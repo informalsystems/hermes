@@ -599,6 +599,12 @@ impl CosmosSdkChain {
             Err(_) => Err(Error::tx_no_confirmation()),
         }
     }
+
+    fn trusting_period(&self, unbonding_period: Duration) -> Duration {
+        self.config
+            .trusting_period
+            .unwrap_or(2 * unbonding_period / 3)
+    }
 }
 
 fn empty_event_present(events: &[IbcEvent]) -> bool {
@@ -1635,12 +1641,13 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+        let unbonding_period = self.unbonding_period()?;
         // Build the client state.
         ClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
-            self.config.trusting_period,
-            self.unbonding_period()?,
+            self.trusting_period(unbonding_period),
+            unbonding_period,
             self.config.clock_drift,
             height,
             ICSHeight::zero(),
