@@ -144,7 +144,7 @@ clock_drift = '5s'
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period
 # (e.g. unbonding period = 3 weeks, trusting period = 2 weeks).
-# Default: 14days (336 hours)
+# Default: 2/3 of the `unbonding period` for Cosmos SDK chains
 trusting_period = '14days'
 
 # Specify the trust threshold for the light client, ie. the maximum fraction of validators
