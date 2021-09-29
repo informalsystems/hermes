@@ -295,7 +295,7 @@ Future versions may create multiple relay threads. One possibility is to create 
 
 ### Relayer Algorithm
 
-A relayer algorithm is described in [relayer algorithm described in IBC Specificication](https://github.com/cosmos/ibc/blame/master/spec/relayer/ics-018-relayer-algorithms/README.md#L47) and [Go relayer implementation ](https://github.com/cosmos/relayer/blob/f3a302df9e6e0c28883f5480199d3190821bcc06/relayer/strategies.go#L49.).
+A relayer algorithm is described in [relayer algorithm described in IBC Specification](https://github.com/cosmos/ibc/blame/master/spec/relayer/ics-018-relayer-algorithms/README.md#L47) and [Go relayer implementation ](https://github.com/cosmos/relayer/blob/f3a302df9e6e0c28883f5480199d3190821bcc06/relayer/strategies.go#L49.).
 
 This section describes some of the details of the realy thread algorithm in the Rust implementation. Inputs are the IBC Events and the events of interest are described in Appendix A.
 
