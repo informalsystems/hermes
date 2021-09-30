@@ -278,7 +278,10 @@ impl CosmosSdkChain {
 
         debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
 
-        self.incr_account_sequence()?;
+        // Avoid bumping up the account s.n. if CheckTx failed
+        if response.code.is_ok() {
+            self.incr_account_sequence()?;
+        }
 
         Ok(response)
     }
