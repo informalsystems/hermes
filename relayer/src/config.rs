@@ -97,10 +97,6 @@ pub mod default {
         Duration::from_secs(10)
     }
 
-    pub fn trusting_period() -> Duration {
-        Duration::from_secs(336 * 60 * 60) // 336 hours ~ 14 days
-    }
-
     pub fn clock_drift() -> Duration {
         Duration::from_secs(5)
     }
@@ -322,8 +318,8 @@ pub struct ChainConfig {
     pub max_tx_size: MaxTxSize,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
-    #[serde(default = "default::trusting_period", with = "humantime_serde")]
-    pub trusting_period: Duration,
+    #[serde(with = "humantime_serde")]
+    pub trusting_period: Option<Duration>,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
