@@ -80,10 +80,11 @@ In the future, [`basecoin-rs`][basecoin-rs] will be used to more robustly test `
 
 What are some of the most common issues that lead to errors? There's a lot of serializing and deserializing of I/O, especially in Hermes. How does Hermes choose to handle these errors? 
 
-Handled via the in-house `flex-error` library. 
+Handled via the in-house [`flex-error`][flex-error] library. 
 
 
 [basecoin-rs]: https://github.com/informalsystems/basecoin-rs
+[flex-error]: https://github.com/informalsystems/flex-error
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
 [ibc-standards]: https://github.com/cosmos/ibc#standardisation
 [ibc-client]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
