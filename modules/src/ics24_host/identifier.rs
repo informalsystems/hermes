@@ -83,7 +83,7 @@ impl ChainId {
     /// assert_eq!(ChainId::is_epoch_format("chainA-1"), true);
     /// ```
     pub fn is_epoch_format(chain_id: &str) -> bool {
-        let re = safe_regex::regex!(br"^.+[^-]-{1}[1-9][0-9]*$");
+        let re = safe_regex::regex!(br".+[^-]-{1}[1-9][0-9]*");
         re.is_match(chain_id.as_bytes())
     }
 }
