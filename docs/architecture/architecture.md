@@ -18,37 +18,27 @@ Some important terms and acronyms that are commonly used include:
 
 At its highest level, `ibc-rs` implements the InterBlockchain Communication protocol which is captured in [specifications in a separate repository](ibc-specs). `ibc-rs` exposes modules that implement the specified protocol logic. The IBC protocol can be understood as having two separate components: on-chain and off-chain logic. The relayer, which is the main off-chain component, is a standalone process, of which Hermes is an implementation. On-chain components can be thought of as modules or smart contracts that run as part of a chain. The main on-chain components deal with the abstractions of clients, connections, and channels. 
 
-TODO: Add a chart visualizing this breakdown.
-
-## How to Read the Codebase
-
-`ibc-rs` (as well as many of Informal's other codebases) is structured a little bit differently from what you might see in a more "traditional" open source codebase. The main differentiating factor is the fact that the different pieces and components are specified in [standards](ibc-standards).
-
-The `modules` crate doesn't quite follow a conventional Rust project layout. It borrows its layout from the ics-standardization project (https://github.com/cosmos/ibc#standardisation)
-
-The `modules` crate implements the [ICS standards][ics-standards]. The other crates in `ibc-rs` follow a conventional Rust project layout. 
-
-TODO: Make the `modules` `lib.rs` file self-explanatory.
-TODO: Define what "conventional" means. 
-TODO: Maybe remove `icsxx_` prefixes from the `modules` crate. 
-
 ## Code Map 
 
 This section talks briefly about the various directories and modules in `ibc-rs`. 
 
 ### `modules`
 
-This crate contains the main data structures and on-chain logic of the IBC protocol. These are the fundamental pieces that make up the IBC protocol. There is the conceptual notion of 'handlers', which are pieces of code that each handle a particular type of message. The most notable handlers are the [client](ibc-client), [connection](ibc-connection), and [channel](ibc-channel) handlers.  
+> Note: While the name of the directory is `modules`, the name of the crate is `ibc`. 
 
-#### Clients
+This crate contains the main data structures and on-chain logic of the IBC protocol. These are the fundamental pieces that make up the IBC protocol. There is the conceptual notion of 'handlers', which are pieces of code that each handle a particular type of message. The most notable handlers are the [client][ibc-client], [connection][ibc-connection], and [channel][ibc-channel] handlers.
+
+> Note: The naming of directories in the `ibc` crate follow a slightly different convention compared to the other crates in `ibc-rs`. This is because this crate implements the [ICS standards][ics-standards]. Modules in the `ibc` crate that implement a piece of the ICS standard are prefixed with the standard's designation. For example, the `modules/src/ics02_client` implements [ICS 02][ics02], which specifies the Client abstraction. These prefixes may be removed in the future. 
+
+#### Clients (ICS 02)
 
 Clients encapsulate all of the verification methods of another IBC-enabled chain in order to ensure that the other chain adheres to the IBC protocol and does not exhibit misbehaviour. Clients "track" the metadata of the other chain's blocks, and each chain has a client for every other chain that it communicates with. 
 
-#### Connections
+#### Connections (ICS 03)
 
 Connections associate a chain with another chain by connecting a client on the local chain with a client on the remote chain. This association is pair-wise unique and is established between two chains following a 4-step handshake process. 
 
-#### Channels
+#### Channels (ICS 04)
 
 Channels are an abstraction layer that facilitate communication between applications and the chains those applications are built upon. One important function that channels can fulfill is guaranteeing that data packets sent between an application and its chain are well-ordered. 
 
@@ -82,9 +72,9 @@ Used by Hermes to gather telemetry data and expose it via a Prometheus endpoint.
 
 ### Testing
 
-Most of the components in the `ibc` (in the `modules` directory) have basic unit testing coverage. We mock up chains in order to help test `ibc` components. 
+Most of the components in the `ibc` crate (i.e. the `modules` directory) have basic unit testing coverage. We mock up chains in order to help test `ibc` components. The main utility for constructing a mock chain is the [`MockContext`][mock-context] type.  
 
-In the future, `basecoin-rs` will be used to more robustly test ibc components more than what mocks can currently provide (like actually making data go through the serialization/deserialization process). 
+In the future, [`basecoin-rs`][basecoin-rs] will be used to more robustly test `ibc` components in a more thorough fashion than what mocks can currently provide (for example, data being sent between a basecoin chain and an `ibc` module will have to go  through the serialization/deserialization process). 
 
 ### Error Handling 
 
@@ -93,9 +83,11 @@ What are some of the most common issues that lead to errors? There's a lot of se
 Handled via the in-house `flex-error` library. 
 
 
+[basecoin-rs]: https://github.com/informalsystems/basecoin-rs
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
 [ibc-standards]: https://github.com/cosmos/ibc#standardisation
 [ibc-client]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
 [ibc-connection]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics03_connection
 [ibc-channel]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics04_channel
-
+[ics02]: https://github.com/cosmos/ibc/blob/master/spec/core/ics-002-client-semantics/README.md
+[mock-context]: https://github.com/informalsystems/ibc-rs/blob/794d224e3f21a4d977beeaefc8d959bb30939a73/modules/src/mock/context.rs#L43
