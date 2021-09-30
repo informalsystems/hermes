@@ -80,25 +80,25 @@ impl TryFrom<RawConsensusState> for ConsensusState {
     }
 }
 
-impl TryFrom<ConsensusState> for RawConsensusState {
-    type Error = Error;
+impl From<ConsensusState> for RawConsensusState {
+    fn from(value: ConsensusState) -> Self {
+        let nanos = value
+            .timestamp
+            .0
+            .timestamp_subsec_nanos()
+            .try_into()
+            .unwrap_or(0);
 
-    fn try_from(value: ConsensusState) -> Result<Self, Error> {
-        Ok(RawConsensusState {
+        RawConsensusState {
             timestamp: Some(Timestamp {
                 seconds: value.timestamp.0.timestamp(),
-                nanos: value
-                    .timestamp
-                    .0
-                    .timestamp_subsec_nanos()
-                    .try_into()
-                    .map_err(Error::timestamp_overflow)?,
+                nanos,
             }),
             root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot {
                 hash: value.root.into_vec(),
             }),
             next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
-        })
+        }
     }
 }
 

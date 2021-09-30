@@ -51,15 +51,13 @@ impl TryFrom<RawMisbehaviour> for Misbehaviour {
     }
 }
 
-impl TryFrom<Misbehaviour> for RawMisbehaviour {
-    type Error = Error;
-
-    fn try_from(value: Misbehaviour) -> Result<Self, Error> {
-        Ok(RawMisbehaviour {
+impl From<Misbehaviour> for RawMisbehaviour {
+    fn from(value: Misbehaviour) -> Self {
+        RawMisbehaviour {
             client_id: value.client_id.to_string(),
-            header_1: Some(value.header1.try_into()?),
-            header_2: Some(value.header2.try_into()?),
-        })
+            header_1: Some(value.header1.into()),
+            header_2: Some(value.header2.into()),
+        }
     }
 }
 
