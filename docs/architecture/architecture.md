@@ -14,15 +14,23 @@ Some important terms and acronyms that are commonly used include:
 
 ## Bird's Eye View
 
-![](docs/architecture/assets/repo-context.png)
+![](docs/architecture/assets/ibc-rs-layout.png)
 
-At its highest level, `ibc-rs` implements the InterBlockchain Communication protocol which is captured in [specifications in a separate repository](ibc-specs). `Ibc-rs` exposes modules that implement the specified protocol logic. The IBC protocol can be understood as having two separate components: it is split between on-chain and off-chain logic. [[note that only the off-chain component, the relayer, is a **process**, while the on-chain component is best thought as a **module** or component or smart contract running on a chain]] Hermes is an example of the off-chain component, that is a packet relayer that facillitates communication between two chains. The main on-chain components deal with the abstractions of clients, connections, and channels. 
+At its highest level, `ibc-rs` implements the InterBlockchain Communication protocol which is captured in [specifications in a separate repository](ibc-specs). `ibc-rs` exposes modules that implement the specified protocol logic. The IBC protocol can be understood as having two separate components: on-chain and off-chain logic. The relayer, which is the main off-chain component, is a standalone process, of which Hermes is an implementation. On-chain components can be thought of as modules or smart contracts that run as part of a chain. The main on-chain components deal with the abstractions of clients, connections, and channels. 
+
+TODO: Add a chart visualizing this breakdown.
 
 ## How to Read the Codebase
 
 `ibc-rs` (as well as many of Informal's other codebases) is structured a little bit differently from what you might see in a more "traditional" open source codebase. The main differentiating factor is the fact that the different pieces and components are specified in [standards](ibc-standards).
 
-Answer how to read the codebase, i.e. `icsxx_`
+The `modules` crate doesn't quite follow a conventional Rust project layout. It borrows its layout from the ics-standardization project (https://github.com/cosmos/ibc#standardisation)
+
+The `modules` crate implements the [ICS standards][ics-standards]. The other crates in `ibc-rs` follow a conventional Rust project layout. 
+
+TODO: Make the `modules` `lib.rs` file self-explanatory.
+TODO: Define what "conventional" means. 
+TODO: Maybe remove `icsxx_` prefixes from the `modules` crate. 
 
 ## Code Map 
 
@@ -58,6 +66,8 @@ An add-on to the CLI mainly for exposing some internal runtime details of Hermes
 
 ### `proto`
 
+Depends on the `proto-compiler` crate's generated proto files.
+
 Consists of protobuf-generated Rust types which are necessary for interacting with the Cosmos SDK. Also contains client and server methods that the relayer library includes for accessing the gRPC calls of a chain.
 
 ### `proto-compiler`
@@ -72,11 +82,16 @@ Used by Hermes to gather telemetry data and expose it via a Prometheus endpoint.
 
 ### Testing
 
-TODO
+Most of the components in the `ibc` (in the `modules` directory) have basic unit testing coverage. We mock up chains in order to help test `ibc` components. 
+
+In the future, `basecoin-rs` will be used to more robustly test ibc components more than what mocks can currently provide (like actually making data go through the serialization/deserialization process). 
 
 ### Error Handling 
 
-TODO 
+What are some of the most common issues that lead to errors? There's a lot of serializing and deserializing of I/O, especially in Hermes. How does Hermes choose to handle these errors? 
+
+Handled via the in-house `flex-error` library. 
+
 
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
 [ibc-standards]: https://github.com/cosmos/ibc#standardisation
