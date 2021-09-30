@@ -6,17 +6,17 @@ This document describes the architecture of `ibc-rs`. If you're looking for a hi
 
 Some important terms and acronyms that are commonly used include:
 
- * IBC: Refers to the *I*nter*B*lockchain *C*ommunication protocol, a distributed protocol that allows different sovereign blockchains to communicate with one another. The protocol has both on-chain and off-chain components.
- * ICS: Refers to *I*nter*C*hain *S*tandards, which are stadardization documents that capture the specifications of the IBC protocol across multiple documents. For example, ICS02 captures the client abstraction of the IBC protocol.
- * IBC module: Refers to a piece of on-chain logic on an IBC-enabled chain.
- * Relayer: Refers to an off-chain process that is responsible for relaying packets between chains.
- * Hermes: Refers to the `ibc-rs` crate's particular relayer implementation. 
+ * **IBC**: Refers to the **I**nter**B**lockchain **C**ommunication protocol, a distributed protocol that allows different sovereign blockchains to communicate with one another. The protocol has both on-chain and off-chain components.
+ * **ICS**: Refers to **I**nter**C**hain **S**tandards, which are stadardization documents that capture the specifications of the IBC protocol across multiple documents. For example, ICS02 captures the client abstraction of the IBC protocol.
+ * **IBC module**: Refers to a piece of on-chain logic on an IBC-enabled chain.
+ * **Relayer**: Refers to an off-chain process that is responsible for relaying packets between chains.
+ * **Hermes**: Refers to the `ibc-rs` crate's particular relayer implementation. 
 
 ## Bird's Eye View
 
 ![](assets/ibc-rs-layout.png)
 
-At its highest level, `ibc-rs` implements the InterBlockchain Communication protocol which is captured in [specifications in a separate repository](ibc-specs). `ibc-rs` exposes modules that implement the specified protocol logic. The IBC protocol can be understood as having two separate components: on-chain and off-chain logic. The relayer, which is the main off-chain component, is a standalone process, of which Hermes is an implementation. On-chain components can be thought of as modules or smart contracts that run as part of a chain. The main on-chain components deal with the abstractions of clients, connections, and channels. 
+At its highest level, `ibc-rs` implements the InterBlockchain Communication protocol which is captured in [specifications in a separate repository][ibc-specs]. `ibc-rs` exposes modules that implement the specified protocol logic. The IBC protocol can be understood as having two separate components: on-chain and off-chain logic. The relayer, which is the main off-chain component, is a standalone process, of which Hermes is an implementation. On-chain components can be thought of as modules or smart contracts that run as part of a chain. The main on-chain components deal with the abstractions of clients, connections, and channels. 
 
 ## Code Map 
 
