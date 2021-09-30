@@ -290,8 +290,7 @@ impl CosmosSdkChain {
                 // is due to "out of gas" errors. These are unrecoverable at the moment
                 // on the Hermes side. We'll inform the user to check for misconfig.
                 error!(
-                    "[{}] the price configuration for this chain may be too low!\\
-                    please check the `gas_price.price` Hermes config.toml",
+                    "[{}] the price configuration for this chain may be too low! please check the `gas_price.price` Hermes config.toml",
                     self.id()
                 );
             }
