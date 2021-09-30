@@ -24,7 +24,7 @@ use tendermint_rpc::query::{EventType, Query};
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, trace, warn};
+use tracing::{debug, error, trace, warn};
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -276,11 +276,17 @@ impl CosmosSdkChain {
 
         let response = self.block_on(broadcast_tx_sync(self, tx_bytes))?;
 
-        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
-
-        // Avoid bumping up the account s.n. if CheckTx failed
-        if response.code.is_ok() {
-            self.incr_account_sequence()?;
+        match response.code {
+            tendermint::abci::Code::Ok => {
+                // A success means the account s.n. was increased
+                self.incr_account_sequence()?;
+                debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
+            }
+            tendermint::abci::Code::Err(_) => {
+                // Avoid increasing the account s.n. if CheckTx failed
+                // Simply log the error
+                error!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
+            }
         }
 
         Ok(response)
