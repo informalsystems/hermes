@@ -875,7 +875,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 match event {
                     IbcEvent::SendPacket(send_event) => {
                         packet_sequences.push(send_event.packet.sequence);
-                        if packet_sequences.len() > 10 {
+                        if packet_sequences.len() >= 10 {
                             // Enough to print the first 10
                             break;
                         }
@@ -964,7 +964,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 match event {
                     IbcEvent::WriteAcknowledgement(write_ack_event) => {
                         packet_sequences.push(write_ack_event.packet.sequence);
-                        if packet_sequences.len() > 10 {
+                        if packet_sequences.len() >= 10 {
                             // Enough to print the first 10
                             break;
                         }
