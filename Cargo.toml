@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "gm-connector",
     "modules",
     "relayer",
     "relayer-cli",

@@ -1,5 +1,10 @@
 # Gaiad Manager Change Log
 
+## v0.1.0
+- gm-connector compatibility: implemented JSON output if `OUTPUT=json` is set in the environment.  ([#1412])
+
+[#1412]: https://github.com/informalsystems/ibc-rs/issues/1412
+
 ## v0.0.9
 
 ### FEATURES

@@ -1,0 +1,17 @@
+
+[chain-1]
+  ports_start_at = 27000
+
+[chain-2]
+  ports_start_at = 27010
+
+[global]
+  gaiad_binary = "https://github.com/cosmos/gaia/releases/download/v5.0.6/gaiad-v5.0.6-darwin-amd64"
+  ports_start_at = 27030
+
+  [global.hermes]
+    binary = "./hermes"
+
+[node-a]
+  network = "chain-1"
+  ports_start_at = 27020

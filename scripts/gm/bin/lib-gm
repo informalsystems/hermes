@@ -5,9 +5,9 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  VERSION="v0.0.9"
-  if [ "$OUTPUT" == "json" ]; then
-    printf '{"status": "success", "message": "%s"}' "$VERSION"
+  VERSION="v0.1.0"
+  if is_json_output; then
+    echo '{"status": "success", "message": "'"${VERSION}"'"}'
   else
     echo "$VERSION"
   fi
@@ -175,16 +175,22 @@ EOF
 }
 
 find_config_file() {
-  if [ -f "${SCRIPT_DIR}gm.toml" ]; then
-    export CONFIG_DIR="${SCRIPT_DIR}"
-  elif [ -f "${HOME}/.gm/gm.toml" ]; then
-    export CONFIG_DIR="${HOME}/.gm/"
-  elif [ -d "${HOME}/.gm" ]; then
-    export CONFIG_DIR="${HOME}/.gm/"
+  if [ -n "${GM_TOML:-}" ] && [ -f "${GM_TOML:-}" ]; then
+    # shellcheck disable=SC2155
+    export CONFIG_DIR="$(dirname "${GM_TOML}")"
+    export CONFIG_FILE="${GM_TOML}"
   else
-    export CONFIG_DIR="${SCRIPT_DIR}"
+    if [ -f "${SCRIPT_DIR}gm.toml" ]; then
+      export CONFIG_DIR="${SCRIPT_DIR}"
+    elif [ -f "${HOME}/.gm/gm.toml" ]; then
+      export CONFIG_DIR="${HOME}/.gm/"
+    elif [ -d "${HOME}/.gm" ]; then
+      export CONFIG_DIR="${HOME}/.gm/"
+    else
+      export CONFIG_DIR="${SCRIPT_DIR}"
+    fi
+    export CONFIG_FILE="${CONFIG_DIR}gm.toml"
   fi
-  export CONFIG_FILE="${CONFIG_DIR}gm.toml"
 }
 
 # End Configuration Management
@@ -254,6 +260,23 @@ enforce_requirements() {
   fi
 }
 
+is_json_output() {
+  test "${OUTPUT:-}" = "json"
+}
+
+disable_when_json() {
+  if is_json_output; then
+      exit_with_error "not implemented"
+      exit 0
+  fi
+}
+
+info() {
+  if ! is_json_output; then
+    echo "$*"
+  fi
+}
+
 debug() {
   if [ -n "${DEBUG:-}" ]; then
     echo "DEBUG: $*" 1>&2
@@ -261,13 +284,17 @@ debug() {
 }
 
 warn() {
-  echo "WARNING: $*"
+  if ! is_json_output; then
+    echo "WARNING: $*"
+  fi
 }
 
 warn_unknown_node() {
-  if ! a_in_b "$1" "$ALL_NODES"; then
-    warn "unknown node $1, skipping..."
-    return 1
+  if ! is_json_output; then
+    if ! a_in_b "$1" "$ALL_NODES"; then
+      warn "unknown node $1, skipping..."
+      return 1
+    fi
   fi
 }
 
@@ -279,12 +306,12 @@ warn_unknown_hermes_node() {
 }
 
 exit_with_error() {
-  if [ "${OUTPUT:-}" == "json" ]; then
-    printf '{"status": "error", "message": "%s"}' "$*"
+  if is_json_output; then
+    echo '{"status": "error", "message": "'"$*"'"}'
   else
     echo "ERROR: $*, exiting..."
+    return 1
   fi
-  return 1
 }
 
 # Functions
@@ -533,7 +560,7 @@ EOF
 }
 
 create() {
-  echo "Creating $1 config..."
+  info "Creating $1 config..."
   GAIAD_BINARY="$(get_gaiad_binary "$1")"
   HOME_DIR="$(get_home_dir "$1")"
   NETWORK="$(get_chain_id "$1")"
@@ -671,7 +698,7 @@ start() {
     nohup "$GAIAD_BINARY" start --home "$HOME_DIR" > "$GAIAD_LOG" 2>&1 &
     GAIAD_PID=$!
     echo "$GAIAD_PID" > "$HOME_DIR/pid"
-    echo "$i started, PID: $GAIAD_PID, LOG: $GAIAD_LOG"
+    info "$i started, PID: $GAIAD_PID, LOG: $GAIAD_LOG"
     sleep 1
     if ! is_running "$1"; then
       warn "$1 failed. Check the logs with \`gm log $1\`."
@@ -683,7 +710,7 @@ stop() {
   if is_running "$1"; then
     HOME_DIR="$(get_home_dir "$1")"
     GAIAD_PID="$(cat "${HOME_DIR}/pid")"
-    echo "Stopping $1 with PID $GAIAD_PID..."
+    info "Stopping $1 with PID $GAIAD_PID..."
     kill -TERM "$GAIAD_PID" 2> /dev/null && rm -f "$HOME_DIR/pid"
     RESULT="$?"
     if [ "$RESULT" != "0" ]; then
@@ -709,10 +736,73 @@ stop() {
 }
 
 print_header_line() {
-  echo "NODE               PID    RPC   APP  GRPC  HOME_DIR"
+  if is_json_output; then
+    echo "{"
+    echo '  "status": "success",'
+    echo '  "message": ['
+    JSON_COMMA=0
+  else
+    echo "NODE               PID    RPC   APP  GRPC  HOME_DIR"
+  fi
+}
+
+print_footer_line() {
+  if is_json_output; then
+    echo "  ]"
+    echo "}"
+  fi
 }
 
 print_status_line() {
+  if is_json_output; then
+    HOME_DIR="$(get_home_dir "$1")"
+    GAIAD_PID_FILE="${HOME_DIR}/pid"
+    GAIAD_PID=""
+    if [ -f "$GAIAD_PID_FILE" ]; then
+      GAIAD_PID="$(cat "$GAIAD_PID_FILE")"
+    fi
+    if [ "$JSON_COMMA" = "0" ]; then
+      JSON_COMMA=1
+    else
+      echo "    ,"
+    fi
+    CHAIN_ID="$1"
+    if [ "${2:-}" = " " ]; then
+      CHAIN_ID="$(get_network "$1")"
+    fi
+    if [ "${GAIAD_PID}" = "" ]; then
+      cat << EOF
+    {
+      "name": "$1",
+      "chain-id": "${CHAIN_ID}",
+      "config-dir": "${HOME_DIR}"
+    }
+EOF
+    else
+      P2P="$(get_p2p_port "$1")"
+      RPC="$(get_rpc_port "$1")"
+      APP="$(get_app_port "$1")"
+      GRPC="$(get_grpc_port "$1")"
+      PPROF="$(get_pprof_port "$1")"
+      GRPCW="$(get_grpcw_port "$1")"
+      cat << EOF
+    {
+      "name": "$1",
+      "chain-id": "${CHAIN_ID}",
+      "pid": ${GAIAD_PID},
+      "config-dir": "${HOME_DIR}",
+      "ports": {
+        "rpc": ${RPC},
+        "app": ${APP},
+        "grpc": ${GRPC},
+        "p2p": ${P2P},
+        "pprof": ${PPROF},
+        "grpc-web": ${GRPC}
+      }
+    }
+EOF
+    fi
+  else
     NAME="${2:-}$1"
     NAME_LENGTH="${#NAME}"
     NAME_PAD=""
@@ -741,6 +831,7 @@ print_status_line() {
     else
        echo "${NAME}${NAME_PAD}     -      -     -     - $HOME_DIR_PRINTED"
     fi
+  fi
 }
 
 status() {
@@ -758,6 +849,7 @@ status() {
       fi
     done
   done
+  print_footer_line
 }
 
 ports() {
@@ -916,12 +1008,16 @@ reset() {
   fi
   GAIAD_BINARY="$(get_gaiad_binary "$1")"
   HOME_DIR="$(get_home_dir "$1")"
-  echo "Resetting $1..."
+  info "Resetting $1..."
   if [ ! -d "$HOME_DIR" ]; then
     warn "No configuration at ${HOME_DIR}. Skipping..."
     return 0
   fi
-  "$GAIAD_BINARY" unsafe-reset-all --home "$HOME_DIR"
+  if is_json_output; then
+    "$GAIAD_BINARY" unsafe-reset-all --home "$HOME_DIR" 1> /dev/null 2> /dev/null
+  else
+    "$GAIAD_BINARY" unsafe-reset-all --home "$HOME_DIR"
+  fi
   if [ -z "$WAS_RUNNING" ]; then
     start "$1"
   fi
@@ -936,7 +1032,7 @@ safer_rm() {
         if [ -d "$HOME_DIR/config" ]; then
           if [ -f "$HOME_DIR/config/config.toml" ]; then
             if [ -d "$HOME_DIR/data" ]; then
-              echo "Executing \"rm -r $HOME_DIR\"..."
+              info "Executing \"rm -r $HOME_DIR\"..."
               rm -r "$HOME_DIR"
             else
               warn "Anxious to run \"rm -r ${HOME_DIR}\" automatically, folder does not contain data folder, skipping..."
