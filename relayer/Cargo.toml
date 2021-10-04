@@ -23,7 +23,7 @@ telemetry = ["ibc-telemetry"]
 
 [dependencies]
 ibc           = { version = "0.7.2", path = "../modules" }
-ibc-proto     = { version = "0.11.0", path = "../proto" }
+ibc-proto     = { version = "0.11.0", path = "../proto", default-features = false, features = ["std"] }
 ibc-telemetry = { version = "0.7.2", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"

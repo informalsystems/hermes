@@ -22,13 +22,27 @@ macro_rules! format {
     }
 }
 
+#[cfg(feature = "std")]
+macro_rules! include_proto {
+    ($path:literal) => {
+        include!(concat!("prost/std/", $path));
+    }
+}
+
+#[cfg(not(feature = "std"))]
+macro_rules! include_proto {
+    ($path:literal) => {
+        include!(concat!("prost/no_std/", $path));
+    }
+}
+
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
 pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
 
 pub mod cosmos {
     pub mod auth {
         pub mod v1beta1 {
-            include!("prost/cosmos.auth.v1beta1.rs");
+            include_proto!("cosmos.auth.v1beta1.rs");
             /// EthAccount defines an Ethermint account.
             /// TODO: remove when/if a canonical `EthAccount`
             /// lands in the next Cosmos SDK release
@@ -45,23 +59,23 @@ pub mod cosmos {
     }
     pub mod staking {
         pub mod v1beta1 {
-            include!("prost/cosmos.staking.v1beta1.rs");
+            include_proto!("cosmos.staking.v1beta1.rs");
         }
     }
     pub mod base {
         pub mod abci {
             pub mod v1beta1 {
-                include!("prost/cosmos.base.abci.v1beta1.rs");
+                include_proto!("cosmos.base.abci.v1beta1.rs");
             }
         }
         pub mod kv {
             pub mod v1beta1 {
-                include!("prost/cosmos.base.kv.v1beta1.rs");
+                include_proto!("cosmos.base.kv.v1beta1.rs");
             }
         }
         pub mod query {
             pub mod v1beta1 {
-                include!("prost/cosmos.base.query.v1beta1.rs");
+                include_proto!("cosmos.base.query.v1beta1.rs");
             }
 
             pub mod pagination {
@@ -77,48 +91,48 @@ pub mod cosmos {
         }
         pub mod reflection {
             pub mod v1beta1 {
-                include!("prost/cosmos.base.reflection.v1beta1.rs");
+                include_proto!("cosmos.base.reflection.v1beta1.rs");
             }
         }
         pub mod store {
             pub mod v1beta1 {
-                include!("prost/cosmos.base.store.v1beta1.rs");
+                include_proto!("cosmos.base.store.v1beta1.rs");
             }
         }
         pub mod v1beta1 {
-            include!("prost/cosmos.base.v1beta1.rs");
+            include_proto!("cosmos.base.v1beta1.rs");
         }
         pub mod tendermint {
             pub mod v1beta1 {
-                include!("prost/cosmos.base.tendermint.v1beta1.rs");
+                include_proto!("cosmos.base.tendermint.v1beta1.rs");
             }
         }
     }
     pub mod crypto {
         pub mod multisig {
             pub mod v1beta1 {
-                include!("prost/cosmos.crypto.multisig.v1beta1.rs");
+                include_proto!("cosmos.crypto.multisig.v1beta1.rs");
             }
         }
     }
     pub mod tx {
         pub mod signing {
             pub mod v1beta1 {
-                include!("prost/cosmos.tx.signing.v1beta1.rs");
+                include_proto!("cosmos.tx.signing.v1beta1.rs");
             }
         }
         pub mod v1beta1 {
-            include!("prost/cosmos.tx.v1beta1.rs");
+            include_proto!("cosmos.tx.v1beta1.rs");
         }
     }
     pub mod upgrade {
         pub mod v1beta1 {
-            include!("prost/cosmos.upgrade.v1beta1.rs");
+            include_proto!("cosmos.upgrade.v1beta1.rs");
         }
     }
     pub mod gov {
         pub mod v1beta1 {
-            include!("prost/cosmos.gov.v1beta1.rs");
+            include_proto!("cosmos.gov.v1beta1.rs");
         }
     }
 }
@@ -127,59 +141,59 @@ pub mod ibc {
     pub mod apps {
         pub mod transfer {
             pub mod v1 {
-                include!("prost/ibc.applications.transfer.v1.rs");
+                include_proto!("ibc.applications.transfer.v1.rs");
             }
         }
     }
     pub mod core {
         pub mod channel {
             pub mod v1 {
-                include!("prost/ibc.core.channel.v1.rs");
+                include_proto!("ibc.core.channel.v1.rs");
             }
         }
         pub mod client {
             pub mod v1 {
-                include!("prost/ibc.core.client.v1.rs");
+                include_proto!("ibc.core.client.v1.rs");
             }
         }
         pub mod commitment {
             pub mod v1 {
-                include!("prost/ibc.core.commitment.v1.rs");
+                include_proto!("ibc.core.commitment.v1.rs");
             }
         }
         pub mod connection {
             pub mod v1 {
-                include!("prost/ibc.core.connection.v1.rs");
+                include_proto!("ibc.core.connection.v1.rs");
             }
         }
         pub mod types {
             pub mod v1 {
-                include!("prost/ibc.core.types.v1.rs");
+                include_proto!("ibc.core.types.v1.rs");
             }
         }
     }
     pub mod lightclients {
         pub mod localhost {
             pub mod v1 {
-                include!("prost/ibc.lightclients.localhost.v1.rs");
+                include_proto!("ibc.lightclients.localhost.v1.rs");
             }
         }
         pub mod solomachine {
             pub mod v1 {
-                include!("prost/ibc.lightclients.solomachine.v1.rs");
+                include_proto!("ibc.lightclients.solomachine.v1.rs");
             }
         }
         pub mod tendermint {
             pub mod v1 {
-                include!("prost/ibc.lightclients.tendermint.v1.rs");
+                include_proto!("ibc.lightclients.tendermint.v1.rs");
             }
         }
     }
     pub mod mock {
-        include!("prost/ibc.mock.rs");
+        include_proto!("ibc.mock.rs");
     }
 }
 
 pub mod ics23 {
-    include!("prost/ics23.rs");
+    include_proto!("ics23.rs");
 }

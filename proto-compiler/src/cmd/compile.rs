@@ -35,7 +35,6 @@ impl CompileCmd {
 fn run_cmd(sdk_src: &Path, ibc_src: &Option<PathBuf>, out: &Path) -> Result<(), Error>
 {
     let tmp_sdk = TempDir::new("ibc-proto-sdk")?;
-    output_version(sdk_src, tmp_sdk.as_ref(), "COSMOS_SDK_COMMIT")?;
     compile_sdk_protos(sdk_src, tmp_sdk.as_ref(), ibc_src.clone())?;
 
     match ibc_src {
@@ -46,13 +45,16 @@ fn run_cmd(sdk_src: &Path, ibc_src: &Option<PathBuf>, out: &Path) -> Result<(), 
         Some(ibc_path) => {
             let tmp_ibc = TempDir::new("ibc-proto-ibc-go")?;
 
-            output_version(&ibc_path, tmp_ibc.as_ref(), "COSMOS_IBC_COMMIT")?;
             compile_ibc_protos(&ibc_path, tmp_ibc.as_ref())?;
 
             // Merge the generated files into a single directory, taking care not to overwrite anything
             copy_generated_files(tmp_sdk.as_ref(), Some(tmp_ibc.as_ref().to_owned()), &out)?;
+
+            output_version(&ibc_path, out, "COSMOS_IBC_COMMIT")?;
         }
     }
+
+    output_version(sdk_src, out, "COSMOS_SDK_COMMIT")?;
 
     Ok(())
 }
