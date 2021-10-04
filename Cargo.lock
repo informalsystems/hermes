@@ -2891,8 +2891,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa5354dfcc3bbd8bf3b000b9cfb19afcb4e1bbaed9d6b2d6bc2fa05e027bd7e1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#72398480e08356c5a4dc1c276628a7a60229bc87"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2925,8 +2924,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c67bd8950fa29cd53f482ae3030700c74235260d9143bf634563136b5da5224c"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#72398480e08356c5a4dc1c276628a7a60229bc87"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -2945,8 +2943,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c36f58bd68be7a6e3221c49cc1a14cbc619c189bb26a43425f544831922d2be"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#72398480e08356c5a4dc1c276628a7a60229bc87"
 dependencies = [
  "bytes",
  "chrono",
@@ -2963,8 +2960,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ca84e07a1ca78193a81854685a9cb99c17080674442c4fe10ee53f4d2195169"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#72398480e08356c5a4dc1c276628a7a60229bc87"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -2996,8 +2992,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82fe76085d594f6c836f60b84a7acc69ddd12556d3d3a4f8c3d83626da2e658e"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#72398480e08356c5a4dc1c276628a7a60229bc87"
 dependencies = [
  "ed25519-dalek",
  "gumdrop 0.8.0",
