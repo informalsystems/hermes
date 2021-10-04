@@ -1517,29 +1517,44 @@ impl ChainEndpoint for CosmosSdkChain {
 
                 let mut result: Vec<IbcEvent> = vec![];
 
-                let response = self
-                    .block_on(
-                        self.rpc_client.block_results(
-                            tendermint::block::Height::try_from(request.height.revision_height)
-                                .unwrap(),
-                        ),
-                    )
-                    .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+                for seq in &request.sequences {
+                    let response = self
+                        .block_on(self.rpc_client.block_search(
+                            packet_query(&request, *seq),
+                            1,
+                            1, // there should only be a single match for this query
+                            Order::Ascending,
+                        ))
+                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-                if let Some(begin_block_events) = response.begin_block_events {
-                    let evs = packet_from_block_result_events(begin_block_events, &request);
-                    if !evs.is_empty() {
-                        result.extend_from_slice(evs.as_slice());
+                    assert!(
+                        response.blocks.len() <= 1,
+                        "block_results: unexpected number of blocks"
+                    );
+
+                    if let Some(block_response) = response.blocks.first() {
+                        let response = self
+                            .block_on(
+                                self.rpc_client
+                                    .block_results(block_response.block.header.height),
+                            )
+                            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+                        if let Some(begin_block_events) = response.begin_block_events {
+                            let evs = packet_from_block_result_events(begin_block_events, &request);
+                            if !evs.is_empty() {
+                                result.extend(evs);
+                            }
+                        }
+
+                        if let Some(end_block_events) = response.end_block_events {
+                            let evs = packet_from_block_result_events(end_block_events, &request);
+                            if !evs.is_empty() {
+                                result.extend(evs);
+                            }
+                        }
                     }
                 }
-
-                if let Some(end_block_events) = response.end_block_events {
-                    let evs = packet_from_block_result_events(end_block_events, &request);
-                    if !evs.is_empty() {
-                        result.extend_from_slice(evs.as_slice());
-                    }
-                }
-
                 Ok(result)
             }
         }
