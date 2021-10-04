@@ -1532,27 +1532,28 @@ impl ChainEndpoint for CosmosSdkChain {
                         "block_results: unexpected number of blocks"
                     );
 
-                    if let Some(block_response) = response.blocks.first() {
+                    if let Some(block) = response.blocks.first().map(|first| &first.block) {
                         let response = self
-                            .block_on(
-                                self.rpc_client
-                                    .block_results(block_response.block.header.height),
-                            )
+                            .block_on(self.rpc_client.block_results(block.header.height))
                             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-                        if let Some(begin_block_events) = response.begin_block_events {
-                            let evs = packet_from_block_result_events(begin_block_events, &request);
-                            if !evs.is_empty() {
-                                result.extend(evs);
-                            }
-                        }
+                        result.append(
+                            &mut response
+                                .begin_block_events
+                                .unwrap_or_default()
+                                .into_iter()
+                                .filter_map(|ev| send_packet_from_event(ev, &request))
+                                .collect(),
+                        );
 
-                        if let Some(end_block_events) = response.end_block_events {
-                            let evs = packet_from_block_result_events(end_block_events, &request);
-                            if !evs.is_empty() {
-                                result.extend(evs);
-                            }
-                        }
+                        result.append(
+                            &mut response
+                                .end_block_events
+                                .unwrap_or_default()
+                                .into_iter()
+                                .filter_map(|ev| send_packet_from_event(ev, &request))
+                                .collect(),
+                        );
                     }
                 }
                 Ok(result)
@@ -1870,37 +1871,23 @@ fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx
     result
 }
 
-// Extract the packet events from the block_results (begin_block / end_block) events
-fn packet_from_block_result_events(
-    events: Vec<Event>,
-    request: &QueryPacketEventDataRequest,
-) -> Vec<IbcEvent> {
-    if events.is_empty() {
-        return Vec::new();
-    }
-
-    let sequence: &Vec<Sequence> = &request.sequences;
-
-    let mut result: Vec<IbcEvent> = Vec::with_capacity(events.len());
-    for event in events {
-        if event.type_str == IbcEventType::SendPacket.as_str() {
-            if let Some(ibc_event) = ChannelEvents::try_from_tx(&event) {
-                if let IbcEvent::SendPacket(send_packet) = ibc_event.clone() {
-                    let packet = send_packet.packet;
-                    if packet.source_port == request.source_port_id
-                        && packet.source_channel == request.source_channel_id
-                        && packet.destination_port == request.destination_port_id
-                        && packet.destination_channel == request.destination_channel_id
-                        && sequence.contains(&packet.sequence)
-                    {
-                        result.push(ibc_event)
-                    }
+fn send_packet_from_event(event: Event, request: &QueryPacketEventDataRequest) -> Option<IbcEvent> {
+    if event.type_str == IbcEventType::SendPacket.as_str() {
+        if let Some(ibc_event) = ChannelEvents::try_from_tx(&event) {
+            if let IbcEvent::SendPacket(send_packet) = ibc_event.clone() {
+                let packet = send_packet.packet;
+                if packet.source_port == request.source_port_id
+                    && packet.source_channel == request.source_channel_id
+                    && packet.destination_port == request.destination_port_id
+                    && packet.destination_channel == request.destination_channel_id
+                    && request.sequences.contains(&packet.sequence)
+                {
+                    return Some(ibc_event);
                 }
             }
         }
     }
-
-    result
+    None
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
