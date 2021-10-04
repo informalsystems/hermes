@@ -864,18 +864,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_txs(QueryTxRequest::Packet(query.clone()))
             .map_err(LinkError::relayer)?;
 
-        let events_result_from_block = self
+        let (start_block_events, end_block_events) = self
             .src_chain()
             .query_block(QueryBlockRequest::Packet(query))
             .map_err(LinkError::relayer)?;
 
-        if !events_result_from_tx.is_empty() {
-            events_result.extend(events_result_from_tx);
-        }
-
-        if !events_result_from_block.is_empty() {
-            events_result.extend(events_result_from_block);
-        }
+        // events must be ordered in the following fashion -
+        // start-block events followed by tx-events followed by end-block events
+        events_result.extend(start_block_events);
+        events_result.extend(events_result_from_tx);
+        events_result.extend(end_block_events);
 
         let mut packet_sequences = vec![];
         for event in events_result.iter() {

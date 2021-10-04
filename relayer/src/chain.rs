@@ -264,7 +264,10 @@ pub trait ChainEndpoint: Sized {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 
-    fn query_block(&self, request: QueryBlockRequest) -> Result<Vec<IbcEvent>, Error>;
+    fn query_block(
+        &self,
+        request: QueryBlockRequest,
+    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 
     // Provable queries
     fn proven_client_state(

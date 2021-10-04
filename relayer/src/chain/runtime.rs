@@ -778,7 +778,7 @@ where
     fn query_block(
         &self,
         request: QueryBlockRequest,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_block(request);
 
