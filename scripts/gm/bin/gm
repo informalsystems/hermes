@@ -167,7 +167,7 @@ case "${1:-help}" in
     fi
     ;;
   ports)
-    disable_when_json # Todo: implement it for JSON
+    disable_when_json
     parse_config_file
     if [ $# -eq 1 ]; then
       NODES="$ALL_NODES"
@@ -265,6 +265,7 @@ case "${1:-help}" in
     exit 0
     ;;
   *)
+    disable_when_json
     usage
     exit_with_error "could not understand the command '$1'"
     ;;
