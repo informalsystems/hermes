@@ -18,11 +18,14 @@ enum Command {
     Compile(CompileCmd),
 }
 
-fn main() {
+fn main() -> eyre::Result<()> {
+    color_eyre::install()?;
     let app: App = argh::from_env();
 
     match app.cmd {
         Command::Clone(clone) => clone.run(),
-        Command::Compile(compile) => compile.run(),
+        Command::Compile(compile) => compile.run()?,
     }
+
+    Ok(())
 }

@@ -27,8 +27,8 @@ pub struct CompileCmd {
 }
 
 impl CompileCmd {
-    pub fn run(&self) {
-        run_cmd(&self.sdk, &self.ibc, &self.out).unwrap();
+    pub fn run(&self) -> Result<(), Error> {
+        run_cmd(&self.sdk, &self.ibc, &self.out)
     }
 }
 
@@ -50,7 +50,7 @@ fn run_cmd(sdk_src: &Path, ibc_src: &Option<PathBuf>, out: &Path) -> Result<(), 
             compile_ibc_protos(&ibc_path, tmp_ibc.as_ref())?;
 
             // Merge the generated files into a single directory, taking care not to overwrite anything
-            copy_generated_files(tmp_sdk.as_ref(), Some(tmp_ibc.as_ref()), &out)?;
+            copy_generated_files(tmp_sdk.as_ref(), Some(tmp_ibc.as_ref().to_owned()), &out)?;
         }
     }
 
@@ -82,16 +82,12 @@ fn build_tonic(
 ) -> Result<(), std::io::Error>
 {
     build_tonic_with_client(
-        &out_dir,
+        &out_dir.join("std"),
         protos, includes, true)?;
 
-    // build_tonic_with_client(
-    //     &out_dir.join("std"),
-    //     protos, includes, true)?;
-
-    // build_tonic_with_client(
-    //     &out_dir.join("no_std"),
-    //     protos, includes, false)?;
+    build_tonic_with_client(
+        &out_dir.join("no_std"),
+        protos, includes, false)?;
 
     Ok(())
 }
@@ -241,7 +237,26 @@ fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>)
     Ok(())
 }
 
-fn copy_generated_files(from_dir_sdk: &Path, from_dir_ibc_opt: Option<&Path>, to_dir: &Path)
+fn copy_generated_files(from_dir_sdk: &Path, from_dir_ibc_opt: Option<PathBuf>, to_dir: &Path)
+    -> Result<(), Error>
+{
+    do_copy_generated_files(
+        &from_dir_sdk.join("std"),
+        from_dir_ibc_opt.clone().map(|p| p.join("std")),
+        &to_dir.join("std")
+    )?;
+
+    do_copy_generated_files(
+        &from_dir_sdk.join("no_std"),
+        from_dir_ibc_opt.map(|p| p.join("no_std")),
+        &to_dir.join("no_std")
+    )?;
+
+
+    Ok(())
+}
+
+fn do_copy_generated_files(from_dir_sdk: &Path, from_dir_ibc_opt: Option<PathBuf>, to_dir: &Path)
     -> Result<(), Error>
 {
     println!(
@@ -250,7 +265,10 @@ fn copy_generated_files(from_dir_sdk: &Path, from_dir_ibc_opt: Option<&Path>, to
     );
 
     // Remove old compiled files
-    remove_dir_all(&to_dir)?;
+    if to_dir.exists() {
+        remove_dir_all(&to_dir)?;
+    }
+
     create_dir_all(&to_dir)?;
 
     let files = list_files_in_dir(from_dir_sdk)?;
