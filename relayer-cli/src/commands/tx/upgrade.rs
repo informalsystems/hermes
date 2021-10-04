@@ -71,13 +71,19 @@ pub struct TxIbcUpgradeChainCmd {
 
 impl TxIbcUpgradeChainCmd {
     fn validate_options(&self, config: &Config) -> Result<UpgradePlanOptions, String> {
-        let src_chain_config = config
-            .find_chain(&self.src_chain_id)
-            .ok_or_else(|| "missing src chain configuration".to_string())?;
+        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
+            format!(
+                "missing configuration for source chain '{}'",
+                self.src_chain_id
+            )
+        })?;
 
-        let dst_chain_config = config
-            .find_chain(&self.dst_chain_id)
-            .ok_or_else(|| "missing destination chain configuration".to_string())?;
+        let dst_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
+            format!(
+                "missing configuration for destination chain '{}'",
+                self.dst_chain_id
+            )
+        })?;
 
         let opts = UpgradePlanOptions {
             dst_chain_config: dst_chain_config.clone(),
