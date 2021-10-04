@@ -833,7 +833,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             return Ok((events_result, query_height));
         }
 
-        trace!(
+        debug!(
             "[{}] packets that still have commitments on {}: {} (first 10 shown here; total={})",
             self,
             self.src_chain().id(),
@@ -841,7 +841,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             commit_sequences.len()
         );
 
-        trace!(
+        debug!(
             "[{}] recv packets to send out to {} of the ones with commitments on source {}: {} (first 10 shown here; total={})",
             self,
             self.dst_chain().id(),
@@ -923,7 +923,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             return Ok((events_result, query_height));
         }
 
-        trace!(
+        debug!(
             "[{}] packets that have acknowledgments on {}: [{:?}..{:?}] (total={})",
             self,
             self.src_chain().id(),
@@ -932,7 +932,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             acked_sequences.len()
         );
 
-        trace!(
+        debug!(
             "[{}] ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
             self,
             self.dst_chain().id(),
