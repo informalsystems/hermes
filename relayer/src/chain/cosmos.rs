@@ -1874,8 +1874,8 @@ fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx
 fn send_packet_from_event(event: Event, request: &QueryPacketEventDataRequest) -> Option<IbcEvent> {
     if event.type_str == IbcEventType::SendPacket.as_str() {
         if let Some(ibc_event) = ChannelEvents::try_from_tx(&event) {
-            if let IbcEvent::SendPacket(send_packet) = ibc_event.clone() {
-                let packet = send_packet.packet;
+            if let IbcEvent::SendPacket(ref send_packet) = ibc_event {
+                let packet = &send_packet.packet;
                 if packet.source_port == request.source_port_id
                     && packet.source_channel == request.source_channel_id
                     && packet.destination_port == request.destination_port_id
