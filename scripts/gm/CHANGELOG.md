@@ -2,6 +2,8 @@
 
 ## v0.1.0
 - gm-connector compatibility: implemented JSON output if `OUTPUT=json` is set in the environment.  ([#1412])
+- Increased default Hermes config constants `rpc_timeout` and `max_gas`
+- Fixed undefaulted `$OUPUT` in `lib-gm`
 
 [#1412]: https://github.com/informalsystems/ibc-rs/issues/1412
 

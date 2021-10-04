@@ -1,10 +1,10 @@
 [package]
 name       = "ibc-proto"
-version    = "0.10.1"
+version    = "0.11.0"
 authors    = ["Informal Systems <hello@informal.systems>"]
 edition    = "2018"
 license    = "Apache-2.0"
-repository = "https://github.com/informalsystems/ibc-proto/tree/master/ibc_proto"
+repository = "https://github.com/informalsystems/ibc-rs/tree/master/proto"
 readme     = "README.md"
 categories = ["cryptography", "cryptography::cryptocurrencies", "database"]
 keywords   = ["blockchain", "cosmos", "tendermint", "ibc", "proto"]
@@ -29,4 +29,4 @@ tonic = "0.4"
 getrandom = { version = "0.2", features = ["js"] }
 
 [dependencies.tendermint-proto]
-version = "=0.21.0"
+version = "=0.22.0"

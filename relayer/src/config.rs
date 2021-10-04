@@ -81,6 +81,10 @@ impl ChannelsSpec {
 pub mod default {
     use super::*;
 
+    pub fn tx_confirmation() -> bool {
+        true
+    }
+
     pub fn filter() -> bool {
         false
     }
@@ -91,10 +95,6 @@ pub mod default {
 
     pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
-    }
-
-    pub fn trusting_period() -> Duration {
-        Duration::from_secs(336 * 60 * 60) // 336 hours ~ 14 days
     }
 
     pub fn clock_drift() -> Duration {
@@ -215,6 +215,8 @@ pub struct GlobalConfig {
     pub filter: bool,
     #[serde(default = "default::clear_packets_interval")]
     pub clear_packets_interval: u64,
+    #[serde(default = "default::tx_confirmation")]
+    pub tx_confirmation: bool,
 }
 
 impl Default for GlobalConfig {
@@ -224,6 +226,7 @@ impl Default for GlobalConfig {
             log_level: LogLevel::default(),
             filter: default::filter(),
             clear_packets_interval: default::clear_packets_interval(),
+            tx_confirmation: default::tx_confirmation(),
         }
     }
 }
@@ -315,8 +318,8 @@ pub struct ChainConfig {
     pub max_tx_size: MaxTxSize,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
-    #[serde(default = "default::trusting_period", with = "humantime_serde")]
-    pub trusting_period: Duration,
+    #[serde(with = "humantime_serde")]
+    pub trusting_period: Option<Duration>,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]

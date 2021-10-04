@@ -28,6 +28,14 @@ log_level = 'info'
 # periodic packet clearing. Default: 100
 clear_packets_interval = 100
 
+# Toggle the transaction confirmation mechanism.
+# The tx confirmation mechanism periodically queries the `/tx_search` RPC
+# endpoint to check that previously-submitted transactions
+# (to any chain in this config file) have delivered successfully.
+# Experimental feature. Affects telemetry if set to false.
+# Default: true.
+tx_confirmation = true
+
 
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
@@ -136,7 +144,7 @@ clock_drift = '5s'
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period
 # (e.g. unbonding period = 3 weeks, trusting period = 2 weeks).
-# Default: 14days (336 hours)
+# Default: 2/3 of the `unbonding period` for Cosmos SDK chains
 trusting_period = '14days'
 
 # Specify the trust threshold for the light client, ie. the maximum fraction of validators

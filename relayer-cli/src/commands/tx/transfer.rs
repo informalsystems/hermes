@@ -71,7 +71,10 @@ pub struct TxIcs20MsgTransferCmd {
 impl Override<Config> for TxIcs20MsgTransferCmd {
     fn override_config(&self, mut config: Config) -> Result<Config, abscissa_core::FrameworkError> {
         let src_chain_config = config.find_chain_mut(&self.src_chain_id).ok_or_else(|| {
-            FrameworkErrorKind::ComponentError.context("missing src chain configuration")
+            FrameworkErrorKind::ComponentError.context(format!(
+                "missing configuration for source chain '{}'",
+                self.src_chain_id
+            ))
         })?;
 
         if let Some(ref key_name) = self.key {
@@ -87,13 +90,19 @@ impl TxIcs20MsgTransferCmd {
         &self,
         config: &Config,
     ) -> Result<TransferOptions, Box<dyn std::error::Error>> {
-        let src_chain_config = config
-            .find_chain(&self.src_chain_id)
-            .ok_or("missing src chain configuration")?;
+        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
+            format!(
+                "missing configuration for source chain '{}'",
+                self.src_chain_id
+            )
+        })?;
 
-        let dest_chain_config = config
-            .find_chain(&self.dst_chain_id)
-            .ok_or("missing destination chain configuration")?;
+        let dest_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
+            format!(
+                "missing configuration for destination chain '{}'",
+                self.dst_chain_id
+            )
+        })?;
 
         let denom = self.denom.clone();
 
