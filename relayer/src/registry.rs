@@ -96,7 +96,7 @@ impl<Chain: ChainHandle> Registry<Chain> {
         if !self.handles.contains_key(chain_id) {
             let handle = spawn_chain_runtime(&self.config, chain_id, self.rt.clone())?;
             self.handles.insert(chain_id.clone(), handle);
-            trace!("spawned chain runtime for chain {}", chain_id);
+            trace!("[{}] spawned chain runtime", chain_id);
             Ok(true)
         } else {
             Ok(false)
