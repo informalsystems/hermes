@@ -71,7 +71,6 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::config::{AddressType, ChainConfig, GasPrice};
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
@@ -79,6 +78,10 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
 use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
+use crate::{
+    config::{AddressType, ChainConfig, GasPrice},
+    sdk_error::sdk_error_from_tx_sync_error_code,
+};
 
 use super::{ChainEndpoint, HealthCheck};
 
@@ -295,9 +298,23 @@ impl CosmosSdkChain {
 
         let response = self.block_on(broadcast_tx_sync(self, tx_bytes))?;
 
-        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
-
-        self.incr_account_sequence()?;
+        match response.code {
+            tendermint::abci::Code::Ok => {
+                // A success means the account s.n. was increased
+                self.incr_account_sequence()?;
+                debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
+            }
+            tendermint::abci::Code::Err(code) => {
+                // Avoid increasing the account s.n. if CheckTx failed
+                // Log the error
+                error!(
+                    "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
+                    self.id(),
+                    response,
+                    sdk_error_from_tx_sync_error_code(code)
+                );
+            }
+        }
 
         Ok(response)
     }
