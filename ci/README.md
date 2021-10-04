@@ -9,7 +9,7 @@ The [End to end (e2e) testing workflow](https://github.com/informalsystems/ibc-r
 ### Testing Ethermint-based networks
 At this moment, the automated E2E workflow does not spin up a network with the (post-Stargate) Ethermint module. In the meantime, you can test it manually by following one of the resources below:
 
-- [the official documentation on ethermint.dev](https://ethermint.dev/quickstart/run_node.html)
+- [the official documentation on ethermint.dev](https://docs.ethermint.zone/quickstart/run_node.html)
 - [using the tweaked E2E scripts from the Injective's fork](https://github.com/InjectiveLabs/ibc-rs/commit/669535617a6e45be9916387e292d45a77e7d23d2)
 - [using the nix-based integration test scripts in the Cronos project](https://github.com/crypto-org-chain/cronos#quitck-start)
 

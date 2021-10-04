@@ -6,7 +6,7 @@ use core::{
     str::FromStr,
     time::Duration,
 };
-use std::{thread, time::Instant};
+use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
@@ -24,7 +24,7 @@ use tendermint_rpc::query::{EventType, Query};
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, trace, warn};
+use tracing::{debug, error, trace, warn};
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -71,7 +71,6 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::config::{AddressType, ChainConfig, GasPrice};
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
@@ -79,6 +78,10 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
 use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
+use crate::{
+    config::{AddressType, ChainConfig, GasPrice},
+    sdk_error::sdk_error_from_tx_sync_error_code,
+};
 
 use super::{ChainEndpoint, HealthCheck};
 
@@ -211,20 +214,24 @@ impl CosmosSdkChain {
 
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
+
         let account_seq = self.account_sequence()?;
 
         debug!(
-            "[{}] send_tx: sending {} messages using nonce {}",
+            "[{}] send_tx: sending {} messages using account sequence {}",
             self.id(),
             proto_msgs.len(),
             account_seq,
         );
 
         let signer_info = self.signer(account_seq)?;
-        let fee = self.default_fee();
+        let default_fee = self.default_fee();
+
+        debug!("[{}] default fee: {}", self.id(), PrettyFee(&default_fee));
+
         let (body, body_buf) = tx_body_and_bytes(proto_msgs)?;
 
-        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), fee.clone())?;
+        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), default_fee.clone())?;
         let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
 
         // Try to simulate the Tx.
@@ -239,11 +246,26 @@ impl CosmosSdkChain {
                 auth_info: Some(auth_info),
                 signatures: vec![signed_doc],
             })
-            .map_or(self.max_gas(), |sr| {
-                sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
-            });
+            .map(|sr| sr.gas_info);
+
+        debug!("[{}] simulated gas: {:?}", self.id(), estimated_gas);
+
+        let estimated_gas = estimated_gas.map_or_else(
+            |e| {
+                error!(
+                    "[{}] failed to estimate gas, falling back on max gas, error: {}",
+                    self.id(),
+                    e
+                );
+
+                self.max_gas()
+            },
+            |gas_info| gas_info.map_or(self.max_gas(), |g| g.gas_used),
+        );
 
         if estimated_gas > self.max_gas() {
+            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] estimated gas is higher than max gas", self.id());
+
             return Err(Error::tx_simulate_gas_estimate_exceeded(
                 self.id().clone(),
                 estimated_gas,
@@ -254,10 +276,10 @@ impl CosmosSdkChain {
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         trace!(
-            "[{}] send_tx: based on the estimated gas, adjusting fee from {:?} to {:?}",
+            "[{}] send_tx: based on the estimated gas, adjusting fee from {} to {}",
             self.id(),
-            fee,
-            adjusted_fee
+            PrettyFee(&default_fee),
+            PrettyFee(&adjusted_fee)
         );
 
         let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
@@ -276,9 +298,23 @@ impl CosmosSdkChain {
 
         let response = self.block_on(broadcast_tx_sync(self, tx_bytes))?;
 
-        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
-
-        self.incr_account_sequence()?;
+        match response.code {
+            tendermint::abci::Code::Ok => {
+                // A success means the account s.n. was increased
+                self.incr_account_sequence()?;
+                debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
+            }
+            tendermint::abci::Code::Err(code) => {
+                // Avoid increasing the account s.n. if CheckTx failed
+                // Log the error
+                error!(
+                    "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
+                    self.id(),
+                    response,
+                    sdk_error_from_tx_sync_error_code(code)
+                );
+            }
+        }
 
         Ok(response)
     }
@@ -379,12 +415,15 @@ impl CosmosSdkChain {
     fn send_tx_simulate(&self, tx: Tx) -> Result<SimulateResponse, Error> {
         crate::time!("tx simulate");
 
-        // The `tx` field of `SimulateRequest` was deprecated
-        // in favor of `tx_bytes`
+        // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
         let mut tx_bytes = vec![];
         prost::Message::encode(&tx, &mut tx_bytes).unwrap();
+
         #[allow(deprecated)]
-        let req = SimulateRequest { tx: None, tx_bytes };
+        let req = SimulateRequest {
+            tx: Some(tx), // needed for simulation to go through with Cosmos SDK <  0.43
+            tx_bytes,     // needed for simulation to go through with Cosmos SDk >= 0.43
+        };
 
         let mut client = self
             .block_on(
@@ -598,6 +637,12 @@ impl CosmosSdkChain {
             // Did not find confirmation
             Err(_) => Err(Error::tx_no_confirmation()),
         }
+    }
+
+    fn trusting_period(&self, unbonding_period: Duration) -> Duration {
+        self.config
+            .trusting_period
+            .unwrap_or(2 * unbonding_period / 3)
     }
 }
 
@@ -1635,12 +1680,13 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+        let unbonding_period = self.unbonding_period()?;
         // Build the client state.
         ClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
-            self.config.trusting_period,
-            self.unbonding_period()?,
+            self.trusting_period(unbonding_period),
+            unbonding_period,
             self.config.clock_drift,
             height,
             ICSHeight::zero(),
@@ -2036,6 +2082,21 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+struct PrettyFee<'a>(&'a Fee);
+impl fmt::Display for PrettyFee<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let amount = match self.0.amount.get(0) {
+            Some(coin) => format!("{}{}", coin.amount, coin.denom),
+            None => "<no amount specified>".to_string(),
+        };
+
+        f.debug_struct("Fee")
+            .field("amount", &amount)
+            .field("gas_limit", &self.0.gas_limit)
+            .finish()
+    }
 }
 
 fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {

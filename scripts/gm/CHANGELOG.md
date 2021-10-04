@@ -3,6 +3,7 @@
 ## UNRELEASED
 
 - Increased default Hermes config constants `rpc_timeout` and `max_gas`
+- Fixed undefaulted `$OUPUT` in `lib-gm`
 
 ## v0.0.9
 
