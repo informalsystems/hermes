@@ -20,3 +20,9 @@ tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint
 tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
 tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
 tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+# ics23 = { git = "https://github.com/confio/ics23.git", branch = "master" }
+safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }

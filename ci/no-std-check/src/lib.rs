@@ -10,6 +10,12 @@ use ibc;
 #[cfg(feature = "ibc_proto")]
 use ibc_proto;
 
+#[cfg(feature = "tendermint")]
+use tendermint;
+
+#[cfg(feature = "tendermint-proto")]
+use tendermint_proto;
+
 #[cfg(feature = "sp-core")]
 use sp_core;
 
@@ -21,6 +27,34 @@ use sp_runtime;
 
 #[cfg(feature = "sp-std")]
 use sp_std;
+
+use prost;
+use prost_types;
+use bytes;
+use serde;
+use serde_bytes;
+use subtle_encoding;
+use num_traits;
+use num_derive;
+use chrono;
+use flex_error;
+
+use async_trait;
+use ed25519;
+use ed25519_dalek;
+use futures;
+use once_cell;
+use serde_json;
+use serde_repr;
+use sha2;
+use signature;
+use subtle;
+use zeroize;
+use k256;
+use ripemd160;
+use tracing;
+use serde_derive;
+use safe_regex;
 
 // Supported Imports
 
@@ -37,8 +71,8 @@ use sp_std;
 // use num_derive;
 // use num_traits;
 // use once_cell;
-use prost;
-use prost_types;
+// use prost;
+// use prost_types;
 // use ripemd160;
 // use ryu;
 // use serde;

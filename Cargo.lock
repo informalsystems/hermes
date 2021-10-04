@@ -684,7 +684,6 @@ version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4620d40f6d2601794401d6dd95a5cf69b6c157852539470eeda433a99b3c0efc"
 dependencies = [
- "serde",
  "signature",
 ]
 
@@ -696,8 +695,6 @@ checksum = "c762bae6dcaf24c4c84667b8579785430908723d5c889f469d76a41d59cc7a9d"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
- "serde",
- "serde_bytes",
  "sha2",
  "zeroize",
 ]
@@ -1029,9 +1026,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b21b78895ff1ade3f8df6a9a77917f20dc8b46d0069dd5a3837cf1f507a70ee"
+checksum = "6c06815895acec637cd6ed6e9662c935b866d20a106f8361892893a7d9234964"
 dependencies = [
  "bytes",
  "fnv",
@@ -2395,8 +2392,7 @@ checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 [[package]]
 name = "safe-proc-macro2"
 version = "1.0.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c9ca0693867c373d726819a6655d3dc4e88028905f1b1e9b9d399a57ea1d83e"
+source = "git+https://github.com/informalsystems/safe-regex.git?branch=main#842d31f5acdcd66dd60481632baaae511c29f0fd"
 dependencies = [
  "unicode-xid",
 ]
@@ -2404,8 +2400,7 @@ dependencies = [
 [[package]]
 name = "safe-quote"
 version = "1.0.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "566c55c34afcf23f8ae1170373f925201163ed0a9fd315274f35eab6d660b56d"
+source = "git+https://github.com/informalsystems/safe-regex.git?branch=main#842d31f5acdcd66dd60481632baaae511c29f0fd"
 dependencies = [
  "safe-proc-macro2",
 ]
@@ -2413,8 +2408,7 @@ dependencies = [
 [[package]]
 name = "safe-regex"
 version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "954950893b0d83c719cb5325bf3941bae7b1c6590d923c70f78bdfed101179b5"
+source = "git+https://github.com/informalsystems/safe-regex.git?branch=main#842d31f5acdcd66dd60481632baaae511c29f0fd"
 dependencies = [
  "safe-regex-macro",
 ]
@@ -2422,8 +2416,7 @@ dependencies = [
 [[package]]
 name = "safe-regex-compiler"
 version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77be88a67af0852122737d6944cf6cf3b493051ac063b074d11d6dc3aaa57047"
+source = "git+https://github.com/informalsystems/safe-regex.git?branch=main#842d31f5acdcd66dd60481632baaae511c29f0fd"
 dependencies = [
  "safe-proc-macro2",
  "safe-quote",
@@ -2432,8 +2425,7 @@ dependencies = [
 [[package]]
 name = "safe-regex-macro"
 version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9276d04505a852d89fab9b9d5d72b47e84c726b121f4b8b212b44fba990485d"
+source = "git+https://github.com/informalsystems/safe-regex.git?branch=main#842d31f5acdcd66dd60481632baaae511c29f0fd"
 dependencies = [
  "safe-proc-macro2",
  "safe-regex-compiler",
@@ -2813,9 +2805,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.77"
+version = "1.0.78"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5239bc68e0fef57495900cfea4e8dc75596d9a319d7e16b1e0a440d24e6fe0a0"
+checksum = "a4eac2e6c19f5c3abc0c229bea31ff0b9b091c7b14990e8924b92902a303a0c0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2857,7 +2849,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#754580ac64fc9c0439deeae85d5dc0adbee9404d"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#c8ce65d96641f125044a9818be05439620df3da8"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2881,14 +2873,13 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.1.43",
  "zeroize",
 ]
 
 [[package]]
 name = "tendermint-config"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#754580ac64fc9c0439deeae85d5dc0adbee9404d"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#c8ce65d96641f125044a9818be05439620df3da8"
 dependencies = [
  "flex-error",
  "serde",
@@ -2901,8 +2892,9 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#754580ac64fc9c0439deeae85d5dc0adbee9404d"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#c8ce65d96641f125044a9818be05439620df3da8"
 dependencies = [
+ "chrono",
  "contracts",
  "crossbeam-channel 0.4.4",
  "derive_more",
@@ -2920,7 +2912,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#754580ac64fc9c0439deeae85d5dc0adbee9404d"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#c8ce65d96641f125044a9818be05439620df3da8"
 dependencies = [
  "bytes",
  "chrono",
@@ -2937,7 +2929,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#754580ac64fc9c0439deeae85d5dc0adbee9404d"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#c8ce65d96641f125044a9818be05439620df3da8"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -2970,8 +2962,9 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#754580ac64fc9c0439deeae85d5dc0adbee9404d"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#c8ce65d96641f125044a9818be05439620df3da8"
 dependencies = [
+ "chrono",
  "ed25519-dalek",
  "gumdrop 0.8.0",
  "serde",
@@ -3287,9 +3280,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.16"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98863d0dd09fa59a1b79c6750ad80dbda6b75f4e71c437a6a1a8cb91a8bcbd77"
+checksum = "c4f915eb6abf914599c200260efced9203504c4c37380af10cdf3b7d36970650"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3298,9 +3291,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.20"
+version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46125608c26121c81b0c6d693eab5a420e416da7e43c426d2e8f7df8da8a3acf"
+checksum = "1f4ed65637b8390770814083d20756f87bfa2c21bf2f110babdc5438351746e4"
 dependencies = [
  "lazy_static",
 ]
