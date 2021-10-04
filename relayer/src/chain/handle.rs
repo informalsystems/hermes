@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc::{ics03_connection::connection::IdentifiedConnectionEnd, query::QueryBlockRequest};
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
@@ -303,8 +303,13 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<u64>>,
     },
 
-    QueryPacketEventData {
+    QueryPacketEventDataFromTx {
         request: QueryTxRequest,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
+    },
+
+    QueryPacketEventDataFromBlock {
+        request: QueryBlockRequest,
         reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 }
@@ -516,4 +521,6 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     ) -> Result<Vec<u64>, Error>;
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
+
+    fn query_block(&self, request: QueryBlockRequest) -> Result<Vec<IbcEvent>, Error>;
 }

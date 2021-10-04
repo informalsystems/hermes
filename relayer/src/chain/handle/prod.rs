@@ -10,7 +10,7 @@ use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::query::QueryTxRequest;
+use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
@@ -422,7 +422,11 @@ impl ChainHandle for ProdChainHandle {
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
+        self.send(|reply_to| ChainRequest::QueryPacketEventDataFromTx { request, reply_to })
+    }
+
+    fn query_block(&self, request: QueryBlockRequest) -> Result<Vec<IbcEvent>, Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlock { request, reply_to })
     }
 }
 
