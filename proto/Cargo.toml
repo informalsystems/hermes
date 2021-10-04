@@ -22,13 +22,14 @@ path = "src/lib.rs"
 all-features = true
 
 [dependencies]
-prost = "0.7"
-prost-types = "0.7"
-bytes = "1.1"
+prost = { version = "0.7", default-features = false }
+prost-types = { version = "0.7", default-features = false }
+bytes = { version = "1.1", default-features = false }
 tonic = { version = "0.4", optional = true }
 
 [dependencies.tendermint-proto]
 version = "=0.22.0"
+default-features = false
 
 [features]
 default = ["std"]

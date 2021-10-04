@@ -15,61 +15,64 @@ description = """
 [features]
 default = ["std", "eyre_tracer"]
 std = [
-    "flex-error/std"
+    "ibc/std",
+    "flex-error/std",
 ]
 eyre_tracer = ["flex-error/eyre_tracer"]
 profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.7.2", path = "../modules" }
+ibc           = { version = "0.7.2", path = "../modules", default-features = false }
 ibc-proto     = { version = "0.11.0", path = "../proto", default-features = false, features = ["std"] }
-ibc-telemetry = { version = "0.7.2", path = "../telemetry", optional = true }
+ibc-telemetry = { version = "0.7.2", path = "../telemetry", default-features = false, optional = true }
 
-subtle-encoding = "0.5"
-async-trait = "0.1.50"
-humantime-serde = "1.0.0"
-serde = "1.0.130"
-serde_cbor = "0.11.2"
-serde_derive = "1.0"
-thiserror = "1.0.29"
-toml = "0.5"
-tracing = "0.1.28"
-tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
-serde_json = { version = "1" }
-bytes = "1.1.0"
-prost = "0.7"
-prost-types = "0.7"
-futures = "0.3.17"
-crossbeam-channel = "0.5.1"
-k256 = { version = "0.9.6", features = ["ecdsa-core", "ecdsa", "sha256"]}
-hex = "0.4"
-bitcoin = { version = "=0.27", features = ["use-serde"] }
-tiny-bip39 = "0.8.0"
-hdpath = { version = "0.6.0", features = ["with-bitcoin"] }
-sha2 = "0.9.8"
+subtle-encoding = { version = "0.5", default-features = false }
+async-trait = { version = "0.1.50", default-features = false }
+humantime-serde = { version = "1.0.0", default-features = false }
+serde = { version = "1.0.130", default-features = false }
+serde_cbor = { version = "0.11.2", default-features = false }
+serde_derive = { version = "1.0", default-features = false }
+thiserror = { version = "1.0.29", default-features = false }
+toml = { version = "0.5", default-features = false }
+tracing = { version = "0.1.28", default-features = false }
+tokio = { version = "1.0", default-features = false, features = ["rt-multi-thread", "time", "sync"] }
+serde_json = { version = "1", default-features = false }
+bytes = { version = "1.1.0", default-features = false }
+prost = { version = "0.7", default-features = false }
+prost-types = { version = "0.7", default-features = false }
+futures = { version = "0.3.17", default-features = false }
+crossbeam-channel = { version = "0.5.1", default-features = false }
+k256 = { version = "0.9.6", default-features = false, features = ["ecdsa-core", "ecdsa", "sha256"]}
+hex = { version = "0.4", default-features = false }
+bitcoin = { version = "=0.27", default-features = false, features = ["use-serde"] }
+tiny-bip39 = { version = "0.8.0", default-features = false }
+hdpath = { version = "0.6.0", default-features = false, features = ["with-bitcoin"] }
+sha2 = { version = "0.9.8", default-features = false }
 tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = false }
-ripemd160 = "0.9.1"
-bech32 = "0.8.1"
-itertools = "0.10.1"
-tonic = { version = "0.4", features = ["tls", "tls-roots"] }
-dirs-next = "2.0.0"
+ripemd160 = { version = "0.9.1", default-features = false }
+bech32 = { version = "0.8.1", default-features = false }
+itertools = { version = "0.10.1", default-features = false }
+tonic = { version = "0.4", default-features = false, features = ["tls", "tls-roots"] }
+dirs-next = { version = "2.0.0", default-features = false }
 retry = { version = "1.3.0", default-features = false }
-async-stream = "0.3.2"
-http = "0.2.4"
+async-stream = { version = "0.3.2", default-features = false }
+http = { version = "0.2.4", default-features = false }
 flex-error = { version = "0.4.3", default-features = false }
-signature = "1.3.0"
-anyhow = "1.0.44"
+signature = { version = "1.3.0", default-features = false }
+anyhow = { version = "1.0.44", default-features = false }
 fraction = {version = "0.9.0", default-features = false }
-semver = "1.0"
-uint = "0.9"
+semver = { version = "1.0", default-features = false }
+uint = { version = "0.9", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.22.0"
+default-features = false
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
 version = "=0.22.0"
+default-features = false
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
@@ -79,6 +82,7 @@ features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-proto]
 version = "=0.22.0"
+default-features = false
 
 [dev-dependencies]
 ibc = { version = "0.7.2", path = "../modules", features = ["mocks"] }

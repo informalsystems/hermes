@@ -4,11 +4,11 @@
 
 // Import the crates that we want to check if they are fully no-std compliance
 
-// #[cfg(feature = "ibc")]
-// use ibc;
+#[cfg(feature = "ibc")]
+use ibc;
 
-// #[cfg(feature = "ibc_proto")]
-// use ibc_proto;
+#[cfg(feature = "ibc_proto")]
+use ibc_proto;
 
 #[cfg(feature = "sp-core")]
 use sp_core;
@@ -24,38 +24,38 @@ use sp_std;
 
 // Supported Imports
 
-use bytes;
-use chrono;
-use contracts;
-use crossbeam_channel;
-use ed25519;
-use ed25519_dalek;
-use flex_error;
-use futures;
-use impl_serde;
-use k256;
-use num_derive;
-use num_traits;
-use once_cell;
+// use bytes;
+// use chrono;
+// use contracts;
+// use crossbeam_channel;
+// use ed25519;
+// use ed25519_dalek;
+// use flex_error;
+// use futures;
+// use impl_serde;
+// use k256;
+// use num_derive;
+// use num_traits;
+// use once_cell;
 use prost;
 use prost_types;
-use ripemd160;
-use ryu;
-use serde;
-use serde_bytes;
-use serde_cbor;
-use serde_derive;
-use serde_json;
-use serde_json_core;
-use serde_repr;
-use sha2;
-use signature;
-use static_assertions;
-use subtle;
-use subtle_encoding;
-use time;
-use tracing;
-use zeroize;
+// use ripemd160;
+// use ryu;
+// use serde;
+// use serde_bytes;
+// use serde_cbor;
+// use serde_derive;
+// use serde_json;
+// use serde_json_core;
+// use serde_repr;
+// use sha2;
+// use signature;
+// use static_assertions;
+// use subtle;
+// use subtle_encoding;
+// use time;
+// use tracing;
+// use zeroize;
 
 // Unsupported Imports
 

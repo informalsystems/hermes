@@ -419,12 +419,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "const-oid"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdab415d6744056100f40250a66bc430c1a46f7a02e20bc11c94c79a0f0464df"
-
-[[package]]
 name = "contracts"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -630,9 +624,6 @@ name = "der"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2adca118c71ecd9ae094d4b68257b3fdfcb711a612b9eec7b5a0d27a5a70a5b4"
-dependencies = [
- "const-oid",
-]
 
 [[package]]
 name = "derive_more"
@@ -727,7 +718,6 @@ dependencies = [
  "ff",
  "generic-array",
  "group",
- "pkcs8",
  "rand_core 0.6.3",
  "subtle",
  "zeroize",
@@ -2036,16 +2026,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
-name = "pkcs8"
-version = "0.7.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee3ef9b64d26bad0536099c816c6734379e45bbd5f14798def6809e5cc350447"
-dependencies = [
- "der",
- "spki",
-]
-
-[[package]]
 name = "pkg-config"
 version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2791,15 +2771,6 @@ name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
-
-[[package]]
-name = "spki"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c01a0c15da1b0b0e1494112e7af814a678fec9bd157881b49beac661e9b6f32"
-dependencies = [
- "der",
-]
 
 [[package]]
 name = "stable_deref_trait"
