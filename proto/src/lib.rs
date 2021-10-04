@@ -26,14 +26,14 @@ macro_rules! format {
 macro_rules! include_proto {
     ($path:literal) => {
         include!(concat!("prost/std/", $path));
-    }
+    };
 }
 
 #[cfg(not(feature = "std"))]
 macro_rules! include_proto {
     ($path:literal) => {
         include!(concat!("prost/no_std/", $path));
-    }
+    };
 }
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.

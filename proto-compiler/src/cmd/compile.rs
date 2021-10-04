@@ -1,12 +1,12 @@
+use std::ffi::OsStr;
 use std::fs::remove_dir_all;
 use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
-use std::ffi::OsStr;
 
+use eyre::Report as Error;
 use git2::Repository;
 use tempdir::TempDir;
-use walkdir::{WalkDir, DirEntry};
-use eyre::{eyre, Report as Error};
+use walkdir::{DirEntry, WalkDir};
 
 use argh::FromArgs;
 #[derive(Debug, FromArgs)]
@@ -32,8 +32,7 @@ impl CompileCmd {
     }
 }
 
-fn run_cmd(sdk_src: &Path, ibc_src: &Option<PathBuf>, out: &Path) -> Result<(), Error>
-{
+fn run_cmd(sdk_src: &Path, ibc_src: &Option<PathBuf>, out: &Path) -> Result<(), Error> {
     let tmp_sdk = TempDir::new("ibc-proto-sdk")?;
     compile_sdk_protos(sdk_src, tmp_sdk.as_ref(), ibc_src.clone())?;
 
@@ -64,8 +63,7 @@ fn build_tonic_with_client(
     protos: &Vec<PathBuf>,
     includes: &Vec<PathBuf>,
     with_client: bool,
-) -> Result<(), std::io::Error>
-{
+) -> Result<(), std::io::Error> {
     create_dir_all(out_dir)?;
 
     tonic_build::configure()
@@ -81,46 +79,35 @@ fn build_tonic(
     out_dir: &Path,
     protos: &Vec<PathBuf>,
     includes: &Vec<PathBuf>,
-) -> Result<(), std::io::Error>
-{
-    build_tonic_with_client(
-        &out_dir.join("std"),
-        protos, includes, true)?;
+) -> Result<(), std::io::Error> {
+    build_tonic_with_client(&out_dir.join("std"), protos, includes, true)?;
 
-    build_tonic_with_client(
-        &out_dir.join("no_std"),
-        protos, includes, false)?;
+    build_tonic_with_client(&out_dir.join("no_std"), protos, includes, false)?;
 
     Ok(())
 }
 
-fn list_files_in_dir(dir: impl AsRef<Path>)
-    -> Result<Vec<DirEntry>, Error>
-{
+fn list_files_in_dir(dir: impl AsRef<Path>) -> Result<Vec<DirEntry>, Error> {
     let files_and_dirs = WalkDir::new(dir)
         .into_iter()
         .collect::<Result<Vec<DirEntry>, _>>()?;
 
-    let files = files_and_dirs.into_iter()
+    let files = files_and_dirs
+        .into_iter()
         .filter(|f| f.file_type().is_file())
         .collect();
 
     Ok(files)
 }
 
-fn list_protobuf_files(
-    proto_paths: &[String],
-) -> Result<Vec<PathBuf>, Error>
-{
+fn list_protobuf_files(proto_paths: &[String]) -> Result<Vec<PathBuf>, Error> {
     let mut protos: Vec<PathBuf> = vec![];
     for proto_path in proto_paths {
         println!("Looking for proto files in {:?}", proto_path);
 
         let mut proto_files = list_files_in_dir(proto_path)?
             .into_iter()
-            .filter(|f| {
-                f.path().extension() == Some(OsStr::new("proto"))
-            })
+            .filter(|f| f.path().extension() == Some(OsStr::new("proto")))
             .map(|f| f.into_path())
             .collect::<Vec<_>>();
 
@@ -130,13 +117,11 @@ fn list_protobuf_files(
     Ok(protos)
 }
 
-fn output_version(dir: &Path, out_dir: &Path, commit_file: &str)
-    -> Result<(), Error>
-{
+fn output_version(dir: &Path, out_dir: &Path, commit_file: &str) -> Result<(), Error> {
     let repo = Repository::open(dir)?;
-    let commit = repo.head()?;
-    let rev = commit.shorthand()
-        .ok_or_else(|| eyre!("expect commit.shorthand to present"))?;
+    let commit = repo.head()?.peel_to_commit()?;
+
+    let rev = format!("{}", commit.id());
 
     let path = out_dir.join(commit_file);
 
@@ -145,9 +130,7 @@ fn output_version(dir: &Path, out_dir: &Path, commit_file: &str)
     Ok(())
 }
 
-fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path)
-    -> Result<(), Error>
-{
+fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path) -> Result<(), Error> {
     println!(
         "[info ] Compiling IBC .proto files to Rust into '{}'...",
         out_dir.display()
@@ -183,9 +166,11 @@ fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path)
     Ok(())
 }
 
-fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>)
-    -> Result<(), Error>
-{
+fn compile_sdk_protos(
+    sdk_dir: &Path,
+    out_dir: &Path,
+    ibc_dep: Option<PathBuf>,
+) -> Result<(), Error> {
     println!(
         "[info ] Compiling Cosmos-SDK .proto files to Rust into '{}'...",
         out_dir.display()
@@ -206,7 +191,6 @@ fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>)
         format!("{}/proto/cosmos/upgrade", sdk_dir_path),
     ];
 
-
     let mut proto_includes_paths = vec![
         format!("{}/../proto", root),
         format!("{}/proto", sdk_dir_path),
@@ -215,7 +199,7 @@ fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>)
 
     if let Some(ibc_dir) = ibc_dep {
         // Use the IBC proto files from the SDK
-        proto_includes_paths.push(format!("{}/proto", ibc_dir.display()),);
+        proto_includes_paths.push(format!("{}/proto", ibc_dir.display()));
     }
 
     let protos = list_protobuf_files(&proto_paths)?;
@@ -239,28 +223,31 @@ fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>)
     Ok(())
 }
 
-fn copy_generated_files(from_dir_sdk: &Path, from_dir_ibc_opt: Option<PathBuf>, to_dir: &Path)
-    -> Result<(), Error>
-{
+fn copy_generated_files(
+    from_dir_sdk: &Path,
+    from_dir_ibc_opt: Option<PathBuf>,
+    to_dir: &Path,
+) -> Result<(), Error> {
     do_copy_generated_files(
         &from_dir_sdk.join("std"),
         from_dir_ibc_opt.clone().map(|p| p.join("std")),
-        &to_dir.join("std")
+        &to_dir.join("std"),
     )?;
 
     do_copy_generated_files(
         &from_dir_sdk.join("no_std"),
         from_dir_ibc_opt.map(|p| p.join("no_std")),
-        &to_dir.join("no_std")
+        &to_dir.join("no_std"),
     )?;
-
 
     Ok(())
 }
 
-fn do_copy_generated_files(from_dir_sdk: &Path, from_dir_ibc_opt: Option<PathBuf>, to_dir: &Path)
-    -> Result<(), Error>
-{
+fn do_copy_generated_files(
+    from_dir_sdk: &Path,
+    from_dir_ibc_opt: Option<PathBuf>,
+    to_dir: &Path,
+) -> Result<(), Error> {
     println!(
         "[info ] Copying generated files into '{}'...",
         to_dir.display()
@@ -278,10 +265,7 @@ fn do_copy_generated_files(from_dir_sdk: &Path, from_dir_ibc_opt: Option<PathBuf
     // Copy new compiled files (prost does not use folder structures)
     // Copy the SDK files first
     for file in files {
-        copy(
-            file.path(),
-            to_dir.join(file.file_name()),
-        )?;
+        copy(file.path(), to_dir.join(file.file_name()))?;
     }
 
     if let Some(from_dir_ibc) = from_dir_ibc_opt {
@@ -303,10 +287,7 @@ fn do_copy_generated_files(from_dir_sdk: &Path, from_dir_ibc_opt: Option<PathBuf
                     );
                 }
             } else {
-                copy(
-                    file.path(),
-                    target_path,
-                )?;
+                copy(file.path(), target_path)?;
             }
         }
     }

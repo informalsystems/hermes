@@ -1,6 +1,6 @@
 /// FungibleTokenPacketData defines a struct for the packet payload
 /// See FungibleTokenPacketData spec:
-/// https://github.com/cosmos/ibc/tree/master/spec/ics-020-fungible-token-transfer#data-structures
+/// https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#data-structures
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FungibleTokenPacketData {
     /// the token denomination to be transferred
@@ -190,9 +190,19 @@ pub mod query_client {
         }
     }
 }
+/// GenesisState defines the ibc-transfer genesis state
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub denom_traces: ::prost::alloc::vec::Vec<DenomTrace>,
+    #[prost(message, optional, tag = "3")]
+    pub params: ::core::option::Option<Params>,
+}
 /// MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
 /// ICS20 enabled chains. See ICS Spec here:
-/// https://github.com/cosmos/ibc/tree/master/spec/ics-020-fungible-token-transfer#data-structures
+/// https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#data-structures
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgTransfer {
     /// the port on which the packet will be sent
@@ -285,14 +295,4 @@ pub mod msg_client {
             write!(f, "MsgClient {{ ... }}")
         }
     }
-}
-/// GenesisState defines the ibc-transfer genesis state
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "2")]
-    pub denom_traces: ::prost::alloc::vec::Vec<DenomTrace>,
-    #[prost(message, optional, tag = "3")]
-    pub params: ::core::option::Option<Params>,
 }
