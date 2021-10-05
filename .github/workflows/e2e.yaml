@@ -2,6 +2,7 @@ name: End to End testing
 on:
   pull_request:
     paths:
+      - .github/workflows/e2e.yml
       - Cargo.toml
       - ci/**
       - e2e/**
@@ -14,6 +15,7 @@ on:
   push:
     branches: master
     paths:
+      - .github/workflows/e2e.yml
       - Cargo.toml
       - ci/**
       - e2e/**
