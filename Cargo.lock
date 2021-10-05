@@ -1439,7 +1439,7 @@ dependencies = [
  "once_cell",
  "opentelemetry",
  "opentelemetry-prometheus",
- "prometheus",
+ "prometheus 0.13.0",
  "rouille",
 ]
 
@@ -1917,7 +1917,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e06ddda4790151e8b494f9bb32720fce23722d7f395f81383b9b2934bb6356a0"
 dependencies = [
  "opentelemetry",
- "prometheus",
+ "prometheus 0.12.0",
  "protobuf",
 ]
 
@@ -2128,6 +2128,21 @@ name = "prometheus"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5986aa8d62380092d2f50f8b1cdba9cb9b6731ffd4b25b51fd126b6c3e05b99c"
+dependencies = [
+ "cfg-if 1.0.0",
+ "fnv",
+ "lazy_static",
+ "memchr",
+ "parking_lot",
+ "protobuf",
+ "thiserror",
+]
+
+[[package]]
+name = "prometheus"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7f64969ffd5dd8f39bd57a68ac53c163a095ed9d0fb707146da1b27025a3504"
 dependencies = [
  "cfg-if 1.0.0",
  "fnv",
