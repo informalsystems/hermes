@@ -126,10 +126,27 @@ define_error! {
                 low: String,
                 high: String
             }
-            | e |{
+            | e | {
                 format_args!("Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp {1}", e.low, e.high)
             },
 
+        HeaderTimestampTooHigh
+            {
+                actual: String,
+                max: String,
+            }
+            | e | {
+                format_args!("Given other previous updates, header timestamp should be at most {0}, but was {1}", e.max, e.actual)
+            },
+
+        HeaderTimestampTooLow
+            {
+                actual: String,
+                min: String,
+            }
+            | e | {
+                format_args!("Given other previous updates, header timestamp should be at least {0}, but was {1}", e.min, e.actual)
+            },
 
         InvalidHeaderHeight
             { height: Height }
