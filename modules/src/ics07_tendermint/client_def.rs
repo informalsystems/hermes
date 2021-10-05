@@ -25,7 +25,6 @@ use crate::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use crate::prelude::*;
 use crate::Height;
 
-//Box<dyn std::error::Error>
 use crate::downcast;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
