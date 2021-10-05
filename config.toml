@@ -116,9 +116,14 @@ address_type = { derivation = 'cosmos' }
 # Recommended value for Cosmos SDK: 'ibc'
 store_prefix = 'ibc'
 
+# Specify the default amount of gas to be used in case the tx simulation fails,
+# and Hermes cannot estimate the amount of gas needed.
+# Default: 100 000
+default_gas = 100000
+
 # Specify the maximum amount of gas to be used as the gas limit for a transaction.
-# Default: 300000
-max_gas = 3000000
+# Default: 300 000
+max_gas = 300000
 
 # Specify the price per gas used of the fee to submit a transaction and
 # the denomination of the fee. Required

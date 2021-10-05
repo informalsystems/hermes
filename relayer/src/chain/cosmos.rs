@@ -87,10 +87,14 @@ use super::{ChainEndpoint, HealthCheck};
 
 mod compatibility;
 
+/// Default gas amount to be when submitting a transaction when we fail to estimate
+/// the amount of gas needed.
+const DEFAULT_GAS: u64 = 100_000;
+
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
 
-/// Fraction of the estimated gas to add to the gas limit when submitting a transaction.
+/// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
 /// Upper limit on the size of transactions submitted by Hermes, expressed as a
@@ -274,14 +278,14 @@ impl CosmosSdkChain {
         let estimated_gas = estimated_gas.map_or_else(
             |e| {
                 error!(
-                    "[{}] failed to estimate gas, falling back on max gas, error: {}",
+                    "[{}] failed to estimate gas, falling back on default gas, error: {}",
                     self.id(),
                     e
                 );
 
-                self.max_gas()
+                self.default_gas()
             },
-            |gas_info| gas_info.map_or(self.max_gas(), |g| g.gas_used),
+            |gas_info| gas_info.map_or(self.default_gas(), |g| g.gas_used),
         );
 
         if estimated_gas > self.max_gas() {
@@ -338,6 +342,12 @@ impl CosmosSdkChain {
         }
 
         Ok(response)
+    }
+
+    /// The default amount of gas the relayer is willing to pay for a transaction,
+    /// when it cannot simulate the tx and therefore estimate the gas amount needed.
+    fn default_gas(&self) -> u64 {
+        self.config.default_gas.unwrap_or(DEFAULT_GAS)
     }
 
     /// The maximum amount of gas the relayer is willing to pay for a transaction
@@ -434,11 +444,13 @@ impl CosmosSdkChain {
     }
 
     fn send_tx_simulate(&self, tx: Tx) -> Result<SimulateResponse, Error> {
-        crate::time!("tx simulate");
+        crate::time!("send_tx_simulate");
+
+        use ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
 
         // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
         let mut tx_bytes = vec![];
-        prost::Message::encode(&tx, &mut tx_bytes).unwrap();
+        prost::Message::encode(&tx, &mut tx_bytes).unwrap(); // FIXME: Handle error here
 
         #[allow(deprecated)]
         let req = SimulateRequest {
@@ -447,11 +459,7 @@ impl CosmosSdkChain {
         };
 
         let mut client = self
-            .block_on(
-                ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
-                    self.grpc_addr.clone(),
-                ),
-            )
+            .block_on(ServiceClient::connect(self.grpc_addr.clone()))
             .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(req);

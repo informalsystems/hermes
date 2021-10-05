@@ -310,6 +310,7 @@ pub struct ChainConfig {
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,
+    pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
     pub gas_adjustment: Option<f64>,
     #[serde(default)]
