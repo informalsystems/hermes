@@ -1,3 +1,21 @@
+/*
+    This is the proto-compiler compiler that is defined using macro.
+    We use this to generate two proto-compilers:
+        - One with tonic-client enabled, and
+        - One with tonic-client disabled to support no-std.
+
+    We use macro to generate the proto-compiler, because the code is
+    too complicated and fragile to be understood and modified,
+    and future generation of protobuf files may introduce bugs
+    caused by subtle changes here.
+
+    ** Warning: do *not* touch the macro body **
+ */
+
+#[macro_export]
+macro_rules! compile_proto_compiler {
+    ($command:literal, $compile_tonic:expr) => {
+
 use std::fs::remove_dir_all;
 use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
@@ -9,7 +27,7 @@ use walkdir::WalkDir;
 
 use argh::FromArgs;
 #[derive(Debug, FromArgs)]
-#[argh(subcommand, name = "compile")]
+#[argh(subcommand, name = $command)]
 /// Compile
 pub struct CompileCmd {
     #[argh(option, short = 's')]
@@ -102,7 +120,7 @@ impl CompileCmd {
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
         let compilation = tonic_build::configure()
-            .build_client(true)
+            .build_client($compile_tonic)
             .build_server(false)
             .format(true)
             .out_dir(out_dir)
@@ -180,7 +198,7 @@ impl CompileCmd {
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
         let compilation = tonic_build::configure()
-            .build_client(true)
+            .build_client($compile_tonic)
             .build_server(false)
             .format(true)
             .out_dir(out_dir)
@@ -282,3 +300,6 @@ impl CompileCmd {
         }
     }
 }
+
+    } // end macro pattern
+} // end macro rules

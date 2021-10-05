@@ -2,7 +2,8 @@ use argh::FromArgs;
 
 mod cmd;
 use cmd::clone::CloneCmd;
-use cmd::compile::CompileCmd;
+use cmd::compile_std;
+use cmd::compile_no_std;
 
 #[derive(Debug, FromArgs)]
 /// App
@@ -15,7 +16,8 @@ struct App {
 #[argh(subcommand)]
 enum Command {
     Clone(CloneCmd),
-    Compile(CompileCmd),
+    CompileStd(compile_std::CompileCmd),
+    CompileNoStd(compile_no_std::CompileCmd),
 }
 
 fn main() {
@@ -23,6 +25,7 @@ fn main() {
 
     match app.cmd {
         Command::Clone(clone) => clone.run(),
-        Command::Compile(compile) => compile.run(),
+        Command::CompileStd(compile) => compile.run(),
+        Command::CompileNoStd(compile) => compile.run(),
     }
 }
