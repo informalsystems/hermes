@@ -72,23 +72,20 @@ Used by Hermes to gather telemetry data and expose it via a Prometheus endpoint.
 
 ### Testing
 
-Most of the components in the `ibc` crate (i.e. the `modules` directory) have basic unit testing coverage. We mock up chains in order to help test `ibc` components. The main utility for constructing a mock chain is the [`MockContext`][mock-context] type.  
+Most of the components in the `ibc` crate (i.e. the `modules` directory) have basic unit testing coverage. These unit tests make use of mocked up chain components in order to ensure that message payloads are being sent and received as expected. 
 
-In the future, [`basecoin-rs`][basecoin-rs] will be used to more robustly test `ibc` components in a more thorough fashion than what mocks can currently provide (for example, data being sent between a basecoin chain and an `ibc` module will have to go  through the serialization/deserialization process). 
+We also run end-to-end tests to more thoroughly test IBC modules in a more heterogenous fashion. 
 
 ### Error Handling 
 
-What are some of the most common issues that lead to errors? There's a lot of serializing and deserializing of I/O, especially in Hermes. How does Hermes choose to handle these errors? 
+Many errors occur within Hermes as a result of I/O operations. [How does Hermes choose to handle these errors?]
 
-Handled via the in-house [`flex-error`][flex-error] library. 
+[Any other major sources of errors to note?]
 
 
-[basecoin-rs]: https://github.com/informalsystems/basecoin-rs
-[flex-error]: https://github.com/informalsystems/flex-error
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
 [ibc-standards]: https://github.com/cosmos/ibc#standardisation
 [ibc-client]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
 [ibc-connection]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics03_connection
 [ibc-channel]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics04_channel
 [ics02]: https://github.com/cosmos/ibc/blob/master/spec/core/ics-002-client-semantics/README.md
-[mock-context]: https://github.com/informalsystems/ibc-rs/blob/794d224e3f21a4d977beeaefc8d959bb30939a73/modules/src/mock/context.rs#L43
