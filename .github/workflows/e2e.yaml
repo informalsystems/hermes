@@ -9,6 +9,8 @@ on:
       - modules/**
       - relayer/**
       - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
   push:
     branches: master
     paths:
@@ -19,6 +21,8 @@ on:
       - modules/**
       - relayer/**
       - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
 
 env:
   CARGO_INCREMENTAL: 0
