@@ -86,6 +86,12 @@ checksum = "c4872d67bab6358e59559027aa3b9157c53d9358c51423c17554809a8858e0f8"
 
 [[package]]
 name = "cfg-if"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
+
+[[package]]
+name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
@@ -371,7 +377,7 @@ dependencies = [
  "flex-error",
  "ibc-proto",
  "ics23",
- "prost 0.7.0",
+ "prost",
  "prost-types",
  "safe-regex",
  "serde",
@@ -388,7 +394,7 @@ name = "ibc-proto"
 version = "0.11.0"
 dependencies = [
  "bytes",
- "prost 0.7.0",
+ "prost",
  "prost-types",
  "tendermint-proto",
 ]
@@ -396,12 +402,12 @@ dependencies = [
 [[package]]
 name = "ics23"
 version = "0.6.5"
-source = "git+https://github.com/confio/ics23.git?branch=master#5a0206f31ac5ccb40757e98a3c86e7beff95793b"
+source = "git+https://github.com/informalsystems/ics23.git?branch=master#0aeeca2464542b471958a8f6873053982856eaa7"
 dependencies = [
  "anyhow",
  "bytes",
  "hex",
- "prost 0.8.0",
+ "prost",
  "ripemd160",
  "sha2",
  "sha3",
@@ -447,15 +453,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "itertools"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69ddb889f9d0d08a67338271fa9b62996bc788c7796a5c18cf057420aaed5eaf"
-dependencies = [
- "either",
-]
-
-[[package]]
 name = "itoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -467,7 +464,7 @@ version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "903ae2481bcdfdb7b68e0a9baa4b7c9aff600b9ae2e8e5bb5833b8c91ab851ea"
 dependencies = [
- "cfg-if",
+ "cfg-if 1.0.0",
  "ecdsa",
  "elliptic-curve",
  "sha2",
@@ -497,7 +494,7 @@ version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
- "cfg-if",
+ "cfg-if 1.0.0",
 ]
 
 [[package]]
@@ -505,6 +502,12 @@ name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
+
+[[package]]
+name = "memory_units"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8452105ba047068f40ff7093dd1d9da90898e63dd61736462e9cdda6a90ad3c3"
 
 [[package]]
 name = "no-std-check"
@@ -519,11 +522,13 @@ dependencies = [
  "futures",
  "ibc",
  "ibc-proto",
+ "ics23",
  "k256",
  "num-derive",
  "num-traits",
  "once_cell",
- "prost 0.7.0",
+ "prost",
+ "prost-derive",
  "prost-types",
  "ripemd160",
  "safe-regex",
@@ -543,6 +548,7 @@ dependencies = [
  "tendermint",
  "tendermint-proto",
  "tracing",
+ "wee_alloc",
  "zeroize",
 ]
 
@@ -618,7 +624,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "664a8c6b8e62d8f9f2f937e391982eb433ab285b4cd9545b342441e04a906e42"
 dependencies = [
- "cfg-if",
+ "cfg-if 1.0.0",
  "impl-trait-for-tuples",
  "parity-util-mem-derive",
  "primitive-types",
@@ -700,17 +706,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e6984d2f1a23009bd270b8bb56d0926810a3d483f59c987d77969e9d8e840b2"
 dependencies = [
  "bytes",
- "prost-derive 0.7.0",
-]
-
-[[package]]
-name = "prost"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de5e2533f59d08fcf364fd374ebda0692a70bd6d7e66ef97f306f45c6c5d8020"
-dependencies = [
- "bytes",
- "prost-derive 0.8.0",
+ "prost-derive",
 ]
 
 [[package]]
@@ -720,20 +716,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "169a15f3008ecb5160cba7d37bcd690a7601b6d30cfb87a117d45e59d52af5d4"
 dependencies = [
  "anyhow",
- "itertools 0.9.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "600d2f334aa05acb02a755e217ef1ab6dea4d51b58b7846588b747edec04efba"
-dependencies = [
- "anyhow",
- "itertools 0.10.1",
+ "itertools",
  "proc-macro2",
  "quote",
  "syn",
@@ -746,14 +729,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b518d7cdd93dab1d1122cf07fa9a60771836c668dde9d9e2a139f957f0d9f1bb"
 dependencies = [
  "bytes",
- "prost 0.7.0",
+ "prost",
 ]
 
 [[package]]
 name = "quote"
-version = "1.0.9"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3d0b9745dc2debf507c8422de05d7226cc1f0644216dfdfead988f9b1ab32a7"
+checksum = "38bc8cc6a5f2e3655e0899c1b848643b2562f853f114bfec7be120678e3ace05"
 dependencies = [
  "proc-macro2",
 ]
@@ -933,7 +916,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b69f9a4c9740d74c5baa3fd2e547f9525fa8088a8a958e0ca2409a514e33f5fa"
 dependencies = [
  "block-buffer",
- "cfg-if",
+ "cfg-if 1.0.0",
  "cpufeatures",
  "digest",
  "opaque-debug",
@@ -1173,7 +1156,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#c8ce65d96641f125044a9818be05439620df3da8"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f0caa60f229858859f210f88b3e45dbd081c474b"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1184,7 +1167,7 @@ dependencies = [
  "futures",
  "num-traits",
  "once_cell",
- "prost 0.7.0",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -1201,14 +1184,14 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#c8ce65d96641f125044a9818be05439620df3da8"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f0caa60f229858859f210f88b3e45dbd081c474b"
 dependencies = [
  "bytes",
  "chrono",
  "flex-error",
  "num-derive",
  "num-traits",
- "prost 0.7.0",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -1250,7 +1233,7 @@ version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84f96e095c0c82419687c20ddf5cb3eadb61f4e1405923c9dc8e53a1adacbda8"
 dependencies = [
- "cfg-if",
+ "cfg-if 1.0.0",
  "pin-project-lite",
  "tracing-core",
 ]
@@ -1290,6 +1273,18 @@ name = "version_check"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
+
+[[package]]
+name = "wee_alloc"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbb3b5a6b2bb17cb6ad44a2e68a43e8d2722c997da10e928665c72ec6c0a0b8e"
+dependencies = [
+ "cfg-if 0.1.10",
+ "libc",
+ "memory_units",
+ "winapi",
+]
 
 [[package]]
 name = "winapi"

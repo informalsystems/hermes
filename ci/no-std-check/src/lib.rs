@@ -2,6 +2,13 @@
 #![no_std]
 #![allow(unused_imports)]
 
+extern crate alloc;
+
+extern crate wee_alloc;
+
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 // Import the crates that we want to check if they are fully no-std compliance
 
 #[cfg(feature = "ibc")]
@@ -30,6 +37,7 @@ use sp_std;
 
 use prost;
 use prost_types;
+use prost_derive;
 use bytes;
 use serde;
 use serde_bytes;
@@ -52,6 +60,7 @@ use subtle;
 use zeroize;
 use k256;
 use ripemd160;
+use ics23;
 use tracing;
 use serde_derive;
 use safe_regex;

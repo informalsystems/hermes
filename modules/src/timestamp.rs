@@ -59,10 +59,11 @@ impl Timestamp {
         }
     }
 
-    /// Returns a `Timestamp` representation of the current time.
+    // FIXME: Remove this for no_std support
+    // Returns a `Timestamp` representation of the current time.
     pub fn now() -> Timestamp {
         Timestamp {
-            time: Some(Utc::now()),
+            time: None,
         }
     }
 

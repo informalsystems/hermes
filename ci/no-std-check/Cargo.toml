@@ -5,23 +5,25 @@ edition = "2018"
 resolver = "2"
 
 [dependencies]
+wee_alloc = { version = "0.4.5", default-features = false }
 
 ibc = { path = "../../modules", optional = true, default-features = false }
 ibc-proto = { path = "../../proto", optional = true, default-features = false }
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std", optional = true, default-features = false }
-tendermint-proto = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std", optional = true, default-features = false }
+tendermint = { version = "0.22", optional = true, default-features = false }
+tendermint-proto = { version = "0.22", optional = true, default-features = false }
 
 sp-core = { version = "3.0.0", default-features = false, optional = true }
 sp-io = { version = "3.0.0", default-features = false, optional = true }
 sp-runtime = { version = "3.0.0", default-features = false, optional = true }
 sp-std = { version = "3.0.0", default-features = false, optional = true }
 
-prost = { version = "0.7", default-features = false }
+prost = { version = "0.7", default-features = false, features = ["prost-derive"] }
+prost-derive = { version = "0.7", default-features = false }
 prost-types = { version = "0.7", default-features = false }
 bytes = { version = "1.0", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_bytes = { version = "0.11", default-features = false, features = ["alloc"] }
-subtle-encoding = { version = "0.5", default-features = false, features = ["hex", "base64", "bech32-preview"] }
+subtle-encoding = { version = "0.5", default-features = false, features = ["hex", "base64", "alloc", "bech32-preview"] }
 num-traits = { version = "0.2", default-features = false }
 num-derive = { version = "0.3", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["serde", "alloc"] }
@@ -38,20 +40,20 @@ sha2 = { version = "0.9", default-features = false }
 signature = { version = "1.2", default-features = false }
 subtle = { version = "2", default-features = false }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
-k256 = { version = "0.9", default-features = false , features = ["ecdsa", "sha256"] }
+k256 = { version = "0.9", default-features = false, features = ["ecdsa", "sha256"] }
 ripemd160 = { version = "0.9", default-features = false }
-# ics23 = { version = "0.6.5", default-features = false }
+ics23 = { version = "0.6.5", default-features = false }
 tracing = { version = "0.1.28", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
-safe-regex = { version = "0.2.4" }
+safe-regex = { version = "0.2.4", default-features = false }
 
 [features]
 default = []
 use-ibc = [
-  # "ibc",
-  # "ibc-proto",
-  # "tendermint",
-  # "tendermint-proto",
+  "ibc",
+  "ibc-proto",
+  "tendermint",
+  "tendermint-proto",
 ]
 use-substrate = [
   "sp-core",
@@ -70,9 +72,9 @@ panic = "abort"
 panic = "abort"
 
 [patch.crates-io]
-tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-# ics23 = { git = "https://github.com/confio/ics23.git", branch = "master" }
+tendermint          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint-proto    = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+ics23               = { git = "https://github.com/informalsystems/ics23.git", branch = "master" }
 safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
 safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
 safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
