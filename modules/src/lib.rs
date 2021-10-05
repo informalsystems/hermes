@@ -21,11 +21,11 @@
 //! communication over the internet via packet streaming. Indeed, IBC also encodes the notion of
 //! ordered and unordered packet streams.
 //!
-//! At its highest level, IBC can be categorized into on-chain modules and off-chain processes.
-//! On-chain modules, so called because they are the building blocks upon which IBC chains are
-//! built, is where the main data structures and abstractions of the IBC protocol reside. These 
-//! abstractions, sometimes also referred to as 'handlers', are specified in _I_nter_C_hain 
-//! _S_tandards (ICSs), which can be found [here][ibc-standards]. 
+//! At its highest level, IBC can be categorized into on-chain modules and off-chain processes. The
+//! current incarnation of the `ibc` crate is an implementation of the on-chain modules. They
+//! comprise the main data structures and abstractions that are the building blocks upon which IBC
+//! chains are built. These abstrctions, sometimes also referred to as 'handlers', are specified in
+//! _I_nter_C_hain _S_tandards (ICSs), which can be found [here][ibc-standards].
 //!
 //! The main IBC handlers are `Client`s, `Connection`s, and `Channel`s:
 //! - `Client`s ([ICS 02][ics02]) encapsulate encapsulate the verification methods of another
