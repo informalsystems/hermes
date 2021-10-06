@@ -5,8 +5,7 @@ setup:
 	rustup target add wasm32-unknown-unknown --toolchain $(NIGHTLY_VERSION)
 
 check-panic-conflict:
-	rustup run $(NIGHTLY_VERSION) -- \
-		cargo build \
+	cargo build \
 		--no-default-features
 
 check-cargo-build-std:
