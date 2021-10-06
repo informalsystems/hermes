@@ -957,11 +957,9 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect();
 
         // Sort by client identifier counter
-        clients.sort_by(|a, b| {
-            client_id_suffix(&a.client_id)
-                .unwrap_or(0) // Fallback to `0` suffix (no sorting) if client id is malformed
-                .cmp(&client_id_suffix(&b.client_id).unwrap_or(0))
-        });
+        clients.sort_by_cached_key(|c|
+            client_id_suffix(&c.client_id)
+                .unwrap_or(0));
 
         Ok(clients)
     }
