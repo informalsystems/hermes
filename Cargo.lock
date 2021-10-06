@@ -1282,7 +1282,7 @@ dependencies = [
  "tendermint-testgen",
  "test-env-log",
  "tracing",
- "tracing-subscriber 0.2.24",
+ "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -1348,7 +1348,7 @@ dependencies = [
  "toml",
  "tonic",
  "tracing",
- "tracing-subscriber 0.2.24",
+ "tracing-subscriber 0.2.25",
  "uint",
 ]
 
@@ -1388,7 +1388,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
- "tracing-subscriber 0.2.24",
+ "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -1669,7 +1669,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.2.24",
+ "tracing-subscriber 0.2.25",
  "ureq",
 ]
 
@@ -2812,9 +2812,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.78"
+version = "1.0.80"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4eac2e6c19f5c3abc0c229bea31ff0b9b091c7b14990e8924b92902a303a0c0"
+checksum = "d010a1623fbd906d51d650a9916aaefc05ffa0e4053ff7fe601167f3e715d194"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2856,7 +2856,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#a4fd777c43e604bfc40edd6f450391d356cb9e8b"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2886,7 +2886,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#a4fd777c43e604bfc40edd6f450391d356cb9e8b"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
 dependencies = [
  "flex-error",
  "serde",
@@ -2899,7 +2899,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#a4fd777c43e604bfc40edd6f450391d356cb9e8b"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
 dependencies = [
  "chrono",
  "contracts",
@@ -2919,7 +2919,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#a4fd777c43e604bfc40edd6f450391d356cb9e8b"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
 dependencies = [
  "bytes",
  "chrono",
@@ -2936,7 +2936,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#a4fd777c43e604bfc40edd6f450391d356cb9e8b"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -2969,7 +2969,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#a4fd777c43e604bfc40edd6f450391d356cb9e8b"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
 dependencies = [
  "chrono",
  "ed25519-dalek",
@@ -3274,9 +3274,9 @@ checksum = "360dfd1d6d30e05fda32ace2c8c70e9c0a9da713275777f5a4dbb8a1893930c6"
 
 [[package]]
 name = "tracing"
-version = "0.1.28"
+version = "0.1.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84f96e095c0c82419687c20ddf5cb3eadb61f4e1405923c9dc8e53a1adacbda8"
+checksum = "375a639232caf30edfc78e8d89b2d4c375515393e7af7e16f01cd96917fb2105"
 dependencies = [
  "cfg-if 1.0.0",
  "log",
@@ -3287,9 +3287,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.17"
+version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4f915eb6abf914599c200260efced9203504c4c37380af10cdf3b7d36970650"
+checksum = "f4f480b8f81512e825f337ad51e94c1eb5d3bbdf2b363dcd01e2b19a9ffe3f8e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3312,7 +3312,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4d7c0b83d4a500748fa5879461652b361edf5c9d51ede2a2ac03875ca185e24"
 dependencies = [
  "tracing",
- "tracing-subscriber 0.2.24",
+ "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -3365,9 +3365,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.24"
+version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdd0568dbfe3baf7048b7908d2b32bca0d81cd56bec6d2a8f894b01d74f86be3"
+checksum = "0e0d2eaa99c3c2e41547cfa109e910a68ea03823cccad4a0525dcbc9b01e8c71"
 dependencies = [
  "ansi_term 0.12.1",
  "chrono",

@@ -1007,7 +1007,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f0caa60f229858859f210f88b3e45dbd081c474b"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1035,7 +1035,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f0caa60f229858859f210f88b3e45dbd081c474b"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
 dependencies = [
  "bytes",
  "chrono",
