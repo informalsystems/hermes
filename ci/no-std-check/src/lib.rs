@@ -4,23 +4,11 @@
 
 extern crate alloc;
 
-extern crate wee_alloc;
-
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
 // Import the crates that we want to check if they are fully no-std compliance
 
-#[cfg(feature = "ibc")]
 use ibc;
-
-#[cfg(feature = "ibc_proto")]
 use ibc_proto;
-
-#[cfg(feature = "tendermint")]
 use tendermint;
-
-#[cfg(feature = "tendermint-proto")]
 use tendermint_proto;
 
 #[cfg(feature = "sp-core")]
@@ -34,103 +22,6 @@ use sp_runtime;
 
 #[cfg(feature = "sp-std")]
 use sp_std;
-
-use prost;
-use prost_types;
-use prost_derive;
-use bytes;
-use serde;
-use serde_bytes;
-use subtle_encoding;
-use num_traits;
-use num_derive;
-use chrono;
-use flex_error;
-
-use async_trait;
-use ed25519;
-use ed25519_dalek;
-use futures;
-use once_cell;
-use serde_json;
-use serde_repr;
-use sha2;
-use signature;
-use subtle;
-use zeroize;
-use k256;
-use ripemd160;
-use ics23;
-use tracing;
-use serde_derive;
-use safe_regex;
-
-// Supported Imports
-
-// use bytes;
-// use chrono;
-// use contracts;
-// use crossbeam_channel;
-// use ed25519;
-// use ed25519_dalek;
-// use flex_error;
-// use futures;
-// use impl_serde;
-// use k256;
-// use num_derive;
-// use num_traits;
-// use once_cell;
-// use prost;
-// use prost_types;
-// use ripemd160;
-// use ryu;
-// use serde;
-// use serde_bytes;
-// use serde_cbor;
-// use serde_derive;
-// use serde_json;
-// use serde_json_core;
-// use serde_repr;
-// use sha2;
-// use signature;
-// use static_assertions;
-// use subtle;
-// use subtle_encoding;
-// use time;
-// use tracing;
-// use zeroize;
-
-// Unsupported Imports
-
-#[cfg(feature = "tonic")]
-use tonic;
-
-#[cfg(feature = "socket2")]
-use socket2;
-
-#[cfg(feature = "ics23")]
-use ics23;
-
-#[cfg(feature = "getrandom")]
-use getrandom;
-
-#[cfg(feature = "thiserror")]
-use thiserror;
-
-#[cfg(feature = "regex")]
-use regex;
-
-#[cfg(feature = "sled")]
-use sled;
-
-#[cfg(feature = "tokio")]
-use tokio;
-
-#[cfg(feature = "toml")]
-use toml;
-
-#[cfg(feature = "url")]
-use url;
 
 use core::panic::PanicInfo;
 
