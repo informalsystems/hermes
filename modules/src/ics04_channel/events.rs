@@ -888,7 +888,7 @@ mod tests {
             destination_channel: "b_test_channel".parse().unwrap(),
             data: "test_data".as_bytes().to_vec(),
             timeout_height: Height::new(1, 10),
-            timeout_timestamp: Timestamp::now(),
+            timeout_timestamp: Timestamp::from_datetime(chrono::offset::Utc::now()),
         };
         let mut abci_events = vec![];
         let send_packet = SendPacket {
