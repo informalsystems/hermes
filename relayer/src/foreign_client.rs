@@ -2,6 +2,7 @@ use core::{fmt, time::Duration};
 use std::thread;
 use std::time::Instant;
 
+use chrono::Utc;
 use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
@@ -524,7 +525,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .timestamp();
 
         let refresh_window = client_state.refresh_period();
-        let elapsed = Timestamp::now().duration_since(&last_update_time);
+        let elapsed = Timestamp::from_datetime(Utc::now()).duration_since(&last_update_time);
 
         if client_state.is_frozen() || client_state.expired(elapsed.unwrap_or_default()) {
             return Err(ForeignClientError::expired_or_frozen(

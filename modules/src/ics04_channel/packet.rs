@@ -114,10 +114,10 @@ pub struct Packet {
 }
 
 impl Packet {
-    pub fn timed_out(&self, dst_chain_height: Height) -> bool {
+    pub fn timed_out(&self, now: &Timestamp, dst_chain_height: Height) -> bool {
         (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
             || (self.timeout_timestamp != Timestamp::none()
-                && Timestamp::now().check_expiry(&self.timeout_timestamp) == Expired)
+                && now.check_expiry(&self.timeout_timestamp) == Expired)
     }
 }
 
