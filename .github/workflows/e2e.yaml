@@ -2,6 +2,7 @@ name: End to End testing
 on:
   pull_request:
     paths:
+      - .github/workflows/e2e.yaml
       - Cargo.toml
       - ci/**
       - e2e/**
@@ -9,9 +10,12 @@ on:
       - modules/**
       - relayer/**
       - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
   push:
     branches: master
     paths:
+      - .github/workflows/e2e.yaml
       - Cargo.toml
       - ci/**
       - e2e/**
@@ -19,6 +23,8 @@ on:
       - modules/**
       - relayer/**
       - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
 
 env:
   CARGO_INCREMENTAL: 0

@@ -5,6 +5,8 @@ use core::fmt;
 use std::thread;
 use std::time::Instant;
 
+use chrono::Utc;
+use ibc::timestamp::Timestamp;
 use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace};
@@ -864,25 +866,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_txs(query)
             .map_err(LinkError::relayer)?;
 
-        let mut packet_sequences = vec![];
-        for event in events_result.iter() {
-            match event {
-                IbcEvent::SendPacket(send_event) => {
-                    packet_sequences.push(send_event.packet.sequence);
-                    if packet_sequences.len() > 10 {
-                        // Enough to print the first 10
-                        break;
+        if events_result.is_empty() {
+            info!(
+                "[{}] found zero unprocessed SendPacket events on source chain, nothing to do",
+                self
+            );
+        } else {
+            let mut packet_sequences = vec![];
+            for event in events_result.iter() {
+                match event {
+                    IbcEvent::SendPacket(send_event) => {
+                        packet_sequences.push(send_event.packet.sequence);
+                        if packet_sequences.len() >= 10 {
+                            // Enough to print the first 10
+                            break;
+                        }
                     }
+                    _ => return Err(LinkError::unexpected_event(event.clone())),
                 }
-                _ => return Err(LinkError::unexpected_event(event.clone())),
             }
+            info!(
+                "[{}] found unprocessed SendPacket events for {:?} (first 10 shown here; total={})",
+                self,
+                packet_sequences,
+                events_result.len()
+            );
         }
-        info!(
-            "[{}] found unprocessed SendPacket events for {:?} (first 10 shown here; total={})",
-            self,
-            packet_sequences,
-            events_result.len()
-        );
 
         Ok((events_result, query_height))
     }
@@ -946,22 +955,29 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             }))
             .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
 
-        let mut packet_sequences = vec![];
-        for event in events_result.iter() {
-            match event {
-                IbcEvent::WriteAcknowledgement(write_ack_event) => {
-                    packet_sequences.push(write_ack_event.packet.sequence);
-                    if packet_sequences.len() > 10 {
-                        // Enough to print the first 10
-                        break;
+        if events_result.is_empty() {
+            info!(
+                "[{}] found zero unprocessed WriteAcknowledgement events on source chain, nothing to do",
+                self
+            );
+        } else {
+            let mut packet_sequences = vec![];
+            for event in events_result.iter() {
+                match event {
+                    IbcEvent::WriteAcknowledgement(write_ack_event) => {
+                        packet_sequences.push(write_ack_event.packet.sequence);
+                        if packet_sequences.len() >= 10 {
+                            // Enough to print the first 10
+                            break;
+                        }
+                    }
+                    _ => {
+                        return Err(LinkError::unexpected_event(event.clone()));
                     }
                 }
-                _ => {
-                    return Err(LinkError::unexpected_event(event.clone()));
-                }
             }
+            info!("[{}] found unprocessed WriteAcknowledgement events for {:?} (first 10 shown here; total={})", self, packet_sequences, events_result.len());
         }
-        info!("[{}] found unprocessed WriteAcknowledgement events for {:?} (first 10 shown here; total={})", self, packet_sequences, events_result.len());
 
         Ok((events_result, query_height))
     }
@@ -1164,7 +1180,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .state_matches(&ChannelState::Closed)
         {
             Ok(self.build_timeout_on_close_packet(&event.packet, dst_chain_height)?)
-        } else if packet.timed_out(dst_chain_height) {
+        } else if packet.timed_out(&Timestamp::from_datetime(Utc::now()), dst_chain_height) {
             Ok(self.build_timeout_packet(&event.packet, dst_chain_height)?)
         } else {
             Ok(None)
