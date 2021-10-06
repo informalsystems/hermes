@@ -5,6 +5,8 @@ use core::fmt;
 use std::thread;
 use std::time::Instant;
 
+use chrono::Utc;
+use ibc::timestamp::Timestamp;
 use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace};
@@ -1178,7 +1180,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .state_matches(&ChannelState::Closed)
         {
             Ok(self.build_timeout_on_close_packet(&event.packet, dst_chain_height)?)
-        } else if packet.timed_out(dst_chain_height) {
+        } else if packet.timed_out(&Timestamp::from_datetime(Utc::now()), dst_chain_height) {
             Ok(self.build_timeout_packet(&event.packet, dst_chain_height)?)
         } else {
             Ok(None)
