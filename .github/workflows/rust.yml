@@ -2,6 +2,7 @@ name: Rust
 on:
   pull_request:
     paths:
+      - .github/workflows/rust.yml
       - Cargo.toml
       - ci/**
       - e2e/**
@@ -9,9 +10,12 @@ on:
       - modules/**
       - relayer/**
       - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
   push:
     branches: master
     paths:
+      - .github/workflows/rust.yml
       - Cargo.toml
       - ci/**
       - e2e/**
@@ -19,6 +23,8 @@ on:
       - modules/**
       - relayer/**
       - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
 
 env:
   CARGO_INCREMENTAL: 0
