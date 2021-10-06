@@ -859,7 +859,7 @@ mod tests {
         abci_events.push(AbciEvent::from(open_confirm.clone()));
         let close_init = CloseInit::from(attributes.clone());
         abci_events.push(AbciEvent::from(close_init.clone()));
-        let close_confirm = CloseConfirm::from(attributes.clone());
+        let close_confirm = CloseConfirm::from(attributes);
         abci_events.push(AbciEvent::from(close_confirm.clone()));
 
         for event in abci_events {
@@ -869,8 +869,8 @@ mod tests {
                     IbcEvent::OpenTryChannel(e) => assert_eq!(e.0, open_try.0),
                     IbcEvent::OpenAckChannel(e) => assert_eq!(e.0, open_ack.0),
                     IbcEvent::OpenConfirmChannel(e) => assert_eq!(e.0, open_confirm.0),
-                    IbcEvent::CloseInitChannel(e) => assert_eq!(e.0, open_init.0),
-                    IbcEvent::CloseConfirmChannel(e) => assert_eq!(e.0, open_init.0),
+                    IbcEvent::CloseInitChannel(e) => assert_eq!(e.0, close_init.0),
+                    IbcEvent::CloseConfirmChannel(e) => assert_eq!(e.0, close_confirm.0),
                     _ => panic!("unexpected event type"),
                 },
                 None => panic!("converted event was wrong"),
@@ -909,7 +909,7 @@ mod tests {
         abci_events.push(AbciEvent::from(ack_packet.clone()));
         let timeout_packet = TimeoutPacket {
             height: Height::default(),
-            packet: packet.clone(),
+            packet,
         };
         abci_events.push(AbciEvent::from(timeout_packet.clone()));
 

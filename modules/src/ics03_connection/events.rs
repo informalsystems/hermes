@@ -295,7 +295,7 @@ mod test {
         abci_events.push(AbciEvent::from(open_try.clone()));
         let open_ack = OpenAck::from(attributes.clone());
         abci_events.push(AbciEvent::from(open_ack.clone()));
-        let open_confirm = OpenConfirm::from(attributes.clone());
+        let open_confirm = OpenConfirm::from(attributes);
         abci_events.push(AbciEvent::from(open_confirm.clone()));
 
         for event in abci_events {
