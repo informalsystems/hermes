@@ -112,7 +112,7 @@ pub struct PacketState {
 /// conflicts with other protobuf message formats used for acknowledgements.
 /// The first byte of any message with this format will be the non-ASCII values
 /// `0xaa` (result) or `0xb2` (error). Implemented as defined by ICS:
-/// https://github.com/cosmos/ibc/tree/master/spec/ics-004-channel-and-packet-semantics#acknowledgement-envelope
+/// https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#acknowledgement-envelope
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Acknowledgement {
     /// response contains either a result or an error and must be non-empty
@@ -431,6 +431,9 @@ pub struct QueryPacketAcknowledgementsRequest {
     pub pagination: ::core::option::Option<
         super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
     >,
+    /// list of packet sequences
+    #[prost(uint64, repeated, tag = "4")]
+    pub packet_commitment_sequences: ::prost::alloc::vec::Vec<u64>,
 }
 /// QueryPacketAcknowledgemetsResponse is the request type for the
 /// Query/QueryPacketAcknowledgements RPC method
