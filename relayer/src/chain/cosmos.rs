@@ -229,7 +229,7 @@ impl CosmosSdkChain {
 
         debug!("[{}] default fee: {}", self.id(), PrettyFee(&default_fee));
 
-        let (body, body_buf) = tx_body_and_bytes(proto_msgs)?;
+        let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
 
         let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), default_fee.clone())?;
         let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
@@ -643,6 +643,11 @@ impl CosmosSdkChain {
         self.config
             .trusting_period
             .unwrap_or(2 * unbonding_period / 3)
+    }
+
+    /// Returns the preconfigured memo to be used for every submitted transaction
+    fn tx_memo(&self) -> String {
+        self.config.memo.clone().into()
     }
 }
 
@@ -1991,11 +1996,11 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     Ok((auth_info, auth_buf))
 }
 
-fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
+fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: String) -> Result<(TxBody, Vec<u8>), Error> {
     // Create TxBody
     let body = TxBody {
         messages: proto_msgs.to_vec(),
-        memo: "".to_string(),
+        memo,
         timeout_height: 0_u64,
         extension_options: Vec::<Any>::new(),
         non_critical_extension_options: Vec::<Any>::new(),

@@ -99,3 +99,60 @@ impl From<MaxTxSize> for usize {
         m.0
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct Memo(String);
+
+impl Memo {
+    const DEFAULT: &'static str = "";
+    const MAX_LEN: usize = 50;
+
+    pub fn apply_suffix(&mut self, suffix: &str) {
+        // Add a separator if the memo
+        // is pre-populated with some content already.
+        if !self.0.is_empty() {
+            self.0.push_str(" | ");
+        }
+
+        self.0.push_str(suffix);
+    }
+}
+
+impl Default for Memo {
+    fn default() -> Self {
+        Self(Self::DEFAULT.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for Memo {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let m = String::deserialize(deserializer)?;
+
+        if m.len() > Self::MAX_LEN {
+            return Err(D::Error::invalid_length(
+                m.len(),
+                &format!("a string length of at most {}", Self::MAX_LEN).as_str(),
+            ));
+        }
+
+        Ok(Memo(m))
+    }
+}
+
+impl Serialize for Memo {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+impl From<Memo> for String {
+    fn from(m: Memo) -> Self {
+        m.0
+    }
+}

@@ -14,7 +14,7 @@ use tendermint_light_client::types::TrustThreshold;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
-use crate::config::types::{MaxMsgNum, MaxTxSize};
+use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -320,6 +320,8 @@ pub struct ChainConfig {
     pub clock_drift: Duration,
     #[serde(with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
+    #[serde(default)]
+    pub memo: Memo,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
