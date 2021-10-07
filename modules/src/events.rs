@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use core::fmt;
-use flex_error::{define_error, TraceError};
+use flex_error::{define_error, DisplayOnly};
 use prost::alloc::fmt::Formatter;
 use serde_derive::{Deserialize, Serialize};
 
@@ -44,11 +44,11 @@ define_error! {
             | e | { format_args!("missing event key {}", e.key) },
 
         Decode
-            [ TraceError<prost::DecodeError> ]
+            [ DisplayOnly<prost::DecodeError> ]
             | _ | { "error decoding protobuf" },
 
         SubtleEncoding
-            [ TraceError<subtle_encoding::Error> ]
+            [ DisplayOnly<subtle_encoding::Error> ]
             | _ | { "error decoding hex" },
 
         MissingActionString
