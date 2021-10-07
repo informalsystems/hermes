@@ -1,9 +1,7 @@
+use eyre::{eyre, Report as Error};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::{
-    io::{Error, ErrorKind},
-    process::{Command, Stdio},
-};
+use std::process::{Command, Stdio};
 
 /// Connector is used to connect to `gm`
 /// Use the `new()` associated function to create a new one.
@@ -97,22 +95,17 @@ impl Connector {
     }
 
     fn decode_simple_message(message: &str) -> Result<String, Error> {
-        let result: SimpleMessage = serde_json::from_str(message)
-            .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?;
+        let result: SimpleMessage = serde_json::from_str(message)?;
         if result.status != "success" {
-            return Err(Error::new(ErrorKind::Other, result.message));
+            return Err(eyre!("{}", result.message));
         }
         Ok(result.message)
     }
 
     fn decode_status_message(message: &str) -> Result<HashMap<String, ChainStatus>, Error> {
-        let nodes_data: StatusMessage = serde_json::from_str(message)
-            .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?;
+        let nodes_data: StatusMessage = serde_json::from_str(message)?;
         if nodes_data.status != "success" {
-            return Err(Error::new(
-                ErrorKind::Other,
-                "could not decode chain status",
-            ));
+            return Err(eyre!("could not decode chain status"));
         }
         let result: HashMap<String, ChainStatus> = nodes_data
             .message
@@ -139,28 +132,15 @@ impl Connector {
         if let Some(vs) = params {
             command_builder.arg(vs.join(" "));
         }
-        let output = command_builder.output().map_err(|e| {
-            Error::new(
-                ErrorKind::Other,
-                format!("failed to execute {}, {}", gm_path, e.to_string()),
-            )
-        })?;
+        let output = command_builder.output()?;
         if !output.status.success() {
-            return Err(Error::new(
-                ErrorKind::Other,
-                match output.status.code() {
-                    Some(code) => format!("command failed with exit code {}", code),
-                    None => "process terminated by signal".to_string(),
-                },
+            return Err(eyre!(
+                "command failed with exit code {:?}",
+                output.status.code()
             ));
         }
 
-        String::from_utf8(output.stdout).map_err(|_| {
-            Error::new(
-                ErrorKind::Other,
-                "Found invalid UTF-8 while reading results",
-            )
-        })
+        Ok(String::from_utf8(output.stdout)?)
     }
 }
 

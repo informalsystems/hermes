@@ -990,6 +990,7 @@ checksum = "0e4075386626662786ddb0ec9081e7c7eeb1ba31951f447ca780ef9f5d568189"
 name = "gm-connector"
 version = "0.1.0"
 dependencies = [
+ "eyre",
  "serde",
  "serde_derive",
  "serde_json",
