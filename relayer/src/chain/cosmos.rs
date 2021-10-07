@@ -957,11 +957,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect();
 
         // Sort by client identifier counter
-        clients.sort_by(|a, b| {
-            client_id_suffix(&a.client_id)
-                .unwrap_or(0) // Fallback to `0` suffix (no sorting) if client id is malformed
-                .cmp(&client_id_suffix(&b.client_id).unwrap_or(0))
-        });
+        clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));
 
         Ok(clients)
     }
@@ -2120,6 +2116,17 @@ fn mul_ceil(a: u64, f: f64) -> u64 {
 
 #[cfg(test)]
 mod tests {
+    use ibc::{
+        ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
+        ics02_client::client_type::ClientType,
+        ics24_host::identifier::ClientId,
+        mock::client_state::MockClientState,
+        mock::header::MockHeader,
+        Height,
+    };
+
+    use crate::chain::cosmos::client_id_suffix;
+
     #[test]
     fn mul_ceil() {
         assert_eq!(super::mul_ceil(300_000, 0.001), 300);
@@ -2129,5 +2136,33 @@ mod tests {
         assert_eq!(super::mul_ceil(304_000, 0.001), 304);
         assert_eq!(super::mul_ceil(340_000, 0.001), 340);
         assert_eq!(super::mul_ceil(340_001, 0.001), 341);
+    }
+
+    #[test]
+    fn sort_clients_id_suffix() {
+        let mut clients: Vec<IdentifiedAnyClientState> = vec![
+            IdentifiedAnyClientState::new(
+                ClientId::new(ClientType::Tendermint, 4).unwrap(),
+                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+            ),
+            IdentifiedAnyClientState::new(
+                ClientId::new(ClientType::Tendermint, 1).unwrap(),
+                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+            ),
+            IdentifiedAnyClientState::new(
+                ClientId::new(ClientType::Tendermint, 7).unwrap(),
+                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+            ),
+        ];
+        clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));
+        assert_eq!(
+            client_id_suffix(&clients.first().unwrap().client_id).unwrap(),
+            1
+        );
+        assert_eq!(client_id_suffix(&clients[1].client_id).unwrap(), 4);
+        assert_eq!(
+            client_id_suffix(&clients.last().unwrap().client_id).unwrap(),
+            7
+        );
     }
 }
