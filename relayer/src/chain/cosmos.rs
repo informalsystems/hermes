@@ -71,13 +71,13 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
 use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
+use crate::{config::types::Memo, error::Error};
 use crate::{
     config::{AddressType, ChainConfig, GasPrice},
     sdk_error::sdk_error_from_tx_sync_error_code,
@@ -646,8 +646,8 @@ impl CosmosSdkChain {
     }
 
     /// Returns the preconfigured memo to be used for every submitted transaction
-    fn tx_memo(&self) -> String {
-        self.config.memo.clone().into()
+    fn tx_memo(&self) -> &Memo {
+        &self.config.memo
     }
 }
 
@@ -1996,15 +1996,16 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     Ok((auth_info, auth_buf))
 }
 
-fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: String) -> Result<(TxBody, Vec<u8>), Error> {
+fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
     // Create TxBody
     let body = TxBody {
         messages: proto_msgs.to_vec(),
-        memo,
+        memo: memo.to_string(),
         timeout_height: 0_u64,
         extension_options: Vec::<Any>::new(),
         non_critical_extension_options: Vec::<Any>::new(),
     };
+
     // A protobuf serialization of a TxBody
     let mut body_buf = Vec::new();
     prost::Message::encode(&body, &mut body_buf).unwrap();
