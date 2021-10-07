@@ -26,3 +26,4 @@ safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git
 safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
 safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
 safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+tonic = { package = "informalsystems-tonic", git = "https://github.com/informalsystems/tonic.git", branch = "thane/informal-0.5.2" }
