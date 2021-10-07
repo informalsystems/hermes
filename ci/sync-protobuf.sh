@@ -93,16 +93,25 @@ popd
 # so that the newly generated code does not
 # contain removed files.
 
-rm -rf proto/src/prost/*.rs
+rm -rf proto/src/prost/std
+rm -rf proto/src/prost/no_std
+
+mkdir -p proto/src/prost/std
+mkdir -p proto/src/prost/no_std
 
 cd proto-compiler
 
 cargo build --locked
 
-# Run the proto-compiler twice
+# Run the proto-compiler twice,
+# once for std version with --build-tonic set to true
+# and once for no-std version with --build-tonic set to false
 
 cargo run --locked -- compile \
-	--sdk "$COSMOS_SDK_DIR" --ibc "$IBC_GO_DIR" --out ../proto/src/prost
+	--sdk "$COSMOS_SDK_DIR" --ibc "$IBC_GO_DIR" --build-tonic true --out ../proto/src/prost/std
+
+cargo run --locked -- compile \
+	--sdk "$COSMOS_SDK_DIR" --ibc "$IBC_GO_DIR" --build-tonic false --out ../proto/src/prost/no_std
 
 # Remove the temporary checkouts of the repositories
 
