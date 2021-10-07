@@ -78,15 +78,7 @@ We also run end-to-end tests to more thoroughly test IBC modules in a more heter
 
 ### Error Handling 
 
-Many errors occur within Hermes as a result of I/O operations. 
-
-[How does Hermes choose to handle these errors?]
-
-[Any other major sources of errors to note?]
-
-- Errors from misconfiguration on the users' side
-- I/O errors: 1) web socket errors 2) chain RPC errors: occur when full nodes are out of sync with the rest of the network, that can be a source of errors in Hermes; errors that result from transactions being based off of conflicting chain states (sometimes resolved by retrying, other times this might require operator intervention in order to flush the mempool and restart the full node)
-
+Most errors occur within the relayer as a result of either I/O operations or user misconfiguration. I/O-related errors can be sub-categorized into web socket errors and chain RPC errors. The latter occur when full nodes are out of sync with the rest of the network, which result in transactions that are based off of conflicting chain states. Such errors are usually either resolved by retrying the transaction, or might require operator intervention in order to flush the transaction from the mempool in conjunction with restarting the full node.
 
 
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
