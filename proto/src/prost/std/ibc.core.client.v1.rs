@@ -434,47 +434,6 @@ pub mod query_client {
         }
     }
 }
-/// GenesisState defines the ibc client submodule's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// client states with their corresponding identifiers
-    #[prost(message, repeated, tag = "1")]
-    pub clients: ::prost::alloc::vec::Vec<IdentifiedClientState>,
-    /// consensus states from each client
-    #[prost(message, repeated, tag = "2")]
-    pub clients_consensus: ::prost::alloc::vec::Vec<ClientConsensusStates>,
-    /// metadata from each client
-    #[prost(message, repeated, tag = "3")]
-    pub clients_metadata: ::prost::alloc::vec::Vec<IdentifiedGenesisMetadata>,
-    #[prost(message, optional, tag = "4")]
-    pub params: ::core::option::Option<Params>,
-    /// create localhost on initialization
-    #[prost(bool, tag = "5")]
-    pub create_localhost: bool,
-    /// the sequence for the next generated client identifier
-    #[prost(uint64, tag = "6")]
-    pub next_client_sequence: u64,
-}
-/// GenesisMetadata defines the genesis type for metadata that clients may return
-/// with ExportMetadata
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisMetadata {
-    /// store key of metadata without clientID-prefix
-    #[prost(bytes = "vec", tag = "1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    /// metadata value
-    #[prost(bytes = "vec", tag = "2")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
-}
-/// IdentifiedGenesisMetadata has the client metadata with the corresponding
-/// client id.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IdentifiedGenesisMetadata {
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "2")]
-    pub client_metadata: ::prost::alloc::vec::Vec<GenesisMetadata>,
-}
 /// MsgCreateClient defines a message to create an IBC client
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateClient {
@@ -663,4 +622,45 @@ pub mod msg_client {
             write!(f, "MsgClient {{ ... }}")
         }
     }
+}
+/// GenesisState defines the ibc client submodule's genesis state.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// client states with their corresponding identifiers
+    #[prost(message, repeated, tag = "1")]
+    pub clients: ::prost::alloc::vec::Vec<IdentifiedClientState>,
+    /// consensus states from each client
+    #[prost(message, repeated, tag = "2")]
+    pub clients_consensus: ::prost::alloc::vec::Vec<ClientConsensusStates>,
+    /// metadata from each client
+    #[prost(message, repeated, tag = "3")]
+    pub clients_metadata: ::prost::alloc::vec::Vec<IdentifiedGenesisMetadata>,
+    #[prost(message, optional, tag = "4")]
+    pub params: ::core::option::Option<Params>,
+    /// create localhost on initialization
+    #[prost(bool, tag = "5")]
+    pub create_localhost: bool,
+    /// the sequence for the next generated client identifier
+    #[prost(uint64, tag = "6")]
+    pub next_client_sequence: u64,
+}
+/// GenesisMetadata defines the genesis type for metadata that clients may return
+/// with ExportMetadata
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisMetadata {
+    /// store key of metadata without clientID-prefix
+    #[prost(bytes = "vec", tag = "1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    /// metadata value
+    #[prost(bytes = "vec", tag = "2")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+}
+/// IdentifiedGenesisMetadata has the client metadata with the corresponding
+/// client id.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IdentifiedGenesisMetadata {
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub client_metadata: ::prost::alloc::vec::Vec<GenesisMetadata>,
 }

@@ -21,7 +21,6 @@ macro_rules! format {
         ::alloc::format!($( $args )*)
     }
 }
-
 #[cfg(feature = "std")]
 macro_rules! include_proto {
     ($path:literal) => {
