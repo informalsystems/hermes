@@ -3,6 +3,8 @@
 //! Implements defaults, as well as serializing and
 //! deserializing with upper-bound verification.
 
+use core::fmt;
+
 use serde::de::Unexpected;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -106,11 +108,10 @@ impl From<MaxTxSize> for usize {
 /// each transaction it submits.
 /// The memo can be configured on a per-chain basis.
 ///
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Default)]
 pub struct Memo(String);
 
 impl Memo {
-    const DEFAULT: &'static str = "";
     const MAX_LEN: usize = 50;
 
     pub fn apply_suffix(&mut self, suffix: &str) {
@@ -122,11 +123,9 @@ impl Memo {
 
         self.0.push_str(suffix);
     }
-}
 
-impl Default for Memo {
-    fn default() -> Self {
-        Self(Self::DEFAULT.to_string())
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
@@ -157,8 +156,8 @@ impl Serialize for Memo {
     }
 }
 
-impl From<Memo> for String {
-    fn from(m: Memo) -> Self {
-        m.0
+impl fmt::Display for Memo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }
