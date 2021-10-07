@@ -65,7 +65,7 @@ impl AnyHeader {
     pub fn encode_to_string(&self) -> String {
         let buf = Protobuf::encode_vec(self).expect("encoding shouldn't fail");
         let encoded = hex::encode(buf);
-        String::from_utf8(encoded).unwrap()
+        String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8")
     }
 
     pub fn decode_from_string(s: &str) -> Result<Self, Error> {

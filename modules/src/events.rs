@@ -377,26 +377,26 @@ impl IbcEvent {
         }
     }
 
-    pub fn abci_event(&self) -> Option<AbciEvent> {
+    pub fn into_abci_event(self) -> Option<AbciEvent> {
         match self {
-            IbcEvent::CreateClient(ev) => Some(ev.clone().into()),
-            IbcEvent::UpdateClient(ev) => Some(ev.clone().into()),
-            IbcEvent::UpgradeClient(ev) => Some(ev.clone().into()),
-            IbcEvent::ClientMisbehaviour(ev) => Some(ev.clone().into()),
-            IbcEvent::OpenInitConnection(ev) => Some(ev.clone().into()),
-            IbcEvent::OpenTryConnection(ev) => Some(ev.clone().into()),
-            IbcEvent::OpenAckConnection(ev) => Some(ev.clone().into()),
-            IbcEvent::OpenConfirmConnection(ev) => Some(ev.clone().into()),
-            IbcEvent::OpenInitChannel(ev) => Some(ev.clone().into()),
-            IbcEvent::OpenTryChannel(ev) => Some(ev.clone().into()),
-            IbcEvent::OpenAckChannel(ev) => Some(ev.clone().into()),
-            IbcEvent::OpenConfirmChannel(ev) => Some(ev.clone().into()),
-            IbcEvent::CloseInitChannel(ev) => Some(ev.clone().into()),
-            IbcEvent::CloseConfirmChannel(ev) => Some(ev.clone().into()),
-            IbcEvent::SendPacket(ev) => Some(ev.clone().into()),
-            IbcEvent::WriteAcknowledgement(ev) => Some(ev.clone().into()),
-            IbcEvent::AcknowledgePacket(ev) => Some(ev.clone().into()),
-            IbcEvent::TimeoutPacket(ev) => Some(ev.clone().into()),
+            IbcEvent::CreateClient(ev) => Some(ev.into()),
+            IbcEvent::UpdateClient(ev) => Some(ev.into()),
+            IbcEvent::UpgradeClient(ev) => Some(ev.into()),
+            IbcEvent::ClientMisbehaviour(ev) => Some(ev.into()),
+            IbcEvent::OpenInitConnection(ev) => Some(ev.into()),
+            IbcEvent::OpenTryConnection(ev) => Some(ev.into()),
+            IbcEvent::OpenAckConnection(ev) => Some(ev.into()),
+            IbcEvent::OpenConfirmConnection(ev) => Some(ev.into()),
+            IbcEvent::OpenInitChannel(ev) => Some(ev.into()),
+            IbcEvent::OpenTryChannel(ev) => Some(ev.into()),
+            IbcEvent::OpenAckChannel(ev) => Some(ev.into()),
+            IbcEvent::OpenConfirmChannel(ev) => Some(ev.into()),
+            IbcEvent::CloseInitChannel(ev) => Some(ev.into()),
+            IbcEvent::CloseConfirmChannel(ev) => Some(ev.into()),
+            IbcEvent::SendPacket(ev) => Some(ev.into()),
+            IbcEvent::WriteAcknowledgement(ev) => Some(ev.into()),
+            IbcEvent::AcknowledgePacket(ev) => Some(ev.into()),
+            IbcEvent::TimeoutPacket(ev) => Some(ev.into()),
             _ => None,
         }
     }
@@ -433,9 +433,9 @@ impl IbcEvent {
         }
     }
 
-    pub fn ack(&self) -> Option<Vec<u8>> {
+    pub fn ack(&self) -> Option<&[u8]> {
         match self {
-            IbcEvent::WriteAcknowledgement(ev) => Some(ev.ack.clone()),
+            IbcEvent::WriteAcknowledgement(ev) => Some(&ev.ack),
             _ => None,
         }
     }

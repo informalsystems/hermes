@@ -78,6 +78,9 @@ impl Default for Attributes {
     }
 }
 
+/// Convert attributes to Tendermint ABCI tags
+/// The conversion will never fail. No actual conversion from string happens
+/// because `Tag::Key` and `Tag::Value` are also strings
 impl From<Attributes> for Vec<Tag> {
     fn from(a: Attributes) -> Self {
         let mut attributes = vec![];
