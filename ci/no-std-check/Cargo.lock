@@ -285,8 +285,8 @@ dependencies = [
  "flex-error",
  "ibc-proto",
  "ics23",
- "prost",
- "prost-types",
+ "informalsystems-prost",
+ "informalsystems-prost-types",
  "safe-regex",
  "serde",
  "serde_derive",
@@ -302,20 +302,21 @@ name = "ibc-proto"
 version = "0.11.0"
 dependencies = [
  "bytes",
- "prost",
- "prost-types",
+ "informalsystems-prost",
+ "informalsystems-prost-types",
  "tendermint-proto",
 ]
 
 [[package]]
 name = "ics23"
 version = "0.6.5"
-source = "git+https://github.com/informalsystems/ics23.git?branch=master#0aeeca2464542b471958a8f6873053982856eaa7"
+source = "git+https://github.com/informalsystems/ics23.git?branch=master#4461b67382341af6bc6fab9c991ccc5d49a6e83e"
 dependencies = [
  "anyhow",
  "bytes",
  "hex",
- "prost",
+ "informalsystems-prost",
+ "informalsystems-prost-types",
  "ripemd160",
  "sha2",
  "sha3",
@@ -343,6 +344,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "informalsystems-prost"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5620e41d3653c27671bee3e07822407365cae5d97f4a391a1c87cb2a4caf647b"
+dependencies = [
+ "bytes",
+ "informalsystems-prost-derive",
+]
+
+[[package]]
+name = "informalsystems-prost-derive"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c6af6594ef5bc7f879ba098055e084bf3562077b6dc83fcc96b579cdd319eba"
+dependencies = [
+ "anyhow",
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "informalsystems-prost-types"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41b094d80f1836c54e192146a58ef1ef1803b1a50a055ab6303ec757e034431a"
+dependencies = [
+ "bytes",
+ "informalsystems-prost",
+]
+
+[[package]]
 name = "integer-sqrt"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -353,9 +387,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.9.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
+checksum = "69ddb889f9d0d08a67338271fa9b62996bc788c7796a5c18cf057420aaed5eaf"
 dependencies = [
  "either",
 ]
@@ -558,39 +592,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9f5105d4fdaab20335ca9565e106a5d9b82b6219b5ba735731124ac6711d23d"
 dependencies = [
  "unicode-xid",
-]
-
-[[package]]
-name = "prost"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e6984d2f1a23009bd270b8bb56d0926810a3d483f59c987d77969e9d8e840b2"
-dependencies = [
- "bytes",
- "prost-derive",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "169a15f3008ecb5160cba7d37bcd690a7601b6d30cfb87a117d45e59d52af5d4"
-dependencies = [
- "anyhow",
- "itertools",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "prost-types"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b518d7cdd93dab1d1122cf07fa9a60771836c668dde9d9e2a139f957f0d9f1bb"
-dependencies = [
- "bytes",
- "prost",
 ]
 
 [[package]]
@@ -1007,7 +1008,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#553dd0eb98af6a9cd5b0bd3732bb9ac10fa6f79d"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1016,10 +1017,10 @@ dependencies = [
  "ed25519-dalek",
  "flex-error",
  "futures",
+ "informalsystems-prost",
+ "informalsystems-prost-types",
  "num-traits",
  "once_cell",
- "prost",
- "prost-types",
  "serde",
  "serde_bytes",
  "serde_json",
@@ -1035,15 +1036,15 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#515f2de311a5a92ecdf7d138d34cab04d0fba79c"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#553dd0eb98af6a9cd5b0bd3732bb9ac10fa6f79d"
 dependencies = [
  "bytes",
  "chrono",
  "flex-error",
+ "informalsystems-prost",
+ "informalsystems-prost-types",
  "num-derive",
  "num-traits",
- "prost",
- "prost-types",
  "serde",
  "serde_bytes",
  "subtle-encoding",
