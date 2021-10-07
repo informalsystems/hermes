@@ -100,6 +100,12 @@ impl From<MaxTxSize> for usize {
     }
 }
 
+/// A memo domain-type.
+///
+/// Hermes uses this type to populate the `tx.memo` field for
+/// each transaction it submits.
+/// The memo can be configured on a per-chain basis.
+///
 #[derive(Debug, Clone)]
 pub struct Memo(String);
 
