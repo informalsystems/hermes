@@ -14,7 +14,7 @@ Some important terms and acronyms that are commonly used include:
 
 ## Bird's Eye View
 
-![](assets/ibc-rs-layout.png)
+![][layout-image]
 
 At its highest level, `ibc-rs` implements the InterBlockchain Communication protocol which is captured in [specifications in a separate repository][ibc-specs]. `ibc-rs` exposes modules that implement the specified protocol logic. The IBC protocol can be understood as having two separate components: on-chain and off-chain logic. The relayer, which is the main off-chain component, is a standalone process, of which Hermes is an implementation. On-chain components can be thought of as modules or smart contracts that run as part of a chain. The main on-chain components deal with the abstractions of clients, connections, and channels. 
 
@@ -78,9 +78,15 @@ We also run end-to-end tests to more thoroughly test IBC modules in a more heter
 
 ### Error Handling 
 
-Many errors occur within Hermes as a result of I/O operations. [How does Hermes choose to handle these errors?]
+Many errors occur within Hermes as a result of I/O operations. 
+
+[How does Hermes choose to handle these errors?]
 
 [Any other major sources of errors to note?]
+
+- Errors from misconfiguration on the users' side
+- I/O errors: 1) web socket errors 2) chain RPC errors: occur when full nodes are out of sync with the rest of the network, that can be a source of errors in Hermes; errors that result from transactions being based off of conflicting chain states (sometimes resolved by retrying, other times this might require operator intervention in order to flush the mempool and restart the full node)
+
 
 
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
@@ -89,3 +95,4 @@ Many errors occur within Hermes as a result of I/O operations. [How does Hermes 
 [ibc-connection]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics03_connection
 [ibc-channel]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics04_channel
 [ics02]: https://github.com/cosmos/ibc/blob/master/spec/core/ics-002-client-semantics/README.md
+[layout-image]: assets/ibc-rs-layout.png
