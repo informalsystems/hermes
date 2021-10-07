@@ -6,13 +6,13 @@ This document is a record of all the bugs or issues we uncovered while specifyin
 ### 1. ICS3 liveness problem due to ICS018 relayer algorithm
 
 The algorithm for relaying connection handshake datagrams of type `ConnOpenTry`does not handle the situation when both chains are in state `INIT`.
-The current relayer algorithm in [ICS018](https://github.com/cosmos/ibc/tree/master/spec/ics-018-relayer-algorithms) specifies that the `ConnOpenTry` datagram should be relayed only if one of the chains is in state `INIT` and the other chain is uninitialized (see the snippet below); this is not enough for guaranteeing liveness of the connection handshake protocol (ICS04).
+The current relayer algorithm in [ICS018](https://github.com/cosmos/ibc/tree/19f519b2d6829e3096d6b9f79bffb7836033e79c/spec/relayer/ics-018-relayer-algorithms) specifies that the `ConnOpenTry` datagram should be relayed only if one of the chains is in state `INIT` and the other chain is uninitialized (see the snippet below); this is not enough for guaranteeing liveness of the connection handshake protocol (ICS04).
 
 ```
     if (localEnd.state === INIT && remoteEnd === null)
 ```
 
-The correct code should include both the cases when a single chain is in state `INIT`, as well as the case when both chains are in state `INIT`, as specified here: [Relayer.tla](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/relayer/Relayer.tla#L174)
+The correct code should include both the cases when a single chain is in state `INIT`, as well as the case when both chains are in state `INIT`, as specified here: [Relayer.tla](https://github.com/informalsystems/ibc-rs/blob/e1b78946529e39a5c709ccd6d11637993073164e/docs/spec/relayer/Relayer.tla#L174)
 This fix only concerns the relayer algorithm ICS018.
 
 ##### Channel handshake (ICS4) liveness problem
