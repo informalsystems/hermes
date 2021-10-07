@@ -218,6 +218,12 @@ pub enum IbcEvent {
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
+impl Default for IbcEvent {
+    fn default() -> Self {
+        Self::Empty("".to_string())
+    }
+}
+
 /// For use in debug messages
 pub struct PrettyEvents<'a>(pub &'a [IbcEvent]);
 impl<'a> fmt::Display for PrettyEvents<'a> {
