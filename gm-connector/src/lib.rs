@@ -28,32 +28,32 @@ pub struct Ports {
 /// ChainStatus shows the running status of a chain
 #[derive(Deserialize)]
 pub struct ChainStatus {
-    name: String,
+    pub name: String,
     #[serde(rename = "chain-id")]
-    chain_id: String,
+    pub chain_id: String,
     #[serde(rename = "config-dir")]
-    config_dir: String,
-    pid: Option<i64>,
-    ports: Option<Ports>,
+    pub config_dir: String,
+    pub pid: Option<i64>,
+    pub ports: Option<Ports>,
 }
 
 #[derive(Deserialize)]
 struct SimpleMessage {
-    status: String,
-    message: String,
+    pub status: String,
+    pub message: String,
 }
 
 #[derive(Deserialize)]
 struct StatusMessage {
-    status: String,
-    message: Vec<ChainStatus>,
+    pub status: String,
+    pub message: Vec<ChainStatus>,
 }
 
 impl Connector {
     /// Create a new gm connector
-    pub fn new(gm_path: &String, config: Option<String>) -> Result<Self, Error> {
+    pub fn new(gm_path: &str, config: Option<String>) -> Result<Self, Error> {
         Ok(Connector {
-            gm_path: gm_path.clone(),
+            gm_path: gm_path.to_string(),
             version: Connector::decode_simple_message(&Connector::execute_command(
                 gm_path, &None, "version", None,
             )?)?,
@@ -96,7 +96,7 @@ impl Connector {
         Connector::execute_command(&self.gm_path, &self.config, "rm", Some(params)).err()
     }
 
-    fn decode_simple_message(message: &String) -> Result<String, Error> {
+    fn decode_simple_message(message: &str) -> Result<String, Error> {
         let result: SimpleMessage = serde_json::from_str(message)
             .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?;
         if result.status != "success" {
@@ -105,7 +105,7 @@ impl Connector {
         Ok(result.message)
     }
 
-    fn decode_status_message(message: &String) -> Result<HashMap<String, ChainStatus>, Error> {
+    fn decode_status_message(message: &str) -> Result<HashMap<String, ChainStatus>, Error> {
         let nodes_data: StatusMessage = serde_json::from_str(message)
             .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?;
         if nodes_data.status != "success" {
@@ -123,7 +123,7 @@ impl Connector {
     }
 
     fn execute_command(
-        gm_path: &String,
+        gm_path: &str,
         config: &Option<String>,
         command: &str,
         params: Option<Vec<&str>>,
@@ -155,12 +155,12 @@ impl Connector {
             ));
         }
 
-        Ok(String::from_utf8(output.stdout).map_err(|_| {
+        String::from_utf8(output.stdout).map_err(|_| {
             Error::new(
                 ErrorKind::Other,
                 "Found invalid UTF-8 while reading results",
             )
-        })?)
+        })
     }
 }
 
