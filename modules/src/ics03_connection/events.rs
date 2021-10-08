@@ -5,7 +5,9 @@ use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::events::{IbcEvent, IbcEventType};
+use crate::ics02_client::error::Error as Ics02Error;
 use crate::ics02_client::height::Height;
+use crate::ics03_connection::error::Error;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::prelude::*;
 
@@ -18,43 +20,56 @@ const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.parse() {
-        Ok(IbcEventType::OpenInitConnection) => Some(IbcEvent::OpenInitConnection(OpenInit::from(
-            extract_attributes_from_tx(event),
-        ))),
-        Ok(IbcEventType::OpenTryConnection) => Some(IbcEvent::OpenTryConnection(OpenTry::from(
-            extract_attributes_from_tx(event),
-        ))),
-        Ok(IbcEventType::OpenAckConnection) => Some(IbcEvent::OpenAckConnection(OpenAck::from(
-            extract_attributes_from_tx(event),
-        ))),
-        Ok(IbcEventType::OpenConfirmConnection) => Some(IbcEvent::OpenConfirmConnection(
-            OpenConfirm::from(extract_attributes_from_tx(event)),
-        )),
+        Ok(IbcEventType::OpenInitConnection) => extract_attributes_from_tx(event)
+            .map(OpenInit::from)
+            .map(IbcEvent::OpenInitConnection)
+            .ok(),
+        Ok(IbcEventType::OpenTryConnection) => extract_attributes_from_tx(event)
+            .map(OpenTry::from)
+            .map(IbcEvent::OpenTryConnection)
+            .ok(),
+        Ok(IbcEventType::OpenAckConnection) => extract_attributes_from_tx(event)
+            .map(OpenAck::from)
+            .map(IbcEvent::OpenAckConnection)
+            .ok(),
+        Ok(IbcEventType::OpenConfirmConnection) => extract_attributes_from_tx(event)
+            .map(OpenConfirm::from)
+            .map(IbcEvent::OpenConfirmConnection)
+            .ok(),
         _ => None,
     }
 }
 
-fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
+fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attributes, Error> {
     let mut attr = Attributes::default();
 
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         match key {
-            HEIGHT_ATTRIBUTE_KEY => attr.height = value.parse().unwrap(),
-            CONN_ID_ATTRIBUTE_KEY => attr.connection_id = value.parse().ok(),
-            CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = value.parse().unwrap(),
+            HEIGHT_ATTRIBUTE_KEY => {
+                attr.height = value.parse().map_err(|e| {
+                    Error::ics02_client(Ics02Error::invalid_string_as_height(value.to_string(), e))
+                })?
+            }
+            CONN_ID_ATTRIBUTE_KEY => {
+                attr.connection_id = Some(value.parse().map_err(Error::invalid_identifier)?)
+            }
+            CLIENT_ID_ATTRIBUTE_KEY => {
+                attr.client_id = value.parse().map_err(Error::invalid_identifier)?
+            }
             COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_connection_id = value.parse().ok()
+                attr.counterparty_connection_id =
+                    Some(value.parse().map_err(Error::invalid_identifier)?);
             }
             COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_client_id = value.parse().unwrap()
+                attr.counterparty_client_id = value.parse().map_err(Error::invalid_identifier)?;
             }
             _ => {}
         }
     }
 
-    attr
+    Ok(attr)
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

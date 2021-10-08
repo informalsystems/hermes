@@ -1,11 +1,13 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 use crate::events::{IbcEvent, IbcEventType};
 use crate::ics02_client::height::Height;
+use crate::ics04_channel::error::Error;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::prelude::*;
 
 use serde_derive::{Deserialize, Serialize};
+use subtle_encoding::hex;
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
@@ -31,109 +33,151 @@ const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.parse() {
-        Ok(IbcEventType::OpenInitChannel) => Some(IbcEvent::OpenInitChannel(OpenInit::from(
-            extract_attributes_from_tx(event),
-        ))),
-        Ok(IbcEventType::OpenTryChannel) => Some(IbcEvent::OpenTryChannel(OpenTry::from(
-            extract_attributes_from_tx(event),
-        ))),
-        Ok(IbcEventType::OpenAckChannel) => Some(IbcEvent::OpenAckChannel(OpenAck::from(
-            extract_attributes_from_tx(event),
-        ))),
-        Ok(IbcEventType::OpenConfirmChannel) => Some(IbcEvent::OpenConfirmChannel(
-            OpenConfirm::from(extract_attributes_from_tx(event)),
-        )),
-        Ok(IbcEventType::CloseInitChannel) => Some(IbcEvent::CloseInitChannel(CloseInit::from(
-            extract_attributes_from_tx(event),
-        ))),
-        Ok(IbcEventType::CloseConfirmChannel) => Some(IbcEvent::CloseConfirmChannel(
-            CloseConfirm::from(extract_attributes_from_tx(event)),
-        )),
+        Ok(IbcEventType::OpenInitChannel) => extract_attributes_from_tx(event)
+            .map(OpenInit::from)
+            .map(IbcEvent::OpenInitChannel)
+            .ok(),
+        Ok(IbcEventType::OpenTryChannel) => extract_attributes_from_tx(event)
+            .map(OpenTry::from)
+            .map(IbcEvent::OpenTryChannel)
+            .ok(),
+        Ok(IbcEventType::OpenAckChannel) => extract_attributes_from_tx(event)
+            .map(OpenAck::from)
+            .map(IbcEvent::OpenAckChannel)
+            .ok(),
+        Ok(IbcEventType::OpenConfirmChannel) => extract_attributes_from_tx(event)
+            .map(OpenConfirm::from)
+            .map(IbcEvent::OpenConfirmChannel)
+            .ok(),
+        Ok(IbcEventType::CloseInitChannel) => extract_attributes_from_tx(event)
+            .map(CloseInit::from)
+            .map(IbcEvent::CloseInitChannel)
+            .ok(),
+        Ok(IbcEventType::CloseConfirmChannel) => extract_attributes_from_tx(event)
+            .map(CloseConfirm::from)
+            .map(IbcEvent::CloseConfirmChannel)
+            .ok(),
         Ok(IbcEventType::SendPacket) => {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
-            // This event should not have a write ack.
-            assert_eq!(write_ack.len(), 0);
-            Some(IbcEvent::SendPacket(SendPacket {
-                height: Default::default(),
-                packet,
-            }))
+            extract_packet_and_write_ack_from_tx(event)
+                .map(|(packet, write_ack)| {
+                    // This event should not have a write ack.
+                    assert_eq!(write_ack.len(), 0);
+                    IbcEvent::SendPacket(SendPacket {
+                        height: Default::default(),
+                        packet,
+                    })
+                })
+                .ok()
         }
-        Ok(IbcEventType::WriteAck) => {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
-            Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-                height: Default::default(),
-                packet,
-                ack: write_ack,
-            }))
-        }
+        Ok(IbcEventType::WriteAck) => extract_packet_and_write_ack_from_tx(event)
+            .map(|(packet, write_ack)| {
+                IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
+                    height: Default::default(),
+                    packet,
+                    ack: write_ack,
+                })
+            })
+            .ok(),
         Ok(IbcEventType::AckPacket) => {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
-            // This event should not have a write ack.
-            assert_eq!(write_ack.len(), 0);
-            Some(IbcEvent::AcknowledgePacket(AcknowledgePacket {
-                height: Default::default(),
-                packet,
-            }))
+            extract_packet_and_write_ack_from_tx(event)
+                .map(|(packet, write_ack)| {
+                    // This event should not have a write ack.
+                    assert_eq!(write_ack.len(), 0);
+                    IbcEvent::AcknowledgePacket(AcknowledgePacket {
+                        height: Default::default(),
+                        packet,
+                    })
+                })
+                .ok()
         }
         Ok(IbcEventType::Timeout) => {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
-            // This event should not have a write ack.
-            assert_eq!(write_ack.len(), 0);
-            Some(IbcEvent::TimeoutPacket(TimeoutPacket {
-                height: Default::default(),
-                packet,
-            }))
+            extract_packet_and_write_ack_from_tx(event)
+                .map(|(packet, write_ack)| {
+                    // This event should not have a write ack.
+                    assert_eq!(write_ack.len(), 0);
+                    IbcEvent::TimeoutPacket(TimeoutPacket {
+                        height: Default::default(),
+                        packet,
+                    })
+                })
+                .ok()
         }
         _ => None,
     }
 }
 
-fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
+fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attributes, Error> {
     let mut attr = Attributes::default();
 
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         match key {
-            PORT_ID_ATTRIBUTE_KEY => attr.port_id = value.parse().unwrap(),
-            CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = value.parse().ok(),
-            CONNECTION_ID_ATTRIBUTE_KEY => attr.connection_id = value.parse().unwrap(),
+            PORT_ID_ATTRIBUTE_KEY => attr.port_id = value.parse().map_err(Error::identifier)?,
+            CHANNEL_ID_ATTRIBUTE_KEY => {
+                attr.channel_id = Some(value.parse().map_err(Error::identifier)?)
+            }
+            CONNECTION_ID_ATTRIBUTE_KEY => {
+                attr.connection_id = value.parse().map_err(Error::identifier)?
+            }
             COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_port_id = value.parse().unwrap()
+                attr.counterparty_port_id = value.parse().map_err(Error::identifier)?;
             }
             COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_channel_id = value.parse().ok()
+                attr.counterparty_channel_id = Some(value.parse().map_err(Error::identifier)?);
             }
             _ => {}
         }
     }
 
-    attr
+    Ok(attr)
 }
 
-fn extract_packet_and_write_ack_from_tx(event: &tendermint::abci::Event) -> (Packet, Vec<u8>) {
+fn extract_packet_and_write_ack_from_tx(
+    event: &tendermint::abci::Event,
+) -> Result<(Packet, Vec<u8>), Error> {
     let mut packet = Packet::default();
     let mut write_ack: Vec<u8> = Vec::new();
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         match key {
-            PKT_SRC_PORT_ATTRIBUTE_KEY => packet.source_port = value.parse().unwrap(),
-            PKT_SRC_CHANNEL_ATTRIBUTE_KEY => packet.source_channel = value.parse().unwrap(),
-            PKT_DST_PORT_ATTRIBUTE_KEY => packet.destination_port = value.parse().unwrap(),
-            PKT_DST_CHANNEL_ATTRIBUTE_KEY => packet.destination_channel = value.parse().unwrap(),
-            PKT_SEQ_ATTRIBUTE_KEY => packet.sequence = value.parse::<u64>().unwrap().into(),
-            PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => packet.timeout_height = value.parse().unwrap(),
+            PKT_SRC_PORT_ATTRIBUTE_KEY => {
+                packet.source_port = value.parse().map_err(Error::identifier)?
+            }
+            PKT_SRC_CHANNEL_ATTRIBUTE_KEY => {
+                packet.source_channel = value.parse().map_err(Error::identifier)?
+            }
+            PKT_DST_PORT_ATTRIBUTE_KEY => {
+                packet.destination_port = value.parse().map_err(Error::identifier)?
+            }
+            PKT_DST_CHANNEL_ATTRIBUTE_KEY => {
+                packet.destination_channel = value.parse().map_err(Error::identifier)?
+            }
+            PKT_SEQ_ATTRIBUTE_KEY => {
+                packet.sequence = value
+                    .parse::<u64>()
+                    .map_err(|e| Error::invalid_string_as_sequence(value.to_string(), e))?
+                    .into()
+            }
+            PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => {
+                packet.timeout_height =
+                    value.parse().map_err(|_| Error::invalid_timeout_height())?
+            }
             PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY => {
                 packet.timeout_timestamp = value.parse().unwrap()
             }
-            PKT_DATA_ATTRIBUTE_KEY => packet.data = Vec::from(value.as_bytes()),
-            PKT_ACK_ATTRIBUTE_KEY => write_ack = Vec::from(value.as_bytes()),
+            PKT_DATA_ATTRIBUTE_KEY => {
+                packet.data = hex::decode(value).map_err(|_| Error::invalid_packet())?
+            }
+            PKT_ACK_ATTRIBUTE_KEY => {
+                write_ack = hex::decode(value).map_err(|_| Error::invalid_acknowledgement())?
+            }
             _ => {}
         };
     }
 
-    (packet, write_ack)
+    Ok((packet, write_ack))
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -258,9 +302,12 @@ impl From<Packet> for Vec<Tag> {
                 .unwrap(),
         };
         attributes.push(timeout_timestamp);
+        let encoded = hex::encode(p.data);
+        let val =
+            String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8");
         let packet_data = Tag {
             key: PKT_DATA_ATTRIBUTE_KEY.parse().unwrap(),
-            value: String::from_utf8(p.data).unwrap().parse().unwrap(),
+            value: val.parse().unwrap(),
         };
         attributes.push(packet_data);
         let ack = Tag {
@@ -678,12 +725,13 @@ impl From<WriteAcknowledgement> for IbcEvent {
 impl From<WriteAcknowledgement> for AbciEvent {
     fn from(v: WriteAcknowledgement) -> Self {
         let mut attributes = Vec::<Tag>::from(v.packet);
+        let encoded = hex::encode(v.ack);
+        let val =
+            String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8");
+        // No actual conversion from string to `Tag::Key` or `Tag::Value`
         let ack = Tag {
             key: PKT_ACK_ATTRIBUTE_KEY.parse().unwrap(),
-            value: String::from_utf8(v.ack)
-                .expect("shouldn't fail")
-                .parse()
-                .unwrap(),
+            value: val.parse().unwrap(),
         };
         attributes.push(ack);
         AbciEvent {

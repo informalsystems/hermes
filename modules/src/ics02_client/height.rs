@@ -139,6 +139,7 @@ impl core::fmt::Display for Height {
 }
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     HeightError {
         HeightConversion
             { height: String }

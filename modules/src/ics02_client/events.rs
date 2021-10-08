@@ -6,6 +6,7 @@ use tendermint::abci::Event as AbciEvent;
 
 use crate::events::{IbcEvent, IbcEventType};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error::Error;
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
@@ -28,50 +29,73 @@ const HEADER_ATTRIBUTE_KEY: &str = "header";
 
 pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
     match event.type_str.parse() {
-        Ok(IbcEventType::CreateClient) => Some(IbcEvent::CreateClient(CreateClient(
-            extract_attributes_from_tx(event),
-        ))),
-        Ok(IbcEventType::UpdateClient) => Some(IbcEvent::UpdateClient(UpdateClient {
-            common: extract_attributes_from_tx(event),
-            header: extract_header_from_tx(event),
-        })),
-        Ok(IbcEventType::ClientMisbehaviour) => Some(IbcEvent::ClientMisbehaviour(
-            ClientMisbehaviour(extract_attributes_from_tx(event)),
-        )),
-        Ok(IbcEventType::UpgradeClient) => Some(IbcEvent::UpgradeClient(UpgradeClient(
-            extract_attributes_from_tx(event),
-        ))),
+        Ok(IbcEventType::CreateClient) => extract_attributes_from_tx(event)
+            .map(CreateClient)
+            .map(IbcEvent::CreateClient)
+            .ok(),
+        Ok(IbcEventType::UpdateClient) => match extract_attributes_from_tx(event) {
+            Ok(attributes) => match extract_header_from_tx(event) {
+                Ok(header) => Some(IbcEvent::UpdateClient(UpdateClient {
+                    common: attributes,
+                    header: Some(header),
+                })),
+                Err(_) => None,
+            },
+            Err(_) => None,
+        },
+        Ok(IbcEventType::ClientMisbehaviour) => extract_attributes_from_tx(event)
+            .map(ClientMisbehaviour)
+            .map(IbcEvent::ClientMisbehaviour)
+            .ok(),
+        Ok(IbcEventType::UpgradeClient) => extract_attributes_from_tx(event)
+            .map(UpgradeClient)
+            .map(IbcEvent::UpgradeClient)
+            .ok(),
         _ => None,
     }
 }
 
-fn extract_attributes_from_tx(event: &AbciEvent) -> Attributes {
+fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
     let mut attr = Attributes::default();
 
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         match key {
-            HEIGHT_ATTRIBUTE_KEY => attr.height = value.parse().unwrap(),
-            CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = value.parse().unwrap(),
-            CLIENT_TYPE_ATTRIBUTE_KEY => attr.client_type = value.parse().unwrap(),
-            CONSENSUS_HEIGHT_ATTRIBUTE_KEY => attr.consensus_height = value.parse().unwrap(),
+            HEIGHT_ATTRIBUTE_KEY => {
+                attr.height = value
+                    .parse()
+                    .map_err(|e| Error::invalid_string_as_height(value.to_string(), e))?
+            }
+            CLIENT_ID_ATTRIBUTE_KEY => {
+                attr.client_id = value.parse().map_err(Error::invalid_client_identifier)?
+            }
+            CLIENT_TYPE_ATTRIBUTE_KEY => {
+                attr.client_type = value
+                    .parse()
+                    .map_err(|_| Error::unknown_client_type(value.to_string()))?
+            }
+            CONSENSUS_HEIGHT_ATTRIBUTE_KEY => {
+                attr.consensus_height = value
+                    .parse()
+                    .map_err(|e| Error::invalid_string_as_height(value.to_string(), e))?
+            }
             _ => {}
         }
     }
 
-    attr
+    Ok(attr)
 }
 
-pub fn extract_header_from_tx(event: &AbciEvent) -> Option<AnyHeader> {
+pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, Error> {
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         if key == HEADER_ATTRIBUTE_KEY {
-            return AnyHeader::decode_from_string(value).ok();
+            return AnyHeader::decode_from_string(value);
         }
     }
-    None
+    Err(Error::missing_raw_header())
 }
 
 /// NewBlock event signals the committing & execution of a new block.

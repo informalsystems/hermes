@@ -5,6 +5,7 @@ use core::num::TryFromIntError;
 use flex_error::{define_error, TraceError};
 
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::height::HeightError;
 use crate::ics07_tendermint::error::Error as Ics07Error;
 use crate::ics23_commitment::error::Error as Ics23Error;
 use crate::ics24_host::error::ValidationError;
@@ -150,6 +151,11 @@ define_error! {
 
         MissingRawMisbehaviour
             | _ | { "missing raw misbehaviour" },
+
+        InvalidStringAsHeight
+            { value: String }
+            [ HeightError ]
+            | e | { format_args!("String {0} cannnot be converted to height", e.value) },
 
         InvalidHeightResult
             | _ | { "height cannot end up zero or negative" },
