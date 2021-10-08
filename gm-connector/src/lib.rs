@@ -75,23 +75,27 @@ impl Connector {
     }
 
     /// Start networks
-    pub fn start(&self, params: Option<Vec<&str>>) -> Option<Error> {
-        Connector::execute_command(&self.gm_path, &self.config, "start", params).err()
+    pub fn start(&self, params: Option<Vec<&str>>) -> Result<(), Error> {
+        Connector::execute_command(&self.gm_path, &self.config, "start", params)?;
+        Ok(())
     }
 
     /// Stop networks
-    pub fn stop(&self, params: Option<Vec<&str>>) -> Option<Error> {
-        Connector::execute_command(&self.gm_path, &self.config, "stop", params).err()
+    pub fn stop(&self, params: Option<Vec<&str>>) -> Result<(), Error> {
+        Connector::execute_command(&self.gm_path, &self.config, "stop", params)?;
+        Ok(())
     }
 
     /// Reset network databases
-    pub fn reset(&self, params: Option<Vec<&str>>) -> Option<Error> {
-        Connector::execute_command(&self.gm_path, &self.config, "reset", params).err()
+    pub fn reset(&self, params: Option<Vec<&str>>) -> Result<(), Error> {
+        Connector::execute_command(&self.gm_path, &self.config, "reset", params)?;
+        Ok(())
     }
 
     /// Remove network configurations
-    pub fn rm(&self, params: Vec<&str>) -> Option<Error> {
-        Connector::execute_command(&self.gm_path, &self.config, "rm", Some(params)).err()
+    pub fn rm(&self, params: Vec<&str>) -> Result<(), Error> {
+        Connector::execute_command(&self.gm_path, &self.config, "rm", Some(params))?;
+        Ok(())
     }
 
     fn decode_simple_message(message: &str) -> Result<String, Error> {
@@ -176,7 +180,7 @@ mod tests {
         let gm = get_gm_with_test_config();
 
         // Start all networks
-        assert!(gm.start(None).is_none());
+        assert!(gm.start(None).is_ok());
 
         // Get network status and endpoints
         let status = gm.get_status().unwrap();
@@ -185,7 +189,7 @@ mod tests {
         assert!(status["node-a"].config_dir.ends_with("node-a"));
 
         // Stop all networks
-        gm.stop(Some(vec!["node-a"]));
-        assert!(gm.stop(None).is_none());
+        gm.stop(Some(vec!["node-a"])).unwrap();
+        assert!(gm.stop(None).is_ok());
     }
 }
