@@ -1,6 +1,7 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use crossbeam_channel as channel;
+use serde::{Serialize, Serializer};
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -37,7 +38,7 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
 
-use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
+use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -71,8 +72,16 @@ impl ProdChainHandle {
 }
 
 impl ChainHandle for ProdChainHandle {
+    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
+        Self::new(chain_id, sender)
+    }
+
     fn id(&self) -> ChainId {
         self.chain_id.clone()
+    }
+
+    fn health_check(&self) -> Result<HealthCheck, Error> {
+        self.send(|reply_to| ChainRequest::HealthCheck { reply_to })
     }
 
     fn shutdown(&self) -> Result<(), Error> {
@@ -83,8 +92,21 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Subscribe { reply_to })
     }
 
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error> {
-        self.send(|reply_to| ChainRequest::SendMsgs {
+    fn send_messages_and_wait_commit(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+    ) -> Result<Vec<IbcEvent>, Error> {
+        self.send(|reply_to| ChainRequest::SendMessagesAndWaitCommit {
+            proto_msgs,
+            reply_to,
+        })
+    }
+
+    fn send_messages_and_wait_check_tx(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
+        self.send(|reply_to| ChainRequest::SendMessagesAndWaitCheckTx {
             proto_msgs,
             reply_to,
         })
@@ -401,5 +423,14 @@ impl ChainHandle for ProdChainHandle {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
         self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
+    }
+}
+
+impl Serialize for ProdChainHandle {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.id().serialize(serializer)
     }
 }

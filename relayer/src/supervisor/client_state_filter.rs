@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use alloc::collections::BTreeMap as HashMap;
 
 use flex_error::define_error;
 use tracing::{debug, trace};
@@ -10,6 +10,7 @@ use ibc::ics04_channel::error::Error as ChannelError;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 
+use crate::chain::handle::ChainHandle;
 use crate::error::Error as RelayerError;
 use crate::object;
 use crate::registry::{Registry, SpawnError};
@@ -30,7 +31,7 @@ impl Permission {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 enum CacheKey {
     Client(ChainId, ClientId),
     Channel(ChainId, PortId, ChannelId),
@@ -73,9 +74,9 @@ impl FilterPolicy {
     ///
     /// May encounter errors caused by failed queries. Any such error
     /// is propagated and nothing is cached.
-    pub fn control_connection_end_and_client(
+    pub fn control_connection_end_and_client<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         chain_id: &ChainId, // Chain hosting the client & connection
         client_state: &AnyClientState,
         connection: &ConnectionEnd,
@@ -182,9 +183,9 @@ impl FilterPolicy {
         permission
     }
 
-    pub fn control_client_object(
+    pub fn control_client_object<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         obj: &object::Client,
     ) -> Result<Permission, FilterError> {
         let identifier = CacheKey::Client(obj.dst_chain_id.clone(), obj.dst_client_id.clone());
@@ -217,9 +218,9 @@ impl FilterPolicy {
         Ok(self.control_client(&obj.dst_chain_id, &obj.dst_client_id, &client_state))
     }
 
-    pub fn control_conn_object(
+    pub fn control_conn_object<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         obj: &object::Connection,
     ) -> Result<Permission, FilterError> {
         let identifier =
@@ -263,9 +264,9 @@ impl FilterPolicy {
         )
     }
 
-    fn control_channel(
+    fn control_channel<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         chain_id: &ChainId,
         port_id: &PortId,
         channel_id: &ChannelId,
@@ -326,9 +327,9 @@ impl FilterPolicy {
         Ok(permission)
     }
 
-    pub fn control_chan_object(
+    pub fn control_chan_object<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         obj: &object::Channel,
     ) -> Result<Permission, FilterError> {
         self.control_channel(
@@ -339,9 +340,9 @@ impl FilterPolicy {
         )
     }
 
-    pub fn control_packet_object(
+    pub fn control_packet_object<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         obj: &object::Packet,
     ) -> Result<Permission, FilterError> {
         self.control_channel(

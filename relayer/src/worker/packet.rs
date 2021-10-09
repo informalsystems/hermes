@@ -1,14 +1,13 @@
-use std::time::Duration;
+use core::time::Duration;
 
 use crossbeam_channel::Receiver;
-use tracing::{error, info, warn};
+use tracing::{error, info, trace, warn};
 
 use crate::{
-    chain::handle::ChainHandlePair,
+    chain::handle::{ChainHandle, ChainHandlePair},
     link::{Link, LinkParameters, RelaySummary},
     object::Packet,
     telemetry,
-    telemetry::Telemetry,
     util::retry::{retry_with_index, RetryResult},
     worker::retry_strategy,
 };
@@ -22,28 +21,28 @@ enum Step {
 }
 
 #[derive(Debug)]
-pub struct PacketWorker {
+pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     path: Packet,
-    chains: ChainHandlePair,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
-    telemetry: Telemetry,
     clear_packets_interval: u64,
+    with_tx_confirmation: bool,
 }
 
-impl PacketWorker {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
     pub fn new(
         path: Packet,
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: Telemetry,
         clear_packets_interval: u64,
+        with_tx_confirmation: bool,
     ) -> Self {
         Self {
             path,
             chains,
             cmd_rx,
-            telemetry,
             clear_packets_interval,
+            with_tx_confirmation,
         }
     }
 
@@ -56,6 +55,7 @@ impl PacketWorker {
                 src_port_id: self.path.src_port_id.clone(),
                 src_channel_id: self.path.src_channel_id.clone(),
             },
+            self.with_tx_confirmation,
         )
         .map_err(RunError::link)?;
 
@@ -77,13 +77,16 @@ impl PacketWorker {
                 recv(crossbeam_channel::after(BACKOFF)) -> _ => None,
             };
 
-            let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
+            let result = retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
                 self.step(maybe_cmd.clone(), &mut link, index)
             });
 
             match result {
-                Ok(Step::Success(_summary)) => {
-                    telemetry!(self.packet_metrics(&_summary));
+                Ok(Step::Success(summary)) => {
+                    if !summary.is_empty() {
+                        trace!("Packet worker produced relay summary: {:?}", summary);
+                    }
+                    telemetry!(self.packet_metrics(&summary));
                 }
 
                 Ok(Step::Shutdown) => {
@@ -98,7 +101,20 @@ impl PacketWorker {
         }
     }
 
-    fn step(&self, cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<Step, u64> {
+    /// Receives worker commands, which may be:
+    ///     - IbcEvent => then it updates schedule
+    ///     - NewBlock => schedules packet clearing
+    ///     - Shutdown => exits
+    ///
+    /// Regardless of the incoming command, this method
+    /// also refreshes and executes any scheduled operational
+    /// data that is ready.
+    fn step(
+        &self,
+        cmd: Option<WorkerCmd>,
+        link: &mut Link<ChainA, ChainB>,
+        index: u64,
+    ) -> RetryResult<Step, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {
                 WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
@@ -136,27 +152,25 @@ impl PacketWorker {
             }
         }
 
-        let result = link
+        if let Err(e) = link
             .a_to_b
             .refresh_schedule()
-            .and_then(|_| link.a_to_b.execute_schedule());
-
-        match result {
-            Ok(summary) => RetryResult::Ok(Step::Success(summary)),
-            Err(e) => {
-                error!(
-                    path = %self.path.short_name(),
-                    "[{}] worker: schedule execution encountered error: {}",
-                    link.a_to_b, e
-                );
-
-                RetryResult::Retry(index)
-            }
+            .and_then(|_| link.a_to_b.execute_schedule())
+        {
+            error!(
+                "[{}] worker: schedule execution encountered error: {}",
+                link.a_to_b, e
+            );
+            return RetryResult::Retry(index);
         }
+
+        let confirmation_result = link.a_to_b.process_pending_txs();
+
+        RetryResult::Ok(Step::Success(confirmation_result))
     }
 
     /// Get a reference to the uni chan path worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 
@@ -182,12 +196,13 @@ impl PacketWorker {
             .filter(|e| matches!(e, WriteAcknowledgement(_)))
             .count();
 
-        self.telemetry.ibc_receive_packets(
+        telemetry!(
+            ibc_receive_packets,
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
             count as u64,
-        )
+        );
     }
 
     #[cfg(feature = "telemetry")]
@@ -200,12 +215,13 @@ impl PacketWorker {
             .filter(|e| matches!(e, AcknowledgePacket(_)))
             .count();
 
-        self.telemetry.ibc_acknowledgment_packets(
+        telemetry!(
+            ibc_acknowledgment_packets,
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
             count as u64,
-        )
+        );
     }
 
     #[cfg(feature = "telemetry")]
@@ -217,11 +233,12 @@ impl PacketWorker {
             .filter(|e| matches!(e, TimeoutPacket(_)))
             .count();
 
-        self.telemetry.ibc_timeout_packets(
+        telemetry!(
+            ibc_timeout_packets,
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
             count as u64,
-        )
+        );
     }
 }

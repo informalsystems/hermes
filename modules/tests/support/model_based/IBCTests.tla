@@ -16,12 +16,20 @@ ICS02ClientNotFoundTest ==
 ICS02HeaderVerificationFailureTest ==
     /\ actionOutcome = "Ics02HeaderVerificationFailure"
 
+\* ICS07UpgradeClient tests
+ICS07UpgradeOkTest ==
+    /\ actionOutcome = "Ics07UpgradeOk"
+
+ICS07ClientNotFoundTest ==
+    /\ actionOutcome = "Ics07ClientNotFound"
+
+ICS07HeaderVerificationFailureTest ==
+    /\ actionOutcome = "Ics07HeaderVerificationFailure"
+
+
 \* ICS03ConnectionOpenInit tests
 ICS03ConnectionOpenInitOKTest ==
     /\ actionOutcome = "Ics03ConnectionOpenInitOk"
-
-ICS03MissingClientTest ==
-    /\ actionOutcome = "Ics03MissingClient"
 
 \* ICS03ConnectionOpenTry tests
 ICS03ConnectionOpenTryOKTest ==
@@ -36,9 +44,6 @@ ICS03ConnectionNotFoundTest ==
 ICS03ConnectionMismatchTest ==
     /\ actionOutcome = "Ics03ConnectionMismatch"
 
-ICS03MissingClientConsensusStateTest ==
-    /\ actionOutcome = "Ics03MissingClientConsensusState"
-
 \* TODO: the following test should fail but doesn't because proofs are not yet
 \*       verified in the implementation
 \* ICS03InvalidProofTest ==
@@ -48,11 +53,7 @@ ICS03MissingClientConsensusStateTest ==
 ICS03ConnectionOpenAckOKTest ==
     /\ actionOutcome = "Ics03ConnectionOpenAckOk"
 
-ICS03UninitializedConnectionTest ==
-    /\ actionOutcome = "Ics03UninitializedConnection"
-
 \* ICS03ConnectionOpenConfirm tests
 ICS03ConnectionOpenConfirmOKTest ==
     /\ actionOutcome = "Ics03ConnectionOpenConfirmOk"
-
 ===============================================================================

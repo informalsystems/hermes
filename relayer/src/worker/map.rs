@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use alloc::collections::btree_map::BTreeMap as HashMap;
 
 use crossbeam_channel::Sender;
 
@@ -10,7 +10,6 @@ use crate::{
     config::Config,
     object::Object,
     telemetry,
-    telemetry::Telemetry,
 };
 
 use super::{Worker, WorkerHandle, WorkerId, WorkerMsg};
@@ -21,18 +20,16 @@ pub struct WorkerMap {
     workers: HashMap<Object, WorkerHandle>,
     latest_worker_id: WorkerId,
     msg_tx: Sender<WorkerMsg>,
-    telemetry: Telemetry,
 }
 
 impl WorkerMap {
     /// Create a new worker map, which will spawn workers with
     /// the given channel for sending messages back to the [`Supervisor`].
-    pub fn new(msg_tx: Sender<WorkerMsg>, telemetry: Telemetry) -> Self {
+    pub fn new(msg_tx: Sender<WorkerMsg>) -> Self {
         Self {
             workers: HashMap::new(),
             latest_worker_id: WorkerId::new(0),
             msg_tx,
-            telemetry,
         }
     }
 
@@ -46,7 +43,7 @@ impl WorkerMap {
     pub fn remove_stopped(&mut self, id: WorkerId, object: Object) -> bool {
         match self.workers.remove(&object) {
             Some(handle) if handle.id() == id => {
-                telemetry!(self.telemetry.worker(metric_type(&object), -1));
+                telemetry!(worker, metric_type(&object), -1);
 
                 let id = handle.id();
 
@@ -106,11 +103,11 @@ impl WorkerMap {
     /// with the given [`Object`].
     ///
     /// This function will spawn a new [`Worker`] if one does not exists already.
-    pub fn get_or_spawn(
+    pub fn get_or_spawn<Chain: ChainHandle + 'static>(
         &mut self,
         object: Object,
-        src: Box<dyn ChainHandle>,
-        dst: Box<dyn ChainHandle>,
+        src: Chain,
+        dst: Chain,
         config: &Config,
     ) -> &WorkerHandle {
         if self.workers.contains_key(&object) {
@@ -124,10 +121,10 @@ impl WorkerMap {
     /// Spawn a new [`Worker`], only if one does not exists already.
     ///
     /// Returns whether or not the worker was actually spawned.
-    pub fn spawn(
+    pub fn spawn<Chain: ChainHandle + 'static>(
         &mut self,
-        src: Box<dyn ChainHandle>,
-        dst: Box<dyn ChainHandle>,
+        src: Chain,
+        dst: Chain,
         object: &Object,
         config: &Config,
     ) -> bool {
@@ -141,21 +138,20 @@ impl WorkerMap {
     }
 
     /// Force spawn a worker for the given [`Object`].
-    fn spawn_worker(
+    fn spawn_worker<Chain: ChainHandle + 'static>(
         &mut self,
-        src: Box<dyn ChainHandle>,
-        dst: Box<dyn ChainHandle>,
+        src: Chain,
+        dst: Chain,
         object: &Object,
         config: &Config,
     ) -> WorkerHandle {
-        telemetry!(self.telemetry.worker(metric_type(object), 1));
+        telemetry!(worker, metric_type(object), 1);
 
         Worker::spawn(
             ChainHandlePair { a: src, b: dst },
             self.next_worker_id(),
             object.clone(),
             self.msg_tx.clone(),
-            self.telemetry.clone(),
             config,
         )
     }
@@ -187,7 +183,7 @@ impl WorkerMap {
     /// Shutdown the worker associated with the given [`Object`].
     pub fn shutdown_worker(&mut self, object: &Object) {
         if let Some(handle) = self.workers.remove(object) {
-            telemetry!(self.telemetry.worker(metric_type(object), -1));
+            telemetry!(worker, metric_type(object), -1);
 
             match handle.shutdown() {
                 Ok(()) => {

@@ -1,4 +1,5 @@
-use std::fmt;
+use core::fmt;
+use core::iter;
 use std::time::Instant;
 
 use prost_types::Any;
@@ -7,6 +8,7 @@ use tracing::{info, warn};
 use ibc::events::IbcEvent;
 use ibc::Height;
 
+use crate::chain::handle::ChainHandle;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
 
@@ -66,16 +68,17 @@ impl OperationalData {
 
     /// Returns all the messages in this operational data, plus prepending the client update message
     /// if necessary.
-    pub fn assemble_msgs(&self, relay_path: &RelayPath) -> Result<Vec<Any>, LinkError> {
+    pub fn assemble_msgs<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        relay_path: &RelayPath<ChainA, ChainB>,
+    ) -> Result<Vec<Any>, LinkError> {
         if self.batch.is_empty() {
             warn!("assemble_msgs() method call on an empty OperationalData!");
             return Ok(vec![]);
         }
 
-        let mut msgs: Vec<Any> = self.batch.iter().map(|gm| gm.msg.clone()).collect();
-
         // For zero delay we prepend the client update msgs.
-        if relay_path.zero_delay() {
+        let client_update_msg = if relay_path.zero_delay() {
             let update_height = self.proofs_height.increment();
 
             info!(
@@ -94,10 +97,17 @@ impl OperationalData {
                 }
             };
 
-            if let Some(client_update) = client_update_opt.pop() {
-                msgs.insert(0, client_update);
-            }
-        }
+            client_update_opt.pop()
+        } else {
+            None
+        };
+
+        let msgs: Vec<Any> = match client_update_msg {
+            Some(client_update) => iter::once(client_update)
+                .chain(self.batch.iter().map(|gm| gm.msg.clone()))
+                .collect(),
+            None => self.batch.iter().map(|gm| gm.msg.clone()).collect(),
+        };
 
         info!(
             "[{}] assembled batch of {} message(s)",

@@ -1,7 +1,7 @@
 //! Definition of domain type message `MsgUpdateAnyClient`.
 
-use std::convert::TryFrom;
-
+use crate::prelude::*;
+use core::convert::TryFrom;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
@@ -13,7 +13,7 @@ use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
-pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
+pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound when possible
@@ -77,7 +77,7 @@ impl From<MsgUpdateAnyClient> for RawMsgUpdateClient {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient;

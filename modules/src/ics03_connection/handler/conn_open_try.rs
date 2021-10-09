@@ -10,6 +10,7 @@ use crate::ics03_connection::handler::verify::{check_client_consensus_height, ve
 use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use crate::ics24_host::identifier::ConnectionId;
+use crate::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
@@ -24,9 +25,7 @@ pub(crate) fn process(
     let (mut new_connection_end, conn_id) = match msg.previous_connection_id() {
         // A connection with this id should already exist. Search & validate.
         Some(prev_id) => {
-            let old_connection_end = ctx
-                .connection_end(prev_id)
-                .ok_or_else(|| Error::connection_not_found(prev_id.clone()))?;
+            let old_connection_end = ctx.connection_end(prev_id)?;
 
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_connection_end.state_matches(&State::Init)
@@ -55,7 +54,7 @@ pub(crate) fn process(
                 msg.counterparty_versions(),
                 msg.delay_period,
             );
-            let id_counter = ctx.connection_counter();
+            let id_counter = ctx.connection_counter()?;
             let conn_id = ConnectionId::new(id_counter);
 
             output.log(format!(
@@ -89,10 +88,8 @@ pub(crate) fn process(
     new_connection_end.set_state(State::TryOpen);
 
     // Pick the version.
-    new_connection_end.set_version(
-        ctx.pick_version(ctx.get_compatible_versions(), msg.counterparty_versions())
-            .ok_or_else(Error::no_common_version)?,
-    );
+    new_connection_end
+        .set_version(ctx.pick_version(ctx.get_compatible_versions(), msg.counterparty_versions())?);
 
     assert_eq!(new_connection_end.versions().len(), 1);
 
@@ -119,7 +116,8 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use crate::prelude::*;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     use crate::events::IbcEvent;

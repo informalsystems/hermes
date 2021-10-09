@@ -6,6 +6,8 @@ use ibc::{
     ics02_client::height::Height,
     ics24_host::identifier::{ChainId, ChannelId, PortId},
 };
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::transfer::Amount;
 use ibc_relayer::{
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
@@ -35,7 +37,7 @@ pub struct TxIcs20MsgTransferCmd {
         required,
         help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
-    amount: u64,
+    amount: Amount,
 
     #[options(help = "timeout in number of blocks since current", short = "o")]
     timeout_height_offset: u64,
@@ -69,7 +71,10 @@ pub struct TxIcs20MsgTransferCmd {
 impl Override<Config> for TxIcs20MsgTransferCmd {
     fn override_config(&self, mut config: Config) -> Result<Config, abscissa_core::FrameworkError> {
         let src_chain_config = config.find_chain_mut(&self.src_chain_id).ok_or_else(|| {
-            FrameworkErrorKind::ComponentError.context("missing src chain configuration")
+            FrameworkErrorKind::ComponentError.context(format!(
+                "missing configuration for source chain '{}'",
+                self.src_chain_id
+            ))
         })?;
 
         if let Some(ref key_name) = self.key {
@@ -85,13 +90,19 @@ impl TxIcs20MsgTransferCmd {
         &self,
         config: &Config,
     ) -> Result<TransferOptions, Box<dyn std::error::Error>> {
-        let src_chain_config = config
-            .find_chain(&self.src_chain_id)
-            .ok_or("missing src chain configuration")?;
+        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
+            format!(
+                "missing configuration for source chain '{}'",
+                self.src_chain_id
+            )
+        })?;
 
-        let dest_chain_config = config
-            .find_chain(&self.dst_chain_id)
-            .ok_or("missing destination chain configuration")?;
+        let dest_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
+            format!(
+                "missing configuration for destination chain '{}'",
+                self.dst_chain_id
+            )
+        })?;
 
         let denom = self.denom.clone();
 
@@ -115,7 +126,7 @@ impl TxIcs20MsgTransferCmd {
             denom,
             receiver: self.receiver.clone(),
             timeout_height_offset: self.timeout_height_offset,
-            timeout_seconds: std::time::Duration::from_secs(self.timeout_seconds),
+            timeout_seconds: core::time::Duration::from_secs(self.timeout_seconds),
             number_msgs,
         };
 
@@ -157,7 +168,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
                 self.src_chain_id,
                 channel_end_src.state
             ))
-            .exit();
+                .exit();
         }
 
         let conn_id = match channel_end_src.connection_hops.first() {
@@ -166,7 +177,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
                     "could not retrieve the connection hop underlying port/channel '{}'/'{}' on chain '{}'",
                     opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
                 ))
-                .exit()
+                    .exit();
             }
             Some(cid) => cid,
         };

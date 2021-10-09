@@ -12,6 +12,7 @@ use crate::ics04_channel::packet::Sequence;
 use crate::ics07_tendermint::client_def::TendermintClient;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::prelude::*;
 use crate::Height;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -38,7 +39,7 @@ pub trait ClientDef: Clone {
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
 
     /// Verification functions as specified in:
-    /// <https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics>
+    /// <https://github.com/cosmos/ibc/tree/master/spec/ics-002-client-semantics>
     ///
     /// Verify a `proof` that the consensus state of a given client (at height `consensus_height`)
     /// matches the input `consensus_state`. The parameter `counterparty_height` represent the

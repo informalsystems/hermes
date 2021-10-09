@@ -1,16 +1,24 @@
 use super::packet::Sequence;
 use crate::ics02_client::error as client_error;
+use crate::ics03_connection::error as connection_error;
 use crate::ics04_channel::channel::State;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::prelude::*;
 use crate::proofs::ProofError;
 use crate::timestamp::Timestamp;
 use crate::Height;
+
 use flex_error::{define_error, TraceError};
 use tendermint_proto::Error as TendermintError;
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     Error {
+        Ics03Connection
+            [ connection_error::Error ]
+            | _ | { "ics03 connection error" },
+
         UnknownState
             { state: i32 }
             | e | { format_args!("channel state unknown: {}", e.state) },
@@ -57,7 +65,12 @@ define_error! {
             | _ | { "invalid proof: missing height" },
 
         MissingNextRecvSeq
-            | _ | { "Missing sequence number for receiving packets" },
+            { port_channel_id: (PortId, ChannelId) }
+            | e | {
+                format_args!("Missing sequence number for receiving packets on port {0} and channel {1}",
+                             e.port_channel_id.0,
+                             e.port_channel_id.1)
+            },
 
         ZeroPacketSequence
             | _ | { "packet sequence cannot be 0" },
@@ -93,14 +106,6 @@ define_error! {
 
         MissingChannel
             | _ | { "missing channel end" },
-
-        MissingConnection
-            { connection_id: ConnectionId }
-            | e | {
-                format_args!(
-                    "given connection hop {0} does not exist",
-                    e.connection_id)
-            },
 
         NoPortCapability
             { port_id: PortId }
@@ -177,20 +182,17 @@ define_error! {
                     e.sequence)
             },
 
-        MissingClientState
-            { client_id: ClientId }
-            | e | {
-                format_args!(
-                    "No client state associated with client id {0}",
-                    e.client_id)
-            },
-
         MissingNextSendSeq
-            | _ | { "Missing sequence number for send packets" },
+            { port_channel_id: (PortId, ChannelId) }
+            | e | {
+                format_args!("Missing sequence number for sending packets on port {0} and channel {1}",
+                             e.port_channel_id.0,
+                             e.port_channel_id.1)
+            },
 
         InvalidStringAsSequence
             { value: String }
-            [ TraceError<std::num::ParseIntError> ]
+            [ TraceError<core::num::ParseIntError> ]
             | e | {
                 format_args!(
                     "String {0} cannot be converted to packet sequence",
@@ -245,7 +247,7 @@ define_error! {
             | _ | { "Receiving chain block timestamp >= packet timeout timestamp" },
 
         InvalidPacketTimestamp
-            [ TraceError<std::num::TryFromIntError> ]
+            [ TraceError<core::num::TryFromIntError> ]
             | _ | { "Invalid packet timeout timestamp value" },
 
         ErrorInvalidConsensusState
@@ -258,20 +260,10 @@ define_error! {
                     "Client with id {0} is frozen",
                     e.client_id)
             },
-        MissingClientConsensusState
-            { client_id: ClientId, height: Height }
-            | e | {
-                format_args!(
-                    "Missing client consensus state for client id {0} at height {1}",
-                    e.client_id, e.height)
-            },
 
         InvalidCounterpartyChannelId
             [ ValidationError ]
             | _ | { "Invalid channel id in counterparty" },
-
-        ClientNotFound
-            | _ | { "Client not found in chan open verification" },
 
         InvalidChannelState
             { channel_id: ChannelId, state: State }
@@ -308,9 +300,32 @@ define_error! {
                     e.sequence)
             },
 
-        MissingNextAckSeq
-            | _ | { "Missing sequence number for ack packets" },
+        PacketReceiptNotFound
+            { sequence: Sequence }
+            | e | {
+                format_args!(
+                    "Receipt for the packet {0} not found",
+                    e.sequence)
+            },
 
+        PacketAcknowledgementNotFound
+            { sequence: Sequence }
+            | e | {
+                format_args!(
+                    "Acknowledgment for the packet {0} not found",
+                    e.sequence)
+            },
+
+        MissingNextAckSeq
+            { port_channel_id: (PortId, ChannelId) }
+            | e | {
+                format_args!("Missing sequence number for ack packets on port {0} and channel {1}",
+                             e.port_channel_id.0,
+                             e.port_channel_id.1)
+            },
+
+        ImplementationSpecific
+            | _ | { "implementation specific error" },
     }
 }
 

@@ -27,10 +27,9 @@ pub struct CompileCmd {
 
 impl CompileCmd {
     pub fn run(&self) {
-        let with_ibc = self.ibc.is_none();
         let tmp_sdk = TempDir::new("ibc-proto-sdk").unwrap();
         Self::output_version(&self.sdk, tmp_sdk.as_ref(), "COSMOS_SDK_COMMIT");
-        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref(), with_ibc);
+        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref(), self.ibc.clone());
 
         match &self.ibc {
             None => {
@@ -121,7 +120,7 @@ impl CompileCmd {
         }
     }
 
-    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, with_ibc: bool) {
+    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>) {
         println!(
             "[info ] Compiling Cosmos-SDK .proto files to Rust into '{}'...",
             out_dir.display()
@@ -130,7 +129,7 @@ impl CompileCmd {
         let root = env!("CARGO_MANIFEST_DIR");
 
         // Paths
-        let mut proto_paths = vec![
+        let proto_paths = vec![
             format!("{}/../proto/definitions/mock", root),
             format!("{}/proto/cosmos/auth", sdk_dir.display()),
             format!("{}/proto/cosmos/gov", sdk_dir.display()),
@@ -140,16 +139,17 @@ impl CompileCmd {
             format!("{}/proto/cosmos/upgrade", sdk_dir.display()),
         ];
 
-        if with_ibc {
-            // Use the IBC proto files from the SDK
-            proto_paths.push(format!("{}/proto/ibc", sdk_dir.display()));
-        }
 
-        let proto_includes_paths = [
+        let mut proto_includes_paths = vec![
             format!("{}/../proto", root),
             format!("{}/proto", sdk_dir.display()),
             format!("{}/third_party/proto", sdk_dir.display()),
         ];
+
+        if let Some(ibc_dir) = ibc_dep {
+            // Use the IBC proto files from the SDK
+            proto_includes_paths.push(format!("{}/proto", ibc_dir.display()),);
+        }
 
         // List available proto files
         let mut protos: Vec<PathBuf> = vec![];

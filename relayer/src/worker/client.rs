@@ -1,4 +1,5 @@
-use std::{thread, time::Duration};
+use core::time::Duration;
+use std::{thread, time::Instant};
 
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, trace, warn};
@@ -6,37 +7,31 @@ use tracing::{debug, info, trace, warn};
 use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 
 use crate::{
-    chain::handle::ChainHandlePair,
+    chain::handle::{ChainHandle, ChainHandlePair},
     foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
     object::Client,
     telemetry,
-    telemetry::Telemetry,
 };
 
 use super::error::RunError;
 use super::WorkerCmd;
 
-pub struct ClientWorker {
+pub struct ClientWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     client: Client,
-    chains: ChainHandlePair,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
-
-    #[allow(dead_code)]
-    telemetry: Telemetry,
 }
 
-impl ClientWorker {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
     pub fn new(
         client: Client,
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: Telemetry,
     ) -> Self {
         Self {
             client,
             chains,
             cmd_rx,
-            telemetry,
         }
     }
 
@@ -56,31 +51,40 @@ impl ClientWorker {
         // initial check for evidence of misbehaviour for all updates
         let skip_misbehaviour = self.detect_misbehaviour(&client, None);
 
+        // remember the time of the last refresh so we backoff
+        let mut last_refresh = Instant::now() - Duration::from_secs(61);
+
         loop {
             thread::sleep(Duration::from_millis(600));
 
-            // Run client refresh, exit only if expired or frozen
-            match client.refresh() {
-                Ok(Some(_)) => {
-                    telemetry! {
-                        self.telemetry.ibc_client_update(
+            // Clients typically need refresh every 2/3 of their
+            // trusting period (which can e.g., two weeks).
+            // Backoff refresh checking to attempt it every minute.
+            if last_refresh.elapsed() > Duration::from_secs(60) {
+                // Run client refresh, exit only if expired or frozen
+                match client.refresh() {
+                    Ok(Some(_)) => {
+                        telemetry!(
+                            ibc_client_update,
                             &self.client.dst_chain_id,
                             &self.client.dst_client_id,
                             1
-                        )
-                    };
-                }
-                Err(e) => {
-                    if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
-                        warn!("failed to refresh client '{}': {}", client, e);
-
-                        // This worker has completed its job as the client cannot be refreshed any
-                        // further, and can therefore exit without an error.
-                        return Ok(());
+                        );
                     }
-                }
-                _ => (),
-            };
+                    Err(e) => {
+                        if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
+                            warn!("failed to refresh client '{}': {}", client, e);
+
+                            // This worker has completed its job as the client cannot be refreshed any
+                            // further, and can therefore exit without an error.
+                            return Ok(());
+                        }
+                    }
+                    _ => (),
+                };
+
+                last_refresh = Instant::now();
+            }
 
             if skip_misbehaviour {
                 continue;
@@ -97,7 +101,7 @@ impl ClientWorker {
         Ok(())
     }
 
-    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient) -> Next {
+    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient<ChainB, ChainA>) -> Next {
         match cmd {
             WorkerCmd::IbcEvents { batch } => {
                 trace!("[{}] worker received batch: {:?}", client, batch);
@@ -109,13 +113,12 @@ impl ClientWorker {
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
                         if self.detect_misbehaviour(client, Some(update)) {
-                            telemetry! {
-                                self.telemetry.ibc_client_misbehaviour(
-                                    &self.client.dst_chain_id,
-                                    &self.client.dst_client_id,
-                                    1
-                                )
-                            };
+                            telemetry!(
+                                ibc_client_misbehaviour,
+                                &self.client.dst_chain_id,
+                                &self.client.dst_client_id,
+                                1
+                            );
                         }
                     }
                 }
@@ -130,7 +133,11 @@ impl ClientWorker {
         }
     }
 
-    fn detect_misbehaviour(&self, client: &ForeignClient, update: Option<UpdateClient>) -> bool {
+    fn detect_misbehaviour(
+        &self,
+        client: &ForeignClient<ChainB, ChainA>,
+        update: Option<UpdateClient>,
+    ) -> bool {
         match client.detect_misbehaviour_and_submit_evidence(update) {
             MisbehaviourResults::ValidClient => false,
             MisbehaviourResults::VerificationError => {
@@ -150,7 +157,7 @@ impl ClientWorker {
     }
 
     /// Get a reference to the client worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 

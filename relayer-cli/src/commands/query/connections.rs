@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use alloc::sync::Arc;
 
 use abscissa_core::{Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics24_host::identifier::{ChainId, ConnectionId};
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use ibc_relayer::chain::{Chain, CosmosSdkChain};
+use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::Output;
 use crate::prelude::*;

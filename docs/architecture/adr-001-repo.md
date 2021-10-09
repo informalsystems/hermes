@@ -8,7 +8,7 @@
 
 This document provides a basic rundown of the structure of this repository, plus some plans for its evolution.
 
-This repository comprises a Rust implementation of the [IBC](https://github.com/cosmos/ics) suite of protocols.
+This repository comprises a Rust implementation of the [IBC](https://github.com/cosmos/ibc) suite of protocols.
 To complement this implementation, this repository also comprises specifications, primarily written in TLA+, and
 sometimes in English.
 
@@ -68,7 +68,7 @@ such as `SignedHeader`, `Validator`, or `ValidatorSet`.
 
 #### Crate `relayer-modules`
 
-The [canonical IBC specification](https://github.com/cosmos/ics/tree/master/spec/) is modular in the sense of grouping
+The [canonical IBC specification](https://github.com/cosmos/ibc/tree/master/spec/) is modular in the sense of grouping
 different components of the specification in modules; for instance, specification _ICS03_ pertains to the abstraction of 
 IBC connections and the IBC connection handshake protocol, while _ICS04_ pertains to IBC channels and packets.
 We group the code in this crate to reflect the modular separation in the canonical IBC specification.
@@ -115,7 +115,7 @@ See the details for the crate `ibc-proto` [below](#crate-ibc-proto).
 #### Crate `ibc_proto`
 
 The `ibc-proto` library gives a developer access to the Cosmos SDK IBC proto-defined structs directly in Rust.
-The canonical IBC structs reside presently in [cosmos-sdk](https://github.com/cosmos/cosmos-sdk/tree/master/proto/ibc),
+The canonical IBC structs reside presently in [cosmos-sdk](https://github.com/cosmos/ibc-go/tree/main/proto/ibc),
 defined in a proto3 syntax.
 We compile these structs via prost directly to .rs files and import them into the other crates typically under the same
 name prefixed with "Raw", for example:
@@ -158,13 +158,13 @@ For the IBC relayer:
 - A first implementation of the IBC relayer in Golang is under active development at
 [iqlusioninc/relayer](https://github.com/iqlusioninc/relayer).
 - The English specification of the relayer algorithm is captured in the
-[ICS018](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms) spec.
+[ICS018](https://github.com/cosmos/ibc/tree/master/spec/relayer/ics-018-relayer-algorithms) spec.
 
 For IBC modules:
 
-- A Golang implementation of IBC modules is under active development as part of the Cosmos SDK,
-at [cosmos/cosmos-sdk/x/ibc](https://github.com/cosmos/cosmos-sdk/tree/master/x/ibc).
-- The English specifications for IBC modules reside in [cosmos/ics](https://github.com/cosmos/ics/tree/master/spec).
+- A Golang implementation of IBC modules is under active development
+at [cosmos/ibc-go](https://github.com/cosmos/ibc-go/tree/main/modules).
+- The English specifications for IBC modules reside in [cosmos/ibc](https://github.com/cosmos/ibc/tree/master/spec).
 
 ## Status
 

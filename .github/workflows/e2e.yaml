@@ -2,6 +2,7 @@ name: End to End testing
 on:
   pull_request:
     paths:
+      - .github/workflows/e2e.yaml
       - Cargo.toml
       - ci/**
       - e2e/**
@@ -9,9 +10,12 @@ on:
       - modules/**
       - relayer/**
       - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
   push:
     branches: master
     paths:
+      - .github/workflows/e2e.yaml
       - Cargo.toml
       - ci/**
       - e2e/**
@@ -19,6 +23,16 @@ on:
       - modules/**
       - relayer/**
       - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 1
+  CARGO_PROFILE_RELEASE_DEBUG: 1
+  RUST_BACKTRACE: short
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
 
 jobs:
   test-end-to-end:
@@ -29,6 +43,7 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         with:
           command: build

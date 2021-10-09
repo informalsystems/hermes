@@ -16,6 +16,8 @@
 //!
 //! [Hermes]: https://docs.rs/ibc-relayer-cli/0.2.0/
 
+extern crate alloc;
+
 pub mod chain;
 pub mod channel;
 pub mod config;
@@ -29,6 +31,7 @@ pub mod link;
 pub mod macros;
 pub mod object;
 pub mod registry;
+pub mod rest;
 pub mod sdk_error;
 pub mod supervisor;
 pub mod telemetry;

@@ -2,7 +2,7 @@
 
 This document describes the TLA+ model of the core logic of the English
 specification [ICS
-20](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer). We
+20](https://github.com/cosmos/ibc/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer). We
 start by discussing [the model of the
 protocol](#the-model-of-the-protocol).
  Then this document provides links to our TLA+ formalization of [Properties and
@@ -24,16 +24,16 @@ modules](#helper-modules).
 ### Port and Channel Setup and Channel lifecycle management
 
 
-In the model we assume that the [`setup()`](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#port--channel-setup) function has been called
+In the model we assume that the [`setup()`](https://github.com/cosmos/ibc/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#port--channel-setup) function has been called
 before. The [channel handshake
-functions](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#channel-lifecycle-management)
+functions](https://github.com/cosmos/ibc/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#channel-lifecycle-management)
 are also considered being already executed. Our
 model starts from a state where the channel handshake has completed
 successfully. 
 
 ### Packet Relay
 
-The [core callback functions](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transferr#packet-relay)
+The [core callback functions](https://github.com/cosmos/ibc/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#packet-relay)
 `createOutgoingPacket()`, `onRecvPacket()`, `onRecvPacket()` and 
 	`onTimeoutPacket()`, as well as the auxiliary function `refundTokens()`
 	are modeled in
@@ -53,7 +53,7 @@ discussed here. We will discuss it the last.
 
 This module captures the functions
 specifying packet flow and handling from [ICS
-04](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics). 
+04](https://github.com/cosmos/ibc/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics). 
 
 #### [Bank.tla](Bank.tla) 
 The bank module encodes functions defined by the Cosmos bank
@@ -113,7 +113,7 @@ Next ==
 ### Properties and invariants
 
 The English specification provides informal requirements as "[desired properties](
-https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#desired-properties)".
+https://github.com/cosmos/ibc/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#desired-properties)".
 
 #### Preservation of fungibility
 
@@ -124,7 +124,7 @@ on chain B wants to return them, then the tokens can be returned.
 
 For this we require the assumption (which is somewhat implicit it
  its [correctness
-argument](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#correctness)) that the source chain only performs valid transitions.
+argument](https://github.com/cosmos/ibc/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#correctness)) that the source chain only performs valid transitions.
 
 This is implemented in the property `ICS20Prop` in the file [IBCTokenTransfer.tla](IBCTokenTransfer.tla).
 
@@ -205,7 +205,7 @@ To import the specification in the TLA+ toolbox and run TLC:
 We ran TLC using the constants defined in `IBCTokenTransfer.cfg` and verified the invariants `TypeOK` and `ICS20Inv` in 1min21s and the property `ICS20Prop` in 9min34s.
 We note that the specification currently models two transfers: one from `ChainA` to `ChainB`, and vice versa, in their respective native denominations.  
 Both chains are correct, and there is no malicious relayer. 
-The relayer implements the logic from [ICS 18](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-018-relayer-algorithms), in particular, it does not 
+The relayer implements the logic from [ICS 18](https://github.com/cosmos/ibc/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-018-relayer-algorithms), in particular, it does not 
 relay timeouts. 
 However, the packet timeout handlers are specified in [`ICS04PacketHandlers.tla`](ICS04PacketHandlers.tla)
 for future use.

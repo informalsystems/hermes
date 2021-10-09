@@ -6,6 +6,13 @@ This folder contains the files required to run the End to end testing in [Github
 
 The [End to end (e2e) testing workflow](https://github.com/informalsystems/ibc-rs/actions?query=workflow%3A%22End+to+End+testing%22) spins up two `gaia` chains (`ibc-0` and `ibc-1`) in Docker containers and one container that runs the relayer. There's a script that configures the relayer (e.g. configure light clients and add keys) and runs transactions and queries. A successful run of this script ensures that the relayer is working properly with two chains that support `IBC`.
 
+### Testing Ethermint-based networks
+At this moment, the automated E2E workflow does not spin up a network with the (post-Stargate) Ethermint module. In the meantime, you can test it manually by following one of the resources below:
+
+- [the official documentation on ethermint.dev](https://docs.ethermint.zone/quickstart/run_node.html)
+- [using the tweaked E2E scripts from the Injective's fork](https://github.com/InjectiveLabs/ibc-rs/commit/669535617a6e45be9916387e292d45a77e7d23d2)
+- [using the nix-based integration test scripts in the Cronos project](https://github.com/crypto-org-chain/cronos#quitck-start)
+
 ### Running an End to end (e2e) test locally
 
 If you want to run the end to end test locally, you will need [Docker](https://www.docker.com/) installed on your machine.
@@ -163,7 +170,10 @@ Removing network ibc-rs_relaynet
 
 ### [Upgrading the gaia chains release and generating new container images](#upgrading-chains)
 
-The repository stores the files used to configure and build the chains for the containers. For example, the files for a `gaia` chain release `v3.0.0` can be seen [here](./chains/gaia)
+The repository stores the files used to configure and build the chains for the containers. For example, the files for a `gaia` chain release `v5.0.0` can be seen [here](./chains/gaia)
+
+> Note: Please ensure you have gaiad installed on your machine and it matches the version that you're trying to upgrade.
+> You can check but running `gaiad version` in your machine
 
 If you need to generate configuration files for a new gaia release and new containers, please follow the steps below:
 
@@ -172,8 +182,8 @@ If you need to generate configuration files for a new gaia release and new conta
     `cd ci`
 
 
-2. Open the `build-ibc-chains.sh` file and change the release. Just replace the value for the `GAIA_BRANCH` parameter. For example to set it to release `v3.0.0` use:
-    `GAIA_BRANCH="v3.0.0"`
+2. Open the `build-ibc-chains.sh` file and change the release. Just replace the value for the `GAIA_BRANCH` parameter. For example to set it to release `v5.0.0` use:
+    `GAIA_BRANCH="v5.0.0"`
 
 
 3. Run the `build-ibc-chains.sh` script:
@@ -187,17 +197,17 @@ __Note__: This will generate the files for the chains in the `/ci/chains/gaia` f
 4. Committing the release files. **You have to** add the new chain files generated to the ibc-rs repository, just `git commit` the files, otherwise the CI might fail because private keys don't match.
 
 
-5. Update the release for Docker Compose. If this new release should be the default release for running the end to end (e2e) test you need to update the release version in the `docker-compose.yml` file in the `ci` folder of the repository. Open the file and change the release version in all the places required (image name and RELEASE variables. For example, if current release is `v3.0.0` and the new one is `v4.0.0` just do a find and replace with these two values.
+5. Update the release for Docker Compose. If this new release should be the default release for running the end to end (e2e) test you need to update the release version in the `docker-compose.yml` file in the `ci` folder of the repository. Open the file and change the release version in all the places required (image name and RELEASE variables. For example, if current release is `v4.0.0` and the new one is `v5.0.0` just do a find and replace with these two values.
    
 Change the version in the image for ibc-0 and ibc-1 services:
    
    ```
-   image: "informaldev/ibc-0:v4.1.0"
+   image: "informaldev/ibc-0:v4.0.0"
    ```
    
 And in the relayer service:
 
    ```
       args:
-        RELEASE: v4.1.0
+        RELEASE: v4.0.0
    ```

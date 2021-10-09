@@ -1,10 +1,14 @@
-use std::fmt;
+use core::fmt;
 
 use crossbeam_channel::Sender;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info};
 
-use crate::{chain::handle::ChainHandlePair, config::Config, object::Object, telemetry::Telemetry};
+use crate::{
+    chain::handle::{ChainHandle, ChainHandlePair},
+    config::Config,
+    object::Object,
+};
 
 pub mod retry_strategy;
 
@@ -58,27 +62,28 @@ pub enum WorkerMsg {
 }
 
 /// A worker processes batches of events associated with a given [`Object`].
-pub enum Worker {
-    Client(WorkerId, ClientWorker),
-    Connection(WorkerId, ConnectionWorker),
-    Channel(WorkerId, ChannelWorker),
-    Packet(WorkerId, PacketWorker),
+pub enum Worker<ChainA: ChainHandle, ChainB: ChainHandle> {
+    Client(WorkerId, ClientWorker<ChainA, ChainB>),
+    Connection(WorkerId, ConnectionWorker<ChainA, ChainB>),
+    Channel(WorkerId, ChannelWorker<ChainA, ChainB>),
+    Packet(WorkerId, PacketWorker<ChainA, ChainB>),
 }
 
-impl fmt::Display for Worker {
+impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> fmt::Display
+    for Worker<ChainA, ChainB>
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{} <-> {}]", self.chains().a.id(), self.chains().b.id(),)
     }
 }
 
-impl Worker {
+impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA, ChainB> {
     /// Spawn a worker which relays events pertaining to an [`Object`] between two `chains`.
     pub fn spawn(
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<ChainA, ChainB>,
         id: WorkerId,
         object: Object,
         msg_tx: Sender<WorkerMsg>,
-        telemetry: Telemetry,
         config: &Config,
     ) -> WorkerHandle {
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
@@ -86,26 +91,24 @@ impl Worker {
         debug!("spawning worker for object {}", object.short_name(),);
 
         let worker = match &object {
-            Object::Client(client) => Self::Client(
-                id,
-                ClientWorker::new(client.clone(), chains, cmd_rx, telemetry),
-            ),
+            Object::Client(client) => {
+                Self::Client(id, ClientWorker::new(client.clone(), chains, cmd_rx))
+            }
             Object::Connection(connection) => Self::Connection(
                 id,
-                ConnectionWorker::new(connection.clone(), chains, cmd_rx, telemetry),
+                ConnectionWorker::new(connection.clone(), chains, cmd_rx),
             ),
-            Object::Channel(channel) => Self::Channel(
-                id,
-                ChannelWorker::new(channel.clone(), chains, cmd_rx, telemetry),
-            ),
+            Object::Channel(channel) => {
+                Self::Channel(id, ChannelWorker::new(channel.clone(), chains, cmd_rx))
+            }
             Object::Packet(path) => Self::Packet(
                 id,
                 PacketWorker::new(
                     path.clone(),
                     chains,
                     cmd_rx,
-                    telemetry,
                     config.global.clear_packets_interval,
+                    config.global.tx_confirmation,
                 ),
             ),
         };
@@ -150,7 +153,7 @@ impl Worker {
         }
     }
 
-    fn chains(&self) -> &ChainHandlePair {
+    fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         match self {
             Self::Client(_, w) => w.chains(),
             Self::Connection(_, w) => w.chains(),

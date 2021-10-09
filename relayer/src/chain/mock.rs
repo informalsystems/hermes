@@ -1,6 +1,6 @@
-use std::ops::Add;
-use std::sync::Arc;
-use std::time::Duration;
+use alloc::sync::Arc;
+use core::ops::Add;
+use core::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
@@ -38,13 +38,15 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::Chain;
+use crate::chain::ChainEndpoint;
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+
+use super::HealthCheck;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -59,11 +61,20 @@ pub struct MockChain {
     event_receiver: EventReceiver,
 }
 
-impl Chain for MockChain {
+impl MockChain {
+    fn trusting_period(&self) -> Duration {
+        self.config
+            .trusting_period
+            .unwrap_or_else(|| Duration::from_secs(14 * 24 * 60 * 60)) // 14 days
+    }
+}
+
+impl ChainEndpoint for MockChain {
     type LightBlock = TmLightBlock;
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
+    type LightClient = MockLightClient;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
         let (sender, receiver) = channel::unbounded();
@@ -80,8 +91,8 @@ impl Chain for MockChain {
         })
     }
 
-    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
-        Ok(Box::new(MockLightClient::new(self)))
+    fn init_light_client(&self) -> Result<Self::LightClient, Error> {
+        Ok(MockLightClient::new(self))
     }
 
     fn init_event_monitor(
@@ -96,6 +107,10 @@ impl Chain for MockChain {
         &self.config.id
     }
 
+    fn health_check(&self) -> Result<HealthCheck, Error> {
+        Ok(HealthCheck::Healthy)
+    }
+
     fn shutdown(self) -> Result<(), Error> {
         Ok(())
     }
@@ -108,11 +123,21 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
+    fn send_messages_and_wait_commit(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
         let events = self.context.send(proto_msgs).map_err(Error::ics18)?;
 
         Ok(events)
+    }
+
+    fn send_messages_and_wait_check_tx(
+        &mut self,
+        _proto_msgs: Vec<Any>,
+    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
+        todo!()
     }
 
     fn get_signer(&mut self) -> Result<Signer, Error> {
@@ -300,8 +325,8 @@ impl Chain for MockChain {
         let client_state = TendermintClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
-            self.config.trusting_period,
-            self.config.trusting_period.add(Duration::from_secs(1000)),
+            self.trusting_period(),
+            self.trusting_period().add(Duration::from_secs(1000)),
             Duration::from_millis(3000),
             height,
             Height::zero(),
@@ -328,7 +353,7 @@ impl Chain for MockChain {
         trusted_height: Height,
         target_height: Height,
         client_state: &AnyClientState,
-        light_client: &mut dyn LightClient<Self>,
+        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         let succ_trusted = light_client.fetch(trusted_height.increment())?;
 
@@ -385,12 +410,12 @@ impl Chain for MockChain {
 // For integration tests with the modules
 #[cfg(test)]
 pub mod test_utils {
-    use std::str::FromStr;
-    use std::time::Duration;
+    use core::str::FromStr;
+    use core::time::Duration;
 
     use ibc::ics24_host::identifier::ChainId;
 
-    use crate::config::{ChainConfig, GasPrice, PacketFilter};
+    use crate::config::{AddressType, ChainConfig, GasPrice, PacketFilter};
 
     /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
@@ -409,9 +434,10 @@ pub mod test_utils {
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
-            trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
+            trusting_period: Some(Duration::from_secs(14 * 24 * 60 * 60)), // 14 days
             trust_threshold: Default::default(),
             packet_filter: PacketFilter::default(),
+            address_type: AddressType::default(),
         }
     }
 }

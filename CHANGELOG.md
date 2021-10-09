@@ -1,5 +1,155 @@
 # CHANGELOG
 
+## v0.7.3
+
+This minor release most notably includes a fix for a bug introduced in v0.7.0
+where Hermes would always use the max gas when submitting transactions to
+chains based on Cosmos SDK <= 0.42.
+It also improves the handling of account sequence numbers
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Fix a bug introduced in Hermes v0.7.0 where tx simulations would fail on
+    chains based on Cosmos SDK 0.42. This would cause Hermes to use the max
+    gas specified in the config when submitted the tx, leading to high fees.
+    ([#1345](https://github.com/informalsystems/ibc-rs/issues/1345))
+  - Only increase cached account sequence number when `broadcast_tx_sync` fails,
+    therefore ensuring that the cached sequence number stays in sync with the
+    node. ([#1402](https://github.com/informalsystems/ibc-rs/issues/1402))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Set default trusting period to be 2/3 of unbonding period for Cosmos chains
+    ([#1392](https://github.com/informalsystems/ibc-rs/issues/1392))
+
+## v0.7.2
+
+This minor release brings substantial performance improvements as well as
+support for chains using Secp256k1 signatures in consensus votes.
+
+It also bumps the compatibility to Cosmos SDK 0.44.
+
+### FEATURES
+
+- Support for chains which use Secp256k1 signatures in consensus votes ([#1155](https://github.com/informalsystems/ibc-rs/issues/1155))
+- Modified packet worker to use stubborn strategy ([#1290](https://github.com/informalsystems/ibc-rs/issues/1290))
+- Skip `consensus_heights` query in `update_client` when possible ([#1362](https://github.com/informalsystems/ibc-rs/issues/1362))
+- Support for disabling tx confirmation mechanism ([#1380](https://github.com/informalsystems/ibc-rs/issues/1380))
+
+- [gm](scripts/gm)
+  - Binaries in the config can be defined as URLs now.
+  - Add the option to set gm-lib path via the `$GM_LIB` environment variable ([#1365](https://github.com/informalsystems/ibc-rs/issues/1365))
+
+### IMPROVEMENTS
+
+- Use `core` and `alloc` crates for `no_std` compatibility ([#1156](https://github.com/informalsystems/ibc-rs/issues/1156))
+- Improve performance of health check, and only perform it on `hermes start`.
+  Add a `hermes health-check` command. ([#1336](https://github.com/informalsystems/ibc-rs/issues/1336))
+- Treat pre-releases of the Cosmos SDK as their standard version in compatibility check ([#1337](https://github.com/informalsystems/ibc-rs/issues/1337))
+- Bump Cosmos SDK compatibility to v0.44.0 ([#1344](https://github.com/informalsystems/ibc-rs/issues/1344))
+- Improve reliability of health check ([#1382](https://github.com/informalsystems/ibc-rs/issues/1376))
+
+## v0.7.1
+
+This minor release of Hermes notably features support for Ethermint chains and transfer amounts expressed as a 256-bit unsigned integer.
+This release also fixes a bug where the chain runtime within the relayer would crash when failing to decode a invalid header included in a `ClientUpdate` IBC event.
+
+### BUG FIXES
+
+- Fix header decoding error which resulted in killing the chain runtime ([#1342](https://github.com/informalsystems/ibc-rs/issues/1342))
+
+- [gm](scripts/gm)
+  - Fix gaiad keys add prints to stderr instead of stdout in SDK 0.43 ([#1312])
+  - Bumped default `rpc_timeout` in Hermes config to 5 seconds ([#1312])
+
+[#1312]: https://github.com/informalsystems/ibc-rs/issues/1312
+
+### FEATURES
+
+- Added post-Stargate (v0.5+) Ethermint support ([#1267] [#1071])
+
+[#1267]: https://github.com/informalsystems/ibc-rs/issues/1267
+[#1071]: https://github.com/informalsystems/ibc-rs/issues/1071
+
+### IMPROVEMENTS
+
+- General
+  - Derive `Debug`, `PartialEq` and `Eq` traits for module errors ([#1281])
+  - Add MBT tests for ICS 07 Client Upgrade ([#1311])
+  - Add support for uint256 transfer amounts ([#1319])
+
+- [ibc](modules)
+  - Change all `*Reader` traits to return `Result` instead of `Option` ([#1268])
+  - Clean up modules' errors ([#1333])
+
+[#1268]: https://github.com/informalsystems/ibc-rs/issues/1268
+[#1281]: https://github.com/informalsystems/ibc-rs/issues/1281
+[#1311]: https://github.com/informalsystems/ibc-rs/issues/1311
+[#1319]: https://github.com/informalsystems/ibc-rs/issues/1319
+[#1333]: https://github.com/informalsystems/ibc-rs/issues/1333
+
+## v0.7.0
+
+This release of Hermes is the first to be compatible with the development version of Cosmos SDK 0.43.
+Hermes 0.7.0 also improves the performance and reliability of the relayer, notably by waiting asynchronously for transactions to be confirmed.
+Additionnally, Hermes now includes a REST server which exposes the relayer's internal state over HTTP.
+
+### BUG FIXES
+
+- [ibc](modules)
+  - Set the index of `ibc::ics05_port::capabilities::Capability` ([#1257])
+
+- [gm](scripts/gm)
+  - Fix silent exit when requirements are missing
+
+[#1257]: https://github.com/informalsystems/ibc-rs/issues/1257
+[#1261]: https://github.com/informalsystems/ibc-rs/issues/1261
+
+### FEATURES
+
+- General
+  - Update CI to test with gaiad v5.0.5 ([#1175])
+
+- [ibc-relayer-cli](relayer-cli)
+  - Add `keys delete` CLI command ([#1065])
+  - Add `--legacy | -l` flag to support upgrades for chains built with Cosmos SDK < v0.43.0 ([#1287])
+
+- [ibc-relayer](relayer)
+  - Expose the Hermes config and internal state over a REST API ([#843])
+  - Spawn packet workers only when there are outstanding packets or acknowledgements to relay ([#901])
+  - Upgrade to Cosmos SDK proto (v0.43.0) & ibc-go proto (v1.0.0) ([#948])
+
+[#843]: https://github.com/informalsystems/ibc-rs/issues/843
+[#901]: https://github.com/informalsystems/ibc-rs/issues/901
+[#948]: https://github.com/informalsystems/ibc-rs/pull/948
+[#1065]: https://github.com/informalsystems/ibc-rs/issues/1065
+[#1175]: https://github.com/informalsystems/ibc-rs/issues/1175
+[#1287]: https://github.com/informalsystems/ibc-rs/issues/1287
+
+### IMPROVEMENTS
+
+- General
+  - Update Modelator to 0.2.0 ([#1249])
+
+- [ibc-relayer-cli](relayer-cli)
+  - Add optional destination chain and `--verbose` options for `query channels` CLI ([#1132])
+
+- [ibc-relayer](relayer)
+  - Improve support for Interchain Accounts (ICS 027) ([#1191])
+  - Improve performance and reliability of the relayer by asynchronously waiting for tx confirmations ([#1124], [#1265])
+
+- [ibc](modules)
+  - Implement `ics02_client::client_consensus::ConsensusState` for `AnyConsensusState` ([#1297])
+
+[#1124]: https://github.com/informalsystems/ibc-rs/issues/1124
+[#1132]: https://github.com/informalsystems/ibc-rs/issues/1132
+[#1191]: https://github.com/informalsystems/ibc-rs/issues/1191
+[#1249]: https://github.com/informalsystems/ibc-rs/pull/1249
+[#1265]: https://github.com/informalsystems/ibc-rs/issues/1265
+[#1297]: https://github.com/informalsystems/ibc-rs/issues/1297
+
 ## v0.6.2
 
 This minor release of Hermes re-enables the `upgrade client`, `upgrade clients`,

@@ -1,12 +1,15 @@
+use alloc::sync::Arc;
 use std::error::Error;
 use std::io;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 use abscissa_core::{Command, Options, Runnable};
 use crossbeam_channel::Sender;
 
+use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
+use ibc_relayer::rest;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
 
 use crate::conclude::json;
@@ -21,10 +24,11 @@ impl Runnable for StartCmd {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let (supervisor, tx_cmd) = make_supervisor(config.clone()).unwrap_or_else(|e| {
-            Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
-            unreachable!()
-        });
+        let (supervisor, tx_cmd) = make_supervisor::<ProdChainHandle>(config.clone())
+            .unwrap_or_else(|e| {
+                Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
+                unreachable!()
+            });
 
         match crate::config::config_path() {
             Some(config_path) => {
@@ -100,18 +104,48 @@ fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resu
     Ok(())
 }
 
+#[cfg(feature = "rest-server")]
+fn spawn_rest_server(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
+    let rest = config.read().expect("poisoned lock").rest.clone();
+
+    if rest.enabled {
+        let rest_config = ibc_relayer_rest::Config::new(rest.host, rest.port);
+        let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
+        Some(rest_receiver)
+    } else {
+        info!("[rest] address not configured, REST server disabled");
+        None
+    }
+}
+
+#[cfg(not(feature = "rest-server"))]
+fn spawn_rest_server(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
+    let rest = config.read().expect("poisoned lock").rest.clone();
+
+    if rest.enabled {
+        warn!(
+            "REST server enabled in the config but Hermes was built without RESET support, \
+             build Hermes with --features=rest-server to enable REST support."
+        );
+
+        None
+    } else {
+        None
+    }
+}
+
 #[cfg(feature = "telemetry")]
-fn make_supervisor(
-    config: Arc<RwLock<Config>>,
-) -> Result<(Supervisor, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
-    let state = ibc_telemetry::new_state();
+fn spawn_telemetry_server(
+    config: &Arc<RwLock<Config>>,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let state = ibc_telemetry::global();
 
     let telemetry = config.read().expect("poisoned lock").telemetry.clone();
     if telemetry.enabled {
         match ibc_telemetry::spawn((telemetry.host, telemetry.port), state.clone()) {
             Ok((addr, _)) => {
                 info!(
-                    "telemetry service running, exposing metrics at {}/metrics",
+                    "telemetry service running, exposing metrics at http://{}/metrics",
                     addr
                 );
             }
@@ -122,13 +156,13 @@ fn make_supervisor(
         }
     }
 
-    Ok(Supervisor::new(config, state))
+    Ok(())
 }
 
 #[cfg(not(feature = "telemetry"))]
-fn make_supervisor(
-    config: Arc<RwLock<Config>>,
-) -> Result<(Supervisor, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
+fn spawn_telemetry_server(
+    config: &Arc<RwLock<Config>>,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
     if config.read().expect("poisoned lock").telemetry.enabled {
         warn!(
             "telemetry enabled in the config but Hermes was built without telemetry support, \
@@ -136,6 +170,15 @@ fn make_supervisor(
         );
     }
 
-    let telemetry = ibc_relayer::telemetry::TelemetryDisabled;
-    Ok(Supervisor::new(config, telemetry))
+    Ok(())
+}
+
+fn make_supervisor<Chain: ChainHandle + 'static>(
+    config: Arc<RwLock<Config>>,
+) -> Result<(Supervisor<Chain>, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
+    spawn_telemetry_server(&config)?;
+
+    let rest = spawn_rest_server(&config);
+
+    Ok(Supervisor::new(config, rest))
 }

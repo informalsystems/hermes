@@ -5,14 +5,37 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  echo "v0.0.6"
+  VERSION="v0.0.9"
+  if [ "${OUTPUT:-}" == "json" ]; then
+    printf '{"status": "success", "message": "%s"}' "$VERSION"
+  else
+    echo "$VERSION"
+  fi
 }
 
 # Configuration Management
 ###
 
+# Get the operating system in lowercase letters. Works for linux and darwin.
+get_operating_system() {
+  # uname is optional, we will assume linux if it's missing in some streamlined docker images.
+  OP_SYS="$(uname -s || echo)"
+  case "${OP_SYS}" in
+    "Linux" )
+      echo linux
+      ;;
+    "Darwin" )
+      echo darwin
+      ;;
+    * )
+      echo linux
+      ;;
+  esac
+}
+
 set_config_defaults() {
-    GLOBAL_GAIAD_BINARY="$(which gaiad || echo "${GOPATH:-./gaiad}")"
+    OP_SYS="$(get_operating_system)"
+    GLOBAL_GAIAD_BINARY="$(which gaiad || echo "https://github.com/cosmos/gaia/releases/download/v5.0.6/gaiad-v5.0.6-${OP_SYS}-amd64")"
     #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
     DEFAULT_PORTS_START_AT=27000
     GLOBAL_HOME_DIR="${HOME}/.gm"
@@ -153,16 +176,15 @@ EOF
 
 find_config_file() {
   if [ -f "${SCRIPT_DIR}gm.toml" ]; then
-    export CONFIG_FILE="${SCRIPT_DIR}gm.toml"
+    export CONFIG_DIR="${SCRIPT_DIR}"
   elif [ -f "${HOME}/.gm/gm.toml" ]; then
-    export CONFIG_FILE="${HOME}/.gm/gm.toml"
+    export CONFIG_DIR="${HOME}/.gm/"
+  elif [ -d "${HOME}/.gm" ]; then
+    export CONFIG_DIR="${HOME}/.gm/"
   else
-    if [ -d "${HOME}/.gm" ]; then
-      export CONFIG_FILE="${HOME}/.gm/gm.toml"
-    else
-      export CONFIG_FILE="${SCRIPT_DIR}gm.toml"
-    fi
+    export CONFIG_DIR="${SCRIPT_DIR}"
   fi
+  export CONFIG_FILE="${CONFIG_DIR}gm.toml"
 }
 
 # End Configuration Management
@@ -203,20 +225,23 @@ install() {
 }
 
 enforce_requirements() {
-  if [ -z "$(which sconfig)" ]; then
+  if [ -z "$(which sconfig || echo)" ]; then
     exit_with_error "missing sconfig, install it from https://github.com/freshautomations/sconfig/releases"
   fi
-  SED="$(which sed)"
+  SED="$(which sed || echo)"
   if [ -z "$SED" ]; then
     exit_with_error "missing sed, please install it"
   fi
-  if [ -z "$(which tr)" ]; then
+  if [ -z "$(which tr || echo)" ]; then
     exit_with_error "missing tr, please install it"
   fi
-  if [ -z "$(which dirname)" ]; then
+  if [ -z "$(which basename || echo)" ]; then
+    exit_with_error "missing basename, please install it"
+  fi
+  if [ -z "$(which dirname || echo)" ]; then
     exit_with_error "missing dirname, please install it"
   fi
-  STOML="$(which stoml)"
+  STOML="$(which stoml || echo)"
   if [ -z "$STOML" ]; then
     exit_with_error "missing stoml, install it from https://github.com/freshautomations/stoml/releases"
   fi
@@ -231,7 +256,7 @@ enforce_requirements() {
 
 debug() {
   if [ -n "${DEBUG:-}" ]; then
-    echo "DEBUG: $*"
+    echo "DEBUG: $*" 1>&2
   fi
 }
 
@@ -254,7 +279,11 @@ warn_unknown_hermes_node() {
 }
 
 exit_with_error() {
-  echo "ERROR: $*, exiting..."
+  if [ "${OUTPUT:-}" == "json" ]; then
+    printf '{"status": "error", "message": "%s"}' "$*"
+  else
+    echo "ERROR: $*, exiting..."
+  fi
   return 1
 }
 
@@ -298,13 +327,70 @@ load_all_sections() {
   grep '^ *\[.\+\] *$' "$CONFIG_FILE" | sed 's/^ *\[\([^]]*\)\] *$/\1/'
 }
 
+get_url_id() {
+  SUMMARIZER="$(which md5sum || which shasum || which sha256sum)"
+  if [ -z "${SUMMARIZER}" ]; then
+    echo "${1}" | tr -d ":/?=.&"
+  else
+    SUMMARY="$(echo "${1}" | "${SUMMARIZER}")"
+    SUMMARY="${SUMMARY%%  -}"
+    echo "${SUMMARY}"
+  fi
+}
+
+eval_binary() {
+  RAW_BINARY="$(eval echo "${1}")"
+  if [ "${RAW_BINARY##http://}" != "$RAW_BINARY" ] || [ "${RAW_BINARY##https://}" != "$RAW_BINARY" ] || [ "${RAW_BINARY##ftp://}" != "$RAW_BINARY" ]; then
+    FILE_URL_PATH="$(dirname "${RAW_BINARY}")"
+    FILE_URL_PATH_ID="$(get_url_id "${FILE_URL_PATH}")"
+    if [ ! -d "${CONFIG_DIR}${FILE_URL_PATH_ID}" ]; then
+      mkdir "${CONFIG_DIR}${FILE_URL_PATH_ID}" || exit_with_error "could not create temporary folder ${CONFIG_DIR}${FILE_URL_PATH_ID} to download binary ${RAW_BINARY}"
+    fi
+    FILE_NAME="$(basename "${RAW_BINARY}" | tr -d "?=&")"
+    BINARY="${CONFIG_DIR}${FILE_URL_PATH_ID}/${FILE_NAME}"
+    if [ -x "${BINARY}" ]; then
+      echo "${BINARY}"
+    else
+      DOWNLOADER="$(which wget)"
+      if [ -n "${DOWNLOADER}" ]; then
+        debug "downloading ${RAW_BINARY} using wget..."
+        # shellcheck disable=SC2086
+        "${DOWNLOADER}" -q -nd ${WGET_DOWNLOAD_OPTIONS:-} "${RAW_BINARY}" -O "${BINARY}"
+        chmod +x "${BINARY}"
+        echo "${BINARY}"
+      else
+        DOWNLOADER="$(which curl)"
+        if [ -n "${DOWNLOADER}" ]; then
+          debug "downloading ${RAW_BINARY} using curl..."
+          # shellcheck disable=SC2086
+          "${DOWNLOADER}" -s -f -L ${CURL_DOWNLOAD_OPTIONS:-} "${RAW_BINARY}" -o "${BINARY}"
+          chmod +x "${BINARY}"
+          echo "${BINARY}"
+        else
+          exit_with_error "found URL ${RAW_BINARY} but no downloader wget or curl"
+        fi
+      fi
+    fi
+  else
+    if [ -x "${RAW_BINARY}" ]; then
+      echo "${RAW_BINARY}"
+    else
+      exit_with_error "binary \"${RAW_BINARY}\" not found or not executable, check your gm.toml config"
+    fi
+  fi
+}
+
 get_gaiad_binary() {
   RESULT="$(stoml -q "$CONFIG_FILE" "${1}.gaiad_binary")"
   if [ -z "$RESULT" ]; then
-    echo "$GLOBAL_GAIAD_BINARY"
+    eval_binary "$GLOBAL_GAIAD_BINARY"
   else
-    eval echo "$RESULT"
+    eval_binary "$RESULT"
   fi
+}
+
+get_hermes_binary() {
+  eval_binary "$GLOBAL_HERMES_BINARY"
 }
 
 get_ports_start_at() {
@@ -364,7 +450,7 @@ get_auto_maintain_config() {
 get_network() {
   RESULT="$(stoml -q "$CONFIG_FILE" "${1}.network")"
   if [ -z "$RESULT" ]; then
-    exit_on_error "Network not found for node ${1}"
+    exit_with_error "network not found for node ${1}"
   else
     if ! a_in_b "$RESULT" "$VALIDATORS"; then
       return 1
@@ -462,27 +548,27 @@ create() {
     # Create validator key
     VALIDATOR_MNEMONIC="$(get_validator_mnemonic "$1")"
     if [ -z "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "validator" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      "$GAIAD_BINARY" keys add "validator" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
     elif [ -z "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
     elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
       sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
     elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
       sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
     fi
     # Create wallet key
     WALLET_MNEMONIC="$(get_wallet_mnemonic "$1")"
     if [ -z "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      "$GAIAD_BINARY" keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
     elif [ -z "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
     elif [ -n "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
       sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
     elif [ -n "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
       sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
     fi
     # Add accounts to genesis
@@ -769,12 +855,12 @@ id = '${ID}'
 rpc_addr = 'http://localhost:${RPC}'
 grpc_addr = 'http://localhost:${GRPC}'
 websocket_addr = 'ws://localhost:${RPC}/websocket'
-rpc_timeout = '1s'
+rpc_timeout = '15s'
 account_prefix = '${ACCOUNT_PREFIX}'
 key_name = 'wallet'
 store_prefix = 'ibc'
 gas_price = { price = 0.001, denom = '${DENOM}' }
-max_gas = 500000
+max_gas = 1000000
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
@@ -786,16 +872,16 @@ EOF
 hermes_keys() {
   ID="$(get_chain_id "$1")"
   NETWORK_HOME_DIR="$(get_home_dir "$ID")"
-  test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config"
+  HERMES_BINARY="$(get_hermes_binary)"
   HDPATH="$(get_hdpath "$1")"
   if [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
-      "$GLOBAL_HERMES_BINARY" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+      "$HERMES_BINARY" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
   elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
-      "$GLOBAL_HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+      "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
   elif [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
-      "$GLOBAL_HERMES_BINARY" keys add "$ID" --hd-path "$HDPATH" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+      "$HERMES_BINARY" keys add "$ID" --hd-path "$HDPATH" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
   elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
-      "$GLOBAL_HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --hd-path "$HDPATH" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+      "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --hd-path "$HDPATH" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
   fi
 }
 
@@ -810,11 +896,12 @@ hermes_cc() {
   done
   CHAINS="${CHAINS## }"
   N="$(($(echo "$CHAINS" | wc -w)))"
+  HERMES_BINARY="$(get_hermes_binary)"
   for i in $(seq 1 $((N-1)))
   do
     for j in $(seq $((i+1)) $N)
     do
-      echo "\"${GLOBAL_HERMES_BINARY}\" create channel $(n_from_a "$i" "$CHAINS") $(n_from_a "$j" "$CHAINS") --port-a transfer --port-b transfer"
+      echo "\"${HERMES_BINARY}\" create channel $(n_from_a "$i" "$CHAINS") $(n_from_a "$j" "$CHAINS") --port-a transfer --port-b transfer"
     done
   done
 }

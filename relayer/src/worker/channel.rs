@@ -1,39 +1,36 @@
-use std::{thread, time::Duration};
+use core::time::Duration;
+use std::thread;
 
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, warn};
 
 use crate::channel::Channel as RelayChannel;
-use crate::telemetry::Telemetry;
 use crate::{
-    chain::handle::ChainHandlePair, object::Channel, util::retry::retry_with_index,
+    chain::handle::{ChainHandle, ChainHandlePair},
+    object::Channel,
+    util::retry::retry_with_index,
     worker::retry_strategy,
 };
 
 use super::error::RunError;
 use super::WorkerCmd;
 
-pub struct ChannelWorker {
+pub struct ChannelWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel,
-    chains: ChainHandlePair,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
-
-    #[allow(dead_code)]
-    telemetry: Telemetry,
 }
 
-impl ChannelWorker {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ChannelWorker<ChainA, ChainB> {
     pub fn new(
         channel: Channel,
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: Telemetry,
     ) -> Self {
         Self {
             channel,
             chains,
             cmd_rx,
-            telemetry,
         }
     }
 
@@ -126,7 +123,7 @@ impl ChannelWorker {
     }
 
     /// Get a reference to the uni chan path worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 

@@ -1,4 +1,5 @@
-use std::{sync::Arc, thread};
+use alloc::sync::Arc;
+use std::thread;
 
 use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -53,8 +54,8 @@ use crate::{
 };
 
 use super::{
-    handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
-    Chain,
+    handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
+    ChainEndpoint, HealthCheck,
 };
 
 pub struct Threads {
@@ -62,9 +63,9 @@ pub struct Threads {
     pub event_monitor: Option<thread::JoinHandle<()>>,
 }
 
-pub struct ChainRuntime<C: Chain> {
+pub struct ChainRuntime<Endpoint: ChainEndpoint> {
     /// The specific chain this runtime runs against
-    chain: C,
+    chain: Endpoint,
 
     /// The sender side of a channel to this runtime. Any `ChainHandle` can use this to send
     /// chain requests to this runtime
@@ -84,20 +85,23 @@ pub struct ChainRuntime<C: Chain> {
     tx_monitor_cmd: TxMonitorCmd,
 
     /// A handle to the light client
-    light_client: Box<dyn LightClient<C>>,
+    light_client: Endpoint::LightClient,
 
     #[allow(dead_code)]
     rt: Arc<TokioRuntime>, // Making this future-proof, so we keep the runtime around.
 }
 
-impl<C: Chain + Send + 'static> ChainRuntime<C> {
+impl<Endpoint> ChainRuntime<Endpoint>
+where
+    Endpoint: ChainEndpoint + Send + 'static,
+{
     /// Spawns a new runtime for a specific Chain implementation.
-    pub fn spawn(
+    pub fn spawn<Handle: ChainHandle>(
         config: ChainConfig,
         rt: Arc<TokioRuntime>,
-    ) -> Result<Box<dyn ChainHandle>, Error> {
+    ) -> Result<Handle, Error> {
         // Similar to `from_config`.
-        let chain = C::bootstrap(config, rt.clone())?;
+        let chain = Endpoint::bootstrap(config, rt.clone())?;
 
         // Start the light client
         let light_client = chain.init_light_client()?;
@@ -112,17 +116,17 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     }
 
     /// Initializes a runtime for a given chain, and spawns the associated thread
-    fn init(
-        chain: C,
-        light_client: Box<dyn LightClient<C>>,
+    fn init<Handle: ChainHandle>(
+        chain: Endpoint,
+        light_client: Endpoint::LightClient,
         event_receiver: EventReceiver,
         tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
-    ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
+    ) -> (Handle, thread::JoinHandle<()>) {
         let chain_runtime = Self::new(chain, light_client, event_receiver, tx_monitor_cmd, rt);
 
         // Get a handle to the runtime
-        let handle = chain_runtime.handle();
+        let handle: Handle = chain_runtime.handle();
 
         // Spawn the runtime & return
         let id = handle.id();
@@ -137,8 +141,8 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
     /// Basic constructor
     fn new(
-        chain: C,
-        light_client: Box<dyn LightClient<C>>,
+        chain: Endpoint,
+        light_client: Endpoint::LightClient,
         event_receiver: EventReceiver,
         tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
@@ -157,11 +161,11 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         }
     }
 
-    pub fn handle(&self) -> Box<dyn ChainHandle> {
-        let chain_id = self.chain.id().clone();
+    pub fn handle<Handle: ChainHandle>(&self) -> Handle {
+        let chain_id = ChainEndpoint::id(&self.chain).clone();
         let sender = self.request_sender.clone();
 
-        Box::new(ProdChainHandle::new(chain_id, sender))
+        Handle::new(chain_id, sender)
     }
 
     fn run(mut self) -> Result<(), Error> {
@@ -192,12 +196,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             break;
                         }
 
+                        Ok(ChainRequest::HealthCheck { reply_to }) => {
+                            self.health_check(reply_to)?
+                        },
+
                         Ok(ChainRequest::Subscribe { reply_to }) => {
                             self.subscribe(reply_to)?
                         },
 
-                        Ok(ChainRequest::SendMsgs { proto_msgs, reply_to }) => {
-                            self.send_msgs(proto_msgs, reply_to)?
+                        Ok(ChainRequest::SendMessagesAndWaitCommit { proto_msgs, reply_to }) => {
+                            self.send_messages_and_wait_commit(proto_msgs, reply_to)?
+                        },
+
+                        Ok(ChainRequest::SendMessagesAndWaitCheckTx { proto_msgs, reply_to }) => {
+                            self.send_messages_and_wait_check_tx(proto_msgs, reply_to)?
                         },
 
                         Ok(ChainRequest::Signer { reply_to }) => {
@@ -349,56 +361,52 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
-        let subscription = self.event_bus.subscribe();
-
-        reply_to.send(Ok(subscription)).map_err(Error::send)?;
-
-        Ok(())
+    fn health_check(&mut self, reply_to: ReplyTo<HealthCheck>) -> Result<(), Error> {
+        let result = self.chain.health_check();
+        reply_to.send(result).map_err(Error::send)
     }
 
-    fn send_msgs(
+    fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
+        let subscription = self.event_bus.subscribe();
+        reply_to.send(Ok(subscription)).map_err(Error::send)
+    }
+
+    fn send_messages_and_wait_commit(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
-        let result = self.chain.send_msgs(proto_msgs);
+        let result = self.chain.send_messages_and_wait_commit(proto_msgs);
+        reply_to.send(result).map_err(Error::send)
+    }
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+    fn send_messages_and_wait_check_tx(
+        &mut self,
+        proto_msgs: Vec<prost_types::Any>,
+        reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.send_messages_and_wait_check_tx(proto_msgs);
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_latest_height(&self, reply_to: ReplyTo<Height>) -> Result<(), Error> {
         let latest_height = self.chain.query_latest_height();
-
-        reply_to.send(latest_height).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(latest_height).map_err(Error::send)
     }
 
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn get_key(&mut self, reply_to: ReplyTo<KeyEntry>) -> Result<(), Error> {
         let result = self.chain.get_key();
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn module_version(&self, port_id: PortId, reply_to: ReplyTo<String>) -> Result<(), Error> {
         let result = self.chain.query_module_version(&port_id);
-
-        reply_to.send(Ok(result)).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(Ok(result)).map_err(Error::send)
     }
 
     fn build_header(
@@ -414,7 +422,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                 trusted_height,
                 target_height,
                 &client_state,
-                self.light_client.as_mut(),
+                &mut self.light_client,
             )
             .map(|(header, support)| {
                 let header = header.wrap_any();
@@ -422,9 +430,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                 (header, support)
             });
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     /// Constructs a client state for the given height
@@ -438,9 +444,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .build_client_state(height)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(client_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(client_state).map_err(Error::send)
     }
 
     /// Constructs a consensus state for the given height
@@ -458,9 +462,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .build_consensus_state(verified.target)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(consensus_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(consensus_state).map_err(Error::send)
     }
 
     /// Constructs AnyMisbehaviour for the update event
@@ -474,9 +476,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .light_client
             .check_misbehaviour(update_event, &client_state);
 
-        reply_to.send(misbehaviour).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(misbehaviour).map_err(Error::send)
     }
 
     fn build_connection_proofs_and_client_state(
@@ -497,9 +497,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let result = result
             .map(|(opt_client_state, proofs)| (opt_client_state.map(|cs| cs.wrap_any()), proofs));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_clients(
@@ -508,10 +506,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_clients(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_client_connections(
@@ -520,10 +515,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<ConnectionId>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_client_connections(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_client_state(
@@ -537,9 +529,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .query_client_state(&client_id, height)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(client_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(client_state).map_err(Error::send)
     }
 
     fn query_upgraded_client_state(
@@ -552,9 +542,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .query_upgraded_client_state(height)
             .map(|(cl, proof)| (cl.wrap_any(), proof));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_consensus_states(
@@ -563,10 +551,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
     ) -> Result<(), Error> {
         let consensus_states = self.chain.query_consensus_states(request);
-
-        reply_to.send(consensus_states).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(consensus_states).map_err(Error::send)
     }
 
     fn query_consensus_state(
@@ -580,9 +565,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             self.chain
                 .query_consensus_state(client_id, consensus_height, query_height);
 
-        reply_to.send(consensus_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(consensus_state).map_err(Error::send)
     }
 
     fn query_upgraded_consensus_state(
@@ -595,25 +578,17 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .query_upgraded_consensus_state(height)
             .map(|(cs, proof)| (cs.wrap_any(), proof));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_commitment_prefix(&self, reply_to: ReplyTo<CommitmentPrefix>) -> Result<(), Error> {
         let prefix = self.chain.query_commitment_prefix();
-
-        reply_to.send(prefix).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(prefix).map_err(Error::send)
     }
 
     fn query_compatible_versions(&self, reply_to: ReplyTo<Vec<Version>>) -> Result<(), Error> {
         let versions = self.chain.query_compatible_versions();
-
-        reply_to.send(versions).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(versions).map_err(Error::send)
     }
 
     fn query_connection(
@@ -623,10 +598,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<ConnectionEnd>,
     ) -> Result<(), Error> {
         let connection_end = self.chain.query_connection(&connection_id, height);
-
-        reply_to.send(connection_end).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(connection_end).map_err(Error::send)
     }
 
     fn query_connections(
@@ -635,10 +607,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_connections(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_connection_channels(
@@ -647,10 +616,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_connection_channels(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_channels(
@@ -659,10 +625,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channels(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_channel(
@@ -673,10 +636,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<ChannelEnd>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel(&port_id, &channel_id, height);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_channel_client_state(
@@ -685,10 +645,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel_client_state(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn proven_client_state(
@@ -702,9 +659,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .proven_client_state(&client_id, height)
             .map(|(cs, mp)| (cs.wrap_any(), mp));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn proven_connection(
@@ -714,10 +669,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<(ConnectionEnd, MerkleProof)>,
     ) -> Result<(), Error> {
         let result = self.chain.proven_connection(&connection_id, height);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn proven_client_consensus(
@@ -732,9 +684,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .proven_client_consensus(&client_id, consensus_height, height)
             .map(|(cs, mp)| (cs.wrap_any(), mp));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn build_channel_proofs(
@@ -748,9 +698,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .chain
             .build_channel_proofs(&port_id, &channel_id, height);
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn build_packet_proofs(
@@ -766,9 +714,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             self.chain
                 .build_packet_proofs(packet_type, port_id, channel_id, sequence, height);
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_packet_commitments(
@@ -777,10 +723,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<(Vec<PacketState>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_commitments(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_unreceived_packets(
@@ -789,10 +732,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_packet_acknowledgements(
@@ -801,10 +741,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<(Vec<PacketState>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_acknowledgements(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_unreceived_acknowledgement(
@@ -813,10 +750,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_acknowledgements(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_next_sequence_receive(
@@ -825,10 +759,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Sequence>,
     ) -> Result<(), Error> {
         let result = self.chain.query_next_sequence_receive(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_txs(
@@ -837,9 +768,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 }

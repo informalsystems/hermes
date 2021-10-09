@@ -1,6 +1,8 @@
+use core::{fmt, time::Duration};
+use std::thread;
 use std::time::Instant;
-use std::{fmt, thread, time::Duration};
 
+use chrono::Utc;
 use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
@@ -12,6 +14,7 @@ use ibc::events::{IbcEvent, IbcEventType};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
 };
+use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::error::Error as ClientError;
 use ibc::ics02_client::events::UpdateClient;
@@ -213,16 +216,16 @@ define_error! {
 }
 
 #[derive(Clone, Debug)]
-pub struct ForeignClient {
+pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
     /// The identifier of this client. The host chain determines this id upon client creation,
     /// so we may be using the default value temporarily.
     pub id: ClientId,
 
     /// A handle to the chain hosting this client, i.e., destination chain.
-    pub dst_chain: Box<dyn ChainHandle>,
+    pub dst_chain: DstChain,
 
     /// A handle to the chain whose headers this client is verifying, aka the source chain.
-    pub src_chain: Box<dyn ChainHandle>,
+    pub src_chain: SrcChain,
 }
 
 /// Used in Output messages.
@@ -232,7 +235,9 @@ pub struct ForeignClient {
 /// where the first chain identifier is for the source
 /// chain, and the second chain identifier is the
 /// destination (which hosts the client) chain.
-impl fmt::Display for ForeignClient {
+impl<DstChain: ChainHandle, SrcChain: ChainHandle> fmt::Display
+    for ForeignClient<DstChain, SrcChain>
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -244,14 +249,14 @@ impl fmt::Display for ForeignClient {
     }
 }
 
-impl ForeignClient {
+impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcChain> {
     /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
     /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
     pub fn new(
-        dst_chain: Box<dyn ChainHandle>,
-        src_chain: Box<dyn ChainHandle>,
-    ) -> Result<ForeignClient, ForeignClientError> {
+        dst_chain: DstChain,
+        src_chain: SrcChain,
+    ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         // Sanity check
         if src_chain.id().eq(&dst_chain.id()) {
             return Err(ForeignClientError::same_chain_id(src_chain.id()));
@@ -259,8 +264,8 @@ impl ForeignClient {
 
         let mut client = ForeignClient {
             id: ClientId::default(),
-            dst_chain: dst_chain.clone(),
-            src_chain: src_chain.clone(),
+            dst_chain,
+            src_chain,
         };
 
         client.create()?;
@@ -270,9 +275,9 @@ impl ForeignClient {
 
     pub fn restore(
         id: ClientId,
-        dst_chain: Box<dyn ChainHandle>,
-        src_chain: Box<dyn ChainHandle>,
-    ) -> ForeignClient {
+        dst_chain: DstChain,
+        src_chain: SrcChain,
+    ) -> ForeignClient<DstChain, SrcChain> {
         ForeignClient {
             id,
             dst_chain,
@@ -286,10 +291,10 @@ impl ForeignClient {
     /// verifying) is consistent with `expected_target_chain`, and if so, return a new
     /// `ForeignClient` representing this client.
     pub fn find(
-        expected_target_chain: Box<dyn ChainHandle>,
-        host_chain: Box<dyn ChainHandle>,
+        expected_target_chain: SrcChain,
+        host_chain: DstChain,
         client_id: &ClientId,
-    ) -> Result<ForeignClient, ForeignClientError> {
+    ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         let height = Height::new(expected_target_chain.id().version(), 0);
 
         match host_chain.query_client_state(client_id, height) {
@@ -304,7 +309,7 @@ impl ForeignClient {
                     // TODO: Any additional checks?
                     Ok(ForeignClient::restore(
                         client_id.clone(),
-                        host_chain.clone(),
+                        host_chain,
                         expected_target_chain,
                     ))
                 }
@@ -387,25 +392,28 @@ impl ForeignClient {
 
         msgs.push(msg_upgrade);
 
-        let res = self.dst_chain.send_msgs(msgs).map_err(|e| {
-            ForeignClientError::client_upgrade(
-                self.id.clone(),
-                self.dst_chain.id(),
-                "failed while sending message to destination chain".to_string(),
-                e,
-            )
-        })?;
+        let res = self
+            .dst_chain
+            .send_messages_and_wait_commit(msgs)
+            .map_err(|e| {
+                ForeignClientError::client_upgrade(
+                    self.id.clone(),
+                    self.dst_chain.id(),
+                    "failed while sending message to destination chain".to_string(),
+                    e,
+                )
+            })?;
 
         Ok(res)
     }
 
     /// Returns a handle to the chain hosting this client.
-    pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
+    pub fn dst_chain(&self) -> DstChain {
         self.dst_chain.clone()
     }
 
     /// Returns a handle to the chain whose headers this client is sourcing (the source chain).
-    pub fn src_chain(&self) -> Box<dyn ChainHandle> {
+    pub fn src_chain(&self) -> SrcChain {
         self.src_chain.clone()
     }
 
@@ -474,7 +482,7 @@ impl ForeignClient {
 
         let res = self
             .dst_chain
-            .send_msgs(vec![new_msg.to_any()])
+            .send_messages_and_wait_commit(vec![new_msg.to_any()])
             .map_err(|e| {
                 ForeignClientError::client_create(
                     self.dst_chain.id(),
@@ -517,7 +525,7 @@ impl ForeignClient {
             .timestamp();
 
         let refresh_window = client_state.refresh_period();
-        let elapsed = Timestamp::now().duration_since(&last_update_time);
+        let elapsed = Timestamp::from_datetime(Utc::now()).duration_since(&last_update_time);
 
         if client_state.is_frozen() || client_state.expired(elapsed.unwrap_or_default()) {
             return Err(ForeignClientError::expired_or_frozen(
@@ -546,6 +554,86 @@ impl ForeignClient {
         target_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
         self.build_update_client_with_trusted(target_height, Height::zero())
+    }
+
+    // Returns a trusted height that is lower than the target height, so
+    // that the relayer can update the client to the target height based
+    // on the returned trusted height.
+    fn solve_trusted_height(
+        &self,
+        target_height: Height,
+        client_state: &AnyClientState,
+    ) -> Result<Height, ForeignClientError> {
+        let client_latest_height = client_state.latest_height();
+
+        if client_latest_height < target_height {
+            // If the latest height of the client is already lower than the
+            // target height, we can simply use it.
+            Ok(client_latest_height)
+        } else {
+            // The only time when the above is false is when for some reason,
+            // the command line user wants to submit a client update at an
+            // older height even when the relayer already have an up-to-date
+            // client at a newer height.
+
+            // In production, this should rarely happen unless there is another
+            // relayer racing to update the client state, and that we so happen
+            // to get the the latest client state that was updated between
+            // the time the target height was determined, and the time
+            // the client state was fetched.
+
+            warn!("[{}] resolving trusted height from the full list of consensus state heights for target height {}; this may take a while",
+                self, target_height);
+
+            // Potential optimization: cache the list of consensus heights
+            // so that subsequent fetches can be fast.
+            let cs_heights = self.consensus_state_heights()?;
+
+            // Iterate through the available consesnsus heights and find one
+            // that is lower than the target height.
+            cs_heights
+                .into_iter()
+                .find(|h| h < &target_height)
+                .ok_or_else(|| {
+                    ForeignClientError::missing_smaller_trusted_height(
+                        self.dst_chain().id(),
+                        target_height,
+                    )
+                })
+        }
+    }
+
+    // Validate a non-zero trusted height to make sure that there is a corresponding
+    // consensus state at the given trusted height on the destination chain's client.
+    fn validate_trusted_height(
+        &self,
+        target_height: Height,
+        trusted_height: Height,
+        client_state: &AnyClientState,
+    ) -> Result<(), ForeignClientError> {
+        if client_state.latest_height() == trusted_height {
+            Ok(())
+        } else {
+            // There should be no need to validate a trusted height in production,
+            // Since it is always fetched from some client state. The only use is
+            // from the command line when the trusted height is manually specified.
+            // We should consider skipping the validation entirely and only validate
+            // it from the command line itself.
+
+            warn!("[{}] validating that trusted height {} for target height {} is present in the full list of consensus state heights; this may take a while",
+                self, trusted_height, target_height);
+
+            let cs_heights = self.consensus_state_heights()?;
+
+            cs_heights
+                .into_iter()
+                .find(|h| h == &trusted_height)
+                .ok_or_else(|| {
+                    ForeignClientError::missing_trusted_height(self.dst_chain().id(), target_height)
+                })?;
+
+            Ok(())
+        }
     }
 
     /// Returns a vector with a message for updating the client to height `target_height`.
@@ -579,28 +667,11 @@ impl ForeignClient {
                 )
             })?;
 
-        // If not specified, set trusted state to the highest height smaller than target height.
-        // Otherwise ensure that a consensus state at trusted height exists on-chain.
-        let cs_heights = self.consensus_state_heights()?;
         let trusted_height = if trusted_height == Height::zero() {
-            // Get highest height smaller than target height
-            cs_heights
-                .into_iter()
-                .find(|h| h < &target_height)
-                .ok_or_else(|| {
-                    ForeignClientError::missing_smaller_trusted_height(
-                        self.dst_chain().id(),
-                        target_height,
-                    )
-                    // ))
-                })?
+            self.solve_trusted_height(target_height, &client_state)?
         } else {
-            cs_heights
-                .into_iter()
-                .find(|h| h == &trusted_height)
-                .ok_or_else(|| {
-                    ForeignClientError::missing_trusted_height(self.dst_chain().id(), target_height)
-                })?
+            self.validate_trusted_height(target_height, trusted_height, &client_state)?;
+            trusted_height
         };
 
         if trusted_height >= target_height {
@@ -698,13 +769,16 @@ impl ForeignClient {
             ));
         }
 
-        let events = self.dst_chain().send_msgs(new_msgs).map_err(|e| {
-            ForeignClientError::client_update(
-                self.dst_chain.id(),
-                "failed sending message to dst chain".to_string(),
-                e,
-            )
-        })?;
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(new_msgs)
+            .map_err(|e| {
+                ForeignClientError::client_update(
+                    self.dst_chain.id(),
+                    "failed sending message to dst chain".to_string(),
+                    e,
+                )
+            })?;
 
         Ok(events)
     }
@@ -760,6 +834,8 @@ impl ForeignClient {
                 }
                 Ok(result) => {
                     events = result;
+                    // Should break to prevent retrying uselessly.
+                    break;
                 }
             }
         }
@@ -796,7 +872,7 @@ impl ForeignClient {
             .map_err(|e| {
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
             })?;
-        consensus_states.sort_by_key(|a| std::cmp::Reverse(a.height));
+        consensus_states.sort_by_key(|a| core::cmp::Reverse(a.height));
         Ok(consensus_states)
     }
 
@@ -935,9 +1011,11 @@ impl ForeignClient {
             // No header in events, cannot run misbehavior.
             // May happen on chains running older SDKs (e.g., Akash)
             if update_event.header.is_none() {
-                return Err(ForeignClientError::misbehaviour_exit(
-                    "no header in update client events".to_string(),
-                ));
+                return Err(ForeignClientError::misbehaviour_exit(format!(
+                    "could not extract header from update client event {:?} emitted by chain {:?}",
+                    update_event,
+                    self.dst_chain.id()
+                )));
             }
 
             // Check for misbehaviour according to the specific source chain type.
@@ -975,6 +1053,9 @@ impl ForeignClient {
 
             // Clear the update
             update = None;
+
+            // slight backoff
+            thread::sleep(Duration::from_millis(100));
         }
 
         debug!("[{}] finished misbehaviour checking", self);
@@ -1018,15 +1099,18 @@ impl ForeignClient {
             .to_any(),
         );
 
-        let events = self.dst_chain().send_msgs(msgs).map_err(|e| {
-            ForeignClientError::misbehaviour(
-                format!(
-                    "failed sending evidence to destination chain ({})",
-                    self.dst_chain.id(),
-                ),
-                e,
-            )
-        })?;
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(msgs)
+            .map_err(|e| {
+                ForeignClientError::misbehaviour(
+                    format!(
+                        "failed sending evidence to destination chain ({})",
+                        self.dst_chain.id(),
+                    ),
+                    e,
+                )
+            })?;
 
         Ok(events)
     }
@@ -1115,8 +1199,8 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
 /// instances of chains built using `MockChain`.
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-    use std::sync::Arc;
+    use alloc::sync::Arc;
+    use core::str::FromStr;
 
     use test_env_log::test;
     use tokio::runtime::Runtime as TokioRuntime;
@@ -1125,6 +1209,7 @@ mod test {
     use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
 
+    use crate::chain::handle::{ChainHandle, ProdChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;
@@ -1137,13 +1222,13 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain =
+            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
         let a_client =
             ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
 
-        let b_client =
-            ForeignClient::restore(ClientId::default(), b_chain.clone(), a_chain.clone());
+        let b_client = ForeignClient::restore(ClientId::default(), b_chain, a_chain);
 
         // Create the client on chain a
         let res = a_client.build_create_client_and_send();
@@ -1175,8 +1260,9 @@ mod test {
         let num_iterations = 3;
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain =
+            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
         let mut a_client = ForeignClient::restore(a_client_id, a_chain.clone(), b_chain.clone());
 
         let mut b_client =
@@ -1190,7 +1276,7 @@ mod test {
         );
 
         // Remember b's height.
-        let b_height_start = b_chain.clone().query_latest_height().unwrap();
+        let b_height_start = b_chain.query_latest_height().unwrap();
 
         // Create a client on chain a
         let res = a_client.create();
@@ -1281,8 +1367,9 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain =
+            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
@@ -1329,8 +1416,9 @@ mod test {
         let mut _b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain =
+            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());

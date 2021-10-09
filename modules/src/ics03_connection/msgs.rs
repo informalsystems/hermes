@@ -2,7 +2,7 @@
 //!
 //! We define each of the four messages in the connection handshake protocol as a `struct`.
 //! Each such message comprises the same fields as the datagrams defined in ICS3 English spec:
-//! <https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics>.
+//! <https://github.com/cosmos/ibc/tree/master/spec/ics-003-connection-semantics>.
 //!
 //! One departure from ICS3 is that we abstract the three counterparty fields (connection id,
 //! prefix, and client id) into a single field of type `Counterparty`; this applies to messages
@@ -16,6 +16,7 @@ use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use alloc::boxed::Box;
 
 pub mod conn_open_ack;
 pub mod conn_open_confirm;
@@ -35,6 +36,7 @@ pub enum ConnectionMsg {
 pub mod test_util {
 
     use crate::ics24_host::identifier::{ClientId, ConnectionId};
+    use crate::prelude::*;
     use ibc_proto::ibc::core::commitment::v1::MerklePrefix;
     use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
 

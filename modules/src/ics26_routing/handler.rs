@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use core::convert::TryInto;
 use prost_types::Any;
 
@@ -24,7 +25,7 @@ where
     let mut ctx_interim = ctx.clone();
 
     // A buffer for all the events, to be used as return value.
-    let mut res: Vec<IbcEvent> = vec![];
+    let mut res: Vec<IbcEvent> = Vec::new();
 
     for any_msg in messages {
         // Decode the proto message into a domain message, creating an ICS26 envelope.
@@ -56,7 +57,6 @@ where
     let output = match msg {
         Ics2Msg(msg) => {
             let handler_output = ics2_msg_dispatcher(ctx, msg).map_err(Error::ics02_client)?;
-
             // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
                 .map_err(Error::ics02_client)?;
@@ -127,7 +127,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use crate::prelude::*;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     use crate::events::IbcEvent;

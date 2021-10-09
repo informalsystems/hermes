@@ -299,5 +299,5 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 ## References
 
-[specs]: https://github.com/cosmos/ics/tree/master/spec
+[specs]: https://github.com/cosmos/ibc/tree/master/spec
 [#158]: https://github.com/informalsystems/ibc-rs/issues/158

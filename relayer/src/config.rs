@@ -3,8 +3,10 @@
 pub mod reload;
 pub mod types;
 
-use std::collections::{HashMap, HashSet};
-use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
+use alloc::collections::BTreeMap as HashMap;
+use alloc::collections::BTreeSet as HashSet;
+use core::{fmt, time::Duration};
+use std::{fs, fs::File, io::Write, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
@@ -79,6 +81,10 @@ impl ChannelsSpec {
 pub mod default {
     use super::*;
 
+    pub fn tx_confirmation() -> bool {
+        true
+    }
+
     pub fn filter() -> bool {
         false
     }
@@ -89,10 +95,6 @@ pub mod default {
 
     pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
-    }
-
-    pub fn trusting_period() -> Duration {
-        Duration::from_secs(336 * 60 * 60) // 336 hours ~ 14 days
     }
 
     pub fn clock_drift() -> Duration {
@@ -109,6 +111,8 @@ pub mod default {
 pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
+    #[serde(default)]
+    pub rest: RestConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
@@ -211,6 +215,8 @@ pub struct GlobalConfig {
     pub filter: bool,
     #[serde(default = "default::clear_packets_interval")]
     pub clear_packets_interval: u64,
+    #[serde(default = "default::tx_confirmation")]
+    pub tx_confirmation: bool,
 }
 
 impl Default for GlobalConfig {
@@ -220,6 +226,7 @@ impl Default for GlobalConfig {
             log_level: LogLevel::default(),
             filter: default::filter(),
             clear_packets_interval: default::clear_packets_interval(),
+            tx_confirmation: default::tx_confirmation(),
         }
     }
 }
@@ -244,6 +251,55 @@ impl Default for TelemetryConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+pub struct RestConfig {
+    pub enabled: bool,
+    pub host: String,
+    pub port: u16,
+}
+
+impl Default for RestConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            host: "127.0.0.1".to_string(),
+            port: 3000,
+        }
+    }
+}
+
+/// It defines the address generation method
+/// TODO: Ethermint `pk_type` to be restricted
+/// after the Cosmos SDK release with ethsecp256k1
+/// https://github.com/cosmos/cosmos-sdk/pull/9981
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(
+    rename_all = "lowercase",
+    tag = "derivation",
+    content = "proto_type",
+    deny_unknown_fields
+)]
+pub enum AddressType {
+    Cosmos,
+    Ethermint { pk_type: String },
+}
+
+impl Default for AddressType {
+    fn default() -> Self {
+        AddressType::Cosmos
+    }
+}
+
+impl fmt::Display for AddressType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AddressType::Cosmos => write!(f, "cosmos"),
+            AddressType::Ethermint { .. } => write!(f, "ethermint"),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     pub id: ChainId,
     pub rpc_addr: tendermint_rpc::Url,
@@ -262,8 +318,8 @@ pub struct ChainConfig {
     pub max_tx_size: MaxTxSize,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
-    #[serde(default = "default::trusting_period", with = "humantime_serde")]
-    pub trusting_period: Duration,
+    #[serde(with = "humantime_serde")]
+    pub trusting_period: Option<Duration>,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
@@ -271,6 +327,8 @@ pub struct ChainConfig {
     pub gas_price: GasPrice,
     #[serde(default)]
     pub packet_filter: PacketFilter,
+    #[serde(default)]
+    pub address_type: AddressType,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.

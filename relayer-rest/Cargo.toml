@@ -1,0 +1,28 @@
+[package]
+name       = "ibc-relayer-rest"
+version    = "0.7.3"
+authors    = ["Informal Systems <hello@informal.systems>"]
+edition    = "2018"
+license    = "Apache-2.0"
+readme     = "README.md"
+keywords   = ["ibc", "rest", "api", "cosmos", "tendermint"]
+homepage   = "https://hermes.informal.systems/"
+repository = "https://github.com/informalsystems/ibc-rs"
+
+description = """
+  Rust implementation of a RESTful API server for Hermes.
+"""
+
+[dependencies]
+ibc               = { version = "0.7.3", path = "../modules" }
+ibc-relayer       = { version = "0.7.3", path = "../relayer" }
+
+crossbeam-channel = "0.5"
+rouille           = "3.3"
+serde             = "1.0.130"
+tracing           = "0.1"
+
+[dev-dependencies]
+serde_json = "1.0.67"
+toml       = "0.5.8"
+ureq       = "2.2.0"

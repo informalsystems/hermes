@@ -26,17 +26,10 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     let packet = &msg.packet;
 
-    let dest_channel_end = ctx
-        .channel_end(&(
-            packet.destination_port.clone(),
-            packet.destination_channel.clone(),
-        ))
-        .ok_or_else(|| {
-            Error::channel_not_found(
-                packet.destination_port.clone(),
-                packet.destination_channel.clone(),
-            )
-        })?;
+    let dest_channel_end = ctx.channel_end(&(
+        packet.destination_port.clone(),
+        packet.destination_channel.clone(),
+    ))?;
 
     if !dest_channel_end.state_matches(&State::Open) {
         return Err(Error::invalid_channel_state(
@@ -59,9 +52,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
     }
 
-    let connection_end = ctx
-        .connection_end(&dest_channel_end.connection_hops()[0])
-        .ok_or_else(|| Error::missing_connection(dest_channel_end.connection_hops()[0].clone()))?;
+    let connection_end = ctx.connection_end(&dest_channel_end.connection_hops()[0])?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -90,8 +81,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx
-            .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))
-            .ok_or_else(Error::missing_next_recv_seq)?;
+            .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
         if packet.sequence != next_seq_recv {
             return Err(Error::invalid_packet_sequence(
@@ -115,8 +105,8 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
 
         match packet_rec {
-            Some(_receipt) => return Err(Error::packet_already_received(packet.sequence)),
-            None => {
+            Ok(_receipt) => return Err(Error::packet_already_received(packet.sequence)),
+            Err(e) if e.detail() == Error::packet_receipt_not_found(packet.sequence).detail() => {
                 // store a receipt that does not contain any data
                 PacketResult::Recv(RecvPacketResult {
                     port_id: packet.source_port.clone(),
@@ -126,6 +116,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
                     receipt: Some(Receipt::Ok),
                 })
             }
+            Err(_) => return Err(Error::implementation_specific()),
         }
     };
 
@@ -141,7 +132,8 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use crate::prelude::*;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     use crate::ics03_connection::connection::ConnectionEnd;
@@ -187,7 +179,7 @@ mod tests {
             source_channel: ChannelId::default(),
             destination_port: PortId::default(),
             destination_channel: ChannelId::default(),
-            data: vec![],
+            data: Vec::new(),
             timeout_height: client_height,
             timeout_timestamp: Timestamp::from_nanoseconds(1).unwrap(),
         };

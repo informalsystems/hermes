@@ -120,21 +120,24 @@ define_error! {
             |e| { format!("node at {} running chain {} not caught up", e.address, e.chain_id) },
 
         PrivateStore
-            |_| { "requested proof for a path in the private store" },
-
-        Store
-            [ TraceError<sled::Error> ]
-            |_| { "Store error" },
+            |_| { "Requested proof for a path in the private store" },
 
         Event
-            |_| { "Bad Notification" },
+            |_| { "Bad notification" },
+
+        ConversionFromAny
+            [ TraceError<TendermintProtoError> ]
+            |_| { "Conversion from a protobuf `Any` into a domain type failed" },
 
         EmptyUpgradedClientState
-            |_| { "The upgrade plan specifies no upgraded client state" },
+            |_| { "Found no upgraded client state" },
 
-        InvalidUpgradedClientState
-            [ client_error::Error ]
-            |e| { format!("the upgrade plan specifies an invalid upgraded client state: {}", e.source) },
+        ConsensusStateTypeMismatch
+            {
+                expected: ClientType,
+                got: ClientType,
+            }
+            |e| { format!("consensus state type mismatch; hint: expected client type '{0}', got '{1}'", e.expected, e.got) },
 
         EmptyResponseValue
             |_| { "Empty response value" },
@@ -147,7 +150,7 @@ define_error! {
             |_| { "Malformed proof" },
 
         InvalidHeight
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ tendermint::Error ]
             |_| { "Invalid height" },
 
         InvalidMetadata
@@ -298,7 +301,7 @@ define_error! {
 
         InvalidKeyAddress
             { address: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ tendermint::Error ]
             |e| { format!("invalid key address: {0}", e.address) },
 
         Bech32Encoding
@@ -415,6 +418,18 @@ define_error! {
                 format!("Hermes health check failed while verifying the application compatibility for chain {0}:{1}; caused by: {2}",
                     e.chain_id, e.address, e.cause)
             },
+
+        UnknownAccountType
+            {
+                type_url: String
+            }
+            |e| {
+                format!("Failed to deserialize account of an unknown protobuf type: {0}",
+                    e.type_url)
+            },
+
+        EmptyBaseAccount
+            |_| { "Empty BaseAccount within EthAccount" },
 
     }
 }

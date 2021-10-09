@@ -1,5 +1,8 @@
-use std::time::Duration;
+use core::fmt::{Display, Formatter};
+use core::str::FromStr;
+use core::time::Duration;
 
+use chrono::Utc;
 use flex_error::{define_error, DetailOnly};
 use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::events::IbcEvent;
@@ -7,10 +10,12 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
 use crate::config::ChainConfig;
 use crate::error::Error;
+use crate::util::bigint::U256;
 
 define_error! {
     PacketError {
@@ -50,13 +55,30 @@ define_error! {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Amount(U256);
+
+impl Display for Amount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for Amount {
+    type Err = FromStrRadixErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(U256::from_str_radix(s, 10)?))
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct TransferOptions {
     pub packet_src_chain_config: ChainConfig,
     pub packet_dst_chain_config: ChainConfig,
     pub packet_src_port_id: PortId,
     pub packet_src_channel_id: ChannelId,
-    pub amount: u64,
+    pub amount: Amount,
     pub denom: String,
     pub receiver: Option<String>,
     pub timeout_height_offset: u64,
@@ -64,9 +86,9 @@ pub struct TransferOptions {
     pub number_msgs: usize,
 }
 
-pub fn build_and_send_transfer_messages(
-    packet_src_chain: Box<dyn ChainHandle>, // the chain whose account is debited
-    packet_dst_chain: Box<dyn ChainHandle>, // the chain whose account eventually gets credited
+pub fn build_and_send_transfer_messages<Chain: ChainHandle>(
+    packet_src_chain: Chain, // the chain whose account is debited
+    packet_dst_chain: Chain, // the chain whose account eventually gets credited
     opts: TransferOptions,
 ) -> Result<Vec<IbcEvent>, PacketError> {
     let receiver = match &opts.receiver {
@@ -80,7 +102,8 @@ pub fn build_and_send_transfer_messages(
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
         Timestamp::none()
     } else {
-        (Timestamp::now() + opts.timeout_seconds).map_err(PacketError::timestamp_overflow)?
+        (Timestamp::from_datetime(Utc::now()) + opts.timeout_seconds)
+            .map_err(PacketError::timestamp_overflow)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {
@@ -109,7 +132,7 @@ pub fn build_and_send_transfer_messages(
     let msgs = vec![raw_msg; opts.number_msgs];
 
     let events = packet_src_chain
-        .send_msgs(msgs)
+        .send_messages_and_wait_commit(msgs)
         .map_err(|e| PacketError::submit(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction

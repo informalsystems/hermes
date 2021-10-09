@@ -6,6 +6,7 @@ use crate::Height;
 use flex_error::define_error;
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     Error {
         Ics02Client
             [ client_error::Error ]
@@ -23,13 +24,6 @@ define_error! {
             },
 
         ConnectionMismatch
-            { connection_id: ConnectionId }
-            | e | {
-                format_args!("connection end for identifier {0} was never initialized",
-                    e.connection_id)
-            },
-
-        UninitializedConnection
             { connection_id: ConnectionId }
             | e | {
                 format_args!("connection end for identifier {0} was never initialized",
@@ -119,13 +113,6 @@ define_error! {
         MissingCounterpartyPrefix
             | _ | { "missing counterparty prefix" },
 
-        MissingClient
-            { client_id: ClientId }
-            | e | {
-                format_args!("the client id does not match any client state: {0}",
-                    e.client_id)
-            },
-
         NullClientProof
             | _ | { "client proof must be present" },
 
@@ -138,16 +125,6 @@ define_error! {
 
         ConnectionVerificationFailure
             | _ | { "the connection proof verification failed" },
-
-        MissingClientConsensusState
-            {
-                height: Height,
-                client_id: ClientId,
-            }
-            | e | {
-                format_args!("the consensus state at height {0} for client id {1} could not be retrieved",
-                    e.height, e.client_id)
-            },
 
         MissingLocalConsensusState
             { height: Height }
@@ -171,5 +148,8 @@ define_error! {
                 format_args!("the client state proof verification failed for client id {0}",
                     e.client_id)
             },
+
+        ImplementationSpecific
+            | _ | { "implementation specific error" },
     }
 }

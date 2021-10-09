@@ -1,5 +1,5 @@
 // ICS03 - Connection Data Structures as defined in
-// https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#data-structures
+// https://github.com/cosmos/ibc/tree/master/spec/ics-003-connection-semantics#data-structures
 
 /// ConnectionEnd defines a stateful object on a chain connected to another
 /// separate one.
@@ -20,8 +20,9 @@ pub struct ConnectionEnd {
     /// counterparty chain associated with this connection.
     #[prost(message, optional, tag = "4")]
     pub counterparty: ::core::option::Option<Counterparty>,
-    /// delay period that must pass before a consensus state can be used for packet-verification
-    /// NOTE: delay period logic is only implemented by some clients.
+    /// delay period that must pass before a consensus state can be used for
+    /// packet-verification NOTE: delay period logic is only implemented by some
+    /// clients.
     #[prost(uint64, tag = "5")]
     pub delay_period: u64,
 }
@@ -92,6 +93,15 @@ pub struct Version {
     #[prost(string, repeated, tag = "2")]
     pub features: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+/// Params defines the set of Connection parameters.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Params {
+    /// maximum expected time per block (in nanoseconds), used to enforce block delay. This parameter should reflect the
+    /// largest amount of time that the chain might reasonably take to produce the next block under normal operating
+    /// conditions. A safe choice is 3-5x the expected time per block.
+    #[prost(uint64, tag = "1")]
+    pub max_expected_time_per_block: u64,
+}
 /// State defines if a connection is in one of the following states:
 /// INIT, TRYOPEN, OPEN or UNINITIALIZED.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -106,17 +116,6 @@ pub enum State {
     Tryopen = 2,
     /// A connection end has completed the handshake.
     Open = 3,
-}
-/// GenesisState defines the ibc connection submodule's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
-    pub connections: ::prost::alloc::vec::Vec<IdentifiedConnection>,
-    #[prost(message, repeated, tag = "2")]
-    pub client_connection_paths: ::prost::alloc::vec::Vec<ConnectionPaths>,
-    /// the sequence for the next generated connection identifier
-    #[prost(uint64, tag = "3")]
-    pub next_connection_sequence: u64,
 }
 /// QueryConnectionRequest is the request type for the Query/Connection RPC
 /// method
@@ -391,7 +390,8 @@ pub struct MsgConnectionOpenInit {
     #[prost(string, tag = "5")]
     pub signer: ::prost::alloc::string::String,
 }
-/// MsgConnectionOpenInitResponse defines the Msg/ConnectionOpenInit response type.
+/// MsgConnectionOpenInitResponse defines the Msg/ConnectionOpenInit response
+/// type.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenInitResponse {}
 /// MsgConnectionOpenTry defines a msg sent by a Relayer to try to open a
@@ -400,8 +400,8 @@ pub struct MsgConnectionOpenInitResponse {}
 pub struct MsgConnectionOpenTry {
     #[prost(string, tag = "1")]
     pub client_id: ::prost::alloc::string::String,
-    /// in the case of crossing hello's, when both chains call OpenInit, we need the connection identifier
-    /// of the previous connection in state INIT
+    /// in the case of crossing hello's, when both chains call OpenInit, we need
+    /// the connection identifier of the previous connection in state INIT
     #[prost(string, tag = "2")]
     pub previous_connection_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
@@ -478,7 +478,8 @@ pub struct MsgConnectionOpenConfirm {
     #[prost(string, tag = "4")]
     pub signer: ::prost::alloc::string::String,
 }
-/// MsgConnectionOpenConfirmResponse defines the Msg/ConnectionOpenConfirm response type.
+/// MsgConnectionOpenConfirmResponse defines the Msg/ConnectionOpenConfirm
+/// response type.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenConfirmResponse {}
 #[doc = r" Generated client implementations."]
@@ -566,7 +567,8 @@ pub mod msg_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        #[doc = " ConnectionOpenConfirm defines a rpc handler method for MsgConnectionOpenConfirm."]
+        #[doc = " ConnectionOpenConfirm defines a rpc handler method for"]
+        #[doc = " MsgConnectionOpenConfirm."]
         pub async fn connection_open_confirm(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgConnectionOpenConfirm>,
@@ -597,4 +599,17 @@ pub mod msg_client {
             write!(f, "MsgClient {{ ... }}")
         }
     }
+}
+/// GenesisState defines the ibc connection submodule's genesis state.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag = "1")]
+    pub connections: ::prost::alloc::vec::Vec<IdentifiedConnection>,
+    #[prost(message, repeated, tag = "2")]
+    pub client_connection_paths: ::prost::alloc::vec::Vec<ConnectionPaths>,
+    /// the sequence for the next generated connection identifier
+    #[prost(uint64, tag = "3")]
+    pub next_connection_sequence: u64,
+    #[prost(message, optional, tag = "4")]
+    pub params: ::core::option::Option<Params>,
 }

@@ -112,7 +112,7 @@ pub struct PacketState {
 /// conflicts with other protobuf message formats used for acknowledgements.
 /// The first byte of any message with this format will be the non-ASCII values
 /// `0xaa` (result) or `0xb2` (error). Implemented as defined by ICS:
-/// https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#acknowledgement-envelope
+/// https://github.com/cosmos/ibc/tree/master/spec/ics-004-channel-and-packet-semantics#acknowledgement-envelope
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Acknowledgement {
     /// response contains either a result or an error and must be non-empty
@@ -159,38 +159,6 @@ pub enum Order {
     Unordered = 1,
     /// packets are delivered exactly in the order which they were sent
     Ordered = 2,
-}
-/// GenesisState defines the ibc channel submodule's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
-    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
-    #[prost(message, repeated, tag = "2")]
-    pub acknowledgements: ::prost::alloc::vec::Vec<PacketState>,
-    #[prost(message, repeated, tag = "3")]
-    pub commitments: ::prost::alloc::vec::Vec<PacketState>,
-    #[prost(message, repeated, tag = "4")]
-    pub receipts: ::prost::alloc::vec::Vec<PacketState>,
-    #[prost(message, repeated, tag = "5")]
-    pub send_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
-    #[prost(message, repeated, tag = "6")]
-    pub recv_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
-    #[prost(message, repeated, tag = "7")]
-    pub ack_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
-    /// the sequence for the next generated channel identifier
-    #[prost(uint64, tag = "8")]
-    pub next_channel_sequence: u64,
-}
-/// PacketSequence defines the genesis type necessary to retrieve and store
-/// next send and receive sequences.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PacketSequence {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    #[prost(uint64, tag = "3")]
-    pub sequence: u64,
 }
 /// QueryChannelRequest is the request type for the Query/Channel RPC method
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -404,8 +372,8 @@ pub struct QueryPacketReceiptRequest {
     #[prost(uint64, tag = "3")]
     pub sequence: u64,
 }
-/// QueryPacketReceiptResponse defines the client query response for a packet receipt
-/// which also includes a proof, and the height from which the proof was
+/// QueryPacketReceiptResponse defines the client query response for a packet
+/// receipt which also includes a proof, and the height from which the proof was
 /// retrieved
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryPacketReceiptResponse {
@@ -709,7 +677,8 @@ pub mod query_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        #[doc = " PacketReceipt queries if a given packet sequence has been received on the queried chain"]
+        #[doc = " PacketReceipt queries if a given packet sequence has been received on the"]
+        #[doc = " queried chain"]
         pub async fn packet_receipt(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryPacketReceiptRequest>,
@@ -780,8 +749,8 @@ pub mod query_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        #[doc = " UnreceivedAcks returns all the unreceived IBC acknowledgements associated with a"]
-        #[doc = " channel and sequences."]
+        #[doc = " UnreceivedAcks returns all the unreceived IBC acknowledgements associated"]
+        #[doc = " with a channel and sequences."]
         pub async fn unreceived_acks(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryUnreceivedAcksRequest>,
@@ -849,8 +818,8 @@ pub struct MsgChannelOpenInitResponse {}
 pub struct MsgChannelOpenTry {
     #[prost(string, tag = "1")]
     pub port_id: ::prost::alloc::string::String,
-    /// in the case of crossing hello's, when both chains call OpenInit, we need the channel identifier
-    /// of the previous channel in state INIT
+    /// in the case of crossing hello's, when both chains call OpenInit, we need
+    /// the channel identifier of the previous channel in state INIT
     #[prost(string, tag = "2")]
     pub previous_channel_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
@@ -904,7 +873,8 @@ pub struct MsgChannelOpenConfirm {
     #[prost(string, tag = "5")]
     pub signer: ::prost::alloc::string::String,
 }
-/// MsgChannelOpenConfirmResponse defines the Msg/ChannelOpenConfirm response type.
+/// MsgChannelOpenConfirmResponse defines the Msg/ChannelOpenConfirm response
+/// type.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgChannelOpenConfirmResponse {}
 /// MsgChannelCloseInit defines a msg sent by a Relayer to Chain A
@@ -936,7 +906,8 @@ pub struct MsgChannelCloseConfirm {
     #[prost(string, tag = "5")]
     pub signer: ::prost::alloc::string::String,
 }
-/// MsgChannelCloseConfirmResponse defines the Msg/ChannelCloseConfirm response type.
+/// MsgChannelCloseConfirmResponse defines the Msg/ChannelCloseConfirm response
+/// type.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgChannelCloseConfirmResponse {}
 /// MsgRecvPacket receives incoming IBC packet
@@ -1121,7 +1092,8 @@ pub mod msg_client {
                 http::uri::PathAndQuery::from_static("/ibc.core.channel.v1.Msg/ChannelCloseInit");
             self.inner.unary(request.into_request(), path, codec).await
         }
-        #[doc = " ChannelCloseConfirm defines a rpc handler method for MsgChannelCloseConfirm."]
+        #[doc = " ChannelCloseConfirm defines a rpc handler method for"]
+        #[doc = " MsgChannelCloseConfirm."]
         pub async fn channel_close_confirm(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgChannelCloseConfirm>,
@@ -1213,4 +1185,36 @@ pub mod msg_client {
             write!(f, "MsgClient {{ ... }}")
         }
     }
+}
+/// GenesisState defines the ibc channel submodule's genesis state.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag = "1")]
+    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
+    #[prost(message, repeated, tag = "2")]
+    pub acknowledgements: ::prost::alloc::vec::Vec<PacketState>,
+    #[prost(message, repeated, tag = "3")]
+    pub commitments: ::prost::alloc::vec::Vec<PacketState>,
+    #[prost(message, repeated, tag = "4")]
+    pub receipts: ::prost::alloc::vec::Vec<PacketState>,
+    #[prost(message, repeated, tag = "5")]
+    pub send_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
+    #[prost(message, repeated, tag = "6")]
+    pub recv_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
+    #[prost(message, repeated, tag = "7")]
+    pub ack_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
+    /// the sequence for the next generated channel identifier
+    #[prost(uint64, tag = "8")]
+    pub next_channel_sequence: u64,
+}
+/// PacketSequence defines the genesis type necessary to retrieve and store
+/// next send and receive sequences.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PacketSequence {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "3")]
+    pub sequence: u64,
 }
