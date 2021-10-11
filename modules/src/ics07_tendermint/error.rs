@@ -28,7 +28,7 @@ define_error! {
             |e| { format_args!("invalid client state trust threshold: {}", e.reason) },
 
         MissingSignedHeader
-            | _ | { "missing signed header" },
+            |_| { "missing signed header" },
 
         Validation
             { reason: String }
@@ -39,41 +39,41 @@ define_error! {
             |e| { format_args!("invalid raw client state: {}", e.reason) },
 
         MissingValidatorSet
-            | _ | { "missing validator set" },
+            |_| { "missing validator set" },
 
         MissingTrustedValidatorSet
-            | _ | { "missing trusted validator set" },
+            |_| { "missing trusted validator set" },
 
         MissingTrustedHeight
-            | _ | { "missing trusted height" },
+            |_| { "missing trusted height" },
 
         MissingTrustingPeriod
-            | _ | { "missing trusting period" },
+            |_| { "missing trusting period" },
 
         MissingUnbondingPeriod
-            | _ | { "missing unbonding period" },
+            |_| { "missing unbonding period" },
 
         InvalidChainIdentifier
             [ ValidationError ]
-            | _ | { "Invalid chain identifier" },
+            |_| { "invalid chain identifier" },
 
         NegativeTrustingPeriod
-            | _ | { "negative trusting period" },
+            |_| { "negative trusting period" },
 
         NegativeUnbondingPeriod
-            | _ | { "negative unbonding period" },
+            |_| { "negative unbonding period" },
 
         MissingMaxClockDrift
-            | _ | { "missing max clock drift" },
+            |_| { "missing max clock drift" },
 
         NegativeMaxClockDrift
-            | _ | {  "negative max clock drift" },
+            |_| {  "negative max clock drift" },
 
         MissingLatestHeight
-            | _ | { "missing latest height" },
+            |_| { "missing latest height" },
 
         MissingFrozenHeight
-            | _ | { "missing frozen height" },
+            |_| { "missing frozen height" },
 
         InvalidChainId
             { raw_value: String }
@@ -90,7 +90,7 @@ define_error! {
 
         InvalidRawHeader
             [ tendermint::Error ]
-            | _ | { "invalid raw header" },
+            |_| { "invalid raw header" },
 
         InvalidRawMisbehaviour
             { reason: String }
@@ -98,7 +98,6 @@ define_error! {
 
         Decode
             [ TraceError<prost::DecodeError> ]
-            | _ | { "decode error" },
-
+            |_| { "decode error" },
     }
 }
