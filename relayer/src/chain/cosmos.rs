@@ -36,7 +36,7 @@ use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TmHeader;
@@ -49,7 +49,7 @@ use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-use ibc::{downcast, events::IbcEventType, query::QueryBlockRequest};
+use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
@@ -84,6 +84,7 @@ use crate::{
 };
 
 use super::{ChainEndpoint, HealthCheck};
+use ibc::ics04_channel::events::Attributes;
 
 mod compatibility;
 
@@ -610,11 +611,11 @@ impl CosmosSdkChain {
                         // so that we don't attempt to resolve the transaction later on.
                         if response.code.value() != 0 {
                             *events = vec![IbcEvent::ChainError(format!(
-                            "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                            self.id(), response.hash, response.code, response.log
-                        ))];
+                                "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                                self.id(), response.hash, response.code, response.log
+                            ))];
 
-                        // Otherwise, try to resolve transaction hash to the corresponding events.
+                            // Otherwise, try to resolve transaction hash to the corresponding events.
                         } else if let Ok(events_per_tx) =
                             self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
                         {
@@ -1587,7 +1588,7 @@ impl ChainEndpoint for CosmosSdkChain {
                                 .begin_block_events
                                 .unwrap_or_default()
                                 .into_iter()
-                                .filter_map(|ev| send_packet_from_event(ev, &request))
+                                .filter_map(|ev| filter_channel_event(ev, &request))
                                 .collect(),
                         );
 
@@ -1596,7 +1597,7 @@ impl ChainEndpoint for CosmosSdkChain {
                                 .end_block_events
                                 .unwrap_or_default()
                                 .into_iter()
-                                .filter_map(|ev| send_packet_from_event(ev, &request))
+                                .filter_map(|ev| filter_channel_event(ev, &request))
                                 .collect(),
                         );
                     }
@@ -1917,21 +1918,41 @@ fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx
     result
 }
 
-fn send_packet_from_event(event: Event, request: &QueryPacketEventDataRequest) -> Option<IbcEvent> {
-    if event.type_str == IbcEventType::SendPacket.as_str() {
-        if let Some(ibc_event) = ChannelEvents::try_from_tx(&event) {
-            if let IbcEvent::SendPacket(ref send_packet) = ibc_event {
-                let packet = &send_packet.packet;
-                if packet.source_port == request.source_port_id
-                    && packet.source_channel == request.source_channel_id
-                    && packet.destination_port == request.destination_port_id
-                    && packet.destination_channel == request.destination_channel_id
-                    && request.sequences.contains(&packet.sequence)
-                {
-                    return Some(ibc_event);
-                }
+fn filter_channel_event(event: Event, request: &QueryPacketEventDataRequest) -> Option<IbcEvent> {
+    enum ChannelEvent<'a> {
+        Attributes(&'a Attributes),
+        Packet(&'a Packet),
+    }
+
+    if let Some(ibc_event) = ChannelEvents::try_from_tx(&event) {
+        let chan_event = match ibc_event {
+            IbcEvent::OpenInitChannel(ref ev) => ChannelEvent::Attributes(ev.attributes()),
+            IbcEvent::OpenTryChannel(ref ev) => ChannelEvent::Attributes(ev.attributes()),
+            IbcEvent::OpenAckChannel(ref ev) => ChannelEvent::Attributes(ev.attributes()),
+            IbcEvent::OpenConfirmChannel(ref ev) => ChannelEvent::Attributes(ev.attributes()),
+            IbcEvent::CloseInitChannel(ref ev) => {
+                return (ev.port_id() == &request.source_port_id
+                    && ev.channel_id() == &request.source_channel_id
+                    && ev.counterparty_port_id() == &request.destination_port_id
+                    && ev.counterparty_channel_id() == Some(&request.destination_channel_id))
+                .then(|| ibc_event);
             }
-        }
+            IbcEvent::CloseConfirmChannel(ref ev) => {
+                return (ev.channel_id() == Some(&request.source_channel_id)).then(|| ibc_event);
+            }
+            IbcEvent::SendPacket(ref ev) => ChannelEvent::Packet(&ev.packet),
+            IbcEvent::ReceivePacket(ref ev) => ChannelEvent::Packet(&ev.packet),
+            IbcEvent::WriteAcknowledgement(ref ev) => ChannelEvent::Packet(&ev.packet),
+            IbcEvent::AcknowledgePacket(ref ev) => ChannelEvent::Packet(&ev.packet),
+            IbcEvent::TimeoutPacket(ref ev) => ChannelEvent::Packet(&ev.packet),
+            IbcEvent::TimeoutOnClosePacket(ref ev) => ChannelEvent::Packet(&ev.packet),
+            _ => return None,
+        };
+        return match chan_event {
+            ChannelEvent::Attributes(attr) if request.matches_attributes(attr) => Some(ibc_event),
+            ChannelEvent::Packet(pkt) if request.matches_packet(pkt) => Some(ibc_event),
+            _ => None,
+        };
     }
     None
 }
@@ -2157,6 +2178,7 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 }
 
 struct PrettyFee<'a>(&'a Fee);
+
 impl fmt::Display for PrettyFee<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let amount = match self.0.amount.get(0) {
