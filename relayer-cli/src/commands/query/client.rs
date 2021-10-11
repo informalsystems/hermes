@@ -55,7 +55,7 @@ impl Runnable for QueryClientStateCmd {
 
         match chain.query_client_state(&self.client_id, height) {
             Ok(cs) => Output::success(cs).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }
@@ -109,7 +109,9 @@ impl Runnable for QueryClientConsensusCmd {
             Err(e) => {
                 return Output::error(format!(
                     "Failed while querying client '{}' on chain '{}' with error: {}",
-                    self.client_id, self.chain_id, e
+                    self.client_id,
+                    self.chain_id,
+                    e.detail()
                 ))
                 .exit()
             }
@@ -125,7 +127,7 @@ impl Runnable for QueryClientConsensusCmd {
 
                 match res {
                     Ok(cs) => Output::success(cs).exit(),
-                    Err(e) => Output::error(format!("{}", e)).exit(),
+                    Err(e) => Output::error(format!("{}", e.detail())).exit(),
                 }
             }
             None => {
@@ -143,7 +145,7 @@ impl Runnable for QueryClientConsensusCmd {
                             Output::success(states).exit()
                         }
                     }
-                    Err(e) => Output::error(format!("{}", e)).exit(),
+                    Err(e) => Output::error(format!("{}", e.detail())).exit(),
                 }
             }
         }
@@ -192,7 +194,9 @@ impl Runnable for QueryClientHeaderCmd {
             Err(e) => {
                 return Output::error(format!(
                     "Failed while querying client '{}' on chain '{}' with error: {}",
-                    self.client_id, self.chain_id, e
+                    self.client_id,
+                    self.chain_id,
+                    e.detail()
                 ))
                 .exit()
             }
@@ -211,7 +215,7 @@ impl Runnable for QueryClientHeaderCmd {
 
         match res {
             Ok(header) => Output::success(header).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }
@@ -258,7 +262,7 @@ impl Runnable for QueryClientConnectionsCmd {
 
         match res {
             Ok(ce) => Output::success(ce).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

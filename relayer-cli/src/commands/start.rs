@@ -45,7 +45,11 @@ impl Runnable for StartCmd {
         info!("Hermes has started");
         match supervisor.run() {
             Ok(()) => Output::success_msg("done").exit(),
-            Err(e) => Output::error(format!("Hermes failed to start, last error: {}", e)).exit(),
+            Err(e) => Output::error(format!(
+                "Hermes failed to start, last error: {}",
+                e.detail()
+            ))
+            .exit(),
         }
     }
 }
@@ -71,7 +75,7 @@ fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resu
                     match reload.reload() {
                         Ok(true) => info!("configuration successfully reloaded"),
                         Ok(false) => info!("configuration did not change"),
-                        Err(e) => error!("failed to reload configuration: {}", e),
+                        Err(e) => error!("failed to reload configuration: {}", e.detail()),
                     }
                 }
                 SIGUSR1 => {

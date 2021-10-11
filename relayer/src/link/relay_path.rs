@@ -567,7 +567,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 error!(
                     "[{}] failed to regenerate operational data from initial data: {} \
                     with error {}, discarding this op. data",
-                    self, initial_odata, e
+                    self,
+                    initial_odata,
+                    e.detail()
                 );
                 return None;
             } // Cannot retry, contain the error by reporting a None
@@ -585,7 +587,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     error!(
                         "[{}] failed to schedule newly-generated operational data from \
                     initial data: {} with error {}, discarding this op. data",
-                        self, initial_odata, e
+                        self,
+                        initial_odata,
+                        e.detail()
                     );
                     return None;
                 }
@@ -1232,14 +1236,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         let mut summary_src = self.process_pending_txs_src().unwrap_or_else(|e| {
-            error!("error processing pending events in source chain: {}", e);
+            error!(
+                "error processing pending events in source chain: {}",
+                e.detail()
+            );
             RelaySummary::empty()
         });
 
         let summary_dst = self.process_pending_txs_dst().unwrap_or_else(|e| {
             error!(
                 "error processing pending events in destination chain: {}",
-                e
+                e.detail()
             );
             RelaySummary::empty()
         });

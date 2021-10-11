@@ -47,8 +47,13 @@ pub fn monitor_misbehaviour(
     client_id: &ClientId,
     config: &config::Reader<CliApp>,
 ) -> Result<Option<IbcEvent>, Box<dyn std::error::Error>> {
-    let chain = spawn_chain_runtime(config, chain_id)
-        .map_err(|e| format!("could not spawn the chain runtime for {}: {}", chain_id, e))?;
+    let chain = spawn_chain_runtime(config, chain_id).map_err(|e| {
+        format!(
+            "could not spawn the chain runtime for {}: {}",
+            chain_id,
+            e.detail()
+        )
+    })?;
 
     let subscription = chain.subscribe()?;
 
@@ -101,7 +106,13 @@ fn misbehaviour_handling<Chain: ChainHandle>(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let client_state = chain
         .query_client_state(&client_id, Height::zero())
-        .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;
+        .map_err(|e| {
+            format!(
+                "could not query client state for {}: {}",
+                client_id,
+                e.detail()
+            )
+        })?;
 
     if client_state.is_frozen() {
         return Err(format!("client {} is already frozen", client_id).into());

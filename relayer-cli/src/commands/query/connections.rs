@@ -52,7 +52,7 @@ impl Runnable for QueryConnectionsCmd {
 
                 Output::success(ids).exit()
             }
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

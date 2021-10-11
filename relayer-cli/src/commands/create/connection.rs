@@ -93,7 +93,7 @@ impl CreateConnectionCommand {
         let delay = Duration::from_secs(self.delay);
         match Connection::new(client_a, client_b, delay) {
             Ok(conn) => Output::success(conn).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 
@@ -104,7 +104,7 @@ impl CreateConnectionCommand {
         // Validate & spawn runtime for chain_a.
         let chain_a = match spawn_chain_runtime(&config, &self.chain_a_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         // Unwrap the identifier of the client on chain_a.
@@ -125,7 +125,9 @@ impl CreateConnectionCommand {
             Err(e) => {
                 return Output::error(format!(
                     "Failed while querying client '{}' on chain '{}' with error: {}",
-                    client_a_id, self.chain_a_id, e
+                    client_a_id,
+                    self.chain_a_id,
+                    e.detail()
                 ))
                 .exit()
             }
@@ -134,7 +136,7 @@ impl CreateConnectionCommand {
         // Validate & spawn runtime for chain_b.
         let chain_b = match spawn_chain_runtime(&config, &chain_b_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         // Unwrap the identifier of the client on chain_b.
@@ -163,7 +165,7 @@ impl CreateConnectionCommand {
         let delay = Duration::from_secs(self.delay);
         match Connection::new(client_a, client_b, delay) {
             Ok(conn) => Output::success(conn).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

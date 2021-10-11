@@ -145,7 +145,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                 error!(
                     path = %self.path.short_name(),
                     "[{}] worker: handling command encountered error: {}",
-                    link.a_to_b, e
+                    link.a_to_b, e.detail()
                 );
 
                 return RetryResult::Retry(index);
@@ -159,7 +159,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         {
             error!(
                 "[{}] worker: schedule execution encountered error: {}",
-                link.a_to_b, e
+                link.a_to_b,
+                e.detail()
             );
             return RetryResult::Retry(index);
         }

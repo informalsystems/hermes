@@ -132,7 +132,7 @@ where
         let id = handle.id();
         let thread = thread::spawn(move || {
             if let Err(e) = chain_runtime.run() {
-                error!("failed to start runtime for chain '{}': {}", id, e);
+                error!("failed to start runtime for chain '{}': {}", id, e.detail());
             }
         });
 

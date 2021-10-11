@@ -373,7 +373,7 @@ impl EventMonitor {
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
-                    error!("[{}] {}", self.chain_id, e);
+                    error!("[{}] {}", self.chain_id, e.detail());
                 }),
                 Err(e) => {
                     match e.detail() {
@@ -384,7 +384,7 @@ impl EventMonitor {
                             );
 
                             self.propagate_error(e).unwrap_or_else(|e| {
-                                error!("[{}] {}", self.chain_id, e);
+                                error!("[{}] {}", self.chain_id, e.detail());
                             });
 
                             // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
@@ -397,7 +397,11 @@ impl EventMonitor {
                             return Next::Continue;
                         }
                         _ => {
-                            error!("[{}] failed to collect events: {}", self.chain_id, e);
+                            error!(
+                                "[{}] failed to collect events: {}",
+                                self.chain_id,
+                                e.detail()
+                            );
 
                             // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
                             self.reconnect();

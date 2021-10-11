@@ -60,7 +60,7 @@ impl Runnable for QueryChannelEndCmd {
                     Output::success(channel_end).exit()
                 }
             }
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

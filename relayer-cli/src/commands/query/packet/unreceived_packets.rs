@@ -62,7 +62,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
     fn run(&self) {
         match self.execute() {
             Ok(seqs) => Output::success(seqs).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

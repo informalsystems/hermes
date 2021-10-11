@@ -20,7 +20,7 @@ macro_rules! tx_chan_cmd {
         let chains = match ChainHandlePair::spawn(&config, &$self.src_chain_id, &$self.dst_chain_id)
         {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         // Retrieve the connection
@@ -29,7 +29,7 @@ macro_rules! tx_chan_cmd {
             .query_connection(&$self.dst_conn_id, Height::default())
         {
             Ok(connection) => connection,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         let channel = $chan(chains, dst_connection);
@@ -40,7 +40,7 @@ macro_rules! tx_chan_cmd {
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     };
 }
@@ -72,7 +72,7 @@ impl Runnable for TxRawChanOpenInitCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         // Retrieve the connection
@@ -81,7 +81,7 @@ impl Runnable for TxRawChanOpenInitCmd {
             .query_connection(&self.dst_conn_id, Height::default())
         {
             Ok(connection) => connection,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         let channel = Channel {
@@ -112,7 +112,7 @@ impl Runnable for TxRawChanOpenInitCmd {
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }
@@ -156,7 +156,7 @@ impl Runnable for TxRawChanOpenTryCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         // Retrieve the connection
@@ -165,7 +165,7 @@ impl Runnable for TxRawChanOpenTryCmd {
             .query_connection(&self.dst_conn_id, Height::default())
         {
             Ok(connection) => connection,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         let channel = Channel {
@@ -196,7 +196,7 @@ impl Runnable for TxRawChanOpenTryCmd {
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
 
         tx_chan_cmd!(

@@ -5,7 +5,6 @@ use std::{path::PathBuf, sync::RwLock};
 
 use crossbeam_channel::Sender;
 use itertools::Itertools;
-use thiserror::Error;
 
 use ibc::ics24_host::identifier::ChainId;
 use tracing::debug;
@@ -17,16 +16,21 @@ use crate::{
 
 use super::{ChainConfig, Config};
 
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("failed to load configuration from disk")]
-    LoadFailed(#[source] crate::error::Error),
+use flex_error::define_error;
 
-    #[error("configuration is inconsistent, did not find config for added/updated chain {0}")]
-    InconsistentConfig(ChainId),
+define_error! {
+    Error {
+        LoadFailed
+            [ crate::error::Error ]
+            |_| { "failed to load configuration from disk" },
 
-    #[error("internal: poisoned lock")]
-    PoisonedLock,
+        InconsistentConfig
+            { chain_id: ChainId }
+            |e| { format_args!("configuration is inconsistent, did not find config for added/updated chain {}", e.chain_id) },
+
+        PoisonedLock
+            |_| { "internal: poisoned lock" },
+    }
 }
 
 /// Facility for reloading the relayer configuration.
@@ -64,7 +68,7 @@ impl ConfigReload {
     ///
     /// See also: [`ConfigReload::update_config`]
     pub fn reload(&self) -> Result<bool, Error> {
-        let new_config = super::load(&self.path).map_err(Error::LoadFailed)?;
+        let new_config = super::load(&self.path).map_err(Error::load_failed)?;
         self.update_config(new_config)
     }
 
@@ -94,7 +98,7 @@ impl ConfigReload {
     /// current configuration by the supervisor, will result in the given
     /// configuration.
     fn compute_updates(&self, new: &Config) -> Result<Vec<ConfigUpdate>, Error> {
-        let cur = self.current.read().map_err(|_| Error::PoisonedLock)?;
+        let cur = self.current.read().map_err(|_| Error::poisoned_lock())?;
 
         let cur_chains = cur.chains_map();
         let new_chains = new.chains_map();
@@ -107,7 +111,7 @@ impl ConfigReload {
                     let config = new
                         .find_chain(id)
                         .cloned()
-                        .ok_or_else(|| Error::InconsistentConfig((*id).clone()))?;
+                        .ok_or_else(|| Error::inconsistent_config((*id).clone()))?;
 
                     Ok(ConfigUpdate::Add(config))
                 }
@@ -115,7 +119,7 @@ impl ConfigReload {
                     let config = new
                         .find_chain(id)
                         .cloned()
-                        .ok_or_else(|| Error::InconsistentConfig((*id).clone()))?;
+                        .ok_or_else(|| Error::inconsistent_config((*id).clone()))?;
 
                     Ok(ConfigUpdate::Update(config))
                 }

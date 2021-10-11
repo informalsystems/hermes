@@ -30,7 +30,7 @@ impl Runnable for TxRawPacketRecvCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         let opts = LinkParameters {
@@ -39,7 +39,7 @@ impl Runnable for TxRawPacketRecvCmd {
         };
         let mut link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         let res: Result<Vec<IbcEvent>, Error> = link
@@ -48,7 +48,7 @@ impl Runnable for TxRawPacketRecvCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }
@@ -74,7 +74,7 @@ impl Runnable for TxRawPacketAckCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         let opts = LinkParameters {
@@ -83,7 +83,7 @@ impl Runnable for TxRawPacketAckCmd {
         };
         let mut link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         let res: Result<Vec<IbcEvent>, Error> = link
@@ -92,7 +92,7 @@ impl Runnable for TxRawPacketAckCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

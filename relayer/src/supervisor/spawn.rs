@@ -97,7 +97,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             Err(e) => {
                 error!(
                     "skipping workers for chain {}, reason: failed to spawn chain runtime with error: {}",
-                    from_chain_id, e
+                    from_chain_id, e.detail()
                 );
 
                 return;
@@ -109,7 +109,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             Err(e) => {
                 error!(
                     "skipping workers for chain {}, reason: failed to query clients with error: {}",
-                    from_chain_id, e
+                    from_chain_id,
+                    e.detail()
                 );
 
                 return;
@@ -133,7 +134,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             Err(e) => {
                 error!(
                     "skipping workers for chain {}, reason: failed to spawn chain runtime with error: {}",
-                    chain_id, e
+                    chain_id, e.detail()
                 );
 
                 return;
@@ -145,7 +146,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             Err(e) => {
                 error!(
                     "skipping workers for chain {}, reason: failed to query clients with error: {}",
-                    chain_id, e
+                    chain_id,
+                    e.detail()
                 );
 
                 return;
@@ -228,7 +230,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             Err(e) => {
                 error!(
                     "skipping workers for chain {}, reason: failed to query client connections for client {}: {}",
-                    chain_id, client.client_id, e
+                    chain_id, client.client_id, e.detail()
                 );
 
                 return;
@@ -253,7 +255,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             Err(e) => {
                 error!(
                     "skipping workers for chain {} and connection {}, reason: failed to query connection end: {}",
-                    chain_id, connection_id, e
+                    chain_id, connection_id, e.detail()
                 );
                 return;
             }
@@ -282,7 +284,11 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                     return;
                 }
                 Err(e) => {
-                    error!("skipping workers for chain {}. reason: {}", chain_id, e);
+                    error!(
+                        "skipping workers for chain {}. reason: {}",
+                        chain_id,
+                        e.detail()
+                    );
                     return;
                 }
                 _ => {} // allowed
@@ -299,7 +305,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                 "skipped workers for connection {} on chain {}, reason: {}",
                 connection.connection_id,
                 chain.id(),
-                e
+                e.detail()
             ),
         }
 
@@ -343,7 +349,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             Err(e) => {
                 error!(
                     "skipping workers for chain {} and connection {}, reason: failed to query its channels: {}",
-                    chain.id(), connection_id, e
+                    chain.id(), connection_id, e.detail()
                 );
 
                 return;
@@ -363,7 +369,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                     "skipped workers for chain {} and channel {} due to error {}",
                     chain.id(),
                     channel_id,
-                    e
+                    e.detail()
                 ),
             }
         }

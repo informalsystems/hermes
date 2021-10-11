@@ -498,7 +498,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
     fn create(&mut self) -> Result<(), ForeignClientError> {
         let event = self.build_create_client_and_send().map_err(|e| {
-            error!("[{}]  failed CreateClient: {}", self, e);
+            error!("[{}]  failed CreateClient: {}", self, e.detail());
             e
         })?;
 
@@ -826,7 +826,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     error!(
                         "[{}] query_tx with error {}, retry {}/{}",
                         self,
-                        e,
+                        e.detail(),
                         i + 1,
                         MAX_RETRIES
                     );

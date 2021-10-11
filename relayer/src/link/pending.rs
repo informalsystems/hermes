@@ -207,7 +207,9 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                     error!(
                         "[{}] error querying for tx hashes {}: {}. will retry again later",
-                        self, tx_hashes, e
+                        self,
+                        tx_hashes,
+                        e.detail()
                     );
 
                     // Push it to the back of the pending queue to process it

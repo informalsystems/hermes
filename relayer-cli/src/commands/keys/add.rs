@@ -73,7 +73,7 @@ impl Runnable for KeysAddCmd {
         let config = app_config();
 
         let opts = match self.options(&config) {
-            Err(err) => return Output::error(err).exit(),
+            Err(e) => return Output::error(e).exit(),
             Ok(result) => result,
         };
 

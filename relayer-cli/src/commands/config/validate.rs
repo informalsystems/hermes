@@ -15,7 +15,7 @@ impl Runnable for ValidateCmd {
 
         match config::validate_config(&config) {
             Ok(_) => Output::success("validation passed successfully").exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

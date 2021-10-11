@@ -368,13 +368,13 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             match chain {
                 Ok(chain) => match chain.health_check() {
                     Ok(Healthy) => info!("[{}] chain is healthy", id),
-                    Ok(Unhealthy(e)) => error!("[{}] chain is unhealthy: {}", id, e),
-                    Err(e) => error!("[{}] failed to perform health check: {}", id, e),
+                    Ok(Unhealthy(e)) => error!("[{}] chain is unhealthy: {}", id, e.detail()),
+                    Err(e) => error!("[{}] failed to perform health check: {}", id, e.detail()),
                 },
                 Err(e) => {
                     error!(
                         "skipping health check for chain {}, reason: failed to spawn chain runtime with error: {}",
-                        config.id, e
+                        config.id, e.detail()
                     );
                 }
             }
@@ -431,7 +431,8 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                 Err(e) => {
                     error!(
                         "failed to spawn chain runtime for {}: {}",
-                        chain_config.id, e
+                        chain_config.id,
+                        e.detail()
                     );
 
                     continue;
@@ -442,7 +443,8 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                 Ok(subscription) => subscriptions.push((chain, subscription)),
                 Err(e) => error!(
                     "failed to subscribe to events of {}: {}",
-                    chain_config.id, e
+                    chain_config.id,
+                    e.detail()
                 ),
             }
         }
@@ -521,7 +523,8 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         if let Err(e) = self.registry.spawn(&id) {
             error!(
                 "failed to add chain {} because of failure to spawn the chain runtime: {}",
-                id, e
+                id,
+                e.detail()
             );
 
             // Remove the newly added config
@@ -620,9 +623,13 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
         match batch.deref() {
             Ok(batch) => {
-                let _ = self
-                    .process_batch(chain, batch)
-                    .map_err(|e| error!("[{}] error during batch processing: {}", chain_id, e));
+                let _ = self.process_batch(chain, batch).map_err(|e| {
+                    error!(
+                        "[{}] error during batch processing: {}",
+                        chain_id,
+                        e.detail()
+                    )
+                });
             }
             Err(EventError(EventErrorDetail::SubscriptionCancelled(_), _)) => {
                 warn!(chain.id = %chain_id, "event subscription was cancelled, clearing pending packets");
@@ -630,12 +637,17 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                 let _ = self.clear_pending_packets(&chain_id).map_err(|e| {
                     error!(
                         "[{}] error during clearing pending packets: {}",
-                        chain_id, e
+                        chain_id,
+                        e.detail()
                     )
                 });
             }
             Err(e) => {
-                error!("[{}] error in receiving event batch: {}", chain_id, e)
+                error!(
+                    "[{}] error in receiving event batch: {}",
+                    chain_id,
+                    e.detail()
+                )
             }
         }
     }

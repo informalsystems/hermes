@@ -74,7 +74,7 @@ pub fn extract_header_from_tx(event: &tendermint::abci::Event) -> Option<AnyHead
             let result = match Protobuf::decode(header_bytes.as_ref()) {
                 Ok(header) => Some(header),
                 Err(e) => {
-                    tracing::error!("error {} while decoding {:?}", e, header_bytes);
+                    tracing::error!("error {} while decoding {:?}", e.detail(), header_bytes);
                     None
                 }
             };

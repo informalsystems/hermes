@@ -139,7 +139,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
+            Err(e) => return Output::error(e).exit(),
             Ok(result) => result,
         };
 
@@ -214,7 +214,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

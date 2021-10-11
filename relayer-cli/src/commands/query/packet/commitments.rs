@@ -61,7 +61,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
     fn run(&self) {
         match self.execute() {
             Ok(p) => Output::success(p).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

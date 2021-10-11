@@ -131,7 +131,7 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
         };
 
         if let Err(e) = result {
-            error!("[{}] worker aborted with error: {}", name, e);
+            error!("[{}] worker aborted with error: {}", name, e.detail());
         }
 
         if let Err(e) = msg_tx.send(WorkerMsg::Stopped(id, object)) {

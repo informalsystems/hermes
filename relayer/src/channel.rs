@@ -383,7 +383,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
     fn do_chan_open_try_and_send(&mut self) -> Result<(), ChannelError> {
         let event = self.build_chan_open_try_and_send().map_err(|e| {
-            error!("Failed ChanTry {:?}: {:?}", self.b_side, e);
+            error!("Failed ChanTry {:?}: {:?}", self.b_side, e.detail());
             e
         })?;
 
@@ -616,7 +616,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match self.handshake_step(state) {
             Err(e) => {
-                error!("Failed Chan{:?} with error: {}", state, e);
+                error!("Failed Chan{:?} with error: {}", state, e.detail());
                 RetryResult::Retry(index)
             }
             Ok(ev) => {
@@ -975,7 +975,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         do_build_chan_open_ack_and_send(self).map_err(|e| {
-            error!("failed ChanAck {:?}: {}", self.b_side, e);
+            error!("failed ChanAck {:?}: {}", self.b_side, e.detail());
             e
         })
     }
@@ -1068,7 +1068,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         do_build_chan_open_confirm_and_send(self).map_err(|e| {
-            error!("failed ChanConfirm {:?}: {}", self.b_side, e);
+            error!("failed ChanConfirm {:?}: {}", self.b_side, e.detail());
             e
         })
     }

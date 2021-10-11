@@ -59,7 +59,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
     fn run(&self) {
         match self.execute() {
             Ok(ps) => Output::success(ps).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

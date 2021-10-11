@@ -130,7 +130,7 @@ pub fn listen(
 
                 info!("");
             }
-            Err(e) => error!("- error: {}", e),
+            Err(e) => error!("- error: {}", e.detail()),
         }
     }
 

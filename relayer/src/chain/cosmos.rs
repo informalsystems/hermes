@@ -248,14 +248,16 @@ impl CosmosSdkChain {
             })
             .map(|sr| sr.gas_info);
 
-        debug!("[{}] simulated gas: {:?}", self.id(), estimated_gas);
+        if let Ok(ref gas) = estimated_gas {
+            debug!("[{}] simulated gas: {:?}", self.id(), gas);
+        }
 
         let estimated_gas = estimated_gas.map_or_else(
             |e| {
                 error!(
                     "[{}] failed to estimate gas, falling back on max gas, error: {}",
                     self.id(),
-                    e
+                    e.detail()
                 );
 
                 self.max_gas()
@@ -305,13 +307,15 @@ impl CosmosSdkChain {
                 debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
             }
             tendermint::abci::Code::Err(code) => {
-                // Avoid increasing the account s.n. if CheckTx failed
+                let sdk_error = sdk_error_from_tx_sync_error_code(code);
+
+                // Avoid increasing the account s.n. if CheckTx failed.
                 // Log the error
                 error!(
                     "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
                     self.id(),
                     response,
-                    sdk_error_from_tx_sync_error_code(code)
+                    sdk_error.detail()
                 );
             }
         }

@@ -123,14 +123,14 @@ impl Runnable for TxIbcUpgradeChainCmd {
             .map_err(Error::relayer);
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         let dst_chain_res =
             CosmosSdkChain::bootstrap(opts.dst_chain_config.clone(), rt).map_err(Error::relayer);
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e.detail())).exit(),
         };
 
         let res: Result<Vec<IbcEvent>, Error> =
@@ -139,7 +139,7 @@ impl Runnable for TxIbcUpgradeChainCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }

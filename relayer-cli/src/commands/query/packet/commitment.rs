@@ -69,7 +69,7 @@ impl Runnable for QueryPacketCommitmentCmd {
     fn run(&self) {
         match self.execute() {
             Ok(hex) => Output::success(hex).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e.detail())).exit(),
         }
     }
 }
