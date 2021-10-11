@@ -148,190 +148,46 @@ You will need to use a text editor to create the file and add content to it.</p>
 </code></pre>
 <h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of contents</a></h2>
 <ul>
-<li><a href="#configuration-format">Configuration format</a>
-<ul>
-<li><a href="#global"><code>[global]</code></a>
-<ul>
-<li><a href="#parameters">Parameters</a></li>
-</ul>
-</li>
-<li><a href="#telemetry"><code>[telemetry]</code></a>
-<ul>
-<li><a href="#parameters-1">Parameters</a></li>
-</ul>
-</li>
-<li><a href="#rest"><code>[rest]</code></a>
-<ul>
-<li><a href="#parameters-2">Parameters</a></li>
-</ul>
-</li>
-<li><a href="#chains"><code>[[chains]]</code></a>
-<ul>
-<li><a href="#parameters-3">Parameters</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li><a href="#configuration">Configuration</a></li>
 <li><a href="#adding-private-keys">Adding private keys</a></li>
 <li><a href="#example-configuration-file">Example configuration file</a></li>
 <li><a href="#update-the-configuration-without-restarting-hermes">Update the configuration without restarting Hermes</a></li>
 <li><a href="#next-steps">Next steps</a></li>
 </ul>
-<h2 id="configuration-format"><a class="header" href="#configuration-format">Configuration format</a></h2>
+<h2 id="configuration-1"><a class="header" href="#configuration-1">Configuration</a></h2>
 <p>The configuration file must have one <code>global</code> section, and one <code>chains</code> section for each chain.</p>
 <blockquote>
 <p><strong>Note:</strong> As of 0.6.0, the Hermes configuration file is self-documented.
-This section of the guide which discusses each parameter in turn is no
-longer maintained, and we may remove it soon. Please read the configuration
-file <a href="https://github.com/informalsystems/ibc-rs/blob/v0.7.3/config.toml"><code>config.toml</code></a> itself for the most up-to-date documentation of parameters.</p>
+Please read the configuration file <a href="https://github.com/informalsystems/ibc-rs/blob/v0.7.3/config.toml"><code>config.toml</code></a>
+itself for the most up-to-date documentation of parameters.</p>
 </blockquote>
-<h3 id="global"><a class="header" href="#global"><code>[global]</code></a></h3>
-<p>The <code>global</code> section has parameters that apply globally to the relayer operation.</p>
-<h4 id="parameters"><a class="header" href="#parameters">Parameters</a></h4>
-<ul>
-<li>
-<p><strong>strategy</strong>: <em>(string)</em> Specify the strategy to be used by the relayer. Default: <code>packets</code>
-Two options are currently supported:</p>
-<ul>
-<li><code>all</code>: Relay packets and perform channel and connection handshakes.</li>
-<li><code>packets</code>: Relay packets only.</li>
-</ul>
-</li>
-<li>
-<p><strong>log_level</strong>: <em>(string)</em> Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default: <code>info</code>.
-For more information on parametrizing the log output, see the section <a href="./help.html#parametrizing-the-log-output-level">help/log-level</a>.</p>
-</li>
-</ul>
-<p>Here is an example for the <code>global</code> section:</p>
-<pre><code class="language-toml">[global]
-strategy = 'packets'
-log_level = 'info'
-</code></pre>
-<h3 id="telemetry"><a class="header" href="#telemetry"><code>[telemetry]</code></a></h3>
-<p>The <code>telemetry</code> section defines parameters for Hermes' built-in <a href="telemetry.html">telemetry</a> capabilities.</p>
-<h4 id="parameters-1"><a class="header" href="#parameters-1">Parameters</a></h4>
-<ul>
-<li>
-<p><strong>enabled</strong>: <em>(boolean)</em> Whether or not to enable the telemetry service. Default: <code>false</code>.</p>
-</li>
-<li>
-<p><strong>host</strong>: <em>(string)</em> Specify the IPv4/6 host over which the built-in HTTP server will serve the metrics gathered by the telemetry service. Default: <code>127.0.0.1</code></p>
-</li>
-<li>
-<p><strong>port</strong>: <em>(u16)</em> Specify the port over which the built-in HTTP server will serve the metrics gathered by the telemetry service. Default: <code>3001</code></p>
-</li>
-</ul>
-<p>Here is an example for the <code>telemetry</code> section:</p>
-<pre><code class="language-toml">[telemetry]
-enabled = true
-host    = '127.0.0.1'
-port    = 3001
-</code></pre>
-<h3 id="rest"><a class="header" href="#rest"><code>[rest]</code></a></h3>
-<p>The <code>rest</code> section defines parameters for Hermes' built-in <a href="rest-api.html">REST API</a>..</p>
-<h4 id="parameters-2"><a class="header" href="#parameters-2">Parameters</a></h4>
-<ul>
-<li>
-<p><strong>enabled</strong>: <em>(boolean)</em> Whether or not to enable the built-in REST server. Default: <code>false</code>.</p>
-</li>
-<li>
-<p><strong>host</strong>: <em>(string)</em> Specify the IPv4/6 host over which the built-in HTTP server will be listening. Default: <code>127.0.0.1</code></p>
-</li>
-<li>
-<p><strong>port</strong>: <em>(u16)</em> Specify the port over which the built-in HTTP server will be listening. Default: <code>3000</code></p>
-</li>
-</ul>
-<p>Here is an example for the <code>rest</code> section:</p>
-<pre><code class="language-toml">[rest]
-enabled = true
-host    = '127.0.0.1'
-port    = 3000
-</code></pre>
-<h3 id="chains"><a class="header" href="#chains"><code>[[chains]]</code></a></h3>
-<p>A <code>chains</code> section includes parameters related to a chain and the full node to which the relayer can send transactions and queries.</p>
-<h4 id="parameters-3"><a class="header" href="#parameters-3">Parameters</a></h4>
-<ul>
-<li>
-<p><strong>id</strong>: <em>(string)</em> Specify the chain ID. For example <code>ibc-0</code></p>
-</li>
-<li>
-<p><strong>rpc_addr</strong>: <em>(string)</em> Specify the RPC address and port where the chain RPC server listens on. For example <code>http://localhost:26657</code></p>
-</li>
-<li>
-<p><strong>grpc_addr</strong>: <em>(string)</em> Specify the GRPC address and port where the chain GRPC server listens on. For example <code>http://localhost:9090</code></p>
-</li>
-<li>
-<p><strong>websocket_addr</strong>: <em>(string)</em> Specify the WebSocket address and port where the chain WebSocket server listens on. For example <code>ws://localhost:26657/websocket</code></p>
-</li>
-<li>
-<p><strong>rpc_timeout</strong>: <em>(string)</em> Specify the maximum amount of time (duration) that the RPC requests should take before timing out. Default: <code>10s</code> (10 seconds).</p>
-</li>
-<li>
-<p><strong>account_prefix</strong>: <em>(string)</em> Specify the prefix used by the chain. For example <code>cosmos</code></p>
-</li>
-<li>
-<p><strong>key_name</strong>: <em>(string)</em> Specify the name of the private key to use for signing transactions. See the <a href="commands/keys/index.html#adding-keys">Adding Keys</a> chapter for for more information about managing signing keys.</p>
-</li>
-<li>
-<p><strong>store_prefix</strong>: <em>(string)</em> Specify the store prefix used by the on-chain IBC modules. For example <code>ibc</code>.</p>
-</li>
-<li>
-<p><strong>max_gas</strong>: <em>(u64)</em> Specify the maximum amount of gas to be used as the gas limit for a transaction. Default: <code>300000</code></p>
-</li>
-<li>
-<p><strong>gas_price</strong>: <em>(table)</em></p>
-<ul>
-<li><strong>price</strong>: <em>(f64)</em> Specify the price per gas used of the fee to submit a transaction.</li>
-<li><strong>denom</strong>: <em>(string)</em> Specify the denomination of the fee.</li>
-</ul>
-</li>
-<li>
-<p><strong>gas_adjustment</strong>: <em>(f64)</em> Specify by what percentage to increase the gas estimate used to compute the fee, to account for potential estimation error. Default: <code>0.1</code>, ie. 10%.</p>
-</li>
-<li>
-<p><strong>max_msg_num</strong>: <em>(u64)</em> Specify how many IBC messages at most to include in a single transaction. Default: <code>30</code></p>
-</li>
-<li>
-<p><strong>max_tx_size</strong>: <em>(u64)</em> Specify the maximum size, in bytes, of each transaction that Hermes will submit. Default: <code>2097152</code> (2 MiB)</p>
-</li>
-<li>
-<p><strong>clock_drift</strong>: <em>(string)</em>  Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default: <code>5s</code></p>
-</li>
-<li>
-<p><strong>trusting_period</strong>: <em>(string)</em> Specify the amount of time to be used as the light client trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default: <code>14days</code> (336 hours)</p>
-</li>
-<li>
-<p><strong>trust_threshold</strong> <sup>(advanced)</sup>: <em>(table)</em> Specify the trust threshold for the light client, ie. the maximum fraction of validators which have changed between two blocks. Default: <code>{ numerator = '1', denominator = '3' }</code>, ie. 1/3.</p>
-<ul>
-<li><strong>numerator</strong>: <em>(string)</em> The numerator of the fraction (must parse to a <code>u64</code>).</li>
-<li><strong>denominator</strong>: <em>(string)</em> The denominator of the fraction (must parse to a <code>u64</code>).
-<strong>Warning</strong> - <em>This is an advanced feature! Modify with caution.</em></li>
-</ul>
-</li>
-</ul>
-<p>For example if you want to add a configuration for a chain named <code>ibc-0</code>:</p>
-<pre><code class="language-toml">[[chains]]
-id = 'ibc-0'
-rpc_addr = 'http://127.0.0.1:26657'
-grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://localhost:26657/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 2000000
-gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
-clock_drift = '5s'
-trusting_period = '14days'
-</code></pre>
+<p>By default, Hermes will relay on all channels available between all the configured chains.
+In this way, every configured chain will act as a source (in the sense that Hermes listens for events)
+and as a destination (to relay packets that others chains have sent).</p>
+<p>For example, if there are only two chains configured, then Hermes will only relay packets between those two,
+i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
+Hermes will ignore all events that pertain to chains which are unknown (ie. not present in config.toml).</p>
+<p>To restrict relaying on specific channels, or uni-directionally, you can use <a href="https://github.com/informalsystems/ibc-rs/blob/v0.7.3/config.toml#L156-L173">packet filtering policies</a>.</p>
 <h2 id="adding-private-keys"><a class="header" href="#adding-private-keys">Adding private keys</a></h2>
-<p>For each chain configured you need to add a private key for that chain in order to submit <a href="./commands/raw/index.html">transactions</a>, please refer to the <a href="./commands/keys/index.html">Keys</a> sections in order to learn how to add the private keys that are used by the relayer.</p>
+<p>For each chain configured you need to add a private key for that chain in order to submit <a href="./commands/raw/index.html">transactions</a>,
+please refer to the <a href="./commands/keys/index.html">Keys</a> sections in order to learn how to add the private keys that are used by the relayer.</p>
 <h2 id="example-configuration-file"><a class="header" href="#example-configuration-file">Example configuration file</a></h2>
 <p>Here is a full example of a configuration file with two chains configured:</p>
 <pre><code class="language-toml">[global]
-strategy = 'packets'
+strategy = 'all'
 log_level = 'info'
+filter = false
+clear_packets_interval = 100
+
+[rest]
+enabled = true
+host = '127.0.0.1'
+port = 3000
+
+[telemetry]
+enabled = true
+host = '127.0.0.1'
+port = 3001
 
 [[chains]]
 id = 'ibc-0'
