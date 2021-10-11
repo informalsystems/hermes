@@ -28,9 +28,20 @@ The configuration file must have one `global` section, and one `chains` section 
 > Please read the configuration file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.7.3/config.toml)
 > itself for the most up-to-date documentation of parameters.
 
+By default, Hermes will relay on all channels available between all the configured chains.
+In this way, every configured chain will act as a source (in the sense that Hermes listens for events)
+and as a destination (to relay packets that others chains have sent).
+
+For example, if there are only two chains configured, then Hermes will only relay packets between those two,
+i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
+Hermes will ignore all events that pertain to chains which are unknown (ie. not present in config.toml).
+
+To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v0.7.3/config.toml#L156-L173).
+
 ## Adding private keys
 
-For each chain configured you need to add a private key for that chain in order to submit [transactions](./commands/raw/index.md), please refer to the [Keys](./commands/keys/index.md) sections in order to learn how to add the private keys that are used by the relayer.
+For each chain configured you need to add a private key for that chain in order to submit [transactions](./commands/raw/index.md),
+please refer to the [Keys](./commands/keys/index.md) sections in order to learn how to add the private keys that are used by the relayer.
 
 ## Example configuration file
 
