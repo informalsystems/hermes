@@ -321,7 +321,7 @@ pub struct ChainConfig {
     #[serde(with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
     #[serde(default)]
-    pub memo: Memo,
+    pub memo_prefix: Memo,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]

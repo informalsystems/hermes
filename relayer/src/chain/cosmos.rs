@@ -647,7 +647,7 @@ impl CosmosSdkChain {
 
     /// Returns the preconfigured memo to be used for every submitted transaction
     fn tx_memo(&self) -> &Memo {
-        &self.config.memo
+        &self.config.memo_prefix
     }
 }
 

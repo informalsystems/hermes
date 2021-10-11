@@ -137,7 +137,7 @@ impl Configurable<Config> for CliCmd {
         let web = "https://hermes.informal.systems";
         let suffix = format!("{} {} ({})", CliCmd::name(), CliCmd::version(), web);
         for ccfg in config.chains.iter_mut() {
-            ccfg.memo.apply_suffix(&suffix);
+            ccfg.memo_prefix.apply_suffix(&suffix);
         }
 
         match self {
