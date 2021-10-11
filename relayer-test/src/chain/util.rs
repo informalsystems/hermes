@@ -1,5 +1,9 @@
+use eyre::Report as Error;
 use rand::Rng;
 use std::net::{SocketAddrV4, Ipv4Addr, TcpListener};
+use std::fs;
+use std::io;
+use std::thread;
 
 pub fn random_u32() -> u32 {
     let mut rng = rand::thread_rng();
@@ -22,4 +26,18 @@ pub fn random_unused_tcp_port()
         Ok(_) => port,
         Err(_) => random_unused_tcp_port()
     }
+}
+
+pub fn pipe_to_file(mut source: impl io::Read + Send + 'static, file_path: &str) -> Result<(), Error> {
+    let mut file = fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(file_path)?;
+
+    thread::spawn(move || {
+        std::io::copy(&mut source, &mut file)
+            .unwrap();
+    });
+
+    Ok(())
 }

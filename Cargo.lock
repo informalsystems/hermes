@@ -1458,10 +1458,13 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-telemetry",
+ "itertools 0.10.1",
  "rand 0.8.4",
  "rusty-fork",
+ "serde_json",
  "test-env-log",
  "tokio",
+ "toml",
  "tracing",
  "tracing-subscriber 0.2.24",
 ]

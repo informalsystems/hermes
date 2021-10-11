@@ -1,3 +1,4 @@
+use super::id::ChainId;
 use super::util;
 use super::manager::ChainManager;
 
@@ -24,19 +25,21 @@ impl ChainBuilder {
     ) -> ChainManager
     {
         let chain_num = util::random_u32();
-        let chain_id = format!("ibc-{:x}", chain_num);
+        let chain_id = ChainId(format!("ibc-{:x}", chain_num));
 
         let rpc_port = util::random_unused_tcp_port();
         let grpc_port = util::random_unused_tcp_port();
+        let p2p_port = util::random_unused_tcp_port();
 
-        let home_path = format!("{}/{}", self.base_store_dir, chain_id);
+        let home_path = format!("{}/{}", self.base_store_dir, chain_id.0);
 
         ChainManager::new(
             self.command_path.clone(),
             chain_id,
             home_path,
             rpc_port,
-            grpc_port
+            grpc_port,
+            p2p_port,
         )
     }
 }
