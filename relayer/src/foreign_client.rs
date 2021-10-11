@@ -447,7 +447,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .map_err(|e| {
                 ForeignClientError::client_create(
                     self.src_chain.id(),
-                    "failed while querying src chain for latest height".to_string(),
+                    "failed when building client state".to_string(),
                     e,
                 )
             })?
