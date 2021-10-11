@@ -1446,6 +1446,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-relayer-test"
+version = "0.6.1"
+dependencies = [
+ "color-eyre",
+ "env_logger",
+ "eyre",
+ "hex",
+ "ibc",
+ "ibc-proto",
+ "ibc-relayer",
+ "ibc-relayer-cli",
+ "ibc-telemetry",
+ "rand 0.8.4",
+ "rusty-fork",
+ "test-env-log",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.2.24",
+]
+
+[[package]]
 name = "ibc-telemetry"
 version = "0.8.0-pre.1"
 dependencies = [
@@ -2487,6 +2508,18 @@ dependencies = [
  "rustls 0.19.1",
  "schannel",
  "security-framework",
+]
+
+[[package]]
+name = "rusty-fork"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb3dcc6e454c328bb824492db107ab7c0ae8fcffe4ad210136ef014458c1bc4f"
+dependencies = [
+ "fnv",
+ "quick-error",
+ "tempfile",
+ "wait-timeout",
 ]
 
 [[package]]
