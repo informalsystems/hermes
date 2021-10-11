@@ -10,7 +10,7 @@ use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::{Error as Ics02Error, ErrorDetail as Ics02ErrorDetail};
+use crate::ics02_client::error::Error as Ics02Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::packet::Sequence;
@@ -65,8 +65,9 @@ impl ClientDef for TendermintClient {
         // match the untrusted header.
         let header_consensus_state = ConsensusState::from(header.clone());
         let existing_consensus_state =
-            match maybe_read_consensus_state(ctx, &client_id, header.height())? {
+            match ctx.maybe_consensus_state(&client_id, header.height())? {
                 Some(cs) => {
+                    let cs = downcast_consensus_state(cs)?;
                     // If this consensus state matches, skip verification
                     // (optimization)
                     if cs == header_consensus_state {
@@ -79,7 +80,8 @@ impl ClientDef for TendermintClient {
                 None => None,
             };
 
-        let trusted_consensus_state = read_consensus_state(ctx, &client_id, header.trusted_height)?;
+        let trusted_consensus_state =
+            downcast_consensus_state(ctx.consensus_state(&client_id, header.trusted_height)?)?;
 
         let trusted_state = TrustedBlockState {
             header_time: trusted_consensus_state.timestamp,
@@ -138,12 +140,14 @@ impl ClientDef for TendermintClient {
         // Monotonicity checks for timestamps for in-the-middle updates
         // (cs-new, cs-next, cs-latest)
         if header.height() < client_state.latest_height() {
-            let maybe_next_cs = maybe_read_next_consensus_state(
-                ctx,
-                &client_id,
-                header.height(),
-                client_state.latest_height(),
-            )?;
+            let maybe_next_cs = ctx
+                .next_consensus_state(
+                    &client_id,
+                    header.height().increment(),
+                    client_state.latest_height().decrement()?,
+                )?
+                .map(downcast_consensus_state)
+                .transpose()?;
             if let Some(next_cs) = maybe_next_cs {
                 // New (untrusted) header timestamp cannot occur after next
                 // consensus state's height
@@ -159,12 +163,14 @@ impl ClientDef for TendermintClient {
         }
         // (cs-trusted, cs-prev, cs-new)
         if header.trusted_height < header.height() {
-            let maybe_prev_cs = maybe_read_prev_consensus_state(
-                ctx,
-                &client_id,
-                header.height(),
-                header.trusted_height,
-            )?;
+            let maybe_prev_cs = ctx
+                .prev_consensus_state(
+                    &client_id,
+                    header.height().decrement()?,
+                    header.trusted_height.increment(),
+                )?
+                .map(downcast_consensus_state)
+                .transpose()?;
             if let Some(prev_cs) = maybe_prev_cs {
                 // New (untrusted) header timestamp cannot occur before the
                 // previous consensus state's height
@@ -297,68 +303,9 @@ impl ClientDef for TendermintClient {
     }
 }
 
-// Utility method to improve readability of obtaining a Tendermint-specific
-// consensus state from the given context.
-fn read_consensus_state(
-    ctx: &dyn ClientReader,
-    client_id: &ClientId,
-    height: Height,
-) -> Result<ConsensusState, Ics02Error> {
-    maybe_read_consensus_state(ctx, client_id, height)?
-        .ok_or_else(|| Ics02Error::consensus_state_not_found(client_id.clone(), height))
-}
-
-fn maybe_read_consensus_state(
-    ctx: &dyn ClientReader,
-    client_id: &ClientId,
-    height: Height,
-) -> Result<Option<ConsensusState>, Ics02Error> {
-    match ctx.consensus_state(client_id, height).map(|cs| {
-        downcast!(
-            cs => AnyConsensusState::Tendermint
-        )
-        .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
-    }) {
-        Ok(result) => result.map(Some),
-        Err(e) => match e.detail() {
-            Ics02ErrorDetail::ConsensusStateNotFound(_) => Ok(None),
-            _ => Err(e),
-        },
-    }
-}
-
-// Searches forwards for updates where lower_height < h < upper_height
-fn maybe_read_next_consensus_state(
-    ctx: &dyn ClientReader,
-    client_id: &ClientId,
-    lower_height: Height,
-    upper_height: Height,
-) -> Result<Option<ConsensusState>, Ics02Error> {
-    let mut cur_height = lower_height.increment();
-    while cur_height < upper_height {
-        let maybe_cs = maybe_read_consensus_state(ctx, client_id, cur_height)?;
-        if maybe_cs.is_some() {
-            return Ok(maybe_cs);
-        }
-        cur_height = cur_height.increment();
-    }
-    Ok(None)
-}
-
-// Searches backwards for consensus states where lower_height < h < upper_height
-fn maybe_read_prev_consensus_state(
-    ctx: &dyn ClientReader,
-    client_id: &ClientId,
-    upper_height: Height,
-    lower_height: Height,
-) -> Result<Option<ConsensusState>, Ics02Error> {
-    let mut cur_height = upper_height.decrement()?;
-    while cur_height > lower_height {
-        let maybe_cs = maybe_read_consensus_state(ctx, client_id, cur_height)?;
-        if maybe_cs.is_some() {
-            return Ok(maybe_cs);
-        }
-        cur_height = cur_height.decrement()?;
-    }
-    Ok(None)
+fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState, Ics02Error> {
+    downcast!(
+        cs => AnyConsensusState::Tendermint
+    )
+    .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
 }
