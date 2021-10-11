@@ -22,10 +22,10 @@ path = "src/lib.rs"
 all-features = true
 
 [dependencies]
-prost = "0.7"
-prost-types = "0.7"
+prost = { package = "informalsystems-prost", version = "0.8.1" }
+prost-types = { package = "informalsystems-prost-types", version = "0.8.1" }
 bytes = "1.1"
-tonic = "0.4"
+tonic = { package = "informalsystems-tonic", version = "0.5.2", path = "../../../open-source/tonic/tonic" }
 getrandom = { version = "0.2", features = ["js"] }
 
 [dependencies.tendermint-proto]
