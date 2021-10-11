@@ -6,13 +6,13 @@ This document is a record of all the bugs or issues we uncovered while specifyin
 ### 1. ICS3 liveness problem due to ICS018 relayer algorithm
 
 The algorithm for relaying connection handshake datagrams of type `ConnOpenTry`does not handle the situation when both chains are in state `INIT`.
-The current relayer algorithm in [ICS018](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms) specifies that the `ConnOpenTry` datagram should be relayed only if one of the chains is in state `INIT` and the other chain is uninitialized (see the snippet below); this is not enough for guaranteeing liveness of the connection handshake protocol (ICS04).
+The current relayer algorithm in [ICS018](https://github.com/cosmos/ibc/tree/19f519b2d6829e3096d6b9f79bffb7836033e79c/spec/relayer/ics-018-relayer-algorithms) specifies that the `ConnOpenTry` datagram should be relayed only if one of the chains is in state `INIT` and the other chain is uninitialized (see the snippet below); this is not enough for guaranteeing liveness of the connection handshake protocol (ICS04).
 
 ```
     if (localEnd.state === INIT && remoteEnd === null)
 ```
 
-The correct code should include both the cases when a single chain is in state `INIT`, as well as the case when both chains are in state `INIT`, as specified here: [Relayer.tla](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/relayer/Relayer.tla#L174)
+The correct code should include both the cases when a single chain is in state `INIT`, as well as the case when both chains are in state `INIT`, as specified here: [Relayer.tla](https://github.com/informalsystems/ibc-rs/blob/e1b78946529e39a5c709ccd6d11637993073164e/docs/spec/relayer/Relayer.tla#L174)
 This fix only concerns the relayer algorithm ICS018.
 
 ##### Channel handshake (ICS4) liveness problem
@@ -101,7 +101,7 @@ From this point on, the model stutters, i.e., is unable to progress further in t
 ### 3. ICS3 problems due to version negotiation
 
 __Context__.
-The original issue triggering this discussion is here: [cosmos/ics/#459](https://github.com/cosmos/ics/issues/459).
+The original issue triggering this discussion is here: [cosmos/ics/#459](https://github.com/cosmos/ibc/issues/459).
 Briefly, version negotiation in the ICS3 handshake can interfere in various ways, breaking either the safety or liveness of this protocol.
 Several solution candidates exist, which we classify by their "mode", i.e., a strategy for picking the version at some point or another in the protocol.
 For a full description of the modes, please consult [L2-tla/readme.md#version-negotiation-modes](spec/connection-handshake/L2-tla/README.md#version-negotiation-modes).
@@ -122,7 +122,7 @@ These are the main takeaways from this discussion:
 
 1. The set of compatible versions that chains start off with (return values of `getCompatibleVersions()` in ICS3) have to intersect, otherwise a liveness issue occurs. This assumption is independent of the version negotiation mode. We report this in __case (a)__ below.
 2. Modes "overwrite", "onTryNonDet", and "onAckNonDet" all result in breaking the handshake protocol. See __cases (b), (c), and (d)__ below for traces.
-3. The deterministic modes "onTryDet" and "onAckDet" pass model checking, so a solution should be chosen among these two candidates (see the [original issue](https://github.com/cosmos/ics/issues/459) for follow-up on the solution).
+3. The deterministic modes "onTryDet" and "onAckDet" pass model checking, so a solution should be chosen among these two candidates (see the [original issue](https://github.com/cosmos/ibc/issues/459) for follow-up on the solution).
 
 ##### Case (a). Empty version intersection causes liveness issue
 

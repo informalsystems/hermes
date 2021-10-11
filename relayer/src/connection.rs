@@ -1122,6 +1122,7 @@ fn check_destination_connection_state(
             == expected_connection.counterparty().connection_id();
 
     // TODO check versions and store prefix
+    // https://github.com/informalsystems/ibc-rs/issues/1389
 
     if good_state && good_client_ids && good_connection_ids {
         Ok(())

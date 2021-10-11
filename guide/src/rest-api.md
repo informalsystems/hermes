@@ -39,7 +39,7 @@ as the version of the REST server itself (under the `ibc-relayer-rest` key).
 [
   {
     "name": "ibc-relayer",
-    "version": "0.7.2"
+    "version": "0.7.3"
   },
   {
     "name": "ibc-relayer-rest",

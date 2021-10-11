@@ -6,7 +6,7 @@ fi
 
 version() {
   VERSION="v0.0.9"
-  if [ "$OUTPUT" == "json" ]; then
+  if [ "${OUTPUT:-}" == "json" ]; then
     printf '{"status": "success", "message": "%s"}' "$VERSION"
   else
     echo "$VERSION"

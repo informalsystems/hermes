@@ -1,4 +1,4 @@
-# Hermes Guide (v0.7.2)
+# Hermes Guide (v0.7.3)
 
 This guide can help you setup, configure, and operate Hermes to transfer
 packets between two IBC enabled chains.

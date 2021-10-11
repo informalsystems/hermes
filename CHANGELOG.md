@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## v0.7.3
+
+This minor release most notably includes a fix for a bug introduced in v0.7.0
+where Hermes would always use the max gas when submitting transactions to
+chains based on Cosmos SDK <= 0.42.
+It also improves the handling of account sequence numbers
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Fix a bug introduced in Hermes v0.7.0 where tx simulations would fail on
+    chains based on Cosmos SDK 0.42. This would cause Hermes to use the max
+    gas specified in the config when submitted the tx, leading to high fees.
+    ([#1345](https://github.com/informalsystems/ibc-rs/issues/1345))
+  - Only increase cached account sequence number when `broadcast_tx_sync` fails,
+    therefore ensuring that the cached sequence number stays in sync with the
+    node. ([#1402](https://github.com/informalsystems/ibc-rs/issues/1402))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Set default trusting period to be 2/3 of unbonding period for Cosmos chains
+    ([#1392](https://github.com/informalsystems/ibc-rs/issues/1392))
+
 ## v0.7.2
 
 This minor release brings substantial performance improvements as well as
@@ -12,10 +36,11 @@ It also bumps the compatibility to Cosmos SDK 0.44.
 - Support for chains which use Secp256k1 signatures in consensus votes ([#1155](https://github.com/informalsystems/ibc-rs/issues/1155))
 - Modified packet worker to use stubborn strategy ([#1290](https://github.com/informalsystems/ibc-rs/issues/1290))
 - Skip `consensus_heights` query in `update_client` when possible ([#1362](https://github.com/informalsystems/ibc-rs/issues/1362))
+- Support for disabling tx confirmation mechanism ([#1380](https://github.com/informalsystems/ibc-rs/issues/1380))
+
 - [gm](scripts/gm)
   - Binaries in the config can be defined as URLs now.
-  - Add the option to set gm-lib path via the $GM_LIB environment variable ([#1365](https://github.com/informalsystems/ibc-rs/issues/1365))
-- Support for disabling tx confirmation mechanism ([#1380](https://github.com/informalsystems/ibc-rs/issues/1380))
+  - Add the option to set gm-lib path via the `$GM_LIB` environment variable ([#1365](https://github.com/informalsystems/ibc-rs/issues/1365))
 
 ### IMPROVEMENTS
 

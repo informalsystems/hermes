@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "0.7.2"
+version    = "0.7.3"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -25,11 +25,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.7.2", path = "../modules" }
-ibc-relayer      = { version = "0.7.2", path = "../relayer" }
+ibc              = { version = "0.7.3", path = "../modules" }
+ibc-relayer      = { version = "0.7.3", path = "../relayer" }
 ibc-proto        = { version = "0.11.0", path = "../proto" }
-ibc-telemetry    = { version = "0.7.2", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.7.2", path = "../relayer-rest", optional = true }
+ibc-telemetry    = { version = "0.7.3", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.7.3", path = "../relayer-rest", optional = true }
 
 gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
@@ -50,7 +50,7 @@ subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.1"
 atty = "0.2.14"
-flex-error = { version = "0.4.2", default-features = false }
+flex-error = { version = "0.4.3", default-features = false }
 signal-hook = "0.3.10"
 
 [dependencies.tendermint-proto]
