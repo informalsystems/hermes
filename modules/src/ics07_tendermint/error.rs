@@ -9,11 +9,11 @@ define_error! {
     Error {
         InvalidTrustingPeriod
             { reason: String }
-            | _ | { "invalid trusting period" },
+            |e| { format_args!("invalid trusting period: {}", e.reason) },
 
-        InvalidUnboundingPeriod
+        InvalidUnbondingPeriod
             { reason: String }
-            | _ | { "invalid unbonding period" },
+            |e| { format_args!("invalid unbonding period: {}", e.reason) },
 
         InvalidAddress
             | _ | { "invalid address" },
