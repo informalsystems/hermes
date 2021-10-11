@@ -21,25 +21,22 @@ define_error! {
         InvalidHeader
             { reason: String }
             [ tendermint::Error ]
-            | _ | { "invalid header, failed basic validation" },
+            |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },
 
         InvalidTrustThreshold
             { reason: String }
-            | e | {
-                format_args!("invalid client state trust threshold: {}",
-                    e.reason)
-            },
+            |e| { format_args!("invalid client state trust threshold: {}", e.reason) },
 
         MissingSignedHeader
             | _ | { "missing signed header" },
 
         Validation
             { reason: String }
-            | _ | { "invalid header, failed basic validation" },
+            |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },
 
         InvalidRawClientState
             { reason: String }
-            | _ | { "invalid raw client state" },
+            |e| { format_args!("invalid raw client state: {}", e.reason) },
 
         MissingValidatorSet
             | _ | { "missing validator set" },
@@ -81,14 +78,15 @@ define_error! {
         InvalidChainId
             { raw_value: String }
             [ ValidationError ]
-            | e | { format_args!("invalid chain identifier: raw value {0}", e.raw_value) },
+            |e| { format_args!("invalid chain identifier: {}", e.raw_value) },
 
         InvalidRawHeight
-            | _ | { "invalid raw height" },
+            { raw_height: u64 }
+            |e| { format_args!("invalid raw height: {}", e.raw_height) },
 
         InvalidRawConsensusState
             { reason: String }
-            | _ | { "invalid raw client consensus state" },
+            |e| { format_args!("invalid raw client consensus state: {}", e.reason) },
 
         InvalidRawHeader
             [ tendermint::Error ]
@@ -96,7 +94,7 @@ define_error! {
 
         InvalidRawMisbehaviour
             { reason: String }
-            | _ | { "invalid raw misbehaviour" },
+            |e| { format_args!("invalid raw misbehaviour: {}", e.reason) },
 
         Decode
             [ TraceError<prost::DecodeError> ]
