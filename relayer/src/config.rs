@@ -318,7 +318,7 @@ pub struct ChainConfig {
     pub max_tx_size: MaxTxSize,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
-    #[serde(with = "humantime_serde")]
+    #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML

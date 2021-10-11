@@ -1332,6 +1332,7 @@ dependencies = [
  "bech32",
  "bitcoin",
  "bytes",
+ "chrono",
  "crossbeam-channel 0.5.1",
  "dirs-next",
  "env_logger",
