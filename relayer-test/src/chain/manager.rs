@@ -6,6 +6,7 @@ use std::str;
 use tracing::{debug, trace};
 use serde_json as json;
 use toml;
+use core::str::FromStr;
 
 use crate::process::ChildProcess;
 use super::util;
@@ -199,16 +200,16 @@ impl ChainManager {
         Ok(())
     }
 
-    pub fn update_chain_config(&self, cont: impl FnOnce(toml::Value) -> Result<toml::Value, Error>) -> Result<(), Error> {
+    pub fn update_chain_config(&self, cont: impl FnOnce(&mut toml::Value) -> Result<(), Error>) -> Result<(), Error> {
         let config1 = self.read_file("config/config.toml")?;
 
-        let config2 = toml::from_str(&config1)?;
+        let mut config2 = toml::from_str(&config1)?;
 
-        let config3 = cont(config2)?;
+        cont(&mut config2)?;
 
-        let config4 = toml::to_string_pretty(&config3)?;
+        let config3 = toml::to_string_pretty(&config2)?;
 
-        self.write_file("config/config.toml", &config4)?;
+        self.write_file("config/config.toml", &config3)?;
 
         Ok(())
     }
@@ -251,9 +252,9 @@ impl ChainManager {
         &self,
         wallet_id: &WalletAddress,
         denom: &str
-    ) -> Result<String, Error>
+    ) -> Result<u64, Error>
     {
-        self.exec(&[
+        let res = self.exec(&[
             "--node",
             &format!("tcp://localhost:{}", self.rpc_port),
             "query",
@@ -266,6 +267,17 @@ impl ChainManager {
             "json",
             "--log_level",
             "error",
-        ])
+        ])?;
+
+        let amount_str = json::from_str::<json::Value>(&res)?
+            .get("amount")
+            .ok_or_else(|| eyre!("expected amount field"))?
+            .as_str()
+            .ok_or_else(|| eyre!("expected string field"))?
+            .to_string();
+
+        let amount = u64::from_str(&amount_str)?;
+
+        Ok(amount)
     }
 }

@@ -1,0 +1,96 @@
+use eyre::{eyre, Report as Error};
+use tracing::{info, debug, trace};
+use core::time::Duration;
+use std::thread;
+
+use super::config;
+use super::builder::ChainBuilder;
+use super::manager::ChainManager;
+use super::wallet::Wallet;
+use crate::process::ChildProcess;
+
+pub struct BoostrapResult {
+    pub chain: ChainManager,
+    pub process: ChildProcess,
+    pub validator: Wallet,
+    pub user1: Wallet,
+    pub user2: Wallet,
+}
+
+pub fn bootstrap_chain(builder: &ChainBuilder)
+    -> Result<BoostrapResult, Error>
+{
+    const COIN_AMOUNT: u64 = 1_000_000_000_000;
+
+    let chain = builder.new_chain();
+
+    info!("created new chain: {:?}", chain);
+
+    chain.initialize()?;
+
+    let validator = chain.add_random_wallet("validator")?;
+
+    let user1 = chain.add_random_wallet("user")?;
+    let user2 = chain.add_random_wallet("user")?;
+
+    info!("created user {:?}", user1);
+
+    chain.add_genesis_account(&validator.address, &[
+        ("stake", COIN_AMOUNT),
+    ])?;
+
+    chain.add_genesis_validator(&validator.id, "stake", 1_000_000_000_000)?;
+
+    chain.add_genesis_account(&user1.address, &[
+        ("stake", COIN_AMOUNT),
+        ("samoleans", COIN_AMOUNT)
+    ])?;
+
+    chain.collect_gen_txs()?;
+
+    chain.update_chain_config(|config| {
+        config::set_rpc_port(config, chain.rpc_port)?;
+        config::set_p2p_port(config, chain.p2p_port)?;
+        config::set_timeout_commit(config, Duration::from_secs(1))?;
+        config::set_timeout_propose(config, Duration::from_secs(1))?;
+
+        Ok(())
+    })?;
+
+    let process = chain.start()?;
+
+    wait_wallet_amount(&chain, &user1, COIN_AMOUNT, 5)?;
+
+    Ok(BoostrapResult {
+        chain,
+        process,
+        validator,
+        user1,
+        user2,
+    })
+}
+
+// Wait for the wallet to reach the target amount when querying from the chain.
+// This is to ensure that the chain has properly started and committed the genesis block
+fn wait_wallet_amount(chain: &ChainManager, user: &Wallet, target_amount: u64, remaining_retry: u16)
+    -> Result<(), Error>
+{
+    if remaining_retry == 0 {
+        return Err(eyre!("failed to wait for wallet to reach target amount. did the chain started properly?"))
+    }
+
+    debug!("waiting for wallet for {} to reach amount {}", user.id.0, target_amount);
+
+    thread::sleep(Duration::from_secs(1));
+
+    let query_res = chain.query_balance(&user.address, "samoleans");
+    match query_res {
+        Ok(amount) if amount == target_amount  => {
+            Ok(())
+        }
+        _ => {
+            trace!("query balance return mismatch amount {:?}, retrying", query_res);
+            wait_wallet_amount(chain, user, target_amount, remaining_retry - 1)
+        }
+    }
+}
