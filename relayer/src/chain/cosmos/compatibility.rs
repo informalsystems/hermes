@@ -34,7 +34,7 @@ const SDK_MODULE_VERSION_REQ: &str = ">=0.41.3, <=0.44.0";
 /// # Note: Should be consistent with [features] guide page.
 ///
 /// [features]: https://hermes.informal.systems/features.html
-const IBC_GO_MODULE_VERSION_REQ: &str = ">=1.2, <=1.2";
+const IBC_GO_MODULE_VERSION_REQ: &str = ">=1.2.1, <=1.2.1";
 
 /// Helper struct to capture all the reported information of an
 /// IBC application, e.g., `gaiad`.
@@ -175,7 +175,8 @@ fn ibc_go_diagnostic(version_info: VersionInfo) -> Result<(), Diagnostic> {
         .iter()
         .find(|&m| m.path.contains(IBC_GO_MODULE_NAME))
     {
-        // Not an error, we support chains without the standalone ibc-go module
+        // If binarylacks the ibc-go dependency it is _not_ an error,
+        // we support chains without the standalone ibc-go module.
         None => Ok(()),
         Some(ibc_module) => {
             // The raw version number has a leading 'v', trim it out;
