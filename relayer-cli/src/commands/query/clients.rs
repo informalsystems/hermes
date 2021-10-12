@@ -60,6 +60,27 @@ impl Runnable for QueryAllClientsCmd {
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
 
+        use std::str::FromStr;
+        use ibc::ics04_channel::packet::Sequence;
+        let query = ibc::query::QueryTxRequest::Packet(ibc::ics04_channel::channel::QueryPacketEventDataRequest {
+            event_id: ibc::events::IbcEventType::SendPacket,
+            source_port_id: ibc::ics24_host::identifier::PortId::from_str("transfer").unwrap(),
+            source_channel_id: ibc::ics24_host::identifier::ChannelId::from_str("channel-0").unwrap(),
+            destination_port_id: ibc::ics24_host::identifier::PortId::from_str("transfer").unwrap(),
+            destination_channel_id: ibc::ics24_host::identifier::ChannelId::from_str("channel-41").unwrap(),
+            height: ibc::Height::new(1, 184204),
+            sequences: vec![Sequence::from(11)],
+        });
+
+        let events_result = chain
+            .query_txs(query)
+            .map_err(Error::relayer);
+
+        debug!(
+            "printing stuff {:?}",
+            events_result
+        );
+
         let req = QueryClientStatesRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
