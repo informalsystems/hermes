@@ -128,6 +128,20 @@ impl CosmosSdkChain {
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
+        // Check that the trusting period is smaller than the unbounding period
+        let unbonding_period = self.unbonding_period()?;
+        let trusting_period = self.trusting_period(unbonding_period);
+
+        if trusting_period >= unbonding_period {
+            return Err(
+                Error::config_validation_trusting_period_greater_than_unbonding_period(
+                    self.id().clone(),
+                    trusting_period,
+                    unbonding_period,
+                ),
+            );
+        }
+
         // Get the latest height and convert to tendermint Height
         let latest_height = Height::try_from(self.query_latest_height()?.revision_height)
             .map_err(Error::invalid_height)?;
