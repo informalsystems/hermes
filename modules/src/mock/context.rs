@@ -1,7 +1,8 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
 use crate::prelude::*;
-use alloc::collections::btree_map::BTreeMap as HashMap;
+
+use alloc::collections::btree_map::BTreeMap;
 use core::cmp::min;
 
 use tracing::debug;
@@ -65,49 +66,49 @@ pub struct MockContext {
     history: Vec<HostBlock>,
 
     /// The set of all clients, indexed by their id.
-    clients: HashMap<ClientId, MockClientRecord>,
+    clients: BTreeMap<ClientId, MockClientRecord>,
 
     /// Counter for the client identifiers, necessary for `increase_client_counter` and the
     /// `client_counter` methods.
     client_ids_counter: u64,
 
     /// Association between client ids and connection ids.
-    client_connections: HashMap<ClientId, ConnectionId>,
+    client_connections: BTreeMap<ClientId, ConnectionId>,
 
     /// All the connections in the store.
-    connections: HashMap<ConnectionId, ConnectionEnd>,
+    connections: BTreeMap<ConnectionId, ConnectionEnd>,
 
     /// Counter for connection identifiers (see `increase_connection_counter`).
     connection_ids_counter: u64,
 
     /// Association between connection ids and channel ids.
-    connection_channels: HashMap<ConnectionId, Vec<(PortId, ChannelId)>>,
+    connection_channels: BTreeMap<ConnectionId, Vec<(PortId, ChannelId)>>,
 
     /// Counter for channel identifiers (see `increase_channel_counter`).
     channel_ids_counter: u64,
 
     /// All the channels in the store. TODO Make new key PortId X ChanneId
-    channels: HashMap<(PortId, ChannelId), ChannelEnd>,
+    channels: BTreeMap<(PortId, ChannelId), ChannelEnd>,
 
     /// Tracks the sequence number for the next packet to be sent.
-    next_sequence_send: HashMap<(PortId, ChannelId), Sequence>,
+    next_sequence_send: BTreeMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be received.
-    next_sequence_recv: HashMap<(PortId, ChannelId), Sequence>,
+    next_sequence_recv: BTreeMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be acknowledged.
-    next_sequence_ack: HashMap<(PortId, ChannelId), Sequence>,
+    next_sequence_ack: BTreeMap<(PortId, ChannelId), Sequence>,
 
-    packet_acknowledgement: HashMap<(PortId, ChannelId, Sequence), String>,
+    packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     /// Maps ports to their capabilities
-    port_capabilities: HashMap<PortId, Capability>,
+    port_capabilities: BTreeMap<PortId, Capability>,
 
     /// Constant-size commitments to packets data fields
-    packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
+    packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     // Used by unordered channel
-    packet_receipt: HashMap<(PortId, ChannelId, Sequence), Receipt>,
+    packet_receipt: BTreeMap<(PortId, ChannelId, Sequence), Receipt>,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
