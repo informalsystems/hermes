@@ -113,7 +113,7 @@ impl ClientState {
     }
 
     pub fn with_set_frozen(self, h: Height) -> Self {
-        Self { 
+        Self {
             frozen_height: h,
             ..self
         }
