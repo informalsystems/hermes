@@ -130,7 +130,7 @@ impl ChainManager {
 
     pub fn add_random_wallet(&self, prefix: &str) -> Result<Wallet, Error> {
         let num = util::random_u32();
-        let wallet_id = format!("{}-{:x}", prefix, num);
+        let wallet_id = format!("{}_{:x}", prefix, num);
         self.add_wallet(&wallet_id)
     }
 
@@ -257,8 +257,6 @@ impl ChainManager {
                 &self.grpc_listen_address(),
                 "--rpc.laddr",
                 &self.rpc_listen_address(),
-                "--log_level",
-                "error"
             ])
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
@@ -296,8 +294,6 @@ impl ChainManager {
             denom,
             "--output",
             "json",
-            "--log_level",
-            "error",
         ])?;
 
         let amount_str = json::from_str::<json::Value>(&res)?

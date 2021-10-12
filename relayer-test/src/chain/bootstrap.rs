@@ -51,6 +51,7 @@ pub fn bootstrap_chain(builder: &ChainBuilder)
     chain.collect_gen_txs()?;
 
     chain.update_chain_config(|config| {
+        config::set_log_level(config, "trace")?;
         config::set_rpc_port(config, chain.rpc_port)?;
         config::set_p2p_port(config, chain.p2p_port)?;
         config::set_timeout_commit(config, Duration::from_secs(1))?;

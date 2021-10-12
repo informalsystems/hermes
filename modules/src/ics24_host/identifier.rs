@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::convert::TryFrom;
+use core::convert::{From, Infallible};
 use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
 use serde::{Deserialize, Serialize};
@@ -37,6 +37,19 @@ impl ChainId {
     pub fn new(name: String, version: u64) -> Self {
         Self {
             id: format!("{}-{}", name, version),
+            version,
+        }
+    }
+
+    pub fn from_string(id: &str) -> Self {
+        let version = if Self::is_epoch_format(id) {
+            Self::chain_version(id)
+        } else {
+            0
+        };
+
+        Self {
+            id: id.to_string(),
             version,
         }
     }
@@ -89,19 +102,10 @@ impl ChainId {
 }
 
 impl FromStr for ChainId {
-    type Err = ValidationError;
+    type Err = Infallible;
 
     fn from_str(id: &str) -> Result<Self, Self::Err> {
-        let version = if Self::is_epoch_format(id) {
-            Self::chain_version(id)
-        } else {
-            0
-        };
-
-        Ok(Self {
-            id: id.to_string(),
-            version,
-        })
+        Ok(Self::from_string(id))
     }
 }
 
@@ -129,11 +133,9 @@ impl Default for ChainId {
     }
 }
 
-impl TryFrom<String> for ChainId {
-    type Error = ValidationError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::from_str(value.as_str())
+impl From<String> for ChainId {
+    fn from(value: String) -> Self {
+        Self::from_string(&value)
     }
 }
 

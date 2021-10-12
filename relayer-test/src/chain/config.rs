@@ -45,3 +45,12 @@ pub fn set_timeout_propose(config: &mut Value, duration: Duration) -> Result<(),
 
     Ok(())
 }
+
+pub fn set_log_level(config: &mut Value, log_level: &str) -> Result<(), Error> {
+    config
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("log_level".to_string(), log_level.into());
+
+    Ok(())
+}

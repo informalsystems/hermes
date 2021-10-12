@@ -18,7 +18,7 @@ fn create_chain_config(chain: &BootstrapResult)
     -> Result<config::ChainConfig, Error>
 {
     Ok(config::ChainConfig {
-        id: ChainId::new(chain.chain.chain_id.0.clone(), 0),
+        id: ChainId::from_string(&chain.chain.chain_id.0),
         rpc_addr: Url::from_str(&chain.chain.rpc_address())?,
         websocket_addr: Url::from_str(&chain.chain.websocket_address())?,
         grpc_addr: Url::from_str(&chain.chain.grpc_address())?,
@@ -61,10 +61,14 @@ fn test_chain_manager() -> Result<(), Error> {
     config.chains.push(chain_a_config);
     config.chains.push(chain_b_config);
 
+    let config_str = toml::to_string_pretty(&config)?;
+
+    info!("hermes config:\n{}", config_str);
+
     let chain_handles = ChainHandlePair::spawn(
         &config,
-        &ChainId::new(chain_a.chain.chain_id.0.clone(), 0),
-        &&ChainId::new(chain_b.chain.chain_id.0.clone(), 0)
+        &ChainId::from_string(&chain_a.chain.chain_id.0),
+        &&ChainId::from_string(&chain_b.chain.chain_id.0)
     )?;
 
     info!("adding key {} to chain config {} with key entry {:?}",
