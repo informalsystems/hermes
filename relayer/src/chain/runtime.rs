@@ -216,8 +216,12 @@ where
                             self.get_signer(reply_to)?
                         }
 
-                        Ok(ChainRequest::Key { reply_to }) => {
+                        Ok(ChainRequest::GetKey { reply_to }) => {
                             self.get_key(reply_to)?
+                        }
+
+                        Ok(ChainRequest::AddKey { key_name, key, reply_to }) => {
+                            self.add_key(key_name, key, reply_to)?
                         }
 
                         Ok(ChainRequest::ModuleVersion { port_id, reply_to }) => {
@@ -405,6 +409,11 @@ where
 
     fn get_key(&mut self, reply_to: ReplyTo<KeyEntry>) -> Result<(), Error> {
         let result = self.chain.get_key();
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn add_key(&mut self, key_name: String, key: KeyEntry, reply_to: ReplyTo<()>) -> Result<(), Error> {
+        let result = self.chain.add_key(&key_name, key);
         reply_to.send(result).map_err(Error::send)
     }
 

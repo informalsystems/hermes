@@ -15,6 +15,7 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::keyring::Store;
 use crate::error::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -309,6 +310,8 @@ pub struct ChainConfig {
     pub rpc_timeout: Duration,
     pub account_prefix: String,
     pub key_name: String,
+    #[serde(default)]
+    pub key_store_type: Store,
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,

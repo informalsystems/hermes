@@ -72,7 +72,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::event::monitor::{EventMonitor, EventReceiver};
-use crate::keyring::{KeyEntry, KeyRing, Store};
+use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
@@ -731,8 +731,11 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
         // Initialize key store and load key
-        let keybase = KeyRing::new(Store::Test, &config.account_prefix, &config.id)
-            .map_err(Error::key_base)?;
+        let keybase = KeyRing::new(
+            config.key_store_type,
+            &config.account_prefix,
+            &config.id
+        ).map_err(Error::key_base)?;
 
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
@@ -960,6 +963,15 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::key_base)?;
 
         Ok(key)
+    }
+
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error> {
+        self
+            .keybase_mut()
+            .add_key(key_name, key)
+            .map_err(Error::key_base)?;
+
+        Ok(())
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {

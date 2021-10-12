@@ -135,6 +135,8 @@ pub trait ChainEndpoint: Sized {
 
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
+
     // Queries
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;

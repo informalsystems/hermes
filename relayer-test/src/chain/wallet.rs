@@ -1,3 +1,5 @@
+use ibc_relayer::keyring::KeyEntry;
+
 #[derive(Debug)]
 pub struct WalletId(pub String);
 
@@ -8,16 +10,19 @@ pub struct WalletAddress(pub String);
 pub struct Wallet {
     pub id: WalletId,
     pub address: WalletAddress,
+    pub key: KeyEntry,
 }
 
 impl Wallet {
     pub fn new(
         id: String,
-        address: String
+        address: String,
+        key: KeyEntry,
     ) -> Self {
         Self {
             id: WalletId(id),
-            address: WalletAddress(address)
+            address: WalletAddress(address),
+            key,
         }
     }
 }

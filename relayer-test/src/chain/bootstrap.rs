@@ -9,16 +9,16 @@ use super::manager::ChainManager;
 use super::wallet::Wallet;
 use crate::process::ChildProcess;
 
-pub struct BoostrapResult {
+pub struct BootstrapResult {
     pub chain: ChainManager,
     pub process: ChildProcess,
     pub validator: Wallet,
-    pub user1: Wallet,
-    pub user2: Wallet,
+    pub relayer: Wallet,
+    pub user: Wallet,
 }
 
 pub fn bootstrap_chain(builder: &ChainBuilder)
-    -> Result<BoostrapResult, Error>
+    -> Result<BootstrapResult, Error>
 {
     const COIN_AMOUNT: u64 = 1_000_000_000_000;
 
@@ -29,11 +29,8 @@ pub fn bootstrap_chain(builder: &ChainBuilder)
     chain.initialize()?;
 
     let validator = chain.add_random_wallet("validator")?;
-
-    let user1 = chain.add_random_wallet("user")?;
-    let user2 = chain.add_random_wallet("user")?;
-
-    info!("created user {:?}", user1);
+    let user = chain.add_random_wallet("user")?;
+    let relayer = chain.add_random_wallet("relayer")?;
 
     chain.add_genesis_account(&validator.address, &[
         ("stake", COIN_AMOUNT),
@@ -41,7 +38,12 @@ pub fn bootstrap_chain(builder: &ChainBuilder)
 
     chain.add_genesis_validator(&validator.id, "stake", 1_000_000_000_000)?;
 
-    chain.add_genesis_account(&user1.address, &[
+    chain.add_genesis_account(&user.address, &[
+        ("stake", COIN_AMOUNT),
+        ("samoleans", COIN_AMOUNT)
+    ])?;
+
+    chain.add_genesis_account(&relayer.address, &[
         ("stake", COIN_AMOUNT),
         ("samoleans", COIN_AMOUNT)
     ])?;
@@ -59,14 +61,14 @@ pub fn bootstrap_chain(builder: &ChainBuilder)
 
     let process = chain.start()?;
 
-    wait_wallet_amount(&chain, &user1, COIN_AMOUNT, 5)?;
+    wait_wallet_amount(&chain, &relayer, COIN_AMOUNT, 10)?;
 
-    Ok(BoostrapResult {
+    Ok(BootstrapResult {
         chain,
         process,
         validator,
-        user1,
-        user2,
+        relayer,
+        user,
     })
 }
 

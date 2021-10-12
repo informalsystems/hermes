@@ -7,6 +7,7 @@ use tracing::{debug, trace};
 use serde_json as json;
 use toml;
 use core::str::FromStr;
+use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 
 use crate::process::ChildProcess;
 use super::util;
@@ -45,6 +46,26 @@ impl ChainManager {
             grpc_port,
             p2p_port,
         }
+    }
+
+    pub fn rpc_address(&self) -> String {
+        format!("http://localhost:{}", self.rpc_port)
+    }
+
+    pub fn websocket_address(&self) -> String {
+        format!("ws://localhost:{}/websocket", self.rpc_port)
+    }
+
+    pub fn grpc_address(&self) -> String {
+        format!("http://localhost:{}", self.grpc_port)
+    }
+
+    pub fn rpc_listen_address(&self) -> String {
+        format!("tcp://localhost:{}", self.rpc_port)
+    }
+
+    pub fn grpc_listen_address(&self) -> String {
+        format!("localhost:{}", self.grpc_port)
     }
 
     pub fn exec(&self, args: &[&str]) -> Result<String, Error> {
@@ -109,12 +130,12 @@ impl ChainManager {
 
     pub fn add_random_wallet(&self, prefix: &str) -> Result<Wallet, Error> {
         let num = util::random_u32();
-        let wallet_id = format!("{}-{}", prefix, num);
+        let wallet_id = format!("{}-{:x}", prefix, num);
         self.add_wallet(&wallet_id)
     }
 
     pub fn add_wallet(&self, wallet_id: &str) -> Result<Wallet, Error> {
-        let res = self.exec(&[
+        let seed_content = self.exec(&[
             "--home",
             self.home_path.as_str(),
             "keys",
@@ -126,7 +147,7 @@ impl ChainManager {
             "json",
         ])?;
 
-        let json_val: json::Value = json::from_str(&res)?;
+        let json_val: json::Value = json::from_str(&seed_content)?;
         let wallet_address = json_val
             .get("address")
             .ok_or_else(|| eyre!("expect address string field to be present in json result"))?
@@ -136,9 +157,19 @@ impl ChainManager {
 
         let seed_path = format!("{}_seed.json", wallet_id);
 
-        self.write_file(&seed_path, &res)?;
+        self.write_file(&seed_path, &seed_content)?;
 
-        Ok(Wallet::new(wallet_id.to_string(), wallet_address))
+        let hd_path = HDPath::from_str("m/44'/118'/0'/0/0")
+            .map_err(|e| eyre!("failed to create HDPath: {:?}", e))?;
+
+        let key_file: KeyFile = json::from_str(&seed_content)?;
+
+        let key = KeyEntry::from_key_file(
+            key_file,
+            &hd_path,
+        )?;
+
+        Ok(Wallet::new(wallet_id.to_string(), wallet_address, key))
     }
 
     pub fn add_genesis_account(
@@ -223,9 +254,9 @@ impl ChainManager {
                 "--pruning",
                 "nothing",
                 "--grpc.address",
-                &format!("0.0.0.0:{}", self.grpc_port),
+                &self.grpc_listen_address(),
                 "--rpc.laddr",
-                &format!("tcp://0.0.0.0:{}", self.rpc_port),
+                &self.rpc_listen_address(),
                 "--log_level",
                 "error"
             ])
@@ -256,7 +287,7 @@ impl ChainManager {
     {
         let res = self.exec(&[
             "--node",
-            &format!("tcp://localhost:{}", self.rpc_port),
+            &self.rpc_listen_address(),
             "query",
             "bank",
             "balances",

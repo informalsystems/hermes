@@ -36,7 +36,6 @@ clear_packets_interval = 100
 # Default: true.
 tx_confirmation = true
 
-
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
 [rest]
