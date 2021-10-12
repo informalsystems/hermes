@@ -1,5 +1,5 @@
-use std::process::Child;
 use eyre::Report as Error;
+use std::process::Child;
 
 // A lightweight wrapper around std::process::Child
 // to ensure that the process is killed when the handle
@@ -13,7 +13,7 @@ impl ChildProcess {
     pub fn new(child: Child) -> Self {
         Self {
             child,
-            waited: false
+            waited: false,
         }
     }
 

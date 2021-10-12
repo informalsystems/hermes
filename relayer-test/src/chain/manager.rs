@@ -1,18 +1,18 @@
+use core::str::FromStr;
 use eyre::{eyre, Report as Error};
+use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
+use serde_json as json;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::str;
-use tracing::{debug, trace};
-use serde_json as json;
 use toml;
-use core::str::FromStr;
-use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
+use tracing::{debug, trace};
 
-use crate::process::ChildProcess;
-use super::util;
 use super::id::ChainId;
+use super::util;
 use super::wallet::{Wallet, WalletAddress, WalletId};
+use crate::process::ChildProcess;
 
 #[derive(Debug)]
 pub struct ChainManager {
@@ -74,9 +74,7 @@ impl ChainManager {
             self.command_path, args
         );
 
-        let output = Command::new(&self.command_path)
-            .args(args)
-            .output()?;
+        let output = Command::new(&self.command_path).args(args).output()?;
 
         if output.status.success() {
             let message = str::from_utf8(&output.stdout)?.to_string();
@@ -94,9 +92,7 @@ impl ChainManager {
     }
 
     pub fn help(&self) -> Result<(), Error> {
-        self.exec(&[
-            "--help"
-        ])?;
+        self.exec(&["--help"])?;
 
         Ok(())
     }
@@ -164,10 +160,7 @@ impl ChainManager {
 
         let key_file: KeyFile = json::from_str(&seed_content)?;
 
-        let key = KeyEntry::from_key_file(
-            key_file,
-            &hd_path,
-        )?;
+        let key = KeyEntry::from_key_file(key_file, &hd_path)?;
 
         Ok(Wallet::new(wallet_id.to_string(), wallet_address, key))
     }
@@ -175,32 +168,32 @@ impl ChainManager {
     pub fn add_genesis_account(
         &self,
         wallet: &WalletAddress,
-        amounts: &[(&str, u64)]
-    ) -> Result<(), Error>
-    {
-        let amounts_str = itertools::join(amounts
-            .iter()
-            .map(|(denom, amount)| format!("{}{}", amount, denom)), ",");
+        amounts: &[(&str, u64)],
+    ) -> Result<(), Error> {
+        let amounts_str = itertools::join(
+            amounts
+                .iter()
+                .map(|(denom, amount)| format!("{}{}", amount, denom)),
+            ",",
+        );
 
         self.exec(&[
             "--home",
             &self.home_path,
             "add-genesis-account",
             &wallet.0,
-            &amounts_str
+            &amounts_str,
         ])?;
 
         Ok(())
     }
-
 
     pub fn add_genesis_validator(
         &self,
         wallet_id: &WalletId,
         denom: &str,
         amount: u64,
-    ) -> Result<(), Error>
-    {
+    ) -> Result<(), Error> {
         let amount_str = format!("{}{}", amount, denom);
 
         self.exec(&[
@@ -212,26 +205,22 @@ impl ChainManager {
             "test",
             "--chain-id",
             &self.chain_id.0,
-            &amount_str
+            &amount_str,
         ])?;
 
         Ok(())
     }
 
-    pub fn collect_gen_txs(
+    pub fn collect_gen_txs(&self) -> Result<(), Error> {
+        self.exec(&["--home", &self.home_path, "collect-gentxs"])?;
+
+        Ok(())
+    }
+
+    pub fn update_chain_config(
         &self,
-    ) -> Result<(), Error>
-    {
-        self.exec(&[
-            "--home",
-            &self.home_path,
-            "collect-gentxs",
-        ])?;
-
-        Ok(())
-    }
-
-    pub fn update_chain_config(&self, cont: impl FnOnce(&mut toml::Value) -> Result<(), Error>) -> Result<(), Error> {
+        cont: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
+    ) -> Result<(), Error> {
         let config1 = self.read_file("config/config.toml")?;
 
         let mut config2 = toml::from_str(&config1)?;
@@ -263,11 +252,13 @@ impl ChainManager {
             .stderr(Stdio::piped())
             .spawn()?;
 
-        let stdout = child.stdout
+        let stdout = child
+            .stdout
             .take()
             .ok_or_else(|| eyre!("expected stdout to be present in child process"))?;
 
-        let stderr = child.stderr
+        let stderr = child
+            .stderr
             .take()
             .ok_or_else(|| eyre!("expected stderr to be present in child process"))?;
 
@@ -277,12 +268,7 @@ impl ChainManager {
         Ok(ChildProcess::new(child))
     }
 
-    pub fn query_balance(
-        &self,
-        wallet_id: &WalletAddress,
-        denom: &str
-    ) -> Result<u64, Error>
-    {
+    pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &str) -> Result<u64, Error> {
         let res = self.exec(&[
             "--node",
             &self.rpc_listen_address(),

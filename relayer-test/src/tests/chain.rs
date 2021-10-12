@@ -1,22 +1,20 @@
-use tracing::info;
-use eyre::Report as Error;
-use core::time::Duration;
 use core::str::FromStr;
-use ibc_relayer::config;
-use tendermint_rpc::Url;
+use core::time::Duration;
+use eyre::Report as Error;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer::keyring::{Store};
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_cli::cli_utils::ChainHandlePair;
+use ibc_relayer::config;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::keyring::Store;
+use ibc_relayer_cli::cli_utils::ChainHandlePair;
+use tendermint_rpc::Url;
+use tracing::info;
 
-use crate::init::init_test;
-use crate::chain::builder::ChainBuilder;
 use crate::chain::bootstrap::{bootstrap_chain, BootstrapResult};
+use crate::chain::builder::ChainBuilder;
+use crate::init::init_test;
 
-fn create_chain_config(chain: &BootstrapResult)
-    -> Result<config::ChainConfig, Error>
-{
+fn create_chain_config(chain: &BootstrapResult) -> Result<config::ChainConfig, Error> {
     Ok(config::ChainConfig {
         id: ChainId::from_string(&chain.chain.chain_id.0),
         rpc_addr: Url::from_str(&chain.chain.rpc_address())?,
@@ -46,10 +44,7 @@ fn create_chain_config(chain: &BootstrapResult)
 fn test_chain_manager() -> Result<(), Error> {
     init_test()?;
 
-    let builder = ChainBuilder::new(
-        "gaiad",
-        "data",
-    );
+    let builder = ChainBuilder::new("gaiad", "data");
 
     let chain_a = bootstrap_chain(&builder)?;
     let chain_b = bootstrap_chain(&builder)?;
@@ -68,33 +63,27 @@ fn test_chain_manager() -> Result<(), Error> {
     let chain_handles = ChainHandlePair::spawn(
         &config,
         &ChainId::from_string(&chain_a.chain.chain_id.0),
-        &&ChainId::from_string(&chain_b.chain.chain_id.0)
+        &&ChainId::from_string(&chain_b.chain.chain_id.0),
     )?;
 
-    info!("adding key {} to chain config {} with key entry {:?}",
+    info!(
+        "adding key {} to chain config {} with key entry {:?}",
         chain_a.relayer.id.0,
         chain_handles.src.id(),
         chain_a.relayer.key,
     );
 
-    chain_handles.src.add_key(
-        chain_a.relayer.id.0.clone(),
-        chain_a.relayer.key,
-    )?;
+    chain_handles
+        .src
+        .add_key(chain_a.relayer.id.0.clone(), chain_a.relayer.key)?;
 
-    chain_handles.dst.add_key(
-        chain_b.relayer.id.0.clone(),
-        chain_b.relayer.key,
-    )?;
+    chain_handles
+        .dst
+        .add_key(chain_b.relayer.id.0.clone(), chain_b.relayer.key)?;
 
-    let client = ForeignClient::restore(
-        ClientId::default(),
-        chain_handles.dst,
-        chain_handles.src
-    );
+    let client = ForeignClient::restore(ClientId::default(), chain_handles.dst, chain_handles.src);
 
-    let res = client
-        .build_create_client_and_send()?;
+    let res = client.build_create_client_and_send()?;
 
     info!("successfully created client: {}", res);
 

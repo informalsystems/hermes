@@ -731,11 +731,8 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
         // Initialize key store and load key
-        let keybase = KeyRing::new(
-            config.key_store_type,
-            &config.account_prefix,
-            &config.id
-        ).map_err(Error::key_base)?;
+        let keybase = KeyRing::new(config.key_store_type, &config.account_prefix, &config.id)
+            .map_err(Error::key_base)?;
 
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
@@ -966,8 +963,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error> {
-        self
-            .keybase_mut()
+        self.keybase_mut()
             .add_key(key_name, key)
             .map_err(Error::key_base)?;
 

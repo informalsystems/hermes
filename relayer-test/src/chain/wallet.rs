@@ -14,11 +14,7 @@ pub struct Wallet {
 }
 
 impl Wallet {
-    pub fn new(
-        id: String,
-        address: String,
-        key: KeyEntry,
-    ) -> Self {
+    pub fn new(id: String, address: String, key: KeyEntry) -> Self {
         Self {
             id: WalletId(id),
             address: WalletAddress(address),

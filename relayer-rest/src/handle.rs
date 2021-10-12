@@ -54,7 +54,7 @@ pub fn chain_config(
 ) -> Result<ChainConfig, RestApiError> {
     submit_request(sender, |reply_to| Request::GetChain {
         chain_id: ChainId::from_string(chain_id),
-        reply_to
+        reply_to,
     })
 }
 

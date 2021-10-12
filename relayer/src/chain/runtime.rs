@@ -412,7 +412,12 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn add_key(&mut self, key_name: String, key: KeyEntry, reply_to: ReplyTo<()>) -> Result<(), Error> {
+    fn add_key(
+        &mut self,
+        key_name: String,
+        key: KeyEntry,
+        reply_to: ReplyTo<()>,
+    ) -> Result<(), Error> {
         let result = self.chain.add_key(&key_name, key);
         reply_to.send(result).map_err(Error::send)
     }

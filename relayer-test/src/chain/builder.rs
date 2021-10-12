@@ -1,6 +1,6 @@
 use super::id::ChainId;
-use super::util;
 use super::manager::ChainManager;
+use super::util;
 
 #[derive(Debug)]
 pub struct ChainBuilder {
@@ -10,20 +10,14 @@ pub struct ChainBuilder {
 }
 
 impl ChainBuilder {
-    pub fn new(
-        command_path: &str,
-        base_store_dir: &str,
-    ) -> Self {
+    pub fn new(command_path: &str, base_store_dir: &str) -> Self {
         Self {
             command_path: command_path.to_string(),
             base_store_dir: base_store_dir.to_string(),
         }
     }
 
-    pub fn new_chain(
-        &self
-    ) -> ChainManager
-    {
+    pub fn new_chain(&self) -> ChainManager {
         let chain_num = util::random_u32();
         let chain_id = ChainId(format!("ibc-{:x}", chain_num));
 

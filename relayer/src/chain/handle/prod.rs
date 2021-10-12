@@ -121,12 +121,11 @@ impl ChainHandle for ProdChainHandle {
     }
 
     fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
-        self.send(|reply_to|
-            ChainRequest::AddKey {
-                key_name,
-                key,
-                reply_to,
-            })
+        self.send(|reply_to| ChainRequest::AddKey {
+            key_name,
+            key,
+            reply_to,
+        })
     }
 
     fn module_version(&self, port_id: &PortId) -> Result<String, Error> {
