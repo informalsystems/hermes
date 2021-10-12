@@ -1,5 +1,7 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
-use crate::events::IbcEvent;
+use core::convert::TryFrom;
+
+use crate::events::{extract_attribute, Error, IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
@@ -423,6 +425,20 @@ impl SendPacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
+    }
+}
+
+impl TryFrom<RawObject> for SendPacket {
+    type Error = Error;
+
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let height = obj.height;
+        let data_str: String = extract_attribute(&obj, &format!("{}.packet_data", obj.action))?;
+
+        let mut packet = Packet::try_from(obj)?;
+        packet.data = Vec::from(data_str.as_str().as_bytes());
+
+        Ok(SendPacket { height, packet })
     }
 }
 

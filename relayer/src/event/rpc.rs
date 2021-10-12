@@ -1,8 +1,12 @@
+use alloc::collections::BTreeMap as HashMap;
+use core::convert::TryFrom;
+
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 
-use ibc::events::{from_tx_response_event, IbcEvent};
+use ibc::events::{from_tx_response_event, IbcEvent, RawObject};
 use ibc::ics02_client::events::NewBlock;
 use ibc::ics02_client::height::Height;
+use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics24_host::identifier::ChainId;
 
 pub fn get_all_events(
@@ -32,19 +36,20 @@ pub fn get_all_events(
             );
 
             vals.push((height, NewBlock::new(height).into()));
+
+            if let Some(events) = &result.events {
+                let ibc_events =
+                    send_packet_from_block_events(height, events.clone().into_iter().collect());
+                if !ibc_events.is_empty() {
+                    vals.extend(ibc_events);
+                }
+            }
         }
         RpcEventData::Tx { tx_result } => {
             let height = Height::new(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 tx_result.height as u64,
             );
-
-            // tracing::trace!(
-            //     "WebSocket event (Tx) => height: {}, \nevents: {:#?}, tx.events: {:#?}",
-            //     height,
-            //     result.events,
-            //     tx_result.result.events
-            // );
 
             for abci_event in &tx_result.result.events {
                 if let Some(ibc_event) = from_tx_response_event(height, abci_event) {
@@ -57,4 +62,21 @@ pub fn get_all_events(
     }
 
     Ok(vals)
+}
+
+fn send_packet_from_block_events(
+    height: Height,
+    events: HashMap<String, Vec<String>>,
+) -> Vec<(Height, IbcEvent)> {
+    let mut vals: Vec<(Height, IbcEvent)> = vec![];
+    if let Some(packets) = events.get("send_packet.packet_data") {
+        for i in 0..packets.len() {
+            let raw_obj = RawObject::new(height, "send_packet".to_string(), i, events.clone());
+
+            if let Ok(pkg) = ChannelEvents::SendPacket::try_from(raw_obj) {
+                vals.push((height, IbcEvent::from(pkg)))
+            }
+        }
+    }
+    vals
 }
