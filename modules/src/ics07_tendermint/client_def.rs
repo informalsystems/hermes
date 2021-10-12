@@ -141,11 +141,7 @@ impl ClientDef for TendermintClient {
         // (cs-new, cs-next, cs-latest)
         if header.height() < client_state.latest_height() {
             let maybe_next_cs = ctx
-                .next_consensus_state(
-                    &client_id,
-                    header.height().increment(),
-                    client_state.latest_height().decrement()?,
-                )?
+                .next_consensus_state(&client_id, header.height())?
                 .map(downcast_consensus_state)
                 .transpose()?;
             if let Some(next_cs) = maybe_next_cs {
@@ -164,11 +160,7 @@ impl ClientDef for TendermintClient {
         // (cs-trusted, cs-prev, cs-new)
         if header.trusted_height < header.height() {
             let maybe_prev_cs = ctx
-                .prev_consensus_state(
-                    &client_id,
-                    header.height().decrement()?,
-                    header.trusted_height.increment(),
-                )?
+                .prev_consensus_state(&client_id, header.height())?
                 .map(downcast_consensus_state)
                 .transpose()?;
             if let Some(prev_cs) = maybe_prev_cs {

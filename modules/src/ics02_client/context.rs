@@ -41,59 +41,19 @@ pub trait ClientReader {
         }
     }
 
-    /// Attempts to search for the next consensus state starting at
-    /// `lower_height`, searching up to `upper_height` (inclusive).
-    ///
-    /// If a consensus state is returned, its height will therefore be `h` such
-    /// that `lower_height <= h <= upper_height`.
-    ///
-    /// The default implementation uses a linear search between the two heights,
-    /// resulting in `O(n)` lookup time. Optimizations are possible depending on
-    /// the nature of the underlying store, and must be implemented on a
-    /// per-store basis.
+    /// Search for the lowest consensus state higher than `height`.
     fn next_consensus_state(
         &self,
         client_id: &ClientId,
-        lower_height: Height,
-        upper_height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error> {
-        let mut cur_height = lower_height;
-        while cur_height <= upper_height {
-            let maybe_cs = self.maybe_consensus_state(client_id, cur_height)?;
-            if maybe_cs.is_some() {
-                return Ok(maybe_cs);
-            }
-            cur_height = cur_height.increment();
-        }
-        Ok(None)
-    }
+        height: Height,
+    ) -> Result<Option<AnyConsensusState>, Error>;
 
-    /// Attempts to search for the previous consensus state starting from
-    /// `upper_height`, searching down to `lower_height` (inclusive).
-    ///
-    /// If a consensus state is returned, its height will therefore be `h` such
-    /// that `upper_height >= h >= lower_height`.
-    ///
-    /// The default implementation uses a linear search between the two heights,
-    /// resulting in `O(n)` lookup time. Optimizations are possible depending on
-    /// the nature of the underlying store, and must be implemented on a
-    /// per-store basis.
+    /// Search for the highest consensus state lower than `height`.
     fn prev_consensus_state(
         &self,
         client_id: &ClientId,
-        upper_height: Height,
-        lower_height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error> {
-        let mut cur_height = upper_height;
-        while cur_height >= lower_height {
-            let maybe_cs = self.maybe_consensus_state(client_id, cur_height)?;
-            if maybe_cs.is_some() {
-                return Ok(maybe_cs);
-            }
-            cur_height = cur_height.decrement()?;
-        }
-        Ok(None)
-    }
+        height: Height,
+    ) -> Result<Option<AnyConsensusState>, Error>;
 
     /// Returns a natural number, counting how many clients have been created thus far.
     /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.

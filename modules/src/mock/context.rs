@@ -883,6 +883,60 @@ impl ClientReader for MockContext {
         }
     }
 
+    /// Search for the lowest consensus state higher than `height`.
+    fn next_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<AnyConsensusState>, Ics02Error> {
+        let client_record = self
+            .clients
+            .get(client_id)
+            .ok_or_else(|| Ics02Error::client_not_found(client_id.clone()))?;
+
+        // Get the consensus state heights and sort them in ascending order.
+        let mut heights: Vec<Height> = client_record.consensus_states.keys().cloned().collect();
+        heights.sort();
+
+        // Search for next state.
+        for h in heights {
+            if h > height {
+                // unwrap should never happen, as the consensus state for h must exist
+                return Ok(Some(
+                    client_record.consensus_states.get(&h).unwrap().clone(),
+                ));
+            }
+        }
+        Ok(None)
+    }
+
+    /// Search for the highest consensus state lower than `height`.
+    fn prev_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<AnyConsensusState>, Ics02Error> {
+        let client_record = self
+            .clients
+            .get(client_id)
+            .ok_or_else(|| Ics02Error::client_not_found(client_id.clone()))?;
+
+        // Get the consensus state heights and sort them in descending order.
+        let mut heights: Vec<Height> = client_record.consensus_states.keys().cloned().collect();
+        heights.sort_by(|a, b| b.cmp(a));
+
+        // Search for previous state.
+        for h in heights {
+            if h < height {
+                // unwrap should never happen, as the consensus state for h must exist
+                return Ok(Some(
+                    client_record.consensus_states.get(&h).unwrap().clone(),
+                ));
+            }
+        }
+        Ok(None)
+    }
+
     fn client_counter(&self) -> Result<u64, Ics02Error> {
         Ok(self.client_ids_counter)
     }
