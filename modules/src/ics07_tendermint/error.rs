@@ -13,11 +13,11 @@ define_error! {
     Error {
         InvalidTrustingPeriod
             { reason: String }
-            | _ | { "invalid trusting period" },
+            | e | { format_args!("invalid trusting period: {}", e.reason) },
 
         InvalidUnbondingPeriod
             { reason: String }
-            | _ | { "invalid unbonding period" },
+            | e | { format_args!("invalid unbonding period: {}", e.reason) },
 
         InvalidAddress
             | _ | { "invalid address" },
@@ -30,8 +30,7 @@ define_error! {
         InvalidTrustThreshold
             { reason: String }
             | e | {
-                format_args!("invalid client state trust threshold: {}",
-                    e.reason)
+                format_args!("invalid client state trust threshold: {}", e.reason)
             },
 
         MissingSignedHeader
@@ -39,11 +38,11 @@ define_error! {
 
         Validation
             { reason: String }
-            | _ | { "invalid header, failed basic validation" },
+            | e | { format_args!("invalid header, failed basic validation: {}", e.reason) },
 
         InvalidRawClientState
             { reason: String }
-            | _ | { "invalid raw client state" },
+            | e | { format_args!("invalid raw client state: {}", e.reason) },
 
         MissingValidatorSet
             | _ | { "missing validator set" },
@@ -92,7 +91,7 @@ define_error! {
 
         InvalidRawConsensusState
             { reason: String }
-            | _ | { "invalid raw client consensus state" },
+            | e | { format_args!("invalid raw client consensus state: {}", e.reason) },
 
         InvalidRawHeader
             [ TendermintError ]
@@ -100,7 +99,7 @@ define_error! {
 
         InvalidRawMisbehaviour
             { reason: String }
-            | _ | { "invalid raw misbehaviour" },
+            | e | { format_args!("invalid raw misbehaviour: {}", e.reason) },
 
         Decode
             [ TraceError<prost::DecodeError> ]
@@ -109,7 +108,7 @@ define_error! {
         InsufficientVotingPower
             { reason: String }
             | e | {
-                format_args!("insufficient overlap {}", e.reason)
+                format_args!("insufficient overlap: {}", e.reason)
             },
 
         LowUpdateTimestamp
