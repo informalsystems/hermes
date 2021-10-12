@@ -132,7 +132,14 @@ impl Configurable<Config> for CliCmd {
     ///
     /// This can be safely deleted if you don't want to override config
     /// settings from command-line options.
-    fn process_config(&self, config: Config) -> Result<Config, FrameworkError> {
+    fn process_config(&self, mut config: Config) -> Result<Config, FrameworkError> {
+        // Alter the memo for all chains to include a suffix with Hermes build details
+        let web = "https://hermes.informal.systems";
+        let suffix = format!("{} {} ({})", CliCmd::name(), CliCmd::version(), web);
+        for ccfg in config.chains.iter_mut() {
+            ccfg.memo_prefix.apply_suffix(&suffix);
+        }
+
         match self {
             CliCmd::Tx(cmd) => cmd.override_config(config),
             // CliCmd::Help(cmd) => cmd.override_config(config),
