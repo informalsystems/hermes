@@ -67,7 +67,7 @@ impl ClientState {
             ));
         }
         if trusting_period >= unbonding_period {
-            return Err(Error::invalid_unbonding_period(
+            return Err(Error::invalid_trusting_period(
                 "ClientState trusting period must be smaller than unbonding period".to_string(),
             ));
         }
@@ -113,7 +113,7 @@ impl ClientState {
     }
 
     pub fn with_set_frozen(self, h: Height) -> Self {
-        ClientState {
+        Self { 
             frozen_height: h,
             ..self
         }

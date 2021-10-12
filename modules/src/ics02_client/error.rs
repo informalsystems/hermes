@@ -226,7 +226,7 @@ define_error! {
                 time2: Timestamp,
             }
             | e | {
-                format_args!("Timestamp none or {} and now {}", e.time1, e.time2)
+                format_args!("timestamp is invalid or missing, timestamp={0},  now={1}", e.time1, e.time2)
             },
 
         HeaderNotWithinTrustPeriod
@@ -235,7 +235,7 @@ define_error! {
                 update_time: Timestamp,
             }
             | e | {
-                format_args!("Header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
+                format_args!("header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
             },
 
         TendermintHandlerError

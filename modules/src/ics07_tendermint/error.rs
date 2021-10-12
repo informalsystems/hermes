@@ -109,7 +109,7 @@ define_error! {
         InsufficientVotingPower
             { reason: String }
             | e | {
-                format_args!("Insufficient overlap {}", e.reason)
+                format_args!("insufficient overlap {}", e.reason)
             },
 
         LowUpdateTimestamp
@@ -118,7 +118,7 @@ define_error! {
                 high: String
             }
             | e | {
-                format_args!("Header timestamp {0} must be greater than current client consensus state timestamp {1}", e.low, e.high)
+                format_args!("header timestamp {0} must be greater than current client consensus state timestamp {1}", e.low, e.high)
             },
 
         HeaderTimestampOutsideTrustingTime
@@ -127,7 +127,7 @@ define_error! {
                 high: String
             }
             | e | {
-                format_args!("Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp {1}", e.low, e.high)
+                format_args!("header timestamp {0} is outside the trusting period w.r.t. consensus state timestamp {1}", e.low, e.high)
             },
 
         HeaderTimestampTooHigh
@@ -136,7 +136,7 @@ define_error! {
                 max: String,
             }
             | e | {
-                format_args!("Given other previous updates, header timestamp should be at most {0}, but was {1}", e.max, e.actual)
+                format_args!("given other previous updates, header timestamp should be at most {0}, but was {1}", e.max, e.actual)
             },
 
         HeaderTimestampTooLow
@@ -145,13 +145,13 @@ define_error! {
                 min: String,
             }
             | e | {
-                format_args!("Given other previous updates, header timestamp should be at least {0}, but was {1}", e.min, e.actual)
+                format_args!("given other previous updates, header timestamp should be at least {0}, but was {1}", e.min, e.actual)
             },
 
         InvalidHeaderHeight
             { height: Height }
             | e | {
-                format_args!("Header height = {0} is invalid", e.height)
+                format_args!("header height = {0} is invalid", e.height)
             },
 
         InvalidTrustedHeaderHeight
@@ -160,7 +160,7 @@ define_error! {
                 height_header: Height
             }
             | e | {
-                format_args!("The header height is {0} and it is lower than the trusted header height, which is {1} ", e.height_header, e.trusted_header_height)
+                format_args!("header height is {0} and is lower than the trusted header height, which is {1} ", e.height_header, e.trusted_header_height)
             },
 
         LowUpdateHeight
@@ -169,7 +169,7 @@ define_error! {
                 high: Height
             }
             | e | {
-                format_args!("The header height is {0} and it must be at greater than the current client height which is {1}", e.low, e.high)
+                format_args!("header height is {0} but it must be greater than the current client height which is {1}", e.low, e.high)
             },
 
         MismatchedRevisions
@@ -178,7 +178,7 @@ define_error! {
                 update_revision: u64,
             }
             | e | {
-                format_args!("The header's current/trusted revision number ({0}) and the update's revision number ({1}) should be the same", e.current_revision, e.update_revision)
+                format_args!("the header's current/trusted revision number ({0}) and the update's revision number ({1}) should be the same", e.current_revision, e.update_revision)
             },
 
         InvalidValidatorSet
@@ -187,13 +187,13 @@ define_error! {
                 hash2: Hash,
             }
             | e | {
-                format_args!("Invalid validator set: header_validators_hash={} and validators_hash={}", e.hash1, e.hash2)
+                format_args!("invalid validator set: header_validators_hash={} and validators_hash={}", e.hash1, e.hash2)
             },
 
         NotEnoughTrustedValsSigned
             { reason: String }
             | e | {
-                format_args!("Not enough trust because insufficient validators overlap: {}", e.reason)
+                format_args!("not enough trust because insufficient validators overlap: {}", e.reason)
             },
 
         VerificationError
@@ -208,18 +208,18 @@ define_error! {
     #[derive(Debug, PartialEq, Eq)]
     VerificationError {
         InvalidSignature
-            | _ | { "Couldn't verify validator signature" },
+            | _ | { "couldn't verify validator signature" },
 
         DuplicateValidator
             { id: Id }
             | e | {
-                format_args!("Duplicate validator in commit signatures with address {}", e.id)
+                format_args!("duplicate validator in commit signatures with address {}", e.id)
             },
 
         InsufficientOverlap
             { q1: u64, q2: u64 }
             | e | {
-                format_args!("Insufficient signers overlap between {0} and {1}", e.q1, e.q2)
+                format_args!("insufficient signers overlap between {0} and {1}", e.q1, e.q2)
             },
     }
 }

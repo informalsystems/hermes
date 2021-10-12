@@ -144,6 +144,7 @@ impl ClientDef for TendermintClient {
                 .next_consensus_state(&client_id, header.height())?
                 .map(downcast_consensus_state)
                 .transpose()?;
+
             if let Some(next_cs) = maybe_next_cs {
                 // New (untrusted) header timestamp cannot occur after next
                 // consensus state's height
@@ -163,6 +164,7 @@ impl ClientDef for TendermintClient {
                 .prev_consensus_state(&client_id, header.height())?
                 .map(downcast_consensus_state)
                 .transpose()?;
+
             if let Some(prev_cs) = maybe_prev_cs {
                 // New (untrusted) header timestamp cannot occur before the
                 // previous consensus state's height

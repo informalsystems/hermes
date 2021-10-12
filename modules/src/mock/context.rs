@@ -230,7 +230,7 @@ impl MockContext {
         };
         let consensus_states = vec![(cs_height, consensus_state)].into_iter().collect();
 
-        info!("Consensus state {:?}", consensus_states);
+        debug!("consensus states: {:?}", consensus_states);
 
         let client_record = MockClientRecord {
             client_type,
@@ -295,7 +295,7 @@ impl MockContext {
         .into_iter()
         .collect();
 
-        info!("Consensus state {:?}", consensus_states);
+        debug!("consensus states: {:?}", consensus_states);
 
         let client_record = MockClientRecord {
             client_type,
