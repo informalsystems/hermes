@@ -57,7 +57,7 @@ pub fn process(
             Error::consensus_state_not_found(client_id.clone(), client_state.latest_height())
         })?;
 
-    info!("latest consensus state {:?}", latest_consensus_state);
+    debug!("latest consensus state: {:?}", latest_consensus_state);
 
     let duration = Timestamp::now()
         .duration_since(&latest_consensus_state.timestamp())
