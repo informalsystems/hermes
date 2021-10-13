@@ -143,16 +143,16 @@ fn extract_packet_and_write_ack_from_tx(
         let value = tag.value.as_ref();
         match key {
             PKT_SRC_PORT_ATTRIBUTE_KEY => {
-                packet.source_port = value.parse().map_err(Error::identifier)?
+                packet.source_port = value.parse().map_err(Error::identifier)?;
             }
             PKT_SRC_CHANNEL_ATTRIBUTE_KEY => {
-                packet.source_channel = value.parse().map_err(Error::identifier)?
+                packet.source_channel = value.parse().map_err(Error::identifier)?;
             }
             PKT_DST_PORT_ATTRIBUTE_KEY => {
-                packet.destination_port = value.parse().map_err(Error::identifier)?
+                packet.destination_port = value.parse().map_err(Error::identifier)?;
             }
             PKT_DST_CHANNEL_ATTRIBUTE_KEY => {
-                packet.destination_channel = value.parse().map_err(Error::identifier)?
+                packet.destination_channel = value.parse().map_err(Error::identifier)?;
             }
             PKT_SEQ_ATTRIBUTE_KEY => {
                 packet.sequence = value
@@ -162,19 +162,19 @@ fn extract_packet_and_write_ack_from_tx(
             }
             PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => {
                 packet.timeout_height =
-                    value.parse().map_err(|_| Error::invalid_timeout_height())?
+                    value.parse().map_err(|_| Error::invalid_timeout_height())?;
             }
             PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY => {
-                packet.timeout_timestamp = value.parse().unwrap()
+                packet.timeout_timestamp = value.parse().unwrap();
             }
             PKT_DATA_ATTRIBUTE_KEY => {
-                packet.data = hex::decode(value).map_err(|_| Error::invalid_packet())?
+                packet.data = Vec::from(value.as_bytes());
             }
             PKT_ACK_ATTRIBUTE_KEY => {
-                write_ack = hex::decode(value).map_err(|_| Error::invalid_acknowledgement())?
+                write_ack = Vec::from(value.as_bytes());
             }
             _ => {}
-        };
+        }
     }
 
     Ok((packet, write_ack))
