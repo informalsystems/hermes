@@ -38,7 +38,6 @@ pub enum Expiry {
     InvalidTimestamp,
 }
 
-
 impl Timestamp {
     /// The IBC protocol represents timestamps as u64 Unix
     /// timestamps in nanoseconds.
@@ -52,9 +51,11 @@ impl Timestamp {
             Ok(Timestamp { time: None })
         } else {
 
-            // The underlying library [`chrono::DateTime`] allows conversion
-            // from nanoseconds only from an `i64` value. We go around this
-            // limitation by decomposing the u64 nanos into seconds + nanos.
+            // The underlying library [`chrono::DateTime`] does not support
+            // conversion from `u64` nanoseconds value, only from `i64`
+            // (which can overflow when converting from the unsigned type).
+            // We go around this limitation by decomposing the `u64` nanos
+            // into seconds + nanos and construct the timestamp from that.
             let (s, ns) = into_seconds_and_nanoseconds(nanoseconds);
 
             Ok(Timestamp {
@@ -190,11 +191,11 @@ impl Default for Timestamp {
 }
 
 
-/// Helper for the [`Timestamp`] constructor.
+/// Helper for the [`Timestamp::from_nanoseconds`] constructor.
 ///
 /// Converts `u64` nanoseconds into its constituent
-/// seconds represented as `i64` and nanoseconds
-/// represented as `u32`.
+/// seconds (represented as `i64`) plus the remaining
+/// nanoseconds (represented as `u32`).
 ///
 /// ```
 /// use core::time::Duration;
