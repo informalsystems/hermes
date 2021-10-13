@@ -61,7 +61,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
             extract_packet_and_write_ack_from_tx(event)
                 .map(|(packet, write_ack)| {
                     // This event should not have a write ack.
-                    assert_eq!(write_ack.len(), 0);
+                    debug_assert_eq!(write_ack.len(), 0);
                     IbcEvent::SendPacket(SendPacket {
                         height: Default::default(),
                         packet,
@@ -82,7 +82,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
             extract_packet_and_write_ack_from_tx(event)
                 .map(|(packet, write_ack)| {
                     // This event should not have a write ack.
-                    assert_eq!(write_ack.len(), 0);
+                    debug_assert_eq!(write_ack.len(), 0);
                     IbcEvent::AcknowledgePacket(AcknowledgePacket {
                         height: Default::default(),
                         packet,
@@ -94,7 +94,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
             extract_packet_and_write_ack_from_tx(event)
                 .map(|(packet, write_ack)| {
                     // This event should not have a write ack.
-                    assert_eq!(write_ack.len(), 0);
+                    debug_assert_eq!(write_ack.len(), 0);
                     IbcEvent::TimeoutPacket(TimeoutPacket {
                         height: Default::default(),
                         packet,
