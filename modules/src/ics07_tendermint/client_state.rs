@@ -56,14 +56,15 @@ impl ClientState {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
             return Err(Error::invalid_trusting_period(
-                "ClientState trusting period must be greater than zero".to_string(),
+                "ClientState trusting period ({:?}) must be greater than zero".to_string(),
+                trusting_period
             ));
         }
 
         if unbonding_period <= Duration::new(0, 0) {
             return Err(Error::invalid_unbonding_period(format!(
-                "ClientState unbonding period ({}s) must be greater than zero",
-                unbonding_period.as_secs()
+                "ClientState unbonding period ({:?}) must be greater than zero",
+                unbonding_period
             )));
         }
 
