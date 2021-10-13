@@ -143,8 +143,13 @@ impl Default for Attributes {
 }
 
 /// Convert attributes to Tendermint ABCI tags
-/// The conversion will never fail. No actual conversion from string happens
-/// because `Tag::Key` and `Tag::Value` are also strings
+///
+/// # Note
+/// The parsing of `Key`s and `Value`s never fails, because the
+/// `FromStr` instance of `tendermint::abci::tag::{Key, Value}`
+/// is infallible, even if it is not represented in the error type.
+/// Once tendermint-rs improves the API of the `Key` and `Value` types,
+/// we will be able to remove the `.parse().unwrap()` calls.
 impl From<Attributes> for Vec<Tag> {
     fn from(a: Attributes) -> Self {
         let height = Tag {
