@@ -50,7 +50,6 @@ impl Timestamp {
         if nanoseconds == 0 {
             Ok(Timestamp { time: None })
         } else {
-
             // The underlying library [`chrono::DateTime`] does not support
             // conversion from `u64` nanoseconds value, only from `i64`
             // (which can overflow when converting from the unsigned type).
@@ -63,7 +62,6 @@ impl Timestamp {
             })
         }
     }
-
 
     /// Returns a `Timestamp` representation of a timestamp not being set.
     pub fn none() -> Self {
@@ -189,7 +187,6 @@ impl Default for Timestamp {
         Timestamp { time: None }
     }
 }
-
 
 /// Helper for the [`Timestamp::from_nanoseconds`] constructor.
 ///
