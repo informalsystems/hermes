@@ -441,7 +441,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let client_state = self
+        let mut client_state = self
             .src_chain
             .build_client_state(latest_height)
             .map_err(|e| {
@@ -452,6 +452,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?
             .wrap_any();
+
+        if let AnyClientState::Tendermint(ref mut tm_client_state) = client_state {
+            if let Ok(dst_chain_config) = self.dst_chain.config() {
+                tm_client_state.max_clock_drift += dst_chain_config.clock_drift;
+                // TODO - add some max_block_time to the chain config and retrieve from there
+                tm_client_state.max_clock_drift += Duration::new(10, 0);
+            }
+        }
 
         let consensus_state = self
             .src_chain

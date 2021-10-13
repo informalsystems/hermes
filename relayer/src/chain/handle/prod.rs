@@ -36,7 +36,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
-use crate::{connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
+use crate::{config::ChainConfig, connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
@@ -114,6 +114,10 @@ impl ChainHandle for ProdChainHandle {
 
     fn get_signer(&self) -> Result<Signer, Error> {
         self.send(|reply_to| ChainRequest::Signer { reply_to })
+    }
+
+    fn config(&self) -> Result<ChainConfig, Error> {
+        self.send(|reply_to| ChainRequest::Config { reply_to })
     }
 
     fn get_key(&self) -> Result<KeyEntry, Error> {

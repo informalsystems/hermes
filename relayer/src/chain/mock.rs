@@ -144,6 +144,10 @@ impl ChainEndpoint for MockChain {
         Ok(get_dummy_account_id())
     }
 
+    fn config(&mut self) -> Result<ChainConfig, Error> {
+        Ok(self.config.clone())
+    }
+
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
         unimplemented!()
     }

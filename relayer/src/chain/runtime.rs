@@ -216,6 +216,10 @@ where
                             self.get_signer(reply_to)?
                         }
 
+                        Ok(ChainRequest::Config { reply_to }) => {
+                            self.config(reply_to)?
+                        }
+
                         Ok(ChainRequest::Key { reply_to }) => {
                             self.get_key(reply_to)?
                         }
@@ -396,6 +400,11 @@ where
 
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn config(&mut self, reply_to: ReplyTo<ChainConfig>) -> Result<(), Error> {
+        let result = self.chain.config();
         reply_to.send(result).map_err(Error::send)
     }
 

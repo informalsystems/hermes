@@ -50,6 +50,7 @@ use crate::{
 };
 
 use super::HealthCheck;
+use crate::config::ChainConfig;
 
 mod prod;
 
@@ -112,6 +113,10 @@ pub enum ChainRequest {
     SendMessagesAndWaitCheckTx {
         proto_msgs: Vec<prost_types::Any>,
         reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
+    },
+
+    Config {
+        reply_to: ReplyTo<ChainConfig>,
     },
 
     Signer {
@@ -341,6 +346,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error>;
 
     fn get_signer(&self) -> Result<Signer, Error>;
+
+    fn config(&self) -> Result<ChainConfig, Error>;
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 

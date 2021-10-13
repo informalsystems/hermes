@@ -133,6 +133,8 @@ pub trait ChainEndpoint: Sized {
 
     fn get_signer(&mut self) -> Result<Signer, Error>;
 
+    fn config(&mut self) -> Result<ChainConfig, Error>;
+
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
     // Queries

@@ -891,6 +891,11 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(Signer::new(bech32))
     }
 
+    /// Get the chain configuration
+    fn config(&mut self) -> Result<ChainConfig, Error> {
+        Ok(self.config.clone())
+    }
+
     /// Get the signing key
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
         crate::time!("get_key");
