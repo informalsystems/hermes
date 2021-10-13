@@ -38,26 +38,31 @@ pub enum Expiry {
     InvalidTimestamp,
 }
 
+
 impl Timestamp {
-    /// When used in IBC, all raw timestamps are represented as u64 Unix timestamp in nanoseconds.
+    /// The IBC protocol represents timestamps as u64 Unix
+    /// timestamps in nanoseconds.
     ///
-    /// A value of 0 indicates that the timestamp is not set, and result in the underlying
-    /// type being None.
+    /// A protocol value of 0 indicates that the timestamp
+    /// is not set. In this case, our domain type takes the
+    /// value of None.
     ///
-    /// The underlying library [`chrono::DateTime`] allows conversion from nanoseconds only
-    /// from an `i64` value. In practice, `i64` still have sufficient precision for our purpose.
-    /// However we have to handle the case of `u64` overflowing in `i64`, to prevent
-    /// malicious packets from crashing the relayer.
     pub fn from_nanoseconds(nanoseconds: u64) -> Result<Timestamp, TryFromIntError> {
         if nanoseconds == 0 {
             Ok(Timestamp { time: None })
         } else {
-            let nanoseconds = nanoseconds.try_into()?;
+
+            // The underlying library [`chrono::DateTime`] allows conversion
+            // from nanoseconds only from an `i64` value. We go around this
+            // limitation by decomposing the u64 nanos into seconds + nanos.
+            let (s, ns) = into_seconds_and_nanoseconds(nanoseconds);
+
             Ok(Timestamp {
-                time: Some(Utc.timestamp_nanos(nanoseconds)),
+                time: Some(Utc.timestamp(s, ns)),
             })
         }
     }
+
 
     /// Returns a `Timestamp` representation of a timestamp not being set.
     pub fn none() -> Self {
@@ -172,9 +177,9 @@ impl FromStr for Timestamp {
     type Err = ParseTimestampError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let seconds = u64::from_str(s).map_err(ParseTimestampError::parse_int)?;
+        let nanoseconds = u64::from_str(s).map_err(ParseTimestampError::parse_int)?;
 
-        Timestamp::from_nanoseconds(seconds).map_err(ParseTimestampError::try_from_int)
+        Timestamp::from_nanoseconds(nanoseconds).map_err(ParseTimestampError::try_from_int)
     }
 }
 
@@ -182,6 +187,34 @@ impl Default for Timestamp {
     fn default() -> Self {
         Timestamp { time: None }
     }
+}
+
+
+/// Helper for the [`Timestamp`] constructor.
+///
+/// Converts `u64` nanoseconds into its constituent
+/// seconds represented as `i64` and nanoseconds
+/// represented as `u32`.
+///
+/// ```
+/// use core::time::Duration;
+/// use ibc::timestamp;
+/// let max = u64::MAX;
+/// let duration = Duration::from_nanos(max);
+/// let (s, n) = timestamp::into_seconds_and_nanoseconds(max);
+/// assert_eq!(duration.as_secs(), s as u64);
+/// assert_eq!(duration.subsec_nanos(), n);
+/// ```
+pub fn into_seconds_and_nanoseconds(nanoseconds: u64) -> (i64, u32) {
+    const NANOS_PER_SEC: u32 = 1_000_000_000;
+
+    let seconds = nanoseconds / (NANOS_PER_SEC as u64);
+
+    // Safe because u64::MAX divided by NANOS_PER_SEC fits into i64
+    let out_secs: i64 = seconds.try_into().unwrap();
+    let out_nanos = (nanoseconds % (NANOS_PER_SEC as u64)) as u32;
+
+    (out_secs, out_nanos)
 }
 
 #[cfg(test)]

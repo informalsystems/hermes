@@ -524,7 +524,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .consensus_state(client_state.latest_height())?
             .timestamp();
 
+        // The refresh_window is the maximum duration
+        // we can backoff between subsequent client updates.
         let refresh_window = client_state.refresh_period();
+        // Compute the duration since the last update of this client
         let elapsed = Timestamp::from_datetime(Utc::now()).duration_since(&last_update_time);
 
         if client_state.is_frozen() || client_state.expired(elapsed.unwrap_or_default()) {
