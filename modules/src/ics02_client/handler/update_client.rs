@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
-use tracing::info;
+use tracing::debug;
 
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
