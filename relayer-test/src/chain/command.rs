@@ -14,8 +14,10 @@ use super::util;
 use super::wallet::{Wallet, WalletAddress, WalletId};
 use crate::process::ChildProcess;
 
+const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
+
 #[derive(Debug)]
-pub struct ChainManager {
+pub struct ChainCommand {
     pub command_path: String,
 
     pub chain_id: ChainId,
@@ -29,7 +31,7 @@ pub struct ChainManager {
     pub p2p_port: u16,
 }
 
-impl ChainManager {
+impl ChainCommand {
     pub fn new(
         command_path: String,
         chain_id: ChainId,
@@ -126,7 +128,7 @@ impl ChainManager {
 
     pub fn add_random_wallet(&self, prefix: &str) -> Result<Wallet, Error> {
         let num = util::random_u32();
-        let wallet_id = format!("{}_{:x}", prefix, num);
+        let wallet_id = format!("{}-{:x}", prefix, num);
         self.add_wallet(&wallet_id)
     }
 
@@ -151,11 +153,10 @@ impl ChainManager {
             .ok_or_else(|| eyre!("expect address string field to be present in json result"))?
             .to_string();
 
-        let seed_path = format!("{}_seed.json", wallet_id);
-
+        let seed_path = format!("{}-seed.json", wallet_id);
         self.write_file(&seed_path, &seed_content)?;
 
-        let hd_path = HDPath::from_str("m/44'/118'/0'/0/0")
+        let hd_path = HDPath::from_str(COSMOS_HD_PATH)
             .map_err(|e| eyre!("failed to create HDPath: {:?}", e))?;
 
         let key_file: KeyFile = json::from_str(&seed_content)?;

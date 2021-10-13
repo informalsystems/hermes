@@ -56,7 +56,7 @@ define_error! {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct Amount(U256);
+pub struct Amount(pub U256);
 
 impl Display for Amount {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

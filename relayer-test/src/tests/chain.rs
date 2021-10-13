@@ -1,16 +1,24 @@
 use core::str::FromStr;
 use core::time::Duration;
-use eyre::Report as Error;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer::chain::handle::ChainHandle;
+use eyre::{eyre, Report as Error};
+use ibc::ics04_channel::channel::Order;
+use ibc::ics24_host::identifier::{ChainId, PortId};
+use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
+use ibc_relayer::channel::Channel;
 use ibc_relayer::config;
+use ibc_relayer::config::default;
+use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::keyring::Store;
+use ibc_relayer::supervisor::Supervisor;
+use ibc_relayer::transfer::{build_and_send_transfer_messages, Amount, TransferOptions};
 use ibc_relayer_cli::cli_utils::ChainHandlePair;
+use std::sync::Arc;
+use std::sync::RwLock;
 use tendermint_rpc::Url;
 use tracing::info;
 
-use crate::chain::bootstrap::{bootstrap_chain, BootstrapResult};
+use crate::chain::bootstrap::{bootstrap_chain, wait_wallet_amount, BootstrapResult};
 use crate::chain::builder::ChainBuilder;
 use crate::init::init_test;
 
@@ -23,7 +31,7 @@ fn create_chain_config(chain: &BootstrapResult) -> Result<config::ChainConfig, E
         rpc_timeout: Duration::from_secs(10),
         account_prefix: "cosmos".to_string(),
         key_name: chain.relayer.id.0.clone(),
-        key_store_type: Store::Test,
+        key_store_type: Store::Memory,
         store_prefix: "ibc".to_string(),
         default_gas: None,
         max_gas: Some(3000000),
@@ -53,8 +61,8 @@ fn test_chain_manager() -> Result<(), Error> {
     let chain_b_config = create_chain_config(&chain_b)?;
 
     let mut config = config::Config::default();
-    config.chains.push(chain_a_config);
-    config.chains.push(chain_b_config);
+    config.chains.push(chain_a_config.clone());
+    config.chains.push(chain_b_config.clone());
 
     let config_str = toml::to_string_pretty(&config)?;
 
@@ -75,17 +83,86 @@ fn test_chain_manager() -> Result<(), Error> {
 
     chain_handles
         .src
-        .add_key(chain_a.relayer.id.0.clone(), chain_a.relayer.key)?;
+        .add_key(chain_a.relayer.id.0.clone(), chain_a.relayer.key.clone())?;
+
+    chain_handles
+        .src
+        .add_key(chain_a.user.id.0.clone(), chain_a.user.key.clone())?;
 
     chain_handles
         .dst
-        .add_key(chain_b.relayer.id.0.clone(), chain_b.relayer.key)?;
+        .add_key(chain_b.relayer.id.0.clone(), chain_b.relayer.key.clone())?;
 
-    let client = ForeignClient::restore(ClientId::default(), chain_handles.dst, chain_handles.src);
+    chain_handles
+        .dst
+        .add_key(chain_b.user.id.0.clone(), chain_b.user.key.clone())?;
 
-    let res = client.build_create_client_and_send()?;
+    let client_a_to_b = ForeignClient::new(chain_handles.dst.clone(), chain_handles.src.clone())?;
 
-    info!("successfully created client: {}", res);
+    let client_b_to_a = ForeignClient::new(chain_handles.src.clone(), chain_handles.dst.clone())?;
+
+    let connection = Connection::new(
+        client_a_to_b.clone(),
+        client_b_to_a.clone(),
+        default::connection_delay(),
+    )?;
+
+    let transfer_port = PortId::from_str("transfer")?;
+
+    let channel = Channel::new(
+        connection,
+        Order::Unordered,
+        transfer_port.clone(),
+        transfer_port.clone(),
+        None,
+    )?;
+
+    info!("created new channel {:?}", channel);
+
+    let res = client_a_to_b.build_create_client_and_send()?;
+    info!("created client: {}", res);
+
+    // let channel_id_a = channel.a_side.channel_id()
+    //     .ok_or_else(|| eyre!("expect channel id"))?;
+
+    // let transfer_options = TransferOptions {
+    //     packet_src_chain_config: chain_a_config,
+    //     packet_dst_chain_config: chain_b_config,
+    //     packet_src_port_id: transfer_port.clone(),
+    //     packet_src_channel_id: channel_id_a.clone(),
+    //     amount: Amount(1000.into()),
+    //     denom: "samoleans".to_string(),
+    //     receiver: Some(chain_b.user.address.0.clone()),
+    //     timeout_height_offset: 1000,
+    //     timeout_seconds: Duration::from_secs(0),
+    //     number_msgs: 1,
+    // };
+
+    // let (supervisor, _) = <Supervisor<ProdChainHandle>>::new(
+    //     Arc::new(RwLock::new(config.clone())),
+    //     None,
+    // );
+
+    // std::thread::spawn(move || {
+    //     supervisor.run().unwrap();
+    // });
+
+    // build_and_send_transfer_messages(
+    //     chain_handles.src,
+    //     chain_handles.dst,
+    //     transfer_options
+    // )?;
+
+    // wait_wallet_amount(
+    //     &chain_b.chain,
+    //     &chain_b.user,
+    //     1_000_000_001_000,
+    //     20
+    // )?;
+
+    // info!("successfully performed IBC transfer");
+
+    std::thread::sleep(Duration::from_secs(9999999));
 
     Ok(())
 }

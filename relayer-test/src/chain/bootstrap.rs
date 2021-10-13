@@ -4,13 +4,13 @@ use std::thread;
 use tracing::{debug, info, trace};
 
 use super::builder::ChainBuilder;
+use super::command::ChainCommand;
 use super::config;
-use super::manager::ChainManager;
 use super::wallet::Wallet;
 use crate::process::ChildProcess;
 
 pub struct BootstrapResult {
-    pub chain: ChainManager,
+    pub chain: ChainCommand,
     pub process: ChildProcess,
     pub validator: Wallet,
     pub relayer: Wallet,
@@ -71,8 +71,8 @@ pub fn bootstrap_chain(builder: &ChainBuilder) -> Result<BootstrapResult, Error>
 
 // Wait for the wallet to reach the target amount when querying from the chain.
 // This is to ensure that the chain has properly started and committed the genesis block
-fn wait_wallet_amount(
-    chain: &ChainManager,
+pub fn wait_wallet_amount(
+    chain: &ChainCommand,
     user: &Wallet,
     target_amount: u64,
     remaining_retry: u16,

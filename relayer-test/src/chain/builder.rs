@@ -1,5 +1,5 @@
+use super::command::ChainCommand;
 use super::id::ChainId;
-use super::manager::ChainManager;
 use super::util;
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ impl ChainBuilder {
         }
     }
 
-    pub fn new_chain(&self) -> ChainManager {
+    pub fn new_chain(&self) -> ChainCommand {
         let chain_num = util::random_u32();
         let chain_id = ChainId(format!("ibc-{:x}", chain_num));
 
@@ -27,7 +27,7 @@ impl ChainBuilder {
 
         let home_path = format!("{}/{}", self.base_store_dir, chain_id.0);
 
-        ChainManager::new(
+        ChainCommand::new(
             self.command_path.clone(),
             chain_id,
             home_path,
