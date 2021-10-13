@@ -132,6 +132,13 @@ impl CosmosSdkChain {
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = self.trusting_period(unbonding_period);
 
+        if trusting_period <= Duration::ZERO {
+            return Err(Error::config_validation_trusting_period_smaller_than_zero(
+                self.id().clone(),
+                trusting_period,
+            ));
+        }
+
         if trusting_period >= unbonding_period {
             return Err(
                 Error::config_validation_trusting_period_greater_than_unbonding_period(

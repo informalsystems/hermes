@@ -411,6 +411,16 @@ define_error! {
                     e.chain_id, e.configured_bound, GENESIS_MAX_BYTES_MAX_FRACTION * 100.0, e.genesis_bound)
             },
 
+        ConfigValidationTrustingPeriodSmallerThanZero
+            {
+                chain_id: ChainId,
+                trusting_period: Duration,
+            }
+            |e| {
+                format!("semantic config validation failed for option `trusting_period` of chain '{}', reason: trusting period ({}) must be greater than zero",
+                    e.chain_id, format_duration(e.trusting_period))
+            },
+
         ConfigValidationTrustingPeriodGreaterThanUnbondingPeriod
             {
                 chain_id: ChainId,
