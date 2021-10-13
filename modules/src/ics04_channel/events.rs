@@ -115,16 +115,16 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attribu
         match key {
             PORT_ID_ATTRIBUTE_KEY => attr.port_id = value.parse().map_err(Error::identifier)?,
             CHANNEL_ID_ATTRIBUTE_KEY => {
-                attr.channel_id = Some(value.parse().map_err(Error::identifier)?)
+                attr.channel_id = value.parse().ok();
             }
             CONNECTION_ID_ATTRIBUTE_KEY => {
-                attr.connection_id = value.parse().map_err(Error::identifier)?
+                attr.connection_id = value.parse().map_err(Error::identifier)?;
             }
             COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_port_id = value.parse().map_err(Error::identifier)?;
             }
             COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_channel_id = Some(value.parse().map_err(Error::identifier)?);
+                attr.counterparty_channel_id = value.parse().ok();
             }
             _ => {}
         }

@@ -50,17 +50,16 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attribu
             HEIGHT_ATTRIBUTE_KEY => {
                 attr.height = value.parse().map_err(|e| {
                     Error::ics02_client(Ics02Error::invalid_string_as_height(value.to_string(), e))
-                })?
+                })?;
             }
             CONN_ID_ATTRIBUTE_KEY => {
-                attr.connection_id = Some(value.parse().map_err(Error::invalid_identifier)?)
+                attr.connection_id = value.parse().ok();
             }
             CLIENT_ID_ATTRIBUTE_KEY => {
-                attr.client_id = value.parse().map_err(Error::invalid_identifier)?
+                attr.client_id = value.parse().map_err(Error::invalid_identifier)?;
             }
             COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_connection_id =
-                    Some(value.parse().map_err(Error::invalid_identifier)?);
+                attr.counterparty_connection_id = value.parse().ok();
             }
             COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_client_id = value.parse().map_err(Error::invalid_identifier)?;
