@@ -55,14 +55,11 @@ define_error! {
             | _ | { "error decoding hex" },
 
         MissingActionString
-            | _ | { "Missing action string" },
+            | _ | { "missing action string" },
 
         IncorrectEventType
             { event: String }
-            | e | {
-                format_args!("Incorrect Event Type {}",
-                    e.event)
-            },
+            | e | { format_args!("incorrect event type: {}", e.event) },
     }
 }
 
