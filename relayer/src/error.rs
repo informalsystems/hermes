@@ -1,9 +1,10 @@
 //! This module defines the various errors that be raised in the relayer.
 
-use crate::keyring::errors::Error as KeyringError;
-use crate::sdk_error::SdkError;
+use core::time::Duration;
+
 use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
+use humantime::format_duration;
 use prost::DecodeError;
 use tendermint::Error as TendermintError;
 use tendermint_light_client::{
@@ -30,6 +31,8 @@ use ibc::{
 
 use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
 use crate::event::monitor;
+use crate::keyring::errors::Error as KeyringError;
+use crate::sdk_error::SdkError;
 
 define_error! {
     Error {
@@ -407,6 +410,27 @@ define_error! {
             |e| {
                 format!("semantic config validation failed for option `max_tx_size` chain '{}', reason: `max_tx_size` = {} is greater than {}% of the genesis block param `max_size` = {}",
                     e.chain_id, e.configured_bound, GENESIS_MAX_BYTES_MAX_FRACTION * 100.0, e.genesis_bound)
+            },
+
+        ConfigValidationTrustingPeriodSmallerThanZero
+            {
+                chain_id: ChainId,
+                trusting_period: Duration,
+            }
+            |e| {
+                format!("semantic config validation failed for option `trusting_period` of chain '{}', reason: trusting period ({}) must be greater than zero",
+                    e.chain_id, format_duration(e.trusting_period))
+            },
+
+        ConfigValidationTrustingPeriodGreaterThanUnbondingPeriod
+            {
+                chain_id: ChainId,
+                trusting_period: Duration,
+                unbonding_period: Duration,
+            }
+            |e| {
+                format!("semantic config validation failed for option `trusting_period` of chain '{}', reason: trusting period ({}) must be smaller than the unbonding period ({})",
+                    e.chain_id, format_duration(e.trusting_period), format_duration(e.unbonding_period))
             },
 
         SdkModuleVersion
