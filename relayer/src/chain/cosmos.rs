@@ -87,10 +87,6 @@ use super::{ChainEndpoint, HealthCheck};
 
 mod compatibility;
 
-/// Default gas amount to be when submitting a transaction when we fail to estimate
-/// the amount of gas needed.
-const DEFAULT_GAS: u64 = 100_000;
-
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
 
@@ -362,7 +358,7 @@ impl CosmosSdkChain {
     /// The default amount of gas the relayer is willing to pay for a transaction,
     /// when it cannot simulate the tx and therefore estimate the gas amount needed.
     fn default_gas(&self) -> u64 {
-        self.config.default_gas.unwrap_or(DEFAULT_GAS)
+        self.config.default_gas.unwrap_or_else(|| self.max_gas())
     }
 
     /// The maximum amount of gas the relayer is willing to pay for a transaction
