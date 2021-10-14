@@ -7,21 +7,23 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
 use ibc::{
+    core::{
+        ics02_client::{
+            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
+            client_state::{AnyClientState, IdentifiedAnyClientState},
+            events::UpdateClient,
+            header::AnyHeader,
+            misbehaviour::MisbehaviourEvidence,
+        },
+        ics03_connection::{connection::ConnectionEnd, version::Version},
+        ics04_channel::{
+            channel::{ChannelEnd, IdentifiedChannelEnd},
+            packet::{PacketMsgType, Sequence},
+        },
+        ics23_commitment::commitment::CommitmentPrefix,
+        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::{
-        client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
-        client_state::{AnyClientState, IdentifiedAnyClientState},
-        events::UpdateClient,
-        header::AnyHeader,
-        misbehaviour::MisbehaviourEvidence,
-    },
-    ics03_connection::{connection::ConnectionEnd, version::Version},
-    ics04_channel::{
-        channel::{ChannelEnd, IdentifiedChannelEnd},
-        packet::{PacketMsgType, Sequence},
-    },
-    ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
     query::QueryTxRequest,
     signer::Signer,

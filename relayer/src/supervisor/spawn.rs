@@ -2,10 +2,12 @@ use itertools::Itertools;
 use tracing::{debug, error, warn};
 
 use ibc::{
-    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
-    ics04_channel::channel::{IdentifiedChannelEnd, State as ChannelState},
-    ics24_host::identifier::{ChainId, ConnectionId},
+    core::{
+        ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
+        ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
+        ics04_channel::channel::{IdentifiedChannelEnd, State as ChannelState},
+        ics24_host::identifier::{ChainId, ConnectionId},
+    },
     Height,
 };
 
