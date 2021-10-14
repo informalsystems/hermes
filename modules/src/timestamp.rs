@@ -87,8 +87,14 @@ impl Timestamp {
     /// Convert a `Timestamp` to `u64` value in nanoseconds. If no timestamp
     /// is set, the result is 0.
     pub fn as_nanoseconds(&self) -> u64 {
-        self.time
-            .map_or(0, |time| time.timestamp_nanos().try_into().unwrap())
+        self.time.map_or(0, |time| {
+            let s = time.timestamp();
+            assert!(s > 0, "time {:?} has negative `.timestamp()`", time);
+            let s: u64 = s.try_into().unwrap();
+
+            let ns = time.timestamp_subsec_nanos() as u64;
+            s + ns
+        })
     }
 
     /// Convert a `Timestamp` to an optional [`chrono::DateTime<Utc>`]
