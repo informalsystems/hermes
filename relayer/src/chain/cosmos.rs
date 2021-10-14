@@ -943,7 +943,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let key = self
             .keybase()
             .get_key(&self.config.key_name)
-            .map_err(Error::key_base)?;
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
 
         let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
         Ok(Signer::new(bech32))
@@ -957,7 +957,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let key = self
             .keybase()
             .get_key(&self.config.key_name)
-            .map_err(Error::key_base)?;
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
 
         Ok(key)
     }

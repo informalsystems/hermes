@@ -82,7 +82,9 @@ define_error! {
             },
 
         Signer
-            { chain_id: ChainId }
+            {
+                chain_id: ChainId
+            }
             [ Error ]
             |e| {
                 format!("could not retrieve signer from src chain {}", e.chain_id)

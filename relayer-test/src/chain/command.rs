@@ -294,4 +294,14 @@ impl ChainCommand {
 
         Ok(amount)
     }
+
+    pub fn query_denom_traces(&self) -> Result<String, Error> {
+        self.exec(&[
+            "--node",
+            &self.rpc_listen_address(),
+            "query",
+            "ibc-transfer",
+            "denom-traces",
+        ])
+    }
 }

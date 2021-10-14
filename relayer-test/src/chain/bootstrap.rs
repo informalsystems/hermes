@@ -58,7 +58,7 @@ pub fn bootstrap_chain(builder: &ChainBuilder) -> Result<BootstrapResult, Error>
 
     let process = chain.start()?;
 
-    wait_wallet_amount(&chain, &relayer, COIN_AMOUNT, 10)?;
+    wait_wallet_amount(&chain, &relayer, COIN_AMOUNT, "samoleans", 10)?;
 
     Ok(BootstrapResult {
         chain,
@@ -75,6 +75,7 @@ pub fn wait_wallet_amount(
     chain: &ChainCommand,
     user: &Wallet,
     target_amount: u64,
+    denom: &str,
     remaining_retry: u16,
 ) -> Result<(), Error> {
     if remaining_retry == 0 {
@@ -88,17 +89,29 @@ pub fn wait_wallet_amount(
         user.id.0, target_amount
     );
 
-    thread::sleep(Duration::from_secs(1));
+    thread::sleep(Duration::from_secs(2));
 
-    let query_res = chain.query_balance(&user.address, "samoleans");
+    let query_res = chain.query_balance(&user.address, denom);
     match query_res {
-        Ok(amount) if amount == target_amount => Ok(()),
+        Ok(amount) => {
+            if amount == target_amount {
+                Ok(())
+            } else {
+                trace!(
+                    "current balance amount {} does not match the target amount {}",
+                    amount,
+                    target_amount
+                );
+
+                wait_wallet_amount(chain, user, target_amount, denom, remaining_retry - 1)
+            }
+        }
         _ => {
             trace!(
                 "query balance return mismatch amount {:?}, retrying",
                 query_res
             );
-            wait_wallet_amount(chain, user, target_amount, remaining_retry - 1)
+            wait_wallet_amount(chain, user, target_amount, denom, remaining_retry - 1)
         }
     }
 }

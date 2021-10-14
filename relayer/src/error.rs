@@ -252,6 +252,11 @@ define_error! {
             [ KeyringError ]
             |_| { "Keybase error" },
 
+        KeyNotFound
+            { key_name: String }
+            [ KeyringError ]
+            |e| { format!("signature key not found: {}", e.key_name) },
+
         Ics02
             [ client_error::Error ]
             |e| { format!("ICS 02 error: {}", e.source) },

@@ -13,8 +13,10 @@ use ibc_relayer::keyring::Store;
 use ibc_relayer::supervisor::Supervisor;
 use ibc_relayer::transfer::{build_and_send_transfer_messages, Amount, TransferOptions};
 use ibc_relayer_cli::cli_utils::ChainHandlePair;
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::sync::RwLock;
+use subtle_encoding::hex;
 use tendermint_rpc::Url;
 use tracing::info;
 
@@ -31,7 +33,7 @@ fn create_chain_config(chain: &BootstrapResult) -> Result<config::ChainConfig, E
         rpc_timeout: Duration::from_secs(10),
         account_prefix: "cosmos".to_string(),
         key_name: chain.relayer.id.0.clone(),
-        key_store_type: Store::Memory,
+        key_store_type: Store::Test,
         store_prefix: "ibc".to_string(),
         default_gas: None,
         max_gas: Some(3000000),
@@ -119,48 +121,74 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!("created new channel {:?}", channel);
 
-    let res = client_a_to_b.build_create_client_and_send()?;
-    info!("created client: {}", res);
+    // let res = client_a_to_b.build_create_client_and_send()?;
+    // info!("created client: {}", res);
 
-    // let channel_id_a = channel.a_side.channel_id()
-    //     .ok_or_else(|| eyre!("expect channel id"))?;
+    let channel_id_a = channel
+        .a_side
+        .channel_id()
+        .ok_or_else(|| eyre!("expect channel id"))?;
 
-    // let transfer_options = TransferOptions {
-    //     packet_src_chain_config: chain_a_config,
-    //     packet_dst_chain_config: chain_b_config,
-    //     packet_src_port_id: transfer_port.clone(),
-    //     packet_src_channel_id: channel_id_a.clone(),
-    //     amount: Amount(1000.into()),
-    //     denom: "samoleans".to_string(),
-    //     receiver: Some(chain_b.user.address.0.clone()),
-    //     timeout_height_offset: 1000,
-    //     timeout_seconds: Duration::from_secs(0),
-    //     number_msgs: 1,
-    // };
+    let channel_id_b = channel
+        .b_side
+        .channel_id()
+        .ok_or_else(|| eyre!("expect channel id"))?;
 
-    // let (supervisor, _) = <Supervisor<ProdChainHandle>>::new(
-    //     Arc::new(RwLock::new(config.clone())),
-    //     None,
-    // );
+    let transfer_options = TransferOptions {
+        packet_src_chain_config: chain_a_config,
+        packet_dst_chain_config: chain_b_config,
+        packet_src_port_id: transfer_port.clone(),
+        packet_src_channel_id: channel_id_a.clone(),
+        amount: Amount(1000_000.into()),
+        denom: "samoleans".to_string(),
+        receiver: Some(chain_b.user.address.0.clone()),
+        timeout_height_offset: 100,
+        timeout_seconds: Duration::from_secs(0),
+        number_msgs: 1,
+    };
 
-    // std::thread::spawn(move || {
-    //     supervisor.run().unwrap();
-    // });
+    let (supervisor, _) =
+        <Supervisor<ProdChainHandle>>::new(Arc::new(RwLock::new(config.clone())), None);
 
-    // build_and_send_transfer_messages(
-    //     chain_handles.src,
-    //     chain_handles.dst,
-    //     transfer_options
-    // )?;
+    std::thread::spawn(move || {
+        supervisor.run().unwrap();
+    });
 
-    // wait_wallet_amount(
-    //     &chain_b.chain,
-    //     &chain_b.user,
-    //     1_000_000_001_000,
-    //     20
-    // )?;
+    info!("Sending IBC transfer");
 
-    // info!("successfully performed IBC transfer");
+    let res =
+        build_and_send_transfer_messages(chain_handles.src, chain_handles.dst, transfer_options)?;
+
+    info!("IBC transfer result: {:?}", res);
+
+    std::thread::sleep(Duration::from_secs(10));
+
+    let denom_traces = chain_b.chain.query_denom_traces()?;
+    info!("denom traces on chain B: {}", denom_traces);
+
+    let denom_str = format!("transfer/{}/samoleans", channel_id_b);
+    let mut hasher = Sha256::new();
+    hasher.update(denom_str.as_bytes());
+    let denom_hash = hasher.finalize();
+    let denom_hex = String::from_utf8(hex::encode_upper(denom_hash))?;
+    let denom_hash_str = format!("ibc/{}", denom_hex);
+
+    info!(
+        "Waiting for user on chain B to receive transfer in denom {}",
+        denom_hash_str
+    );
+
+    // std::thread::sleep(Duration::from_secs(30));
+
+    wait_wallet_amount(
+        &chain_b.chain,
+        &chain_b.user,
+        1_000_000,
+        &denom_hash_str,
+        20,
+    )?;
+
+    info!("successfully performed IBC transfer");
 
     std::thread::sleep(Duration::from_secs(9999999));
 
