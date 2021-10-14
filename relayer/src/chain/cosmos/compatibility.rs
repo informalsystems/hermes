@@ -175,7 +175,7 @@ fn ibc_go_diagnostic(version_info: VersionInfo) -> Result<(), Diagnostic> {
         .iter()
         .find(|&m| m.path.contains(IBC_GO_MODULE_NAME))
     {
-        // If binarylacks the ibc-go dependency it is _not_ an error,
+        // If binary lacks the ibc-go dependency it is _not_ an error,
         // we support chains without the standalone ibc-go module.
         None => Ok(()),
         Some(ibc_module) => {
