@@ -250,13 +250,17 @@ impl CosmosSdkChain {
         );
 
         let signer_info = self.signer(account_seq)?;
-        let default_fee = self.default_fee();
+        let max_fee = self.max_fee();
 
-        debug!("[{}] default fee: {}", self.id(), PrettyFee(&default_fee));
+        debug!(
+            "[{}] send_tx: max fee, for use in tx simulation: {}",
+            self.id(),
+            PrettyFee(&max_fee)
+        );
 
         let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
 
-        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), default_fee.clone())?;
+        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), max_fee)?;
         let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
 
         // Try to simulate the Tx.
@@ -273,12 +277,16 @@ impl CosmosSdkChain {
             })
             .map(|sr| sr.gas_info);
 
-        debug!("[{}] simulated gas: {:?}", self.id(), estimated_gas);
+        debug!(
+            "[{}] send_tx: simulated gas: {:?}",
+            self.id(),
+            estimated_gas
+        );
 
         let estimated_gas = estimated_gas.map_or_else(
             |e| {
                 error!(
-                    "[{}] failed to estimate gas, falling back on default gas, error: {}",
+                    "[{}] send_tx: failed to estimate gas, falling back on default gas, error: {}",
                     self.id(),
                     e
                 );
@@ -289,7 +297,7 @@ impl CosmosSdkChain {
         );
 
         if estimated_gas > self.max_gas() {
-            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] estimated gas is higher than max gas", self.id());
+            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
 
             return Err(Error::tx_simulate_gas_estimate_exceeded(
                 self.id().clone(),
@@ -300,10 +308,9 @@ impl CosmosSdkChain {
 
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
-        trace!(
-            "[{}] send_tx: based on the estimated gas, adjusting fee from {} to {}",
+        debug!(
+            "[{}] send_tx: based on the estimated gas, use fee: {}",
             self.id(),
-            PrettyFee(&default_fee),
             PrettyFee(&adjusted_fee)
         );
 
@@ -543,7 +550,7 @@ impl CosmosSdkChain {
         Ok(signer_info)
     }
 
-    fn default_fee(&self) -> Fee {
+    fn max_fee(&self) -> Fee {
         Fee {
             amount: vec![self.max_fee_in_coins()],
             gas_limit: self.max_gas(),
@@ -554,10 +561,12 @@ impl CosmosSdkChain {
 
     fn fee_with_gas(&self, gas_limit: u64) -> Fee {
         let adjusted_gas_limit = self.apply_adjustment_to_gas(gas_limit);
+
         Fee {
             amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
             gas_limit: adjusted_gas_limit,
-            ..self.default_fee()
+            payer: "".to_string(),
+            granter: "".to_string(),
         }
     }
 
