@@ -5,9 +5,9 @@ use prost_types::Any;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
+use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
-use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
 use crate::Height;

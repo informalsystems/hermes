@@ -8,11 +8,11 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 
+use crate::clients::ics07_tendermint::error::Error;
+use crate::clients::ics07_tendermint::header::Header;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
-use crate::clients::ics07_tendermint::error::Error;
-use crate::clients::ics07_tendermint::header::Header;
 use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::ZERO_DURATION;
@@ -237,8 +237,8 @@ mod tests {
 
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
-    use crate::core::ics02_client::trust_threshold::TrustThreshold;
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
+    use crate::core::ics02_client::trust_threshold::TrustThreshold;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::test::test_serialization_roundtrip;
     use crate::timestamp::ZERO_DURATION;
@@ -246,7 +246,8 @@ mod tests {
 
     #[test]
     fn serialization_roundtrip_no_proof() {
-        let json_data = include_str!("../../../tests/support/query/serialization/client_state.json");
+        let json_data =
+            include_str!("../../../tests/support/query/serialization/client_state.json");
         println!("json_data: {:?}", json_data);
         test_serialization_roundtrip::<AbciQuery>(json_data);
     }
@@ -373,9 +374,9 @@ pub mod test_util {
 
     use tendermint::block::Header;
 
+    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::core::ics02_client::client_state::AnyClientState;
     use crate::core::ics02_client::height::Height;
-    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::core::ics24_host::identifier::ChainId;
 
     pub fn get_dummy_tendermint_client_state(tm_header: Header) -> AnyClientState {

@@ -7,7 +7,9 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
+use crate::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
+};
 use crate::core::ics23_commitment::merkle::apply_prefix;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics24_host::Path;

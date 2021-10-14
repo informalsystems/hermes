@@ -4,9 +4,9 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;
 
-use crate::core::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
+use crate::core::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::Height;
 

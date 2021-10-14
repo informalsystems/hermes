@@ -9,10 +9,10 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
+use crate::clients::ics07_tendermint::client_state;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
-use crate::clients::ics07_tendermint::client_state;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(any(test, feature = "mocks"))]
@@ -222,9 +222,9 @@ mod tests {
 
     use prost_types::Any;
 
-    use crate::core::ics02_client::client_state::AnyClientState;
     use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
+    use crate::core::ics02_client::client_state::AnyClientState;
 
     #[test]
     fn any_client_state_serialization() {

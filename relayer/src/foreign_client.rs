@@ -9,8 +9,6 @@ use tracing::{debug, error, info, trace, warn};
 
 use crate::error::Error as RelayerError;
 use flex_error::define_error;
-use ibc::downcast;
-use ibc::events::{IbcEvent, IbcEventType};
 use ibc::core::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
 };
@@ -25,6 +23,8 @@ use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
 use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc::downcast;
+use ibc::events::{IbcEvent, IbcEventType};
 use ibc::query::QueryTxRequest;
 use ibc::timestamp::Timestamp;
 use ibc::tx_msg::Msg;
@@ -1205,8 +1205,8 @@ mod test {
     use test_env_log::test;
     use tokio::runtime::Runtime as TokioRuntime;
 
-    use ibc::events::IbcEvent;
     use ibc::core::ics24_host::identifier::ClientId;
+    use ibc::events::IbcEvent;
     use ibc::Height;
 
     use crate::chain::handle::{ChainHandle, ProdChainHandle};

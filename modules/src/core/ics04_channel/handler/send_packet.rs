@@ -1,5 +1,3 @@
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics04_channel::channel::Counterparty;
 use crate::core::ics04_channel::channel::State;
@@ -7,6 +5,8 @@ use crate::core::ics04_channel::events::SendPacket;
 use crate::core::ics04_channel::packet::{PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error, packet::Packet};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 use crate::timestamp::{Expiry, Timestamp};
 use crate::Height;
@@ -115,7 +115,6 @@ mod tests {
     use core::convert::TryInto;
     use test_env_log::test;
 
-    use crate::events::IbcEvent;
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -126,6 +125,7 @@ mod tests {
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::core::ics04_channel::packet::Packet;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
 

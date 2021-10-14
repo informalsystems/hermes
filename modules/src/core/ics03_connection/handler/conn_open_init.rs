@@ -1,7 +1,5 @@
 //! Protocol logic specific to ICS3 messages of type `MsgConnectionOpenInit`.
 
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
 use crate::core::ics03_connection::connection::{ConnectionEnd, State};
 use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
@@ -9,6 +7,8 @@ use crate::core::ics03_connection::events::Attributes;
 use crate::core::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use crate::core::ics24_host::identifier::ConnectionId;
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
 pub(crate) fn process(
@@ -58,12 +58,12 @@ mod tests {
     use core::convert::TryFrom;
     use test_env_log::test;
 
-    use crate::events::IbcEvent;
     use crate::core::ics03_connection::connection::State;
     use crate::core::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::core::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::core::ics03_connection::msgs::ConnectionMsg;
+    use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::Height;
 

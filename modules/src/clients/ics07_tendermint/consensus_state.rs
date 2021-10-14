@@ -11,10 +11,10 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_type::ClientType;
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
+use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]

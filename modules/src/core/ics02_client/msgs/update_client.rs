@@ -82,9 +82,9 @@ mod tests {
 
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient;
 
+    use crate::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
     use crate::core::ics02_client::header::AnyHeader;
     use crate::core::ics02_client::msgs::MsgUpdateAnyClient;
-    use crate::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
     use crate::core::ics24_host::identifier::ClientId;
     use crate::test_utils::get_dummy_account_id;
 

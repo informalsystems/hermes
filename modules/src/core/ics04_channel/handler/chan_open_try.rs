@@ -1,7 +1,5 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenTry`.
 
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::core::ics04_channel::context::ChannelReader;
@@ -11,6 +9,8 @@ use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use crate::core::ics24_host::identifier::ChannelId;
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
 pub(crate) fn process(
@@ -155,7 +155,6 @@ mod tests {
     use core::convert::TryFrom;
     use test_env_log::test;
 
-    use crate::events::IbcEvent;
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::error as ics02_error;
     use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -171,6 +170,7 @@ mod tests {
     use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::core::ics04_channel::msgs::ChannelMsg;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId};
+    use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
     use crate::Height;

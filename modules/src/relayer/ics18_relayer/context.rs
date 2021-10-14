@@ -1,12 +1,12 @@
 use crate::prelude::*;
 use prost_types::Any;
 
-use crate::events::IbcEvent;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::header::AnyHeader;
+use crate::events::IbcEvent;
 
-use crate::relayer::ics18_relayer::error::Error;
 use crate::core::ics24_host::identifier::ClientId;
+use crate::relayer::ics18_relayer::error::Error;
 use crate::signer::Signer;
 use crate::Height;
 /// Trait capturing all dependencies (i.e., the context) which algorithms in ICS18 require to

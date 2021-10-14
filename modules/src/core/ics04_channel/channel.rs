@@ -11,10 +11,10 @@ use ibc_proto::ibc::core::channel::v1::{
     IdentifiedChannel as RawIdentifiedChannel,
 };
 
-use crate::events::IbcEventType;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::{error::Error, packet::Sequence};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::events::IbcEventType;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IdentifiedChannelEnd {

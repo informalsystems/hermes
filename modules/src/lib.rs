@@ -35,8 +35,8 @@ extern crate std;
 mod prelude;
 
 pub mod applications;
-pub mod core;
 pub mod clients;
+pub mod core;
 pub mod events;
 pub mod handler;
 pub mod keys;

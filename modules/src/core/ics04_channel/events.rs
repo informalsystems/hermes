@@ -1,8 +1,8 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
-use crate::events::IbcEvent;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::events::IbcEvent;
 use crate::prelude::*;
 
 use serde_derive::{Deserialize, Serialize};

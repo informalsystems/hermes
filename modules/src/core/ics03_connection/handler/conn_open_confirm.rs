@@ -1,7 +1,5 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
 
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
 use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
@@ -9,6 +7,8 @@ use crate::core::ics03_connection::events::Attributes;
 use crate::core::ics03_connection::handler::verify::verify_proofs;
 use crate::core::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
 pub(crate) fn process(
@@ -69,7 +69,6 @@ mod tests {
     use core::str::FromStr;
     use test_env_log::test;
 
-    use crate::events::IbcEvent;
     use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::core::ics03_connection::context::ConnectionReader;
     use crate::core::ics03_connection::handler::{dispatch, ConnectionResult};
@@ -78,6 +77,7 @@ mod tests {
     use crate::core::ics03_connection::msgs::ConnectionMsg;
     use crate::core::ics23_commitment::commitment::CommitmentPrefix;
     use crate::core::ics24_host::identifier::ClientId;
+    use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
     use crate::Height;

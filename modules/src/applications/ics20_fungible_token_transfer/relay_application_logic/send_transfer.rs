@@ -1,10 +1,10 @@
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::applications::ics20_fungible_token_transfer::error::Error;
 use crate::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
-use crate::handler::HandlerOutput;
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::packet::PacketResult;
+use crate::handler::HandlerOutput;
 use crate::prelude::*;
 
 pub(crate) fn send_transfer<Ctx>(

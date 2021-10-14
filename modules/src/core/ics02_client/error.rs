@@ -4,8 +4,8 @@ use core::num::TryFromIntError;
 
 use flex_error::{define_error, TraceError};
 
-use crate::core::ics02_client::client_type::ClientType;
 use crate::clients::ics07_tendermint::error::Error as Ics07Error;
+use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::error::Error as Ics23Error;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;

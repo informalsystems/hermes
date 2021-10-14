@@ -9,7 +9,6 @@ use serde::Serialize;
 use tracing::debug;
 use tracing::{error, warn};
 
-use ibc::events::IbcEvent;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::{
     ConnectionEnd, Counterparty, IdentifiedConnectionEnd, State,
@@ -19,6 +18,7 @@ use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfi
 use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::events::IbcEvent;
 use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
 

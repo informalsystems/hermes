@@ -1,9 +1,9 @@
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 
-use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::core::ics02_client::events::NewBlock;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc::events::{from_tx_response_event, IbcEvent};
 
 pub fn get_all_events(
     chain_id: &ChainId,

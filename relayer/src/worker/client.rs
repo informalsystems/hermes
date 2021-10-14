@@ -4,7 +4,7 @@ use std::{thread, time::Instant};
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, trace, warn};
 
-use ibc::{events::IbcEvent, core::ics02_client::events::UpdateClient};
+use ibc::{core::ics02_client::events::UpdateClient, events::IbcEvent};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},

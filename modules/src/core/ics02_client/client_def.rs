@@ -1,6 +1,6 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-use crate::downcast;
+use crate::clients::ics07_tendermint::client_def::TendermintClient;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
@@ -9,9 +9,11 @@ use crate::core::ics02_client::header::{AnyHeader, Header};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::packet::Sequence;
-use crate::clients::ics07_tendermint::client_def::TendermintClient;
-use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
+use crate::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
+};
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
 

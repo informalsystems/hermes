@@ -1,11 +1,11 @@
 //! This module implements the processing logic for ICS3 (connection open handshake) messages.
 
-use crate::handler::HandlerOutput;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::msgs::ConnectionMsg;
 use crate::core::ics24_host::identifier::ConnectionId;
+use crate::handler::HandlerOutput;
 
 pub mod conn_open_ack;
 pub mod conn_open_confirm;

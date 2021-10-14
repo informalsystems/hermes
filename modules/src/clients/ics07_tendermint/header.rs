@@ -11,9 +11,9 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
+use crate::clients::ics07_tendermint::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::header::AnyHeader;
-use crate::clients::ics07_tendermint::error::Error;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::Height;
 use core::cmp::Ordering;
@@ -144,9 +144,11 @@ pub mod test_util {
     use crate::Height;
 
     pub fn get_dummy_tendermint_header() -> tendermint::block::Header {
-        serde_json::from_str::<SignedHeader>(include_str!("../../../tests/support/signed_header.json"))
-            .unwrap()
-            .header
+        serde_json::from_str::<SignedHeader>(include_str!(
+            "../../../tests/support/signed_header.json"
+        ))
+        .unwrap()
+        .header
     }
 
     // TODO: This should be replaced with a ::default() or ::produce().

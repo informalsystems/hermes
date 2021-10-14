@@ -1,9 +1,9 @@
 use crate::core::ics02_client::header::{AnyHeader, Header};
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics02_client::msgs::ClientMsg;
+use crate::core::ics24_host::identifier::ClientId;
 use crate::relayer::ics18_relayer::context::Ics18Context;
 use crate::relayer::ics18_relayer::error::Error;
-use crate::core::ics24_host::identifier::ClientId;
 
 /// Builds a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`
 /// context, assuming that the latest header on the source context is `src_header`.
@@ -51,13 +51,13 @@ where
 mod tests {
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::header::Header;
-    use crate::relayer::ics18_relayer::context::Ics18Context;
-    use crate::relayer::ics18_relayer::utils::build_client_update_datagram;
     use crate::core::ics24_host::identifier::{ChainId, ClientId};
     use crate::core::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::context::MockContext;
     use crate::mock::host::HostType;
     use crate::prelude::*;
+    use crate::relayer::ics18_relayer::context::Ics18Context;
+    use crate::relayer::ics18_relayer::utils::build_client_update_datagram;
     use crate::Height;
     use test_env_log::test;
 

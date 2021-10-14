@@ -1,8 +1,8 @@
 use abscissa_core::{config, Command, Options, Runnable};
-use ibc::events::IbcEvent;
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 use std::ops::Deref;

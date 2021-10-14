@@ -4,11 +4,11 @@ use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
-use crate::events::IbcEvent;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::ClientId;
+use crate::events::IbcEvent;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";

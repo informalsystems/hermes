@@ -1,7 +1,5 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -11,6 +9,8 @@ use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
@@ -72,8 +72,6 @@ mod tests {
     use core::str::FromStr;
     use test_env_log::test;
 
-    use crate::events::IbcEvent;
-    use crate::handler::HandlerOutput;
     use crate::core::ics02_client::client_state::AnyClientState;
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
@@ -82,6 +80,8 @@ mod tests {
     use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::core::ics02_client::msgs::ClientMsg;
     use crate::core::ics24_host::identifier::ClientId;
+    use crate::events::IbcEvent;
+    use crate::handler::HandlerOutput;
     use crate::mock::client_state::MockClientState;
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;

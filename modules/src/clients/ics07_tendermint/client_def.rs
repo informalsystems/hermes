@@ -1,5 +1,8 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
+use crate::clients::ics07_tendermint::client_state::ClientState;
+use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
+use crate::clients::ics07_tendermint::header::Header;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -7,10 +10,9 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::packet::Sequence;
-use crate::clients::ics07_tendermint::client_state::ClientState;
-use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
-use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
+use crate::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
+};
 use crate::core::ics24_host::identifier::ConnectionId;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use crate::prelude::*;

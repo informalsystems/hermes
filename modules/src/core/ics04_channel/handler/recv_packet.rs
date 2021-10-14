@@ -1,5 +1,3 @@
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
 use crate::core::ics02_client::height::Height;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{Counterparty, Order, State};
@@ -10,6 +8,8 @@ use crate::core::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::core::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
@@ -144,13 +144,13 @@ mod tests {
     use crate::core::ics04_channel::handler::recv_packet::process;
     use crate::core::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
     use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-    use crate::relayer::ics18_relayer::context::Ics18Context;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
+    use crate::relayer::ics18_relayer::context::Ics18Context;
     use crate::test_utils::get_dummy_account_id;
     use crate::timestamp::Timestamp;
     use crate::timestamp::ZERO_DURATION;
-    use crate::{events::IbcEvent, core::ics04_channel::packet::Packet};
+    use crate::{core::ics04_channel::packet::Packet, events::IbcEvent};
 
     #[test]
     fn recv_packet_processing() {

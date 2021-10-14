@@ -131,9 +131,9 @@ mod tests {
     use core::convert::TryFrom;
     use test_env_log::test;
 
-    use crate::events::IbcEvent;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
+    use crate::events::IbcEvent;
     use crate::{
         applications::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer,
         core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof,

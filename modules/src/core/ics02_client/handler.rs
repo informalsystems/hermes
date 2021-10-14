@@ -1,9 +1,9 @@
 //! This module implements the processing logic for ICS2 (client abstractions and functions) msgs.
 
-use crate::handler::HandlerOutput;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::msgs::ClientMsg;
+use crate::handler::HandlerOutput;
 
 pub mod create_client;
 pub mod update_client;

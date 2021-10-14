@@ -1,7 +1,5 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 //!
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
@@ -11,6 +9,8 @@ use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
 use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
 /// The result following the successful processing of a `MsgUpgradeAnyClient` message.
@@ -79,8 +79,6 @@ mod tests {
     use core::convert::TryFrom;
     use core::str::FromStr;
 
-    use crate::events::IbcEvent;
-    use crate::handler::HandlerOutput;
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Upgrade;
@@ -88,6 +86,8 @@ mod tests {
     use crate::core::ics02_client::msgs::ClientMsg;
     use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
     use crate::core::ics24_host::identifier::ClientId;
+    use crate::events::IbcEvent;
+    use crate::handler::HandlerOutput;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;

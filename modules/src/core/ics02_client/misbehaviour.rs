@@ -3,8 +3,8 @@ use core::convert::TryFrom;
 use prost_types::Any;
 use tendermint_proto::Protobuf;
 
-use crate::core::ics02_client::error::Error;
 use crate::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
+use crate::core::ics02_client::error::Error;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::misbehaviour::Misbehaviour as MockMisbehaviour;

@@ -7,10 +7,10 @@ use tendermint::chain::Id as TMChainId;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::header::AnyHeader;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use crate::clients::ics07_tendermint::header::Header as TMHeader;
+use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::timestamp::Timestamp;

@@ -14,7 +14,10 @@ use tendermint_light_client::{
 use tendermint_rpc as rpc;
 
 use ibc::{
-    downcast,
+    clients::ics07_tendermint::{
+        header::{headers_compatible, Header as TmHeader},
+        misbehaviour::Misbehaviour as TmMisbehaviour,
+    },
     core::{
         ics02_client::{
             client_state::AnyClientState,
@@ -25,10 +28,7 @@ use ibc::{
         },
         ics24_host::identifier::ChainId,
     },
-    clients::ics07_tendermint::{
-        header::{headers_compatible, Header as TmHeader},
-        misbehaviour::Misbehaviour as TmMisbehaviour,
-    },
+    downcast,
 };
 use tracing::trace;
 

@@ -8,13 +8,13 @@ use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
-use crate::events::IbcEventType;
+use crate::clients::ics07_tendermint::consensus_state;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::height::Height;
-use crate::clients::ics07_tendermint::consensus_state;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::core::ics24_host::identifier::ClientId;
+use crate::events::IbcEventType;
 use crate::timestamp::Timestamp;
 
 #[cfg(any(test, feature = "mocks"))]

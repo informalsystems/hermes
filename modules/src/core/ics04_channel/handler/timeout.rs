@@ -1,5 +1,3 @@
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
 use crate::core::ics04_channel::events::TimeoutPacket;
@@ -10,6 +8,8 @@ use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::core::ics04_channel::packet::{PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 use crate::timestamp::Expiry;
 
@@ -136,7 +136,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
 #[cfg(test)]
 mod tests {
 
-    use crate::events::IbcEvent;
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -148,6 +147,7 @@ mod tests {
     use crate::core::ics04_channel::msgs::timeout::test_util::get_dummy_raw_msg_timeout;
     use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::events::IbcEvent;
     use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
 
