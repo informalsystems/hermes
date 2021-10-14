@@ -95,7 +95,7 @@ impl Timestamp {
     pub fn as_nanoseconds(&self) -> u64 {
         self.time.map_or(0, |time| {
             let s = time.timestamp();
-            assert!(s > 0, "time {:?} has negative `.timestamp()`", time);
+            assert!(s >= 0, "time {:?} has negative `.timestamp()`", time);
             let s: u64 = s.try_into().unwrap();
 
             util::assemble_in_nanos(s, time.timestamp_subsec_nanos())
