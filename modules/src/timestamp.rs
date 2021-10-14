@@ -54,7 +54,7 @@ impl Timestamp {
             // conversion from `u64` nanoseconds value, only from `i64`
             // (which can overflow when converting from the unsigned type).
             // We go around this limitation by decomposing the `u64` nanos
-            // into seconds + nanos and construct the timestamp from that.
+            // into seconds + nanos and constructing the timestamp from that.
             let (s, ns) = util::break_in_secs_and_nanos(nanoseconds);
 
             match Utc.timestamp_opt(s, ns) {
@@ -200,7 +200,6 @@ impl FromStr for Timestamp {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let nanoseconds = u64::from_str(s).map_err(ParseTimestampError::parse_int)?;
 
-        // Timestamp::from_nanoseconds(nanoseconds).map_err(ParseTimestampError::try_from_int)
         Timestamp::from_nanoseconds(nanoseconds)
     }
 }
