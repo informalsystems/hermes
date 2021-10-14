@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use core::convert::TryInto;
 use core::fmt::Display;
-use core::num::{ParseIntError, TryFromIntError};
+use core::num::ParseIntError;
 use core::ops::{Add, Sub};
 use core::str::FromStr;
 use core::time::Duration;
@@ -46,7 +46,7 @@ impl Timestamp {
     /// is not set. In this case, our domain type takes the
     /// value of None.
     ///
-    pub fn from_nanoseconds(nanoseconds: u64) -> Result<Timestamp, TryFromIntError> {
+    pub fn from_nanoseconds(nanoseconds: u64) -> Result<Timestamp, ParseTimestampError> {
         if nanoseconds == 0 {
             Ok(Timestamp { time: None })
         } else {
@@ -58,9 +58,13 @@ impl Timestamp {
             let (s, ns) = util::break_in_secs_and_nanos(nanoseconds);
 
             match Utc.timestamp_opt(s, ns) {
-                chrono::LocalResult::None => todo!(),
+                chrono::LocalResult::None => {
+                    Err(ParseTimestampError::invalid_timestamp_conversion(s, ns))
+                }
                 chrono::LocalResult::Single(ts) => Ok(Timestamp { time: Some(ts) }),
-                chrono::LocalResult::Ambiguous(_, _) => todo!(),
+                chrono::LocalResult::Ambiguous(_, _) => {
+                    Err(ParseTimestampError::ambiguous_timestamp_conversion(s, ns))
+                }
             }
         }
     }
@@ -168,14 +172,25 @@ impl Sub<Duration> for Timestamp {
 }
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     ParseTimestampError {
         ParseInt
             [ TraceError<ParseIntError> ]
-            | _ | { "error parsing integer from string"},
+            | _ | { "error parsing u64 integer from string"},
 
-        TryFromInt
-            [ TraceError<TryFromIntError> ]
-            | _ | { "error converting from u64 to i64" },
+        InvalidTimestampConversion
+            {
+                secs: i64,
+                nanos: u32,
+            }
+            | _ | { "error converting into Timestamp from seconds + nanoseconds" },
+
+        AmbiguousTimestampConversion
+            {
+                secs: i64,
+                nanos: u32,
+            }
+            | _ | { "ambigous conversion into Timestamp from seconds + nanoseconds" },
     }
 }
 
@@ -185,7 +200,8 @@ impl FromStr for Timestamp {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let nanoseconds = u64::from_str(s).map_err(ParseTimestampError::parse_int)?;
 
-        Timestamp::from_nanoseconds(nanoseconds).map_err(ParseTimestampError::try_from_int)
+        // Timestamp::from_nanoseconds(nanoseconds).map_err(ParseTimestampError::try_from_int)
+        Timestamp::from_nanoseconds(nanoseconds)
     }
 }
 
