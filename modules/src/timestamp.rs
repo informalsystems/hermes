@@ -91,9 +91,10 @@ impl Timestamp {
             let s = time.timestamp();
             assert!(s > 0, "time {:?} has negative `.timestamp()`", time);
             let s: u64 = s.try_into().unwrap();
+            let ns = s * 1_000_000_000;
 
-            let ns = time.timestamp_subsec_nanos() as u64;
-            s + ns
+            let subsec_ns = time.timestamp_subsec_nanos() as u64;
+            ns + subsec_ns
         })
     }
 
