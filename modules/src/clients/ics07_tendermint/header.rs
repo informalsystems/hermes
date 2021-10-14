@@ -144,7 +144,7 @@ pub mod test_util {
     use crate::Height;
 
     pub fn get_dummy_tendermint_header() -> tendermint::block::Header {
-        serde_json::from_str::<SignedHeader>(include_str!("../../tests/support/signed_header.json"))
+        serde_json::from_str::<SignedHeader>(include_str!("../../../tests/support/signed_header.json"))
             .unwrap()
             .header
     }
@@ -166,7 +166,7 @@ pub mod test_util {
     pub fn get_dummy_ics07_header() -> Header {
         // Build a SignedHeader from a JSON file.
         let shdr = serde_json::from_str::<SignedHeader>(include_str!(
-            "../../tests/support/signed_header.json"
+            "../../../tests/support/signed_header.json"
         ))
         .unwrap();
 

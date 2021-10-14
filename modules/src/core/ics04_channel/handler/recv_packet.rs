@@ -150,7 +150,7 @@ mod tests {
     use crate::test_utils::get_dummy_account_id;
     use crate::timestamp::Timestamp;
     use crate::timestamp::ZERO_DURATION;
-    use crate::{events::IbcEvent, ics04_channel::packet::Packet};
+    use crate::{events::IbcEvent, core::ics04_channel::packet::Packet};
 
     #[test]
     fn recv_packet_processing() {

@@ -136,7 +136,7 @@ mod tests {
     use crate::core::ics02_client::client_state::AnyClientState;
     use crate::{
         applications::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer,
-        ics23_commitment::commitment::test_util::get_dummy_merkle_proof,
+        core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof,
     };
 
     use crate::core::ics02_client::msgs::{

@@ -102,7 +102,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
 #[cfg(test)]
 pub mod test_util {
     use crate::{
-        ics24_host::identifier::{ChannelId, PortId},
+        core::ics24_host::identifier::{ChannelId, PortId},
         test_utils::get_dummy_account_id,
         Height,
     };

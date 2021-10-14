@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn serialization_roundtrip_no_proof() {
-        let json_data = include_str!("../../tests/support/query/serialization/client_state.json");
+        let json_data = include_str!("../../../tests/support/query/serialization/client_state.json");
         println!("json_data: {:?}", json_data);
         test_serialization_roundtrip::<AbciQuery>(json_data);
     }
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn serialization_roundtrip_with_proof() {
         let json_data =
-            include_str!("../../tests/support/query/serialization/client_state_proof.json");
+            include_str!("../../../tests/support/query/serialization/client_state_proof.json");
         println!("json_data: {:?}", json_data);
         test_serialization_roundtrip::<AbciQuery>(json_data);
     }

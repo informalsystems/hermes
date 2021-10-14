@@ -91,7 +91,7 @@ mod tests {
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
-    use crate::{events::IbcEvent, ics04_channel::packet::Packet};
+    use crate::{events::IbcEvent, core::ics04_channel::packet::Packet};
 
     #[test]
     fn write_ack_packet_processing() {
