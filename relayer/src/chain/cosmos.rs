@@ -263,49 +263,13 @@ impl CosmosSdkChain {
         let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), max_fee)?;
         let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
 
-        // Try to simulate the Tx.
-        // It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
-        // they do not individually verify. For example for the following batch
-        // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
-        // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
-        // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
-        let estimated_gas = self
-            .send_tx_simulate(Tx {
-                body: Some(body),
-                auth_info: Some(auth_info),
-                signatures: vec![signed_doc],
-            })
-            .map(|sr| sr.gas_info);
+        let simulate_tx = Tx {
+            body: Some(body),
+            auth_info: Some(auth_info),
+            signatures: vec![signed_doc],
+        };
 
-        debug!(
-            "[{}] send_tx: simulated gas: {:?}",
-            self.id(),
-            estimated_gas
-        );
-
-        let estimated_gas = estimated_gas.map_or_else(
-            |e| {
-                error!(
-                    "[{}] send_tx: failed to estimate gas, falling back on default gas, error: {}",
-                    self.id(),
-                    e
-                );
-
-                self.default_gas()
-            },
-            |gas_info| gas_info.map_or(self.default_gas(), |g| g.gas_used),
-        );
-
-        if estimated_gas > self.max_gas() {
-            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
-
-            return Err(Error::tx_simulate_gas_estimate_exceeded(
-                self.id().clone(),
-                estimated_gas,
-                self.max_gas(),
-            ));
-        }
-
+        let estimated_gas = self.estimate_gas(simulate_tx)?;
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
@@ -349,6 +313,50 @@ impl CosmosSdkChain {
         }
 
         Ok(response)
+    }
+
+    /// Try to simulate the given tx in order to estimate how much gas will be needed to submit it.
+    ///
+    /// It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
+    /// they do not individually verify. For example for the following batch
+    /// [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
+    /// if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
+    /// In this case we use the `default_gas` param.
+    fn estimate_gas(&self, tx: Tx) -> Result<u64, Error> {
+        let estimated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
+
+        if let Ok(ref gas) = estimated_gas {
+            debug!(
+                "[{}] send_tx: tx simulation successful, simulated gas: {:?}",
+                self.id(),
+                gas
+            );
+        }
+
+        let estimated_gas = estimated_gas.map_or_else(
+            |e| {
+                error!(
+                    "[{}] send_tx: failed to estimate gas, falling back on default gas, error: {}",
+                    self.id(),
+                    e.detail()
+                );
+
+                self.default_gas()
+            },
+            |gas_info| gas_info.map_or(self.default_gas(), |g| g.gas_used),
+        );
+
+        if estimated_gas > self.max_gas() {
+            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+
+            return Err(Error::tx_simulate_gas_estimate_exceeded(
+                self.id().clone(),
+                estimated_gas,
+                self.max_gas(),
+            ));
+        }
+
+        Ok(estimated_gas)
     }
 
     /// The default amount of gas the relayer is willing to pay for a transaction,
