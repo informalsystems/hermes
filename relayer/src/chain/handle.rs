@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 

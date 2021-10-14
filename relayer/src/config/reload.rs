@@ -7,7 +7,7 @@ use crossbeam_channel::Sender;
 use itertools::Itertools;
 use thiserror::Error;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 use tracing::debug;
 
 use crate::{

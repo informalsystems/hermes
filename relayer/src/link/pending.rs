@@ -6,7 +6,7 @@ use std::time::Instant;
 use tracing::{debug, error, trace};
 
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use crate::error::Error as RelayerError;

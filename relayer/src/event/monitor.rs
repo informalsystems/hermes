@@ -18,7 +18,7 @@ use tendermint_rpc::{
     Error as RpcError, SubscriptionClient, Url, WebSocketClient, WebSocketClientDriver,
 };
 
-use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
+use ibc::{events::IbcEvent, core::ics02_client::height::Height, core::ics24_host::identifier::ChainId};
 
 use crate::util::{
     retry::{retry_count, retry_with_index, RetryResult},

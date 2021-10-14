@@ -10,7 +10,7 @@ use tracing::{debug, error, info, trace, warn};
 
 use ibc::{
     events::IbcEvent,
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
+    core::ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
 

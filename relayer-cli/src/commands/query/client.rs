@@ -5,10 +5,10 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
 use ibc::events::IbcEventType;
-use ibc::ics02_client::client_consensus::QueryClientEventRequest;
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics24_host::identifier::ChainId;
-use ibc::ics24_host::identifier::ClientId;
+use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ClientId;
 use ibc::query::QueryTxRequest;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;

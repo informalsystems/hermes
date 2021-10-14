@@ -6,17 +6,17 @@ use tokio::runtime::Runtime as TokioRuntime;
 pub use cosmos::CosmosSdkChain;
 
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::{
+use ibc::core::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
 };
-use ibc::ics02_client::client_state::{AnyClientState, ClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::header::Header;
-use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
-use ibc::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics02_client::client_state::{AnyClientState, ClientState, IdentifiedAnyClientState};
+use ibc::core::ics02_client::header::Header;
+use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
+use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
+use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;

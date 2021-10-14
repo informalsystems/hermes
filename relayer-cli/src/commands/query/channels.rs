@@ -3,9 +3,9 @@ use core::fmt::{Debug, Error, Formatter};
 use abscissa_core::{Options, Runnable};
 use serde::Serialize;
 
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics04_channel::channel::{ChannelEnd, State};
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics04_channel::channel::{ChannelEnd, State};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};

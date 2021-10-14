@@ -1,6 +1,6 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{KeyRing, Store},
