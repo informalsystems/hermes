@@ -34,8 +34,8 @@ ibc-relayer-rest = { version = "0.7.3", path = "../relayer-rest", optional = tru
 gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
 tokio = { version = "1.0", features = ["full"] }
-tracing = "0.1.28"
-tracing-subscriber = "0.2.24"
+tracing = "0.1.29"
+tracing-subscriber = "0.2.25"
 eyre = "0.6.5"
 color-eyre = "0.5"
 futures = "0.3.17"

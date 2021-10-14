@@ -24,7 +24,7 @@ const IBC_GO_MODULE_NAME: &str = "cosmos/ibc-go";
 /// # Note: Should be consistent with [features] guide page.
 ///
 /// [features]: https://hermes.informal.systems/features.html
-const SDK_MODULE_VERSION_REQ: &str = ">=0.41.3, <=0.44.0";
+const SDK_MODULE_VERSION_REQ: &str = ">=0.41.3, <=0.44.1";
 
 /// Specifies the IBC-go module version requirement.
 /// At the moment, we support both chains with and without
