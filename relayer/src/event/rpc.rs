@@ -13,23 +13,23 @@ pub fn get_all_events(
 
     match &result.data {
         RpcEventData::NewBlock {
-            block,
-            result_begin_block,
-            result_end_block,
+            block, ..
+            // result_begin_block,
+            // result_end_block,
         } => {
             let height = Height::new(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
             );
 
-            tracing::trace!(
-                "WebSocket event (NewBlock) on {} at height: {}, \nresult_begin_block: {:#?}, result_end_block: {:#?}, events: {:#?}",
-                chain_id,
-                height,
-                result_begin_block,
-                result_end_block,
-                result.events
-            );
+            // tracing::trace!(
+            //     "WebSocket event (NewBlock) on {} at height: {}, \nresult_begin_block: {:#?}, result_end_block: {:#?}, events: {:#?}",
+            //     chain_id,
+            //     height,
+            //     result_begin_block,
+            //     result_end_block,
+            //     result.events
+            // );
 
             vals.push((height, NewBlock::new(height).into()));
         }

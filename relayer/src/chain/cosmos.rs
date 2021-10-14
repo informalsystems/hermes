@@ -1579,6 +1579,11 @@ impl ChainEndpoint for CosmosSdkChain {
                     );
 
                     if let Some(block) = response.blocks.first().map(|first| &first.block) {
+                        let response_height =
+                            ICSHeight::new(self.id().version(), u64::from(block.header.height));
+                        if request.height != ICSHeight::zero() && response_height > request.height {
+                            continue;
+                        }
                         let response = self
                             .block_on(self.rpc_client.block_results(block.header.height))
                             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;

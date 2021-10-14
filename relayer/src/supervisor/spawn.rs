@@ -282,7 +282,10 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                     return;
                 }
                 Err(e) => {
-                    error!("skipping workers for chain {}. reason: {}", chain_id, e);
+                    error!(
+                        "skipping workers for chain {}, client {} & conn {}. reason: {}",
+                        chain_id, client.client_id, connection_id, e
+                    );
                     return;
                 }
                 _ => {} // allowed

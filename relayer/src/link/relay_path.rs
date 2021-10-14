@@ -871,6 +871,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_block(QueryBlockRequest::Packet(query))
             .map_err(LinkError::relayer)?;
 
+        trace!("[{}] start_block_events {:?}", self, start_block_events);
+        trace!("[{}] events_result_from_tx {:?}", self, events_result_from_tx);
+        trace!("[{}] end_block_events {:?}", self, end_block_events);
+
         // events must be ordered in the following fashion -
         // start-block events followed by tx-events followed by end-block events
         events_result.extend(start_block_events);
