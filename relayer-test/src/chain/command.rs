@@ -1,6 +1,6 @@
 use core::str::FromStr;
 use eyre::{eyre, Report as Error};
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use serde_json as json;
 use std::fs;
@@ -10,9 +10,9 @@ use std::str;
 use toml;
 use tracing::{debug, trace};
 
-use super::util;
 use super::wallet::{Wallet, WalletAddress, WalletId};
 use crate::process::ChildProcess;
+use crate::util;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
@@ -303,5 +303,41 @@ impl ChainCommand {
             "ibc-transfer",
             "denom-traces",
         ])
+    }
+
+    // We use gaiad instead of the internal raw tx transfer to transfer tokens,
+    // as the current chain implementation cannot dynamically switch the sender,
+    // and instead always use the configured relayer wallet for sending tokens.
+    pub fn transfer_token(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sender: &WalletAddress,
+        receiver: &WalletAddress,
+        amount: u64,
+        denom: &str,
+    ) -> Result<(), Error> {
+        self.exec(&[
+            "--node",
+            &self.rpc_listen_address(),
+            "tx",
+            "ibc-transfer",
+            "transfer",
+            port_id.as_str(),
+            channel_id.as_str(),
+            &receiver.0,
+            &format!("{}{}", amount, denom),
+            "--from",
+            &sender.0,
+            "--chain-id",
+            self.chain_id.as_str(),
+            "--home",
+            &self.home_path,
+            "--keyring-backend",
+            "test",
+            "--yes",
+        ])?;
+
+        Ok(())
     }
 }

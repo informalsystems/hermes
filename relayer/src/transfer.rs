@@ -92,10 +92,9 @@ pub fn build_and_send_transfer_messages<Chain: ChainHandle>(
     opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, PacketError> {
     let receiver = match &opts.receiver {
-        None => packet_dst_chain.get_signer(),
-        Some(r) => Ok(r.clone().into()),
-    }
-    .map_err(PacketError::key)?;
+        None => packet_dst_chain.get_signer().map_err(PacketError::key)?,
+        Some(r) => r.clone().into(),
+    };
 
     let sender = packet_src_chain.get_signer().map_err(PacketError::key)?;
 

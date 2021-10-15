@@ -8,18 +8,22 @@ use crate::chain::command::ChainCommand;
 use crate::chain::config;
 use crate::chain::wallet::Wallet;
 use crate::process::ChildProcess;
+use crate::util;
+
+pub const STAKE_DENOM: &str = "stake";
+pub const INITIAL_TOKEN_AMOUNT: u64 = 1_000_000_000_000;
 
 pub struct ChainService {
     pub chain: ChainCommand,
     pub process: ChildProcess,
     pub validator: Wallet,
     pub relayer: Wallet,
-    pub user: Wallet,
+    pub user1: Wallet,
+    pub user2: Wallet,
+    pub denom: String,
 }
 
 pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService, Error> {
-    const COIN_AMOUNT: u64 = 1_000_000_000_000;
-
     let chain = builder.new_chain();
 
     info!("created new chain: {:?}", chain);
@@ -27,27 +31,44 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService, Er
     chain.initialize()?;
 
     let validator = chain.add_random_wallet("validator")?;
-    let user = chain.add_random_wallet("user")?;
     let relayer = chain.add_random_wallet("relayer")?;
+    let user1 = chain.add_random_wallet("user1")?;
+    let user2 = chain.add_random_wallet("user2")?;
 
-    chain.add_genesis_account(&validator.address, &[("stake", COIN_AMOUNT)])?;
+    let denom = format!("coin{:x}", util::random_u32());
 
-    chain.add_genesis_validator(&validator.id, "stake", 1_000_000_000_000)?;
+    chain.add_genesis_account(&validator.address, &[(STAKE_DENOM, INITIAL_TOKEN_AMOUNT)])?;
+
+    chain.add_genesis_validator(&validator.id, STAKE_DENOM, INITIAL_TOKEN_AMOUNT)?;
 
     chain.add_genesis_account(
-        &user.address,
-        &[("stake", COIN_AMOUNT), ("samoleans", COIN_AMOUNT)],
+        &user1.address,
+        &[
+            (STAKE_DENOM, INITIAL_TOKEN_AMOUNT),
+            (&denom, INITIAL_TOKEN_AMOUNT),
+        ],
+    )?;
+
+    chain.add_genesis_account(
+        &user2.address,
+        &[
+            (STAKE_DENOM, INITIAL_TOKEN_AMOUNT),
+            (&denom, INITIAL_TOKEN_AMOUNT),
+        ],
     )?;
 
     chain.add_genesis_account(
         &relayer.address,
-        &[("stake", COIN_AMOUNT), ("samoleans", COIN_AMOUNT)],
+        &[
+            (STAKE_DENOM, INITIAL_TOKEN_AMOUNT),
+            (&denom, INITIAL_TOKEN_AMOUNT),
+        ],
     )?;
 
     chain.collect_gen_txs()?;
 
     chain.update_chain_config(|config| {
-        config::set_log_level(config, "trace")?;
+        config::set_log_level(config, "debug")?;
         config::set_rpc_port(config, chain.rpc_port)?;
         config::set_p2p_port(config, chain.p2p_port)?;
         config::set_timeout_commit(config, Duration::from_secs(1))?;
@@ -58,14 +79,16 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService, Er
 
     let process = chain.start()?;
 
-    wait_wallet_amount(&chain, &relayer, COIN_AMOUNT, "samoleans", 10)?;
+    wait_wallet_amount(&chain, &relayer, INITIAL_TOKEN_AMOUNT, &denom, 10)?;
 
     Ok(ChainService {
         chain,
         process,
         validator,
         relayer,
-        user,
+        user1,
+        user2,
+        denom,
     })
 }
 

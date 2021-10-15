@@ -74,14 +74,16 @@ pub fn boostrap_chain_pair(builder: &ChainBuilder) -> Result<ChainServices, Erro
         service_a.relayer.key.clone(),
     )?;
 
-    handle_a.add_key(service_a.user.id.0.clone(), service_a.user.key.clone())?;
+    handle_a.add_key(service_a.user1.id.0.clone(), service_a.user1.key.clone())?;
+    handle_a.add_key(service_a.user2.id.0.clone(), service_a.user2.key.clone())?;
 
     handle_b.add_key(
         service_b.relayer.id.0.clone(),
         service_b.relayer.key.clone(),
     )?;
 
-    handle_b.add_key(service_b.user.id.0.clone(), service_b.user.key.clone())?;
+    handle_b.add_key(service_b.user1.id.0.clone(), service_b.user1.key.clone())?;
+    handle_b.add_key(service_b.user2.id.0.clone(), service_b.user2.key.clone())?;
 
     let client_a_to_b = ForeignClient::new(handle_b.clone(), handle_a.clone())?;
     let client_b_to_a = ForeignClient::new(handle_a.clone(), handle_b.clone())?;

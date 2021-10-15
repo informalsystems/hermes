@@ -1,7 +1,7 @@
 use ibc::ics24_host::identifier::ChainId;
 
 use super::command::ChainCommand;
-use super::util;
+use crate::util;
 
 #[derive(Debug)]
 pub struct ChainBuilder {
