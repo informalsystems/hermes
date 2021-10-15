@@ -66,8 +66,11 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!("Sending IBC transfer");
 
-    let res =
-        build_and_send_transfer_messages(services.handle_a, services.handle_b, transfer_options)?;
+    let res = build_and_send_transfer_messages(
+        &services.handle_a,
+        &services.handle_b,
+        &transfer_options,
+    )?;
 
     info!("IBC transfer result: {:?}", res);
 

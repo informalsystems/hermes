@@ -87,9 +87,9 @@ pub struct TransferOptions {
 }
 
 pub fn build_and_send_transfer_messages<Chain: ChainHandle>(
-    packet_src_chain: Chain, // the chain whose account is debited
-    packet_dst_chain: Chain, // the chain whose account eventually gets credited
-    opts: TransferOptions,
+    packet_src_chain: &Chain, // the chain whose account is debited
+    packet_dst_chain: &Chain, // the chain whose account eventually gets credited
+    opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, PacketError> {
     let receiver = match &opts.receiver {
         None => packet_dst_chain.get_signer(),

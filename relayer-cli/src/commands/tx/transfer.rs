@@ -210,7 +210,8 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         // Checks pass, build and send the tx
         let res: Result<Vec<IbcEvent>, Error> =
-            build_and_send_transfer_messages(chains.src, chains.dst, opts).map_err(Error::packet);
+            build_and_send_transfer_messages(&chains.src, &chains.dst, &opts)
+                .map_err(Error::packet);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
