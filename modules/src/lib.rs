@@ -36,6 +36,10 @@
 //! - `Channel`s ([ICS 04][ics04]) ensure, among other things, that packets sent between connected
 //! chains are well-ordered.
 //!
+//! These pieces of core functionality, among others, are located in the `core` directory.
+//! Applications (e.g. Fungible Token Transfer) are located in the `applications` directory. Client
+//! modules (e.g. the Tendermint client) are located in the `client` directory.
+//!
 //! [ics02]: https://github.com/cosmos/ibc/blob/master/spec/core/ics-002-client-semantics/README.md
 //! [ics03]: https://github.com/cosmos/ibc/tree/master/spec/core/ics-003-connection-semantics
 //! [ics04]: https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics
