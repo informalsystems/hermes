@@ -94,7 +94,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         (supervisor, cmd_tx)
     }
 
-    pub fn registry(&mut self) -> &mut Registry<Chain> {
+    pub fn get_registry(&mut self) -> &mut Registry<Chain> {
         &mut self.registry
     }
 
@@ -432,7 +432,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     }
 
     /// Run the supervisor event loop.
-    pub fn run(mut self) -> Result<(), Error> {
+    pub fn run(&mut self) -> Result<(), Error> {
         self.health_check();
 
         self.spawn_workers(SpawnMode::Startup);

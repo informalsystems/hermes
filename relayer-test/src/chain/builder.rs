@@ -1,5 +1,6 @@
+use ibc::ics24_host::identifier::ChainId;
+
 use super::command::ChainCommand;
-use super::id::ChainId;
 use super::util;
 
 #[derive(Debug)]
@@ -19,13 +20,13 @@ impl ChainBuilder {
 
     pub fn new_chain(&self) -> ChainCommand {
         let chain_num = util::random_u32();
-        let chain_id = ChainId(format!("ibc-{:x}", chain_num));
+        let chain_id = ChainId::from_string(&format!("ibc-{:x}", chain_num));
 
         let rpc_port = util::random_unused_tcp_port();
         let grpc_port = util::random_unused_tcp_port();
         let p2p_port = util::random_unused_tcp_port();
 
-        let home_path = format!("{}/{}", self.base_store_dir, chain_id.0);
+        let home_path = format!("{}/{}", self.base_store_dir, chain_id);
 
         ChainCommand::new(
             self.command_path.clone(),

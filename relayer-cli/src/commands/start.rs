@@ -24,7 +24,7 @@ impl Runnable for StartCmd {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let (supervisor, tx_cmd) = make_supervisor::<ProdChainHandle>(config.clone())
+        let (mut supervisor, tx_cmd) = make_supervisor::<ProdChainHandle>(config.clone())
             .unwrap_or_else(|e| {
                 Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
                 unreachable!()

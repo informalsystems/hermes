@@ -1450,6 +1450,7 @@ name = "ibc-relayer-test"
 version = "0.8.0-pre.1"
 dependencies = [
  "color-eyre",
+ "crossbeam-channel 0.5.1",
  "env_logger",
  "eyre",
  "hex",

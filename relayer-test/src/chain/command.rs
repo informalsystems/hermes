@@ -1,5 +1,6 @@
 use core::str::FromStr;
 use eyre::{eyre, Report as Error};
+use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use serde_json as json;
 use std::fs;
@@ -9,7 +10,6 @@ use std::str;
 use toml;
 use tracing::{debug, trace};
 
-use super::id::ChainId;
 use super::util;
 use super::wallet::{Wallet, WalletAddress, WalletId};
 use crate::process::ChildProcess;
@@ -104,9 +104,9 @@ impl ChainCommand {
             "--home",
             &self.home_path,
             "--chain-id",
-            &self.chain_id.0,
+            self.chain_id.as_str(),
             "init",
-            &self.chain_id.0,
+            self.chain_id.as_str(),
         ])?;
 
         Ok(())
@@ -205,7 +205,7 @@ impl ChainCommand {
             "--keyring-backend",
             "test",
             "--chain-id",
-            &self.chain_id.0,
+            self.chain_id.as_str(),
             &amount_str,
         ])?;
 

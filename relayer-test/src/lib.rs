@@ -1,3 +1,4 @@
+pub mod bootstrap;
 pub mod chain;
 pub mod init;
 pub mod process;

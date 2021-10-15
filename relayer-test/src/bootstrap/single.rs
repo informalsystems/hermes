@@ -3,13 +3,13 @@ use eyre::{eyre, Report as Error};
 use std::thread;
 use tracing::{debug, info, trace};
 
-use super::builder::ChainBuilder;
-use super::command::ChainCommand;
-use super::config;
-use super::wallet::Wallet;
+use crate::chain::builder::ChainBuilder;
+use crate::chain::command::ChainCommand;
+use crate::chain::config;
+use crate::chain::wallet::Wallet;
 use crate::process::ChildProcess;
 
-pub struct BootstrapResult {
+pub struct ChainService {
     pub chain: ChainCommand,
     pub process: ChildProcess,
     pub validator: Wallet,
@@ -17,7 +17,7 @@ pub struct BootstrapResult {
     pub user: Wallet,
 }
 
-pub fn bootstrap_chain(builder: &ChainBuilder) -> Result<BootstrapResult, Error> {
+pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService, Error> {
     const COIN_AMOUNT: u64 = 1_000_000_000_000;
 
     let chain = builder.new_chain();
@@ -60,7 +60,7 @@ pub fn bootstrap_chain(builder: &ChainBuilder) -> Result<BootstrapResult, Error>
 
     wait_wallet_amount(&chain, &relayer, COIN_AMOUNT, "samoleans", 10)?;
 
-    Ok(BootstrapResult {
+    Ok(ChainService {
         chain,
         process,
         validator,
