@@ -445,6 +445,7 @@ pub mod test_utils {
             trust_threshold: Default::default(),
             packet_filter: PacketFilter::default(),
             address_type: AddressType::default(),
+            memo_prefix: Default::default(),
         }
     }
 }

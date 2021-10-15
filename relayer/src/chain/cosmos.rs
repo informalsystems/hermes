@@ -71,13 +71,13 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
 use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
+use crate::{config::types::Memo, error::Error};
 use crate::{
     config::{AddressType, ChainConfig, GasPrice},
     sdk_error::sdk_error_from_tx_sync_error_code,
@@ -129,6 +129,27 @@ impl CosmosSdkChain {
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
+        // Check that the trusting period is smaller than the unbounding period
+        let unbonding_period = self.unbonding_period()?;
+        let trusting_period = self.trusting_period(unbonding_period);
+
+        if trusting_period <= Duration::ZERO {
+            return Err(Error::config_validation_trusting_period_smaller_than_zero(
+                self.id().clone(),
+                trusting_period,
+            ));
+        }
+
+        if trusting_period >= unbonding_period {
+            return Err(
+                Error::config_validation_trusting_period_greater_than_unbonding_period(
+                    self.id().clone(),
+                    trusting_period,
+                    unbonding_period,
+                ),
+            );
+        }
+
         // Get the latest height and convert to tendermint Height
         let latest_height = Height::try_from(self.query_latest_height()?.revision_height)
             .map_err(Error::invalid_height)?;
@@ -230,7 +251,7 @@ impl CosmosSdkChain {
 
         debug!("[{}] default fee: {}", self.id(), PrettyFee(&default_fee));
 
-        let (body, body_buf) = tx_body_and_bytes(proto_msgs)?;
+        let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
 
         let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), default_fee.clone())?;
         let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
@@ -644,6 +665,11 @@ impl CosmosSdkChain {
         self.config
             .trusting_period
             .unwrap_or(2 * unbonding_period / 3)
+    }
+
+    /// Returns the preconfigured memo to be used for every submitted transaction
+    fn tx_memo(&self) -> &Memo {
+        &self.config.memo_prefix
     }
 }
 
@@ -2089,15 +2115,16 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     Ok((auth_info, auth_buf))
 }
 
-fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
+fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
     // Create TxBody
     let body = TxBody {
         messages: proto_msgs.to_vec(),
-        memo: "".to_string(),
+        memo: memo.to_string(),
         timeout_height: 0_u64,
         extension_options: Vec::<Any>::new(),
         non_critical_extension_options: Vec::<Any>::new(),
     };
+
     // A protobuf serialization of a TxBody
     let mut body_buf = Vec::new();
     prost::Message::encode(&body, &mut body_buf).unwrap();
