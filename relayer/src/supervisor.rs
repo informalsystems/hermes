@@ -94,6 +94,10 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         (supervisor, cmd_tx)
     }
 
+    pub fn registry(&mut self) -> &mut Registry<Chain> {
+        &mut self.registry
+    }
+
     /// Returns `true` if the relayer should filter based on
     /// client state attributes, e.g., trust threshold.
     /// Returns `false` otherwise.

@@ -13,7 +13,6 @@ use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::keyring::Store;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, Amount, TransferOptions};
-use ibc_relayer_cli::cli_utils::ChainHandlePair;
 use std::sync::Arc;
 use std::sync::RwLock;
 use tendermint_rpc::Url;
@@ -32,7 +31,7 @@ fn create_chain_config(chain: &BootstrapResult) -> Result<config::ChainConfig, E
         rpc_timeout: Duration::from_secs(10),
         account_prefix: "cosmos".to_string(),
         key_name: chain.relayer.id.0.clone(),
-        key_store_type: Store::Test,
+        key_store_type: Store::Memory,
         store_prefix: "ibc".to_string(),
         default_gas: None,
         max_gas: Some(3000000),
@@ -69,38 +68,26 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!("hermes config:\n{}", config_str);
 
-    let chain_handles = ChainHandlePair::spawn(
-        &config,
-        &ChainId::from_string(&chain_a.chain.chain_id.0),
-        &&ChainId::from_string(&chain_b.chain.chain_id.0),
-    )?;
+    let (mut supervisor, supervisor_sender) =
+        <Supervisor<ProdChainHandle>>::new(Arc::new(RwLock::new(config.clone())), None);
 
-    info!(
-        "adding key {} to chain config {} with key entry {:?}",
-        chain_a.relayer.id.0,
-        chain_handles.src.id(),
-        chain_a.relayer.key,
-    );
+    let chain_id_a = ChainId::from_string(&chain_a.chain.chain_id.0);
+    let chain_id_b = ChainId::from_string(&chain_b.chain.chain_id.0);
 
-    chain_handles
-        .src
-        .add_key(chain_a.relayer.id.0.clone(), chain_a.relayer.key.clone())?;
+    let chain_handle_a = supervisor.registry().get_or_spawn(&chain_id_a)?;
+    let chain_handle_b = supervisor.registry().get_or_spawn(&chain_id_b)?;
 
-    chain_handles
-        .src
-        .add_key(chain_a.user.id.0.clone(), chain_a.user.key.clone())?;
+    chain_handle_a.add_key(chain_a.relayer.id.0.clone(), chain_a.relayer.key.clone())?;
 
-    chain_handles
-        .dst
-        .add_key(chain_b.relayer.id.0.clone(), chain_b.relayer.key.clone())?;
+    chain_handle_a.add_key(chain_a.user.id.0.clone(), chain_a.user.key.clone())?;
 
-    chain_handles
-        .dst
-        .add_key(chain_b.user.id.0.clone(), chain_b.user.key.clone())?;
+    chain_handle_b.add_key(chain_b.relayer.id.0.clone(), chain_b.relayer.key.clone())?;
 
-    let client_a_to_b = ForeignClient::new(chain_handles.dst.clone(), chain_handles.src.clone())?;
+    chain_handle_b.add_key(chain_b.user.id.0.clone(), chain_b.user.key.clone())?;
 
-    let client_b_to_a = ForeignClient::new(chain_handles.src.clone(), chain_handles.dst.clone())?;
+    let client_a_to_b = ForeignClient::new(chain_handle_b.clone(), chain_handle_a.clone())?;
+
+    let client_b_to_a = ForeignClient::new(chain_handle_a.clone(), chain_handle_b.clone())?;
 
     let connection = Connection::new(
         client_a_to_b.clone(),
@@ -146,17 +133,13 @@ fn test_chain_manager() -> Result<(), Error> {
         number_msgs: 1,
     };
 
-    let (supervisor, supervisor_sender) =
-        <Supervisor<ProdChainHandle>>::new(Arc::new(RwLock::new(config.clone())), None);
-
     std::thread::spawn(move || {
         supervisor.run().unwrap();
     });
 
     info!("Sending IBC transfer");
 
-    let res =
-        build_and_send_transfer_messages(chain_handles.src, chain_handles.dst, transfer_options)?;
+    let res = build_and_send_transfer_messages(chain_handle_a, chain_handle_b, transfer_options)?;
 
     info!("IBC transfer result: {:?}", res);
 
