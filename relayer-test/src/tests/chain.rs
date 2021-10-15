@@ -1,6 +1,7 @@
 use core::str::FromStr;
 use core::time::Duration;
 use eyre::{eyre, Report as Error};
+use ibc::application::ics20_fungible_token_transfer::derive_ibc_denom;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, PortId};
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
@@ -10,13 +11,11 @@ use ibc_relayer::config::default;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::keyring::Store;
-use ibc_relayer::supervisor::Supervisor;
+use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, Amount, TransferOptions};
 use ibc_relayer_cli::cli_utils::ChainHandlePair;
-use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::sync::RwLock;
-use subtle_encoding::hex;
 use tendermint_rpc::Url;
 use tracing::info;
 
@@ -147,7 +146,7 @@ fn test_chain_manager() -> Result<(), Error> {
         number_msgs: 1,
     };
 
-    let (supervisor, _) =
+    let (supervisor, supervisor_sender) =
         <Supervisor<ProdChainHandle>>::new(Arc::new(RwLock::new(config.clone())), None);
 
     std::thread::spawn(move || {
@@ -161,36 +160,20 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!("IBC transfer result: {:?}", res);
 
-    std::thread::sleep(Duration::from_secs(10));
-
-    let denom_traces = chain_b.chain.query_denom_traces()?;
-    info!("denom traces on chain B: {}", denom_traces);
-
-    let denom_str = format!("transfer/{}/samoleans", channel_id_b);
-    let mut hasher = Sha256::new();
-    hasher.update(denom_str.as_bytes());
-    let denom_hash = hasher.finalize();
-    let denom_hex = String::from_utf8(hex::encode_upper(denom_hash))?;
-    let denom_hash_str = format!("ibc/{}", denom_hex);
+    let denom_b = derive_ibc_denom(&transfer_port, &channel_id_b, "samoleans")?;
 
     info!(
         "Waiting for user on chain B to receive transfer in denom {}",
-        denom_hash_str
+        denom_b
     );
 
-    // std::thread::sleep(Duration::from_secs(30));
-
-    wait_wallet_amount(
-        &chain_b.chain,
-        &chain_b.user,
-        1_000_000,
-        &denom_hash_str,
-        20,
-    )?;
+    wait_wallet_amount(&chain_b.chain, &chain_b.user, 1_000_000, &denom_b, 20)?;
 
     info!("successfully performed IBC transfer");
 
-    std::thread::sleep(Duration::from_secs(9999999));
+    supervisor_sender.send(SupervisorCmd::Stop)?;
+
+    std::thread::sleep(Duration::from_secs(1));
 
     Ok(())
 }

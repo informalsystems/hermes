@@ -20,7 +20,7 @@ eyre_tracer = ["flex-error/eyre_tracer"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = ["tendermint-testgen", "sha2"]
+mocks = ["tendermint-testgen"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
@@ -37,7 +37,7 @@ prost-types = { package = "informalsystems-prost-types", version = "0.8", defaul
 bytes = { version = "1.1.0", default-features = false }
 safe-regex = { version = "0.2.4", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
-sha2 = { version = "0.9.8", default-features = false, optional = true }
+sha2 = { version = "0.9.8", default-features = false }
 flex-error = { version = "0.4.3", default-features = false }
 
 [dependencies.tendermint]
@@ -61,7 +61,6 @@ test-env-log = { version = "0.2.7", features = ["trace"] }
 modelator = "0.2.1"
 tendermint-rpc = { version = "=0.23.0-internal", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.23.0-internal" } # Needed for generating (synthetic) light blocks.
-sha2 = { version = "0.9.8" }
 
 # pin clap to avoid miscompilations with modelator
 clap = "=3.0.0-beta.4"

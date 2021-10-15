@@ -62,6 +62,12 @@ pub struct Supervisor<Chain: ChainHandle> {
     client_state_filter: FilterPolicy,
 }
 
+#[derive(Eq, PartialEq)]
+enum StepResult {
+    Break,
+    Continue,
+}
+
 impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Create a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn new(
@@ -381,6 +387,46 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         }
     }
 
+    fn run_step(
+        &mut self,
+        subscriptions: &mut Vec<(Chain, Subscription)>,
+    ) -> Result<StepResult, Error> {
+        if let Some((chain, batch)) = try_recv_multiple(&subscriptions) {
+            self.handle_batch(chain.clone(), batch);
+        }
+
+        if let Ok(msg) = self.worker_msg_rx.try_recv() {
+            self.handle_worker_msg(msg);
+        }
+
+        if let Ok(cmd) = self.cmd_rx.try_recv() {
+            match cmd {
+                SupervisorCmd::UpdateConfig(update) => {
+                    let effect = self.update_config(update);
+
+                    if let CmdEffect::ConfigChanged = effect {
+                        match self.init_subscriptions() {
+                            Ok(subs) => {
+                                *subscriptions = subs;
+                            }
+                            Err(Error(ErrorDetail::NoChainsAvailable(_), _)) => (),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                }
+                SupervisorCmd::DumpState(reply_to) => {
+                    self.dump_state(reply_to);
+                }
+                SupervisorCmd::Stop => return Ok(StepResult::Break),
+            }
+        }
+
+        // Process incoming requests from the REST server
+        self.handle_rest_requests();
+
+        Ok(StepResult::Continue)
+    }
+
     /// Run the supervisor event loop.
     pub fn run(mut self) -> Result<(), Error> {
         self.health_check();
@@ -390,30 +436,12 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         let mut subscriptions = self.init_subscriptions()?;
 
         loop {
-            if let Some((chain, batch)) = try_recv_multiple(&subscriptions) {
-                self.handle_batch(chain.clone(), batch);
+            let step_res = self.run_step(&mut subscriptions)?;
+
+            if step_res == StepResult::Break {
+                info!("stopping supervisor");
+                return Ok(());
             }
-
-            if let Ok(msg) = self.worker_msg_rx.try_recv() {
-                self.handle_worker_msg(msg);
-            }
-
-            if let Ok(cmd) = self.cmd_rx.try_recv() {
-                let after = self.handle_cmd(cmd);
-
-                if let CmdEffect::ConfigChanged = after {
-                    match self.init_subscriptions() {
-                        Ok(subs) => {
-                            subscriptions = subs;
-                        }
-                        Err(Error(ErrorDetail::NoChainsAvailable(_), _)) => (),
-                        Err(e) => return Err(e),
-                    }
-                }
-            }
-
-            // Process incoming requests from the REST server
-            self.handle_rest_requests();
 
             std::thread::sleep(Duration::from_millis(50));
         }
@@ -456,24 +484,11 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         Ok(subscriptions)
     }
 
-    /// Handle the given [`SupervisorCmd`].
-    ///
-    /// Returns an [`CmdEffect`] which instructs the caller as to
-    /// whether or not the event subscriptions needs to be reset or not.
-    fn handle_cmd(&mut self, cmd: SupervisorCmd) -> CmdEffect {
-        match cmd {
-            SupervisorCmd::UpdateConfig(update) => self.update_config(update),
-            SupervisorCmd::DumpState(reply_to) => self.dump_state(reply_to),
-        }
-    }
-
     /// Dump the state of the supervisor into a [`SupervisorState`] value,
     /// and send it back through the given channel.
-    fn dump_state(&self, reply_to: Sender<SupervisorState>) -> CmdEffect {
+    fn dump_state(&self, reply_to: Sender<SupervisorState>) {
         let state = self.state();
         let _ = reply_to.try_send(state);
-
-        CmdEffect::Nothing
     }
 
     /// Returns a representation of the supervisor's internal state
