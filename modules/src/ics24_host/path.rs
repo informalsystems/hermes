@@ -4,7 +4,7 @@ use crate::prelude::*;
 /// https://github.com/cosmos/ibc/tree/master/spec/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
 ///
-use core::fmt::{Display, Formatter, Result};
+use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
 
 use crate::ics04_channel::packet::Sequence;
@@ -84,7 +84,7 @@ impl Path {
 /// The Display trait adds the `.to_string()` method to the Path struct.
 /// This is where the different path strings are constructed.
 impl Display for Path {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self {
             Path::ClientType(client_id) => write!(f, "clients/{}/clientType", client_id),
             Path::ClientState(client_id) => write!(f, "clients/{}/clientState", client_id),
@@ -172,10 +172,45 @@ impl FromStr for Path {
     type Err = PathError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let _components: Vec<&str> = s.split('/').collect();
+        let components: Vec<&str> = s.split('/').collect();
 
-        Ok(Path::ClientType(0))
+        parse_client_type(&components)
+            // .or_else(|| parse_client_state(&components))
+            // .or_else(|| parse_client_consensus_state(&components))
+            // .or_else(|| parse_client_connections(&components))
+            // .or_else(|| parse_connections(&components))
+            // .or_else(|| parse_ports(&components))
+            // .or_else(|| parse_channel_ends(&components))
+            // .or_else(|| parse_seq_sends(&components))
+            // .or_else(|| parse_seq_recvs(&components))
+            // .or_else(|| parse_seq_acks(&components))
+            // .or_else(|| parse_commitments(&components))
+            // .or_else(|| parse_acks(&components))
+            // .or_else(|| parse_receipts(&components))
+            // .or_else(|| parse_upgrades(&components))
+            .ok_or_else(|| PathError::parse_failure(s.to_string()))
     }
+}
+
+fn parse_client_type(components: &[&str]) -> Option<Path> {
+    if components.len() != 3 {
+        return None;
+    }
+
+    if "clients" != *components.first().unwrap() {
+        return None;
+    }
+
+    if "clientType" != *components.last().unwrap() {
+        return None;
+    }
+
+    let client_id = match ClientId::from_str(components[1]) {
+        Ok(s) => s,
+        Err(_) => return None,
+    };
+
+    Some(Path::ClientType(client_id))
 }
 
 #[cfg(test)]
@@ -184,13 +219,20 @@ mod tests {
     use core::str::FromStr;
 
     #[test]
-    fn parse_client_type_path() {
-        let path = Path::from_str("clients/0/clientType");
+    fn parse_fromstr_errors() {
+        let path = Path::from_str("clients/clientType");
 
-        assert!(path.is_ok());
+        assert!(path.is_err());
+    }
 
-        let path = path.unwrap();
+    #[test]
+    fn parse_client_type_works() {
+        let path = "clients/07-tendermint-0/clientType";
+        let components: Vec<&str> = path.split('/').collect();
 
-        assert_eq!(path, Path::ClientType(0));
+        assert_eq!(
+            parse_client_type(&components),
+            Some(Path::ClientType(ClientId::default()))
+        );
     }
 }
