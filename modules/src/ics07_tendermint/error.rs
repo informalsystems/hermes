@@ -9,11 +9,11 @@ define_error! {
     Error {
         InvalidTrustingPeriod
             { reason: String }
-            | _ | { "invalid trusting period" },
+            |e| { format_args!("invalid trusting period: {}", e.reason) },
 
-        InvalidUnboundingPeriod
+        InvalidUnbondingPeriod
             { reason: String }
-            | _ | { "invalid unbonding period" },
+            |e| { format_args!("invalid unbonding period: {}", e.reason) },
 
         InvalidAddress
             | _ | { "invalid address" },
@@ -21,86 +21,83 @@ define_error! {
         InvalidHeader
             { reason: String }
             [ tendermint::Error ]
-            | _ | { "invalid header, failed basic validation" },
+            |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },
 
         InvalidTrustThreshold
             { reason: String }
-            | e | {
-                format_args!("invalid client state trust threshold: {}",
-                    e.reason)
-            },
+            |e| { format_args!("invalid client state trust threshold: {}", e.reason) },
 
         MissingSignedHeader
-            | _ | { "missing signed header" },
+            |_| { "missing signed header" },
 
         Validation
             { reason: String }
-            | _ | { "invalid header, failed basic validation" },
+            |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },
 
         InvalidRawClientState
             { reason: String }
-            | _ | { "invalid raw client state" },
+            |e| { format_args!("invalid raw client state: {}", e.reason) },
 
         MissingValidatorSet
-            | _ | { "missing validator set" },
+            |_| { "missing validator set" },
 
         MissingTrustedValidatorSet
-            | _ | { "missing trusted validator set" },
+            |_| { "missing trusted validator set" },
 
         MissingTrustedHeight
-            | _ | { "missing trusted height" },
+            |_| { "missing trusted height" },
 
         MissingTrustingPeriod
-            | _ | { "missing trusting period" },
+            |_| { "missing trusting period" },
 
         MissingUnbondingPeriod
-            | _ | { "missing unbonding period" },
+            |_| { "missing unbonding period" },
 
         InvalidChainIdentifier
             [ ValidationError ]
-            | _ | { "Invalid chain identifier" },
+            |_| { "invalid chain identifier" },
 
         NegativeTrustingPeriod
-            | _ | { "negative trusting period" },
+            |_| { "negative trusting period" },
 
         NegativeUnbondingPeriod
-            | _ | { "negative unbonding period" },
+            |_| { "negative unbonding period" },
 
         MissingMaxClockDrift
-            | _ | { "missing max clock drift" },
+            |_| { "missing max clock drift" },
 
         NegativeMaxClockDrift
-            | _ | {  "negative max clock drift" },
+            |_| {  "negative max clock drift" },
 
         MissingLatestHeight
-            | _ | { "missing latest height" },
+            |_| { "missing latest height" },
 
         MissingFrozenHeight
-            | _ | { "missing frozen height" },
+            |_| { "missing frozen height" },
 
         InvalidChainId
             { raw_value: String }
             [ ValidationError ]
-            | e | { format_args!("invalid chain identifier: raw value {0}", e.raw_value) },
+            |e| { format_args!("invalid chain identifier: {}", e.raw_value) },
 
         InvalidRawHeight
-            | _ | { "invalid raw height" },
+            { raw_height: u64 }
+            |e| { format_args!("invalid raw height: {}", e.raw_height) },
 
         InvalidRawConsensusState
             { reason: String }
-            | _ | { "invalid raw client consensus state" },
+            |e| { format_args!("invalid raw client consensus state: {}", e.reason) },
 
         InvalidRawHeader
             [ tendermint::Error ]
-            | _ | { "invalid raw header" },
+            |_| { "invalid raw header" },
 
         InvalidRawMisbehaviour
             { reason: String }
-            | _ | { "invalid raw misbehaviour" },
+            |e| { format_args!("invalid raw misbehaviour: {}", e.reason) },
 
         Decode
             [ TraceError<prost::DecodeError> ]
-            | _ | { "decode error" },
-
+            |_| { "decode error" },
     }
 }
