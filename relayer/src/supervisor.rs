@@ -649,6 +649,16 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
         let collected = self.collect_events(&src_chain, batch);
 
+        // If there is a NewBlock event, forward this event first to any workers affected by it.
+        if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
+            for worker in self.workers.to_notify(&src_chain.id()) {
+                worker
+                    .send_new_block(height, new_block)
+                    .map_err(Error::worker)?
+            }
+        }
+
+        // Forward the IBC events.
         for (object, events) in collected.per_object.into_iter() {
             if !self.relay_on_object(&src_chain.id(), &object) {
                 trace!(
@@ -682,15 +692,6 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             worker
                 .send_events(height, events, chain_id.clone())
                 .map_err(Error::worker)?
-        }
-
-        // If there is a NewBlock event, forward the event to any workers affected by it.
-        if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
-            for worker in self.workers.to_notify(&src_chain.id()) {
-                worker
-                    .send_new_block(height, new_block)
-                    .map_err(Error::worker)?
-            }
         }
 
         Ok(())
