@@ -153,6 +153,12 @@ trusting_period = '14days'
 # Warning: This is an advanced feature! Modify with caution.
 trust_threshold = { numerator = '1', denominator = '3' }
 
+# Specify a string that Hermes will use as a memo for each transaction it submits
+# to this chain. The string is limited to 50 characters. Default: '' (empty).
+# Note: Hermes will append to the string defined here additional
+# operational debugging information, e.g., relayer build version.
+memo_prefix = ''
+
 # This section specifies the filters for policy based relaying.
 # Default: no policy/ filters
 # The section is ignored if the global 'filter' option is set to 'false'.

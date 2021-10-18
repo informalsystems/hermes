@@ -71,13 +71,13 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
 use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
+use crate::{config::types::Memo, error::Error};
 use crate::{
     config::{AddressType, ChainConfig, GasPrice},
     sdk_error::sdk_error_from_tx_sync_error_code,
@@ -128,6 +128,27 @@ impl CosmosSdkChain {
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
+        // Check that the trusting period is smaller than the unbounding period
+        let unbonding_period = self.unbonding_period()?;
+        let trusting_period = self.trusting_period(unbonding_period);
+
+        if trusting_period <= Duration::ZERO {
+            return Err(Error::config_validation_trusting_period_smaller_than_zero(
+                self.id().clone(),
+                trusting_period,
+            ));
+        }
+
+        if trusting_period >= unbonding_period {
+            return Err(
+                Error::config_validation_trusting_period_greater_than_unbonding_period(
+                    self.id().clone(),
+                    trusting_period,
+                    unbonding_period,
+                ),
+            );
+        }
+
         // Get the latest height and convert to tendermint Height
         let latest_height = Height::try_from(self.query_latest_height()?.revision_height)
             .map_err(Error::invalid_height)?;
@@ -229,7 +250,7 @@ impl CosmosSdkChain {
 
         debug!("[{}] default fee: {}", self.id(), PrettyFee(&default_fee));
 
-        let (body, body_buf) = tx_body_and_bytes(proto_msgs)?;
+        let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
 
         let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), default_fee.clone())?;
         let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
@@ -644,6 +665,11 @@ impl CosmosSdkChain {
             .trusting_period
             .unwrap_or(2 * unbonding_period / 3)
     }
+
+    /// Returns the preconfigured memo to be used for every submitted transaction
+    fn tx_memo(&self) -> &Memo {
+        &self.config.memo_prefix
+    }
 }
 
 fn empty_event_present(events: &[IbcEvent]) -> bool {
@@ -957,11 +983,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect();
 
         // Sort by client identifier counter
-        clients.sort_by(|a, b| {
-            client_id_suffix(&a.client_id)
-                .unwrap_or(0) // Fallback to `0` suffix (no sorting) if client id is malformed
-                .cmp(&client_id_suffix(&b.client_id).unwrap_or(0))
-        });
+        clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));
 
         Ok(clients)
     }
@@ -1991,15 +2013,16 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     Ok((auth_info, auth_buf))
 }
 
-fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
+fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
     // Create TxBody
     let body = TxBody {
         messages: proto_msgs.to_vec(),
-        memo: "".to_string(),
+        memo: memo.to_string(),
         timeout_height: 0_u64,
         extension_options: Vec::<Any>::new(),
         non_critical_extension_options: Vec::<Any>::new(),
     };
+
     // A protobuf serialization of a TxBody
     let mut body_buf = Vec::new();
     prost::Message::encode(&body, &mut body_buf).unwrap();
@@ -2120,6 +2143,17 @@ fn mul_ceil(a: u64, f: f64) -> u64 {
 
 #[cfg(test)]
 mod tests {
+    use ibc::{
+        ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
+        ics02_client::client_type::ClientType,
+        ics24_host::identifier::ClientId,
+        mock::client_state::MockClientState,
+        mock::header::MockHeader,
+        Height,
+    };
+
+    use crate::chain::cosmos::client_id_suffix;
+
     #[test]
     fn mul_ceil() {
         assert_eq!(super::mul_ceil(300_000, 0.001), 300);
@@ -2129,5 +2163,33 @@ mod tests {
         assert_eq!(super::mul_ceil(304_000, 0.001), 304);
         assert_eq!(super::mul_ceil(340_000, 0.001), 340);
         assert_eq!(super::mul_ceil(340_001, 0.001), 341);
+    }
+
+    #[test]
+    fn sort_clients_id_suffix() {
+        let mut clients: Vec<IdentifiedAnyClientState> = vec![
+            IdentifiedAnyClientState::new(
+                ClientId::new(ClientType::Tendermint, 4).unwrap(),
+                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+            ),
+            IdentifiedAnyClientState::new(
+                ClientId::new(ClientType::Tendermint, 1).unwrap(),
+                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+            ),
+            IdentifiedAnyClientState::new(
+                ClientId::new(ClientType::Tendermint, 7).unwrap(),
+                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+            ),
+        ];
+        clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));
+        assert_eq!(
+            client_id_suffix(&clients.first().unwrap().client_id).unwrap(),
+            1
+        );
+        assert_eq!(client_id_suffix(&clients[1].client_id).unwrap(), 4);
+        assert_eq!(
+            client_id_suffix(&clients.last().unwrap().client_id).unwrap(),
+            7
+        );
     }
 }
