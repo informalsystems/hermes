@@ -303,12 +303,12 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<u64>>,
     },
 
-    QueryPacketEventDataFromTx {
+    QueryPacketEventDataFromTxs {
         request: QueryTxRequest,
         reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 
-    QueryPacketEventDataFromBlock {
+    QueryPacketEventDataFromBlocks {
         request: QueryBlockRequest,
         reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     },
@@ -522,7 +522,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 
-    fn query_block(
+    fn query_blocks(
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;

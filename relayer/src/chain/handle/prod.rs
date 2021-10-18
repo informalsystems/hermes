@@ -422,14 +422,14 @@ impl ChainHandle for ProdChainHandle {
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketEventDataFromTx { request, reply_to })
+        self.send(|reply_to| ChainRequest::QueryPacketEventDataFromTxs { request, reply_to })
     }
 
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlock { request, reply_to })
+        self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to })
     }
 }
 

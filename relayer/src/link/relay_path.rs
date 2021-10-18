@@ -868,21 +868,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let (start_block_events, end_block_events) = self
             .src_chain()
-            .query_block(QueryBlockRequest::Packet(query))
+            .query_blocks(QueryBlockRequest::Packet(query))
             .map_err(LinkError::relayer)?;
 
         trace!("[{}] start_block_events {:?}", self, start_block_events);
-        trace!(
-            "[{}] events_result_from_tx {:?}",
-            self,
-            events_result_from_tx
-        );
+        trace!("[{}] tx_events {:?}", self, tx_events);
         trace!("[{}] end_block_events {:?}", self, end_block_events);
 
         // events must be ordered in the following fashion -
         // start-block events followed by tx-events followed by end-block events
         events_result.extend(start_block_events);
-        events_result.extend(events_result_from_tx);
+        events_result.extend(tx_events);
         events_result.extend(end_block_events);
 
         if events_result.is_empty() {

@@ -276,7 +276,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_block(
+    fn query_blocks(
         &self,
         _request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {

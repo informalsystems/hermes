@@ -353,7 +353,7 @@ where
                         },
 
                         Ok(ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to }) => {
-                            self.query_block(request, reply_to)?
+                            self.query_blocks(request, reply_to)?
                         },
 
                         Err(e) => error!("received error via chain request channel: {}", e),
@@ -775,12 +775,12 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_block(
+    fn query_blocks(
         &self,
         request: QueryBlockRequest,
         reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_block(request);
+        let result = self.chain.query_blocks(request);
 
         reply_to.send(result).map_err(Error::send)?;
 
