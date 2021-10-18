@@ -348,11 +348,11 @@ where
                             self.query_next_sequence_receive(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryPacketEventDataFromTx { request, reply_to }) => {
+                        Ok(ChainRequest::QueryPacketEventDataFromTxs { request, reply_to }) => {
                             self.query_txs(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryPacketEventDataFromBlock { request, reply_to }) => {
+                        Ok(ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to }) => {
                             self.query_block(request, reply_to)?
                         },
 

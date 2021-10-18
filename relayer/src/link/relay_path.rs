@@ -861,7 +861,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             height: query_height,
         };
 
-        let events_result_from_tx = self
+        let tx_events = self
             .src_chain()
             .query_txs(QueryTxRequest::Packet(query.clone()))
             .map_err(LinkError::relayer)?;

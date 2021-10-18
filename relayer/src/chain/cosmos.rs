@@ -1949,7 +1949,7 @@ fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx
     result
 }
 
-fn filter_channel_event(event: Event, request: &QueryPacketEventDataRequest) -> Option<IbcEvent> {
+fn filter_matching_event(event: Event, request: &QueryPacketEventDataRequest) -> Option<IbcEvent> {
     enum ChannelEvent<'a> {
         Attributes(&'a Attributes),
         Packet(&'a Packet),

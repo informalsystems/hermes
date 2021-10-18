@@ -425,7 +425,7 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryPacketEventDataFromTx { request, reply_to })
     }
 
-    fn query_block(
+    fn query_blocks(
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
