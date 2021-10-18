@@ -100,7 +100,7 @@ impl core::fmt::Display for Sequence {
     }
 }
 
-#[derive(PartialEq, Deserialize, Serialize, Hash, Clone)]
+#[derive(Clone, Debug, Hash, PartialEq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,
@@ -118,16 +118,6 @@ impl Packet {
         (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
             || (self.timeout_timestamp != Timestamp::none()
                 && now.check_expiry(&self.timeout_timestamp) == Expired)
-    }
-}
-
-impl core::fmt::Debug for Packet {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "{:?} {:?} {:?}",
-            self.source_port, self.source_channel, self.sequence
-        )
     }
 }
 
