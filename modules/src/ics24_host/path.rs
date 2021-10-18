@@ -174,10 +174,7 @@ impl FromStr for Path {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let components: Vec<&str> = s.split('/').collect();
 
-        parse_client_type(&components)
-            // .or_else(|| parse_client_state(&components))
-            // .or_else(|| parse_client_consensus_state(&components))
-            // .or_else(|| parse_client_connections(&components))
+        parse_client_paths(&components)
             // .or_else(|| parse_connections(&components))
             // .or_else(|| parse_ports(&components))
             // .or_else(|| parse_channel_ends(&components))
@@ -192,16 +189,8 @@ impl FromStr for Path {
     }
 }
 
-fn parse_client_type(components: &[&str]) -> Option<Path> {
-    if components.len() != 3 {
-        return None;
-    }
-
+fn parse_client_paths(components: &[&str]) -> Option<Path> {
     if "clients" != *components.first().unwrap() {
-        return None;
-    }
-
-    if "clientType" != *components.last().unwrap() {
         return None;
     }
 
@@ -210,7 +199,39 @@ fn parse_client_type(components: &[&str]) -> Option<Path> {
         Err(_) => return None,
     };
 
-    Some(Path::ClientType(client_id))
+    if components.len() == 3 {
+        match components[2] {
+            "clientType" => Some(Path::ClientType(client_id)),
+            "clientState" => Some(Path::ClientState(client_id)),
+            "connections" => Some(Path::ClientConnections(client_id)),
+            _ => None,
+        }
+    } else if components.len() == 4 {
+        if "consensusStates" != components[2] {
+            return None;
+        }
+
+        let epoch_height: Vec<&str> = components.last().unwrap().split('-').collect();
+
+        if epoch_height.len() != 2 {
+            return None;
+        }
+
+        let epoch = epoch_height.first().unwrap().parse::<u64>();
+        let height = epoch_height.last().unwrap().parse::<u64>();
+
+        if epoch.is_err() || height.is_err() {
+            return None;
+        }
+
+        Some(Path::ClientConsensusState {
+            client_id,
+            epoch: epoch.unwrap(),
+            height: height.unwrap(),
+        })
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -233,6 +254,17 @@ mod tests {
         assert_eq!(
             parse_client_type(&components),
             Some(Path::ClientType(ClientId::default()))
+        );
+    }
+
+    #[test]
+    fn parse_client_state_works() {
+        let path = "clients/07-tendermint-0/clientState";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_client_state(&components),
+            Some(Path::ClientState(ClientId::default()))
         );
     }
 }
