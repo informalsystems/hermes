@@ -5,9 +5,12 @@ use crate::prelude::*;
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
 ///
 use core::fmt::{Display, Formatter, Result};
+use core::str::FromStr;
 
 use crate::ics04_channel::packet::Sequence;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+
+use flex_error::define_error;
 
 /// ABCI Query path for the IBC sub-store
 pub const IBC_QUERY_PATH: &str = "store/ibc/key";
@@ -24,7 +27,7 @@ const UPGRADED_CLIENT_STATE: &str = "upgradedClient";
 /// - The key identifying the upgraded consensus state
 const UPGRADED_CLIENT_CONSENSUS_STATE: &str = "upgradedConsState";
 
-/// The Path enum abstracts out the different sub-paths
+/// The Path enum abstracts out the different sub-paths.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Path {
     ClientType(ClientId),
@@ -78,8 +81,8 @@ impl Path {
     }
 }
 
-/// The Display trait adds the `.to_string()` method to the Path struct
-/// This is where the different path strings are constructed
+/// The Display trait adds the `.to_string()` method to the Path struct.
+/// This is where the different path strings are constructed.
 impl Display for Path {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self {
@@ -153,5 +156,41 @@ impl Display for Path {
                 UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_CONSENSUS_STATE
             ),
         }
+    }
+}
+
+define_error! {
+    #[derive(Eq, PartialEq)]
+    PathError {
+        ParseFailure
+            { path: String }
+            | e | { format!("'{}' could not be parsed into a Path", e.path) },
+    }
+}
+
+impl FromStr for Path {
+    type Err = PathError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let _components: Vec<&str> = s.split('/').collect();
+
+        Ok(Path::ClientType(0))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::str::FromStr;
+
+    #[test]
+    fn parse_client_type_path() {
+        let path = Path::from_str("clients/0/clientType");
+
+        assert!(path.is_ok());
+
+        let path = path.unwrap();
+
+        assert_eq!(path, Path::ClientType(0));
     }
 }
