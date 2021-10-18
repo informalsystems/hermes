@@ -36,7 +36,10 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
-use crate::{config::ChainConfig, connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
+use crate::{
+    chain::ChainStatus, config::ChainConfig, connection::ConnectionMsgType, error::Error,
+    keyring::KeyEntry,
+};
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
@@ -131,8 +134,8 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn query_latest_height(&self) -> Result<Height, Error> {
-        self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
+    fn query_status(&self) -> Result<ChainStatus, Error> {
+        self.send(|reply_to| ChainRequest::QueryStatus { reply_to })
     }
 
     fn query_clients(

@@ -38,7 +38,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::ChainEndpoint;
+use crate::chain::{ChainEndpoint, ChainStatus};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -156,8 +156,8 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_latest_height(&self) -> Result<Height, Error> {
-        Ok(self.context.query_latest_height())
+    fn query_status(&self) -> Result<ChainStatus, Error> {
+        unimplemented!()
     }
 
     fn query_clients(

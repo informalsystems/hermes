@@ -106,6 +106,14 @@ impl Timestamp {
             _ => Expiry::InvalidTimestamp,
         }
     }
+    /// Checks whether the timestamp has expired when compared to the
+    /// `other` timestamp. Returns an [`Expiry`] result.
+    pub fn after(&self, other: &Timestamp) -> bool {
+        match (self.time, other.time) {
+            (Some(time1), Some(time2)) => time1 > time2,
+            _ => false,
+        }
+    }
 }
 
 impl Display for Timestamp {

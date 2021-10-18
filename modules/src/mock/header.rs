@@ -72,6 +72,10 @@ impl Header for MockHeader {
         self.height
     }
 
+    fn timestamp(&self) -> Timestamp {
+        self.timestamp
+    }
+
     fn wrap_any(self) -> AnyHeader {
         AnyHeader::Mock(self)
     }

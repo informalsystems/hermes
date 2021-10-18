@@ -21,7 +21,9 @@ use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::{EventType, Query};
-use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
+use tendermint_rpc::{
+    endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
+};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, trace, warn};
@@ -84,6 +86,9 @@ use crate::{
 };
 
 use super::{ChainEndpoint, HealthCheck};
+use crate::chain::ChainStatus;
+use chrono::DateTime;
+use ibc::timestamp::Timestamp;
 
 mod compatibility;
 
@@ -649,6 +654,29 @@ impl CosmosSdkChain {
     fn tx_memo(&self) -> &Memo {
         &self.config.memo_prefix
     }
+
+    /// Query the chain status via an RPC query
+    fn status(&self) -> Result<status::Response, Error> {
+        let status = self
+            .block_on(self.rpc_client().status())
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        if status.sync_info.catching_up {
+            return Err(Error::chain_not_caught_up(
+                self.config.rpc_addr.to_string(),
+                self.config().id.clone(),
+            ));
+        }
+        Ok(status)
+    }
+
+    /// Query the chain's latest height
+    pub fn query_latest_height(&self) -> Result<ICSHeight, Error> {
+        let status = self.status()?;
+        Ok(ICSHeight {
+            revision_number: ChainId::chain_version(status.node_info.network.as_str()),
+            revision_height: u64::from(status.sync_info.latest_block_height),
+        })
+    }
 }
 
 fn empty_event_present(events: &[IbcEvent]) -> bool {
@@ -918,24 +946,20 @@ impl ChainEndpoint for CosmosSdkChain {
         ))
     }
 
-    /// Query the latest height the chain is at via a RPC query
-    fn query_latest_height(&self) -> Result<ICSHeight, Error> {
-        crate::time!("query_latest_height");
+    /// Query the chain status
+    fn query_status(&self) -> Result<ChainStatus, Error> {
+        crate::time!("query_status");
+        let status = self.status()?;
 
-        let status = self
-            .block_on(self.rpc_client().status())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-        if status.sync_info.catching_up {
-            return Err(Error::chain_not_caught_up(
-                self.config.rpc_addr.to_string(),
-                self.config().id.clone(),
-            ));
-        }
-
-        Ok(ICSHeight {
+        let time = DateTime::from(status.sync_info.latest_block_time);
+        let height = ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
             revision_height: u64::from(status.sync_info.latest_block_height),
+        };
+
+        Ok(ChainStatus {
+            height,
+            timestamp: Timestamp::from_datetime(time),
         })
     }
 

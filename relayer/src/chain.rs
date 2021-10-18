@@ -40,6 +40,7 @@ use crate::event::monitor::TxMonitorCmd;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
+use ibc::timestamp::Timestamp;
 
 pub(crate) mod cosmos;
 pub mod counterparty;
@@ -54,6 +55,13 @@ pub mod mock;
 pub enum HealthCheck {
     Healthy,
     Unhealthy(Box<Error>),
+}
+
+/// The result of a chain status query.
+#[derive(Clone, Debug)]
+pub struct ChainStatus {
+    pub height: ICSHeight,
+    pub timestamp: Timestamp,
 }
 
 /// Generic query response type
@@ -146,8 +154,8 @@ pub trait ChainEndpoint: Sized {
         Ok(get_compatible_versions())
     }
 
-    /// Query the latest height the chain is at
-    fn query_latest_height(&self) -> Result<ICSHeight, Error>;
+    /// Query the latest height and timestamp the chain is at
+    fn query_status(&self) -> Result<ChainStatus, Error>;
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(

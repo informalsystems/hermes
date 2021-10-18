@@ -2,10 +2,9 @@ use alloc::sync::Arc;
 use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
@@ -25,9 +24,10 @@ use ibc::{
     proofs::Proofs,
     query::QueryTxRequest,
     signer::Signer,
+    timestamp::Timestamp,
     Height,
 };
-
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -39,10 +39,11 @@ use ibc_proto::ibc::core::{
     commitment::v1::MerkleProof,
     connection::v1::QueryClientConnectionsRequest,
 };
-
 pub use prod::ProdChainHandle;
 
 use crate::{
+    chain::ChainStatus,
+    config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
     event::monitor::{EventBatch, Result as MonitorResult},
@@ -50,7 +51,6 @@ use crate::{
 };
 
 use super::HealthCheck;
-use crate::config::ChainConfig;
 
 mod prod;
 
@@ -132,8 +132,8 @@ pub enum ChainRequest {
         reply_to: ReplyTo<String>,
     },
 
-    QueryLatestHeight {
-        reply_to: ReplyTo<Height>,
+    QueryStatus {
+        reply_to: ReplyTo<ChainStatus>,
     },
 
     QueryClients {
@@ -353,7 +353,15 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
 
-    fn query_latest_height(&self) -> Result<Height, Error>;
+    fn query_status(&self) -> Result<ChainStatus, Error>;
+
+    fn query_latest_height(&self) -> Result<Height, Error> {
+        Ok(self.query_status()?.height)
+    }
+
+    fn query_latest_timestamp(&self) -> Result<Timestamp, Error> {
+        Ok(self.query_status()?.timestamp)
+    }
 
     fn query_clients(
         &self,
