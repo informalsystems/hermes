@@ -601,7 +601,7 @@ mod tests {
     }
 
     #[test]
-    fn client_type_path_parses() {
+    fn test_parse_client_paths_fn() {
         let path = "clients/07-tendermint-0/clientType";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -609,10 +609,7 @@ mod tests {
             parse_client_paths(&components),
             Some(Path::ClientType(ClientId::default()))
         );
-    }
 
-    #[test]
-    fn client_state_path_parses() {
         let path = "clients/07-tendermint-0/clientState";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -620,10 +617,7 @@ mod tests {
             parse_client_paths(&components),
             Some(Path::ClientState(ClientId::default()))
         );
-    }
 
-    #[test]
-    fn client_consensus_state_path_parses() {
         let path = "clients/07-tendermint-0/consensusStates/15-31";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -638,18 +632,50 @@ mod tests {
     }
 
     #[test]
-    fn client_connections_path_parses() {
-        let path = "clients/07-tendermint-0/connections";
-        let components: Vec<&str> = path.split('/').collect();
+    fn client_type_path_parses() {
+        let path = "clients/07-tendermint-0/clientType";
+        let path = Path::from_str(path);
 
+        assert!(path.is_ok());
+        assert_eq!(path.unwrap(), Path::ClientType(ClientId::default()),);
+    }
+
+    #[test]
+    fn client_state_path_parses() {
+        let path = "clients/07-tendermint-0/clientState";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(path.unwrap(), Path::ClientState(ClientId::default()));
+    }
+
+    #[test]
+    fn client_consensus_state_path_parses() {
+        let path = "clients/07-tendermint-0/consensusStates/15-31";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
         assert_eq!(
-            parse_client_paths(&components),
-            Some(Path::ClientConnections(ClientId::default()))
+            path.unwrap(),
+            Path::ClientConsensusState {
+                client_id: ClientId::default(),
+                epoch: 15,
+                height: 31,
+            }
         );
     }
 
     #[test]
-    fn connections_path_parses() {
+    fn client_connections_path_parses() {
+        let path = "clients/07-tendermint-0/connections";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(path.unwrap(), Path::ClientConnections(ClientId::default()));
+    }
+
+    #[test]
+    fn test_parse_connections_fn() {
         let path = "connections/connection-0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -660,7 +686,16 @@ mod tests {
     }
 
     #[test]
-    fn ports_path_parses() {
+    fn connections_path_parses() {
+        let path = "connections/connection-0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(path.unwrap(), Path::Connections(ConnectionId::new(0)));
+    }
+
+    #[test]
+    fn test_parse_ports_fn() {
         let path = "ports/defaultPort";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -671,7 +706,16 @@ mod tests {
     }
 
     #[test]
-    fn channels_path_parses() {
+    fn ports_path_parses() {
+        let path = "ports/defaultPort";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(path.unwrap(), Path::Ports(PortId::default()));
+    }
+
+    #[test]
+    fn test_parse_channels_fn() {
         let path = "channels/channel-0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -682,7 +726,15 @@ mod tests {
     }
 
     #[test]
-    fn sequences_path_parses() {
+    fn channels_path_doesnt_parse() {
+        let path = "channels/channel-0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_err());
+    }
+
+    #[test]
+    fn test_parse_sequences_fn() {
         let path = "sequences/0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -693,7 +745,15 @@ mod tests {
     }
 
     #[test]
-    fn channel_ends_path_parses() {
+    fn sequences_path_doesnt_parse() {
+        let path = "sequences/0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_err());
+    }
+
+    #[test]
+    fn test_parse_channel_ends_fn() {
         let path = "channelEnds/ports/defaultPort/channels/channel-0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -704,7 +764,19 @@ mod tests {
     }
 
     #[test]
-    fn sequence_send_path_parses() {
+    fn channel_ends_path_parses() {
+        let path = "channelEnds/ports/defaultPort/channels/channel-0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(
+            path.unwrap(),
+            Path::ChannelEnds(PortId::default(), ChannelId::default()),
+        );
+    }
+
+    #[test]
+    fn test_parse_seqs_fn() {
         let path = "nextSequenceSend/ports/defaultPort/channels/channel-0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -712,10 +784,7 @@ mod tests {
             parse_seqs(&components),
             Some(Path::SeqSends(PortId::default(), ChannelId::default())),
         );
-    }
 
-    #[test]
-    fn sequence_recv_path_parses() {
         let path = "nextSequenceRecv/ports/defaultPort/channels/channel-0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -723,10 +792,7 @@ mod tests {
             parse_seqs(&components),
             Some(Path::SeqRecvs(PortId::default(), ChannelId::default())),
         );
-    }
 
-    #[test]
-    fn sequence_ack_path_parses() {
         let path = "nextSequenceAck/ports/defaultPort/channels/channel-0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -737,7 +803,43 @@ mod tests {
     }
 
     #[test]
-    fn commitments_path_parses() {
+    fn sequence_send_path_parses() {
+        let path = "nextSequenceSend/ports/defaultPort/channels/channel-0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(
+            path.unwrap(),
+            Path::SeqSends(PortId::default(), ChannelId::default()),
+        );
+    }
+
+    #[test]
+    fn sequence_recv_path_parses() {
+        let path = "nextSequenceRecv/ports/defaultPort/channels/channel-0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(
+            path.unwrap(),
+            Path::SeqRecvs(PortId::default(), ChannelId::default()),
+        );
+    }
+
+    #[test]
+    fn sequence_ack_path_parses() {
+        let path = "nextSequenceAck/ports/defaultPort/channels/channel-0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(
+            path.unwrap(),
+            Path::SeqAcks(PortId::default(), ChannelId::default()),
+        );
+    }
+
+    #[test]
+    fn test_parse_commitments_fn() {
         let path = "commitments/ports/defaultPort/channels/channel-0/sequences/0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -752,7 +854,23 @@ mod tests {
     }
 
     #[test]
-    fn acks_path_parses() {
+    fn commitments_path_parses() {
+        let path = "commitments/ports/defaultPort/channels/channel-0/sequences/0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(
+            path.unwrap(),
+            Path::Commitments {
+                port_id: PortId::default(),
+                channel_id: ChannelId::default(),
+                sequence: Sequence::default(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_parse_acks_fn() {
         let path = "acks/ports/defaultPort/channels/channel-0/sequences/0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -767,7 +885,23 @@ mod tests {
     }
 
     #[test]
-    fn receipts_path_parses() {
+    fn acks_path_parses() {
+        let path = "acks/ports/defaultPort/channels/channel-0/sequences/0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(
+            path.unwrap(),
+            Path::Acks {
+                port_id: PortId::default(),
+                channel_id: ChannelId::default(),
+                sequence: Sequence::default(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_parse_receipts_fn() {
         let path = "receipts/ports/defaultPort/channels/channel-0/sequences/0";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -782,7 +916,23 @@ mod tests {
     }
 
     #[test]
-    fn upgrade_client_state_path_parses() {
+    fn receipts_path_parses() {
+        let path = "receipts/ports/defaultPort/channels/channel-0/sequences/0";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(
+            path.unwrap(),
+            Path::Receipts {
+                port_id: PortId::default(),
+                channel_id: ChannelId::default(),
+                sequence: Sequence::default(),
+            },
+        );
+    }
+
+    #[test]
+    fn test_parse_upgrades_fn() {
         let path = "upgradedIBCState/0/upgradedClient";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -790,10 +940,7 @@ mod tests {
             parse_upgrades(&components),
             Some(Path::Upgrade(ClientUpgradePath::UpgradedClientState(0))),
         );
-    }
 
-    #[test]
-    fn upgrade_client_consensus_state_path_parses() {
         let path = "upgradedIBCState/0/upgradedConsState";
         let components: Vec<&str> = path.split('/').collect();
 
@@ -802,6 +949,30 @@ mod tests {
             Some(Path::Upgrade(
                 ClientUpgradePath::UpgradedClientConsensusState(0)
             )),
+        )
+    }
+
+    #[test]
+    fn upgrade_client_state_path_parses() {
+        let path = "upgradedIBCState/0/upgradedClient";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(
+            path.unwrap(),
+            Path::Upgrade(ClientUpgradePath::UpgradedClientState(0)),
+        );
+    }
+
+    #[test]
+    fn upgrade_client_consensus_state_path_parses() {
+        let path = "upgradedIBCState/0/upgradedConsState";
+        let path = Path::from_str(path);
+
+        assert!(path.is_ok());
+        assert_eq!(
+            path.unwrap(),
+            Path::Upgrade(ClientUpgradePath::UpgradedClientConsensusState(0)),
         );
     }
 }
