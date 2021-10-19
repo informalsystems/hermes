@@ -187,7 +187,7 @@ impl FromStr for Path {
             .or_else(|| parse_commitments(&components))
             .or_else(|| parse_acks(&components))
             .or_else(|| parse_receipts(&components))
-            // .or_else(|| parse_upgrades(&components))
+            .or_else(|| parse_upgrades(&components))
             .ok_or_else(|| PathError::parse_failure(s.to_string()))
     }
 }
@@ -553,16 +553,51 @@ fn parse_receipts(components: &[&str]) -> Option<Path> {
     })
 }
 
+fn parse_upgrades(components: &[&str]) -> Option<Path> {
+    if components.len() != 3 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    if first != UPGRADED_IBC_STATE {
+        return None;
+    }
+
+    let last = match components.last() {
+        Some(l) => *l,
+        None => return None,
+    };
+
+    let height = match components[1].parse::<u64>() {
+        Ok(h) => h,
+        Err(_) => return None,
+    };
+
+    match last {
+        UPGRADED_CLIENT_STATE => Some(Path::Upgrade(ClientUpgradePath::UpgradedClientState(
+            height,
+        ))),
+        UPGRADED_CLIENT_CONSENSUS_STATE => Some(Path::Upgrade(
+            ClientUpgradePath::UpgradedClientConsensusState(height),
+        )),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use core::str::FromStr;
 
     #[test]
-    fn parse_fromstr_errors() {
-        let path = Path::from_str("clients/clientType");
+    fn invalid_path_doesnt_parse() {
+        let invalid_path = Path::from_str("clients/clientType");
 
-        assert!(path.is_err());
+        assert!(invalid_path.is_err());
     }
 
     #[test]
@@ -743,6 +778,30 @@ mod tests {
                 channel_id: ChannelId::default(),
                 sequence: Sequence::default(),
             }),
+        );
+    }
+
+    #[test]
+    fn upgrade_client_state_path_parses() {
+        let path = "upgradedIBCState/0/upgradedClient";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_upgrades(&components),
+            Some(Path::Upgrade(ClientUpgradePath::UpgradedClientState(0))),
+        );
+    }
+
+    #[test]
+    fn upgrade_client_consensus_state_path_parses() {
+        let path = "upgradedIBCState/0/upgradedConsState";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_upgrades(&components),
+            Some(Path::Upgrade(
+                ClientUpgradePath::UpgradedClientConsensusState(0)
+            )),
         );
     }
 }
