@@ -40,6 +40,8 @@ pub enum Path {
     ClientConnections(ClientId),
     Connections(ConnectionId),
     Ports(PortId),
+    Channels(ChannelId),
+    Sequences(Sequence),
     ChannelEnds(PortId, ChannelId),
     SeqSends(PortId, ChannelId),
     SeqRecvs(PortId, ChannelId),
@@ -99,7 +101,9 @@ impl Display for Path {
             ),
             Path::ClientConnections(client_id) => write!(f, "clients/{}/connections", client_id),
             Path::Connections(connection_id) => write!(f, "connections/{}", connection_id),
+            Path::Channels(channel_id) => write!(f, "channels/{}", channel_id),
             Path::Ports(port_id) => write!(f, "ports/{}", port_id),
+            Path::Sequences(sequence) => write!(f, "sequences/{}", sequence),
             Path::ChannelEnds(port_id, channel_id) => {
                 write!(f, "channelEnds/ports/{}/channels/{}", port_id, channel_id)
             }
@@ -168,6 +172,7 @@ define_error! {
     }
 }
 
+/// The FromStr trait allows paths encoded as strings to be parsed into Paths.
 impl FromStr for Path {
     type Err = PathError;
 
@@ -176,14 +181,12 @@ impl FromStr for Path {
 
         parse_client_paths(&components)
             .or_else(|| parse_connections(&components))
-            // .or_else(|| parse_ports(&components))
-            // .or_else(|| parse_channel_ends(&components))
-            // .or_else(|| parse_seq_sends(&components))
-            // .or_else(|| parse_seq_recvs(&components))
-            // .or_else(|| parse_seq_acks(&components))
-            // .or_else(|| parse_commitments(&components))
-            // .or_else(|| parse_acks(&components))
-            // .or_else(|| parse_receipts(&components))
+            .or_else(|| parse_ports(&components))
+            .or_else(|| parse_channel_ends(&components))
+            .or_else(|| parse_seqs(&components))
+            .or_else(|| parse_commitments(&components))
+            .or_else(|| parse_acks(&components))
+            .or_else(|| parse_receipts(&components))
             // .or_else(|| parse_upgrades(&components))
             .ok_or_else(|| PathError::parse_failure(s.to_string()))
     }
@@ -277,6 +280,279 @@ fn parse_connections(components: &[&str]) -> Option<Path> {
     Some(Path::Connections(connection_id))
 }
 
+fn parse_ports(components: &[&str]) -> Option<Path> {
+    if components.len() != 2 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    if first != "ports" {
+        return None;
+    }
+
+    let port_id = match components.last() {
+        Some(p) => *p,
+        None => return None,
+    };
+
+    let port_id = match PortId::from_str(port_id) {
+        Ok(p) => p,
+        Err(_) => return None,
+    };
+
+    Some(Path::Ports(port_id))
+}
+
+fn parse_channels(components: &[&str]) -> Option<Path> {
+    if components.len() != 2 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    if first != "channels" {
+        return None;
+    }
+
+    let channel_id = match components.last() {
+        Some(c) => *c,
+        None => return None,
+    };
+
+    let channel_id = match ChannelId::from_str(channel_id) {
+        Ok(c) => c,
+        Err(_) => return None,
+    };
+
+    Some(Path::Channels(channel_id))
+}
+
+fn parse_sequences(components: &[&str]) -> Option<Path> {
+    if components.len() != 2 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    if first != "sequences" {
+        return None;
+    }
+
+    let sequence_number = match components.last() {
+        Some(s) => *s,
+        None => return None,
+    };
+
+    match Sequence::from_str(sequence_number) {
+        Ok(seq) => Some(Path::Sequences(seq)),
+        Err(_) => None,
+    }
+}
+
+fn parse_channel_ends(components: &[&str]) -> Option<Path> {
+    if components.len() != 5 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    if first != "channelEnds" {
+        return None;
+    }
+
+    let port = parse_ports(&components[1..=2]);
+    let channel = parse_channels(&components[3..=4]);
+
+    let port_id = if let Some(Path::Ports(port_id)) = port {
+        port_id
+    } else {
+        return None;
+    };
+
+    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+        channel_id
+    } else {
+        return None;
+    };
+
+    Some(Path::ChannelEnds(port_id, channel_id))
+}
+
+fn parse_seqs(components: &[&str]) -> Option<Path> {
+    if components.len() != 5 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    let port = parse_ports(&components[1..=2]);
+    let channel = parse_channels(&components[3..=4]);
+
+    let port_id = if let Some(Path::Ports(port_id)) = port {
+        port_id
+    } else {
+        return None;
+    };
+
+    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+        channel_id
+    } else {
+        return None;
+    };
+
+    match first {
+        "nextSequenceSend" => Some(Path::SeqSends(port_id, channel_id)),
+        "nextSequenceRecv" => Some(Path::SeqRecvs(port_id, channel_id)),
+        "nextSequenceAck" => Some(Path::SeqAcks(port_id, channel_id)),
+        _ => None,
+    }
+}
+
+fn parse_commitments(components: &[&str]) -> Option<Path> {
+    if components.len() != 7 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    if first != "commitments" {
+        return None;
+    }
+
+    let port = parse_ports(&components[1..=2]);
+    let channel = parse_channels(&components[3..=4]);
+    let sequence = parse_sequences(&components[5..]);
+
+    let port_id = if let Some(Path::Ports(port_id)) = port {
+        port_id
+    } else {
+        return None;
+    };
+
+    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+        channel_id
+    } else {
+        return None;
+    };
+
+    let sequence = if let Some(Path::Sequences(seq)) = sequence {
+        seq
+    } else {
+        return None;
+    };
+
+    Some(Path::Commitments {
+        port_id,
+        channel_id,
+        sequence,
+    })
+}
+
+fn parse_acks(components: &[&str]) -> Option<Path> {
+    if components.len() != 7 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    if first != "acks" {
+        return None;
+    }
+
+    let port = parse_ports(&components[1..=2]);
+    let channel = parse_channels(&components[3..=4]);
+    let sequence = parse_sequences(&components[5..]);
+
+    let port_id = if let Some(Path::Ports(port_id)) = port {
+        port_id
+    } else {
+        return None;
+    };
+
+    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+        channel_id
+    } else {
+        return None;
+    };
+
+    let sequence = if let Some(Path::Sequences(seq)) = sequence {
+        seq
+    } else {
+        return None;
+    };
+
+    Some(Path::Acks {
+        port_id,
+        channel_id,
+        sequence,
+    })
+}
+
+fn parse_receipts(components: &[&str]) -> Option<Path> {
+    if components.len() != 7 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    if first != "receipts" {
+        return None;
+    }
+
+    let port = parse_ports(&components[1..=2]);
+    let channel = parse_channels(&components[3..=4]);
+    let sequence = parse_sequences(&components[5..]);
+
+    let port_id = if let Some(Path::Ports(port_id)) = port {
+        port_id
+    } else {
+        return None;
+    };
+
+    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+        channel_id
+    } else {
+        return None;
+    };
+
+    let sequence = if let Some(Path::Sequences(seq)) = sequence {
+        seq
+    } else {
+        return None;
+    };
+
+    Some(Path::Receipts {
+        port_id,
+        channel_id,
+        sequence,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -308,6 +584,165 @@ mod tests {
         assert_eq!(
             parse_client_paths(&components),
             Some(Path::ClientState(ClientId::default()))
+        );
+    }
+
+    #[test]
+    fn client_consensus_state_path_parses() {
+        let path = "clients/07-tendermint-0/consensusStates/15-31";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_client_paths(&components),
+            Some(Path::ClientConsensusState {
+                client_id: ClientId::default(),
+                epoch: 15,
+                height: 31,
+            })
+        );
+    }
+
+    #[test]
+    fn client_connections_path_parses() {
+        let path = "clients/07-tendermint-0/connections";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_client_paths(&components),
+            Some(Path::ClientConnections(ClientId::default()))
+        );
+    }
+
+    #[test]
+    fn connections_path_parses() {
+        let path = "connections/connection-0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_connections(&components),
+            Some(Path::Connections(ConnectionId::new(0))),
+        );
+    }
+
+    #[test]
+    fn ports_path_parses() {
+        let path = "ports/defaultPort";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_ports(&components),
+            Some(Path::Ports(PortId::default())),
+        );
+    }
+
+    #[test]
+    fn channels_path_parses() {
+        let path = "channels/channel-0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_channels(&components),
+            Some(Path::Channels(ChannelId::default())),
+        );
+    }
+
+    #[test]
+    fn sequences_path_parses() {
+        let path = "sequences/0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_sequences(&components),
+            Some(Path::Sequences(Sequence::default()))
+        );
+    }
+
+    #[test]
+    fn channel_ends_path_parses() {
+        let path = "channelEnds/ports/defaultPort/channels/channel-0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_channel_ends(&components),
+            Some(Path::ChannelEnds(PortId::default(), ChannelId::default())),
+        );
+    }
+
+    #[test]
+    fn sequence_send_path_parses() {
+        let path = "nextSequenceSend/ports/defaultPort/channels/channel-0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_seqs(&components),
+            Some(Path::SeqSends(PortId::default(), ChannelId::default())),
+        );
+    }
+
+    #[test]
+    fn sequence_recv_path_parses() {
+        let path = "nextSequenceRecv/ports/defaultPort/channels/channel-0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_seqs(&components),
+            Some(Path::SeqRecvs(PortId::default(), ChannelId::default())),
+        );
+    }
+
+    #[test]
+    fn sequence_ack_path_parses() {
+        let path = "nextSequenceAck/ports/defaultPort/channels/channel-0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_seqs(&components),
+            Some(Path::SeqAcks(PortId::default(), ChannelId::default())),
+        );
+    }
+
+    #[test]
+    fn commitments_path_parses() {
+        let path = "commitments/ports/defaultPort/channels/channel-0/sequences/0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_commitments(&components),
+            Some(Path::Commitments {
+                port_id: PortId::default(),
+                channel_id: ChannelId::default(),
+                sequence: Sequence::default(),
+            }),
+        );
+    }
+
+    #[test]
+    fn acks_path_parses() {
+        let path = "acks/ports/defaultPort/channels/channel-0/sequences/0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_acks(&components),
+            Some(Path::Acks {
+                port_id: PortId::default(),
+                channel_id: ChannelId::default(),
+                sequence: Sequence::default(),
+            }),
+        );
+    }
+
+    #[test]
+    fn receipts_path_parses() {
+        let path = "receipts/ports/defaultPort/channels/channel-0/sequences/0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_receipts(&components),
+            Some(Path::Receipts {
+                port_id: PortId::default(),
+                channel_id: ChannelId::default(),
+                sequence: Sequence::default(),
+            }),
         );
     }
 }
