@@ -47,6 +47,7 @@ use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 use super::HealthCheck;
+use ibc::ics04_channel::context::ChannelReader;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -157,7 +158,10 @@ impl ChainEndpoint for MockChain {
     }
 
     fn query_status(&self) -> Result<ChainStatus, Error> {
-        unimplemented!()
+        Ok(ChainStatus {
+            height: self.context.host_height(),
+            timestamp: self.context.host_timestamp(),
+        })
     }
 
     fn query_clients(
@@ -438,6 +442,7 @@ pub mod test_utils {
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
+            max_block_time: Duration::from_secs(10),
             trusting_period: Some(Duration::from_secs(14 * 24 * 60 * 60)), // 14 days
             trust_threshold: Default::default(),
             packet_filter: PacketFilter::default(),

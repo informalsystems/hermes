@@ -471,8 +471,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         if let AnyClientState::Tendermint(ref mut tm_client_state) = client_state {
             if let Ok(dst_chain_config) = self.dst_chain.config() {
                 tm_client_state.max_clock_drift += dst_chain_config.clock_drift;
-                // TODO - add some max_block_time to the chain config and retrieve from there
-                tm_client_state.max_clock_drift += Duration::new(10, 0);
+                tm_client_state.max_clock_drift += dst_chain_config.max_block_time;
             }
         }
 
@@ -685,11 +684,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         {
             // Header would be considered in the future, wait for destination chain to
             // advance to the next height.
-            trace!("[{}] src header timestamp {:?} is after dst latest header timestamp {:?} + client state drift {:?}",
-                   self, header.timestamp(), status.timestamp, client_state.clock_drift());
+            trace!("[{}] src header {} is after dst latest header {} + client state drift {:?}, wait for next height on {}",
+                   self, header.timestamp(), status.timestamp, client_state.clock_drift(), self.dst_chain().id());
 
             let target_dst_height = status.height.increment();
             loop {
+                thread::sleep(Duration::from_millis(300));
                 status = self.dst_chain().query_status().map_err(|e| {
                     ForeignClientError::client_update(
                         self.dst_chain.id(),
@@ -700,7 +700,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 if status.height >= target_dst_height {
                     break;
                 }
-                thread::sleep(Duration::from_millis(300))
             }
         }
 

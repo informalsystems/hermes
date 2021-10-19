@@ -101,6 +101,10 @@ pub mod default {
         Duration::from_secs(5)
     }
 
+    pub fn max_block_time() -> Duration {
+        Duration::from_secs(10)
+    }
+
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
     }
@@ -318,6 +322,8 @@ pub struct ChainConfig {
     pub max_tx_size: MaxTxSize,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
+    #[serde(default = "default::max_block_time", with = "humantime_serde")]
+    pub max_block_time: Duration,
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
     #[serde(default)]
