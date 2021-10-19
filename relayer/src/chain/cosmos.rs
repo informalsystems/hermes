@@ -123,15 +123,18 @@ impl CosmosSdkChain {
     /// parameters against the chain's genesis configuration.
     ///
     /// Currently, validates the following:
-    ///     - the configured `max_tx_size` is appropriate.
+    ///     - the configured `max_tx_size` is appropriate
+    ///     - the trusting period is greater than zero
+    ///     - the trusting period is smaller than the unbonding period
+    ///     - the default gas is smaller than the max gas
     ///
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
-        // Check that the trusting period is smaller than the unbounding period
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = self.trusting_period(unbonding_period);
 
+        // Check that the trusting period is greater than zero
         if trusting_period <= Duration::ZERO {
             return Err(Error::config_validation_trusting_period_smaller_than_zero(
                 self.id().clone(),
@@ -139,6 +142,7 @@ impl CosmosSdkChain {
             ));
         }
 
+        // Check that the trusting period is smaller than the unbounding period
         if trusting_period >= unbonding_period {
             return Err(
                 Error::config_validation_trusting_period_greater_than_unbonding_period(
