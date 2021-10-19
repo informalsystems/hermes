@@ -9,6 +9,7 @@ use core::time::Duration;
 use chrono::{offset::Utc, DateTime, TimeZone};
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
+use tendermint::Time;
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 
@@ -56,6 +57,13 @@ impl Timestamp {
             Ok(Timestamp {
                 time: Some(Utc.timestamp_nanos(nanoseconds)),
             })
+        }
+    }
+
+    /// Returns a `Timestamp` representation of the current time.
+    pub fn now() -> Timestamp {
+        Timestamp {
+            time: Some(Utc::now()),
         }
     }
 
@@ -175,6 +183,14 @@ impl FromStr for Timestamp {
         let seconds = u64::from_str(s).map_err(ParseTimestampError::parse_int)?;
 
         Timestamp::from_nanoseconds(seconds).map_err(ParseTimestampError::try_from_int)
+    }
+}
+
+impl From<Time> for Timestamp {
+    fn from(tendermint_time: Time) -> Timestamp {
+        Timestamp {
+            time: Some(tendermint_time.into()),
+        }
     }
 }
 

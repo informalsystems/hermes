@@ -10,6 +10,7 @@ use crate::ics02_client::error::Error;
 use crate::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
@@ -22,6 +23,9 @@ pub trait Header: Clone + core::fmt::Debug + Send + Sync {
 
     /// The height of the consensus state
     fn height(&self) -> Height;
+
+    /// The timestamp of the consensus state
+    fn timestamp(&self) -> Timestamp;
 
     /// Wrap into an `AnyHeader`
     fn wrap_any(self) -> AnyHeader;
@@ -52,6 +56,15 @@ impl Header for AnyHeader {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.height(),
+        }
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        match self {
+            Self::Tendermint(header) => header.timestamp(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(header) => header.timestamp,
         }
     }
 

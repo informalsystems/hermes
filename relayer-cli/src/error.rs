@@ -9,6 +9,7 @@ use ibc_relayer::link::error::LinkError;
 use ibc_relayer::supervisor::Error as SupervisorError;
 use ibc_relayer::transfer::PacketError;
 use ibc_relayer::upgrade_chain::UpgradeChainError;
+use tendermint::Error as TendermintError;
 
 define_error! {
     /// An error raised within the relayer CLI
@@ -30,7 +31,7 @@ define_error! {
 
         InvalidHash
             { hash: String }
-            [ tendermint::Error ]
+            [ TendermintError ]
             | e | {
                 format_args!("CLI argument error: could not parse '{}' into a valid hash",
                     e.hash)
