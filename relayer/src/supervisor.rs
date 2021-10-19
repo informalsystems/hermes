@@ -368,7 +368,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             match chain {
                 Ok(chain) => match chain.health_check() {
                     Ok(Healthy) => info!("[{}] chain is healthy", id),
-                    Ok(Unhealthy(e)) => error!("[{}] chain is unhealthy: {}", id, e),
+                    Ok(Unhealthy(e)) => warn!("[{}] chain is unhealthy: {}", id, e),
                     Err(e) => error!("[{}] failed to perform health check: {}", id, e),
                 },
                 Err(e) => {
