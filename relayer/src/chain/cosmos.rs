@@ -920,8 +920,8 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     /// Get the chain configuration
-    fn config(&mut self) -> Result<ChainConfig, Error> {
-        Ok(self.config.clone())
+    fn config(&mut self) -> ChainConfig {
+        self.config.clone()
     }
 
     /// Get the signing key
@@ -1709,7 +1709,11 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((res.value, commitment_proof_bytes))
     }
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+    fn build_client_state(
+        &self,
+        height: ICSHeight,
+        dst_config: ChainConfig,
+    ) -> Result<Self::ClientState, Error> {
         let unbonding_period = self.unbonding_period()?;
         // Build the client state.
         ClientState::new(
@@ -1717,7 +1721,7 @@ impl ChainEndpoint for CosmosSdkChain {
             self.config.trust_threshold.into(),
             self.trusting_period(unbonding_period),
             unbonding_period,
-            self.config.clock_drift,
+            self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
             ICSHeight::zero(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],

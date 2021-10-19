@@ -441,8 +441,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Get signer
         let signer = self.dst_chain.get_signer().map_err(|e| {
             ForeignClientError::client_create(
-                self.dst_chain.id(),
-                "failed while fetching the destination chain signer".to_string(),
+                self.src_chain.id(),
+                format!(
+                    "failed while fetching the dst chain ({}) signer",
+                    self.dst_chain.id()
+                ),
                 e,
             )
         })?;
@@ -450,15 +453,27 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Build client create message with the data from source chain at latest height.
         let latest_height = self.src_chain.query_latest_height().map_err(|e| {
             ForeignClientError::client_create(
-                self.dst_chain.id(),
-                "failed while querying src chain ({}) for latest height: {}".to_string(),
+                self.src_chain.id(),
+                "failed while querying src chain for latest height".to_string(),
                 e,
             )
         })?;
 
-        let mut client_state = self
+        let client_state = self
             .src_chain
-            .build_client_state(latest_height)
+            .build_client_state(
+                latest_height,
+                self.dst_chain.config().map_err(|e| {
+                    ForeignClientError::client_create(
+                        self.src_chain.id(),
+                        format!(
+                            "failed while querying dst chain ({}) for its configuration",
+                            self.dst_chain.id()
+                        ),
+                        e,
+                    )
+                })?,
+            )
             .map_err(|e| {
                 ForeignClientError::client_create(
                     self.src_chain.id(),
@@ -467,13 +482,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?
             .wrap_any();
-
-        if let AnyClientState::Tendermint(ref mut tm_client_state) = client_state {
-            if let Ok(dst_chain_config) = self.dst_chain.config() {
-                tm_client_state.max_clock_drift += dst_chain_config.clock_drift;
-                tm_client_state.max_clock_drift += dst_chain_config.max_block_time;
-            }
-        }
 
         let consensus_state = self
             .src_chain

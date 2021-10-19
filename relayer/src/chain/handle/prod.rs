@@ -320,8 +320,16 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error> {
-        self.send(|reply_to| ChainRequest::BuildClientState { height, reply_to })
+    fn build_client_state(
+        &self,
+        height: Height,
+        dst_config: ChainConfig,
+    ) -> Result<AnyClientState, Error> {
+        self.send(|reply_to| ChainRequest::BuildClientState {
+            height,
+            dst_config,
+            reply_to,
+        })
     }
 
     fn build_consensus_state(

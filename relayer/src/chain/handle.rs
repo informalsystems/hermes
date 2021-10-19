@@ -150,6 +150,7 @@ pub enum ChainRequest {
 
     BuildClientState {
         height: Height,
+        dst_config: ChainConfig,
         reply_to: ReplyTo<AnyClientState>,
     },
 
@@ -470,7 +471,11 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error>;
 
     /// Constructs a client state at the given height
-    fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error>;
+    fn build_client_state(
+        &self,
+        height: Height,
+        dst_config: ChainConfig,
+    ) -> Result<AnyClientState, Error>;
 
     /// Constructs a consensus state at the given height
     fn build_consensus_state(

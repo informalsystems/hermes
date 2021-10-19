@@ -145,8 +145,8 @@ impl ChainEndpoint for MockChain {
         Ok(get_dummy_account_id())
     }
 
-    fn config(&mut self) -> Result<ChainConfig, Error> {
-        Ok(self.config.clone())
+    fn config(&mut self) -> ChainConfig {
+        self.config.clone()
     }
 
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
@@ -329,13 +329,17 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
+    fn build_client_state(
+        &self,
+        height: Height,
+        dst_config: ChainConfig,
+    ) -> Result<Self::ClientState, Error> {
         let client_state = TendermintClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
             self.trusting_period(),
             self.trusting_period().add(Duration::from_secs(1000)),
-            Duration::from_millis(3000),
+            self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
             Height::zero(),
             vec!["upgrade/upgradedClient".to_string()],

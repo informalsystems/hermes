@@ -233,8 +233,8 @@ where
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildClientState { height, reply_to }) => {
-                            self.build_client_state(height, reply_to)?
+                        Ok(ChainRequest::BuildClientState { height, dst_config, reply_to }) => {
+                            self.build_client_state(height, dst_config, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
@@ -405,7 +405,7 @@ where
     }
 
     fn get_config(&mut self, reply_to: ReplyTo<ChainConfig>) -> Result<(), Error> {
-        let result = self.chain.config();
+        let result = Ok(self.chain.config());
         reply_to.send(result).map_err(Error::send)
     }
 
@@ -447,11 +447,12 @@ where
     fn build_client_state(
         &self,
         height: Height,
+        dst_config: ChainConfig,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
         let client_state = self
             .chain
-            .build_client_state(height)
+            .build_client_state(height, dst_config)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(client_state).map_err(Error::send)

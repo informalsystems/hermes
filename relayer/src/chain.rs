@@ -141,7 +141,7 @@ pub trait ChainEndpoint: Sized {
 
     fn get_signer(&mut self) -> Result<Signer, Error>;
 
-    fn config(&mut self) -> Result<ChainConfig, Error>;
+    fn config(&mut self) -> ChainConfig;
 
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
@@ -310,7 +310,11 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error>;
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;
+    fn build_client_state(
+        &self,
+        height: ICSHeight,
+        dst_config: ChainConfig,
+    ) -> Result<Self::ClientState, Error>;
 
     fn build_consensus_state(
         &self,
