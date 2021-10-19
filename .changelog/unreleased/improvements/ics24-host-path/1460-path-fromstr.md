@@ -1,0 +1,1 @@
+- Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers.
