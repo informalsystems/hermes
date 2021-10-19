@@ -137,7 +137,7 @@ impl From<Attributes> for Vec<Tag> {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct OpenInit(pub Attributes);
+pub struct OpenInit(Attributes);
 
 impl OpenInit {
     pub fn attributes(&self) -> &Attributes {
@@ -177,7 +177,7 @@ impl From<OpenInit> for AbciEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct OpenTry(pub Attributes);
+pub struct OpenTry(Attributes);
 
 impl OpenTry {
     pub fn attributes(&self) -> &Attributes {
@@ -217,7 +217,7 @@ impl From<OpenTry> for AbciEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct OpenAck(pub Attributes);
+pub struct OpenAck(Attributes);
 
 impl OpenAck {
     pub fn attributes(&self) -> &Attributes {
@@ -257,7 +257,7 @@ impl From<OpenAck> for AbciEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct OpenConfirm(pub Attributes);
+pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {
     pub fn attributes(&self) -> &Attributes {

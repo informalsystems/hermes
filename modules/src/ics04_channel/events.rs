@@ -6,8 +6,8 @@ use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::prelude::*;
 
+use core::convert::TryFrom;
 use serde_derive::{Deserialize, Serialize};
-use subtle_encoding::hex;
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
@@ -269,8 +269,9 @@ impl From<Attributes> for Vec<Tag> {
 /// is infallible, even if it is not represented in the error type.
 /// Once tendermint-rs improves the API of the `Key` and `Value` types,
 /// we will be able to remove the `.parse().unwrap()` calls.
-impl From<Packet> for Vec<Tag> {
-    fn from(p: Packet) -> Self {
+impl TryFrom<Packet> for Vec<Tag> {
+    type Error = Error;
+    fn try_from(p: Packet) -> Result<Self, Self::Error> {
         let mut attributes = vec![];
         let src_port = Tag {
             key: PKT_SRC_PORT_ATTRIBUTE_KEY.parse().unwrap(),
@@ -312,9 +313,8 @@ impl From<Packet> for Vec<Tag> {
                 .unwrap(),
         };
         attributes.push(timeout_timestamp);
-        let encoded = hex::encode(p.data);
         let val =
-            String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8");
+            String::from_utf8(p.data).expect("hex-encoded string should always be valid UTF-8");
         let packet_data = Tag {
             key: PKT_DATA_ATTRIBUTE_KEY.parse().unwrap(),
             value: val.parse().unwrap(),
@@ -325,7 +325,7 @@ impl From<Packet> for Vec<Tag> {
             value: "".parse().unwrap(),
         };
         attributes.push(ack);
-        attributes
+        Ok(attributes)
     }
 }
 
@@ -642,13 +642,15 @@ impl From<SendPacket> for IbcEvent {
     }
 }
 
-impl From<SendPacket> for AbciEvent {
-    fn from(v: SendPacket) -> Self {
-        let attributes = Vec::<Tag>::from(v.packet);
-        AbciEvent {
+impl TryFrom<SendPacket> for AbciEvent {
+    type Error = Error;
+
+    fn try_from(v: SendPacket) -> Result<Self, Self::Error> {
+        let attributes = Vec::<Tag>::try_from(v.packet)?;
+        Ok(AbciEvent {
             type_str: IbcEventType::SendPacket.as_str().to_string(),
             attributes,
-        }
+        })
     }
 }
 
@@ -732,22 +734,23 @@ impl From<WriteAcknowledgement> for IbcEvent {
     }
 }
 
-impl From<WriteAcknowledgement> for AbciEvent {
-    fn from(v: WriteAcknowledgement) -> Self {
-        let mut attributes = Vec::<Tag>::from(v.packet);
-        let encoded = hex::encode(v.ack);
+impl TryFrom<WriteAcknowledgement> for AbciEvent {
+    type Error = Error;
+
+    fn try_from(v: WriteAcknowledgement) -> Result<Self, Self::Error> {
+        let mut attributes = Vec::<Tag>::try_from(v.packet)?;
         let val =
-            String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8");
+            String::from_utf8(v.ack).expect("hex-encoded string should always be valid UTF-8");
         // No actual conversion from string to `Tag::Key` or `Tag::Value`
         let ack = Tag {
             key: PKT_ACK_ATTRIBUTE_KEY.parse().unwrap(),
             value: val.parse().unwrap(),
         };
         attributes.push(ack);
-        AbciEvent {
+        Ok(AbciEvent {
             type_str: IbcEventType::WriteAck.as_str().to_string(),
             attributes,
-        }
+        })
     }
 }
 
@@ -788,13 +791,15 @@ impl From<AcknowledgePacket> for IbcEvent {
     }
 }
 
-impl From<AcknowledgePacket> for AbciEvent {
-    fn from(v: AcknowledgePacket) -> Self {
-        let attributes = Vec::<Tag>::from(v.packet);
-        AbciEvent {
+impl TryFrom<AcknowledgePacket> for AbciEvent {
+    type Error = Error;
+
+    fn try_from(v: AcknowledgePacket) -> Result<Self, Self::Error> {
+        let attributes = Vec::<Tag>::try_from(v.packet)?;
+        Ok(AbciEvent {
             type_str: IbcEventType::AckPacket.as_str().to_string(),
             attributes,
-        }
+        })
     }
 }
 
@@ -837,13 +842,15 @@ impl From<TimeoutPacket> for IbcEvent {
     }
 }
 
-impl From<TimeoutPacket> for AbciEvent {
-    fn from(v: TimeoutPacket) -> Self {
-        let attributes = Vec::<Tag>::from(v.packet);
-        AbciEvent {
+impl TryFrom<TimeoutPacket> for AbciEvent {
+    type Error = Error;
+
+    fn try_from(v: TimeoutPacket) -> Result<Self, Self::Error> {
+        let attributes = Vec::<Tag>::try_from(v.packet)?;
+        Ok(AbciEvent {
             type_str: IbcEventType::Timeout.as_str().to_string(),
             attributes,
-        }
+        })
     }
 }
 
@@ -959,23 +966,23 @@ mod tests {
             height: Height::default(),
             packet: packet.clone(),
         };
-        abci_events.push(AbciEvent::from(send_packet.clone()));
+        abci_events.push(AbciEvent::try_from(send_packet.clone()).unwrap());
         let write_ack = WriteAcknowledgement {
             height: Height::default(),
             packet: packet.clone(),
             ack: "test_ack".as_bytes().to_vec(),
         };
-        abci_events.push(AbciEvent::from(write_ack.clone()));
+        abci_events.push(AbciEvent::try_from(write_ack.clone()).unwrap());
         let ack_packet = AcknowledgePacket {
             height: Height::default(),
             packet: packet.clone(),
         };
-        abci_events.push(AbciEvent::from(ack_packet.clone()));
+        abci_events.push(AbciEvent::try_from(ack_packet.clone()).unwrap());
         let timeout_packet = TimeoutPacket {
             height: Height::default(),
             packet,
         };
-        abci_events.push(AbciEvent::from(timeout_packet.clone()));
+        abci_events.push(AbciEvent::try_from(timeout_packet.clone()).unwrap());
 
         for event in abci_events {
             match try_from_tx(&event) {

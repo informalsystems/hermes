@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use core::convert::{TryFrom, TryInto};
 use core::fmt;
 use core::str::FromStr;
 use flex_error::{define_error, TraceError};
@@ -268,6 +269,34 @@ impl fmt::Display for IbcEvent {
     }
 }
 
+impl TryFrom<IbcEvent> for AbciEvent {
+    type Error = Error;
+
+    fn try_from(event: IbcEvent) -> Result<Self, Self::Error> {
+        Ok(match event {
+            IbcEvent::CreateClient(event) => event.into(),
+            IbcEvent::UpdateClient(event) => event.into(),
+            IbcEvent::UpgradeClient(event) => event.into(),
+            IbcEvent::ClientMisbehaviour(event) => event.into(),
+            IbcEvent::OpenInitConnection(event) => event.into(),
+            IbcEvent::OpenTryConnection(event) => event.into(),
+            IbcEvent::OpenAckConnection(event) => event.into(),
+            IbcEvent::OpenConfirmConnection(event) => event.into(),
+            IbcEvent::OpenInitChannel(event) => event.into(),
+            IbcEvent::OpenTryChannel(event) => event.into(),
+            IbcEvent::OpenAckChannel(event) => event.into(),
+            IbcEvent::OpenConfirmChannel(event) => event.into(),
+            IbcEvent::CloseInitChannel(event) => event.into(),
+            IbcEvent::CloseConfirmChannel(event) => event.into(),
+            IbcEvent::SendPacket(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::WriteAcknowledgement(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
+            _ => return Err(Error::incorrect_event_type(event.to_string())),
+        })
+    }
+}
+
 // This is tendermint specific
 pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -> Option<IbcEvent> {
     // Return the first hit we find
@@ -371,30 +400,6 @@ impl IbcEvent {
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
             IbcEvent::Empty(_) => IbcEventType::Empty,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
-        }
-    }
-
-    pub fn into_abci_event(self) -> Option<AbciEvent> {
-        match self {
-            IbcEvent::CreateClient(ev) => Some(ev.into()),
-            IbcEvent::UpdateClient(ev) => Some(ev.into()),
-            IbcEvent::UpgradeClient(ev) => Some(ev.into()),
-            IbcEvent::ClientMisbehaviour(ev) => Some(ev.into()),
-            IbcEvent::OpenInitConnection(ev) => Some(ev.into()),
-            IbcEvent::OpenTryConnection(ev) => Some(ev.into()),
-            IbcEvent::OpenAckConnection(ev) => Some(ev.into()),
-            IbcEvent::OpenConfirmConnection(ev) => Some(ev.into()),
-            IbcEvent::OpenInitChannel(ev) => Some(ev.into()),
-            IbcEvent::OpenTryChannel(ev) => Some(ev.into()),
-            IbcEvent::OpenAckChannel(ev) => Some(ev.into()),
-            IbcEvent::OpenConfirmChannel(ev) => Some(ev.into()),
-            IbcEvent::CloseInitChannel(ev) => Some(ev.into()),
-            IbcEvent::CloseConfirmChannel(ev) => Some(ev.into()),
-            IbcEvent::SendPacket(ev) => Some(ev.into()),
-            IbcEvent::WriteAcknowledgement(ev) => Some(ev.into()),
-            IbcEvent::AcknowledgePacket(ev) => Some(ev.into()),
-            IbcEvent::TimeoutPacket(ev) => Some(ev.into()),
-            _ => None,
         }
     }
 

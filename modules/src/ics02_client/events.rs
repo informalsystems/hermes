@@ -34,13 +34,10 @@ pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
             .map(IbcEvent::CreateClient)
             .ok(),
         Ok(IbcEventType::UpdateClient) => match extract_attributes_from_tx(event) {
-            Ok(attributes) => match extract_header_from_tx(event) {
-                Ok(header) => Some(IbcEvent::UpdateClient(UpdateClient {
-                    common: attributes,
-                    header: Some(header),
-                })),
-                Err(_) => None,
-            },
+            Ok(attributes) => Some(IbcEvent::UpdateClient(UpdateClient {
+                common: attributes,
+                header: extract_header_from_tx(event).ok(),
+            })),
             Err(_) => None,
         },
         Ok(IbcEventType::ClientMisbehaviour) => extract_attributes_from_tx(event)
