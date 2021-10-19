@@ -153,6 +153,17 @@ impl CosmosSdkChain {
             );
         }
 
+        // If the default gas is strictly greater than the max gas and the tx simulation fails,
+        // Hermes won't be able to ever submit that tx because the gas amount wanted will be
+        // greater than the max gas.
+        if self.default_gas() > self.max_gas() {
+            return Err(Error::config_validation_default_gas_too_high(
+                self.id().clone(),
+                self.default_gas(),
+                self.max_gas(),
+            ));
+        }
+
         // Get the latest height and convert to tendermint Height
         let latest_height = Height::try_from(self.query_latest_height()?.revision_height)
             .map_err(Error::invalid_height)?;

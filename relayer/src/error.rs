@@ -432,6 +432,17 @@ define_error! {
                     e.chain_id, format_duration(e.trusting_period), format_duration(e.unbonding_period))
             },
 
+        ConfigValidationDefaultGasTooHigh
+            {
+                chain_id: ChainId,
+                default_gas: u64,
+                max_gas: u64,
+            }
+            |e| {
+                format!("semantic config validation failed for option `default_gas` of chain '{}', reason: default gas ({}) must be smaller than the max gas ({})",
+                    e.chain_id, e.default_gas, e.max_gas)
+            },
+
         SdkModuleVersion
             {
                 chain_id: ChainId,
