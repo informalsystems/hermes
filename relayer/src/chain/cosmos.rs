@@ -284,8 +284,9 @@ impl CosmosSdkChain {
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
-            "[{}] send_tx: based on the estimated gas, use fee: {}",
+            "[{}] send_tx: using {} gas, fee {}",
             self.id(),
+            estimated_gas,
             PrettyFee(&adjusted_fee)
         );
 
