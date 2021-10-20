@@ -1,1 +1,3 @@
-- Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers.
+- Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers ([#1460][issue-1460]).
+
+[issue-1460]: https://github.com/informalsystems/ibc-rs/issues/1460
