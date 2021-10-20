@@ -144,9 +144,8 @@ clock_drift = '5s'
 # Specify the maximum block time on this chain.
 # The block time together with the clock drift are added to the source drift to estimate
 # the maximum clock drift when creating a client on this chain. Default: 10s
-# Value of 0s means the value cannot be estimated, e.g. if the blockchain only
-# creates blocks that include transactions (i.e. no empty blocks).
-max_clock_drift = '10s'
+# For cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
+max_block_time = '10s'
 
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period

@@ -671,6 +671,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// - determine the `dst_timestamp` as the time of the latest block on destination chain
     /// - return if `header.timestamp <= dst_timestamp + client_state.max_clock_drift`
     /// - wait for the destination chain to reach `dst_timestamp + 1`
+    ///    Note: This is mostly to help with exsiting clients where the `max_clock_drift` did
+    ///    not take into account the block time.
     /// - return error if header.timestamp < dst_timestamp + client_state.max_clock_drift
     fn wait_for_header_validation_delay(
         &self,
@@ -685,6 +687,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 e,
             )
         })?;
+
+        // TODO - remove
+        trace!(
+            "DIFF {:?}",
+            header.timestamp().duration_since(&status.timestamp)
+        );
 
         if header
             .timestamp()
