@@ -48,9 +48,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
             client
         );
 
-        // initial check for evidence of misbehaviour for all updates
-        let skip_misbehaviour = self.detect_misbehaviour(&client, None);
-
         // remember the time of the last refresh so we backoff
         let mut last_refresh = Instant::now() - Duration::from_secs(61);
 
@@ -84,10 +81,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
                 };
 
                 last_refresh = Instant::now();
-            }
-
-            if skip_misbehaviour {
-                continue;
             }
 
             if let Ok(cmd) = self.cmd_rx.try_recv() {

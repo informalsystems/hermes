@@ -29,9 +29,7 @@ use ibc::{
     tx_msg::Msg,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    QueryNextSequenceReceiveRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
+use ibc_proto::ibc::core::channel::v1::QueryNextSequenceReceiveRequest;
 
 use crate::chain::counterparty::{
     unreceived_acknowledgements_sequences, unreceived_packets_sequences,
@@ -285,17 +283,29 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
-        for _ in 0..MAX_RETRIES {
-            let cleared = self
-                .build_recv_packet_and_timeout_msgs(height)
-                .and_then(|()| self.build_packet_ack_msgs(height))
-                .is_ok();
+        let cleared_recv = self.build_recv_packet_and_timeout_msgs(height);
 
-            if cleared {
-                return Ok(());
-            }
+        if let Err(ref e) = cleared_recv {
+            error!(
+                "[{}] failed clearing recv packets before height {:?}: {}",
+                self, height, e
+            );
         }
-        Err(LinkError::old_packet_clearing_failed())
+
+        let cleared_ack = self.build_packet_ack_msgs(height);
+
+        if let Err(ref e) = cleared_ack {
+            error!(
+                "[{}] failed clearing ack packets before height {:?}: {}",
+                self, height, e
+            );
+        }
+
+        if cleared_recv.is_err() || cleared_ack.is_err() {
+            Err(LinkError::old_packet_clearing_failed())
+        } else {
+            Ok(())
+        }
     }
 
     fn should_clear_packets(&self) -> bool {
@@ -410,24 +420,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     }
                 }
                 IbcEvent::SendPacket(ref send_packet_ev) => {
-                    if self.send_packet_event_handled(send_packet_ev)? {
-                        debug!("[{}] {} already handled", self, send_packet_ev);
-                        (None, None)
-                    } else {
-                        self.build_recv_or_timeout_from_send_packet_event(
-                            send_packet_ev,
-                            dst_height,
-                        )?
-                    }
+                    self.build_recv_or_timeout_from_send_packet_event(send_packet_ev, dst_height)?
                 }
                 IbcEvent::WriteAcknowledgement(ref write_ack_ev) => {
                     if self
                         .dst_channel(Height::zero())?
                         .state_matches(&ChannelState::Closed)
                     {
-                        (None, None)
-                    } else if self.write_ack_event_handled(write_ack_ev)? {
-                        debug!("[{}] {} already handled", self, write_ack_ev);
                         (None, None)
                     } else {
                         (self.build_ack_from_recv_event(write_ack_ev)?, None)
@@ -638,8 +637,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let msgs = odata.assemble_msgs(self)?;
 
         match odata.target {
-            OperationalDataTarget::Source => S::submit(self.src_chain(), msgs),
             OperationalDataTarget::Destination => S::submit(self.dst_chain(), msgs),
+            OperationalDataTarget::Source => S::submit(self.src_chain(), msgs),
         }
     }
 
@@ -656,64 +655,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 self.pending_txs_dst.insert_new_pending_tx(reply, odata);
             }
         }
-    }
-
-    /// Checks if a sent packet has been received on destination.
-    fn send_packet_received_on_dst(&self, packet: &Packet) -> Result<bool, LinkError> {
-        let unreceived_packet = self
-            .dst_chain()
-            .query_unreceived_packets(QueryUnreceivedPacketsRequest {
-                port_id: self.dst_port_id().to_string(),
-                channel_id: self.dst_channel_id().to_string(),
-                packet_commitment_sequences: vec![packet.sequence.into()],
-            })
-            .map_err(LinkError::relayer)?;
-
-        Ok(unreceived_packet.is_empty())
-    }
-
-    /// Checks if a packet commitment has been cleared on source.
-    /// The packet commitment is cleared when either an acknowledgment or a timeout is received on source.
-    fn send_packet_commitment_cleared_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
-        let (bytes, _) = self
-            .src_chain()
-            .build_packet_proofs(
-                PacketMsgType::Recv,
-                self.src_port_id(),
-                self.src_channel_id(),
-                packet.sequence,
-                Height::zero(),
-            )
-            .map_err(LinkError::relayer)?;
-
-        Ok(bytes.is_empty())
-    }
-
-    /// Checks if a send packet event has already been handled (e.g. by another relayer).
-    fn send_packet_event_handled(&self, sp: &SendPacket) -> Result<bool, LinkError> {
-        Ok(self.send_packet_received_on_dst(&sp.packet)?
-            || self.send_packet_commitment_cleared_on_src(&sp.packet)?)
-    }
-
-    /// Checks if an acknowledgement for the given packet has been received on
-    /// source chain of the packet, ie. the destination chain of the relay path
-    /// that sends the acknowledgment.
-    fn recv_packet_acknowledged_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
-        let unreceived_ack = self
-            .dst_chain()
-            .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
-                port_id: self.dst_port_id().to_string(),
-                channel_id: self.dst_channel_id().to_string(),
-                packet_ack_sequences: vec![packet.sequence.into()],
-            })
-            .map_err(LinkError::relayer)?;
-
-        Ok(unreceived_ack.is_empty())
-    }
-
-    /// Checks if a receive packet event has already been handled (e.g. by another relayer).
-    fn write_ack_event_handled(&self, rp: &WriteAcknowledgement) -> Result<bool, LinkError> {
-        self.recv_packet_acknowledged_on_src(&rp.packet)
     }
 
     /// Returns `true` if the delay for this relaying path is zero.
@@ -861,15 +802,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             height: query_height,
         };
 
-        let tx_events = self
+        let tx_res = self
             .src_chain()
-            .query_txs(QueryTxRequest::Packet(query.clone()))
-            .map_err(LinkError::relayer)?;
+            .query_txs(QueryTxRequest::Packet(query.clone()));
+        if let Err(ref e) = tx_res {
+            error!("[{}] ERROR in query_txs: {}", self, e);
+        }
+        let tx_events = tx_res.map_err(LinkError::relayer)?;
 
-        let (start_block_events, end_block_events) = self
+        let bl_res = self
             .src_chain()
-            .query_blocks(QueryBlockRequest::Packet(query))
-            .map_err(LinkError::relayer)?;
+            .query_blocks(QueryBlockRequest::Packet(query));
+        if let Err(ref e) = bl_res {
+            error!("[{}] ERROR in query_blocks: {}", self, e);
+        }
+        let (start_block_events, end_block_events) = bl_res.map_err(LinkError::relayer)?;
 
         trace!("[{}] start_block_events {:?}", self, start_block_events);
         trace!("[{}] tx_events {:?}", self, tx_events);
@@ -1313,12 +1260,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 match event {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
-                        if self.send_packet_event_handled(e)? {
-                            debug!(
-                                "[{}] refreshing schedule: already handled send packet {}",
-                                self, e
-                            );
-                        } else if let Some(new_msg) =
+                        if let Some(new_msg) =
                             self.build_timeout_from_send_packet_event(e, dst_current_height)?
                         {
                             debug!(
@@ -1336,15 +1278,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             retain_batch.push(gm.clone());
                         }
                     }
-                    IbcEvent::WriteAcknowledgement(e) => {
-                        if self.write_ack_event_handled(e)? {
-                            debug!(
-                                "[{}] refreshing schedule: already handled {} write ack ",
-                                self, e
-                            );
-                        } else {
-                            retain_batch.push(gm.clone());
-                        }
+                    IbcEvent::WriteAcknowledgement(_e) => {
+                        retain_batch.push(gm.clone());
                     }
                     _ => retain_batch.push(gm.clone()),
                 }

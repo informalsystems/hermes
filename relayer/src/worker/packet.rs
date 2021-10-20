@@ -77,7 +77,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                 recv(crossbeam_channel::after(BACKOFF)) -> _ => None,
             };
 
-            let result = retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
+            let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                 self.step(maybe_cmd.clone(), &mut link, index)
             });
 

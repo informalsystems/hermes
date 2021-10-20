@@ -1582,6 +1582,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
         crate::time!("query_blocks");
 
+        trace!("XXX query blocks for {:?}", request);
         match request {
             QueryBlockRequest::Packet(request) => {
                 crate::time!("query_blocks: query block packet events");

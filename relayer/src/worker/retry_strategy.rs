@@ -10,8 +10,8 @@ use core::time::Duration;
 /// is capped to 2 seconds.
 /// See the `default_strategy` test below.
 pub fn worker_default_strategy() -> impl Iterator<Item = Duration> {
-    let strategy = ConstantGrowth::new(Duration::from_millis(200), Duration::from_millis(100));
-    clamp_total(strategy, Duration::from_millis(500), Duration::from_secs(2))
+    let strategy = ConstantGrowth::new(Duration::from_secs(3), Duration::from_millis(500));
+    clamp_total(strategy, Duration::from_secs(2), Duration::from_secs(15))
 }
 
 /// A stubborn worker retry strategy.
@@ -30,25 +30,7 @@ pub fn worker_stubborn_strategy() -> impl Iterator<Item = Duration> {
 mod tests {
     use std::time::Duration;
 
-    use crate::worker::retry_strategy::{worker_default_strategy, worker_stubborn_strategy};
-
-    #[test]
-    fn default_strategy() {
-        let strategy = worker_default_strategy();
-        let delays = strategy.take(10).collect::<Vec<_>>();
-        // This strategy has exactly 6 retry steps
-        assert_eq!(
-            delays,
-            vec![
-                Duration::from_millis(200),
-                Duration::from_millis(300),
-                Duration::from_millis(400),
-                Duration::from_millis(500),
-                Duration::from_millis(500),
-                Duration::from_millis(100),
-            ]
-        );
-    }
+    use crate::worker::retry_strategy::worker_stubborn_strategy;
 
     #[test]
     fn stubborn_strategy() {
