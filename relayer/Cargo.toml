@@ -43,7 +43,7 @@ bytes = { version = "1.1.0", default-features = false }
 prost = { package = "informalsystems-prost", version = "0.8.1", default-features = false }
 prost-types = { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
 futures = { version = "0.3.17", default-features = false }
-crossbeam-channel = { version = "0.5.1", default-features = false }
+crossbeam-channel = { version = "0.5.1", default-features = false, features = ["std"] }
 k256 = { version = "0.9.6", default-features = false, features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = { version = "0.4", default-features = false }
 bitcoin = { version = "=0.27", default-features = false, features = ["use-serde"] }
