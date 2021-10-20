@@ -1,7 +1,5 @@
 use crate::prelude::*;
 
-use core::num::TryFromIntError;
-
 use flex_error::{define_error, TraceError};
 
 use crate::ics02_client::client_type::ClientType;
@@ -174,7 +172,7 @@ define_error! {
             | _ | { "tendermint error" },
 
         InvalidPacketTimestamp
-            [ TraceError<TryFromIntError> ]
+            [ crate::timestamp::ParseTimestampError ]
             | _ | { "invalid packet timeout timestamp value" },
 
         ClientArgsTypeMismatch
