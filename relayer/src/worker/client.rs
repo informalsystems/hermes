@@ -2,13 +2,11 @@ use core::time::Duration;
 use std::{thread, time::Instant};
 
 use crossbeam_channel::Receiver;
-use tracing::{debug, info, trace, warn};
-
-use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
+use tracing::{info, warn};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
-    foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
+    foreign_client::{ForeignClient, ForeignClientErrorDetail},
     object::Client,
     telemetry,
 };
@@ -94,58 +92,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         Ok(())
     }
 
-    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient<ChainB, ChainA>) -> Next {
+    fn process_cmd(&self, cmd: WorkerCmd, _client: &ForeignClient<ChainB, ChainA>) -> Next {
         match cmd {
-            WorkerCmd::IbcEvents { batch } => {
-                trace!("[{}] worker received batch: {:?}", client, batch);
-
-                for event in batch.events {
-                    if let IbcEvent::UpdateClient(update) = event {
-                        debug!("[{}] client was updated", client);
-
-                        // Run misbehaviour. If evidence submitted the loop will exit in next
-                        // iteration with frozen client
-                        if self.detect_misbehaviour(client, Some(update)) {
-                            telemetry!(
-                                ibc_client_misbehaviour,
-                                &self.client.dst_chain_id,
-                                &self.client.dst_client_id,
-                                1
-                            );
-                        }
-                    }
-                }
-
-                Next::Continue
-            }
-
+            WorkerCmd::IbcEvents { .. } => Next::Continue,
             WorkerCmd::NewBlock { .. } => Next::Continue,
             WorkerCmd::ClearPendingPackets => Next::Continue,
-
             WorkerCmd::Shutdown => Next::Abort,
-        }
-    }
-
-    fn detect_misbehaviour(
-        &self,
-        client: &ForeignClient<ChainB, ChainA>,
-        update: Option<UpdateClient>,
-    ) -> bool {
-        match client.detect_misbehaviour_and_submit_evidence(update) {
-            MisbehaviourResults::ValidClient => false,
-            MisbehaviourResults::VerificationError => {
-                // can retry in next call
-                false
-            }
-            MisbehaviourResults::EvidenceSubmitted(_) => {
-                // if evidence was submitted successfully then exit
-                true
-            }
-            MisbehaviourResults::CannotExecute => {
-                // skip misbehaviour checking if chain does not have support for it (i.e. client
-                // update event does not include the header)
-                true
-            }
         }
     }
 
