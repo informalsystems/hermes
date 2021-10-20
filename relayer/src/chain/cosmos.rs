@@ -90,7 +90,7 @@ mod compatibility;
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
 
-/// Fraction of the estimated gas to add to the gas limit when submitting a transaction.
+/// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
 /// Upper limit on the size of transactions submitted by Hermes, expressed as a
@@ -123,15 +123,18 @@ impl CosmosSdkChain {
     /// parameters against the chain's genesis configuration.
     ///
     /// Currently, validates the following:
-    ///     - the configured `max_tx_size` is appropriate.
+    ///     - the configured `max_tx_size` is appropriate
+    ///     - the trusting period is greater than zero
+    ///     - the trusting period is smaller than the unbonding period
+    ///     - the default gas is smaller than the max gas
     ///
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
-        // Check that the trusting period is smaller than the unbounding period
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = self.trusting_period(unbonding_period);
 
+        // Check that the trusting period is greater than zero
         if trusting_period <= Duration::ZERO {
             return Err(Error::config_validation_trusting_period_smaller_than_zero(
                 self.id().clone(),
@@ -139,6 +142,7 @@ impl CosmosSdkChain {
             ));
         }
 
+        // Check that the trusting period is smaller than the unbounding period
         if trusting_period >= unbonding_period {
             return Err(
                 Error::config_validation_trusting_period_greater_than_unbonding_period(
@@ -147,6 +151,17 @@ impl CosmosSdkChain {
                     unbonding_period,
                 ),
             );
+        }
+
+        // If the default gas is strictly greater than the max gas and the tx simulation fails,
+        // Hermes won't be able to ever submit that tx because the gas amount wanted will be
+        // greater than the max gas.
+        if self.default_gas() > self.max_gas() {
+            return Err(Error::config_validation_default_gas_too_high(
+                self.id().clone(),
+                self.default_gas(),
+                self.max_gas(),
+            ));
         }
 
         // Get the latest height and convert to tendermint Height
@@ -246,60 +261,32 @@ impl CosmosSdkChain {
         );
 
         let signer_info = self.signer(account_seq)?;
-        let default_fee = self.default_fee();
+        let max_fee = self.max_fee();
 
-        debug!("[{}] default fee: {}", self.id(), PrettyFee(&default_fee));
+        debug!(
+            "[{}] send_tx: max fee, for use in tx simulation: {}",
+            self.id(),
+            PrettyFee(&max_fee)
+        );
 
         let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
 
-        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), default_fee.clone())?;
+        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), max_fee)?;
         let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
 
-        // Try to simulate the Tx.
-        // It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
-        // they do not individually verify. For example for the following batch
-        // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
-        // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
-        // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
-        let estimated_gas = self
-            .send_tx_simulate(Tx {
-                body: Some(body),
-                auth_info: Some(auth_info),
-                signatures: vec![signed_doc],
-            })
-            .map(|sr| sr.gas_info);
+        let simulate_tx = Tx {
+            body: Some(body),
+            auth_info: Some(auth_info),
+            signatures: vec![signed_doc],
+        };
 
-        debug!("[{}] simulated gas: {:?}", self.id(), estimated_gas);
-
-        let estimated_gas = estimated_gas.map_or_else(
-            |e| {
-                error!(
-                    "[{}] failed to estimate gas, falling back on max gas, error: {}",
-                    self.id(),
-                    e
-                );
-
-                self.max_gas()
-            },
-            |gas_info| gas_info.map_or(self.max_gas(), |g| g.gas_used),
-        );
-
-        if estimated_gas > self.max_gas() {
-            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] estimated gas is higher than max gas", self.id());
-
-            return Err(Error::tx_simulate_gas_estimate_exceeded(
-                self.id().clone(),
-                estimated_gas,
-                self.max_gas(),
-            ));
-        }
-
+        let estimated_gas = self.estimate_gas(simulate_tx)?;
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
-        trace!(
-            "[{}] send_tx: based on the estimated gas, adjusting fee from {} to {}",
+        debug!(
+            "[{}] send_tx: using {} gas, fee {}",
             self.id(),
-            PrettyFee(&default_fee),
+            estimated_gas,
             PrettyFee(&adjusted_fee)
         );
 
@@ -338,6 +325,56 @@ impl CosmosSdkChain {
         }
 
         Ok(response)
+    }
+
+    /// Try to simulate the given tx in order to estimate how much gas will be needed to submit it.
+    ///
+    /// It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
+    /// they do not individually verify. For example for the following batch
+    /// [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
+    /// if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
+    /// In this case we use the `default_gas` param.
+    fn estimate_gas(&self, tx: Tx) -> Result<u64, Error> {
+        let estimated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
+
+        if let Ok(ref gas) = estimated_gas {
+            debug!(
+                "[{}] send_tx: tx simulation successful, simulated gas: {:?}",
+                self.id(),
+                gas
+            );
+        }
+
+        let estimated_gas = estimated_gas.map_or_else(
+            |e| {
+                error!(
+                    "[{}] send_tx: failed to estimate gas, falling back on default gas, error: {}",
+                    self.id(),
+                    e.detail()
+                );
+
+                self.default_gas()
+            },
+            |gas_info| gas_info.map_or(self.default_gas(), |g| g.gas_used),
+        );
+
+        if estimated_gas > self.max_gas() {
+            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+
+            return Err(Error::tx_simulate_gas_estimate_exceeded(
+                self.id().clone(),
+                estimated_gas,
+                self.max_gas(),
+            ));
+        }
+
+        Ok(estimated_gas)
+    }
+
+    /// The default amount of gas the relayer is willing to pay for a transaction,
+    /// when it cannot simulate the tx and therefore estimate the gas amount needed.
+    fn default_gas(&self) -> u64 {
+        self.config.default_gas.unwrap_or_else(|| self.max_gas())
     }
 
     /// The maximum amount of gas the relayer is willing to pay for a transaction
@@ -434,11 +471,13 @@ impl CosmosSdkChain {
     }
 
     fn send_tx_simulate(&self, tx: Tx) -> Result<SimulateResponse, Error> {
-        crate::time!("tx simulate");
+        crate::time!("send_tx_simulate");
+
+        use ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
 
         // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
         let mut tx_bytes = vec![];
-        prost::Message::encode(&tx, &mut tx_bytes).unwrap();
+        prost::Message::encode(&tx, &mut tx_bytes).unwrap(); // FIXME: Handle error here
 
         #[allow(deprecated)]
         let req = SimulateRequest {
@@ -447,11 +486,7 @@ impl CosmosSdkChain {
         };
 
         let mut client = self
-            .block_on(
-                ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
-                    self.grpc_addr.clone(),
-                ),
-            )
+            .block_on(ServiceClient::connect(self.grpc_addr.clone()))
             .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(req);
@@ -535,7 +570,7 @@ impl CosmosSdkChain {
         Ok(signer_info)
     }
 
-    fn default_fee(&self) -> Fee {
+    fn max_fee(&self) -> Fee {
         Fee {
             amount: vec![self.max_fee_in_coins()],
             gas_limit: self.max_gas(),
@@ -546,10 +581,12 @@ impl CosmosSdkChain {
 
     fn fee_with_gas(&self, gas_limit: u64) -> Fee {
         let adjusted_gas_limit = self.apply_adjustment_to_gas(gas_limit);
+
         Fee {
             amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
             gas_limit: adjusted_gas_limit,
-            ..self.default_fee()
+            payer: "".to_string(),
+            granter: "".to_string(),
         }
     }
 
