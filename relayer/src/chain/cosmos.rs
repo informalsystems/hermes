@@ -84,7 +84,6 @@ use crate::{
 };
 
 use super::{ChainEndpoint, HealthCheck};
-use ibc::ics04_channel::events::Attributes;
 
 mod compatibility;
 
@@ -1620,7 +1619,7 @@ impl ChainEndpoint for CosmosSdkChain {
                                 .begin_block_events
                                 .unwrap_or_default()
                                 .into_iter()
-                                .filter_map(|ev| filter_matching_event(ev, &request))
+                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
                                 .collect(),
                         );
 
@@ -1629,7 +1628,7 @@ impl ChainEndpoint for CosmosSdkChain {
                                 .end_block_events
                                 .unwrap_or_default()
                                 .into_iter()
-                                .filter_map(|ev| filter_matching_event(ev, &request))
+                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
                                 .collect(),
                         );
                     }
@@ -1874,23 +1873,8 @@ fn packet_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .filter(|abci_event| abci_event.type_str == request.event_id.as_str())
-        .flat_map(|abci_event| ChannelEvents::try_from_tx(&abci_event))
-        .find(|event| {
-            let packet = match event {
-                IbcEvent::SendPacket(send_ev) => Some(&send_ev.packet),
-                IbcEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
-                _ => None,
-            };
-
-            packet.map_or(false, |packet| {
-                packet.source_port == request.source_port_id
-                    && packet.source_channel == request.source_channel_id
-                    && packet.destination_port == request.destination_port_id
-                    && packet.destination_channel == request.destination_channel_id
-                    && packet.sequence == seq
-            })
-        })
+        .filter_map(|ev| filter_matching_event(ev, request, seq))
+        .next()
 }
 
 // Extracts from the Tx the update client event for the requested client and height.
@@ -1950,43 +1934,39 @@ fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx
     result
 }
 
-fn filter_matching_event(event: Event, request: &QueryPacketEventDataRequest) -> Option<IbcEvent> {
-    enum ChannelEvent<'a> {
-        Attributes(&'a Attributes),
-        Packet(&'a Packet),
+fn filter_matching_event(
+    event: Event,
+    request: &QueryPacketEventDataRequest,
+    seq: Sequence,
+) -> Option<IbcEvent> {
+    fn matches_packet(
+        request: &QueryPacketEventDataRequest,
+        seq: Sequence,
+        packet: &Packet,
+    ) -> bool {
+        packet.source_port == request.source_port_id
+            && packet.source_channel == request.source_channel_id
+            && packet.destination_port == request.destination_port_id
+            && packet.destination_channel == request.destination_channel_id
+            && packet.sequence == seq
     }
 
-    if let Some(ibc_event) = ChannelEvents::try_from_tx(&event) {
-        let chan_event = match ibc_event {
-            IbcEvent::OpenInitChannel(ref ev) => ChannelEvent::Attributes(ev.attributes()),
-            IbcEvent::OpenTryChannel(ref ev) => ChannelEvent::Attributes(ev.attributes()),
-            IbcEvent::OpenAckChannel(ref ev) => ChannelEvent::Attributes(ev.attributes()),
-            IbcEvent::OpenConfirmChannel(ref ev) => ChannelEvent::Attributes(ev.attributes()),
-            IbcEvent::CloseInitChannel(ref ev) => {
-                return (ev.port_id() == &request.source_port_id
-                    && ev.channel_id() == &request.source_channel_id
-                    && ev.counterparty_port_id() == &request.destination_port_id
-                    && ev.counterparty_channel_id() == Some(&request.destination_channel_id))
-                .then(|| ibc_event);
-            }
-            IbcEvent::CloseConfirmChannel(ref ev) => {
-                return (ev.channel_id() == Some(&request.source_channel_id)).then(|| ibc_event);
-            }
-            IbcEvent::SendPacket(ref ev) => ChannelEvent::Packet(&ev.packet),
-            IbcEvent::ReceivePacket(ref ev) => ChannelEvent::Packet(&ev.packet),
-            IbcEvent::WriteAcknowledgement(ref ev) => ChannelEvent::Packet(&ev.packet),
-            IbcEvent::AcknowledgePacket(ref ev) => ChannelEvent::Packet(&ev.packet),
-            IbcEvent::TimeoutPacket(ref ev) => ChannelEvent::Packet(&ev.packet),
-            IbcEvent::TimeoutOnClosePacket(ref ev) => ChannelEvent::Packet(&ev.packet),
-            _ => return None,
-        };
-        return match chan_event {
-            ChannelEvent::Attributes(attr) if request.matches_attributes(attr) => Some(ibc_event),
-            ChannelEvent::Packet(pkt) if request.matches_packet(pkt) => Some(ibc_event),
-            _ => None,
-        };
+    if event.type_str != request.event_id.as_str() {
+        return None;
     }
-    None
+
+    let ibc_event = ChannelEvents::try_from_tx(&event)?;
+    match ibc_event {
+        IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
+            Some(ibc_event)
+        }
+        IbcEvent::WriteAcknowledgement(ref ack_ev)
+            if matches_packet(request, seq, &ack_ev.packet) =>
+        {
+            Some(ibc_event)
+        }
+        _ => None,
+    }
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
@@ -2173,7 +2153,7 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         .map_err(|e| {
             Error::health_check_grpc_transport(
                 chain_id.clone(),
-                rpc_address.clone(),
+                grpc_address.clone(),
                 "tendermint::ServiceClient".to_string(),
                 e,
             )
@@ -2184,7 +2164,7 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let response = client.get_node_info(request).await.map_err(|e| {
         Error::health_check_grpc_status(
             chain_id.clone(),
-            rpc_address.clone(),
+            grpc_address.clone(),
             "tendermint::ServiceClient".to_string(),
             e,
         )
@@ -2193,7 +2173,7 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let version = response.into_inner().application_version.ok_or_else(|| {
         Error::health_check_invalid_version(
             chain_id.clone(),
-            rpc_address.clone(),
+            grpc_address.clone(),
             "tendermint::GetNodeInfoRequest".to_string(),
         )
     })?;

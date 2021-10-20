@@ -792,7 +792,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             sequences.iter().take(10).join(", "), sequences.len()
         );
 
-        let query = QueryPacketEventDataRequest {
+        let mut query = QueryPacketEventDataRequest {
             event_id: IbcEventType::SendPacket,
             source_port_id: self.src_port_id().clone(),
             source_channel_id: src_channel_id.clone(),
@@ -810,13 +810,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
         let tx_events = tx_res.map_err(LinkError::relayer)?;
 
-        let bl_res = self
-            .src_chain()
-            .query_blocks(QueryBlockRequest::Packet(query));
-        if let Err(ref e) = bl_res {
-            error!("[{}] ERROR in query_blocks: {}", self, e);
-        }
-        let (start_block_events, end_block_events) = bl_res.map_err(LinkError::relayer)?;
+        let recvd_sequences: Vec<Sequence> = tx_events
+            .iter()
+            .filter_map(|ev| match ev {
+                IbcEvent::SendPacket(ref send_ev) => Some(send_ev.packet.sequence),
+                IbcEvent::WriteAcknowledgement(ref ack_ev) => Some(ack_ev.packet.sequence),
+                _ => None,
+            })
+            .collect();
+        query.sequences.retain(|seq| !recvd_sequences.contains(seq));
+
+        let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
+            self.src_chain()
+                .query_blocks(QueryBlockRequest::Packet(query))
+                .map_err(LinkError::relayer)?
+        } else {
+            Default::default()
+        };
 
         trace!("[{}] start_block_events {:?}", self, start_block_events);
         trace!("[{}] tx_events {:?}", self, tx_events);
