@@ -13,8 +13,6 @@ use ibc_proto::ibc::core::channel::v1::{
 
 use crate::events::IbcEventType;
 use crate::ics02_client::height::Height;
-use crate::ics04_channel::events::Attributes;
-use crate::ics04_channel::packet::Packet;
 use crate::ics04_channel::{error::Error, packet::Sequence};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
@@ -434,24 +432,6 @@ pub struct QueryPacketEventDataRequest {
     pub destination_port_id: PortId,
     pub sequences: Vec<Sequence>,
     pub height: Height,
-}
-
-impl QueryPacketEventDataRequest {
-    pub fn matches_packet(&self, packet: &Packet) -> bool {
-        packet.source_port == self.source_port_id
-            && packet.source_channel == self.source_channel_id
-            && packet.destination_port == self.destination_port_id
-            && packet.destination_channel == self.destination_channel_id
-            && self.sequences.contains(&packet.sequence)
-    }
-
-    pub fn matches_attributes(&self, attrs: &Attributes) -> bool {
-        // TODO(hu55a1n1): check for self.sequences.empty()?
-        attrs.port_id == self.source_port_id
-            && attrs.channel_id.as_ref() == Some(&self.source_channel_id)
-            && attrs.counterparty_port_id == self.destination_port_id
-            && attrs.counterparty_channel_id.as_ref() == Some(&self.destination_channel_id)
-    }
 }
 
 /// Version validation, specific for channel (ICS4) opening handshake protocol.
