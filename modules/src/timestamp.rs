@@ -92,6 +92,17 @@ impl Timestamp {
 
     /// Convert a `Timestamp` to `u64` value in nanoseconds. If no timestamp
     /// is set, the result is 0.
+    /// ```
+    /// use ibc::timestamp::Timestamp;
+    /// let max = u64::MAX;
+    /// let tx = Timestamp::from_nanoseconds(max).unwrap();
+    /// let utx = tx.as_nanoseconds();
+    /// assert_eq!(utx, max);
+    /// let min = u64::MIN;
+    /// let ti = Timestamp::from_nanoseconds(min).unwrap();
+    /// let uti = ti.as_nanoseconds();
+    /// assert_eq!(uti, min);
+    /// ```
     pub fn as_nanoseconds(&self) -> u64 {
         self.time.map_or(0, |time| {
             let s = time.timestamp();
@@ -222,18 +233,7 @@ pub mod util {
     /// nanoseconds (represented as `u32`).
     ///
     /// Similar to [`chrono::timestamp_nanos`].
-    ///
-    ///
-    /// ```
-    /// use core::time::Duration;
-    /// use ibc::timestamp::util;
-    /// let max = u64::MAX;
-    /// let duration = Duration::from_nanos(max);
-    /// let (s, n) = util::break_in_secs_and_nanos(max);
-    /// assert_eq!(duration.as_secs(), s as u64);
-    /// assert_eq!(duration.subsec_nanos(), n);
-    /// ```
-    pub fn break_in_secs_and_nanos(nanoseconds: u64) -> (i64, u32) {
+    pub(super) fn break_in_secs_and_nanos(nanoseconds: u64) -> (i64, u32) {
         let seconds = nanoseconds / NANOS_PER_SEC;
 
         // Safe because u64::MAX divided by NANOS_PER_SEC fits into i64
@@ -246,14 +246,7 @@ pub mod util {
     /// Helper method for achieving the reverse of
     /// [`break_in_secs_and_nanos`].
     ///
-    /// ```
-    /// use ibc::timestamp::util;
-    /// let (s, n) = util::break_in_secs_and_nanos(u64::MAX);
-    /// assert!(s > 0);
-    /// let res = util::assemble_in_nanos(s as u64, n);
-    /// assert_eq!(res, u64::MAX);
-    /// ```
-    pub fn assemble_in_nanos(s: u64, subsec_ns: u32) -> u64 {
+    pub(super) fn assemble_in_nanos(s: u64, subsec_ns: u32) -> u64 {
         let ns = s * NANOS_PER_SEC;
 
         ns + subsec_ns as u64
