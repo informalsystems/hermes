@@ -2152,7 +2152,7 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         .map_err(|e| {
             Error::health_check_grpc_transport(
                 chain_id.clone(),
-                rpc_address.clone(),
+                grpc_address.clone(),
                 "tendermint::ServiceClient".to_string(),
                 e,
             )
@@ -2163,7 +2163,7 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let response = client.get_node_info(request).await.map_err(|e| {
         Error::health_check_grpc_status(
             chain_id.clone(),
-            rpc_address.clone(),
+            grpc_address.clone(),
             "tendermint::ServiceClient".to_string(),
             e,
         )
@@ -2172,7 +2172,7 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let version = response.into_inner().application_version.ok_or_else(|| {
         Error::health_check_invalid_version(
             chain_id.clone(),
-            rpc_address.clone(),
+            grpc_address.clone(),
             "tendermint::GetNodeInfoRequest".to_string(),
         )
     })?;

@@ -1,8 +1,11 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
 use crate::prelude::*;
-use alloc::collections::btree_map::BTreeMap as HashMap;
+
+use alloc::collections::btree_map::BTreeMap;
 use core::cmp::min;
+
+use tracing::debug;
 
 use prost_types::Any;
 use sha2::Digest;
@@ -63,49 +66,49 @@ pub struct MockContext {
     history: Vec<HostBlock>,
 
     /// The set of all clients, indexed by their id.
-    clients: HashMap<ClientId, MockClientRecord>,
+    clients: BTreeMap<ClientId, MockClientRecord>,
 
     /// Counter for the client identifiers, necessary for `increase_client_counter` and the
     /// `client_counter` methods.
     client_ids_counter: u64,
 
     /// Association between client ids and connection ids.
-    client_connections: HashMap<ClientId, ConnectionId>,
+    client_connections: BTreeMap<ClientId, ConnectionId>,
 
     /// All the connections in the store.
-    connections: HashMap<ConnectionId, ConnectionEnd>,
+    connections: BTreeMap<ConnectionId, ConnectionEnd>,
 
     /// Counter for connection identifiers (see `increase_connection_counter`).
     connection_ids_counter: u64,
 
     /// Association between connection ids and channel ids.
-    connection_channels: HashMap<ConnectionId, Vec<(PortId, ChannelId)>>,
+    connection_channels: BTreeMap<ConnectionId, Vec<(PortId, ChannelId)>>,
 
     /// Counter for channel identifiers (see `increase_channel_counter`).
     channel_ids_counter: u64,
 
     /// All the channels in the store. TODO Make new key PortId X ChanneId
-    channels: HashMap<(PortId, ChannelId), ChannelEnd>,
+    channels: BTreeMap<(PortId, ChannelId), ChannelEnd>,
 
     /// Tracks the sequence number for the next packet to be sent.
-    next_sequence_send: HashMap<(PortId, ChannelId), Sequence>,
+    next_sequence_send: BTreeMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be received.
-    next_sequence_recv: HashMap<(PortId, ChannelId), Sequence>,
+    next_sequence_recv: BTreeMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be acknowledged.
-    next_sequence_ack: HashMap<(PortId, ChannelId), Sequence>,
+    next_sequence_ack: BTreeMap<(PortId, ChannelId), Sequence>,
 
-    packet_acknowledgement: HashMap<(PortId, ChannelId, Sequence), String>,
+    packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     /// Maps ports to their capabilities
-    port_capabilities: HashMap<PortId, Capability>,
+    port_capabilities: BTreeMap<PortId, Capability>,
 
     /// Constant-size commitments to packets data fields
-    packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
+    packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     // Used by unordered channel
-    packet_receipt: HashMap<(PortId, ChannelId, Sequence), Receipt>,
+    packet_receipt: BTreeMap<(PortId, ChannelId, Sequence), Receipt>,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -218,6 +221,7 @@ impl MockContext {
                     self.host_chain_id.clone(),
                     cs_height.revision_height,
                 );
+
                 let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
                     get_dummy_tendermint_client_state(light_block.signed_header.header);
@@ -228,11 +232,79 @@ impl MockContext {
         };
         let consensus_states = vec![(cs_height, consensus_state)].into_iter().collect();
 
+        debug!("consensus states: {:?}", consensus_states);
+
         let client_record = MockClientRecord {
             client_type,
             client_state,
             consensus_states,
         };
+        self.clients.insert(client_id.clone(), client_record);
+        self
+    }
+
+    pub fn with_client_parametrized_history(
+        mut self,
+        client_id: &ClientId,
+        client_state_height: Height,
+        client_type: Option<ClientType>,
+        consensus_state_height: Option<Height>,
+    ) -> Self {
+        let cs_height = consensus_state_height.unwrap_or(client_state_height);
+        let prev_cs_height = cs_height.clone().sub(1).unwrap_or(client_state_height);
+
+        let client_type = client_type.unwrap_or(ClientType::Mock);
+
+        let (client_state, consensus_state) = match client_type {
+            // If it's a mock client, create the corresponding mock states.
+            ClientType::Mock => (
+                Some(MockClientState(MockHeader::new(client_state_height)).into()),
+                MockConsensusState::new(MockHeader::new(cs_height)).into(),
+            ),
+            // If it's a Tendermint client, we need TM states.
+            ClientType::Tendermint => {
+                let light_block = HostBlock::generate_tm_block(
+                    self.host_chain_id.clone(),
+                    cs_height.revision_height,
+                );
+
+                let consensus_state = AnyConsensusState::from(light_block.clone());
+                let client_state =
+                    get_dummy_tendermint_client_state(light_block.signed_header.header);
+
+                // Return the tuple.
+                (Some(client_state), consensus_state)
+            }
+        };
+
+        let prev_consensus_state = match client_type {
+            // If it's a mock client, create the corresponding mock states.
+            ClientType::Mock => MockConsensusState::new(MockHeader::new(prev_cs_height)).into(),
+            // If it's a Tendermint client, we need TM states.
+            ClientType::Tendermint => {
+                let light_block = HostBlock::generate_tm_block(
+                    self.host_chain_id.clone(),
+                    prev_cs_height.revision_height,
+                );
+                AnyConsensusState::from(light_block)
+            }
+        };
+
+        let consensus_states = vec![
+            (prev_cs_height, prev_consensus_state),
+            (cs_height, consensus_state),
+        ]
+        .into_iter()
+        .collect();
+
+        debug!("consensus states: {:?}", consensus_states);
+
+        let client_record = MockClientRecord {
+            client_type,
+            client_state,
+            consensus_states,
+        };
+
         self.clients.insert(client_id.clone(), client_record);
         self
     }
@@ -347,7 +419,7 @@ impl MockContext {
 
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
-    fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
+    pub fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
         let target = target_height.revision_height as usize;
         let latest = self.latest_height.revision_height as usize;
 
@@ -430,6 +502,21 @@ impl MockContext {
                 consensus_state: v.clone(),
             })
             .collect()
+    }
+
+    pub fn latest_client_states(&self, client_id: &ClientId) -> &AnyClientState {
+        self.clients[client_id].client_state.as_ref().unwrap()
+    }
+
+    pub fn latest_consensus_states(
+        &self,
+        client_id: &ClientId,
+        height: &Height,
+    ) -> &AnyConsensusState {
+        self.clients[client_id]
+            .consensus_states
+            .get(height)
+            .unwrap()
     }
 }
 
@@ -796,6 +883,60 @@ impl ClientReader for MockContext {
                 height,
             )),
         }
+    }
+
+    /// Search for the lowest consensus state higher than `height`.
+    fn next_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<AnyConsensusState>, Ics02Error> {
+        let client_record = self
+            .clients
+            .get(client_id)
+            .ok_or_else(|| Ics02Error::client_not_found(client_id.clone()))?;
+
+        // Get the consensus state heights and sort them in ascending order.
+        let mut heights: Vec<Height> = client_record.consensus_states.keys().cloned().collect();
+        heights.sort();
+
+        // Search for next state.
+        for h in heights {
+            if h > height {
+                // unwrap should never happen, as the consensus state for h must exist
+                return Ok(Some(
+                    client_record.consensus_states.get(&h).unwrap().clone(),
+                ));
+            }
+        }
+        Ok(None)
+    }
+
+    /// Search for the highest consensus state lower than `height`.
+    fn prev_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<AnyConsensusState>, Ics02Error> {
+        let client_record = self
+            .clients
+            .get(client_id)
+            .ok_or_else(|| Ics02Error::client_not_found(client_id.clone()))?;
+
+        // Get the consensus state heights and sort them in descending order.
+        let mut heights: Vec<Height> = client_record.consensus_states.keys().cloned().collect();
+        heights.sort_by(|a, b| b.cmp(a));
+
+        // Search for previous state.
+        for h in heights {
+            if h < height {
+                // unwrap should never happen, as the consensus state for h must exist
+                return Ok(Some(
+                    client_record.consensus_states.get(&h).unwrap().clone(),
+                ));
+            }
+        }
+        Ok(None)
     }
 
     fn client_counter(&self) -> Result<u64, Ics02Error> {

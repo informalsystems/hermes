@@ -1300,6 +1300,7 @@ dependencies = [
  "sha2",
  "subtle-encoding",
  "tendermint",
+ "tendermint-light-client",
  "tendermint-proto",
  "tendermint-rpc",
  "tendermint-testgen",
