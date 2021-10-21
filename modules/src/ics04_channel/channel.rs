@@ -11,7 +11,7 @@ use ibc_proto::ibc::core::channel::v1::{
     IdentifiedChannel as RawIdentifiedChannel,
 };
 
-use crate::events::IbcEventType;
+use crate::events::WithBlockDataType;
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::{error::Error, packet::Sequence};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
@@ -425,7 +425,7 @@ impl core::fmt::Display for State {
 /// The query is preformed for the chain context at `height`.
 #[derive(Clone, Debug)]
 pub struct QueryPacketEventDataRequest {
-    pub event_id: IbcEventType,
+    pub event_id: WithBlockDataType,
     pub source_channel_id: ChannelId,
     pub source_port_id: PortId,
     pub destination_channel_id: ChannelId,

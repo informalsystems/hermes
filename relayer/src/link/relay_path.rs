@@ -12,7 +12,7 @@ use prost_types::Any;
 use tracing::{debug, error, info, trace};
 
 use ibc::{
-    events::{IbcEvent, IbcEventType, PrettyEvents},
+    events::{IbcEvent, PrettyEvents, WithBlockDataType},
     ics04_channel::{
         channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
         events::{SendPacket, WriteAcknowledgement},
@@ -852,7 +852,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         );
 
         let mut query = QueryPacketEventDataRequest {
-            event_id: IbcEventType::SendPacket,
+            event_id: WithBlockDataType::SendPacket,
             source_port_id: self.src_port_id().clone(),
             source_channel_id: src_channel_id.clone(),
             destination_port_id: self.dst_port_id().clone(),
@@ -973,7 +973,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         events_result = self
             .src_chain()
             .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
-                event_id: IbcEventType::WriteAck,
+                event_id: WithBlockDataType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
                 source_channel_id: dst_channel_id.clone(),
                 destination_port_id: self.src_port_id().clone(),

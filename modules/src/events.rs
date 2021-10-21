@@ -64,22 +64,23 @@ define_error! {
     }
 }
 
-/// Events types
+/// Events whose data is not included in the app state and must be extracted using tendermint RPCs
+/// (i.e. /tx_search or /block_search)
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum IbcEventType {
+pub enum WithBlockDataType {
     CreateClient,
     UpdateClient,
     SendPacket,
     WriteAck,
 }
 
-impl IbcEventType {
+impl WithBlockDataType {
     pub fn as_str(&self) -> &'static str {
         match *self {
-            IbcEventType::CreateClient => "create_client",
-            IbcEventType::UpdateClient => "update_client",
-            IbcEventType::SendPacket => "send_packet",
-            IbcEventType::WriteAck => "write_acknowledgement",
+            WithBlockDataType::CreateClient => "create_client",
+            WithBlockDataType::UpdateClient => "update_client",
+            WithBlockDataType::SendPacket => "send_packet",
+            WithBlockDataType::WriteAck => "write_acknowledgement",
         }
     }
 }
