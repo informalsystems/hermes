@@ -14,7 +14,7 @@ use tracing::{debug, error, info, trace};
 use ibc::{
     events::{IbcEvent, IbcEventType, PrettyEvents},
     ics04_channel::{
-        channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
+        channel::{ChannelEnd, Order, State as ChannelState},
         events::{SendPacket, WriteAcknowledgement},
         msgs::{
             acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
@@ -23,7 +23,7 @@ use ibc::{
         packet::{Packet, PacketMsgType, Sequence},
     },
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-    query::{QueryBlockRequest, QueryTxRequest},
+    query::QueryPacketEventDataRequest,
     signer::Signer,
     timestamp::ZERO_DURATION,
     tx_msg::Msg,
@@ -813,8 +813,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         opt_query_height: Option<Height>,
     ) -> Result<(Vec<IbcEvent>, Height), LinkError> {
-        let mut events_result = vec![];
-
         let src_channel_id = self.src_channel_id();
         let dst_channel_id = self.dst_channel_id();
 
@@ -832,7 +830,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let sequences: Vec<Sequence> = sequences.into_iter().map(From::from).collect();
         if sequences.is_empty() {
-            return Ok((events_result, query_height));
+            return Ok((Vec::default(), query_height));
         }
 
         debug!(
@@ -851,7 +849,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             sequences.iter().take(10).join(", "), sequences.len()
         );
 
-        let mut query = QueryPacketEventDataRequest {
+        let query = QueryPacketEventDataRequest {
             event_id: IbcEventType::SendPacket,
             source_port_id: self.src_port_id().clone(),
             source_channel_id: src_channel_id.clone(),
@@ -861,47 +859,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             height: query_height,
         };
 
-        let tx_events = self
+        let events = self
             .src_chain()
-            .query_txs(QueryTxRequest::Packet(query.clone()))
+            .query_packet_data(query)
             .map_err(LinkError::relayer)?;
 
-        let recvd_sequences: Vec<Sequence> = tx_events
-            .iter()
-            .filter_map(|ev| match ev {
-                IbcEvent::SendPacket(ref send_ev) => Some(send_ev.packet.sequence),
-                IbcEvent::WriteAcknowledgement(ref ack_ev) => Some(ack_ev.packet.sequence),
-                _ => None,
-            })
-            .collect();
-        query.sequences.retain(|seq| !recvd_sequences.contains(seq));
+        trace!("[{}] events {:?}", self, events);
 
-        let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
-            self.src_chain()
-                .query_blocks(QueryBlockRequest::Packet(query))
-                .map_err(LinkError::relayer)?
-        } else {
-            Default::default()
-        };
-
-        trace!("[{}] start_block_events {:?}", self, start_block_events);
-        trace!("[{}] tx_events {:?}", self, tx_events);
-        trace!("[{}] end_block_events {:?}", self, end_block_events);
-
-        // events must be ordered in the following fashion -
-        // start-block events followed by tx-events followed by end-block events
-        events_result.extend(start_block_events);
-        events_result.extend(tx_events);
-        events_result.extend(end_block_events);
-
-        if events_result.is_empty() {
+        if events.is_empty() {
             info!(
                 "[{}] found zero unprocessed SendPacket events on source chain, nothing to do",
                 self
             );
         } else {
             let mut packet_sequences = vec![];
-            for event in events_result.iter() {
+            for event in events.iter() {
                 match event {
                     IbcEvent::SendPacket(send_event) => {
                         packet_sequences.push(send_event.packet.sequence);
@@ -917,11 +889,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 "[{}] found unprocessed SendPacket events for {:?} (first 10 shown here; total={})",
                 self,
                 packet_sequences,
-                events_result.len()
+                events.len()
             );
         }
 
-        Ok((events_result, query_height))
+        Ok((events, query_height))
     }
 
     /// Returns relevant packet events for building ack messages.
@@ -972,7 +944,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         events_result = self
             .src_chain()
-            .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
+            .query_packet_data(QueryPacketEventDataRequest {
                 event_id: IbcEventType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
                 source_channel_id: dst_channel_id.clone(),
@@ -980,7 +952,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 destination_channel_id: src_channel_id.clone(),
                 sequences,
                 height: query_height,
-            }))
+            })
             .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
 
         if events_result.is_empty() {

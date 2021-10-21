@@ -847,7 +847,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             return Ok(None);
         }
 
-        // It is possible in theory that `query_txs` returns multiple client update events for the
+        // It is possible in theory that `query_client_header()` returns multiple client update events for the
         // same consensus height. This could happen when multiple client updates with same header
         // were submitted to chain. However this is not what it's observed during testing.
         // Regardless, just take the event from the first update.

@@ -26,6 +26,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, trace, warn};
 
+use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
@@ -34,7 +35,7 @@ use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
@@ -46,10 +47,9 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, Po
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
-use ibc::query::{QueryTxHash, QueryTxRequest};
+use ibc::query::{QueryPacketEventDataRequest, QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
@@ -1518,44 +1518,6 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_txs");
 
         match request {
-            QueryTxRequest::Packet(request) => {
-                crate::time!("query_txs: query packet events");
-
-                let mut result: Vec<IbcEvent> = vec![];
-
-                for seq in &request.sequences {
-                    // query first (and only) Tx that includes the event specified in the query request
-                    let response = self
-                        .block_on(self.rpc_client.tx_search(
-                            packet_query(&request, *seq),
-                            false,
-                            1,
-                            1, // get only the first Tx matching the query
-                            Order::Ascending,
-                        ))
-                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-                    assert!(
-                        response.txs.len() <= 1,
-                        "packet_from_tx_search_response: unexpected number of txs"
-                    );
-
-                    if response.txs.is_empty() {
-                        continue;
-                    }
-
-                    if let Some(event) = packet_from_tx_search_response(
-                        self.id(),
-                        &request,
-                        *seq,
-                        response.txs[0].clone(),
-                    ) {
-                        result.push(event);
-                    }
-                }
-                Ok(result)
-            }
-
             QueryTxRequest::Client(request) => {
                 crate::time!("query_txs: single client update event");
 
@@ -1612,66 +1574,92 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
-    fn query_blocks(
+    fn query_packet_data(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        crate::time!("query_blocks");
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEvent>, Error> {
+        crate::time!("query_packet_data");
 
-        match request {
-            QueryBlockRequest::Packet(request) => {
-                crate::time!("query_blocks: query block packet events");
+        let mut tx_events: Vec<IbcEvent> = vec![];
+        let mut begin_block_events: Vec<IbcEvent> = vec![];
+        let mut end_block_events: Vec<IbcEvent> = vec![];
 
-                let mut begin_block_events: Vec<IbcEvent> = vec![];
-                let mut end_block_events: Vec<IbcEvent> = vec![];
+        for seq in &request.sequences {
+            // query first (and only) Tx that includes the event specified in the query request
+            let mut response = self
+                .block_on(self.rpc_client.tx_search(
+                    packet_query(&request, *seq),
+                    false,
+                    1,
+                    1, // get only the first Tx matching the query
+                    Order::Ascending,
+                ))
+                .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-                for seq in &request.sequences {
-                    let response = self
-                        .block_on(self.rpc_client.block_search(
-                            packet_query(&request, *seq),
-                            1,
-                            1, // there should only be a single match for this query
-                            Order::Ascending,
-                        ))
-                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+            assert!(
+                response.txs.len() <= 1,
+                "packet_from_tx_search_response: unexpected number of txs"
+            );
 
-                    assert!(
-                        response.blocks.len() <= 1,
-                        "block_results: unexpected number of blocks"
-                    );
-
-                    if let Some(block) = response.blocks.first().map(|first| &first.block) {
-                        let response_height =
-                            ICSHeight::new(self.id().version(), u64::from(block.header.height));
-                        if request.height != ICSHeight::zero() && response_height > request.height {
-                            continue;
-                        }
-                        let response = self
-                            .block_on(self.rpc_client.block_results(block.header.height))
-                            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-                        begin_block_events.append(
-                            &mut response
-                                .begin_block_events
-                                .unwrap_or_default()
-                                .into_iter()
-                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
-                                .collect(),
-                        );
-
-                        end_block_events.append(
-                            &mut response
-                                .end_block_events
-                                .unwrap_or_default()
-                                .into_iter()
-                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
-                                .collect(),
-                        );
-                    }
+            if let Some(tx) = response.txs.pop() {
+                if let Some(event) = packet_from_tx_search_response(self.id(), &request, *seq, tx) {
+                    tx_events.push(event);
+                    continue;
                 }
-                Ok((begin_block_events, end_block_events))
+            }
+
+            // query begin/end block events
+            let response = self
+                .block_on(self.rpc_client.block_search(
+                    packet_query(&request, *seq),
+                    1,
+                    1, // there should only be a single match for this query
+                    Order::Ascending,
+                ))
+                .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+            assert!(
+                response.blocks.len() <= 1,
+                "block_results: unexpected number of blocks"
+            );
+
+            if let Some(block) = response.blocks.first().map(|first| &first.block) {
+                let response_height =
+                    ICSHeight::new(self.id().version(), u64::from(block.header.height));
+                if request.height != ICSHeight::zero() && response_height > request.height {
+                    continue;
+                }
+                let response = self
+                    .block_on(self.rpc_client.block_results(block.header.height))
+                    .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+                begin_block_events.append(
+                    &mut response
+                        .begin_block_events
+                        .unwrap_or_default()
+                        .into_iter()
+                        .filter_map(|ev| filter_matching_event(ev, &request, *seq))
+                        .collect(),
+                );
+
+                end_block_events.append(
+                    &mut response
+                        .end_block_events
+                        .unwrap_or_default()
+                        .into_iter()
+                        .filter_map(|ev| filter_matching_event(ev, &request, *seq))
+                        .collect(),
+                );
             }
         }
+
+        // events must be ordered in the following fashion -
+        // start-block events followed by tx-events followed by end-block events
+        let mut events_result = vec![];
+        events_result.extend(begin_block_events);
+        events_result.extend(tx_events);
+        events_result.extend(end_block_events);
+        Ok(events_result)
     }
 
     fn proven_client_state(
@@ -1887,7 +1875,7 @@ fn tx_hash_query(request: &QueryTxHash) -> Query {
     tendermint_rpc::query::Query::eq("tx.hash", request.0.to_string())
 }
 
-// Extract the packet events from the query_txs RPC response. For any given
+// Extract the packet events from the query_transaction_by_hash RPC response. For any given
 // packet query, there is at most one Tx matching such query. Moreover, a Tx may
 // contain several events, but a single one must match the packet query.
 // For example, if we're querying for the packet with sequence 3 and this packet

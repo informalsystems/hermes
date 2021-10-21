@@ -11,9 +11,7 @@ use ibc_proto::ibc::core::channel::v1::{
     IdentifiedChannel as RawIdentifiedChannel,
 };
 
-use crate::events::IbcEventType;
-use crate::ics02_client::height::Height;
-use crate::ics04_channel::{error::Error, packet::Sequence};
+use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -419,19 +417,6 @@ impl core::fmt::Display for State {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(f, "{}", self.as_string())
     }
-}
-
-/// Used to query a packet event, identified by `event_id`, for specific channel and sequences.
-/// The query is preformed for the chain context at `height`.
-#[derive(Clone, Debug)]
-pub struct QueryPacketEventDataRequest {
-    pub event_id: IbcEventType,
-    pub source_channel_id: ChannelId,
-    pub source_port_id: PortId,
-    pub destination_channel_id: ChannelId,
-    pub destination_port_id: PortId,
-    pub sequences: Vec<Sequence>,
-    pub height: Height,
 }
 
 /// Version validation, specific for channel (ICS4) opening handshake protocol.

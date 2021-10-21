@@ -22,7 +22,7 @@ use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
-use ibc::query::{QueryBlockRequest, QueryTxRequest};
+use ibc::query::{QueryBlockRequest, QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
@@ -272,11 +272,11 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_txs(&self, _request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_transaction_by_hash(&self, _request: QueryTxHash) -> Result<Option<ResultTx>, Error> {
         unimplemented!()
     }
 
-    fn query_blocks(
+    fn query_packet_data(
         &self,
         _request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
