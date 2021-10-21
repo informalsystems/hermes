@@ -12,4 +12,9 @@ pub enum QueryTxRequest {
 }
 
 #[derive(Clone, Debug)]
+pub enum QueryBlockRequest {
+    Packet(QueryPacketEventDataRequest),
+}
+
+#[derive(Clone, Debug)]
 pub struct QueryTxHash(pub Hash);

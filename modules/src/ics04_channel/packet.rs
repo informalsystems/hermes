@@ -6,6 +6,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
+use crate::events::{extract_attribute, Error as EventError, RawObject};
 use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::timestamp::{Expiry::Expired, Timestamp};
@@ -200,6 +201,45 @@ impl TryFrom<RawPacket> for Packet {
             data: raw_pkt.data,
             timeout_height: packet_timeout_height,
             timeout_timestamp,
+        })
+    }
+}
+
+impl TryFrom<RawObject> for Packet {
+    type Error = EventError;
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        Ok(Packet {
+            sequence: extract_attribute(&obj, &format!("{}.packet_sequence", obj.action))?
+                .parse()
+                .map_err(EventError::channel)?,
+            source_port: extract_attribute(&obj, &format!("{}.packet_src_port", obj.action))?
+                .parse()
+                .map_err(EventError::parse)?,
+            source_channel: extract_attribute(&obj, &format!("{}.packet_src_channel", obj.action))?
+                .parse()
+                .map_err(EventError::parse)?,
+            destination_port: extract_attribute(&obj, &format!("{}.packet_dst_port", obj.action))?
+                .parse()
+                .map_err(EventError::parse)?,
+            destination_channel: extract_attribute(
+                &obj,
+                &format!("{}.packet_dst_channel", obj.action),
+            )?
+            .parse()
+            .map_err(EventError::parse)?,
+            data: vec![],
+            timeout_height: extract_attribute(
+                &obj,
+                &format!("{}.packet_timeout_height", obj.action),
+            )?
+            .parse()
+            .map_err(EventError::height)?,
+            timeout_timestamp: extract_attribute(
+                &obj,
+                &format!("{}.packet_timeout_timestamp", obj.action),
+            )?
+            .parse()
+            .map_err(EventError::timestamp)?,
         })
     }
 }
