@@ -12,7 +12,7 @@ use prost_types::Any;
 use tracing::{debug, error, info, trace};
 
 use ibc::{
-    events::{IbcEvent, IbcEventType, PrettyEvents},
+    events::{IbcEvent, PrettyEvents, WithBlockDataType},
     ics04_channel::{
         channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
         events::{SendPacket, WriteAcknowledgement},
@@ -23,7 +23,7 @@ use ibc::{
         packet::{Packet, PacketMsgType, Sequence},
     },
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-    query::QueryTxRequest,
+    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     timestamp::ZERO_DURATION,
     tx_msg::Msg,
@@ -851,20 +851,48 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             sequences.iter().take(10).join(", "), sequences.len()
         );
 
-        let query = QueryTxRequest::Packet(QueryPacketEventDataRequest {
-            event_id: IbcEventType::SendPacket,
+        let mut query = QueryPacketEventDataRequest {
+            event_id: WithBlockDataType::SendPacket,
             source_port_id: self.src_port_id().clone(),
             source_channel_id: src_channel_id.clone(),
             destination_port_id: self.dst_port_id().clone(),
             destination_channel_id: dst_channel_id.clone(),
             sequences,
             height: query_height,
-        });
+        };
 
-        events_result = self
+        let tx_events = self
             .src_chain()
-            .query_txs(query)
+            .query_txs(QueryTxRequest::Packet(query.clone()))
             .map_err(LinkError::relayer)?;
+
+        let recvd_sequences: Vec<Sequence> = tx_events
+            .iter()
+            .filter_map(|ev| match ev {
+                IbcEvent::SendPacket(ref send_ev) => Some(send_ev.packet.sequence),
+                IbcEvent::WriteAcknowledgement(ref ack_ev) => Some(ack_ev.packet.sequence),
+                _ => None,
+            })
+            .collect();
+        query.sequences.retain(|seq| !recvd_sequences.contains(seq));
+
+        let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
+            self.src_chain()
+                .query_blocks(QueryBlockRequest::Packet(query))
+                .map_err(LinkError::relayer)?
+        } else {
+            Default::default()
+        };
+
+        trace!("[{}] start_block_events {:?}", self, start_block_events);
+        trace!("[{}] tx_events {:?}", self, tx_events);
+        trace!("[{}] end_block_events {:?}", self, end_block_events);
+
+        // events must be ordered in the following fashion -
+        // start-block events followed by tx-events followed by end-block events
+        events_result.extend(start_block_events);
+        events_result.extend(tx_events);
+        events_result.extend(end_block_events);
 
         if events_result.is_empty() {
             info!(
@@ -945,7 +973,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         events_result = self
             .src_chain()
             .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
-                event_id: IbcEventType::WriteAck,
+                event_id: WithBlockDataType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
                 source_channel_id: dst_channel_id.clone(),
                 destination_port_id: self.src_port_id().clone(),

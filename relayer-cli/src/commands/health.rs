@@ -37,7 +37,7 @@ impl Runnable for HealthCheckCmd {
                 Ok(Unhealthy(_)) => {
                     // No need to print the error here as it's already printed in `Chain::health_check`
                     // TODO(romac): Move the printing code here and in the supervisor/registry
-                    error!("[{}] chain is unhealthy", ch.id)
+                    warn!("[{}] chain is unhealthy", ch.id)
                 }
                 Err(e) => error!(
                     "[{}] failed to perform health check, reason: {}",
