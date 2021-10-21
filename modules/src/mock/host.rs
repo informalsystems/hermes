@@ -63,7 +63,7 @@ impl HostBlock {
         // same timestamp as two block can be generated per second.
         let ten_millis = core::time::Duration::from_millis(1000);
         std::thread::sleep(ten_millis);
-        let time = Time::now()
+        let time = Time(chrono::Utc::now())
             .duration_since(Time::unix_epoch())
             .unwrap()
             .as_secs();

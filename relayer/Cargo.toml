@@ -39,8 +39,8 @@ tracing = "0.1.29"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
 bytes = "1.1.0"
-prost = "0.7"
-prost-types = "0.7"
+prost = { package = "informalsystems-prost", version = "0.8" }
+prost-types = { package = "informalsystems-prost-types", version = "0.8" }
 futures = "0.3.17"
 crossbeam-channel = "0.5.1"
 k256 = { version = "0.9.6", features = ["ecdsa-core", "ecdsa", "sha256"]}
@@ -53,12 +53,12 @@ tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = fal
 ripemd160 = "0.9.1"
 bech32 = "0.8.1"
 itertools = "0.10.1"
-tonic = { version = "0.4", features = ["tls", "tls-roots"] }
+tonic = { package = "informalsystems-tonic", path = "../../tonic/tonic", version = "0.5", features = ["tls", "tls-roots"] }
 dirs-next = "2.0.0"
 retry = { version = "1.3.0", default-features = false }
 async-stream = "0.3.2"
 http = "0.2.4"
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.3", default-features = false, features = ["std", "eyre_tracer"] }
 signature = "1.3.0"
 anyhow = "1.0.44"
 fraction = {version = "0.9.0", default-features = false }
