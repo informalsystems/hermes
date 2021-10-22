@@ -13,7 +13,7 @@ use bitcoin::hashes::hex::ToHex;
 use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
-use tendermint::abci::Path as TendermintABCIPath;
+use tendermint::abci::{Event, Path as TendermintABCIPath};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
@@ -26,7 +26,6 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, trace, warn};
 
-use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
@@ -37,7 +36,7 @@ use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TmHeader;
@@ -50,6 +49,7 @@ use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
+use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
@@ -90,7 +90,7 @@ mod compatibility;
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
 
-/// Fraction of the estimated gas to add to the gas limit when submitting a transaction.
+/// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
 /// Upper limit on the size of transactions submitted by Hermes, expressed as a
@@ -123,15 +123,18 @@ impl CosmosSdkChain {
     /// parameters against the chain's genesis configuration.
     ///
     /// Currently, validates the following:
-    ///     - the configured `max_tx_size` is appropriate.
+    ///     - the configured `max_tx_size` is appropriate
+    ///     - the trusting period is greater than zero
+    ///     - the trusting period is smaller than the unbonding period
+    ///     - the default gas is smaller than the max gas
     ///
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
-        // Check that the trusting period is smaller than the unbounding period
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = self.trusting_period(unbonding_period);
 
+        // Check that the trusting period is greater than zero
         if trusting_period <= Duration::ZERO {
             return Err(Error::config_validation_trusting_period_smaller_than_zero(
                 self.id().clone(),
@@ -139,6 +142,7 @@ impl CosmosSdkChain {
             ));
         }
 
+        // Check that the trusting period is smaller than the unbounding period
         if trusting_period >= unbonding_period {
             return Err(
                 Error::config_validation_trusting_period_greater_than_unbonding_period(
@@ -147,6 +151,17 @@ impl CosmosSdkChain {
                     unbonding_period,
                 ),
             );
+        }
+
+        // If the default gas is strictly greater than the max gas and the tx simulation fails,
+        // Hermes won't be able to ever submit that tx because the gas amount wanted will be
+        // greater than the max gas.
+        if self.default_gas() > self.max_gas() {
+            return Err(Error::config_validation_default_gas_too_high(
+                self.id().clone(),
+                self.default_gas(),
+                self.max_gas(),
+            ));
         }
 
         // Get the latest height and convert to tendermint Height
@@ -246,60 +261,32 @@ impl CosmosSdkChain {
         );
 
         let signer_info = self.signer(account_seq)?;
-        let default_fee = self.default_fee();
+        let max_fee = self.max_fee();
 
-        debug!("[{}] default fee: {}", self.id(), PrettyFee(&default_fee));
+        debug!(
+            "[{}] send_tx: max fee, for use in tx simulation: {}",
+            self.id(),
+            PrettyFee(&max_fee)
+        );
 
         let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
 
-        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), default_fee.clone())?;
+        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), max_fee)?;
         let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
 
-        // Try to simulate the Tx.
-        // It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
-        // they do not individually verify. For example for the following batch
-        // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
-        // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
-        // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
-        let estimated_gas = self
-            .send_tx_simulate(Tx {
-                body: Some(body),
-                auth_info: Some(auth_info),
-                signatures: vec![signed_doc],
-            })
-            .map(|sr| sr.gas_info);
+        let simulate_tx = Tx {
+            body: Some(body),
+            auth_info: Some(auth_info),
+            signatures: vec![signed_doc],
+        };
 
-        debug!("[{}] simulated gas: {:?}", self.id(), estimated_gas);
-
-        let estimated_gas = estimated_gas.map_or_else(
-            |e| {
-                error!(
-                    "[{}] failed to estimate gas, falling back on max gas, error: {}",
-                    self.id(),
-                    e
-                );
-
-                self.max_gas()
-            },
-            |gas_info| gas_info.map_or(self.max_gas(), |g| g.gas_used),
-        );
-
-        if estimated_gas > self.max_gas() {
-            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] estimated gas is higher than max gas", self.id());
-
-            return Err(Error::tx_simulate_gas_estimate_exceeded(
-                self.id().clone(),
-                estimated_gas,
-                self.max_gas(),
-            ));
-        }
-
+        let estimated_gas = self.estimate_gas(simulate_tx)?;
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
-        trace!(
-            "[{}] send_tx: based on the estimated gas, adjusting fee from {} to {}",
+        debug!(
+            "[{}] send_tx: using {} gas, fee {}",
             self.id(),
-            PrettyFee(&default_fee),
+            estimated_gas,
             PrettyFee(&adjusted_fee)
         );
 
@@ -338,6 +325,56 @@ impl CosmosSdkChain {
         }
 
         Ok(response)
+    }
+
+    /// Try to simulate the given tx in order to estimate how much gas will be needed to submit it.
+    ///
+    /// It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
+    /// they do not individually verify. For example for the following batch
+    /// [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
+    /// if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
+    /// In this case we use the `default_gas` param.
+    fn estimate_gas(&self, tx: Tx) -> Result<u64, Error> {
+        let estimated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
+
+        if let Ok(ref gas) = estimated_gas {
+            debug!(
+                "[{}] send_tx: tx simulation successful, simulated gas: {:?}",
+                self.id(),
+                gas
+            );
+        }
+
+        let estimated_gas = estimated_gas.map_or_else(
+            |e| {
+                error!(
+                    "[{}] send_tx: failed to estimate gas, falling back on default gas, error: {}",
+                    self.id(),
+                    e.detail()
+                );
+
+                self.default_gas()
+            },
+            |gas_info| gas_info.map_or(self.default_gas(), |g| g.gas_used),
+        );
+
+        if estimated_gas > self.max_gas() {
+            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+
+            return Err(Error::tx_simulate_gas_estimate_exceeded(
+                self.id().clone(),
+                estimated_gas,
+                self.max_gas(),
+            ));
+        }
+
+        Ok(estimated_gas)
+    }
+
+    /// The default amount of gas the relayer is willing to pay for a transaction,
+    /// when it cannot simulate the tx and therefore estimate the gas amount needed.
+    fn default_gas(&self) -> u64 {
+        self.config.default_gas.unwrap_or_else(|| self.max_gas())
     }
 
     /// The maximum amount of gas the relayer is willing to pay for a transaction
@@ -434,11 +471,13 @@ impl CosmosSdkChain {
     }
 
     fn send_tx_simulate(&self, tx: Tx) -> Result<SimulateResponse, Error> {
-        crate::time!("tx simulate");
+        crate::time!("send_tx_simulate");
+
+        use ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
 
         // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
         let mut tx_bytes = vec![];
-        prost::Message::encode(&tx, &mut tx_bytes).unwrap();
+        prost::Message::encode(&tx, &mut tx_bytes).unwrap(); // FIXME: Handle error here
 
         #[allow(deprecated)]
         let req = SimulateRequest {
@@ -447,11 +486,7 @@ impl CosmosSdkChain {
         };
 
         let mut client = self
-            .block_on(
-                ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
-                    self.grpc_addr.clone(),
-                ),
-            )
+            .block_on(ServiceClient::connect(self.grpc_addr.clone()))
             .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(req);
@@ -535,7 +570,7 @@ impl CosmosSdkChain {
         Ok(signer_info)
     }
 
-    fn default_fee(&self) -> Fee {
+    fn max_fee(&self) -> Fee {
         Fee {
             amount: vec![self.max_fee_in_coins()],
             gas_limit: self.max_gas(),
@@ -546,10 +581,12 @@ impl CosmosSdkChain {
 
     fn fee_with_gas(&self, gas_limit: u64) -> Fee {
         let adjusted_gas_limit = self.apply_adjustment_to_gas(gas_limit);
+
         Fee {
             amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
             gas_limit: adjusted_gas_limit,
-            ..self.default_fee()
+            payer: "".to_string(),
+            granter: "".to_string(),
         }
     }
 
@@ -631,11 +668,11 @@ impl CosmosSdkChain {
                         // so that we don't attempt to resolve the transaction later on.
                         if response.code.value() != 0 {
                             *events = vec![IbcEvent::ChainError(format!(
-                            "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                            self.id(), response.hash, response.code, response.log
-                        ))];
+                                "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                                self.id(), response.hash, response.code, response.log
+                            ))];
 
-                        // Otherwise, try to resolve transaction hash to the corresponding events.
+                            // Otherwise, try to resolve transaction hash to the corresponding events.
                         } else if let Ok(events_per_tx) =
                             self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
                         {
@@ -1575,6 +1612,68 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
+    fn query_blocks(
+        &self,
+        request: QueryBlockRequest,
+    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+        crate::time!("query_blocks");
+
+        match request {
+            QueryBlockRequest::Packet(request) => {
+                crate::time!("query_blocks: query block packet events");
+
+                let mut begin_block_events: Vec<IbcEvent> = vec![];
+                let mut end_block_events: Vec<IbcEvent> = vec![];
+
+                for seq in &request.sequences {
+                    let response = self
+                        .block_on(self.rpc_client.block_search(
+                            packet_query(&request, *seq),
+                            1,
+                            1, // there should only be a single match for this query
+                            Order::Ascending,
+                        ))
+                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+                    assert!(
+                        response.blocks.len() <= 1,
+                        "block_results: unexpected number of blocks"
+                    );
+
+                    if let Some(block) = response.blocks.first().map(|first| &first.block) {
+                        let response_height =
+                            ICSHeight::new(self.id().version(), u64::from(block.header.height));
+                        if request.height != ICSHeight::zero() && response_height > request.height {
+                            continue;
+                        }
+                        let response = self
+                            .block_on(self.rpc_client.block_results(block.header.height))
+                            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+                        begin_block_events.append(
+                            &mut response
+                                .begin_block_events
+                                .unwrap_or_default()
+                                .into_iter()
+                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
+                                .collect(),
+                        );
+
+                        end_block_events.append(
+                            &mut response
+                                .end_block_events
+                                .unwrap_or_default()
+                                .into_iter()
+                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
+                                .collect(),
+                        );
+                    }
+                }
+                Ok((begin_block_events, end_block_events))
+            }
+        }
+    }
+
     fn proven_client_state(
         &self,
         client_id: &ClientId,
@@ -1810,23 +1909,8 @@ fn packet_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .filter(|abci_event| abci_event.type_str == request.event_id.as_str())
-        .flat_map(|abci_event| ChannelEvents::try_from_tx(&abci_event))
-        .find(|event| {
-            let packet = match event {
-                IbcEvent::SendPacket(send_ev) => Some(&send_ev.packet),
-                IbcEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
-                _ => None,
-            };
-
-            packet.map_or(false, |packet| {
-                packet.source_port == request.source_port_id
-                    && packet.source_channel == request.source_channel_id
-                    && packet.destination_port == request.destination_port_id
-                    && packet.destination_channel == request.destination_channel_id
-                    && packet.sequence == seq
-            })
-        })
+        .filter_map(|ev| filter_matching_event(ev, request, seq))
+        .next()
 }
 
 // Extracts from the Tx the update client event for the requested client and height.
@@ -1884,6 +1968,41 @@ fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx
         }
     }
     result
+}
+
+fn filter_matching_event(
+    event: Event,
+    request: &QueryPacketEventDataRequest,
+    seq: Sequence,
+) -> Option<IbcEvent> {
+    fn matches_packet(
+        request: &QueryPacketEventDataRequest,
+        seq: Sequence,
+        packet: &Packet,
+    ) -> bool {
+        packet.source_port == request.source_port_id
+            && packet.source_channel == request.source_channel_id
+            && packet.destination_port == request.destination_port_id
+            && packet.destination_channel == request.destination_channel_id
+            && packet.sequence == seq
+    }
+
+    if event.type_str != request.event_id.as_str() {
+        return None;
+    }
+
+    let ibc_event = ChannelEvents::try_from_tx(&event)?;
+    match ibc_event {
+        IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
+            Some(ibc_event)
+        }
+        IbcEvent::WriteAcknowledgement(ref ack_ev)
+            if matches_packet(request, seq, &ack_ev.packet) =>
+        {
+            Some(ibc_event)
+        }
+        _ => None,
+    }
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
@@ -2108,6 +2227,7 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 }
 
 struct PrettyFee<'a>(&'a Fee);
+
 impl fmt::Display for PrettyFee<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let amount = match self.0.amount.get(0) {
