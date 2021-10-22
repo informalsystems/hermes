@@ -44,8 +44,7 @@ ABCI's `BeginBlock` and `EndBlock` methods ([#1231](https://github.com/informals
 
 - [Relayer Library](relayer)
   - Handle SendPacket events originating from Tendermint ABCI's BeginBlock
-    and EndBlock methods ([#1231](https://github.com/informalsystems/ibc-
-    rs/issues/1231))
+    and EndBlock methods ([#1231](https://github.com/informalsystems/ibc-rs/issues/1231))
   - Improve error message when `create client` fails and add a health
     check for the trusting period being smaller than the unbonding period
     ([#1440](https://github.com/informalsystems/ibc-rs/issues/1440))
