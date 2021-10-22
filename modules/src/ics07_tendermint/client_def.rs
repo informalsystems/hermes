@@ -109,10 +109,14 @@ impl ClientDef for TendermintClient {
 
         let options = client_state.as_light_client_options()?;
 
-        match self
-            .verifier
-            .verify(untrusted_state, trusted_state, &options, Time::now())
-        {
+        let verdict = self.verifier.verify(
+            untrusted_state,
+            trusted_state,
+            &options,
+            Time(chrono::Utc::now()),
+        );
+
+        match verdict {
             Verdict::Success => {}
             Verdict::NotEnoughTrust(voting_power_tally) => {
                 return Err(Error::not_enough_trusted_vals_signed(format!(
