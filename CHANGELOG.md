@@ -1,5 +1,52 @@
 # CHANGELOG
 
+## v0.8.0-pre.1
+*October 22nd, 2021*
+
+This is a pre-release which depends on forks of various Rust libraries.
+As such, it is advised to avoid depending on the `ibc` and `ibc-relayer` crates
+at version 0.8.0-pre.1.
+
+However, Hermes v0.8.0-pre.1 is considered stable and it is recommended for all
+users to update to this version.
+
+This release notably includes a new [`memo_prefix`][memo] configuration option
+for specifying a prefix to be include in the memo of each transaction submitted
+by Hermes.
+
+[memo]: https://github.com/informalsystems/ibc-rs/blob/master/config.toml#L161-L165
+
+### BREAKING CHANGES
+
+- [IBC Modules](modules)
+  - The `check_header_and_update_state` method of the `ClientDef`
+    trait (ICS02) has been expanded to facilitate ICS07
+    ([#1214](https://github.com/informalsystems/ibc-rs/issues/1214))
+
+### FEATURES
+
+- General
+  - Add support for the `tx.memo` field
+    ([#1433](https://github.com/informalsystems/ibc-rs/issues/1433))
+- [IBC Modules](modules)
+  - Add ICS07 verification functionality by using `tendermint-light-client`
+    ([#1214](https://github.com/informalsystems/ibc-rs/issues/1214))
+- [Relayer Library](relayer)
+  - Add a `default_gas` setting to be used for submitting a tx when tx simulation
+    fails ([#1457](https://github.com/informalsystems/ibc-rs/issues/1457))
+  - Update compatibility check for IBC-Go dependency
+    ([#1464](https://github.com/informalsystems/ibc-rs/issues/1464))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Handle SendPacket events originating from Tendermint ABCI's BeginBlock
+    and EndBlock methods ([#1231](https://github.com/informalsystems/ibc-
+    rs/issues/1231))
+  - Improve error message when `create client` fails and add a health
+    check for the trusting period being smaller than the unbonding period
+    ([#1440](https://github.com/informalsystems/ibc-rs/issues/1440))
+
 ## v0.7.3
 *October 4th, 2021*
 
