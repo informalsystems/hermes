@@ -50,7 +50,7 @@ ABCI's `BeginBlock` and `EndBlock` methods ([#1231](https://github.com/informals
     check for the trusting period being smaller than the unbonding period
     ([#1440](https://github.com/informalsystems/ibc-rs/issues/1440))
 
-## v0.7.3
+## v0.8.0-pre.1
 *October 4th, 2021*
 
 This minor release most notably includes a fix for a bug introduced in v0.7.0
