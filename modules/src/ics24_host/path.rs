@@ -40,8 +40,6 @@ pub enum Path {
     ClientConnections(ClientId),
     Connections(ConnectionId),
     Ports(PortId),
-    Channels(ChannelId),
-    Sequences(Sequence),
     ChannelEnds(PortId, ChannelId),
     SeqSends(PortId, ChannelId),
     SeqRecvs(PortId, ChannelId),
@@ -69,6 +67,14 @@ pub enum Path {
 pub enum ClientUpgradePath {
     UpgradedClientState(u64),
     UpgradedClientConsensusState(u64),
+}
+
+/// Sub-paths which are not part of the specification, but are still
+/// useful to represent for parsing purposes.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum SubPath {
+    Channels(ChannelId),
+    Sequences(Sequence),
 }
 
 impl Path {
@@ -101,9 +107,7 @@ impl Display for Path {
             ),
             Path::ClientConnections(client_id) => write!(f, "clients/{}/connections", client_id),
             Path::Connections(connection_id) => write!(f, "connections/{}", connection_id),
-            Path::Channels(channel_id) => write!(f, "channels/{}", channel_id),
             Path::Ports(port_id) => write!(f, "ports/{}", port_id),
-            Path::Sequences(sequence) => write!(f, "sequences/{}", sequence),
             Path::ChannelEnds(port_id, channel_id) => {
                 write!(f, "channelEnds/ports/{}/channels/{}", port_id, channel_id)
             }
@@ -307,7 +311,7 @@ fn parse_ports(components: &[&str]) -> Option<Path> {
     Some(Path::Ports(port_id))
 }
 
-fn parse_channels(components: &[&str]) -> Option<Path> {
+fn parse_channels(components: &[&str]) -> Option<SubPath> {
     if components.len() != 2 {
         return None;
     }
@@ -331,10 +335,10 @@ fn parse_channels(components: &[&str]) -> Option<Path> {
         Err(_) => return None,
     };
 
-    Some(Path::Channels(channel_id))
+    Some(SubPath::Channels(channel_id))
 }
 
-fn parse_sequences(components: &[&str]) -> Option<Path> {
+fn parse_sequences(components: &[&str]) -> Option<SubPath> {
     if components.len() != 2 {
         return None;
     }
@@ -354,7 +358,7 @@ fn parse_sequences(components: &[&str]) -> Option<Path> {
     };
 
     match Sequence::from_str(sequence_number) {
-        Ok(seq) => Some(Path::Sequences(seq)),
+        Ok(seq) => Some(SubPath::Sequences(seq)),
         Err(_) => None,
     }
 }
@@ -382,7 +386,7 @@ fn parse_channel_ends(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+    let channel_id = if let Some(SubPath::Channels(channel_id)) = channel {
         channel_id
     } else {
         return None;
@@ -410,7 +414,7 @@ fn parse_seqs(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+    let channel_id = if let Some(SubPath::Channels(channel_id)) = channel {
         channel_id
     } else {
         return None;
@@ -448,13 +452,13 @@ fn parse_commitments(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+    let channel_id = if let Some(SubPath::Channels(channel_id)) = channel {
         channel_id
     } else {
         return None;
     };
 
-    let sequence = if let Some(Path::Sequences(seq)) = sequence {
+    let sequence = if let Some(SubPath::Sequences(seq)) = sequence {
         seq
     } else {
         return None;
@@ -491,13 +495,13 @@ fn parse_acks(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+    let channel_id = if let Some(SubPath::Channels(channel_id)) = channel {
         channel_id
     } else {
         return None;
     };
 
-    let sequence = if let Some(Path::Sequences(seq)) = sequence {
+    let sequence = if let Some(SubPath::Sequences(seq)) = sequence {
         seq
     } else {
         return None;
@@ -534,13 +538,13 @@ fn parse_receipts(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    let channel_id = if let Some(Path::Channels(channel_id)) = channel {
+    let channel_id = if let Some(SubPath::Channels(channel_id)) = channel {
         channel_id
     } else {
         return None;
     };
 
-    let sequence = if let Some(Path::Sequences(seq)) = sequence {
+    let sequence = if let Some(SubPath::Sequences(seq)) = sequence {
         seq
     } else {
         return None;
@@ -721,7 +725,7 @@ mod tests {
 
         assert_eq!(
             parse_channels(&components),
-            Some(Path::Channels(ChannelId::default())),
+            Some(SubPath::Channels(ChannelId::default())),
         );
     }
 
@@ -740,7 +744,7 @@ mod tests {
 
         assert_eq!(
             parse_sequences(&components),
-            Some(Path::Sequences(Sequence::default()))
+            Some(SubPath::Sequences(Sequence::default()))
         );
     }
 
