@@ -801,13 +801,13 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.7.3"
+version = "0.8.0-pre.1"
 dependencies = [
  "bytes",
  "chrono",
  "flex-error",
  "ibc-proto",
- "ics23 0.6.5",
+ "informalsystems-ics23",
  "informalsystems-prost",
  "informalsystems-prost-types",
  "safe-regex",
@@ -824,7 +824,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.11.0"
+version = "0.12.0-pre.1"
 dependencies = [
  "bytes",
  "getrandom 0.2.3",
@@ -832,20 +832,6 @@ dependencies = [
  "informalsystems-prost-types",
  "informalsystems-tonic",
  "tendermint-proto",
-]
-
-[[package]]
-name = "ics23"
-version = "0.6.5"
-dependencies = [
- "anyhow",
- "bytes",
- "hex",
- "informalsystems-prost",
- "ripemd160",
- "sha2",
- "sha3",
- "sp-std",
 ]
 
 [[package]]
@@ -917,6 +903,23 @@ checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
 dependencies = [
  "autocfg",
  "hashbrown",
+]
+
+[[package]]
+name = "informalsystems-ics23"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3082f27f44b0c2199d307d2f92891bc37c13ea0ad6f78065f8db7feaf6b8d62b"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "hex",
+ "informalsystems-prost",
+ "informalsystems-prost-types",
+ "ripemd160",
+ "sha2",
+ "sha3",
+ "sp-std",
 ]
 
 [[package]]
@@ -1160,7 +1163,7 @@ dependencies = [
  "getrandom 0.2.3",
  "ibc",
  "ibc-proto",
- "ics23 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ics23",
  "impl-serde",
  "informalsystems-prost",
  "informalsystems-prost-types",

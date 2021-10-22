@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "0.7.3"
+version    = "0.8.0-pre.1"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -25,11 +25,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.7.3", path = "../modules" }
-ibc-relayer      = { version = "0.7.3", path = "../relayer" }
-ibc-proto        = { version = "0.11.0", path = "../proto" }
-ibc-telemetry    = { version = "0.7.3", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.7.3", path = "../relayer-rest", optional = true }
+ibc              = { version = "0.8.0-pre.1", path = "../modules" }
+ibc-relayer      = { version = "0.8.0-pre.1", path = "../relayer" }
+ibc-proto        = { version = "0.12.0-pre.1", path = "../proto" }
+ibc-telemetry    = { version = "0.8.0-pre.1", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.8.0-pre.1", path = "../relayer-rest", optional = true }
 
 gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
