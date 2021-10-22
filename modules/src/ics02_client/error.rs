@@ -1,7 +1,5 @@
 use crate::prelude::*;
 
-use core::num::TryFromIntError;
-
 use flex_error::{define_error, TraceError};
 
 use crate::ics02_client::client_type::ClientType;
@@ -9,7 +7,11 @@ use crate::ics07_tendermint::error::Error as Ics07Error;
 use crate::ics23_commitment::error::Error as Ics23Error;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::ClientId;
+use crate::timestamp::Timestamp;
 use crate::Height;
+
+use tendermint::Error as TendermintError;
+use tendermint_proto::Error as TendermintProtoError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -58,7 +60,7 @@ define_error! {
 
         FailedTrustThresholdConversion
             { numerator: u64, denominator: u64 }
-            [ tendermint::Error ]
+            [ TendermintError ]
             | e | { format_args!("failed to build Tendermint domain type trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
 
         UnknownClientStateType
@@ -105,14 +107,14 @@ define_error! {
             },
 
         DecodeRawClientState
-            [ TraceError<tendermint_proto::Error> ]
+            [ TraceError<TendermintProtoError> ]
             | _ | { "error decoding raw client state" },
 
         MissingRawClientState
             | _ | { "missing raw client state" },
 
         InvalidRawConsensusState
-            [ TraceError<tendermint_proto::Error> ]
+            [ TraceError<TendermintProtoError> ]
             | _ | { "invalid raw client consensus state" },
 
         MissingRawConsensusState
@@ -134,14 +136,14 @@ define_error! {
             | _ | { "invalid client identifier" },
 
         InvalidRawHeader
-            [ TraceError<tendermint_proto::Error> ]
+            [ TraceError<TendermintProtoError> ]
             | _ | { "invalid raw header" },
 
         MissingRawHeader
             | _ | { "missing raw header" },
 
         DecodeRawMisbehaviour
-            [ TraceError<tendermint_proto::Error> ]
+            [ TraceError<TendermintProtoError> ]
             | _ | { "invalid raw misbehaviour" },
 
         InvalidRawMisbehaviour
@@ -170,7 +172,7 @@ define_error! {
             | _ | { "tendermint error" },
 
         InvalidPacketTimestamp
-            [ TraceError<TryFromIntError> ]
+            [ crate::timestamp::ParseTimestampError ]
             | _ | { "invalid packet timeout timestamp value" },
 
         ClientArgsTypeMismatch
@@ -178,6 +180,12 @@ define_error! {
             | e | {
                 format_args!("mismatch between client and arguments types, expected: {0:?}",
                     e.client_type)
+            },
+
+        InsufficientVotingPower
+            { reason: String }
+            | e | {
+                format_args!("Insufficient overlap {}", e.reason)
             },
 
         RawClientAndConsensusStateTypesMismatch
@@ -206,8 +214,37 @@ define_error! {
                 client_height: Height,
             }
             | e | {
-                format_args!("upgraded client height {0} must be at greater than current client height {1}",
+                format_args!("upgraded client height {} must be at greater than current client height {}",
                     e.upgraded_height, e.client_height)
             },
+
+        InvalidConsensusStateTimestamp
+            {
+                time1: Timestamp,
+                time2: Timestamp,
+            }
+            | e | {
+                format_args!("timestamp is invalid or missing, timestamp={0},  now={1}", e.time1, e.time2)
+            },
+
+        HeaderNotWithinTrustPeriod
+            {
+                latest_time:Timestamp,
+                update_time: Timestamp,
+            }
+            | e | {
+                format_args!("header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
+            },
+
+        TendermintHandlerError
+            [ Ics07Error ]
+            | _ | { format_args!("Tendermint-specific handler error") },
+
+    }
+}
+
+impl From<Ics07Error> for Error {
+    fn from(e: Ics07Error) -> Error {
+        Error::tendermint_handler_error(e)
     }
 }

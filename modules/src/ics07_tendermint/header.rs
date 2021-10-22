@@ -9,6 +9,8 @@ use tendermint::validator::Set as ValidatorSet;
 use tendermint::Time;
 use tendermint_proto::Protobuf;
 
+use crate::timestamp::Timestamp;
+
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
 use crate::ics02_client::client_type::ClientType;
@@ -24,6 +26,7 @@ pub struct Header {
     pub signed_header: SignedHeader, // contains the commitment root
     pub validator_set: ValidatorSet, // the validator set that signed Header
     pub trusted_height: Height, // the height of a trusted header seen by client less than or equal to Header
+    // TODO(thane): Rename this to trusted_next_validator_set?
     pub trusted_validator_set: ValidatorSet, // the last trusted validator set at trusted height
 }
 
@@ -79,6 +82,10 @@ impl crate::ics02_client::header::Header for Header {
         self.height()
     }
 
+    fn timestamp(&self) -> Timestamp {
+        self.time().into()
+    }
+
     fn wrap_any(self) -> AnyHeader {
         AnyHeader::Tendermint(self)
     }
@@ -90,7 +97,7 @@ impl TryFrom<RawHeader> for Header {
     type Error = Error;
 
     fn try_from(raw: RawHeader) -> Result<Self, Self::Error> {
-        Ok(Self {
+        let header = Self {
             signed_header: raw
                 .signed_header
                 .ok_or_else(Error::missing_signed_header)?
@@ -110,7 +117,16 @@ impl TryFrom<RawHeader> for Header {
                 .ok_or_else(Error::missing_trusted_validator_set)?
                 .try_into()
                 .map_err(Error::invalid_raw_header)?,
-        })
+        };
+
+        if header.height().revision_number != header.trusted_height.revision_number {
+            return Err(Error::mismatched_revisions(
+                header.trusted_height.revision_number,
+                header.height().revision_number,
+            ));
+        }
+
+        Ok(header)
     }
 }
 

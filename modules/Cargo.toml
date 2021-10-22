@@ -17,9 +17,10 @@ description = """
 default = ["std", "eyre_tracer"]
 std = ["flex-error/std"]
 eyre_tracer = ["flex-error/eyre_tracer"]
+
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = [ "tendermint-testgen", "sha2" ]
+mocks = ["tendermint-testgen", "sha2"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
@@ -44,6 +45,10 @@ version = "=0.22.0"
 
 [dependencies.tendermint-proto]
 version = "=0.22.0"
+
+[dependencies.tendermint-light-client]
+version = "=0.22.0"
+default-features = false
 
 [dependencies.tendermint-testgen]
 version = "=0.22.0"

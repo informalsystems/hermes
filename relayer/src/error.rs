@@ -6,13 +6,14 @@ use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
 use prost::DecodeError;
+use tendermint::Error as TendermintError;
 use tendermint_light_client::{
     components::io::IoError as LightClientIoError, errors::Error as LightClientError,
 };
 use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
-use tendermint_rpc::Error as TendermintError;
+use tendermint_rpc::Error as TendermintRpcError;
 use tonic::{
     metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
     Status as GrpcStatus,
@@ -53,7 +54,7 @@ define_error! {
 
         Rpc
             { url: tendermint_rpc::Url }
-            [ TraceClone<TendermintError> ]
+            [ TraceClone<TendermintRpcError> ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -153,7 +154,7 @@ define_error! {
             |_| { "Malformed proof" },
 
         InvalidHeight
-            [ tendermint::Error ]
+            [ TendermintError ]
             |_| { "Invalid height" },
 
         InvalidMetadata
@@ -304,7 +305,7 @@ define_error! {
 
         InvalidKeyAddress
             { address: String }
-            [ tendermint::Error ]
+            [ TendermintError ]
             |e| { format!("invalid key address: {0}", e.address) },
 
         Bech32Encoding
@@ -430,6 +431,17 @@ define_error! {
             |e| {
                 format!("semantic config validation failed for option `trusting_period` of chain '{}', reason: trusting period ({}) must be smaller than the unbonding period ({})",
                     e.chain_id, format_duration(e.trusting_period), format_duration(e.unbonding_period))
+            },
+
+        ConfigValidationDefaultGasTooHigh
+            {
+                chain_id: ChainId,
+                default_gas: u64,
+                max_gas: u64,
+            }
+            |e| {
+                format!("semantic config validation failed for option `default_gas` of chain '{}', reason: default gas ({}) must be smaller than the max gas ({})",
+                    e.chain_id, e.default_gas, e.max_gas)
             },
 
         SdkModuleVersion
