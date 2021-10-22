@@ -836,7 +836,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         debug!(
-            "[{}] packets that still have commitments on {}: {} (first 10 shown here; total={})",
+            "[{}] packet seq. that still have commitments on {}: {} (first 10 shown here; total={})",
             self,
             self.src_chain().id(),
             commit_sequences.iter().take(10).join(", "),
