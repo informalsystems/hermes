@@ -11,5 +11,5 @@ prost-build = { package = "informalsystems-prost-build", version = "0.8" }
 tempdir = "0.3.7"
 walkdir = "2.3"
 argh = "0.1.3"
-tonic = { package = "informalsystems-tonic", path = "../../tonic/tonic", version = "0.5" }
-tonic-build = { package = "informalsystems-tonic-build", path = "../../tonic/tonic-build", version = "0.5" }
+tonic = { package = "informalsystems-tonic", version = "0.5" }
+tonic-build = { package = "informalsystems-tonic-build", version = "0.5" }
