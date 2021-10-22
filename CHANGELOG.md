@@ -17,7 +17,7 @@ by Hermes.
 Moreover, Hermes is now able to handle `SendPacket` events originating from Tendermint
 ABCI's `BeginBlock` and `EndBlock` methods ([#1231](https://github.com/informalsystems/ibc-rs/issues/1231)).
 
-[memo]: https://github.com/informalsystems/ibc-rs/blob/master/config.toml#L161-L165
+[memo]: https://github.com/informalsystems/ibc-rs/blob/v0.8.0-pre.1/config.toml#L161-L165
 
 ### BREAKING CHANGES
 
