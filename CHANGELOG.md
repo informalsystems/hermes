@@ -3,16 +3,19 @@
 ## v0.8.0-pre.1
 *October 22nd, 2021*
 
-This is a pre-release which depends on forks of various Rust libraries.
+This is a pre-release which depends on in-house forks of various Rust libraries.
 As such, it is advised to avoid depending on the `ibc` and `ibc-relayer` crates
 at version 0.8.0-pre.1.
 
-However, Hermes v0.8.0-pre.1 is considered stable and it is recommended for all
+Hermes v0.8.0-pre.1 is considered stable and it is recommended for all
 users to update to this version.
 
 This release notably includes a new [`memo_prefix`][memo] configuration option
-for specifying a prefix to be include in the memo of each transaction submitted
+for specifying a prefix to be included in the memo of each transaction submitted
 by Hermes.
+
+Moreover, Hermes is now able to handle `SendPacket` events originating from Tendermint
+ABCI's `BeginBlock` and `EndBlock` methods ([#1231](https://github.com/informalsystems/ibc-rs/issues/1231)).
 
 [memo]: https://github.com/informalsystems/ibc-rs/blob/master/config.toml#L161-L165
 
