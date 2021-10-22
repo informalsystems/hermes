@@ -63,6 +63,10 @@ tendermint-rpc = { version = "=0.23.0-internal", features = ["http-client", "web
 tendermint-testgen = { version = "=0.23.0-internal" } # Needed for generating (synthetic) light blocks.
 sha2 = { version = "0.9.8" }
 
+# pin clap to avoid miscompilations with modelator
+clap = "=3.0.0-beta.4"
+clap_derive = "=3.0.0-beta.4"
+
 [[test]]
 name = "mbt"
 path = "tests/mbt.rs"
