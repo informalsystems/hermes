@@ -1324,7 +1324,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.12.0"
+version = "0.12.0-pre.1"
 dependencies = [
  "bytes",
  "getrandom 0.2.3",
