@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## v0.7.3
+*October 4th, 2021*
 
 This minor release most notably includes a fix for a bug introduced in v0.7.0
 where Hermes would always use the max gas when submitting transactions to
@@ -25,6 +26,7 @@ It also improves the handling of account sequence numbers
     ([#1392](https://github.com/informalsystems/ibc-rs/issues/1392))
 
 ## v0.7.2
+*September 24th, 2021*
 
 This minor release brings substantial performance improvements as well as
 support for chains using Secp256k1 signatures in consensus votes.
@@ -52,6 +54,7 @@ It also bumps the compatibility to Cosmos SDK 0.44.
 - Improve reliability of health check ([#1382](https://github.com/informalsystems/ibc-rs/issues/1376))
 
 ## v0.7.1
+*September 14th, 2021*
 
 This minor release of Hermes notably features support for Ethermint chains and transfer amounts expressed as a 256-bit unsigned integer.
 This release also fixes a bug where the chain runtime within the relayer would crash when failing to decode a invalid header included in a `ClientUpdate` IBC event.
@@ -91,6 +94,7 @@ This release also fixes a bug where the chain runtime within the relayer would c
 [#1333]: https://github.com/informalsystems/ibc-rs/issues/1333
 
 ## v0.7.0
+*August 24t, 2021*
 
 This release of Hermes is the first to be compatible with the development version of Cosmos SDK 0.43.
 Hermes 0.7.0 also improves the performance and reliability of the relayer, notably by waiting asynchronously for transactions to be confirmed.
@@ -151,6 +155,7 @@ Additionnally, Hermes now includes a REST server which exposes the relayer's int
 [#1297]: https://github.com/informalsystems/ibc-rs/issues/1297
 
 ## v0.6.2
+*August 2nd, 2021*
 
 This minor release of Hermes re-enables the `upgrade client`, `upgrade clients`,
 `tx raw upgrade-clients`, and `tx raw upgrade-chain`, and otherwise
