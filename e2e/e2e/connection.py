@@ -270,7 +270,7 @@ def verify_state(c: Config,
     if strategy == 'all':
         sleep(10.0)
         for i in range(20):
-            sleep(2.0)
+            sleep(5.0)
             ibc1_conn_end = query_connection_end(c, ibc1, ibc1_conn_id)
             ibc0_conn_id = ibc1_conn_end.counterparty.connection_id
             ibc0_conn_end = query_connection_end(c, ibc0, ibc0_conn_id)
