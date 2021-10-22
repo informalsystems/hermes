@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use alloc::collections::btree_map::BTreeMap as HashMap;
 use core::fmt;
 use flex_error::{define_error, TraceError};
 use prost::alloc::fmt::Formatter;
@@ -63,22 +64,23 @@ define_error! {
     }
 }
 
-/// Events types
+/// Events whose data is not included in the app state and must be extracted using tendermint RPCs
+/// (i.e. /tx_search or /block_search)
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum IbcEventType {
+pub enum WithBlockDataType {
     CreateClient,
     UpdateClient,
     SendPacket,
     WriteAck,
 }
 
-impl IbcEventType {
+impl WithBlockDataType {
     pub fn as_str(&self) -> &'static str {
         match *self {
-            IbcEventType::CreateClient => "create_client",
-            IbcEventType::UpdateClient => "update_client",
-            IbcEventType::SendPacket => "send_packet",
-            IbcEventType::WriteAck => "write_acknowledgement",
+            WithBlockDataType::CreateClient => "create_client",
+            WithBlockDataType::UpdateClient => "update_client",
+            WithBlockDataType::SendPacket => "send_packet",
+            WithBlockDataType::WriteAck => "write_acknowledgement",
         }
     }
 }
@@ -257,4 +259,55 @@ impl IbcEvent {
             _ => None,
         }
     }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct RawObject {
+    pub height: Height,
+    pub action: String,
+    pub idx: usize,
+    pub events: HashMap<String, Vec<String>>,
+}
+
+impl RawObject {
+    pub fn new(
+        height: Height,
+        action: String,
+        idx: usize,
+        events: HashMap<String, Vec<String>>,
+    ) -> RawObject {
+        RawObject {
+            height,
+            action,
+            idx,
+            events,
+        }
+    }
+}
+
+pub fn extract_events(
+    events: &HashMap<String, Vec<String>>,
+    action_string: &str,
+) -> Result<(), Error> {
+    if let Some(message_action) = events.get("message.action") {
+        if message_action.contains(&action_string.to_owned()) {
+            return Ok(());
+        }
+        return Err(Error::missing_action_string());
+    }
+    Err(Error::incorrect_event_type(action_string.to_string()))
+}
+
+pub fn extract_attribute(object: &RawObject, key: &str) -> Result<String, Error> {
+    let value = object
+        .events
+        .get(key)
+        .ok_or_else(|| Error::missing_key(key.to_string()))?[object.idx]
+        .clone();
+
+    Ok(value)
+}
+
+pub fn maybe_extract_attribute(object: &RawObject, key: &str) -> Option<String> {
+    object.events.get(key).map(|tags| tags[object.idx].clone())
 }

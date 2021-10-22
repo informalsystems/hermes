@@ -247,7 +247,7 @@ define_error! {
             | _ | { "Receiving chain block timestamp >= packet timeout timestamp" },
 
         InvalidPacketTimestamp
-            [ TraceError<core::num::TryFromIntError> ]
+            [ crate::timestamp::ParseTimestampError ]
             | _ | { "Invalid packet timeout timestamp value" },
 
         ErrorInvalidConsensusState
