@@ -1,1 +1,0 @@
-- Broadened the range of supported Cosmos-SDK versions from `0.44.0` to `0.44.1`
