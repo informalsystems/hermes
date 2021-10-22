@@ -1299,7 +1299,7 @@ dependencies = [
  "env_logger",
  "flex-error",
  "ibc-proto",
- "ics23",
+ "informalsystems-ics23",
  "informalsystems-prost",
  "informalsystems-prost-types",
  "modelator",
@@ -1457,20 +1457,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ics23"
-version = "0.6.5"
-dependencies = [
- "anyhow",
- "bytes",
- "hex",
- "informalsystems-prost",
- "ripemd160",
- "sha2",
- "sha3",
- "sp-std",
-]
-
-[[package]]
 name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1501,6 +1487,23 @@ checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
 dependencies = [
  "autocfg",
  "hashbrown",
+]
+
+[[package]]
+name = "informalsystems-ics23"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3082f27f44b0c2199d307d2f92891bc37c13ea0ad6f78065f8db7feaf6b8d62b"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "hex",
+ "informalsystems-prost",
+ "informalsystems-prost-types",
+ "ripemd160",
+ "sha2",
+ "sha3",
+ "sp-std",
 ]
 
 [[package]]
