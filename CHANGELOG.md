@@ -144,7 +144,7 @@ This release also fixes a bug where the chain runtime within the relayer would c
 [#1333]: https://github.com/informalsystems/ibc-rs/issues/1333
 
 ## v0.7.0
-*August 24t, 2021*
+*August 24th, 2021*
 
 This release of Hermes is the first to be compatible with the development version of Cosmos SDK 0.43.
 Hermes 0.7.0 also improves the performance and reliability of the relayer, notably by waiting asynchronously for transactions to be confirmed.
