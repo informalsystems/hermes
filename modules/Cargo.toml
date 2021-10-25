@@ -65,7 +65,7 @@ sha2 = { version = "0.9.8" }
 
 # pin clap to avoid miscompilations with modelator
 clap = "=3.0.0-beta.4"
-clap_derive = "=3.0.0-beta.4"
+clap_derive = "=3.0.0-beta.5"
 
 [[test]]
 name = "mbt"
