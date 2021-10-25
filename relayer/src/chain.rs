@@ -1,5 +1,4 @@
 use alloc::sync::Arc;
-use prost_types::Any;
 use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -41,10 +40,13 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
+use self::tx::TrackedMsgs;
+
 pub(crate) mod cosmos;
 pub mod counterparty;
 pub mod handle;
 pub mod runtime;
+pub mod tx;
 
 #[cfg(test)]
 pub mod mock;
@@ -121,14 +123,14 @@ pub trait ChainEndpoint: Sized {
     // synchronously wait for it to be committed.
     fn send_messages_and_wait_commit(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error>;
 
     /// Sends one or more transactions with `msgs` to chain.
     /// Non-blocking alternative to `send_messages_and_wait_commit` interface.
     fn send_messages_and_wait_check_tx(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<TxResponse>, Error>;
 
     fn get_signer(&mut self) -> Result<Signer, Error>;

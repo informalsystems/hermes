@@ -55,6 +55,7 @@ use crate::{
 
 use super::{
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
+    tx::TrackedMsgs,
     ChainEndpoint, HealthCheck,
 };
 
@@ -204,12 +205,12 @@ where
                             self.subscribe(reply_to)?
                         },
 
-                        Ok(ChainRequest::SendMessagesAndWaitCommit { proto_msgs, reply_to }) => {
-                            self.send_messages_and_wait_commit(proto_msgs, reply_to)?
+                        Ok(ChainRequest::SendMessagesAndWaitCommit { tracked_msgs, reply_to }) => {
+                            self.send_messages_and_wait_commit(tracked_msgs, reply_to)?
                         },
 
-                        Ok(ChainRequest::SendMessagesAndWaitCheckTx { proto_msgs, reply_to }) => {
-                            self.send_messages_and_wait_check_tx(proto_msgs, reply_to)?
+                        Ok(ChainRequest::SendMessagesAndWaitCheckTx { tracked_msgs, reply_to }) => {
+                            self.send_messages_and_wait_check_tx(tracked_msgs, reply_to)?
                         },
 
                         Ok(ChainRequest::Signer { reply_to }) => {
@@ -377,19 +378,19 @@ where
 
     fn send_messages_and_wait_commit(
         &mut self,
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
-        let result = self.chain.send_messages_and_wait_commit(proto_msgs);
+        let result = self.chain.send_messages_and_wait_commit(tracked_msgs);
         reply_to.send(result).map_err(Error::send)
     }
 
     fn send_messages_and_wait_check_tx(
         &mut self,
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
         reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
     ) -> Result<(), Error> {
-        let result = self.chain.send_messages_and_wait_check_tx(proto_msgs);
+        let result = self.chain.send_messages_and_wait_check_tx(tracked_msgs);
         reply_to.send(result).map_err(Error::send)
     }
 

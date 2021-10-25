@@ -46,6 +46,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
+use super::tx::TrackedMsgs;
 use super::HealthCheck;
 
 /// The representation of a mocked chain as the relayer sees it.
@@ -125,17 +126,17 @@ impl ChainEndpoint for MockChain {
 
     fn send_messages_and_wait_commit(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        let events = self.context.send(proto_msgs).map_err(Error::ics18)?;
+        let events = self.context.send(tracked_msgs.msgs).map_err(Error::ics18)?;
 
         Ok(events)
     }
 
     fn send_messages_and_wait_check_tx(
         &mut self,
-        _proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
         todo!()
     }

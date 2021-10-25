@@ -15,6 +15,7 @@ use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::{Plan, SoftwareUpgradeProposal};
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
+use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -132,7 +133,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     };
 
     let events = dst_chain
-        .send_messages_and_wait_commit(vec![any_msg])
+        .send_messages_and_wait_commit(TrackedMsgs::new_single_msg(any_msg))
         .map_err(|e| UpgradeChainError::submit(dst_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction

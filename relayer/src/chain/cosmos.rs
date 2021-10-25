@@ -24,7 +24,7 @@ use tendermint_rpc::query::{EventType, Query};
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, span, trace, warn, Level};
 
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{
@@ -83,7 +83,7 @@ use crate::{
     sdk_error::sdk_error_from_tx_sync_error_code,
 };
 
-use super::{ChainEndpoint, HealthCheck};
+use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
 
 mod compatibility;
 
@@ -842,9 +842,10 @@ impl ChainEndpoint for CosmosSdkChain {
     /// msgs in a Tx until any of the max size, max num msgs, max fee are exceeded.
     fn send_messages_and_wait_commit(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("send_messages_and_wait_commit");
+        let proto_msgs = tracked_msgs.msgs;
         debug!(
             "send_messages_and_wait_commit with {} messages",
             proto_msgs.len()
@@ -898,13 +899,14 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn send_messages_and_wait_check_tx(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<Response>, Error> {
         crate::time!("send_messages_and_wait_check_tx");
-        debug!(
-            "send_messages_and_wait_check_tx with {} messages",
-            proto_msgs.len()
-        );
+
+        let span = span!(Level::DEBUG, "send", id = %tracked_msgs);
+        let _enter = span.enter();
+
+        let proto_msgs = tracked_msgs.msgs;
 
         if proto_msgs.is_empty() {
             return Ok(vec![]);

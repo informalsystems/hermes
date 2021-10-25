@@ -13,6 +13,7 @@ use ibc::Height;
 use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::tx::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::util::bigint::U256;
@@ -132,7 +133,7 @@ pub fn build_and_send_transfer_messages<Chain: ChainHandle>(
     let msgs = vec![raw_msg; opts.number_msgs];
 
     let events = packet_src_chain
-        .send_messages_and_wait_commit(msgs)
+        .send_messages_and_wait_commit(TrackedMsgs::new(msgs))
         .map_err(|e| PacketError::submit(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction
