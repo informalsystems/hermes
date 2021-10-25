@@ -4,7 +4,6 @@ use core::fmt::{self, Debug};
 use crossbeam_channel as channel;
 use serde::Serialize;
 
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
@@ -14,7 +13,9 @@ use ibc::{
         header::AnyHeader,
         misbehaviour::MisbehaviourEvidence,
     },
-    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics03_connection::{
+        connection::ConnectionEnd, connection::IdentifiedConnectionEnd, version::Version,
+    },
     ics04_channel::{
         channel::{ChannelEnd, IdentifiedChannelEnd},
         packet::{PacketMsgType, Sequence},
@@ -22,7 +23,7 @@ use ibc::{
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
-    query::QueryTxRequest,
+    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     timestamp::Timestamp,
     Height,
@@ -309,9 +310,14 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<u64>>,
     },
 
-    QueryPacketEventData {
+    QueryPacketEventDataFromTxs {
         request: QueryTxRequest,
         reply_to: ReplyTo<Vec<IbcEvent>>,
+    },
+
+    QueryPacketEventDataFromBlocks {
+        request: QueryBlockRequest,
+        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     },
 }
 
@@ -536,4 +542,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     ) -> Result<Vec<u64>, Error>;
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
+
+    fn query_blocks(
+        &self,
+        request: QueryBlockRequest,
+    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 }

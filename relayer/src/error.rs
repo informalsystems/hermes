@@ -1,17 +1,19 @@
 //! This module defines the various errors that be raised in the relayer.
 
-use crate::keyring::errors::Error as KeyringError;
-use crate::sdk_error::SdkError;
+use core::time::Duration;
+
 use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
+use humantime::format_duration;
 use prost::DecodeError;
+use tendermint::Error as TendermintError;
 use tendermint_light_client::{
     components::io::IoError as LightClientIoError, errors::Error as LightClientError,
 };
 use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
-use tendermint_rpc::Error as TendermintError;
+use tendermint_rpc::Error as TendermintRpcError;
 use tonic::{
     metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
     Status as GrpcStatus,
@@ -29,6 +31,8 @@ use ibc::{
 
 use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
 use crate::event::monitor;
+use crate::keyring::errors::Error as KeyringError;
+use crate::sdk_error::SdkError;
 
 define_error! {
     Error {
@@ -50,7 +54,7 @@ define_error! {
 
         Rpc
             { url: tendermint_rpc::Url }
-            [ TraceClone<TendermintError> ]
+            [ TraceClone<TendermintRpcError> ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -150,7 +154,7 @@ define_error! {
             |_| { "Malformed proof" },
 
         InvalidHeight
-            [ tendermint::Error ]
+            [ TendermintError ]
             |_| { "Invalid height" },
 
         InvalidMetadata
@@ -301,7 +305,7 @@ define_error! {
 
         InvalidKeyAddress
             { address: String }
-            [ tendermint::Error ]
+            [ TendermintError ]
             |e| { format!("invalid key address: {0}", e.address) },
 
         Bech32Encoding
@@ -406,6 +410,38 @@ define_error! {
             |e| {
                 format!("semantic config validation failed for option `max_tx_size` chain '{}', reason: `max_tx_size` = {} is greater than {}% of the genesis block param `max_size` = {}",
                     e.chain_id, e.configured_bound, GENESIS_MAX_BYTES_MAX_FRACTION * 100.0, e.genesis_bound)
+            },
+
+        ConfigValidationTrustingPeriodSmallerThanZero
+            {
+                chain_id: ChainId,
+                trusting_period: Duration,
+            }
+            |e| {
+                format!("semantic config validation failed for option `trusting_period` of chain '{}', reason: trusting period ({}) must be greater than zero",
+                    e.chain_id, format_duration(e.trusting_period))
+            },
+
+        ConfigValidationTrustingPeriodGreaterThanUnbondingPeriod
+            {
+                chain_id: ChainId,
+                trusting_period: Duration,
+                unbonding_period: Duration,
+            }
+            |e| {
+                format!("semantic config validation failed for option `trusting_period` of chain '{}', reason: trusting period ({}) must be smaller than the unbonding period ({})",
+                    e.chain_id, format_duration(e.trusting_period), format_duration(e.unbonding_period))
+            },
+
+        ConfigValidationDefaultGasTooHigh
+            {
+                chain_id: ChainId,
+                default_gas: u64,
+                max_gas: u64,
+            }
+            |e| {
+                format!("semantic config validation failed for option `default_gas` of chain '{}', reason: default gas ({}) must be smaller than the max gas ({})",
+                    e.chain_id, e.default_gas, e.max_gas)
             },
 
         SdkModuleVersion

@@ -22,7 +22,7 @@ use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
-use ibc::query::QueryTxRequest;
+use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
@@ -284,6 +284,13 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
+    fn query_blocks(
+        &self,
+        _request: QueryBlockRequest,
+    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+        unimplemented!()
+    }
+
     fn proven_client_state(
         &self,
         _client_id: &ClientId,
@@ -440,6 +447,7 @@ pub mod test_utils {
             account_prefix: "".to_string(),
             key_name: "".to_string(),
             store_prefix: "".to_string(),
+            default_gas: None,
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
