@@ -702,11 +702,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_open_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_init()?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: dst_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(dst_msgs, "create channel");
 
         let events = self
             .dst_chain()
@@ -865,11 +861,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_try()?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: dst_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(dst_msgs, "create channel");
 
         let events = self
             .dst_chain()
@@ -956,11 +948,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         ) -> Result<IbcEvent, ChannelError> {
             let dst_msgs = channel.build_chan_open_ack()?;
 
-            // TODO(ADI)
-            let tm = TrackedMsgs {
-                msgs: dst_msgs,
-                tracking_nr: "".into(),
-            };
+            let tm = TrackedMsgs::new(dst_msgs, "create channel");
 
             let events = channel
                 .dst_chain()
@@ -1058,11 +1046,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         ) -> Result<IbcEvent, ChannelError> {
             let dst_msgs = channel.build_chan_open_confirm()?;
 
-            // TODO(ADI)
-            let tm = TrackedMsgs {
-                msgs: dst_msgs,
-                tracking_nr: "".into(),
-            };
+            let tm = TrackedMsgs::new(dst_msgs, "create channel");
             let events = channel
                 .dst_chain()
                 .send_messages_and_wait_commit(tm)
@@ -1126,11 +1110,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_close_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_close_init()?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: dst_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(dst_msgs, "create channel");
 
         let events = self
             .dst_chain()
@@ -1211,11 +1191,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_close_confirm_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_close_confirm()?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: dst_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(dst_msgs, "create channel");
 
         let events = self
             .dst_chain()

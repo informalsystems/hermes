@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use nanoid::nanoid;
 use prost_types::Any;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use ibc::events::IbcEvent;
 use ibc::Height;
@@ -32,13 +32,21 @@ impl fmt::Display for OperationalDataTarget {
 /// A set of [`IbcEvent`]s that have an associated
 /// tracking number to ensure better observability.
 pub struct TrackedEvents {
-    pub list: Vec<IbcEvent>,
-    pub tracking_nr: String,
+    list: Vec<IbcEvent>,
+    tracking_id: String,
 }
 
 impl TrackedEvents {
     pub fn is_empty(&self) -> bool {
         self.list.is_empty()
+    }
+
+    pub fn events(&self) -> &Vec<IbcEvent> {
+        &self.list
+    }
+
+    pub fn tracking_id(&self) -> &String {
+        &self.tracking_id
     }
 
     pub fn len(&self) -> usize {
@@ -56,14 +64,14 @@ impl From<Vec<IbcEvent>> for TrackedEvents {
     fn from(list: Vec<IbcEvent>) -> Self {
         Self {
             list,
-            tracking_nr: nanoid!(10),
+            tracking_id: nanoid!(10),
         }
     }
 }
 
 impl fmt::Display for TrackedEvents {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.tracking_nr)
+        write!(f, "{}", self.tracking_id)
     }
 }
 
@@ -93,17 +101,17 @@ pub struct OperationalData {
     /// Stores the time when the clients on the target chain has been updated, i.e., when this data
     /// was scheduled. Necessary for packet delays.
     pub scheduled_time: Instant,
-    pub tracking_nr: String,
+    pub tracking_id: String,
 }
 
 impl OperationalData {
-    pub fn new(proofs_height: Height, target: OperationalDataTarget, tn: String) -> Self {
+    pub fn new(proofs_height: Height, target: OperationalDataTarget, tn: &str) -> Self {
         OperationalData {
             proofs_height,
             batch: vec![],
             target,
             scheduled_time: Instant::now(),
-            tracking_nr: tn,
+            tracking_id: tn.to_string(),
         }
     }
 
@@ -115,7 +123,7 @@ impl OperationalData {
         let list = self.batch.iter().map(|gm| gm.event.clone()).collect();
         TrackedEvents {
             list,
-            tracking_nr: self.tracking_nr.clone(),
+            tracking_id: self.tracking_id.clone(),
         }
     }
 
@@ -126,11 +134,6 @@ impl OperationalData {
         &self,
         relay_path: &RelayPath<ChainA, ChainB>,
     ) -> Result<TrackedMsgs, LinkError> {
-        if self.batch.is_empty() {
-            warn!("assemble_msgs() method call on an empty OperationalData!");
-            return Ok(TrackedMsgs::empty());
-        }
-
         // For zero delay we prepend the client update msgs.
         let client_update_msg = if relay_path.zero_delay() {
             let update_height = self.proofs_height.increment();
@@ -163,12 +166,13 @@ impl OperationalData {
             None => self.batch.iter().map(|gm| gm.msg.clone()).collect(),
         };
 
-        let tm = TrackedMsgs {
-            msgs,
-            tracking_nr: self.tracking_nr.clone(),
-        };
+        let tm = TrackedMsgs::new(msgs, &self.tracking_id);
 
-        info!("[{}] assembled batch of {} msgs", relay_path, tm.msgs.len());
+        info!(
+            "[{}] assembled batch of {} msgs",
+            relay_path,
+            tm.messages().len()
+        );
 
         Ok(tm)
     }
@@ -179,7 +183,7 @@ impl fmt::Display for OperationalData {
         write!(
             f,
             "{} ->{} @{}; len={}",
-            self.tracking_nr,
+            self.tracking_id,
             self.target,
             self.proofs_height,
             self.batch.len(),

@@ -133,7 +133,7 @@ pub fn build_and_send_transfer_messages<Chain: ChainHandle>(
     let msgs = vec![raw_msg; opts.number_msgs];
 
     let events = packet_src_chain
-        .send_messages_and_wait_commit(TrackedMsgs::new(msgs))
+        .send_messages_and_wait_commit(TrackedMsgs::new(msgs, "ft-transfer"))
         .map_err(|e| PacketError::submit(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction

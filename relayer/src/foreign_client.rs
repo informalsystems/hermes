@@ -393,11 +393,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         msgs.push(msg_upgrade);
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(msgs, "upgrade client");
 
         let res = self
             .dst_chain
@@ -489,7 +485,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         let res = self
             .dst_chain
-            .send_messages_and_wait_commit(TrackedMsgs::new_single_msg(new_msg.to_any()))
+            .send_messages_and_wait_commit(TrackedMsgs::new_single(
+                new_msg.to_any(),
+                "create client",
+            ))
             .map_err(|e| {
                 ForeignClientError::client_create(
                     self.dst_chain.id(),
@@ -782,11 +781,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             ));
         }
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: new_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(new_msgs, "update client");
 
         let events = self
             .dst_chain()
@@ -1118,11 +1113,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .to_any(),
         );
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(msgs, "evidence");
 
         let events = self
             .dst_chain()

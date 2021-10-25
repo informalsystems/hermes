@@ -755,11 +755,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_init_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_init()?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: dst_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(dst_msgs, "create connection");
 
         let events = self
             .dst_chain()
@@ -819,11 +815,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: client_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(client_msgs, "create connection");
         self.src_chain()
             .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.src_chain().id(), e))?;
@@ -894,11 +886,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_try_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_try()?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: dst_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(dst_msgs, "create connection");
 
         let events = self
             .dst_chain()
@@ -948,11 +936,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: client_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(client_msgs, "create connection");
 
         self.src_chain()
             .send_messages_and_wait_commit(tm)
@@ -998,11 +982,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_ack_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_ack()?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: dst_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(dst_msgs, "create connection");
 
         let events = self
             .dst_chain()
@@ -1081,11 +1061,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_confirm_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_confirm()?;
 
-        // TODO(ADI)
-        let tm = TrackedMsgs {
-            msgs: dst_msgs,
-            tracking_nr: "".into(),
-        };
+        let tm = TrackedMsgs::new(dst_msgs, "create connection");
 
         let events = self
             .dst_chain()

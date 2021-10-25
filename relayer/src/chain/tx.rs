@@ -4,30 +4,38 @@ use prost_types::Any;
 
 #[derive(Debug, Clone)]
 pub struct TrackedMsgs {
-    pub msgs: Vec<Any>,
-    pub tracking_nr: String,
+    msgs: Vec<Any>,
+    tracking_id: String,
 }
 
-// TODO(Adi): The tracking nr should never be empty
 impl TrackedMsgs {
-    pub fn new(msgs: Vec<Any>) -> Self {
+    pub fn new(msgs: Vec<Any>, tid: &str) -> Self {
         Self {
             msgs,
-            tracking_nr: "".into(),
+            tracking_id: tid.into(),
         }
     }
 
-    pub fn new_single_msg(msg: Any) -> Self {
-        Self::new(vec![msg])
+    pub fn messages(&self) -> &Vec<Any> {
+        &self.msgs
     }
 
-    pub fn empty() -> Self {
-        Self::new(vec![])
+    pub fn new_single(msg: Any, tid: &str) -> Self {
+        Self {
+            msgs: vec![msg],
+            tracking_id: tid.into(),
+        }
+    }
+}
+
+impl From<TrackedMsgs> for Vec<Any> {
+    fn from(tm: TrackedMsgs) -> Vec<Any> {
+        tm.msgs
     }
 }
 
 impl fmt::Display for TrackedMsgs {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}; len={}", self.tracking_nr, self.msgs.len())
+        write!(f, "{}; len={}", self.tracking_id, self.msgs.len())
     }
 }

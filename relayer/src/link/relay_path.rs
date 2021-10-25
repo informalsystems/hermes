@@ -374,7 +374,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let span = span!(Level::DEBUG, "generate", id = %events);
         let _enter = span.enter();
 
-        let input = events.list;
+        let input = events.events();
         let src_height = match input.get(0) {
             None => return Ok((None, None)),
             Some(ev) => ev.height(),
@@ -385,22 +385,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let mut src_od = OperationalData::new(
             dst_height,
             OperationalDataTarget::Source,
-            events.tracking_nr.clone(),
+            events.tracking_id(),
         );
         // Operational data targeting the destination chain (e.g., SendPacket messages)
         let mut dst_od = OperationalData::new(
             src_height,
             OperationalDataTarget::Destination,
-            events.tracking_nr,
+            events.tracking_id(),
         );
 
         for event in input {
             trace!("[{}] {} => {}", self, self.src_chain().id(), event);
             let (dst_msg, src_msg) = match event {
-                IbcEvent::CloseInitChannel(_) => (
-                    Some(self.build_chan_close_confirm_from_event(&event)?),
-                    None,
-                ),
+                IbcEvent::CloseInitChannel(_) => {
+                    (Some(self.build_chan_close_confirm_from_event(event)?), None)
+                }
                 IbcEvent::TimeoutPacket(ref timeout_ev) => {
                     // When a timeout packet for an ordered channel is processed on-chain (src here)
                     // the chain closes the channel but no close init event is emitted, instead
@@ -412,10 +411,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             .src_channel(timeout_ev.height)?
                             .state_matches(&ChannelState::Closed)
                     {
-                        (
-                            Some(self.build_chan_close_confirm_from_event(&event)?),
-                            None,
-                        )
+                        (Some(self.build_chan_close_confirm_from_event(event)?), None)
                     } else {
                         (None, None)
                     }
@@ -474,7 +470,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         msg.type_url,
                         event
                     );
-                    src_od.batch.push(TransitMessage { event, msg });
+                    src_od.batch.push(TransitMessage {
+                        event: event.clone(),
+                        msg,
+                    });
                 }
             }
         }
@@ -734,7 +733,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Handles updating the client on the destination chain
-    fn update_client_dst(&self, src_chain_height: Height) -> Result<(), LinkError> {
+    fn update_client_dst(
+        &self,
+        src_chain_height: Height,
+        tracking_id: &str,
+    ) -> Result<(), LinkError> {
         // Handle the update on the destination chain
         // Check if a consensus state at update_height exists on destination chain already
         if self
@@ -756,11 +759,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 i + 1, MAX_RETRIES,
             );
 
-            // TODO(ADI) Fill in the tn.
-            let tm = TrackedMsgs {
-                msgs: dst_update,
-                tracking_nr: "".into(),
-            };
+            let tm = TrackedMsgs::new(dst_update, tracking_id);
 
             let dst_tx_events = self
                 .dst_chain()
@@ -784,7 +783,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Handles updating the client on the source chain
-    fn update_client_src(&self, dst_chain_height: Height) -> Result<(), LinkError> {
+    fn update_client_src(
+        &self,
+        dst_chain_height: Height,
+        tracking_id: &str,
+    ) -> Result<(), LinkError> {
         if self
             .src_chain()
             .proven_client_consensus(self.src_client_id(), dst_chain_height, Height::zero())
@@ -803,11 +806,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 dst_chain_height,
             );
 
-            // TODO(ADI) Fill in the tn.
-            let tm = TrackedMsgs {
-                msgs: src_update,
-                tracking_nr: "".into(),
-            };
+            let tm = TrackedMsgs::new(src_update, tracking_id);
 
             let src_tx_events = self
                 .src_chain()
@@ -1354,14 +1353,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             self.build_timeout_from_send_packet_event(e, dst_current_height)?
                         {
                             debug!("[{}] found a timed-out msg in the op data {}", self, odata);
-                            timed_out.entry(odata_pos).or_insert_with(
-                                || OperationalData::new(dst_current_height, OperationalDataTarget::Source, odata.tracking_nr.clone())
-                            ).push(
-                                TransitMessage {
+                            timed_out
+                                .entry(odata_pos)
+                                .or_insert_with(|| {
+                                    OperationalData::new(
+                                        dst_current_height,
+                                        OperationalDataTarget::Source,
+                                        &odata.tracking_id,
+                                    )
+                                })
+                                .push(TransitMessage {
                                     event: event.clone(),
                                     msg: new_msg,
-                                },
-                            );
+                                });
                         } else {
                             // A SendPacket event, but did not time-out yet, retain
                             retain_batch.push(gm.clone());
@@ -1429,8 +1433,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             debug!("[{}] connection delay is non-zero: updating client", self);
             let target_height = od.proofs_height.increment();
             match od.target {
-                OperationalDataTarget::Source => self.update_client_src(target_height)?,
-                OperationalDataTarget::Destination => self.update_client_dst(target_height)?,
+                OperationalDataTarget::Source => {
+                    self.update_client_src(target_height, &od.tracking_id)?
+                }
+                OperationalDataTarget::Destination => {
+                    self.update_client_dst(target_height, &od.tracking_id)?
+                }
             };
         } else {
             debug!(

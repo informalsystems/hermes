@@ -133,7 +133,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     };
 
     let events = dst_chain
-        .send_messages_and_wait_commit(TrackedMsgs::new_single_msg(any_msg))
+        .send_messages_and_wait_commit(TrackedMsgs::new_single(any_msg, "upgrade"))
         .map_err(|e| UpgradeChainError::submit(dst_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction
