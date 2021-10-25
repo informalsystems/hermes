@@ -1364,12 +1364,7 @@ dependencies = [
  "informalsystems-tonic",
  "itertools",
  "k256",
-<<<<<<< HEAD
-=======
  "nanoid",
- "prost",
- "prost-types",
->>>>>>> c2ad8c2c (More structure in logs, pass 1)
  "retry",
  "ripemd160",
  "semver 1.0.4",
