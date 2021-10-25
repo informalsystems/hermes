@@ -14,6 +14,26 @@ sp-core = { version = "3.0.0", default-features = false, optional = true }
 sp-io = { version = "3.0.0", default-features = false, optional = true }
 sp-runtime = { version = "3.0.0", default-features = false, optional = true }
 sp-std = { version = "3.0.0", default-features = false, optional = true }
+sp-api = { version = "3.0.0", default-features = false, optional = true }
+sp-application-crypto = { version = "3.0.0", default-features = false, optional = true }
+sp-arithmetic = { version = "3.0.0", default-features = false, optional = true }
+sp-blockchain = { version = "3.0.0", default-features = false, optional = true }
+sp-consensus = { version = "0.9.0", default-features = false, optional = true }
+sp-keystore = { version = "0.9.0", default-features = false, optional = true }
+sp-staking = { version = "3.0.0", default-features = false, optional = true }
+sp-trie = { version = "3.0.0", default-features = false, optional = true }
+sp-utils = { version = "3.0.0", default-features = false, optional = true }
+sp-authorship = { version = "3.0.0", default-features = false, optional = true }
+sp-timestamp = { version = "3.0.0", default-features = false, optional = true }
+sp-state-machine = { version = "0.9.0", default-features = false, optional = true }
+sp-block-builder = { version = "3.0.0", default-features = false, optional = true }
+sp-consensus-babe = { version = "0.9.0", default-features = false, optional = true }
+sp-finality-grandpa = { version = "3.0.0", default-features = false, optional = true }
+sp-inherents = { version = "3.0.0", default-features = false, optional = true }
+sp-offchain = { version = "3.0.0", default-features = false, optional = true }
+sp-session = { version = "3.0.0", default-features = false, optional = true }
+sp-transaction-pool = { version = "3.0.0", default-features = false, optional = true }
+sp-version = { version = "3.0.0", default-features = false, optional = true }
 
 [features]
 default = []
@@ -22,6 +42,26 @@ use-substrate = [
   "sp-io",
   "sp-runtime",
   "sp-std",
+  "sp-api",
+  "sp-application-crypto",
+  "sp-arithmetic",
+  "sp-blockchain",
+  "sp-consensus",
+  "sp-keystore",
+  "sp-staking",
+  "sp-trie",
+  "sp-utils",
+  "sp-authorship",
+  "sp-timestamp",
+  "sp-state-machine",
+  "sp-block-builder",
+  "sp-consensus-babe",
+  "sp-finality-grandpa",
+  "sp-inherents",
+  "sp-offchain",
+  "sp-session",
+  "sp-transaction-pool",
+  "sp-version",
 ]
 
 [profile.dev]
@@ -39,3 +79,159 @@ safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git
 safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
 safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
 safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+
+# susbtrate
+frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-session = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-client-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-keystore = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-network = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-network-gossip = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-application-crypto = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-arithmetic = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-blockchain = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-consensus = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-core = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-io = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-keystore = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-runtime = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-staking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-std = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-trie = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-utils = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+substrate-prometheus-endpoint = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-benchmarking-cli = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-assets = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-balances = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-staking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-im-online = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-transaction-payment-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-basic-authorship = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-chain-spec = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-cli = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-babe-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-epochs = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-slots = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-uncles = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-finality-grandpa-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-sync-state-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-authorship = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-timestamp = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-mmr-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-state-machine = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-babe = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-executor = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-finality-grandpa = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-rpc-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-service = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-telemetry = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-transaction-pool = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-block-builder = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-consensus-babe = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-finality-grandpa = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-inherents = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+substrate-frame-rpc-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-election-provider-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-executive = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-system-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-system-rpc-runtime-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-authorship = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-babe = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-grandpa = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-mmr = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-randomness-collective-flip = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-staking-reward-curve = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-sudo = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-timestamp = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-transaction-payment = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-offchain = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-session = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-transaction-pool = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-version = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+substrate-wasm-builder = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+substrate-build-script-utils = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-metadata = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+
+[patch."https://github.com/paritytech/substrate"]
+frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-session = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-client-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-keystore = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-network = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-network-gossip = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-application-crypto = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-arithmetic = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-blockchain = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-consensus = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-core = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-io = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-keystore = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-runtime = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-staking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-std = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-trie = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-utils = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+substrate-prometheus-endpoint = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-benchmarking-cli = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-assets = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-balances = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-staking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-im-online = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-transaction-payment-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-basic-authorship = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-chain-spec = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-cli = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-babe-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-epochs = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-slots = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-uncles = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-finality-grandpa-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-sync-state-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-authorship = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-timestamp = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-mmr-rpc = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-state-machine = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-consensus-babe = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-executor = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-finality-grandpa = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-rpc-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-service = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-telemetry = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sc-transaction-pool = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-block-builder = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-consensus-babe = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-finality-grandpa = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-inherents = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+substrate-frame-rpc-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-election-provider-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-executive = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-system-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-system-rpc-runtime-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-authorship = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-babe = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-grandpa = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-mmr = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-randomness-collective-flip = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-staking-reward-curve = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-sudo = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-timestamp = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-transaction-payment = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-offchain = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-session = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-transaction-pool = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-version = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+substrate-wasm-builder = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+substrate-build-script-utils = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-metadata = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }

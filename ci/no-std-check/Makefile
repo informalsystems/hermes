@@ -1,4 +1,5 @@
-NIGHTLY_VERSION=nightly-2021-09-01
+#NIGHTLY_VERSION=nightly-2021-09-01
+NIGHTLY_VERSION=nightly
 
 setup:
 	rustup install $(NIGHTLY_VERSION)
