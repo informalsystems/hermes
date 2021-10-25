@@ -107,6 +107,10 @@ impl OperationalData {
         }
     }
 
+    pub fn push(&mut self, msg: TransitMessage) {
+        self.batch.push(msg)
+    }
+
     pub fn events(&self) -> TrackedEvents {
         let list = self.batch.iter().map(|gm| gm.event.clone()).collect();
         TrackedEvents {

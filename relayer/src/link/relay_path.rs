@@ -391,11 +391,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let mut dst_od = OperationalData::new(
             src_height,
             OperationalDataTarget::Destination,
-            events.tracking_nr.clone(),
+            events.tracking_nr,
         );
 
         for event in input {
-            debug!("[{}] {} => {}", self, self.src_chain().id(), event);
+            trace!("[{}] {} => {}", self, self.src_chain().id(), event);
             let (dst_msg, src_msg) = match event {
                 IbcEvent::CloseInitChannel(_) => (
                     Some(self.build_chan_close_confirm_from_event(&event)?),
@@ -1335,7 +1335,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // to source operational data.
         let mut all_dst_odata = self.dst_operational_data.clone_vec();
 
-        let mut timed_out: HashMap<usize, Vec<TransitMessage>> = HashMap::default();
+        let mut timed_out: HashMap<usize, OperationalData> = HashMap::default();
 
         // For each operational data targeting the destination chain...
         for (odata_pos, odata) in all_dst_odata.iter_mut().enumerate() {
@@ -1354,7 +1354,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             self.build_timeout_from_send_packet_event(e, dst_current_height)?
                         {
                             debug!("[{}] found a timed-out msg in the op data {}", self, odata);
-                            timed_out.entry(odata_pos).or_insert_with(Vec::new).push(
+                            timed_out.entry(odata_pos).or_insert_with(
+                                || OperationalData::new(dst_current_height, OperationalDataTarget::Source, odata.tracking_nr.clone())
+                            ).push(
                                 TransitMessage {
                                     event: event.clone(),
                                     msg: new_msg,
@@ -1394,12 +1396,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Schedule new operational data targeting the source chain
-        for (_, batch) in timed_out.into_iter() {
-            let mut new_od =
-                OperationalData::new(dst_current_height, OperationalDataTarget::Source, todo!());
-
-            new_od.batch = batch;
-
+        for (_, new_od) in timed_out.into_iter() {
             info!(
                 "[{}] re-scheduling from new timed-out batch of size {}",
                 self,

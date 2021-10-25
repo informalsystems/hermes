@@ -3,7 +3,6 @@ use core::ops::Add;
 use core::time::Duration;
 
 use crossbeam_channel as channel;
-use prost_types::Any;
 use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
@@ -136,7 +135,7 @@ impl ChainEndpoint for MockChain {
 
     fn send_messages_and_wait_check_tx(
         &mut self,
-        tracked_msgs: TrackedMsgs,
+        _tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
         todo!()
     }
