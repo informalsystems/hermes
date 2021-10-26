@@ -1385,7 +1385,8 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let pc = response.commitments;
+        let mut pc = response.commitments;
+        pc.sort_by_key(|ps| ps.sequence);
 
         let height = response
             .height
