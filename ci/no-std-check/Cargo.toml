@@ -16,12 +16,18 @@ sp-runtime = { version = "3.0.0", default-features = false, optional = true }
 sp-std = { version = "3.0.0", default-features = false, optional = true }
 
 [features]
-default = []
+panic-handler = []
 use-substrate = [
   "sp-core",
   "sp-io",
   "sp-runtime",
   "sp-std",
+]
+substrate-std = [
+  "sp-core/std",
+  "sp-io/std",
+  "sp-runtime/std",
+  "sp-std/std",
 ]
 
 [profile.dev]
@@ -33,7 +39,7 @@ panic = "abort"
 [patch.crates-io]
 tendermint          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
 tendermint-proto    = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-ics23               = { git = "https://github.com/informalsystems/ics23.git", branch = "master" }
+ics23               = { git = "https://github.com/informalsystems/ics23.git", branch = "soares/no-std" }
 safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
 safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
 safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }

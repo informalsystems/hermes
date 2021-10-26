@@ -43,7 +43,7 @@ error[E0152]: found duplicate lang item `panic_impl`
 ```
 
  */
-#[cfg(not(feature = "use-substrate"))]
+#[cfg(feature="panic-handler")]
 #[panic_handler]
 #[no_mangle]
 fn panic(_info: &PanicInfo) -> ! {
