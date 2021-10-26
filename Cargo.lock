@@ -1048,9 +1048,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c06815895acec637cd6ed6e9662c935b866d20a106f8361892893a7d9234964"
+checksum = "7fd819562fcebdac5afc5c113c3ec36f902840b70fd4fc458799c8ce4607ae55"
 dependencies = [
  "bytes",
  "fnv",
@@ -1067,9 +1067,9 @@ dependencies = [
 
 [[package]]
 name = "half"
-version = "1.8.1"
+version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bd566f08830dd1fa75b2a5f1d8def8336de7f08b2692a9a71efbe7188aea36f"
+checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
 name = "hashbrown"
@@ -1169,9 +1169,9 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "399c583b2979440c60be0821a6199eca73bc3c8dcd9d070d75ac726e2c6186e5"
+checksum = "1ff4f84919677303da5f147645dbea6b1881f368d03ac84e1dc09031ebd7b2c6"
 dependencies = [
  "bytes",
  "http",
@@ -1208,9 +1208,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.14.13"
+version = "0.14.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15d1cfb9e4f68655fa04c01f59edb405b6074a0f7118ea881e5026e4a1cd8593"
+checksum = "2b91bb1f221b6ea1f1e4371216b70f40748774c2fb5971b450c07773fb92d26b"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1301,10 +1301,10 @@ dependencies = [
  "env_logger",
  "flex-error",
  "ibc-proto",
- "informalsystems-ics23",
- "informalsystems-prost",
- "informalsystems-prost-types",
+ "ics23",
  "modelator",
+ "prost",
+ "prost-types",
  "safe-regex",
  "serde",
  "serde_derive",
@@ -1328,10 +1328,10 @@ version = "0.12.0-pre.1"
 dependencies = [
  "bytes",
  "getrandom 0.2.3",
- "informalsystems-prost",
- "informalsystems-prost-types",
- "informalsystems-tonic",
+ "prost",
+ "prost-types",
  "tendermint-proto",
+ "tonic",
 ]
 
 [[package]]
@@ -1359,11 +1359,10 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ibc-telemetry",
- "informalsystems-prost",
- "informalsystems-prost-types",
- "informalsystems-tonic",
  "itertools",
  "k256",
+ "prost",
+ "prost-types",
  "retry",
  "ripemd160",
  "semver 1.0.4",
@@ -1386,6 +1385,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "toml",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.2.25",
  "uint",
@@ -1410,10 +1410,10 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-rest",
  "ibc-telemetry",
- "informalsystems-prost",
- "informalsystems-prost-types",
  "itertools",
  "once_cell",
+ "prost",
+ "prost-types",
  "regex",
  "serde",
  "serde_derive",
@@ -1459,6 +1459,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ics23"
+version = "0.6.5"
+source = "git+https://github.com/informalsystems/ics23?branch=romac/prost-0.9#46509c655a9b918919a7f1c99524fcfe91afb168"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "hex",
+ "prost",
+ "prost-types",
+ "ripemd160",
+ "sha2",
+ "sha3",
+ "sp-std",
+]
+
+[[package]]
 name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1489,89 +1505,6 @@ checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
 dependencies = [
  "autocfg",
  "hashbrown",
-]
-
-[[package]]
-name = "informalsystems-ics23"
-version = "0.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3082f27f44b0c2199d307d2f92891bc37c13ea0ad6f78065f8db7feaf6b8d62b"
-dependencies = [
- "anyhow",
- "bytes",
- "hex",
- "informalsystems-prost",
- "informalsystems-prost-types",
- "ripemd160",
- "sha2",
- "sha3",
- "sp-std",
-]
-
-[[package]]
-name = "informalsystems-prost"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5620e41d3653c27671bee3e07822407365cae5d97f4a391a1c87cb2a4caf647b"
-dependencies = [
- "bytes",
- "informalsystems-prost-derive",
-]
-
-[[package]]
-name = "informalsystems-prost-derive"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c6af6594ef5bc7f879ba098055e084bf3562077b6dc83fcc96b579cdd319eba"
-dependencies = [
- "anyhow",
- "itertools",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "informalsystems-prost-types"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41b094d80f1836c54e192146a58ef1ef1803b1a50a055ab6303ec757e034431a"
-dependencies = [
- "bytes",
- "informalsystems-prost",
-]
-
-[[package]]
-name = "informalsystems-tonic"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f51072ca90a848c5dd15cf808e94d518c6d8b9f664378838bb06a83ea34ca7b"
-dependencies = [
- "async-stream",
- "async-trait",
- "base64",
- "bytes",
- "futures-core",
- "futures-util",
- "h2",
- "http",
- "http-body",
- "hyper",
- "hyper-timeout",
- "informalsystems-prost",
- "informalsystems-prost-derive",
- "percent-encoding",
- "pin-project",
- "rustls-native-certs",
- "tokio",
- "tokio-rustls",
- "tokio-stream",
- "tokio-util",
- "tower",
- "tower-layer",
- "tower-service",
- "tracing",
- "tracing-futures",
 ]
 
 [[package]]
@@ -1655,9 +1588,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.104"
+version = "0.2.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b2f96d100e1cf1929e7719b7edb3b90ab5298072638fccd77be9ce942ecdfce"
+checksum = "869d572136620d55835903746bcb5cdc54cb2851fd0aeec53220b4bb65ef3013"
 
 [[package]]
 name = "lock_api"
@@ -2142,15 +2075,15 @@ dependencies = [
 
 [[package]]
 name = "pkg-config"
-version = "0.3.20"
+version = "0.3.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c9b1041b4387893b91ee6746cddfc28516aff326a3519fb2adf820932c5e6cb"
+checksum = "12295df4f294471248581bc09bef3c38a5e46f1e36d6a37353621a0c6c357e1f"
 
 [[package]]
 name = "ppv-lite86"
-version = "0.2.14"
+version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3ca011bd0129ff4ae15cd04c4eef202cadf6c51c21e47aba319b4e0501db741"
+checksum = "ed0cfbc8191465bed66e1718596ee0b0b35d5ee1f41c5df2189d0fe8bde535ba"
 
 [[package]]
 name = "proc-macro-error"
@@ -2213,10 +2146,43 @@ dependencies = [
 ]
 
 [[package]]
-name = "protobuf"
-version = "2.25.1"
+name = "prost"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23129d50f2c9355ced935fce8a08bd706ee2e7ce2b3b33bf61dace0e379ac63a"
+checksum = "444879275cb4fd84958b1a1d5420d15e6fcf7c235fe47f053c9c2a80aceb6001"
+dependencies = [
+ "bytes",
+ "prost-derive",
+]
+
+[[package]]
+name = "prost-derive"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
+dependencies = [
+ "anyhow",
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "prost-types"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "534b7a0e836e3c482d2693070f982e39e7611da9695d4d1f5a4b186b51faef0a"
+dependencies = [
+ "bytes",
+ "prost",
+]
+
+[[package]]
+name = "protobuf"
+version = "2.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47c327e191621a2158159df97cdbc2e7074bb4e940275e35abf38eb3d2595754"
 
 [[package]]
 name = "quick-error"
@@ -2426,7 +2392,7 @@ dependencies = [
  "serde_json",
  "sha1",
  "threadpool",
- "time 0.3.3",
+ "time 0.3.4",
  "tiny_http",
  "url",
 ]
@@ -3003,8 +2969,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.23.0-internal"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4de2b0865871f6c71dc865dff0f0aead05312c278181f9f31577d5d99e209872"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/925-prost0.9#158e8ba6b6412881ab481a7ccbc70a0542b7df4d"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3013,11 +2978,11 @@ dependencies = [
  "ed25519-dalek",
  "flex-error",
  "futures",
- "informalsystems-prost",
- "informalsystems-prost-types",
  "k256",
  "num-traits",
  "once_cell",
+ "prost",
+ "prost-types",
  "ripemd160",
  "serde",
  "serde_bytes",
@@ -3034,8 +2999,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.23.0-internal"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d04199510971c3eded80090c7f62fb2a8395b12e3e6ceb80209e1a2d213406ba"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/925-prost0.9#158e8ba6b6412881ab481a7ccbc70a0542b7df4d"
 dependencies = [
  "flex-error",
  "serde",
@@ -3048,8 +3012,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.23.0-internal"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf12f0d6409a0c9c9d3a5293b6438957fcd99e2734f82dde3eafcab4f4900d09"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/925-prost0.9#158e8ba6b6412881ab481a7ccbc70a0542b7df4d"
 dependencies = [
  "chrono",
  "contracts",
@@ -3069,16 +3032,15 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.23.0-internal"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5d06c54f1bf7303d74cfa5a7d5948c6a577e444c8c78ae37cfe5ed0edcbc45"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/925-prost0.9#158e8ba6b6412881ab481a7ccbc70a0542b7df4d"
 dependencies = [
  "bytes",
  "chrono",
  "flex-error",
- "informalsystems-prost",
- "informalsystems-prost-types",
  "num-derive",
  "num-traits",
+ "prost",
+ "prost-types",
  "serde",
  "serde_bytes",
  "subtle-encoding",
@@ -3087,8 +3049,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.23.0-internal"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83fe23cfd9e16066cea7e3a1815d26a5cd3c81321a4c093d5cea2a836289993a"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/925-prost0.9#158e8ba6b6412881ab481a7ccbc70a0542b7df4d"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3121,8 +3082,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.23.0-internal"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "451b42679a605d1ee0b0376a3ed4b7aa89a1a24e4abfbb9a32249d40f144a134"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/925-prost0.9#158e8ba6b6412881ab481a7ccbc70a0542b7df4d"
 dependencies = [
  "chrono",
  "ed25519-dalek",
@@ -3213,9 +3173,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cde1cf55178e0293453ba2cca0d5f8392a922e52aa958aee9c28ed02becc6d03"
+checksum = "99beeb0daeac2bd1e86ac2c21caddecb244b39a093594da1a661ec2060c7aedd"
 dependencies = [
  "libc",
 ]
@@ -3370,6 +3330,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a31142970826733df8241ef35dc040ef98c679ab14d7c3e54d827099b3acecaa"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "tonic"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13f2aeb38f03d458a20b567d26716c0b6e4f27fc9bbc70c4e45933ef4037a0bc"
+dependencies = [
+ "async-stream",
+ "async-trait",
+ "base64",
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "h2",
+ "http",
+ "http-body",
+ "hyper",
+ "hyper-timeout",
+ "percent-encoding",
+ "pin-project",
+ "prost",
+ "prost-derive",
+ "rustls-native-certs",
+ "tokio",
+ "tokio-rustls",
+ "tokio-stream",
+ "tokio-util",
+ "tower",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
