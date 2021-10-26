@@ -225,7 +225,7 @@ Our release process is as follows:
    [See this article][crates.io-security] for a more in-depth explanation.  
    **Note:** This step requires the appropriate privileges to push crates to [crates.io].
 8. Once all crates have been successfully released, create a signed tag and push it to
-   GitHub: `git tag -s -a vX.Y.Z`. In the tag message, write the version and the the link
+   GitHub: `git tag -s -a vX.Y.Z`. In the tag message, write the version and the link
    to the corresponding section of the changelog.
 9. Once the tag is pushed, wait for the CI bot to create a GitHub release, and update
    the release description to `[📖 CHANGELOG](https://github.com/informalsystems/ibc-rs/blob/master/CHANGELOG.md#vXYZ)`.
