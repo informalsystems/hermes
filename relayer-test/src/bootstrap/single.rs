@@ -4,7 +4,7 @@ use std::thread;
 use tracing::{debug, info, trace};
 
 use crate::chain::builder::ChainBuilder;
-use crate::chain::command::ChainCommand;
+use crate::chain::driver::ChainDriver;
 use crate::chain::config;
 use crate::chain::wallet::Wallet;
 use crate::process::ChildProcess;
@@ -14,7 +14,7 @@ pub const STAKE_DENOM: &str = "stake";
 pub const INITIAL_TOKEN_AMOUNT: u64 = 1_000_000_000_000;
 
 pub struct ChainService {
-    pub chain: ChainCommand,
+    pub chain: ChainDriver,
     pub process: ChildProcess,
     pub validator: Wallet,
     pub relayer: Wallet,
@@ -95,7 +95,7 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService, Er
 // Wait for the wallet to reach the target amount when querying from the chain.
 // This is to ensure that the chain has properly started and committed the genesis block
 pub fn wait_wallet_amount(
-    chain: &ChainCommand,
+    chain: &ChainDriver,
     user: &Wallet,
     target_amount: u64,
     denom: &str,

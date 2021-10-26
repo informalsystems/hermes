@@ -16,8 +16,15 @@ use crate::util;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
+/// The name `ChainDriver` is inspired by [WebDriver](https://developer.mozilla.org/en-US/docs/Web/WebDriver),
+/// which is the term used to describe programs that control spawning of the web browsers. In our case,
+/// the ChainDriver is used to spawn and manage Gaia chains.
+///
+/// In the future, we will want to turn this into one or more `ChainDriver` traits so that they can
+/// be used to spawn multiple chain implementations other than one version of Gaia.
+
 #[derive(Debug)]
-pub struct ChainCommand {
+pub struct ChainDriver {
     pub command_path: String,
 
     pub chain_id: ChainId,
@@ -31,7 +38,7 @@ pub struct ChainCommand {
     pub p2p_port: u16,
 }
 
-impl ChainCommand {
+impl ChainDriver {
     pub fn new(
         command_path: String,
         chain_id: ChainId,
