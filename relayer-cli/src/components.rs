@@ -9,7 +9,7 @@ use tracing_subscriber::{
     },
     reload::Handle,
     util::SubscriberInitExt,
-    EnvFilter, FmtSubscriber,
+    filter::EnvFilter, FmtSubscriber,
 };
 
 use ibc_relayer::config::GlobalConfig;
