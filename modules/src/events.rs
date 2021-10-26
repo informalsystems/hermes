@@ -336,8 +336,6 @@ pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -
     }
 }
 
-//
-
 impl IbcEvent {
     pub fn to_json(&self) -> String {
         match serde_json::to_string(self) {
