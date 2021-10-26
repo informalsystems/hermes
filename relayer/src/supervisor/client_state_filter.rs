@@ -3,11 +3,11 @@ use alloc::collections::BTreeMap as HashMap;
 use flex_error::define_error;
 use tracing::{debug, trace};
 
-use ibc::ics02_client::client_state::{AnyClientState, ClientState};
-use ibc::ics02_client::trust_threshold::TrustThreshold;
-use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::error::Error as ChannelError;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
+use ibc::core::ics02_client::trust_threshold::TrustThreshold;
+use ibc::core::ics03_connection::connection::ConnectionEnd;
+use ibc::core::ics04_channel::error::Error as ChannelError;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;

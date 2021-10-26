@@ -34,31 +34,24 @@ extern crate std;
 
 mod prelude;
 
-pub mod application;
+pub mod applications;
+pub mod clients;
+pub mod core;
 pub mod events;
 pub mod handler;
 pub mod keys;
 pub mod macros;
 pub mod proofs;
 pub mod query;
+pub mod relayer;
 pub mod signer;
 pub mod timestamp;
 pub mod tx_msg;
 
-pub mod ics02_client;
-pub mod ics03_connection;
-pub mod ics04_channel;
-pub mod ics05_port;
-pub mod ics07_tendermint;
-pub mod ics18_relayer;
-pub mod ics23_commitment;
-pub mod ics24_host;
-pub mod ics26_routing;
-
 mod serializers;
 
 /// Re-export of ICS 002 Height domain type
-pub type Height = crate::ics02_client::height::Height;
+pub type Height = crate::core::ics02_client::height::Height;
 
 #[cfg(test)]
 mod test;

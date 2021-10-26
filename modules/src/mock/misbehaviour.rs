@@ -5,9 +5,9 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Misbehaviour as RawMisbehaviour;
 
-use crate::ics02_client::error::Error;
-use crate::ics02_client::misbehaviour::AnyMisbehaviour;
-use crate::ics24_host::identifier::ClientId;
+use crate::core::ics02_client::error::Error;
+use crate::core::ics02_client::misbehaviour::AnyMisbehaviour;
+use crate::core::ics24_host::identifier::ClientId;
 use crate::mock::header::MockHeader;
 use crate::Height;
 
@@ -18,7 +18,7 @@ pub struct Misbehaviour {
     pub header2: MockHeader,
 }
 
-impl crate::ics02_client::misbehaviour::Misbehaviour for Misbehaviour {
+impl crate::core::ics02_client::misbehaviour::Misbehaviour for Misbehaviour {
     fn client_id(&self) -> &ClientId {
         &self.client_id
     }

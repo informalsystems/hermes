@@ -2,8 +2,8 @@ use core::time::Duration;
 
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::connection::Connection;

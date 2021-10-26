@@ -3,25 +3,25 @@ use core::fmt::Debug;
 use crossbeam_channel as channel;
 use serde::{Serialize, Serializer};
 
-use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::{
+    core::{
+        ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
+        ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
+        ics02_client::events::UpdateClient,
+        ics02_client::header::AnyHeader,
+        ics02_client::misbehaviour::MisbehaviourEvidence,
+        ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
+        ics03_connection::version::Version,
+        ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
+        ics04_channel::packet::{PacketMsgType, Sequence},
+        ics23_commitment::commitment::CommitmentPrefix,
+        ics24_host::identifier::ChainId,
+        ics24_host::identifier::ChannelId,
+        ics24_host::identifier::{ClientId, ConnectionId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::header::AnyHeader,
-    ics03_connection::connection::ConnectionEnd,
-    ics03_connection::version::Version,
-    ics04_channel::channel::ChannelEnd,
-    ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::ChainId,
-    ics24_host::identifier::ChannelId,
-    ics24_host::identifier::{ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
