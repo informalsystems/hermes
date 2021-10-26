@@ -15,9 +15,7 @@ use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
-///
 /// Message definition for the "packet receiving" datagram.
-///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgTransfer {
     /// the port on which the packet will be sent

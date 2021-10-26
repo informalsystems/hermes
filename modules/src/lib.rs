@@ -15,19 +15,33 @@
 )]
 #![forbid(unsafe_code)]
 
-//! Implementation of the following ICS modules:
+//! This library implements the _I_nter_B_lockchain _C_ommunication (IBC) protocol in Rust. IBC is
+//! a distributed protocol that enables communication between distinct sovereign blockchains.
+//! Loose analogies may be drawn between the IBC protocol and the TCP/UDP protocols that enable
+//! communication over the internet via packet streaming. Indeed, IBC also encodes the notion of
+//! ordered and unordered packet streams.
 //!
-//! - ICS 02: Client
-//! - ICS 03: Connection
-//! - ICS 04: Channel
-//! - ICS 05: Port
-//! - ICS 07: Tendermint Client
-//! - ICS 18: Basic relayer functions
-//! - ICS 23: Vector Commitment Scheme
-//! - ICS 24: Host Requirements
-//! - ICS 26: Routing
-//! - Applications:
-//!    - ICS 20: Fungible Token Transfer
+//! The layout of this crate mirrors the classifications of the [Interchain
+//! Standards][ics-standards]. These classifications are [Core][core], [Clients][clients],
+//! [Applications][applications], and [Relayer][relayer].
+//!
+//! Core consists of the designs and logic pertaining to the transport, authentication, and
+//! ordering layers of the IBC protocol, the most fundamental pieces.
+//!
+//! Clients consists of the implementations of various state machine front-ends that leverage the
+//! IBC protocol.
+//!
+//! Applications consists of various packet encoding and processing semantics which underpin the
+//! various types of transactions that users can perform on any IBC-compliant chain.
+//!
+//! Relayer contains an important off-chain process, the Hermes packet relayer, which is
+//! responsible for facilitating communication between sovereign blockchains via packet forwarding.
+//!
+//! [core]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core
+//! [clients]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/clients
+//! [applications]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/applications
+//! [relayer]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/relayer
+//! [ics-standards]: https://github.com/cosmos/ibc#interchain-standards
 
 extern crate alloc;
 extern crate std;
