@@ -4,14 +4,11 @@
 #![forbid(unsafe_code)]
 
 use ibc_relayer_cli::application::APPLICATION;
-use std::env;
+use ibc_relayer_cli::components::enable_ansi;
 
 /// Boot Cli
 fn main() -> eyre::Result<()> {
-    let term_var = env::var("TERM").unwrap_or_else(|_| "".to_string());
-
-    // Use color_eyre to display error traces in terminals that support color
-    if term_var == "xterm-256color" || term_var == "xterm-color" {
+    if enable_ansi() {
         color_eyre::install()?;
     }
 

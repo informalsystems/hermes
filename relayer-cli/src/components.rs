@@ -92,7 +92,7 @@ impl PrettyTracing {
 /// so that we know whether or not to enable colored output,
 /// using ANSI escape codes. If either is not, eg. because
 /// stdout is redirected to a file, we don't enable colored output.
-fn enable_ansi() -> bool {
+pub fn enable_ansi() -> bool {
     atty::is(atty::Stream::Stdout) && atty::is(atty::Stream::Stderr)
 }
 
