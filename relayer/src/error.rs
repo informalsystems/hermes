@@ -287,7 +287,7 @@ define_error! {
             |_| { "requested proof for data in the privateStore" },
 
         ChannelSend
-            |_| { "failed to send through channel" },
+            |_| { "internal communication failure: error sending inter-thread request/response" },
 
         ChannelReceive
             [ TraceError<crossbeam_channel::RecvError> ]

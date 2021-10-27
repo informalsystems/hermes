@@ -26,7 +26,7 @@ use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::query::QueryTxRequest;
-use ibc::timestamp::Timestamp;
+use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
@@ -75,6 +75,17 @@ define_error! {
                 description: String
             }
             [ RelayerError ]
+            |e| {
+                format_args!("error raised while updating client on chain {0}: {1}", e.chain_id, e.description)
+            },
+
+        ClientUpdateTiming
+            {
+                chain_id: ChainId,
+                clock_drift: Duration,
+                description: String
+            }
+            [ TimestampOverflowError ]
             |e| {
                 format_args!("error raised while updating client on chain {0}: {1}", e.chain_id, e.description)
             },
@@ -674,9 +685,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// - determine the `dst_timestamp` as the time of the latest block on destination chain
     /// - return if `header.timestamp <= dst_timestamp + client_state.max_clock_drift`
     /// - wait for the destination chain to reach `dst_timestamp + 1`
-    ///    Note: This is mostly to help with exsiting clients where the `max_clock_drift` did
+    ///    Note: This is mostly to help with existing clients where the `max_clock_drift` did
     ///    not take into account the block time.
     /// - return error if header.timestamp < dst_timestamp + client_state.max_clock_drift
+    ///
+    /// Ref: https://github.com/informalsystems/ibc-rs/issues/1445.
     fn wait_for_header_validation_delay(
         &self,
         client_state: &AnyClientState,
@@ -692,18 +705,24 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         })?;
 
         // TODO - remove
-        trace!(
+        warn!(
             "DIFF {:?}",
             header.timestamp().duration_since(&status.timestamp)
         );
 
-        if header
-            .timestamp()
-            .after(&(status.timestamp + client_state.clock_drift()).unwrap())
-        {
+        let ts_adjusted = (status.timestamp + client_state.clock_drift()).map_err(|e| {
+            ForeignClientError::client_update_timing(
+                self.dst_chain.id(),
+                client_state.clock_drift(),
+                "failed to adjust timestamp of destination chain with clock drift".to_string(),
+                e,
+            )
+        })?;
+
+        if header.timestamp().after(&ts_adjusted) {
             // Header would be considered in the future, wait for destination chain to
             // advance to the next height.
-            trace!("[{}] src header {} is after dst latest header {} + client state drift {:?}, wait for next height on {}",
+            warn!("[{}] src header {} is after dst latest header {} + client state drift {:?}, wait for next height on {}",
                    self, header.timestamp(), status.timestamp, client_state.clock_drift(), self.dst_chain().id());
 
             let target_dst_height = status.height.increment();
@@ -722,10 +741,16 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             }
         }
 
-        if header
-            .timestamp()
-            .after(&(status.timestamp + client_state.clock_drift()).unwrap())
-        {
+        let next_ts_adjusted = (status.timestamp + client_state.clock_drift()).map_err(|e| {
+            ForeignClientError::client_update_timing(
+                self.dst_chain.id(),
+                client_state.clock_drift(),
+                "failed to adjust timestamp of destination chain with clock drift".to_string(),
+                e,
+            )
+        })?;
+
+        if header.timestamp().after(&next_ts_adjusted) {
             // The header is still in the future
             Err(ForeignClientError::header_in_the_future(
                 self.src_chain.id(),
@@ -742,7 +767,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     }
 
     /// Returns a vector with a message for updating the client to height `target_height`.
-    /// If the client already stores consensus states for this height, returns an empty vector.
+    /// If the client already stores a consensus state for this height, returns an empty vector.
     pub fn build_update_client_with_trusted(
         &self,
         target_height: Height,

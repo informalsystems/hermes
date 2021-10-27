@@ -13,6 +13,7 @@ use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWi
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc::ics04_channel::context::ChannelReader;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
@@ -47,7 +48,6 @@ use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 use super::HealthCheck;
-use ibc::ics04_channel::context::ChannelReader;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the

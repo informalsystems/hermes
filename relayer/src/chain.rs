@@ -20,6 +20,7 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, Po
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::signer::Signer;
+use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -40,7 +41,6 @@ use crate::event::monitor::TxMonitorCmd;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
-use ibc::timestamp::Timestamp;
 
 pub(crate) mod cosmos;
 pub mod counterparty;

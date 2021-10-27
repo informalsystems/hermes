@@ -10,6 +10,7 @@ use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
+use chrono::DateTime;
 use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
@@ -50,6 +51,7 @@ use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
+use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
@@ -78,7 +80,7 @@ use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
-use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
+use crate::{chain::ChainStatus, chain::QueryResponse, event::monitor::TxMonitorCmd};
 use crate::{config::types::Memo, error::Error};
 use crate::{
     config::{AddressType, ChainConfig, GasPrice},
@@ -86,9 +88,6 @@ use crate::{
 };
 
 use super::{ChainEndpoint, HealthCheck};
-use crate::chain::ChainStatus;
-use chrono::DateTime;
-use ibc::timestamp::Timestamp;
 
 mod compatibility;
 
@@ -1835,13 +1834,20 @@ impl ChainEndpoint for CosmosSdkChain {
         dst_config: ChainConfig,
     ) -> Result<Self::ClientState, Error> {
         let unbonding_period = self.unbonding_period()?;
+
+        // Compute the `max_clock_drift` so as to account for destination
+        // chain clock drift and block frequency:
+        // https://github.com/informalsystems/ibc-rs/issues/1445
+        let max_clock_drift =
+            self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time;
+
         // Build the client state.
         ClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
             self.trusting_period(unbonding_period),
             unbonding_period,
-            self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
+            max_clock_drift,
             height,
             ICSHeight::zero(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
