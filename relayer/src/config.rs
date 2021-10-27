@@ -11,12 +11,12 @@ use std::{fs, fs::File, io::Write, path::Path};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use crate::keyring::Store;
 use crate::error::Error;
+use crate::keyring::Store;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {

@@ -4,8 +4,8 @@ use abscissa_core::{Command, Options, Runnable};
 use serde::Serialize;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 

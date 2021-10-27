@@ -35,22 +35,22 @@ gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.29"
-tracing-subscriber = "0.2.25"
+tracing-subscriber = { version = "0.3.1", features = ["fmt", "env-filter", "json"]}
 eyre = "0.6.5"
 color-eyre = "0.5"
 futures = "0.3.17"
 toml = "0.5.8"
 serde_derive = "1.0.116"
 serde_json = "1"
-prost = { package = "informalsystems-prost", version = "0.8" }
-prost-types = { package = "informalsystems-prost-types", version ="0.8" }
+prost = { version = "0.9" }
+prost-types = { version ="0.9" }
 hex = "0.4"
 crossbeam-channel = "0.5.1"
 subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.1"
 atty = "0.2.14"
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
 signal-hook = "0.3.10"
 
 [dependencies.tendermint-proto]

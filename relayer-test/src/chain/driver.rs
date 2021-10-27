@@ -1,6 +1,6 @@
 use core::str::FromStr;
 use eyre::{eyre, Report as Error};
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use serde_json as json;
 use std::fs;

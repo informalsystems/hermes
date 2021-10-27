@@ -1,11 +1,11 @@
 use abscissa_core::{Command, Options, Runnable};
 use serde::{Deserialize, Serialize};
 
-use ibc::ics02_client::client_state::{AnyClientState, ClientState};
-use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::channel::{ChannelEnd, State};
-use ibc::ics24_host::identifier::ChainId;
-use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
+use ibc::core::ics03_connection::connection::ConnectionEnd;
+use ibc::core::ics04_channel::channel::{ChannelEnd, State};
+use ibc::core::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::registry::Registry;

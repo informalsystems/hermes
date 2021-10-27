@@ -38,4 +38,4 @@ toml = "0.5"
 subtle-encoding = "0.5.1"
 sha2 = "0.9.8"
 crossbeam-channel = "0.5.1"
-prost-types = { package = "informalsystems-prost-types", version = "0.8", default-features = false }
+prost-types = { version = "0.9", default-features = false }

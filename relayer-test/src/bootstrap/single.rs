@@ -4,8 +4,8 @@ use std::thread;
 use tracing::{debug, info, trace};
 
 use crate::chain::builder::ChainBuilder;
-use crate::chain::driver::ChainDriver;
 use crate::chain::config;
+use crate::chain::driver::ChainDriver;
 use crate::chain::wallet::Wallet;
 use crate::process::ChildProcess;
 use crate::util;

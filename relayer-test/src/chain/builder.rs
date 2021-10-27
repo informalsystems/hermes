@@ -1,4 +1,4 @@
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 
 use super::driver::ChainDriver;
 use crate::util;

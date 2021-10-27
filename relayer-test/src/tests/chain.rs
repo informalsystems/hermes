@@ -1,7 +1,7 @@
 use core::str::FromStr;
 use eyre::Report as Error;
-use ibc::application::ics20_fungible_token_transfer::derive_ibc_denom;
-use ibc::ics24_host::identifier::PortId;
+use ibc::applications::ics20_fungible_token_transfer::derive_ibc_denom;
+use ibc::core::ics24_host::identifier::PortId;
 use tracing::info;
 
 use crate::bootstrap::pair::boostrap_chain_pair;

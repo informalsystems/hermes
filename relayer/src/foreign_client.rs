@@ -9,22 +9,22 @@ use tracing::{debug, error, info, trace, warn};
 
 use crate::error::Error as RelayerError;
 use flex_error::define_error;
-use ibc::downcast;
-use ibc::events::{IbcEvent, WithBlockDataType};
-use ibc::ics02_client::client_consensus::{
+use ibc::core::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
 };
-use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics02_client::error::Error as ClientError;
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::header::Header;
-use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
-use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
-use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-use ibc::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::core::ics02_client::client_state::AnyClientState;
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics02_client::error::Error as ClientError;
+use ibc::core::ics02_client::events::UpdateClient;
+use ibc::core::ics02_client::header::Header;
+use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
+use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
+use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc::downcast;
+use ibc::events::{IbcEvent, WithBlockDataType};
 use ibc::query::QueryTxRequest;
 use ibc::timestamp::Timestamp;
 use ibc::tx_msg::Msg;
@@ -1211,8 +1211,8 @@ mod test {
     use test_env_log::test;
     use tokio::runtime::Runtime as TokioRuntime;
 
+    use ibc::core::ics24_host::identifier::ClientId;
     use ibc::events::IbcEvent;
-    use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
 
     use crate::chain::handle::{ChainHandle, ProdChainHandle};

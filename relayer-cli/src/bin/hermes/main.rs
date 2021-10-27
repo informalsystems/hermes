@@ -4,9 +4,13 @@
 #![forbid(unsafe_code)]
 
 use ibc_relayer_cli::application::APPLICATION;
+use ibc_relayer_cli::components::enable_ansi;
 
 /// Boot Cli
 fn main() -> eyre::Result<()> {
-    color_eyre::install()?;
+    if enable_ansi() {
+        color_eyre::install()?;
+    }
+
     abscissa_core::boot(&APPLICATION);
 }

@@ -1,5 +1,5 @@
 use crossbeam_channel::Sender;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 
 use crate::config::ChainConfig;
 

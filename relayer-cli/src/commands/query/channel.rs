@@ -3,13 +3,13 @@ use alloc::sync::Arc;
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics24_host::identifier::ChainId;
-use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::core::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::Output;
 use crate::prelude::*;
-use ibc::ics04_channel::channel::State;
+use ibc::core::ics04_channel::channel::State;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {

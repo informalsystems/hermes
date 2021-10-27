@@ -9,16 +9,16 @@ use serde::Serialize;
 use tracing::debug;
 use tracing::{error, warn};
 
-use ibc::events::IbcEvent;
-use ibc::ics02_client::height::Height;
-use ibc::ics03_connection::connection::{
+use ibc::core::ics02_client::height::Height;
+use ibc::core::ics03_connection::connection::{
     ConnectionEnd, Counterparty, IdentifiedConnectionEnd, State,
 };
-use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
-use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
+use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
+use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::events::IbcEvent;
 use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
 

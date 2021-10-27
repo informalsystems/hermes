@@ -9,8 +9,8 @@ use itertools::Itertools;
 use tracing::{debug, error, info, trace, warn};
 
 use ibc::{
+    core::ics24_host::identifier::{ChainId, ChannelId, PortId},
     events::IbcEvent,
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
 
