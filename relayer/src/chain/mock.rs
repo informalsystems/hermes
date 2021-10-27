@@ -346,6 +346,7 @@ impl ChainEndpoint for MockChain {
             self.config.trust_threshold.into(),
             self.trusting_period(),
             self.trusting_period().add(Duration::from_secs(1000)),
+            // See `calculate_client_state_drift`
             self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
             Height::zero(),

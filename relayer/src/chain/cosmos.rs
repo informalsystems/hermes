@@ -1837,11 +1837,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<Self::ClientState, Error> {
         let unbonding_period = self.unbonding_period()?;
 
-        // Compute the `max_clock_drift` so as to account for destination
-        // chain block frequency and clock drift on source and destination.
-        // https://github.com/informalsystems/ibc-rs/issues/1445
-        let max_clock_drift =
-            self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time;
+        let max_clock_drift = calculate_client_state_drift(self.config(), &dst_config);
 
         // Build the client state.
         ClientState::new(
@@ -2300,6 +2296,20 @@ fn mul_ceil(a: u64, f: f64) -> u64 {
     // together, and rounding them to the nearest integer.
     let n = (F::from(a) * F::from(f)).ceil();
     n.numer().unwrap() / n.denom().unwrap()
+}
+
+/// Compute the `max_clock_drift` for a (new) client state
+/// as a function of the configuration of the source chain
+/// and the destination chain configuration.
+///
+/// The client state clock drift must account for destination
+/// chain block frequency and clock drift on source and dest.
+/// https://github.com/informalsystems/ibc-rs/issues/1445
+fn calculate_client_state_drift(
+    src_chain_config: &ChainConfig,
+    dst_chain_config: &ChainConfig,
+) -> Duration {
+    src_chain_config.clock_drift + dst_chain_config.clock_drift + dst_chain_config.max_block_time
 }
 
 #[cfg(test)]
