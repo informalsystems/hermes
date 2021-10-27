@@ -7,7 +7,7 @@ use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info};
 
-use ibc::{events::IbcEvent, ics24_host::identifier::ChainId};
+use ibc::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
 use ibc_relayer::{
     config::ChainConfig,

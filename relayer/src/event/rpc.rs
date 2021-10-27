@@ -3,11 +3,11 @@ use core::convert::TryFrom;
 
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 
+use ibc::core::ics02_client::events::NewBlock;
+use ibc::core::ics02_client::height::Height;
+use ibc::core::ics04_channel::events as ChannelEvents;
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{from_tx_response_event, IbcEvent, RawObject};
-use ibc::ics02_client::events::NewBlock;
-use ibc::ics02_client::height::Height;
-use ibc::ics04_channel::events as ChannelEvents;
-use ibc::ics24_host::identifier::ChainId;
 
 pub fn get_all_events(
     chain_id: &ChainId,

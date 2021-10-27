@@ -7,10 +7,10 @@ use bytes::BufMut;
 use flex_error::define_error;
 use prost_types::Any;
 
-use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics02_client::height::Height;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
-use ibc::{events::IbcEvent, ics07_tendermint::client_state::ClientState};
+use ibc::core::ics02_client::client_state::AnyClientState;
+use ibc::core::ics02_client::height::Height;
+use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc::{clients::ics07_tendermint::client_state::ClientState, events::IbcEvent};
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::{Plan, SoftwareUpgradeProposal};
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;

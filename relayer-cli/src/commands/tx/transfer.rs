@@ -1,10 +1,12 @@
 use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
 
 use ibc::{
+    core::{
+        ics02_client::client_state::ClientState,
+        ics02_client::height::Height,
+        ics24_host::identifier::{ChainId, ChannelId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::client_state::ClientState,
-    ics02_client::height::Height,
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
 };
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::transfer::Amount;

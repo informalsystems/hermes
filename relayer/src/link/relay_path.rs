@@ -12,17 +12,20 @@ use prost_types::Any;
 use tracing::{debug, error, info, trace};
 
 use ibc::{
-    events::{IbcEvent, PrettyEvents, WithBlockDataType},
-    ics04_channel::{
-        channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
-        events::{SendPacket, WriteAcknowledgement},
-        msgs::{
-            acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
-            recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
+    core::{
+        ics04_channel::{
+            channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
+            events::{SendPacket, WriteAcknowledgement},
+            msgs::{
+                acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
+                recv_packet::MsgRecvPacket, timeout::MsgTimeout,
+                timeout_on_close::MsgTimeoutOnClose,
+            },
+            packet::{Packet, PacketMsgType, Sequence},
         },
-        packet::{Packet, PacketMsgType, Sequence},
+        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
-    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+    events::{IbcEvent, PrettyEvents, WithBlockDataType},
     query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     timestamp::ZERO_DURATION,
