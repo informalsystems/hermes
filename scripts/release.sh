@@ -59,11 +59,6 @@ publish() {
   echo ""
 }
 
-publish_dry_run() {
-  echo "Attempting dry run of publishing crate $1..."
-  cargo publish --dry-run --manifest-path "$(get_manifest_path "${1}")"
-}
-
 list_package_files() {
   cargo package --list --manifest-path "$(get_manifest_path "${1}")"
 }
@@ -102,7 +97,6 @@ for crate in ${CRATES}; do
     esac
   fi
 
-  publish_dry_run "${crate}"
   list_package_files "${crate}"
   echo ""
   read -rp "Are you sure you want to publish crate \"${crate}\"? (type YES to publish, anything else to exit) " answer
