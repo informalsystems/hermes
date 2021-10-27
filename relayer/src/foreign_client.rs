@@ -10,7 +10,7 @@ use tracing::{debug, error, info, trace, warn};
 use crate::error::Error as RelayerError;
 use flex_error::define_error;
 use ibc::downcast;
-use ibc::events::{IbcEvent, IbcEventType};
+use ibc::events::{IbcEvent, WithBlockDataType};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
 };
@@ -646,15 +646,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         target_height: Height,
         trusted_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
+        let latest_height = || {
+            self.src_chain().query_latest_height().map_err(|e| {
+                ForeignClientError::client_create(
+                    self.src_chain.id(),
+                    "failed fetching src chain latest height with error".to_string(),
+                    e,
+                )
+            })
+        };
+
         // Wait for source chain to reach `target_height`
-        while self.src_chain().query_latest_height().map_err(|e| {
-            ForeignClientError::client_create(
-                self.src_chain.id(),
-                "failed fetching src chain latest height with error".to_string(),
-                e,
-            )
-        })? < target_height
-        {
+        while latest_height()? < target_height {
             thread::sleep(Duration::from_millis(100))
         }
 
@@ -805,7 +808,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     ) -> Result<Option<UpdateClient>, ForeignClientError> {
         let request = QueryClientEventRequest {
             height: Height::zero(),
-            event_id: IbcEventType::UpdateClient,
+            event_id: WithBlockDataType::UpdateClient,
             client_id: self.id.clone(),
             consensus_height,
         };

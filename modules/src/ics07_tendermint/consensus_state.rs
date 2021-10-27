@@ -1,10 +1,7 @@
 use crate::prelude::*;
-use core::convert::Infallible;
-use core::convert::TryFrom;
-use std::time::SystemTime;
+use core::convert::{Infallible, TryFrom};
 
 use chrono::{TimeZone, Utc};
-use prost_types::Timestamp;
 use serde::Serialize;
 use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::Protobuf;
@@ -83,8 +80,13 @@ impl TryFrom<RawConsensusState> for ConsensusState {
 
 impl From<ConsensusState> for RawConsensusState {
     fn from(value: ConsensusState) -> Self {
+        let timestamp = prost_types::Timestamp {
+            seconds: value.timestamp.0.timestamp(),
+            nanos: value.timestamp.0.timestamp_subsec_nanos() as i32,
+        };
+
         RawConsensusState {
-            timestamp: Some(Timestamp::from(SystemTime::from(value.timestamp))),
+            timestamp: Some(timestamp),
             root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot {
                 hash: value.root.into_vec(),
             }),

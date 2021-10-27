@@ -4,7 +4,7 @@ use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
-use ibc::events::IbcEventType;
+use ibc::events::WithBlockDataType;
 use ibc::ics02_client::client_consensus::QueryClientEventRequest;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::ChainId;
@@ -204,7 +204,7 @@ impl Runnable for QueryClientHeaderCmd {
 
         let res = chain.query_txs(QueryTxRequest::Client(QueryClientEventRequest {
             height,
-            event_id: IbcEventType::UpdateClient,
+            event_id: WithBlockDataType::UpdateClient,
             client_id: self.client_id.clone(),
             consensus_height,
         }));

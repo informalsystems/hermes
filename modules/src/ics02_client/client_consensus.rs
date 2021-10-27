@@ -8,7 +8,7 @@ use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
-use crate::events::IbcEventType;
+use crate::events::WithBlockDataType;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::height::Height;
@@ -186,7 +186,7 @@ impl ConsensusState for AnyConsensusState {
 #[derive(Clone, Debug)]
 pub struct QueryClientEventRequest {
     pub height: crate::Height,
-    pub event_id: IbcEventType,
+    pub event_id: WithBlockDataType,
     pub client_id: ClientId,
     pub consensus_height: crate::Height,
 }

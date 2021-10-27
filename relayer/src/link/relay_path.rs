@@ -12,7 +12,7 @@ use prost_types::Any;
 use tracing::{debug, error, info, trace};
 
 use ibc::{
-    events::{IbcEvent, IbcEventType, PrettyEvents},
+    events::{IbcEvent, PrettyEvents, WithBlockDataType},
     ics04_channel::{
         channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
         events::{SendPacket, WriteAcknowledgement},
@@ -777,7 +777,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         debug!(
-            "[{}] packets that still have commitments on {}: {} (first 10 shown here; total={})",
+            "[{}] packet seq. that still have commitments on {}: {} (first 10 shown here; total={})",
             self,
             self.src_chain().id(),
             commit_sequences.iter().take(10).join(", "),
@@ -793,7 +793,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         );
 
         let mut query = QueryPacketEventDataRequest {
-            event_id: IbcEventType::SendPacket,
+            event_id: WithBlockDataType::SendPacket,
             source_port_id: self.src_port_id().clone(),
             source_channel_id: src_channel_id.clone(),
             destination_port_id: self.dst_port_id().clone(),
@@ -802,13 +802,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             height: query_height,
         };
 
-        let tx_res = self
+        let tx_events = self
             .src_chain()
-            .query_txs(QueryTxRequest::Packet(query.clone()));
-        if let Err(ref e) = tx_res {
-            error!("[{}] ERROR in query_txs: {}", self, e);
-        }
-        let tx_events = tx_res.map_err(LinkError::relayer)?;
+            .query_txs(QueryTxRequest::Packet(query.clone()))
+            .map_err(LinkError::relayer)?;
 
         let recvd_sequences: Vec<Sequence> = tx_events
             .iter()
@@ -917,7 +914,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         events_result = self
             .src_chain()
             .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
-                event_id: IbcEventType::WriteAck,
+                event_id: WithBlockDataType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
                 source_channel_id: dst_channel_id.clone(),
                 destination_port_id: self.src_port_id().clone(),
