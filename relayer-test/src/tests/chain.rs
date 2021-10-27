@@ -35,14 +35,14 @@ fn test_chain_manager() -> Result<(), Error> {
 
     services.service_a.chain.transfer_token(
         &transfer_port,
-        &channel.channel_id_a,
+        channel.channel_id_a.value(),
         &services.service_a.user1.address,
         &services.service_b.user1.address,
         1000,
         &denom_a,
     )?;
 
-    let denom_b = derive_ibc_denom(&transfer_port, &channel.channel_id_b, &denom_a)?;
+    let denom_b = derive_ibc_denom(&transfer_port, channel.channel_id_b.value(), &denom_a)?;
 
     info!(
         "Waiting for user on chain B to receive transfer in denom {}",
@@ -72,7 +72,7 @@ fn test_chain_manager() -> Result<(), Error> {
 
     services.service_b.chain.transfer_token(
         &transfer_port,
-        &channel.channel_id_b,
+        channel.channel_id_b.value(),
         &services.service_b.user1.address,
         &services.service_a.user2.address,
         500,

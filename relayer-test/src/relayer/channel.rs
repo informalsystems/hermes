@@ -7,11 +7,13 @@ use ibc_relayer::config::default;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
+use crate::tagged::Tagged;
+
 #[derive(Debug)]
 pub struct ChannelResult<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub channel: Channel<ChainA, ChainB>,
-    pub channel_id_a: ChannelId,
-    pub channel_id_b: ChannelId,
+    pub channel_id_a: Tagged<ChainA, ChainB, ChannelId>,
+    pub channel_id_b: Tagged<ChainB, ChainA, ChannelId>,
 }
 
 pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -42,8 +44,8 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     let res = ChannelResult {
         channel,
-        channel_id_a,
-        channel_id_b,
+        channel_id_a: Tagged::new(channel_id_a),
+        channel_id_b: Tagged::new(channel_id_b),
     };
 
     Ok(res)
