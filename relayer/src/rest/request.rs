@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 
 use crate::{config::ChainConfig, rest::RestApiError, supervisor::dump_state::SupervisorState};
 

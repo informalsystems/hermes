@@ -2,12 +2,14 @@ use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
 use ibc::{
-    ics02_client::{client_state::ClientState, events::UpdateClient},
-    ics03_connection::events::Attributes as ConnectionAttributes,
-    ics04_channel::events::{
-        Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
+    core::{
+        ics02_client::{client_state::ClientState, events::UpdateClient},
+        ics03_connection::events::Attributes as ConnectionAttributes,
+        ics04_channel::events::{
+            Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
+        },
+        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     Height,
 };
 

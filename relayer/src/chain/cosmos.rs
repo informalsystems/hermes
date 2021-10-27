@@ -26,26 +26,28 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, trace, warn};
 
-use ibc::events::{from_tx_response_event, IbcEvent};
-use ibc::ics02_client::client_consensus::{
+use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
+use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
+use ibc::clients::ics07_tendermint::header::Header as TmHeader;
+use ibc::core::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
 };
-use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::client_type::ClientType;
-use ibc::ics02_client::events as ClientEvents;
-use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
-use ibc::ics04_channel::events as ChannelEvents;
-use ibc::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
-use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
-use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
-use ibc::ics07_tendermint::header::Header as TmHeader;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
-use ibc::ics24_host::Path::ClientState as ClientStatePath;
-use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
+use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::core::ics02_client::client_type::ClientType;
+use ibc::core::ics02_client::events as ClientEvents;
+use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc::core::ics04_channel::channel::{
+    ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest,
+};
+use ibc::core::ics04_channel::events as ChannelEvents;
+use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
+use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
+use ibc::core::ics24_host::Path::ClientState as ClientStatePath;
+use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
+use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
@@ -1385,7 +1387,8 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let pc = response.commitments;
+        let mut pc = response.commitments;
+        pc.sort_by_key(|ps| ps.sequence);
 
         let height = response
             .height
@@ -2264,9 +2267,11 @@ fn mul_ceil(a: u64, f: f64) -> u64 {
 #[cfg(test)]
 mod tests {
     use ibc::{
-        ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
-        ics02_client::client_type::ClientType,
-        ics24_host::identifier::ClientId,
+        core::{
+            ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
+            ics02_client::client_type::ClientType,
+            ics24_host::identifier::ClientId,
+        },
         mock::client_state::MockClientState,
         mock::header::MockHeader,
         Height,
