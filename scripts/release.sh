@@ -6,10 +6,10 @@
 # crates at the same time.
 #
 # For each crate, it will:
-# 1. Run `cargo publish --dry-run` for that crate
-# 2. List all files in the package with `cargo package --list`
-# 3. Prompt the user as to whether to publish or not
-# 4. Publish the package with `cargo publish` (no dry run)
+# 1. List all files in the package with `cargo package --list`
+# 2. Prompt the user as to whether to publish or not
+# 3. Publish the package with `cargo publish`
+# 4. Wait for the crate to be published before moving on to the next crate
 #
 # It has a default set of crates it will publish, which can be overridden by
 # way of command line arguments:
@@ -59,11 +59,6 @@ publish() {
   echo ""
 }
 
-publish_dry_run() {
-  echo "Attempting dry run of publishing crate $1..."
-  cargo publish --dry-run --manifest-path "$(get_manifest_path "${1}")"
-}
-
 list_package_files() {
   cargo package --list --manifest-path "$(get_manifest_path "${1}")"
 }
@@ -74,6 +69,8 @@ wait_until_available() {
     ONLINE_DATE="$(check_version_online "${1}" "${2}")"
     if [ -n "${ONLINE_DATE}" ]; then
       echo "Crate ${crate} is now available online"
+      echo "Waiting 20 more seconds to be sure it's available..."
+      sleep 20
       break
     else
       if [ "${retry}" == 5 ]; then
@@ -102,7 +99,6 @@ for crate in ${CRATES}; do
     esac
   fi
 
-  publish_dry_run "${crate}"
   list_package_files "${crate}"
   echo ""
   read -rp "Are you sure you want to publish crate \"${crate}\"? (type YES to publish, anything else to exit) " answer
