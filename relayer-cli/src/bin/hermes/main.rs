@@ -10,6 +10,8 @@ use ibc_relayer_cli::components::enable_ansi;
 fn main() -> eyre::Result<()> {
     if enable_ansi() {
         color_eyre::install()?;
+    } else {
+        oneline_eyre::install()?;
     }
 
     abscissa_core::boot(&APPLICATION);
