@@ -43,7 +43,7 @@ use ibc_proto::ibc::core::{
 pub use prod::ProdChainHandle;
 
 use crate::{
-    chain::ChainStatus,
+    chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -134,7 +134,7 @@ pub enum ChainRequest {
     },
 
     QueryStatus {
-        reply_to: ReplyTo<ChainStatus>,
+        reply_to: ReplyTo<StatusResponse>,
     },
 
     QueryClients {
@@ -360,7 +360,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
 
-    fn query_status(&self) -> Result<ChainStatus, Error>;
+    fn query_status(&self) -> Result<StatusResponse, Error>;
 
     fn query_latest_height(&self) -> Result<Height, Error> {
         Ok(self.query_status()?.height)

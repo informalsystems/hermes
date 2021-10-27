@@ -80,7 +80,7 @@ use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
-use crate::{chain::ChainStatus, chain::QueryResponse, event::monitor::TxMonitorCmd};
+use crate::{chain::QueryResponse, chain::StatusResponse, event::monitor::TxMonitorCmd};
 use crate::{config::types::Memo, error::Error};
 use crate::{
     config::{AddressType, ChainConfig, GasPrice},
@@ -1004,7 +1004,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     /// Query the chain status
-    fn query_status(&self) -> Result<ChainStatus, Error> {
+    fn query_status(&self) -> Result<StatusResponse, Error> {
         crate::time!("query_status");
         let status = self.status()?;
 
@@ -1014,7 +1014,7 @@ impl ChainEndpoint for CosmosSdkChain {
             revision_height: u64::from(status.sync_info.latest_block_height),
         };
 
-        Ok(ChainStatus {
+        Ok(StatusResponse {
             height,
             timestamp: Timestamp::from_datetime(time),
         })

@@ -37,7 +37,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{
-    chain::ChainStatus, config::ChainConfig, connection::ConnectionMsgType, error::Error,
+    chain::StatusResponse, config::ChainConfig, connection::ConnectionMsgType, error::Error,
     keyring::KeyEntry,
 };
 
@@ -134,7 +134,7 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn query_status(&self) -> Result<ChainStatus, Error> {
+    fn query_status(&self) -> Result<StatusResponse, Error> {
         self.send(|reply_to| ChainRequest::QueryStatus { reply_to })
     }
 

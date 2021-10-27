@@ -42,7 +42,7 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    chain::ChainStatus,
+    chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -398,7 +398,7 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_status(&self, reply_to: ReplyTo<ChainStatus>) -> Result<(), Error> {
+    fn query_status(&self, reply_to: ReplyTo<StatusResponse>) -> Result<(), Error> {
         let latest_timestamp = self.chain.query_status();
         reply_to.send(latest_timestamp).map_err(Error::send)
     }
