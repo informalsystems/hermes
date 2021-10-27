@@ -694,15 +694,6 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                 .map_err(Error::worker)?
         }
 
-        // If there is a NewBlock event, forward this event first to any workers affected by it.
-        if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
-            for worker in self.workers.to_notify(&src_chain.id()) {
-                worker
-                    .send_new_block(height, new_block)
-                    .map_err(Error::worker)?
-            }
-        }
-
         Ok(())
     }
 

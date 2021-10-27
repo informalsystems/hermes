@@ -115,7 +115,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_channel_id: dst_channel_id.clone(),
             dst_port_id: dst_port_id.clone(),
 
-            clear_packets: RefCell::new(true),
+            clear_packets: RefCell::new(false),
             src_operational_data: Queue::new(),
             dst_operational_data: Queue::new(),
 
