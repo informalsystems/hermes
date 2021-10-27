@@ -1,3 +1,4 @@
+use core::marker::PhantomData;
 use core::str::FromStr;
 use eyre::{eyre, Report as Error};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
@@ -12,6 +13,7 @@ use tracing::{debug, trace};
 
 use super::wallet::{Wallet, WalletAddress, WalletId};
 use crate::process::ChildProcess;
+use crate::tagged::Tagged;
 use crate::util;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
@@ -23,8 +25,7 @@ const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 /// In the future, we will want to turn this into one or more `ChainDriver` traits so that they can
 /// be used to spawn multiple chain implementations other than one version of Gaia.
 
-#[derive(Debug)]
-pub struct ChainDriver {
+pub struct ChainDriver<Chain> {
     pub command_path: String,
 
     pub chain_id: ChainId,
@@ -36,9 +37,11 @@ pub struct ChainDriver {
     pub grpc_port: u16,
 
     pub p2p_port: u16,
+
+    phantom: PhantomData<Chain>,
 }
 
-impl ChainDriver {
+impl<Chain> ChainDriver<Chain> {
     pub fn new(
         command_path: String,
         chain_id: ChainId,
@@ -54,6 +57,19 @@ impl ChainDriver {
             rpc_port,
             grpc_port,
             p2p_port,
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn retag<ChainB>(self) -> ChainDriver<ChainB> {
+        ChainDriver {
+            command_path: self.command_path,
+            chain_id: self.chain_id,
+            home_path: self.home_path,
+            rpc_port: self.rpc_port,
+            grpc_port: self.grpc_port,
+            p2p_port: self.p2p_port,
+            phantom: PhantomData,
         }
     }
 
@@ -315,10 +331,10 @@ impl ChainDriver {
     // We use gaiad instead of the internal raw tx transfer to transfer tokens,
     // as the current chain implementation cannot dynamically switch the sender,
     // and instead always use the configured relayer wallet for sending tokens.
-    pub fn transfer_token(
+    pub fn transfer_token<Counterparty>(
         &self,
         port_id: &PortId,
-        channel_id: &ChannelId,
+        channel_id: &Tagged<Chain, Counterparty, ChannelId>,
         sender: &WalletAddress,
         receiver: &WalletAddress,
         amount: u64,
@@ -331,7 +347,7 @@ impl ChainDriver {
             "ibc-transfer",
             "transfer",
             port_id.as_str(),
-            channel_id.as_str(),
+            channel_id.value().as_str(),
             &receiver.0,
             &format!("{}{}", amount, denom),
             "--from",

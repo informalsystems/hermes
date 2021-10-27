@@ -35,7 +35,7 @@ fn test_chain_manager() -> Result<(), Error> {
 
     services.side_a.chain_driver.transfer_token(
         &transfer_port,
-        channel.channel_id_a.value(),
+        &channel.channel_id_a,
         &services.side_a.wallets.user1.address,
         &services.side_b.wallets.user1.address,
         1000,
@@ -72,7 +72,7 @@ fn test_chain_manager() -> Result<(), Error> {
 
     services.side_b.chain_driver.transfer_token(
         &transfer_port,
-        channel.channel_id_b.value(),
+        &channel.channel_id_b,
         &services.side_b.wallets.user1.address,
         &services.side_a.wallets.user2.address,
         500,

@@ -1,6 +1,7 @@
 use ibc::core::ics24_host::identifier::ChainId;
 
 use super::driver::ChainDriver;
+use crate::tagged::Tag;
 use crate::util;
 
 #[derive(Debug)]
@@ -18,7 +19,7 @@ impl ChainBuilder {
         }
     }
 
-    pub fn new_chain(&self) -> ChainDriver {
+    pub fn new_chain(&self) -> ChainDriver<impl Tag> {
         let chain_num = util::random_u32();
         let chain_id = ChainId::from_string(&format!("ibc-{:x}", chain_num));
 
@@ -28,7 +29,7 @@ impl ChainBuilder {
 
         let home_path = format!("{}/{}", self.base_store_dir, chain_id);
 
-        ChainDriver::new(
+        <ChainDriver<()>>::new(
             self.command_path.clone(),
             chain_id,
             home_path,

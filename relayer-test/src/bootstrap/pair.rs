@@ -38,7 +38,7 @@ pub struct ChainDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
 
     pub foreign_client: ForeignClient<ChainA, ChainB>,
 
-    pub chain_driver: ChainDriver,
+    pub chain_driver: ChainDriver<ChainA>,
 
     pub chain_process: ChildProcess,
 
@@ -129,7 +129,7 @@ pub fn boostrap_chain_pair(
 
             foreign_client: client_a_to_b,
 
-            chain_driver: service_a.chain,
+            chain_driver: service_a.chain.retag(),
 
             chain_process: service_a.process,
 
@@ -150,7 +150,7 @@ pub fn boostrap_chain_pair(
 
             foreign_client: client_b_to_a,
 
-            chain_driver: service_b.chain,
+            chain_driver: service_b.chain.retag(),
 
             chain_process: service_b.process,
 
@@ -166,7 +166,7 @@ pub fn boostrap_chain_pair(
     })
 }
 
-fn create_chain_config(chain: &ChainService) -> Result<config::ChainConfig, Error> {
+fn create_chain_config<Chain>(chain: &ChainService<Chain>) -> Result<config::ChainConfig, Error> {
     Ok(config::ChainConfig {
         id: chain.chain.chain_id.clone(),
         rpc_addr: Url::from_str(&chain.chain.rpc_address())?,

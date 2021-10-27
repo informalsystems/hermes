@@ -8,13 +8,14 @@ use crate::chain::config;
 use crate::chain::driver::ChainDriver;
 use crate::chain::wallet::Wallet;
 use crate::process::ChildProcess;
+use crate::tagged::Tag;
 use crate::util;
 
 pub const STAKE_DENOM: &str = "stake";
 pub const INITIAL_TOKEN_AMOUNT: u64 = 1_000_000_000_000;
 
-pub struct ChainService {
-    pub chain: ChainDriver,
+pub struct ChainService<Chain> {
+    pub chain: ChainDriver<Chain>,
     pub process: ChildProcess,
     pub validator: Wallet,
     pub relayer: Wallet,
@@ -23,10 +24,10 @@ pub struct ChainService {
     pub denom: String,
 }
 
-pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService, Error> {
+pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService<impl Tag>, Error> {
     let chain = builder.new_chain();
 
-    info!("created new chain: {:?}", chain);
+    info!("created new chain: {}", chain.chain_id);
 
     chain.initialize()?;
 
@@ -96,8 +97,8 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService, Er
 
 // Wait for the wallet to reach the target amount when querying from the chain.
 // This is to ensure that the chain has properly started and committed the genesis block
-pub fn wait_wallet_amount(
-    chain: &ChainDriver,
+pub fn wait_wallet_amount<Chain>(
+    chain: &ChainDriver<Chain>,
     user: &Wallet,
     target_amount: u64,
     denom: &str,

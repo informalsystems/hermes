@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 
 pub trait Tag {}
 
-impl Tag for () {}
+impl<T> Tag for T {}
 
 pub fn new_tag() -> impl Tag {}
 
