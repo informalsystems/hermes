@@ -20,13 +20,15 @@ use tonic::{
 };
 
 use ibc::{
-    ics02_client::{client_type::ClientType, error as client_error},
-    ics03_connection::error as connection_error,
-    ics07_tendermint::error as tendermint_error,
-    ics18_relayer::error as relayer_error,
-    ics23_commitment::error as commitment_error,
-    ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
+    clients::ics07_tendermint::error as tendermint_error,
+    core::{
+        ics02_client::{client_type::ClientType, error as client_error},
+        ics03_connection::error as connection_error,
+        ics23_commitment::error as commitment_error,
+        ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
+    },
     proofs::ProofError,
+    relayer::ics18_relayer::error as relayer_error,
 };
 
 use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;

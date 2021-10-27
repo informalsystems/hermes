@@ -5,7 +5,9 @@ use crossbeam_channel::Sender;
 use tracing::trace;
 
 use ibc::{
-    events::IbcEvent, ics02_client::events::NewBlock, ics24_host::identifier::ChainId, Height,
+    core::{ics02_client::events::NewBlock, ics24_host::identifier::ChainId},
+    events::IbcEvent,
+    Height,
 };
 
 use crate::{event::monitor::EventBatch, object::Object};

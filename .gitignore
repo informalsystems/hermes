@@ -25,5 +25,5 @@ __pycache__/
 .modelator
 mc.log
 
-# Ignore OSX .DS_Store files
+# Ignore OSX .DS_Store file
 .DS_Store

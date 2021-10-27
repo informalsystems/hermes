@@ -4,12 +4,16 @@ use tracing::{error, trace};
 use crate::channel::ChannelError;
 use crate::supervisor::Error;
 use ibc::{
-    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::{
-        ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
+    core::{
+        ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
+        ics03_connection::connection::{
+            ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
+        },
+        ics04_channel::channel::{IdentifiedChannelEnd, State},
+        ics24_host::identifier::{
+            ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+        },
     },
-    ics04_channel::channel::{IdentifiedChannelEnd, State},
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId},
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{

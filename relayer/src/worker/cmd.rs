@@ -1,4 +1,4 @@
-use ibc::{ics02_client::events::NewBlock, Height};
+use ibc::{core::ics02_client::events::NewBlock, Height};
 
 use crate::event::monitor::EventBatch;
 
