@@ -24,7 +24,7 @@
 //! At its highest level, IBC can be categorized into on-chain modules and off-chain processes. The
 //! current incarnation of the `ibc` crate is an implementation of the on-chain modules. They
 //! comprise the main data structures and abstractions that are the building blocks upon which IBC
-//! chains are built. These abstrctions, sometimes also referred to as 'handlers', are specified in
+//! chains are built. These abstractions, sometimes also referred to as 'handlers', are specified in
 //! _I_nter_C_hain _S_tandards (ICSs), which can be found [here][ibc-standards].
 //!
 //! The main IBC handlers are `Client`s, `Connection`s, and `Channel`s:
