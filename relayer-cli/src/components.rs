@@ -2,6 +2,7 @@ use std::io;
 
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
 use tracing_subscriber::{
+    filter::EnvFilter,
     fmt::{
         format::{DefaultFields, Format, Full, Json, JsonFields},
         time::SystemTime,
@@ -9,7 +10,7 @@ use tracing_subscriber::{
     },
     reload::Handle,
     util::SubscriberInitExt,
-    EnvFilter, FmtSubscriber,
+    FmtSubscriber,
 };
 
 use ibc_relayer::config::GlobalConfig;
