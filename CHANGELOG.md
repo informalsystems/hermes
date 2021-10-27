@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.8.0
+*October 28th, 2021*
+
+### IMPROVEMENTS
+
+- General
+  - Update to official releases of `prost` 0.9 and `tonic` 0.6
+    ([#1502](https://github.com/informalsystems/ibc-rs/issues/1502))
+- [IBC Modules](modules)
+  - Restructure the layout of the `ibc` crate to match `ibc-go`'s [layout](https://github.com/cosmos/ibc-go#contents) 
+    ([#1436](https://github.com/informalsystems/ibc-rs/issues/1436))
+  - Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers 
+    ([#1460](https://github.com/informalsystems/ibc-rs/issues/1460))
+
 ## v0.8.0-pre.1
 *October 22nd, 2021*
 
