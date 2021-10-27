@@ -16,7 +16,7 @@ use tracing::info;
 use crate::bootstrap::single::{bootstrap_single_chain, ChainService};
 use crate::chain::builder::ChainBuilder;
 
-pub struct ChainServices {
+pub struct ChainServices<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub config: config::Config,
     pub config_a: config::ChainConfig,
     pub config_b: config::ChainConfig,
@@ -24,11 +24,11 @@ pub struct ChainServices {
     pub service_a: ChainService,
     pub service_b: ChainService,
 
-    pub handle_a: ProdChainHandle,
-    pub handle_b: ProdChainHandle,
+    pub handle_a: ChainA,
+    pub handle_b: ChainB,
 
-    pub client_a_to_b: ForeignClient<ProdChainHandle, ProdChainHandle>,
-    pub client_b_to_a: ForeignClient<ProdChainHandle, ProdChainHandle>,
+    pub client_a_to_b: ForeignClient<ChainA, ChainB>,
+    pub client_b_to_a: ForeignClient<ChainB, ChainA>,
 
     pub supervisor_cmd_sender: SupervisorCmdSender,
 }
@@ -41,7 +41,9 @@ impl Drop for SupervisorCmdSender {
     }
 }
 
-pub fn boostrap_chain_pair(builder: &ChainBuilder) -> Result<ChainServices, Error> {
+pub fn boostrap_chain_pair(
+    builder: &ChainBuilder,
+) -> Result<ChainServices<impl ChainHandle, impl ChainHandle>, Error> {
     let service_a = bootstrap_single_chain(&builder)?;
     let service_b = bootstrap_single_chain(&builder)?;
 
