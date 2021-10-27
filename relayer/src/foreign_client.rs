@@ -957,31 +957,24 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        // Get the list of consensus state heights in descending order.
-        // Note: If chain does not prune consensus states then the last consensus state is
-        // the one installed by the `CreateClient` which does not include a header.
-        // For chains that do support pruning, it is possible that the last consensus state
-        // was installed by an `UpdateClient` and an event and header will be found.
-        let consensus_state_heights = self.consensus_state_heights()?;
-        let ch = match update {
-            Some(ref u) => u.consensus_height(),
-            None => Height::zero(),
+        let consensus_state_heights = if let Some(ref event) = update {
+            vec![event.height()]
+        } else {
+            // Get the list of consensus state heights in descending order.
+            // Note: If chain does not prune consensus states then the last consensus state is
+            // the one installed by the `CreateClient` which does not include a header.
+            // For chains that do support pruning, it is possible that the last consensus state
+            // was installed by an `UpdateClient` and an event and header will be found.
+            self.consensus_state_heights()?
         };
 
-        debug!(
-            "[{}] checking misbehaviour at {}, number of consensus states: {}",
+        trace!(
+            "[{}] checking misbehaviour for consensus state heights (first 50 shown here): {}, total: {}",
             self,
-            ch,
+            consensus_state_heights.iter().take(50).join(", "),
             consensus_state_heights.len()
         );
 
-        trace!(
-            "[{}] checking misbehaviour for consensus state heights (first 50 shown here): {}",
-            self,
-            consensus_state_heights.iter().take(50).join(", ")
-        );
-
-        let check_once = update.is_some();
         let start_time = Instant::now();
         for target_height in consensus_state_heights {
             // Start with specified update event or the one for latest consensus height
@@ -1045,9 +1038,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 return Ok(misbehavior);
             }
 
-            // Exit the loop if the check was for a single update or if more than
-            // MAX_MISBEHAVIOUR_CHECK_TIME was spent here.
-            if check_once || start_time.elapsed() > MAX_MISBEHAVIOUR_CHECK_DURATION {
+            // Exit the loop if more than MAX_MISBEHAVIOUR_CHECK_TIME was spent here.
+            if start_time.elapsed() > MAX_MISBEHAVIOUR_CHECK_DURATION {
                 trace!(
                     "[{}] finished misbehaviour verification after {:?}",
                     self,
@@ -1064,7 +1056,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             thread::sleep(Duration::from_millis(100));
         }
 
-        debug!("[{}] finished misbehaviour checking", self);
+        trace!(
+            "[{}] finished misbehaviour verification after {:?}",
+            self,
+            start_time.elapsed()
+        );
 
         Ok(None)
     }
