@@ -977,7 +977,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     /// Get the chain configuration
-    fn config(&mut self) -> ChainConfig {
+    fn config(&self) -> ChainConfig {
         self.config.clone()
     }
 
@@ -1836,7 +1836,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let unbonding_period = self.unbonding_period()?;
 
         // Compute the `max_clock_drift` so as to account for destination
-        // chain clock drift and block frequency:
+        // chain block frequency and clock drift on source and destination.
         // https://github.com/informalsystems/ibc-rs/issues/1445
         let max_clock_drift =
             self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time;

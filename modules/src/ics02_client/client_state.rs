@@ -68,7 +68,7 @@ impl AnyClientState {
         }
     }
 
-    pub fn clock_drift(&self) -> Duration {
+    pub fn max_clock_drift(&self) -> Duration {
         match self {
             AnyClientState::Tendermint(state) => state.max_clock_drift,
 

@@ -146,7 +146,7 @@ max_tx_size = 2097152
 # can drift into the future. Default: 5s
 clock_drift = '5s'
 
-# Specify the maximum block time on this chain.
+# Specify the maximum time per block for this chain.
 # The block time together with the clock drift are added to the source drift to estimate
 # the maximum clock drift when creating a client on this chain. Default: 10s
 # For cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`

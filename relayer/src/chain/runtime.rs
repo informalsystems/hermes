@@ -408,7 +408,7 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn get_config(&mut self, reply_to: ReplyTo<ChainConfig>) -> Result<(), Error> {
+    fn get_config(&self, reply_to: ReplyTo<ChainConfig>) -> Result<(), Error> {
         let result = Ok(self.chain.config());
         reply_to.send(result).map_err(Error::send)
     }

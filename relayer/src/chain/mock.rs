@@ -145,7 +145,7 @@ impl ChainEndpoint for MockChain {
         Ok(get_dummy_account_id())
     }
 
-    fn config(&mut self) -> ChainConfig {
+    fn config(&self) -> ChainConfig {
         self.config.clone()
     }
 

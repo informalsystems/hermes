@@ -710,10 +710,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             header.timestamp().duration_since(&status.timestamp)
         );
 
-        let ts_adjusted = (status.timestamp + client_state.clock_drift()).map_err(|e| {
+        let ts_adjusted = (status.timestamp + client_state.max_clock_drift()).map_err(|e| {
             ForeignClientError::client_update_timing(
                 self.dst_chain.id(),
-                client_state.clock_drift(),
+                client_state.max_clock_drift(),
                 "failed to adjust timestamp of destination chain with clock drift".to_string(),
                 e,
             )
@@ -723,7 +723,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // Header would be considered in the future, wait for destination chain to
             // advance to the next height.
             warn!("[{}] src header {} is after dst latest header {} + client state drift {:?}, wait for next height on {}",
-                   self, header.timestamp(), status.timestamp, client_state.clock_drift(), self.dst_chain().id());
+                   self, header.timestamp(), status.timestamp, client_state.max_clock_drift(), self.dst_chain().id());
 
             let target_dst_height = status.height.increment();
             loop {
@@ -741,14 +741,15 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             }
         }
 
-        let next_ts_adjusted = (status.timestamp + client_state.clock_drift()).map_err(|e| {
-            ForeignClientError::client_update_timing(
-                self.dst_chain.id(),
-                client_state.clock_drift(),
-                "failed to adjust timestamp of destination chain with clock drift".to_string(),
-                e,
-            )
-        })?;
+        let next_ts_adjusted =
+            (status.timestamp + client_state.max_clock_drift()).map_err(|e| {
+                ForeignClientError::client_update_timing(
+                    self.dst_chain.id(),
+                    client_state.max_clock_drift(),
+                    "failed to adjust timestamp of destination chain with clock drift".to_string(),
+                    e,
+                )
+            })?;
 
         if header.timestamp().after(&next_ts_adjusted) {
             // The header is still in the future
@@ -759,7 +760,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 self.dst_chain.id(),
                 status.height,
                 status.timestamp,
-                client_state.clock_drift(),
+                client_state.max_clock_drift(),
             ))
         } else {
             Ok(())
