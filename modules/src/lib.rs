@@ -21,21 +21,22 @@
 //! communication over the internet via packet streaming. Indeed, IBC also encodes the notion of
 //! ordered and unordered packet streams.
 //!
-//! The layout of this crate mirrors the classifications of the [Interchain
-//! Standards][ics-standards]. These classifications are [Core][core], [Clients][clients],
+//! The layout of this crate mirrors the classification of the [Interchain
+//! Standards][ics-standards]. The classification consists of [Core][core], [Clients][clients],
 //! [Applications][applications], and [Relayer][relayer].
 //!
 //! Core consists of the designs and logic pertaining to the transport, authentication, and
-//! ordering layers of the IBC protocol, the most fundamental pieces.
+//! ordering layers of the IBC protocol, the fundamental pieces.
 //!
-//! Clients consists of the implementations of various state machine front-ends that leverage the
-//! IBC protocol.
+//! Clients consists of implementations of client verification algorithms (following the base
+//! client interface that is defined in `Core`) for specific types of chains. A chain uses these
+//! verification algorithms to verify the state of remote chains.
 //!
-//! Applications consists of various packet encoding and processing semantics which underpin the
+//! Applications consist of various packet encoding and processing semantics which underpin the
 //! various types of transactions that users can perform on any IBC-compliant chain.
 //!
-//! Relayer contains an important off-chain process, the Hermes packet relayer, which is
-//! responsible for facilitating communication between sovereign blockchains via packet forwarding.
+//! Relayer contains utilities for testing the `ibc` crate against the Hermes IBC relayer. It acts
+//! as scaffolding for gluing the `ibc` crate with Hermes for testing purposes.
 //!
 //! [core]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core
 //! [clients]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/clients
