@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer"
-version    = "0.8.0-pre.1"
+version    = "0.8.0"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -18,9 +18,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.8.0-pre.1", path = "../modules" }
+ibc           = { version = "0.8.0", path = "../modules" }
 ibc-proto     = { version = "0.12.0-pre.1", path = "../proto" }
-ibc-telemetry = { version = "0.8.0-pre.1", path = "../telemetry", optional = true }
+ibc-telemetry = { version = "0.8.0", path = "../telemetry", optional = true }
 
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 subtle-encoding = "0.5"
@@ -79,7 +79,7 @@ features = ["rpc-client", "secp256k1", "unstable"]
 version = "=0.23.0-internal"
 
 [dev-dependencies]
-ibc = { version = "0.8.0-pre.1", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.8.0", path = "../modules", features = ["mocks"] }
 serial_test = "0.5.0"
 env_logger = "0.9.0"
 tracing-subscriber = { version = "0.3.1", features = ["fmt", "env-filter", "json"]}
