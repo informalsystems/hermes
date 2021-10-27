@@ -14,9 +14,7 @@ description = """
 """
 
 [features]
-default = ["std", "eyre_tracer"]
-std = ["flex-error/std"]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = ["flex-error/std", "flex-error/eyre_tracer"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
@@ -38,7 +36,7 @@ bytes = { version = "1.1.0", default-features = false }
 safe-regex = { version = "0.2.4", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 sha2 = { version = "0.9.8", default-features = false, optional = true }
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.23.0-internal"

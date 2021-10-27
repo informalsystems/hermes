@@ -21,7 +21,7 @@ contracts = { version = "0.4.0", default-features = false }
 crossbeam-channel = { version = "0.5.1", default-features = false }
 ed25519 = { version = "1.2.0", default-features = false, features = ["serde"] }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["rand", "u64_backend"] }
-flex-error = { version = "0.4.2", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
 futures = { version = "0.3.17", default-features = false }
 impl-serde = { version = "0.3.1", default-features = false }
 k256 = { version = "0.9", default-features = false, features = ["ecdsa"] }
