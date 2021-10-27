@@ -10,40 +10,66 @@ use ibc_relayer::keyring::Store;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
 use std::sync::Arc;
 use std::sync::RwLock;
+use std::thread;
 use tendermint_rpc::Url;
 use tracing::info;
 
 use crate::bootstrap::single::{bootstrap_single_chain, ChainService};
 use crate::chain::builder::ChainBuilder;
+use crate::chain::driver::ChainDriver;
+use crate::chain::wallet::Wallet;
+use crate::process::ChildProcess;
 
-pub struct ChainServices<ChainA: ChainHandle, ChainB: ChainHandle> {
-    pub config: config::Config,
-    pub config_a: config::ChainConfig,
-    pub config_b: config::ChainConfig,
-
-    pub service_a: ChainService,
-    pub service_b: ChainService,
-
-    pub handle_a: ChainA,
-    pub handle_b: ChainB,
-
-    pub client_a_to_b: ForeignClient<ChainA, ChainB>,
-    pub client_b_to_a: ForeignClient<ChainB, ChainA>,
-
+pub struct ChainsDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
+    // Have this as first field to drop the supervisor
+    // first before stopping the chain driver.
     pub supervisor_cmd_sender: SupervisorCmdSender,
+
+    pub config: config::Config,
+
+    pub side_a: ChainDeployment<ChainA, ChainB>,
+    pub side_b: ChainDeployment<ChainB, ChainA>,
 }
 
+pub struct ChainDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
+    pub config: config::ChainConfig,
+
+    pub handle: ChainA,
+
+    pub foreign_client: ForeignClient<ChainA, ChainB>,
+
+    pub chain_driver: ChainDriver,
+
+    pub chain_process: ChildProcess,
+
+    pub denom: String,
+
+    pub wallets: ChainWallets,
+}
+
+pub struct ChainWallets {
+    pub validator: Wallet,
+    pub relayer: Wallet,
+    pub user1: Wallet,
+    pub user2: Wallet,
+}
+
+// A wrapper around the SupervisorCmd sender so that we can
+// send stop signal to the supervisor before stopping the
+// chain drivers to prevent the supervisor from raising
+// errors caused by closed connections.
 pub struct SupervisorCmdSender(pub Sender<SupervisorCmd>);
 
 impl Drop for SupervisorCmdSender {
     fn drop(&mut self) {
         let _ = self.0.send(SupervisorCmd::Stop);
+        thread::sleep(Duration::from_millis(1000));
     }
 }
 
 pub fn boostrap_chain_pair(
     builder: &ChainBuilder,
-) -> Result<ChainServices<impl ChainHandle, impl ChainHandle>, Error> {
+) -> Result<ChainsDeployment<impl ChainHandle, impl ChainHandle>, Error> {
     let service_a = bootstrap_single_chain(&builder)?;
     let service_b = bootstrap_single_chain(&builder)?;
 
@@ -51,6 +77,7 @@ pub fn boostrap_chain_pair(
     let config_b = create_chain_config(&service_b)?;
 
     let mut config = config::Config::default();
+
     config.chains.push(config_a.clone());
     config.chains.push(config_b.clone());
 
@@ -90,24 +117,53 @@ pub fn boostrap_chain_pair(
     let client_a_to_b = ForeignClient::new(handle_b.clone(), handle_a.clone())?;
     let client_b_to_a = ForeignClient::new(handle_a.clone(), handle_b.clone())?;
 
-    let res = ChainServices {
-        config,
-        config_a,
-        config_b,
-
-        service_a,
-        service_b,
-
-        handle_a,
-        handle_b,
-
-        client_a_to_b,
-        client_b_to_a,
-
+    Ok(ChainsDeployment {
         supervisor_cmd_sender: SupervisorCmdSender(supervisor_cmd_sender),
-    };
 
-    Ok(res)
+        config,
+
+        side_a: ChainDeployment {
+            config: config_a,
+
+            handle: handle_a,
+
+            foreign_client: client_a_to_b,
+
+            chain_driver: service_a.chain,
+
+            chain_process: service_a.process,
+
+            denom: service_a.denom,
+
+            wallets: ChainWallets {
+                validator: service_a.validator,
+                relayer: service_a.relayer,
+                user1: service_a.user1,
+                user2: service_a.user2,
+            },
+        },
+
+        side_b: ChainDeployment {
+            config: config_b,
+
+            handle: handle_b,
+
+            foreign_client: client_b_to_a,
+
+            chain_driver: service_b.chain,
+
+            chain_process: service_b.process,
+
+            denom: service_b.denom,
+
+            wallets: ChainWallets {
+                validator: service_b.validator,
+                relayer: service_b.relayer,
+                user1: service_b.user1,
+                user2: service_b.user2,
+            },
+        },
+    })
 }
 
 fn create_chain_config(chain: &ChainService) -> Result<config::ChainConfig, Error> {

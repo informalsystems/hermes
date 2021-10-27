@@ -399,6 +399,12 @@ impl EventMonitor {
                             return Next::Continue;
                         }
                         _ => {
+                            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
+                                // If the monitor is shut down already, ignore the error
+                                // and return.
+                                return Next::Abort;
+                            }
+
                             error!("[{}] failed to collect events: {}", self.chain_id, e);
 
                             // Reconnect to the WebSocket endpoint, and subscribe again to the queries.

@@ -3,6 +3,12 @@ use core::fmt::{self, Debug, Display};
 use core::iter::{IntoIterator, Iterator};
 use core::marker::PhantomData;
 
+pub trait Tag {}
+
+impl Tag for () {}
+
+pub fn new_tag() -> impl Tag {}
+
 pub struct Tagged<TagA, TagB, Value>(pub Value, PhantomData<(TagA, TagB)>);
 
 impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {

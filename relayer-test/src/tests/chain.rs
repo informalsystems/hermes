@@ -21,23 +21,23 @@ fn test_chain_manager() -> Result<(), Error> {
     let transfer_port = PortId::from_str("transfer")?;
 
     let channel = bootstrap_channel(
-        &services.client_a_to_b,
-        &services.client_b_to_a,
+        &services.side_a.foreign_client,
+        &services.side_b.foreign_client,
         transfer_port.clone(),
         transfer_port.clone(),
     )?;
 
     info!("created new channel {:?}", channel);
 
-    let denom_a = services.service_a.denom;
+    let denom_a = services.side_a.denom;
 
     info!("Sending IBC transfer");
 
-    services.service_a.chain.transfer_token(
+    services.side_a.chain_driver.transfer_token(
         &transfer_port,
         channel.channel_id_a.value(),
-        &services.service_a.user1.address,
-        &services.service_b.user1.address,
+        &services.side_a.wallets.user1.address,
+        &services.side_b.wallets.user1.address,
         1000,
         &denom_a,
     )?;
@@ -50,16 +50,16 @@ fn test_chain_manager() -> Result<(), Error> {
     );
 
     wait_wallet_amount(
-        &services.service_a.chain,
-        &services.service_a.user1,
+        &services.side_a.chain_driver,
+        &services.side_a.wallets.user1,
         INITIAL_TOKEN_AMOUNT - 1000,
         &denom_a,
         20,
     )?;
 
     wait_wallet_amount(
-        &services.service_b.chain,
-        &services.service_b.user1,
+        &services.side_b.chain_driver,
+        &services.side_b.wallets.user1,
         1000,
         &denom_b,
         20,
@@ -67,21 +67,21 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!(
         "successfully performed IBC transfer from chain {} to chain {}",
-        services.service_a.chain.chain_id, services.service_b.chain.chain_id
+        services.side_a.chain_driver.chain_id, services.side_b.chain_driver.chain_id
     );
 
-    services.service_b.chain.transfer_token(
+    services.side_b.chain_driver.transfer_token(
         &transfer_port,
         channel.channel_id_b.value(),
-        &services.service_b.user1.address,
-        &services.service_a.user2.address,
+        &services.side_b.wallets.user1.address,
+        &services.side_a.wallets.user2.address,
         500,
         &denom_b,
     )?;
 
     wait_wallet_amount(
-        &services.service_a.chain,
-        &services.service_a.user2,
+        &services.side_a.chain_driver,
+        &services.side_a.wallets.user2,
         INITIAL_TOKEN_AMOUNT + 500,
         &denom_a,
         20,
@@ -89,7 +89,7 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!(
         "successfully performed reverse IBC transfer from chain {} back to chain {}",
-        services.service_b.chain.chain_id, services.service_a.chain.chain_id
+        services.side_b.chain_driver.chain_id, services.side_a.chain_driver.chain_id
     );
 
     // std::thread::sleep(Duration::from_secs(1));

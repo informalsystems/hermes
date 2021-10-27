@@ -67,8 +67,10 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService, Er
 
     chain.collect_gen_txs()?;
 
+    let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+
     chain.update_chain_config(|config| {
-        config::set_log_level(config, "debug")?;
+        config::set_log_level(config, &log_level)?;
         config::set_rpc_port(config, chain.rpc_port)?;
         config::set_p2p_port(config, chain.p2p_port)?;
         config::set_timeout_commit(config, Duration::from_secs(1))?;
