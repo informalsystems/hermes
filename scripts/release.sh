@@ -6,10 +6,10 @@
 # crates at the same time.
 #
 # For each crate, it will:
-# 1. Run `cargo publish --dry-run` for that crate
-# 2. List all files in the package with `cargo package --list`
-# 3. Prompt the user as to whether to publish or not
-# 4. Publish the package with `cargo publish` (no dry run)
+# 1. List all files in the package with `cargo package --list`
+# 2. Prompt the user as to whether to publish or not
+# 3. Publish the package with `cargo publish`
+# 4. Wait for the crate to be published before moving on to the next crate
 #
 # It has a default set of crates it will publish, which can be overridden by
 # way of command line arguments:
