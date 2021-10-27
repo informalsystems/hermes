@@ -206,7 +206,7 @@ gas_adjustment = 0.1
 max_msg_num = 30
 max_tx_size = 2097152
 clock_drift = '5s'
-max_clock_drift = '10s'
+max_block_time = '10s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
