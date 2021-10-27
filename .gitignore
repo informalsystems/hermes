@@ -25,9 +25,5 @@ __pycache__/
 .modelator
 mc.log
 
-<<<<<<< HEAD
-# Ignore OSX .DS_Store files
-=======
 # Ignore OSX .DS_Store file
->>>>>>> restructure-to-ibc-go
 .DS_Store
