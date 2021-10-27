@@ -69,6 +69,8 @@ wait_until_available() {
     ONLINE_DATE="$(check_version_online "${1}" "${2}")"
     if [ -n "${ONLINE_DATE}" ]; then
       echo "Crate ${crate} is now available online"
+      echo "Waiting 20 more seconds to be sure it's available..."
+      sleep 20
       break
     else
       if [ "${retry}" == 5 ]; then
