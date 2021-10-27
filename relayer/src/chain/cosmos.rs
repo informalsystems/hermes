@@ -717,12 +717,14 @@ impl CosmosSdkChain {
         let status = self
             .block_on(self.rpc_client().status())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
         if status.sync_info.catching_up {
             return Err(Error::chain_not_caught_up(
                 self.config.rpc_addr.to_string(),
                 self.config().id.clone(),
             ));
         }
+
         Ok(status)
     }
 

@@ -735,6 +735,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                         e,
                     )
                 })?;
+
                 if status.height >= target_dst_height {
                     break;
                 }
