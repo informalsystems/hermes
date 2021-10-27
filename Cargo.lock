@@ -1452,13 +1452,12 @@ dependencies = [
 [[package]]
 name = "ics23"
 version = "0.6.5"
-source = "git+https://github.com/informalsystems/ics23?branch=romac/prost-0.9#46509c655a9b918919a7f1c99524fcfe91afb168"
+source = "git+https://github.com/confio/ics23?branch=master#40089c0182b31f9c22799bb7b874132c1bc2cd77"
 dependencies = [
  "anyhow",
  "bytes",
  "hex",
  "prost",
- "prost-types",
  "ripemd160",
  "sha2",
  "sha3",
