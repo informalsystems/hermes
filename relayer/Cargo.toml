@@ -13,11 +13,7 @@ description = """
 """
 
 [features]
-default = ["std", "eyre_tracer"]
-std = [
-    "flex-error/std"
-]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = ["flex-error/std", "flex-error/eyre_tracer"]
 profiling = []
 telemetry = ["ibc-telemetry"]
 
@@ -58,7 +54,7 @@ dirs-next = "2.0.0"
 retry = { version = "1.3.0", default-features = false }
 async-stream = "0.3.2"
 http = "0.2.4"
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
 signature = "1.3.0"
 anyhow = "1.0.44"
 fraction = {version = "0.9.0", default-features = false }
