@@ -13,6 +13,9 @@ description  = """
     This crate comprises the main data structures and on-chain logic.
 """
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 default = ["flex-error/std", "flex-error/eyre_tracer"]
 

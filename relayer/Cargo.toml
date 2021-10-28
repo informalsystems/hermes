@@ -12,6 +12,9 @@ description  = """
     Implementation of an IBC Relayer in Rust, as a library.
 """
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 default   = ["flex-error/std", "flex-error/eyre_tracer"]
 profiling = []
