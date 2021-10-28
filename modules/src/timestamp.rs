@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::convert::TryInto;
+
 use core::fmt::Display;
 use core::num::ParseIntError;
 use core::ops::{Add, Sub};
@@ -140,6 +140,16 @@ impl Timestamp {
             _ => Expiry::InvalidTimestamp,
         }
     }
+
+    /// Checks whether the current timestamp is strictly more advanced
+    /// than the `other` timestamp. Return true if so, and false
+    /// otherwise.
+    pub fn after(&self, other: &Timestamp) -> bool {
+        match (self.time, other.time) {
+            (Some(time1), Some(time2)) => time1 > time2,
+            _ => false,
+        }
+    }
 }
 
 impl Display for Timestamp {
@@ -238,7 +248,6 @@ impl Default for Timestamp {
 }
 
 pub mod util {
-    use core::convert::TryInto;
 
     const NANOS_PER_SEC: u64 = 1_000_000_000;
 
@@ -272,7 +281,7 @@ pub mod util {
 #[cfg(test)]
 mod tests {
     use chrono::Utc;
-    use core::convert::TryInto;
+
     use core::time::Duration;
     use std::thread::sleep;
     use test_env_log::test;

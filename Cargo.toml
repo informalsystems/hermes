@@ -1,5 +1,7 @@
 [workspace]
 
+resolver = "2"
+
 members = [
     "modules",
     "relayer",
@@ -14,9 +16,11 @@ exclude = [
     "proto-compiler"
 ]
 
-# [patch.crates-io]
-# tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
-# tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
-# tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
-# tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
-# tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+[patch.crates-io]
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+ics23                   = { git = "https://github.com/confio/ics23",                  branch = "master" }
+

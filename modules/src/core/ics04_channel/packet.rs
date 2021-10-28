@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::convert::TryFrom;
+
 use core::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
@@ -263,7 +263,7 @@ pub mod test_utils {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use test_env_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;

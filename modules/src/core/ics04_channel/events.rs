@@ -1,7 +1,5 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 
-use core::convert::TryFrom;
-
 use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;

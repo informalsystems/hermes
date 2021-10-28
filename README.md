@@ -4,7 +4,7 @@
 [![End to End testing][e2e-image]][e2e-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
-![Rust 1.53+][rustc-version]
+![Rust 1.56+][rustc-version]
 
 Rust implementation of the Inter-Blockchain Communication (IBC) protocol.
 
@@ -39,8 +39,7 @@ Includes [TLA+ specifications](docs/spec).
 
 ## Requirements
 
-Developed with the latest stable version of Rust: `1.53.0`.
-(May work with older versions.)
+The crates in this project require the latest stable version of Rust: `1.56.0`.
 
 ## Hermes Guide
 
@@ -112,4 +111,4 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [license-image]: https://img.shields.io/badge/license-Apache_2.0-blue.svg
 [license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
-[rustc-version]: https://img.shields.io/badge/rustc-1.53+-blue.svg
+[rustc-version]: https://img.shields.io/badge/rustc-1.56+-blue.svg

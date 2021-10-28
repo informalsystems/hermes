@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use core::convert::TryFrom;
 
 use tendermint_proto::Protobuf;
 
@@ -126,7 +125,6 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryFrom;
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
     use ibc_proto::ibc::core::client::v1::Height;

@@ -112,7 +112,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryInto;
+
     use test_env_log::test;
 
     use crate::core::ics02_client::height::Height;

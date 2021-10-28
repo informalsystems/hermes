@@ -153,7 +153,6 @@ mod tests {
 
     use crate::mock::context::MockContext;
 
-    use core::convert::TryFrom;
     use test_env_log::test;
 
     #[test]

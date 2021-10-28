@@ -10,6 +10,7 @@ use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
+use chrono::DateTime;
 use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
@@ -21,7 +22,9 @@ use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::{EventType, Query};
-use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
+use tendermint_rpc::{
+    endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
+};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, trace, warn};
@@ -50,6 +53,7 @@ use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
+use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
@@ -78,7 +82,7 @@ use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
-use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
+use crate::{chain::QueryResponse, chain::StatusResponse, event::monitor::TxMonitorCmd};
 use crate::{config::types::Memo, error::Error};
 use crate::{
     config::{AddressType, ChainConfig, GasPrice},
@@ -709,6 +713,31 @@ impl CosmosSdkChain {
     fn tx_memo(&self) -> &Memo {
         &self.config.memo_prefix
     }
+
+    /// Query the chain status via an RPC query
+    fn status(&self) -> Result<status::Response, Error> {
+        let status = self
+            .block_on(self.rpc_client().status())
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+        if status.sync_info.catching_up {
+            return Err(Error::chain_not_caught_up(
+                self.config.rpc_addr.to_string(),
+                self.config().id.clone(),
+            ));
+        }
+
+        Ok(status)
+    }
+
+    /// Query the chain's latest height
+    pub fn query_latest_height(&self) -> Result<ICSHeight, Error> {
+        let status = self.status()?;
+        Ok(ICSHeight {
+            revision_number: ChainId::chain_version(status.node_info.network.as_str()),
+            revision_height: u64::from(status.sync_info.latest_block_height),
+        })
+    }
 }
 
 fn empty_event_present(events: &[IbcEvent]) -> bool {
@@ -951,6 +980,11 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(Signer::new(bech32))
     }
 
+    /// Get the chain configuration
+    fn config(&self) -> ChainConfig {
+        self.config.clone()
+    }
+
     /// Get the signing key
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
         crate::time!("get_key");
@@ -973,24 +1007,20 @@ impl ChainEndpoint for CosmosSdkChain {
         ))
     }
 
-    /// Query the latest height the chain is at via a RPC query
-    fn query_latest_height(&self) -> Result<ICSHeight, Error> {
-        crate::time!("query_latest_height");
+    /// Query the chain status
+    fn query_status(&self) -> Result<StatusResponse, Error> {
+        crate::time!("query_status");
+        let status = self.status()?;
 
-        let status = self
-            .block_on(self.rpc_client().status())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-        if status.sync_info.catching_up {
-            return Err(Error::chain_not_caught_up(
-                self.config.rpc_addr.to_string(),
-                self.config().id.clone(),
-            ));
-        }
-
-        Ok(ICSHeight {
+        let time = DateTime::from(status.sync_info.latest_block_time);
+        let height = ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
             revision_height: u64::from(status.sync_info.latest_block_height),
+        };
+
+        Ok(StatusResponse {
+            height,
+            timestamp: Timestamp::from_datetime(time),
         })
     }
 
@@ -1803,15 +1833,22 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((res.value, commitment_proof_bytes))
     }
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+    fn build_client_state(
+        &self,
+        height: ICSHeight,
+        dst_config: ChainConfig,
+    ) -> Result<Self::ClientState, Error> {
         let unbonding_period = self.unbonding_period()?;
+
+        let max_clock_drift = calculate_client_state_drift(self.config(), &dst_config);
+
         // Build the client state.
         ClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
             self.trusting_period(unbonding_period),
             unbonding_period,
-            self.config.clock_drift,
+            max_clock_drift,
             height,
             ICSHeight::zero(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
@@ -2262,6 +2299,20 @@ fn mul_ceil(a: u64, f: f64) -> u64 {
     // together, and rounding them to the nearest integer.
     let n = (F::from(a) * F::from(f)).ceil();
     n.numer().unwrap() / n.denom().unwrap()
+}
+
+/// Compute the `max_clock_drift` for a (new) client state
+/// as a function of the configuration of the source chain
+/// and the destination chain configuration.
+///
+/// The client state clock drift must account for destination
+/// chain block frequency and clock drift on source and dest.
+/// https://github.com/informalsystems/ibc-rs/issues/1445
+fn calculate_client_state_drift(
+    src_chain_config: &ChainConfig,
+    dst_chain_config: &ChainConfig,
+) -> Duration {
+    src_chain_config.clock_drift + dst_chain_config.clock_drift + dst_chain_config.max_block_time
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::convert::TryFrom;
+
 use prost_types::Any;
 
 use crate::applications::ics20_fungible_token_transfer::msgs::{transfer, transfer::MsgTransfer};

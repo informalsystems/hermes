@@ -16,6 +16,7 @@ use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusS
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -40,7 +41,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::ChainEndpoint;
+use crate::chain::{ChainEndpoint, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -146,6 +147,10 @@ impl ChainEndpoint for MockChain {
         Ok(get_dummy_account_id())
     }
 
+    fn config(&self) -> ChainConfig {
+        self.config.clone()
+    }
+
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
         unimplemented!()
     }
@@ -154,8 +159,11 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_latest_height(&self) -> Result<Height, Error> {
-        Ok(self.context.query_latest_height())
+    fn query_status(&self) -> Result<StatusResponse, Error> {
+        Ok(StatusResponse {
+            height: self.context.host_height(),
+            timestamp: self.context.host_timestamp(),
+        })
     }
 
     fn query_clients(
@@ -330,13 +338,18 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
+    fn build_client_state(
+        &self,
+        height: Height,
+        dst_config: ChainConfig,
+    ) -> Result<Self::ClientState, Error> {
         let client_state = TendermintClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
             self.trusting_period(),
             self.trusting_period().add(Duration::from_secs(1000)),
-            Duration::from_millis(3000),
+            // See `calculate_client_state_drift`
+            self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
             Height::zero(),
             vec!["upgrade/upgradedClient".to_string()],
@@ -444,6 +457,7 @@ pub mod test_utils {
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
+            max_block_time: Duration::from_secs(10),
             trusting_period: Some(Duration::from_secs(14 * 24 * 60 * 60)), // 14 days
             trust_threshold: Default::default(),
             packet_filter: PacketFilter::default(),

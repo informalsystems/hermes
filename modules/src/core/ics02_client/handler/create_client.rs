@@ -58,7 +58,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryInto;
+
     use core::time::Duration;
     use test_env_log::test;
 

@@ -1,22 +1,23 @@
 [package]
-name       = "ibc"
-version    = "0.8.0-pre.1"
-edition    = "2018"
-license    = "Apache-2.0"
-readme     = "README.md"
-keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-repository = "https://github.com/informalsystems/ibc-rs"
-authors    = ["Informal Systems <hello@informal.systems>"]
-
-description = """
+name         = "ibc"
+version      = "0.8.0-pre.1"
+edition      = "2021"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.56"
+description  = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
     This crate comprises the main data structures and on-chain logic.
 """
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
-default = ["std", "eyre_tracer"]
-std = ["flex-error/std"]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = ["flex-error/std", "flex-error/eyre_tracer"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
@@ -25,20 +26,20 @@ mocks = ["tendermint-testgen", "sha2"]
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.12.0-pre.1", path = "../proto" }
-ics23 = { package = "informalsystems-ics23", version = "0.6.5", default-features = false }
+ics23 = { version = "0.6.5", default-features = false }
 chrono = { version = "0.4.19", default-features = false }
 thiserror = { version = "1.0.30", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
 serde = { version = "1.0.130", default-features = false }
 serde_json = { version = "1", default-features = false }
 tracing = { version = "0.1.29", default-features = false }
-prost = { package = "informalsystems-prost", version = "0.8", default-features = false }
-prost-types = { package = "informalsystems-prost-types", version = "0.8", default-features = false }
+prost = { version = "0.9", default-features = false }
+prost-types = { version = "0.9", default-features = false }
 bytes = { version = "1.1.0", default-features = false }
 safe-regex = { version = "0.2.4", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 sha2 = { version = "0.9.8", default-features = false, optional = true }
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.23.0-internal"
