@@ -14,11 +14,9 @@ use std::thread;
 use tendermint_rpc::Url;
 use tracing::info;
 
-use crate::bootstrap::single::{bootstrap_single_chain, ChainService};
+use crate::bootstrap::single::{bootstrap_single_chain, ChainDeployment as SingleDeployment};
 use crate::chain::builder::ChainBuilder;
-use crate::chain::driver::ChainDriver;
 use crate::chain::wallet::Wallet;
-use crate::process::ChildProcess;
 use crate::tagged::mono::Tagged as MonoTagged;
 
 use super::wallets::ChainWallets;
@@ -41,13 +39,7 @@ pub struct ChainDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
 
     pub foreign_client: ForeignClient<ChainA, ChainB>,
 
-    pub chain_driver: ChainDriver<ChainA>,
-
-    pub chain_process: ChildProcess,
-
-    pub denom: String,
-
-    pub wallets: MonoTagged<ChainA, ChainWallets>,
+    pub server: MonoTagged<ChainA, SingleDeployment>,
 }
 
 // A wrapper around the SupervisorCmd sender so that we can
@@ -74,7 +66,7 @@ fn add_key_to_chain_handle<Chain: ChainHandle>(
 
 fn add_keys_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
-    wallets: &MonoTagged<Chain, ChainWallets>,
+    wallets: &MonoTagged<Chain, &ChainWallets>,
 ) -> Result<(), Error> {
     add_key_to_chain_handle(chain, &wallets.relayer())?;
     add_key_to_chain_handle(chain, &wallets.user1())?;
@@ -89,8 +81,8 @@ pub fn boostrap_chain_pair(
     let service_a = bootstrap_single_chain(&builder)?;
     let service_b = bootstrap_single_chain(&builder)?;
 
-    let config_a = create_chain_config(&service_a)?;
-    let config_b = create_chain_config(&service_b)?;
+    let config_a = create_chain_config(service_a.value())?;
+    let config_b = create_chain_config(service_b.value())?;
 
     let mut config = config::Config::default();
 
@@ -104,8 +96,8 @@ pub fn boostrap_chain_pair(
     let (mut supervisor, supervisor_cmd_sender) =
         <Supervisor<ProdChainHandle>>::new(Arc::new(RwLock::new(config.clone())), None);
 
-    let chain_id_a = service_a.chain.chain_id.clone();
-    let chain_id_b = service_b.chain.chain_id.clone();
+    let chain_id_a = service_a.value().chain_driver.chain_id.clone();
+    let chain_id_b = service_b.value().chain_driver.chain_id.clone();
 
     let handle_a = supervisor.get_registry().get_or_spawn(&chain_id_a)?;
     let handle_b = supervisor.get_registry().get_or_spawn(&chain_id_b)?;
@@ -114,11 +106,11 @@ pub fn boostrap_chain_pair(
         supervisor.run().unwrap();
     });
 
-    let wallets_a = service_a.wallets.retag();
-    let wallets_b = service_b.wallets.retag();
+    let service_a = service_a.retag();
+    let service_b = service_b.retag();
 
-    add_keys_to_chain_handle(&handle_a, &wallets_a)?;
-    add_keys_to_chain_handle(&handle_b, &wallets_b)?;
+    add_keys_to_chain_handle(&handle_a, &service_a.wallets())?;
+    add_keys_to_chain_handle(&handle_b, &service_b.wallets())?;
 
     let client_a_to_b = ForeignClient::new(handle_b.clone(), handle_a.clone())?;
     let client_b_to_a = ForeignClient::new(handle_a.clone(), handle_b.clone())?;
@@ -135,13 +127,7 @@ pub fn boostrap_chain_pair(
 
             foreign_client: client_a_to_b,
 
-            chain_driver: service_a.chain.retag(),
-
-            chain_process: service_a.process,
-
-            denom: service_a.denom,
-
-            wallets: wallets_a,
+            server: service_a,
         },
 
         side_b: ChainDeployment {
@@ -151,26 +137,20 @@ pub fn boostrap_chain_pair(
 
             foreign_client: client_b_to_a,
 
-            chain_driver: service_b.chain.retag(),
-
-            chain_process: service_b.process,
-
-            denom: service_b.denom,
-
-            wallets: wallets_b,
+            server: service_b,
         },
     })
 }
 
-fn create_chain_config<Chain>(chain: &ChainService<Chain>) -> Result<config::ChainConfig, Error> {
+fn create_chain_config(chain: &SingleDeployment) -> Result<config::ChainConfig, Error> {
     Ok(config::ChainConfig {
-        id: chain.chain.chain_id.clone(),
-        rpc_addr: Url::from_str(&chain.chain.rpc_address())?,
-        websocket_addr: Url::from_str(&chain.chain.websocket_address())?,
-        grpc_addr: Url::from_str(&chain.chain.grpc_address())?,
+        id: chain.chain_driver.chain_id.clone(),
+        rpc_addr: Url::from_str(&chain.chain_driver.rpc_address())?,
+        websocket_addr: Url::from_str(&chain.chain_driver.websocket_address())?,
+        grpc_addr: Url::from_str(&chain.chain_driver.grpc_address())?,
         rpc_timeout: Duration::from_secs(10),
         account_prefix: "cosmos".to_string(),
-        key_name: chain.wallets.relayer().value().id.0.clone(),
+        key_name: chain.wallets.relayer.id.0.clone(),
         key_store_type: Store::Memory,
         store_prefix: "ibc".to_string(),
         default_gas: None,

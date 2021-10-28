@@ -1,5 +1,6 @@
 pub mod bootstrap;
 pub mod chain;
+pub mod ibc;
 pub mod init;
 pub mod process;
 pub mod relayer;

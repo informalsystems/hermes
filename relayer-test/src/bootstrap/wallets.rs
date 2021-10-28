@@ -8,7 +8,7 @@ pub struct ChainWallets {
     pub user2: Wallet,
 }
 
-impl<Chain> Tagged<Chain, ChainWallets> {
+impl<'a, Chain> Tagged<Chain, &'a ChainWallets> {
     pub fn validator(&self) -> Tagged<Chain, &Wallet> {
         self.map_ref(|w| &w.validator)
     }

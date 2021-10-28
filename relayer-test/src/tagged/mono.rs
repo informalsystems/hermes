@@ -40,7 +40,10 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Tagged::new(mapper(self.value()))
     }
 
-    pub fn map_ref<'a, T>(&'a self, mapper: impl FnOnce(&'a Value) -> &'a T) -> Tagged<Tag, &'a T> {
+    pub fn map_ref<'a, T: ?Sized>(
+        &'a self,
+        mapper: impl FnOnce(&'a Value) -> &'a T,
+    ) -> Tagged<Tag, &'a T> {
         Tagged::new(mapper(self.value()))
     }
 

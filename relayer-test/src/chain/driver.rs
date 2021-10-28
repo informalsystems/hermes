@@ -1,4 +1,3 @@
-use core::marker::PhantomData;
 use core::str::FromStr;
 use eyre::{eyre, Report as Error};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
@@ -12,6 +11,7 @@ use toml;
 use tracing::{debug, trace};
 
 use super::wallet::{Wallet, WalletAddress, WalletId};
+use crate::ibc::denom::Denom;
 use crate::process::ChildProcess;
 use crate::tagged::dual::Tagged;
 use crate::tagged::mono::Tagged as MonoTagged;
@@ -26,7 +26,7 @@ const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 /// In the future, we will want to turn this into one or more `ChainDriver` traits so that they can
 /// be used to spawn multiple chain implementations other than one version of Gaia.
 
-pub struct ChainDriver<Chain> {
+pub struct ChainDriver {
     pub command_path: String,
 
     pub chain_id: ChainId,
@@ -38,11 +38,9 @@ pub struct ChainDriver<Chain> {
     pub grpc_port: u16,
 
     pub p2p_port: u16,
-
-    phantom: PhantomData<Chain>,
 }
 
-impl<Chain> ChainDriver<Chain> {
+impl ChainDriver {
     pub fn new(
         command_path: String,
         chain_id: ChainId,
@@ -58,19 +56,6 @@ impl<Chain> ChainDriver<Chain> {
             rpc_port,
             grpc_port,
             p2p_port,
-            phantom: PhantomData,
-        }
-    }
-
-    pub fn retag<ChainB>(self) -> ChainDriver<ChainB> {
-        ChainDriver {
-            command_path: self.command_path,
-            chain_id: self.chain_id,
-            home_path: self.home_path,
-            rpc_port: self.rpc_port,
-            grpc_port: self.grpc_port,
-            p2p_port: self.p2p_port,
-            phantom: PhantomData,
         }
     }
 
@@ -193,12 +178,12 @@ impl<Chain> ChainDriver<Chain> {
     pub fn add_genesis_account(
         &self,
         wallet: &WalletAddress,
-        amounts: &[(&str, u64)],
+        amounts: &[(&Denom, u64)],
     ) -> Result<(), Error> {
         let amounts_str = itertools::join(
             amounts
                 .iter()
-                .map(|(denom, amount)| format!("{}{}", amount, denom)),
+                .map(|(denom, amount)| format!("{}{}", amount, denom.0)),
             ",",
         );
 
@@ -216,10 +201,10 @@ impl<Chain> ChainDriver<Chain> {
     pub fn add_genesis_validator(
         &self,
         wallet_id: &WalletId,
-        denom: &str,
+        denom: &Denom,
         amount: u64,
     ) -> Result<(), Error> {
-        let amount_str = format!("{}{}", amount, denom);
+        let amount_str = format!("{}{}", amount, denom.0);
 
         self.exec(&[
             "--home",
@@ -293,16 +278,68 @@ impl<Chain> ChainDriver<Chain> {
         Ok(ChildProcess::new(child))
     }
 
-    pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &str) -> Result<u64, Error> {
-        let res = self.exec(&[
+    pub fn query_denom_traces(&self) -> Result<String, Error> {
+        self.exec(&[
             "--node",
             &self.rpc_listen_address(),
             "query",
+            "ibc-transfer",
+            "denom-traces",
+        ])
+    }
+}
+
+impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
+    // We use gaiad instead of the internal raw tx transfer to transfer tokens,
+    // as the current chain implementation cannot dynamically switch the sender,
+    // and instead always use the configured relayer wallet for sending tokens.
+    pub fn transfer_token<ChainB>(
+        &self,
+        port_id: &Tagged<ChainA, ChainB, PortId>,
+        channel_id: &Tagged<ChainA, ChainB, ChannelId>,
+        sender: &MonoTagged<ChainA, &WalletAddress>,
+        receiver: &MonoTagged<ChainB, &WalletAddress>,
+        amount: u64,
+        denom: &MonoTagged<ChainA, &Denom>,
+    ) -> Result<(), Error> {
+        self.value().exec(&[
+            "--node",
+            &self.value().rpc_listen_address(),
+            "tx",
+            "ibc-transfer",
+            "transfer",
+            port_id.value().as_str(),
+            channel_id.value().as_str(),
+            &receiver.value().0,
+            &format!("{}{}", amount, denom.value().0),
+            "--from",
+            &sender.value().0,
+            "--chain-id",
+            self.value().chain_id.as_str(),
+            "--home",
+            &self.value().home_path,
+            "--keyring-backend",
+            "test",
+            "--yes",
+        ])?;
+
+        Ok(())
+    }
+
+    pub fn query_balance(
+        &self,
+        wallet_id: &MonoTagged<ChainA, &WalletAddress>,
+        denom: &MonoTagged<ChainA, &Denom>,
+    ) -> Result<u64, Error> {
+        let res = self.value().exec(&[
+            "--node",
+            &self.value().rpc_listen_address(),
+            "query",
             "bank",
             "balances",
-            &wallet_id.0,
+            &wallet_id.value().0,
             "--denom",
-            denom,
+            denom.value().0.as_str(),
             "--output",
             "json",
         ])?;
@@ -317,51 +354,5 @@ impl<Chain> ChainDriver<Chain> {
         let amount = u64::from_str(&amount_str)?;
 
         Ok(amount)
-    }
-
-    pub fn query_denom_traces(&self) -> Result<String, Error> {
-        self.exec(&[
-            "--node",
-            &self.rpc_listen_address(),
-            "query",
-            "ibc-transfer",
-            "denom-traces",
-        ])
-    }
-
-    // We use gaiad instead of the internal raw tx transfer to transfer tokens,
-    // as the current chain implementation cannot dynamically switch the sender,
-    // and instead always use the configured relayer wallet for sending tokens.
-    pub fn transfer_token<Counterparty>(
-        &self,
-        port_id: &PortId,
-        channel_id: &Tagged<Chain, Counterparty, ChannelId>,
-        sender: &MonoTagged<Chain, &WalletAddress>,
-        receiver: &MonoTagged<Counterparty, &WalletAddress>,
-        amount: u64,
-        denom: &str,
-    ) -> Result<(), Error> {
-        self.exec(&[
-            "--node",
-            &self.rpc_listen_address(),
-            "tx",
-            "ibc-transfer",
-            "transfer",
-            port_id.as_str(),
-            channel_id.value().as_str(),
-            &receiver.value().0,
-            &format!("{}{}", amount, denom),
-            "--from",
-            &sender.value().0,
-            "--chain-id",
-            self.chain_id.as_str(),
-            "--home",
-            &self.home_path,
-            "--keyring-backend",
-            "test",
-            "--yes",
-        ])?;
-
-        Ok(())
     }
 }

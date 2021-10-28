@@ -18,6 +18,10 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         self.0
     }
 
+    pub fn as_ref<'a>(&'a self) -> Tagged<TagA, TagB, &'a Value> {
+        Tagged::new(&self.0)
+    }
+
     pub fn flip(self) -> Tagged<TagB, TagA, Value> {
         Tagged::new(self.0)
     }

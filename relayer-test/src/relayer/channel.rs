@@ -19,8 +19,8 @@ pub struct ChannelResult<ChainA: ChainHandle, ChainB: ChainHandle> {
 pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_a_to_b: &ForeignClient<ChainA, ChainB>,
     client_b_to_a: &ForeignClient<ChainB, ChainA>,
-    port_id_a: PortId,
-    port_id_b: PortId,
+    port_id_a: &Tagged<ChainA, ChainB, PortId>,
+    port_id_b: &Tagged<ChainB, ChainA, PortId>,
 ) -> Result<ChannelResult<ChainA, ChainB>, Error> {
     let connection = Connection::new(
         client_a_to_b.clone(),
@@ -28,7 +28,13 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         default::connection_delay(),
     )?;
 
-    let channel = Channel::new(connection, Order::Unordered, port_id_a, port_id_b, None)?;
+    let channel = Channel::new(
+        connection,
+        Order::Unordered,
+        port_id_a.value().clone(),
+        port_id_b.value().clone(),
+        None,
+    )?;
 
     let channel_id_a = channel
         .a_side
