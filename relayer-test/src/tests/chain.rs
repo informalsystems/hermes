@@ -23,8 +23,8 @@ fn test_chain_manager() -> Result<(), Error> {
     let port_b = DualTagged::new(PortId::from_str("transfer")?);
 
     let channel = bootstrap_channel(
-        &services.side_a.foreign_client,
-        &services.side_b.foreign_client,
+        &services.client_b_to_a,
+        &services.client_a_to_b,
         &port_a,
         &port_b,
     )?;
@@ -74,8 +74,8 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!(
         "successfully performed IBC transfer from chain {} to chain {}",
-        services.side_a.chain_driver().value().chain_id,
-        services.side_b.chain_driver().value().chain_id,
+        services.side_a.chain_id(),
+        services.side_b.chain_id(),
     );
 
     let chaina_user2_balance = services
@@ -102,8 +102,8 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!(
         "successfully performed reverse IBC transfer from chain {} back to chain {}",
-        services.side_b.chain_driver().value().chain_id,
-        services.side_a.chain_driver().value().chain_id
+        services.side_b.chain_id(),
+        services.side_a.chain_id(),
     );
 
     // std::thread::sleep(Duration::from_secs(1));

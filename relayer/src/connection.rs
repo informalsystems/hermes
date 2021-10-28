@@ -241,11 +241,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     /// Create a new connection, ensuring that the handshake has succeeded and the two connection
     /// ends exist on each side.
     pub fn new(
-        a_client: ForeignClient<ChainA, ChainB>,
-        b_client: ForeignClient<ChainB, ChainA>,
+        b_to_a_client: ForeignClient<ChainA, ChainB>,
+        a_to_b_client: ForeignClient<ChainB, ChainA>,
         delay_period: Duration,
     ) -> Result<Self, ConnectionError> {
-        Self::validate_clients(&a_client, &b_client)?;
+        Self::validate_clients(&b_to_a_client, &a_to_b_client)?;
 
         // Validate the delay period against the upper bound
         if delay_period > MAX_PACKET_DELAY {
@@ -255,13 +255,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         let mut c = Self {
             delay_period,
             a_side: ConnectionSide::new(
-                a_client.dst_chain(),
-                a_client.id().clone(),
+                b_to_a_client.dst_chain(),
+                b_to_a_client.id().clone(),
                 Default::default(),
             ),
             b_side: ConnectionSide::new(
-                b_client.dst_chain(),
-                b_client.id().clone(),
+                a_to_b_client.dst_chain(),
+                a_to_b_client.id().clone(),
                 Default::default(),
             ),
         };

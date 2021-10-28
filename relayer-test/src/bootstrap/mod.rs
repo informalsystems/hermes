@@ -1,4 +1,4 @@
-pub mod deployment;
+pub mod client_server;
 pub mod pair;
 pub mod running_node;
 pub mod single;

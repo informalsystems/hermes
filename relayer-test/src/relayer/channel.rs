@@ -12,19 +12,19 @@ use crate::tagged::dual::Tagged;
 #[derive(Debug)]
 pub struct ChannelResult<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub channel: Channel<ChainA, ChainB>,
-    pub channel_id_a: Tagged<ChainB, ChainA, ChannelId>,
-    pub channel_id_b: Tagged<ChainA, ChainB, ChannelId>,
+    pub channel_id_a: Tagged<ChainA, ChainB, ChannelId>,
+    pub channel_id_b: Tagged<ChainB, ChainA, ChannelId>,
 }
 
 pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
-    client_a_to_b: &ForeignClient<ChainB, ChainA>,
     client_b_to_a: &ForeignClient<ChainA, ChainB>,
+    client_a_to_b: &ForeignClient<ChainB, ChainA>,
     port_id_a: &Tagged<ChainA, ChainB, PortId>,
     port_id_b: &Tagged<ChainB, ChainA, PortId>,
-) -> Result<ChannelResult<ChainB, ChainA>, Error> {
+) -> Result<ChannelResult<ChainA, ChainB>, Error> {
     let connection = Connection::new(
-        client_a_to_b.clone(),
         client_b_to_a.clone(),
+        client_a_to_b.clone(),
         default::connection_delay(),
     )?;
 
