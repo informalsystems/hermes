@@ -19,6 +19,9 @@ use crate::chain::builder::ChainBuilder;
 use crate::chain::driver::ChainDriver;
 use crate::chain::wallet::Wallet;
 use crate::process::ChildProcess;
+use crate::tagged::mono::Tagged as MonoTagged;
+
+use super::wallets::ChainWallets;
 
 pub struct ChainsDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
     // Have this as first field to drop the supervisor
@@ -44,14 +47,7 @@ pub struct ChainDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
 
     pub denom: String,
 
-    pub wallets: ChainWallets,
-}
-
-pub struct ChainWallets {
-    pub validator: Wallet,
-    pub relayer: Wallet,
-    pub user1: Wallet,
-    pub user2: Wallet,
+    pub wallets: MonoTagged<ChainA, ChainWallets>,
 }
 
 // A wrapper around the SupervisorCmd sender so that we can
@@ -65,6 +61,26 @@ impl Drop for SupervisorCmdSender {
         let _ = self.0.send(SupervisorCmd::Stop);
         thread::sleep(Duration::from_millis(1000));
     }
+}
+
+fn add_key_to_chain_handle<Chain: ChainHandle>(
+    chain: &Chain,
+    wallet: &MonoTagged<Chain, &Wallet>,
+) -> Result<(), Error> {
+    chain.add_key(wallet.value().id.0.clone(), wallet.value().key.clone())?;
+
+    Ok(())
+}
+
+fn add_keys_to_chain_handle<Chain: ChainHandle>(
+    chain: &Chain,
+    wallets: &MonoTagged<Chain, ChainWallets>,
+) -> Result<(), Error> {
+    add_key_to_chain_handle(chain, &wallets.relayer())?;
+    add_key_to_chain_handle(chain, &wallets.user1())?;
+    add_key_to_chain_handle(chain, &wallets.user2())?;
+
+    Ok(())
 }
 
 pub fn boostrap_chain_pair(
@@ -98,21 +114,11 @@ pub fn boostrap_chain_pair(
         supervisor.run().unwrap();
     });
 
-    handle_a.add_key(
-        service_a.relayer.id.0.clone(),
-        service_a.relayer.key.clone(),
-    )?;
+    let wallets_a = service_a.wallets.retag();
+    let wallets_b = service_b.wallets.retag();
 
-    handle_a.add_key(service_a.user1.id.0.clone(), service_a.user1.key.clone())?;
-    handle_a.add_key(service_a.user2.id.0.clone(), service_a.user2.key.clone())?;
-
-    handle_b.add_key(
-        service_b.relayer.id.0.clone(),
-        service_b.relayer.key.clone(),
-    )?;
-
-    handle_b.add_key(service_b.user1.id.0.clone(), service_b.user1.key.clone())?;
-    handle_b.add_key(service_b.user2.id.0.clone(), service_b.user2.key.clone())?;
+    add_keys_to_chain_handle(&handle_a, &wallets_a)?;
+    add_keys_to_chain_handle(&handle_b, &wallets_b)?;
 
     let client_a_to_b = ForeignClient::new(handle_b.clone(), handle_a.clone())?;
     let client_b_to_a = ForeignClient::new(handle_a.clone(), handle_b.clone())?;
@@ -135,12 +141,7 @@ pub fn boostrap_chain_pair(
 
             denom: service_a.denom,
 
-            wallets: ChainWallets {
-                validator: service_a.validator,
-                relayer: service_a.relayer,
-                user1: service_a.user1,
-                user2: service_a.user2,
-            },
+            wallets: wallets_a,
         },
 
         side_b: ChainDeployment {
@@ -156,12 +157,7 @@ pub fn boostrap_chain_pair(
 
             denom: service_b.denom,
 
-            wallets: ChainWallets {
-                validator: service_b.validator,
-                relayer: service_b.relayer,
-                user1: service_b.user1,
-                user2: service_b.user2,
-            },
+            wallets: wallets_b,
         },
     })
 }
@@ -174,7 +170,7 @@ fn create_chain_config<Chain>(chain: &ChainService<Chain>) -> Result<config::Cha
         grpc_addr: Url::from_str(&chain.chain.grpc_address())?,
         rpc_timeout: Duration::from_secs(10),
         account_prefix: "cosmos".to_string(),
-        key_name: chain.relayer.id.0.clone(),
+        key_name: chain.wallets.relayer().value().id.0.clone(),
         key_store_type: Store::Memory,
         store_prefix: "ibc".to_string(),
         default_gas: None,

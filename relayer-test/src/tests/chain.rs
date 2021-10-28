@@ -36,8 +36,8 @@ fn test_chain_manager() -> Result<(), Error> {
     services.side_a.chain_driver.transfer_token(
         &transfer_port,
         &channel.channel_id_a,
-        &services.side_a.wallets.user1.address,
-        &services.side_b.wallets.user1.address,
+        &services.side_a.wallets.user1().address(),
+        &services.side_b.wallets.user1().address(),
         1000,
         &denom_a,
     )?;
@@ -51,7 +51,7 @@ fn test_chain_manager() -> Result<(), Error> {
 
     wait_wallet_amount(
         &services.side_a.chain_driver,
-        &services.side_a.wallets.user1,
+        &services.side_a.wallets.user1(),
         INITIAL_TOKEN_AMOUNT - 1000,
         &denom_a,
         20,
@@ -59,7 +59,7 @@ fn test_chain_manager() -> Result<(), Error> {
 
     wait_wallet_amount(
         &services.side_b.chain_driver,
-        &services.side_b.wallets.user1,
+        &services.side_b.wallets.user1(),
         1000,
         &denom_b,
         20,
@@ -73,15 +73,15 @@ fn test_chain_manager() -> Result<(), Error> {
     services.side_b.chain_driver.transfer_token(
         &transfer_port,
         &channel.channel_id_b,
-        &services.side_b.wallets.user1.address,
-        &services.side_a.wallets.user2.address,
+        &services.side_b.wallets.user1().address(),
+        &services.side_a.wallets.user2().address(),
         500,
         &denom_b,
     )?;
 
     wait_wallet_amount(
         &services.side_a.chain_driver,
-        &services.side_a.wallets.user2,
+        &services.side_a.wallets.user2(),
         INITIAL_TOKEN_AMOUNT + 500,
         &denom_a,
         20,

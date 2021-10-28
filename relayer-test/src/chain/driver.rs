@@ -13,7 +13,8 @@ use tracing::{debug, trace};
 
 use super::wallet::{Wallet, WalletAddress, WalletId};
 use crate::process::ChildProcess;
-use crate::tagged::Tagged;
+use crate::tagged::dual::Tagged;
+use crate::tagged::mono::Tagged as MonoTagged;
 use crate::util;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
@@ -335,8 +336,8 @@ impl<Chain> ChainDriver<Chain> {
         &self,
         port_id: &PortId,
         channel_id: &Tagged<Chain, Counterparty, ChannelId>,
-        sender: &WalletAddress,
-        receiver: &WalletAddress,
+        sender: &MonoTagged<Chain, &WalletAddress>,
+        receiver: &MonoTagged<Counterparty, &WalletAddress>,
         amount: u64,
         denom: &str,
     ) -> Result<(), Error> {
@@ -348,10 +349,10 @@ impl<Chain> ChainDriver<Chain> {
             "transfer",
             port_id.as_str(),
             channel_id.value().as_str(),
-            &receiver.0,
+            &receiver.value().0,
             &format!("{}{}", amount, denom),
             "--from",
-            &sender.0,
+            &sender.value().0,
             "--chain-id",
             self.chain_id.as_str(),
             "--home",

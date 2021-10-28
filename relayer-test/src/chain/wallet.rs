@@ -1,5 +1,7 @@
 use ibc_relayer::keyring::KeyEntry;
 
+use crate::tagged::mono::Tagged;
+
 #[derive(Debug)]
 pub struct WalletId(pub String);
 
@@ -20,5 +22,19 @@ impl Wallet {
             address: WalletAddress(address),
             key,
         }
+    }
+}
+
+impl<'a, Chain> Tagged<Chain, &'a Wallet> {
+    pub fn id<'b>(&'b self) -> Tagged<Chain, &'b WalletId> {
+        self.map_ref(|w| &w.id)
+    }
+
+    pub fn address<'b>(&'b self) -> Tagged<Chain, &'b WalletAddress> {
+        self.map_ref(|w| &w.address)
+    }
+
+    pub fn key<'b>(&'b self) -> Tagged<Chain, &'b KeyEntry> {
+        self.map_ref(|w| &w.key)
     }
 }

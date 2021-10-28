@@ -7,7 +7,7 @@ use ibc_relayer::config::default;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::tagged::Tagged;
+use crate::tagged::dual::Tagged;
 
 #[derive(Debug)]
 pub struct ChannelResult<ChainA: ChainHandle, ChainB: ChainHandle> {

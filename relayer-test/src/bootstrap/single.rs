@@ -8,8 +8,11 @@ use crate::chain::config;
 use crate::chain::driver::ChainDriver;
 use crate::chain::wallet::Wallet;
 use crate::process::ChildProcess;
-use crate::tagged::Tag;
+use crate::tagged::mono::Tagged as MonoTagged;
+use crate::tagged::tag::Tag;
 use crate::util;
+
+use super::wallets::ChainWallets;
 
 pub const STAKE_DENOM: &str = "stake";
 pub const INITIAL_TOKEN_AMOUNT: u64 = 1_000_000_000_000;
@@ -17,11 +20,8 @@ pub const INITIAL_TOKEN_AMOUNT: u64 = 1_000_000_000_000;
 pub struct ChainService<Chain> {
     pub chain: ChainDriver<Chain>,
     pub process: ChildProcess,
-    pub validator: Wallet,
-    pub relayer: Wallet,
-    pub user1: Wallet,
-    pub user2: Wallet,
     pub denom: String,
+    pub wallets: MonoTagged<Chain, ChainWallets>,
 }
 
 pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService<impl Tag>, Error> {
@@ -82,16 +82,20 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService<imp
 
     let process = chain.start()?;
 
-    wait_wallet_amount(&chain, &relayer, INITIAL_TOKEN_AMOUNT, &denom, 10)?;
-
-    Ok(ChainService {
-        chain,
-        process,
+    let wallets = MonoTagged::new(ChainWallets {
         validator,
         relayer,
         user1,
         user2,
+    });
+
+    wait_wallet_amount(&chain, &wallets.relayer(), INITIAL_TOKEN_AMOUNT, &denom, 10)?;
+
+    Ok(ChainService {
+        chain,
+        process,
         denom,
+        wallets,
     })
 }
 
@@ -99,7 +103,7 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<ChainService<imp
 // This is to ensure that the chain has properly started and committed the genesis block
 pub fn wait_wallet_amount<Chain>(
     chain: &ChainDriver<Chain>,
-    user: &Wallet,
+    user: &MonoTagged<Chain, &Wallet>,
     target_amount: u64,
     denom: &str,
     remaining_retry: u16,
@@ -112,12 +116,13 @@ pub fn wait_wallet_amount<Chain>(
 
     debug!(
         "waiting for wallet for {} to reach amount {}",
-        user.id.0, target_amount
+        user.id().value().0,
+        target_amount
     );
 
     thread::sleep(Duration::from_secs(2));
 
-    let query_res = chain.query_balance(&user.address, denom);
+    let query_res = chain.query_balance(user.address().value(), denom);
     match query_res {
         Ok(amount) => {
             if amount == target_amount {

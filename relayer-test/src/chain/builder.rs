@@ -1,7 +1,7 @@
 use ibc::core::ics24_host::identifier::ChainId;
 
 use super::driver::ChainDriver;
-use crate::tagged::Tag;
+use crate::tagged::tag::Tag;
 use crate::util;
 
 #[derive(Debug)]
