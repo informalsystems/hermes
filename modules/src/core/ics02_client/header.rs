@@ -1,6 +1,6 @@
-use crate::prelude::*;
 use core::convert::TryFrom;
 use core::ops::Deref;
+
 use prost_types::Any;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
@@ -10,6 +10,7 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
+use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
@@ -62,9 +63,8 @@ impl Header for AnyHeader {
     fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(header) => header.timestamp(),
-
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(header) => header.timestamp,
+            Self::Mock(header) => header.timestamp(),
         }
     }
 

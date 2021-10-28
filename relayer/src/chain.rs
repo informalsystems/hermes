@@ -22,6 +22,7 @@ use ibc::events::IbcEvent;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::signer::Signer;
+use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -56,6 +57,13 @@ pub mod mock;
 pub enum HealthCheck {
     Healthy,
     Unhealthy(Box<Error>),
+}
+
+/// The result of a chain status query.
+#[derive(Clone, Debug)]
+pub struct StatusResponse {
+    pub height: ICSHeight,
+    pub timestamp: Timestamp,
 }
 
 /// Generic query response type
@@ -135,6 +143,8 @@ pub trait ChainEndpoint: Sized {
 
     fn get_signer(&mut self) -> Result<Signer, Error>;
 
+    fn config(&self) -> ChainConfig;
+
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
     // Queries
@@ -146,8 +156,8 @@ pub trait ChainEndpoint: Sized {
         Ok(get_compatible_versions())
     }
 
-    /// Query the latest height the chain is at
-    fn query_latest_height(&self) -> Result<ICSHeight, Error>;
+    /// Query the latest height and timestamp the chain is at
+    fn query_status(&self) -> Result<StatusResponse, Error>;
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(
@@ -307,7 +317,11 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error>;
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;
+    fn build_client_state(
+        &self,
+        height: ICSHeight,
+        dst_config: ChainConfig,
+    ) -> Result<Self::ClientState, Error>;
 
     fn build_consensus_state(
         &self,
