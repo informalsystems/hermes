@@ -1,14 +1,14 @@
 [package]
-name       = "ibc-telemetry"
-version    = "0.8.0-pre.1"
-edition    = "2018"
-license    = "Apache-2.0"
-readme     = "README.md"
-keywords   = ["cosmos", "ibc", "relayer", "telemetry"]
-repository = "https://github.com/informalsystems/ibc-rs"
-authors    = ["Informal Systems <hello@informal.systems>"]
-
-description = """
+name         = "ibc-telemetry"
+version      = "0.8.0-pre.1"
+edition      = "2018"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["cosmos", "ibc", "relayer", "telemetry"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.56"
+description  = """
     Telemetry service for the Hermes IBC relayer
 """
 
