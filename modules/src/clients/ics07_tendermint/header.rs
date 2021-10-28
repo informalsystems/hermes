@@ -1,5 +1,4 @@
 use core::cmp::Ordering;
-use core::convert::{TryFrom, TryInto};
 
 use bytes::Buf;
 use chrono::DateTime;
@@ -144,7 +143,6 @@ impl From<Header> for RawHeader {
 #[cfg(test)]
 pub mod test_util {
     use alloc::vec;
-    use core::convert::TryInto;
 
     use subtle_encoding::hex;
     use tendermint::block::signed_header::SignedHeader;

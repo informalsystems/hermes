@@ -152,7 +152,7 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use test_env_log::test;
 
     use crate::core::ics02_client::client_type::ClientType;

@@ -1,4 +1,3 @@
-use core::convert::{TryFrom, TryInto};
 use core::marker::{Send, Sync};
 use core::time::Duration;
 
@@ -226,7 +225,6 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryFrom;
 
     use prost_types::Any;
     use test_env_log::test;

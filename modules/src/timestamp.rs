@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::convert::TryInto;
+
 use core::fmt::Display;
 use core::num::ParseIntError;
 use core::ops::{Add, Sub};
@@ -248,7 +248,6 @@ impl Default for Timestamp {
 }
 
 pub mod util {
-    use core::convert::TryInto;
 
     const NANOS_PER_SEC: u64 = 1_000_000_000;
 
@@ -282,7 +281,7 @@ pub mod util {
 #[cfg(test)]
 mod tests {
     use chrono::Utc;
-    use core::convert::TryInto;
+
     use core::time::Duration;
     use std::thread::sleep;
     use test_env_log::test;

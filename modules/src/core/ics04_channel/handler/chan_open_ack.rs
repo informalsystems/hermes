@@ -104,7 +104,7 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use core::str::FromStr;
     use test_env_log::test;
 

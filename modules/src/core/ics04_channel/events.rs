@@ -1,5 +1,4 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
-use core::convert::TryFrom;
 
 use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::packet::Packet;

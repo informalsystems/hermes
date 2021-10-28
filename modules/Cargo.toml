@@ -1,17 +1,20 @@
 [package]
-name       = "ibc"
-version    = "0.8.0-pre.1"
-edition    = "2018"
-license    = "Apache-2.0"
-readme     = "README.md"
-keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-repository = "https://github.com/informalsystems/ibc-rs"
-authors    = ["Informal Systems <hello@informal.systems>"]
-
-description = """
+name         = "ibc"
+version      = "0.8.0-pre.1"
+edition      = "2021"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.56"
+description  = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
     This crate comprises the main data structures and on-chain logic.
 """
+
+[package.metadata.docs.rs]
+all-features = true
 
 [features]
 default = ["flex-error/std", "flex-error/eyre_tracer"]
