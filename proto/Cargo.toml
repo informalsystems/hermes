@@ -2,7 +2,7 @@
 name         = "ibc-proto"
 version      = "0.12.0-pre.1"
 authors      = ["Informal Systems <hello@informal.systems>"]
-edition      = "2018"
+edition      = "2021"
 license      = "Apache-2.0"
 repository   = "https://github.com/informalsystems/ibc-rs/tree/master/proto"
 readme       = "README.md"
