@@ -53,7 +53,7 @@ safe-regex = { version = "0.2.4" }
 tonic = { version = "0.6", optional = true, default-features = false }
 socket2 = { version = "0.4.1", optional = true, default-features = false }
 getrandom = { version = "0.2.3", optional = true, default-features = false, features = ["js"] }
-ics23 = { version = "0.6.5", optional = true, default-features = false }
+ics23 = { version = "0.6.6", optional = true, default-features = false }
 thiserror = { version = "1.0.26", optional = true, default-features = false }
 regex = { version = "1.5.4", optional = true, default-features = false }
 sled = { version = "0.34.7", optional = true, default-features = false }
