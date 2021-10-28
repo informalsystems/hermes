@@ -88,7 +88,7 @@ fn run_supervisor(mut supervisor: Supervisor<impl ChainHandle + 'static>) {
 struct HandleWithNode<Chain>(Chain, MonoTagged<Chain, RunningNode>);
 
 fn spawn_chain_handle(
-    // tag: impl Tag,
+    _: impl Tag,
     supervisor: &mut Supervisor<impl ChainHandle + 'static>,
     node: MonoTagged<impl Tag, RunningNode>,
 ) -> Result<HandleWithNode<impl ChainHandle>, Error> {
@@ -118,8 +118,8 @@ pub fn boostrap_chain_pair(
 
     let (mut supervisor, supervisor_cmd_sender) = spawn_supervisor(&config);
 
-    let HandleWithNode(handle_a, node_a) = spawn_chain_handle(&mut supervisor, node_a)?;
-    let HandleWithNode(handle_b, node_b) = spawn_chain_handle(&mut supervisor, node_b)?;
+    let HandleWithNode(handle_a, node_a) = spawn_chain_handle(|| {}, &mut supervisor, node_a)?;
+    let HandleWithNode(handle_b, node_b) = spawn_chain_handle(|| {}, &mut supervisor, node_b)?;
 
     run_supervisor(supervisor);
 

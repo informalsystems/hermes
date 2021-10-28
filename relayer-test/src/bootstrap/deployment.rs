@@ -14,7 +14,7 @@ pub struct ChainDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
 
     pub handle: ChainA,
 
-    pub foreign_client: ForeignClient<ChainA, ChainB>,
+    pub foreign_client: ForeignClient<ChainB, ChainA>,
 
     pub running_node: MonoTagged<ChainA, RunningNode>,
 }
