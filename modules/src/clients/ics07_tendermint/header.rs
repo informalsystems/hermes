@@ -9,12 +9,15 @@ use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint_proto::Protobuf;
 
+use crate::alloc::string::ToString;
+
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics24_host::identifier::ChainId;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// Tendermint consensus header
@@ -140,6 +143,7 @@ impl From<Header> for RawHeader {
 
 #[cfg(test)]
 pub mod test_util {
+    use alloc::vec;
     use core::convert::TryInto;
 
     use subtle_encoding::hex;

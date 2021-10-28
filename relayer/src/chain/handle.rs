@@ -2,9 +2,6 @@ use alloc::sync::Arc;
 use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
-use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::query::QueryBlockRequest;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
 use ibc::{
@@ -16,7 +13,10 @@ use ibc::{
             header::AnyHeader,
             misbehaviour::MisbehaviourEvidence,
         },
-        ics03_connection::{connection::ConnectionEnd, version::Version},
+        ics03_connection::{
+            connection::{ConnectionEnd, IdentifiedConnectionEnd},
+            version::Version,
+        },
         ics04_channel::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
@@ -31,7 +31,6 @@ use ibc::{
     timestamp::Timestamp,
     Height,
 };
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -41,7 +40,7 @@ use ibc_proto::ibc::core::{
     },
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
-    connection::v1::QueryClientConnectionsRequest,
+    connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
 pub use prod::ProdChainHandle;
 

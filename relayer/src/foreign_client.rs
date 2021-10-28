@@ -16,7 +16,7 @@ use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::header::Header;
+use ibc::core::ics02_client::header::{AnyHeader, Header};
 use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
