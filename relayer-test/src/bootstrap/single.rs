@@ -8,40 +8,20 @@ use crate::chain::config;
 use crate::chain::driver::ChainDriver;
 use crate::chain::wallet::Wallet;
 use crate::ibc::denom::Denom;
-use crate::process::ChildProcess;
 use crate::tagged::mono::Tagged as MonoTagged;
 use crate::tagged::tag::Tag;
 use crate::util;
 
+use super::running_node::RunningNode;
 use super::wallets::ChainWallets;
-
-pub const STAKE_DENOM: &str = "stake";
-pub const INITIAL_TOKEN_AMOUNT: u64 = 1_000_000_000_000;
-
-pub struct ChainDeployment {
-    pub chain_driver: ChainDriver,
-    pub chain_process: ChildProcess,
-    pub denom: Denom,
-    pub wallets: ChainWallets,
-}
-
-impl<Chain> MonoTagged<Chain, ChainDeployment> {
-    pub fn chain_driver<'a>(&'a self) -> MonoTagged<Chain, &'a ChainDriver> {
-        self.map_ref(|c| &c.chain_driver)
-    }
-
-    pub fn wallets<'a>(&'a self) -> MonoTagged<Chain, &'a ChainWallets> {
-        self.map_ref(|c| &c.wallets)
-    }
-
-    pub fn denom<'a>(&'a self) -> MonoTagged<Chain, &'a Denom> {
-        self.map_ref(|c| &c.denom)
-    }
-}
 
 pub fn bootstrap_single_chain(
     builder: &ChainBuilder,
-) -> Result<MonoTagged<impl Tag, ChainDeployment>, Error> {
+) -> Result<MonoTagged<impl Tag, RunningNode>, Error> {
+    let stake_denom = Denom("stake".to_string());
+    let denom = Denom(format!("coin{:x}", util::random_u32()));
+    let initial_amount = util::random_u64_range(1_000_000_000_000, 9_000_000_000_000);
+
     let chain_driver = builder.new_chain();
 
     info!("created new chain: {}", chain_driver.chain_id);
@@ -53,36 +33,23 @@ pub fn bootstrap_single_chain(
     let user1 = chain_driver.add_random_wallet("user1")?;
     let user2 = chain_driver.add_random_wallet("user2")?;
 
-    let stake_denom = Denom(STAKE_DENOM.to_string());
-    let denom = Denom(format!("coin{:x}", util::random_u32()));
+    chain_driver.add_genesis_account(&validator.address, &[(&stake_denom, initial_amount)])?;
 
-    chain_driver
-        .add_genesis_account(&validator.address, &[(&stake_denom, INITIAL_TOKEN_AMOUNT)])?;
-
-    chain_driver.add_genesis_validator(&validator.id, &stake_denom, INITIAL_TOKEN_AMOUNT)?;
+    chain_driver.add_genesis_validator(&validator.id, &stake_denom, initial_amount)?;
 
     chain_driver.add_genesis_account(
         &user1.address,
-        &[
-            (&stake_denom, INITIAL_TOKEN_AMOUNT),
-            (&denom, INITIAL_TOKEN_AMOUNT),
-        ],
+        &[(&stake_denom, initial_amount), (&denom, initial_amount)],
     )?;
 
     chain_driver.add_genesis_account(
         &user2.address,
-        &[
-            (&stake_denom, INITIAL_TOKEN_AMOUNT),
-            (&denom, INITIAL_TOKEN_AMOUNT),
-        ],
+        &[(&stake_denom, initial_amount), (&denom, initial_amount)],
     )?;
 
     chain_driver.add_genesis_account(
         &relayer.address,
-        &[
-            (&stake_denom, INITIAL_TOKEN_AMOUNT),
-            (&denom, INITIAL_TOKEN_AMOUNT),
-        ],
+        &[(&stake_denom, initial_amount), (&denom, initial_amount)],
     )?;
 
     chain_driver.collect_gen_txs()?;
@@ -108,7 +75,7 @@ pub fn bootstrap_single_chain(
         user2,
     };
 
-    let deployment = <MonoTagged<(), _>>::new(ChainDeployment {
+    let deployment = <MonoTagged<(), _>>::new(RunningNode {
         chain_driver,
         chain_process,
         denom,
@@ -118,7 +85,7 @@ pub fn bootstrap_single_chain(
     wait_wallet_amount(
         &deployment.chain_driver(),
         &deployment.wallets().relayer(),
-        INITIAL_TOKEN_AMOUNT,
+        initial_amount,
         &deployment.denom(),
         10,
     )?;

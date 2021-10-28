@@ -10,6 +10,16 @@ pub fn random_u32() -> u32 {
     rng.gen()
 }
 
+pub fn random_u64() -> u64 {
+    let mut rng = rand::thread_rng();
+    rng.gen()
+}
+
+pub fn random_u64_range(min: u64, max: u64) -> u64 {
+    let mut rng = rand::thread_rng();
+    rng.gen_range(min..max)
+}
+
 fn random_port() -> u16 {
     let mut rng = rand::thread_rng();
     rng.gen::<u16>()

@@ -4,7 +4,7 @@ use ibc::core::ics24_host::identifier::PortId;
 use tracing::info;
 
 use crate::bootstrap::pair::boostrap_chain_pair;
-use crate::bootstrap::single::{wait_wallet_amount, INITIAL_TOKEN_AMOUNT};
+use crate::bootstrap::single::wait_wallet_amount;
 use crate::chain::builder::ChainBuilder;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::init::init_test;
@@ -31,15 +31,20 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!("created new channel {:?}", channel);
 
-    let denom_a = services.side_a.server.denom();
+    let denom_a = services.side_a.denom();
+
+    let chaina_user1_balance = services
+        .side_a
+        .chain_driver()
+        .query_balance(&services.side_a.wallets().user1().address(), &denom_a)?;
 
     info!("Sending IBC transfer");
 
-    services.side_a.server.chain_driver().transfer_token(
+    services.side_a.chain_driver().transfer_token(
         &port_a,
         &channel.channel_id_a,
-        &services.side_a.server.wallets().user1().address(),
-        &services.side_b.server.wallets().user1().address(),
+        &services.side_a.wallets().user1().address(),
+        &services.side_b.wallets().user1().address(),
         1000,
         &denom_a,
     )?;
@@ -52,16 +57,16 @@ fn test_chain_manager() -> Result<(), Error> {
     );
 
     wait_wallet_amount(
-        &services.side_a.server.chain_driver(),
-        &services.side_a.server.wallets().user1(),
-        INITIAL_TOKEN_AMOUNT - 1000,
+        &services.side_a.chain_driver(),
+        &services.side_a.wallets().user1(),
+        chaina_user1_balance - 1000,
         &denom_a,
         20,
     )?;
 
     wait_wallet_amount(
-        &services.side_b.server.chain_driver(),
-        &services.side_b.server.wallets().user1(),
+        &services.side_b.chain_driver(),
+        &services.side_b.wallets().user1(),
         1000,
         &denom_b.as_ref(),
         20,
@@ -69,31 +74,36 @@ fn test_chain_manager() -> Result<(), Error> {
 
     info!(
         "successfully performed IBC transfer from chain {} to chain {}",
-        services.side_a.server.chain_driver().value().chain_id,
-        services.side_b.server.chain_driver().value().chain_id,
+        services.side_a.chain_driver().value().chain_id,
+        services.side_b.chain_driver().value().chain_id,
     );
 
-    services.side_b.server.chain_driver().transfer_token(
+    let chaina_user2_balance = services
+        .side_a
+        .chain_driver()
+        .query_balance(&services.side_a.wallets().user2().address(), &denom_a)?;
+
+    services.side_b.chain_driver().transfer_token(
         &port_b,
         &channel.channel_id_b,
-        &services.side_b.server.wallets().user1().address(),
-        &services.side_a.server.wallets().user2().address(),
+        &services.side_b.wallets().user1().address(),
+        &services.side_a.wallets().user2().address(),
         500,
         &denom_b.as_ref(),
     )?;
 
     wait_wallet_amount(
-        &services.side_a.server.chain_driver(),
-        &services.side_a.server.wallets().user2(),
-        INITIAL_TOKEN_AMOUNT + 500,
+        &services.side_a.chain_driver(),
+        &services.side_a.wallets().user2(),
+        chaina_user2_balance + 500,
         &denom_a,
         20,
     )?;
 
     info!(
         "successfully performed reverse IBC transfer from chain {} back to chain {}",
-        services.side_b.server.chain_driver().value().chain_id,
-        services.side_a.server.chain_driver().value().chain_id
+        services.side_b.chain_driver().value().chain_id,
+        services.side_a.chain_driver().value().chain_id
     );
 
     // std::thread::sleep(Duration::from_secs(1));
