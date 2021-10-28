@@ -15,6 +15,7 @@ pub fn assert_eventually_succeed<R>(
     attempts: u16,
     interval: Duration,
 ) -> Result<R, Error> {
+    sleep(interval);
     for _ in 0..attempts {
         match task() {
             Ok(res) => return Ok(res),

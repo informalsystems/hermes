@@ -1,5 +1,6 @@
 pub mod bootstrap;
 pub mod chain;
+pub mod config;
 pub mod error;
 pub mod ibc;
 pub mod init;
@@ -11,3 +12,5 @@ pub mod util;
 #[cfg(test)]
 #[macro_use]
 pub mod tests;
+
+pub use util::hang::hang;

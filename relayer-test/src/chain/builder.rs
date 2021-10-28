@@ -1,6 +1,7 @@
 use ibc::core::ics24_host::identifier::ChainId;
 
 use super::driver::ChainDriver;
+use crate::config::TestConfig;
 use crate::util::random::{random_u32, random_unused_tcp_port};
 
 #[derive(Debug)]
@@ -16,6 +17,10 @@ impl ChainBuilder {
             command_path: command_path.to_string(),
             base_store_dir: base_store_dir.to_string(),
         }
+    }
+
+    pub fn new_with_config(config: &TestConfig) -> Self {
+        Self::new(&config.chain_command_path, &config.chain_store_dir)
     }
 
     pub fn new_chain(&self) -> ChainDriver {
