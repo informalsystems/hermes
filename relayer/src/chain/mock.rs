@@ -7,23 +7,24 @@ use prost_types::Any;
 use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
+use ibc::clients::ics07_tendermint::client_state::{
+    AllowUpdate, ClientState as TendermintClientState,
+};
+use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
+use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::downcast;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::ics04_channel::context::ChannelReader;
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
-use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics18_relayer::context::Ics18Context;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::query::{QueryBlockRequest, QueryTxRequest};
+use ibc::relayer::ics18_relayer::context::Ics18Context;
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
@@ -433,7 +434,7 @@ pub mod test_utils {
     use core::str::FromStr;
     use core::time::Duration;
 
-    use ibc::ics24_host::identifier::ChainId;
+    use ibc::core::ics24_host::identifier::ChainId;
 
     use crate::config::{AddressType, ChainConfig, GasPrice, PacketFilter};
 

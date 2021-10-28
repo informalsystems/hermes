@@ -2,7 +2,7 @@ use alloc::collections::btree_map::BTreeMap as HashMap;
 
 use crossbeam_channel::Sender;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 use tracing::{debug, trace, warn};
 
 use crate::{

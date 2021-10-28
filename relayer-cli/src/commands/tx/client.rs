@@ -2,9 +2,9 @@ use core::fmt;
 
 use abscissa_core::{config, Command, Options, Runnable};
 
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;

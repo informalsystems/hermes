@@ -2,6 +2,7 @@ use std::io;
 
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
 use tracing_subscriber::{
+    filter::EnvFilter,
     fmt::{
         format::{DefaultFields, Format, Full, Json, JsonFields},
         time::SystemTime,
@@ -9,7 +10,7 @@ use tracing_subscriber::{
     },
     reload::Handle,
     util::SubscriberInitExt,
-    EnvFilter, FmtSubscriber,
+    FmtSubscriber,
 };
 
 use ibc_relayer::config::GlobalConfig;
@@ -92,7 +93,7 @@ impl PrettyTracing {
 /// so that we know whether or not to enable colored output,
 /// using ANSI escape codes. If either is not, eg. because
 /// stdout is redirected to a file, we don't enable colored output.
-fn enable_ansi() -> bool {
+pub fn enable_ansi() -> bool {
     atty::is(atty::Stream::Stdout) && atty::is(atty::Stream::Stderr)
 }
 

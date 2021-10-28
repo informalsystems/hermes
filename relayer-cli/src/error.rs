@@ -1,6 +1,6 @@
 use flex_error::define_error;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::channel::ChannelError;
 use ibc_relayer::connection::ConnectionError;
 use ibc_relayer::error::Error as RelayerError;

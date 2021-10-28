@@ -14,19 +14,21 @@ use tendermint_light_client::{
 use tendermint_rpc as rpc;
 
 use ibc::{
-    downcast,
-    ics02_client::{
-        client_state::AnyClientState,
-        client_type::ClientType,
-        events::UpdateClient,
-        header::{AnyHeader, Header},
-        misbehaviour::{Misbehaviour, MisbehaviourEvidence},
-    },
-    ics07_tendermint::{
+    clients::ics07_tendermint::{
         header::{headers_compatible, Header as TmHeader},
         misbehaviour::Misbehaviour as TmMisbehaviour,
     },
-    ics24_host::identifier::ChainId,
+    core::{
+        ics02_client::{
+            client_state::AnyClientState,
+            client_type::ClientType,
+            events::UpdateClient,
+            header::{AnyHeader, Header},
+            misbehaviour::{Misbehaviour, MisbehaviourEvidence},
+        },
+        ics24_host::identifier::ChainId,
+    },
+    downcast,
 };
 use tracing::trace;
 

@@ -3,7 +3,7 @@ use flex_error::define_error;
 use crate::channel::ChannelError;
 use crate::connection::ConnectionError;
 use crate::link::error::LinkError;
-use ibc::ics02_client::error::Error as Ics02Error;
+use ibc::core::ics02_client::error::Error as Ics02Error;
 
 define_error! {
     RunError {

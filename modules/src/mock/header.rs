@@ -5,11 +5,11 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
 
-use crate::ics02_client::client_consensus::AnyConsensusState;
-use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::Error;
-use crate::ics02_client::header::AnyHeader;
-use crate::ics02_client::header::Header;
+use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::error::Error;
+use crate::core::ics02_client::header::AnyHeader;
+use crate::core::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
 use crate::timestamp::Timestamp;
 use crate::Height;

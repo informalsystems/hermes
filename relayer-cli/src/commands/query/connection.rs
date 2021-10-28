@@ -3,7 +3,7 @@ use alloc::sync::Arc;
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::{
+use ibc::core::{
     ics03_connection::connection::State,
     ics24_host::identifier::ConnectionId,
     ics24_host::identifier::{ChainId, PortChannelId},

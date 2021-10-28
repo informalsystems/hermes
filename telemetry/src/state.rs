@@ -7,7 +7,7 @@ use opentelemetry::{
 };
 use opentelemetry_prometheus::PrometheusExporter;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
 use prometheus::proto::MetricFamily;
 
 #[derive(Copy, Clone, Debug)]

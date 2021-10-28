@@ -1,7 +1,7 @@
 use abscissa_core::{Command, Options, Runnable};
 
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::link::{Link, LinkParameters};
 
 use crate::cli_utils::ChainHandlePair;
