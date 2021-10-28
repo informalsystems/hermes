@@ -1,7 +1,7 @@
 use ibc::core::ics24_host::identifier::ChainId;
 
 use super::driver::ChainDriver;
-use crate::util;
+use crate::util::random::{random_u32, random_unused_tcp_port};
 
 #[derive(Debug)]
 pub struct ChainBuilder {
@@ -19,12 +19,12 @@ impl ChainBuilder {
     }
 
     pub fn new_chain(&self) -> ChainDriver {
-        let chain_num = util::random_u32();
+        let chain_num = random_u32();
         let chain_id = ChainId::from_string(&format!("ibc-{:x}", chain_num));
 
-        let rpc_port = util::random_unused_tcp_port();
-        let grpc_port = util::random_unused_tcp_port();
-        let p2p_port = util::random_unused_tcp_port();
+        let rpc_port = random_unused_tcp_port();
+        let grpc_port = random_unused_tcp_port();
+        let p2p_port = random_unused_tcp_port();
 
         let home_path = format!("{}/{}", self.base_store_dir, chain_id);
 

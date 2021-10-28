@@ -1,18 +1,17 @@
 use core::str::FromStr;
-use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
 use crate::bootstrap::deployment::ChainDeployment;
 use crate::bootstrap::pair::boostrap_chain_pair;
-use crate::bootstrap::single::wait_wallet_amount;
 use crate::chain::builder::ChainBuilder;
+use crate::error::Error;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::init::init_test;
 use crate::relayer::channel::{bootstrap_channel, Channel};
 use crate::tagged::*;
-use crate::util::random_u64_range;
+use crate::util::random::random_u64_range;
 
 #[test]
 fn test_chain_manager() -> Result<(), Error> {
@@ -51,21 +50,23 @@ fn test_chain_manager() -> Result<(), Error> {
             denom_b.value().0
         );
 
-        wait_wallet_amount(
-            &deployment.side_a.chain_driver(),
-            &deployment.side_a.wallets().user1(),
-            chaina_user1_balance - a_to_b_amount,
-            &denom_a,
-            20,
-        )?;
+        deployment
+            .side_a
+            .chain_driver()
+            .assert_eventual_wallet_amount(
+                &deployment.side_a.wallets().user1(),
+                chaina_user1_balance - a_to_b_amount,
+                &denom_a,
+            )?;
 
-        wait_wallet_amount(
-            &deployment.side_b.chain_driver(),
-            &deployment.side_b.wallets().user1(),
-            a_to_b_amount,
-            &denom_b.as_ref(),
-            20,
-        )?;
+        deployment
+            .side_b
+            .chain_driver()
+            .assert_eventual_wallet_amount(
+                &deployment.side_b.wallets().user1(),
+                a_to_b_amount,
+                &denom_b.as_ref(),
+            )?;
 
         info!(
             "successfully performed IBC transfer from chain {} to chain {}",
@@ -89,21 +90,23 @@ fn test_chain_manager() -> Result<(), Error> {
             &denom_b.as_ref(),
         )?;
 
-        wait_wallet_amount(
-            &deployment.side_b.chain_driver(),
-            &deployment.side_b.wallets().user1(),
-            a_to_b_amount - b_to_a_amount,
-            &denom_b.as_ref(),
-            20,
-        )?;
+        deployment
+            .side_b
+            .chain_driver()
+            .assert_eventual_wallet_amount(
+                &deployment.side_b.wallets().user1(),
+                a_to_b_amount - b_to_a_amount,
+                &denom_b.as_ref(),
+            )?;
 
-        wait_wallet_amount(
-            &deployment.side_a.chain_driver(),
-            &deployment.side_a.wallets().user2(),
-            chaina_user2_balance + b_to_a_amount,
-            &denom_a,
-            20,
-        )?;
+        deployment
+            .side_a
+            .chain_driver()
+            .assert_eventual_wallet_amount(
+                &deployment.side_a.wallets().user2(),
+                chaina_user2_balance + b_to_a_amount,
+                &denom_a,
+            )?;
 
         info!(
             "successfully performed reverse IBC transfer from chain {} back to chain {}",

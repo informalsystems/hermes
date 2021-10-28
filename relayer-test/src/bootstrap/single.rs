@@ -1,16 +1,13 @@
 use core::time::Duration;
-use eyre::{eyre, Report as Error};
-use std::thread;
-use tracing::{debug, info, trace};
+use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
 use crate::chain::config;
-use crate::chain::driver::ChainDriver;
-use crate::chain::wallet::Wallet;
+use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::tagged::mono::Tagged as MonoTagged;
 use crate::tagged::tag::Tag;
-use crate::util;
+use crate::util::random::{random_u32, random_u64_range};
 
 use super::running_node::RunningNode;
 use super::wallets::ChainWallets;
@@ -19,8 +16,8 @@ pub fn bootstrap_single_chain(
     builder: &ChainBuilder,
 ) -> Result<MonoTagged<impl Tag, RunningNode>, Error> {
     let stake_denom = Denom("stake".to_string());
-    let denom = Denom(format!("coin{:x}", util::random_u32()));
-    let initial_amount = util::random_u64_range(1_000_000_000_000, 9_000_000_000_000);
+    let denom = Denom(format!("coin{:x}", random_u32()));
+    let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
 
     let chain_driver = builder.new_chain();
 
@@ -82,62 +79,11 @@ pub fn bootstrap_single_chain(
         wallets,
     });
 
-    wait_wallet_amount(
-        &deployment.chain_driver(),
+    deployment.chain_driver().assert_eventual_wallet_amount(
         &deployment.wallets().relayer(),
         initial_amount,
         &deployment.denom(),
-        10,
     )?;
 
     Ok(deployment)
-}
-
-// Wait for the wallet to reach the target amount when querying from the chain.
-// This is to ensure that the chain has properly started and committed the genesis block
-pub fn wait_wallet_amount<Chain>(
-    chain: &MonoTagged<Chain, &ChainDriver>,
-    user: &MonoTagged<Chain, &Wallet>,
-    target_amount: u64,
-    denom: &MonoTagged<Chain, &Denom>,
-    remaining_retry: u16,
-) -> Result<(), Error> {
-    if remaining_retry == 0 {
-        return Err(eyre!(
-            "failed to wait for wallet to reach target amount. did the chain started properly?"
-        ));
-    }
-
-    debug!(
-        "waiting for wallet for {} to reach amount {}",
-        user.id().value().0,
-        target_amount
-    );
-
-    thread::sleep(Duration::from_secs(2));
-
-    let query_res = chain.query_balance(&user.address(), denom);
-
-    match query_res {
-        Ok(amount) => {
-            if amount == target_amount {
-                Ok(())
-            } else {
-                trace!(
-                    "current balance amount {} does not match the target amount {}",
-                    amount,
-                    target_amount
-                );
-
-                wait_wallet_amount(chain, user, target_amount, denom, remaining_retry - 1)
-            }
-        }
-        _ => {
-            trace!(
-                "query balance return mismatch amount {:?}, retrying",
-                query_res
-            );
-            wait_wallet_amount(chain, user, target_amount, denom, remaining_retry - 1)
-        }
-    }
 }

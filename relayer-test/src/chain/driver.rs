@@ -1,4 +1,5 @@
 use core::str::FromStr;
+use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
@@ -15,7 +16,9 @@ use crate::ibc::denom::Denom;
 use crate::process::ChildProcess;
 use crate::tagged::dual::Tagged;
 use crate::tagged::mono::Tagged as MonoTagged;
-use crate::util;
+use crate::util::file::pipe_to_file;
+use crate::util::random::random_u32;
+use crate::util::retry::assert_eventually_succeed;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
@@ -136,7 +139,7 @@ impl ChainDriver {
     }
 
     pub fn add_random_wallet(&self, prefix: &str) -> Result<Wallet, Error> {
-        let num = util::random_u32();
+        let num = random_u32();
         let wallet_id = format!("{}-{:x}", prefix, num);
         self.add_wallet(&wallet_id)
     }
@@ -272,8 +275,8 @@ impl ChainDriver {
             .take()
             .ok_or_else(|| eyre!("expected stderr to be present in child process"))?;
 
-        util::pipe_to_file(stdout, &format!("{}/stdout.log", self.home_path))?;
-        util::pipe_to_file(stderr, &format!("{}/stderr.log", self.home_path))?;
+        pipe_to_file(stdout, &format!("{}/stdout.log", self.home_path))?;
+        pipe_to_file(stderr, &format!("{}/stderr.log", self.home_path))?;
 
         Ok(ChildProcess::new(child))
     }
@@ -354,5 +357,33 @@ impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
         let amount = u64::from_str(&amount_str)?;
 
         Ok(amount)
+    }
+
+    pub fn assert_eventual_wallet_amount(
+        &self,
+        user: &MonoTagged<ChainA, &Wallet>,
+        target_amount: u64,
+        denom: &MonoTagged<ChainA, &Denom>,
+    ) -> Result<(), Error> {
+        assert_eventually_succeed(
+            "wallet reach expected amount",
+            || {
+                let amount = self.query_balance(&user.address(), denom)?;
+
+                if amount == target_amount {
+                    Ok(())
+                } else {
+                    Err(eyre!(
+                        "current balance amount {} does not match the target amount {}",
+                        amount,
+                        target_amount
+                    ))
+                }
+            },
+            20,
+            Duration::from_secs(1),
+        )?;
+
+        Ok(())
     }
 }

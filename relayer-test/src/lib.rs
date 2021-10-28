@@ -1,5 +1,6 @@
 pub mod bootstrap;
 pub mod chain;
+pub mod error;
 pub mod ibc;
 pub mod init;
 pub mod process;
