@@ -1,26 +1,23 @@
-use core::time::Duration;
 use crossbeam_channel::Sender;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::supervisor::cmd::SupervisorCmd;
-use std::thread;
 
 use super::client_server::ChainClientServer;
 
 pub struct ChainDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
-    // Have this as first field to drop the supervisor
-    // first before stopping the chain driver.
     pub supervisor_cmd_sender: SupervisorCmdSender,
+
+    pub side_a: ChainClientServer<ChainA>,
+
+    pub side_b: ChainClientServer<ChainB>,
 
     pub config: Config,
 
     pub client_a_to_b: ForeignClient<ChainB, ChainA>,
 
     pub client_b_to_a: ForeignClient<ChainA, ChainB>,
-
-    pub side_a: ChainClientServer<ChainA>,
-    pub side_b: ChainClientServer<ChainB>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ChainDeployment<ChainA, ChainB> {
@@ -45,6 +42,5 @@ pub struct SupervisorCmdSender(pub Sender<SupervisorCmd>);
 impl Drop for SupervisorCmdSender {
     fn drop(&mut self) {
         let _ = self.0.send(SupervisorCmd::Stop);
-        thread::sleep(Duration::from_millis(1000));
     }
 }

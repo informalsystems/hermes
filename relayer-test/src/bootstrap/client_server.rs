@@ -34,3 +34,9 @@ impl<ChainA: ChainHandle> ChainClientServer<ChainA> {
         self.node.denom()
     }
 }
+
+impl<Chain: ChainHandle> Drop for ChainClientServer<Chain> {
+    fn drop(&mut self) {
+        let _ = self.handle.shutdown();
+    }
+}

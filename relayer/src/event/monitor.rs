@@ -360,10 +360,8 @@ impl EventMonitor {
         let rt = self.rt.clone();
 
         loop {
-            if let Ok(cmd) = self.rx_cmd.try_recv() {
-                match cmd {
-                    MonitorCmd::Shutdown => return Next::Abort,
-                }
+            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
+                return Next::Abort;
             }
 
             let result = rt.block_on(async {
@@ -372,6 +370,12 @@ impl EventMonitor {
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
                 }
             });
+
+            // Repeat check of shutdown command here, as previous recv()
+            // may block for a long time.
+            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
+                return Next::Abort;
+            }
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
@@ -399,12 +403,6 @@ impl EventMonitor {
                             return Next::Continue;
                         }
                         _ => {
-                            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
-                                // If the monitor is shut down already, ignore the error
-                                // and return.
-                                return Next::Abort;
-                            }
-
                             error!("[{}] failed to collect events: {}", self.chain_id, e);
 
                             // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
