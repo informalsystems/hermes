@@ -36,7 +36,10 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
-use crate::{connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
+use crate::{
+    chain::StatusResponse, config::ChainConfig, connection::ConnectionMsgType, error::Error,
+    keyring::KeyEntry,
+};
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
@@ -116,6 +119,10 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Signer { reply_to })
     }
 
+    fn config(&self) -> Result<ChainConfig, Error> {
+        self.send(|reply_to| ChainRequest::Config { reply_to })
+    }
+
     fn get_key(&self) -> Result<KeyEntry, Error> {
         self.send(|reply_to| ChainRequest::Key { reply_to })
     }
@@ -127,8 +134,8 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn query_latest_height(&self) -> Result<Height, Error> {
-        self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
+    fn query_status(&self) -> Result<StatusResponse, Error> {
+        self.send(|reply_to| ChainRequest::QueryStatus { reply_to })
     }
 
     fn query_clients(
@@ -313,8 +320,16 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error> {
-        self.send(|reply_to| ChainRequest::BuildClientState { height, reply_to })
+    fn build_client_state(
+        &self,
+        height: Height,
+        dst_config: ChainConfig,
+    ) -> Result<AnyClientState, Error> {
+        self.send(|reply_to| ChainRequest::BuildClientState {
+            height,
+            dst_config,
+            reply_to,
+        })
     }
 
     fn build_consensus_state(

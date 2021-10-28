@@ -1,4 +1,3 @@
-use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
 use core::marker::{Send, Sync};
 use core::time::Duration;
@@ -17,6 +16,7 @@ use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
+use crate::prelude::*;
 use crate::Height;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
@@ -65,6 +65,15 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(_) => None,
+        }
+    }
+
+    pub fn max_clock_drift(&self) -> Duration {
+        match self {
+            AnyClientState::Tendermint(state) => state.max_clock_drift,
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(_) => Duration::new(0, 0),
         }
     }
 
@@ -218,9 +227,9 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
 #[cfg(test)]
 mod tests {
     use core::convert::TryFrom;
-    use test_env_log::test;
 
     use prost_types::Any;
+    use test_env_log::test;
 
     use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
