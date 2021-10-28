@@ -29,4 +29,4 @@ tonic = { version = "0.6" }
 getrandom = { version = "0.2", features = ["js"] }
 
 [dependencies.tendermint-proto]
-version = "=0.23.0-internal"
+version = "=0.23.0"
