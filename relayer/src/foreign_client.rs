@@ -704,12 +704,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        // TODO - remove
-        warn!(
-            "DIFF {:?}",
-            header.timestamp().duration_since(&status.timestamp)
-        );
-
         let ts_adjusted = (status.timestamp + client_state.max_clock_drift()).map_err(|e| {
             ForeignClientError::client_update_timing(
                 self.dst_chain.id(),
