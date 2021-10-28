@@ -896,7 +896,7 @@ impl ChainEndpoint for CosmosSdkChain {
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
+                let events_per_tx = vec![IbcEvent::default(); msg_batch.len()];
                 let tx_sync_result = self.send_tx(msg_batch)?;
                 tx_sync_results.push(TxSyncResult {
                     response: tx_sync_result,
@@ -908,7 +908,7 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         }
         if !msg_batch.is_empty() {
-            let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
+            let events_per_tx = vec![IbcEvent::default(); msg_batch.len()];
             let tx_sync_result = self.send_tx(msg_batch)?;
             tx_sync_results.push(TxSyncResult {
                 response: tx_sync_result,

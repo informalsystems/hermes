@@ -101,7 +101,7 @@ impl core::fmt::Display for Sequence {
     }
 }
 
-#[derive(PartialEq, Deserialize, Serialize, Hash, Clone)]
+#[derive(Clone, Debug, Default, Hash, PartialEq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,
@@ -122,16 +122,6 @@ impl Packet {
     }
 }
 
-impl core::fmt::Debug for Packet {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "{:?} {:?} {:?}",
-            self.source_port, self.source_channel, self.sequence
-        )
-    }
-}
-
 /// Custom debug output to omit the packet data
 impl core::fmt::Display for Packet {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
@@ -146,21 +136,6 @@ impl core::fmt::Display for Packet {
             self.timeout_height,
             self.timeout_timestamp
         )
-    }
-}
-
-impl Default for Packet {
-    fn default() -> Self {
-        Packet {
-            sequence: Sequence(0),
-            source_port: Default::default(),
-            source_channel: Default::default(),
-            destination_port: Default::default(),
-            destination_channel: Default::default(),
-            data: Vec::new(),
-            timeout_height: Default::default(),
-            timeout_timestamp: Default::default(),
-        }
     }
 }
 
@@ -311,7 +286,7 @@ mod tests {
             Test {
                 name: "Good parameters".to_string(),
                 raw: default_raw_msg.clone(),
-                want_pass: true
+                want_pass: true,
             },
             Test {
                 name: "Src port validation: correct".to_string(),
