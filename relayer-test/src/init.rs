@@ -1,6 +1,7 @@
 use eyre::Report as Error;
 use tracing_subscriber::{
     self as ts,
+    filter::EnvFilter,
     layer::{Layer, SubscriberExt},
     util::SubscriberInitExt,
 };
@@ -8,14 +9,16 @@ use tracing_subscriber::{
 pub fn init_test() -> Result<(), Error> {
     color_eyre::install()?;
 
-    let filter = ts::filter::filter_fn(|metadata| match metadata.module_path() {
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug"));
+
+    let module_filter_fn = ts::filter::filter_fn(|metadata| match metadata.module_path() {
         Some(path) => path.starts_with("ibc"),
         None => false,
     });
 
-    ts::registry()
-        .with(ts::fmt::layer().with_filter(filter))
-        .init();
+    let module_filter = ts::fmt::layer().with_filter(module_filter_fn);
+
+    ts::registry().with(env_filter).with(module_filter).init();
 
     Ok(())
 }
