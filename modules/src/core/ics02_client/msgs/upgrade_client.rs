@@ -1,7 +1,7 @@
 //! Definition of domain type msg `MsgUpgradeAnyClient`.
 
 use crate::prelude::*;
-use core::convert::TryFrom;
+
 use core::str::FromStr;
 use tendermint_proto::Protobuf;
 
@@ -155,7 +155,6 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryFrom;
 
     use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 

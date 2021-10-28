@@ -5,7 +5,6 @@ use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
-use core::convert::TryFrom;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint_proto::Protobuf;
 
@@ -131,7 +130,7 @@ mod tests {
 
     use crate::core::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
     use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-    use core::convert::TryFrom;
+
     use ibc_proto::ibc::core::client::v1::Height;
 
     #[test]

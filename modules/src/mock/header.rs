@@ -1,5 +1,3 @@
-use core::convert::TryFrom;
-
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 

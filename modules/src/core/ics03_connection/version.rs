@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use core::convert::TryFrom;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 use serde::{Deserialize, Serialize};
@@ -95,7 +94,7 @@ pub fn pick_version(
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::{TryFrom, TryInto};
+
     use test_env_log::test;
 
     use ibc_proto::ibc::core::connection::v1::Version as RawVersion;

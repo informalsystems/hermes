@@ -1,5 +1,4 @@
 use alloc::collections::BTreeMap as HashMap;
-use core::convert::TryFrom;
 
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 
