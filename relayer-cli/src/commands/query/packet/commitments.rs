@@ -3,8 +3,7 @@ use serde::Serialize;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest;
-use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::counterparty::commitments_on_chain;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
@@ -37,18 +36,8 @@ impl QueryPacketCommitmentsCmd {
 
         let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
-        let grpc_request = QueryPacketCommitmentsRequest {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
-
-        chain
-            .query_packet_commitments(grpc_request)
-            .map_err(Error::relayer)
-            // Transform the raw packet commitm. state into the list of sequence numbers
-            .map(|(ps_vec, height)| (ps_vec.iter().map(|ps| ps.sequence).collect(), height))
-            // Assemble into a coherent result
+        commitments_on_chain(&chain, &self.port_id, &self.channel_id)
+            .map_err(Error::supervisor)
             .map(|(seqs_vec, height)| PacketSeqs {
                 height,
                 seqs: seqs_vec,
