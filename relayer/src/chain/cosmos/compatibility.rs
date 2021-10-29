@@ -1,6 +1,7 @@
 //! Cosmos-SDK compatibility constants and helper methods.
 
 use thiserror::Error;
+use tracing::debug;
 
 use ibc_proto::cosmos::base::tendermint::v1beta1::VersionInfo;
 
@@ -111,6 +112,8 @@ pub enum Diagnostic {
 /// [`SDK_MODULE_VERSION_REQ`] and [`IBC_GO_MODULE_VERSION_REQ`]
 /// for establishing compatibility requirements.
 pub(crate) fn run_diagnostic(v: VersionInfo) -> Result<(), Diagnostic> {
+    debug!("running diagnostic on version info {:?}", v);
+
     sdk_diagnostic(v.clone())?;
     ibc_go_diagnostic(v)?;
     Ok(())

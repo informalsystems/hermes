@@ -54,7 +54,7 @@ fn add_chain_config(config: &mut Config, running_node: &RunningNode) -> Result<(
 
 fn run_supervisor(mut supervisor: Supervisor<impl ChainHandle + 'static>) {
     std::thread::spawn(move || {
-        supervisor.run().unwrap();
+        supervisor.run_without_health_check().unwrap();
     });
 }
 

@@ -435,6 +435,10 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     pub fn run(&mut self) -> Result<(), Error> {
         self.health_check();
 
+        self.run_without_health_check()
+    }
+
+    pub fn run_without_health_check(&mut self) -> Result<(), Error> {
         self.spawn_workers(SpawnMode::Startup);
 
         let mut subscriptions = self.init_subscriptions()?;
