@@ -1,6 +1,6 @@
 [package]
 name         = "ibc"
-version      = "0.8.0-pre.1"
+version      = "0.8.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -25,8 +25,8 @@ mocks = ["tendermint-testgen", "sha2"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.12.0-pre.1", path = "../proto" }
-ics23 = { version = "0.6.5", default-features = false }
+ibc-proto = { version = "0.12.0", path = "../proto" }
+ics23 = { version = "0.6.6", default-features = false }
 chrono = { version = "0.4.19", default-features = false }
 thiserror = { version = "1.0.30", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
@@ -42,17 +42,17 @@ sha2 = { version = "0.9.8", default-features = false, optional = true }
 flex-error = { version = "0.4.4", default-features = false }
 
 [dependencies.tendermint]
-version = "=0.23.0-internal"
+version = "=0.23.0"
 
 [dependencies.tendermint-proto]
-version = "=0.23.0-internal"
+version = "=0.23.0"
 
 [dependencies.tendermint-light-client]
-version = "=0.23.0-internal"
+version = "=0.23.0"
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "=0.23.0-internal"
+version = "=0.23.0"
 optional = true
 
 [dev-dependencies]
@@ -60,8 +60,8 @@ env_logger = "0.9.0"
 tracing-subscriber = { version = "0.3.1", features = ["fmt", "env-filter", "json"]}
 test-env-log = { version = "0.2.7", features = ["trace"] }
 modelator = "0.2.1"
-tendermint-rpc = { version = "=0.23.0-internal", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.23.0-internal" } # Needed for generating (synthetic) light blocks.
+tendermint-rpc = { version = "=0.23.0", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "=0.23.0" } # Needed for generating (synthetic) light blocks.
 sha2 = { version = "0.9.8" }
 
 # pin clap to avoid miscompilations with modelator

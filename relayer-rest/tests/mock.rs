@@ -63,7 +63,7 @@ fn version() {
 
     let rest_api_version = VersionInfo {
         name: "ibc-relayer-rest".to_string(),
-        version: "0.8.0-pre.1".to_string(),
+        version: "0.8.0".to_string(),
     };
 
     let result = vec![version.clone(), rest_api_version];
