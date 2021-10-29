@@ -35,8 +35,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_b_to_a: &ForeignClient<ChainA, ChainB>,
     client_a_to_b: &ForeignClient<ChainB, ChainA>,
-    port_a: &Tagged<ChainA, ChainB, PortId>,
-    port_b: &Tagged<ChainB, ChainA, PortId>,
+    port_a: &Tagged<ChainA, ChainB, &PortId>,
+    port_b: &Tagged<ChainB, ChainA, &PortId>,
 ) -> Result<Channel<ChainA, ChainB>, Error> {
     let connection = Connection::new(
         client_b_to_a.clone(),
@@ -47,8 +47,8 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     let channel = BaseChannel::new(
         connection,
         Order::Unordered,
-        port_a.value().clone(),
-        port_b.value().clone(),
+        port_a.0.clone(),
+        port_b.0.clone(),
         None,
     )?;
 
@@ -68,8 +68,8 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         channel,
         channel_id_a: Tagged::new(channel_id_a),
         channel_id_b: Tagged::new(channel_id_b),
-        port_a: port_a.clone(),
-        port_b: port_b.clone(),
+        port_a: port_a.cloned(),
+        port_b: port_b.cloned(),
     };
 
     Ok(res)

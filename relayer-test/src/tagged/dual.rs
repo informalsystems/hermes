@@ -47,6 +47,15 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
     }
 }
 
+impl<'a, TagA, TagB, Value> Tagged<TagA, TagB, &'a Value> {
+    pub fn cloned(&self) -> Tagged<TagA, TagB, Value>
+    where
+        Value: Clone,
+    {
+        Tagged::new(self.0.clone())
+    }
+}
+
 impl<Tag1, Tag2, Value> Tagged<Tag1, Tag2, Option<Value>> {
     pub fn transpose(self) -> Option<Tagged<Tag1, Tag2, Value>> {
         self.0.map(Tagged::new)

@@ -52,6 +52,15 @@ impl<Tag, Value> Tagged<Tag, Value> {
     }
 }
 
+impl<'a, Tag, Value> Tagged<Tag, &'a Value> {
+    pub fn cloned(&self) -> Tagged<Tag, Value>
+    where
+        Value: Clone,
+    {
+        Tagged::new(self.0.clone())
+    }
+}
+
 pub struct TaggedIterator<Tag, It>(Tagged<Tag, It>);
 
 impl<Tag, It: Iterator> Iterator for TaggedIterator<Tag, It> {

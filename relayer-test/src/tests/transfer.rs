@@ -5,14 +5,13 @@ use ibc_relayer::chain::handle::ChainHandle;
 use serde_json as json;
 use tracing::info;
 
+use crate::bootstrap::channel::boostrap_chain_and_channel_pair;
 use crate::bootstrap::deployment::ChainDeployment;
-use crate::bootstrap::pair::boostrap_chain_pair;
 use crate::chain::builder::ChainBuilder;
 use crate::error::Error;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::init::init_test;
-use crate::relayer::channel::{bootstrap_channel, Channel};
-use crate::tagged::*;
+use crate::relayer::channel::Channel;
 use crate::util::random::random_u64_range;
 
 #[test]
@@ -21,29 +20,19 @@ fn test_ibc_transfer() -> Result<(), Error> {
 
     let builder = ChainBuilder::new_with_config(&test_config);
 
-    let deployment = boostrap_chain_pair(&builder)?;
+    let deployment = boostrap_chain_and_channel_pair(&builder, &PortId::from_str("transfer")?)?;
 
-    let port = PortId::from_str("transfer")?;
-    let port_a = DualTagged::new(port.clone());
-    let port_b = DualTagged::new(port);
+    let chains = deployment.chains;
+    let channel = deployment.channel;
 
-    let channel = bootstrap_channel(
-        &deployment.client_b_to_a,
-        &deployment.client_a_to_b,
-        &port_a,
-        &port_b,
-    )?;
-
-    info!("created new channel {:?}", channel);
-
-    do_test_ibc_transfer(&deployment, &channel)?;
+    do_test_ibc_transfer(&chains, &channel)?;
 
     // Test IBC transfer from the other direction from chain B to chain A
 
-    let deployment = deployment.flip();
+    let chains = chains.flip();
     let channel = channel.flip();
 
-    do_test_ibc_transfer(&deployment, &channel)?;
+    do_test_ibc_transfer(&chains, &channel)?;
 
     Ok(())
 }

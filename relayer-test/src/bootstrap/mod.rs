@@ -1,3 +1,4 @@
+pub mod channel;
 pub mod client_server;
 pub mod deployment;
 pub mod pair;
