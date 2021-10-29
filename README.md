@@ -39,8 +39,7 @@ Includes [TLA+ specifications](docs/spec).
 
 ## Requirements
 
-Developed with the latest stable version of Rust: `1.56.0`.
-(May work with older versions.)
+The crates in this project require the latest stable version of Rust: `1.56.0`.
 
 ## Hermes Guide
 

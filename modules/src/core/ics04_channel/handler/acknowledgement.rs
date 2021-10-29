@@ -139,8 +139,6 @@ mod tests {
     use crate::timestamp::ZERO_DURATION;
     use test_env_log::test;
 
-    use core::convert::TryFrom;
-
     #[test]
     fn ack_packet_processing() {
         struct Test {

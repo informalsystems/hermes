@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::convert::TryFrom;
+
 use core::str::FromStr;
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 use tendermint_proto::Protobuf;

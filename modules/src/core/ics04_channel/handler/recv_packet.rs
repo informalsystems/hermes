@@ -133,7 +133,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use test_env_log::test;
 
     use crate::core::ics03_connection::connection::ConnectionEnd;

@@ -262,7 +262,7 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use test_env_log::test;
 
     use ibc_proto::ibc::core::client::v1::Height;

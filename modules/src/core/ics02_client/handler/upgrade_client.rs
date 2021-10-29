@@ -76,7 +76,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use core::str::FromStr;
 
     use crate::core::ics02_client::error::{Error, ErrorDetail};
