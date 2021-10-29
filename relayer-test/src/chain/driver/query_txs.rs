@@ -20,6 +20,8 @@ impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
             &format!("transfer.recipient={}", recipient_address.value().0),
         ])?;
 
+        // tracing::debug!("parsing tx result: {}", res);
+
         let json_res = json::from_str(&res)?;
 
         Ok(json_res)
