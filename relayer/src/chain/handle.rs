@@ -28,7 +28,6 @@ use ibc::{
     proofs::Proofs,
     query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
-    timestamp::Timestamp,
     Height,
 };
 use ibc_proto::ibc::core::{
@@ -366,10 +365,6 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn query_latest_height(&self) -> Result<Height, Error> {
         Ok(self.query_status()?.height)
-    }
-
-    fn query_latest_timestamp(&self) -> Result<Timestamp, Error> {
-        Ok(self.query_status()?.timestamp)
     }
 
     fn query_clients(
