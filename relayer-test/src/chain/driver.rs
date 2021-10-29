@@ -1,7 +1,7 @@
 use core::str::FromStr;
 use core::time::Duration;
-use eyre::{eyre, Report as Error};
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use eyre::eyre;
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use serde_json as json;
 use std::fs;
@@ -12,13 +12,16 @@ use toml;
 use tracing::{debug, trace};
 
 use super::wallet::{Wallet, WalletAddress, WalletId};
+use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::process::ChildProcess;
-use crate::tagged::dual::Tagged;
-use crate::tagged::mono::Tagged as MonoTagged;
+use crate::tagged::*;
 use crate::util::file::pipe_to_file;
 use crate::util::random::random_u32;
 use crate::util::retry::assert_eventually_succeed;
+
+pub mod query_txs;
+pub mod transfer;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
@@ -293,42 +296,6 @@ impl ChainDriver {
 }
 
 impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
-    // We use gaiad instead of the internal raw tx transfer to transfer tokens,
-    // as the current chain implementation cannot dynamically switch the sender,
-    // and instead always use the configured relayer wallet for sending tokens.
-    pub fn transfer_token<ChainB>(
-        &self,
-        port_id: &Tagged<ChainA, ChainB, PortId>,
-        channel_id: &Tagged<ChainA, ChainB, ChannelId>,
-        sender: &MonoTagged<ChainA, &WalletAddress>,
-        receiver: &MonoTagged<ChainB, &WalletAddress>,
-        amount: u64,
-        denom: &MonoTagged<ChainA, &Denom>,
-    ) -> Result<(), Error> {
-        self.value().exec(&[
-            "--node",
-            &self.value().rpc_listen_address(),
-            "tx",
-            "ibc-transfer",
-            "transfer",
-            port_id.value().as_str(),
-            channel_id.value().as_str(),
-            &receiver.value().0,
-            &format!("{}{}", amount, denom.value().0),
-            "--from",
-            &sender.value().0,
-            "--chain-id",
-            self.value().chain_id.as_str(),
-            "--home",
-            &self.value().home_path,
-            "--keyring-backend",
-            "test",
-            "--yes",
-        ])?;
-
-        Ok(())
-    }
-
     pub fn query_balance(
         &self,
         wallet_id: &MonoTagged<ChainA, &WalletAddress>,
@@ -357,6 +324,20 @@ impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
         let amount = u64::from_str(&amount_str)?;
 
         Ok(amount)
+    }
+
+    pub fn query_memo(&self, tx_hash: &str) -> Result<String, Error> {
+        let res = self.value().exec(&[
+            "--node",
+            &self.value().rpc_listen_address(),
+            "query",
+            "tx",
+            "--type",
+            "hash",
+            tx_hash,
+        ])?;
+
+        Ok(res)
     }
 
     pub fn assert_eventual_wallet_amount(

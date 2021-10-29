@@ -1,6 +1,8 @@
 use core::str::FromStr;
+use eyre::eyre;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
+use serde_json as json;
 use tracing::info;
 
 use crate::bootstrap::deployment::ChainDeployment;
@@ -35,6 +37,8 @@ fn test_ibc_transfer() -> Result<(), Error> {
     info!("created new channel {:?}", channel);
 
     do_test_ibc_transfer(&deployment, &channel)?;
+
+    // Test IBC transfer from the other direction from chain B to chain A
 
     let deployment = deployment.flip();
     let channel = channel.flip();
@@ -97,6 +101,13 @@ fn do_test_ibc_transfer<ChainA: ChainHandle, ChainB: ChainHandle>(
             &denom_b.as_ref(),
         )?;
 
+    let tx_info = deployment
+        .side_b
+        .chain_driver()
+        .query_recipient_transactions(&deployment.side_b.wallets().user1().address())?;
+
+    assert_tx_memo_equals(&tx_info, "testing memo")?;
+
     info!(
         "successfully performed IBC transfer from chain {} to chain {}",
         deployment.side_a.chain_id(),
@@ -142,6 +153,22 @@ fn do_test_ibc_transfer<ChainA: ChainHandle, ChainB: ChainHandle>(
         deployment.side_b.chain_id(),
         deployment.side_a.chain_id(),
     );
+
+    Ok(())
+}
+
+fn assert_tx_memo_equals(tx_info: &json::Value, expected_memo: &str) -> Result<(), Error> {
+    info!("comparing memo field from json value {}", tx_info);
+
+    let memo_field = &tx_info["txs"][0]["tx"]["body"]["memo"];
+
+    info!("memo field value: {}", memo_field);
+
+    let memo_str = memo_field
+        .as_str()
+        .ok_or_else(|| eyre!("expect memo string field to be present in JSON"))?;
+
+    assert_eq!(memo_str, expected_memo);
 
     Ok(())
 }

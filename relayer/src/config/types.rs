@@ -109,10 +109,14 @@ impl From<MaxTxSize> for usize {
 /// The memo can be configured on a per-chain basis.
 ///
 #[derive(Clone, Debug, Default)]
-pub struct Memo(String);
+pub struct Memo(pub String);
 
 impl Memo {
     const MAX_LEN: usize = 50;
+
+    pub fn new(memo: &str) -> Self {
+        Self(memo.to_string())
+    }
 
     pub fn apply_suffix(&mut self, suffix: &str) {
         // Add a separator if the memo

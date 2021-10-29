@@ -24,7 +24,8 @@ pub fn init_test() -> Result<TestConfig, Error> {
 }
 
 fn install_logger() {
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug"));
+    // Use log level INFO by default if RUST_LOG is not set.
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
     let module_filter_fn = ts::filter::filter_fn(|metadata| match metadata.module_path() {
         Some(path) => path.starts_with("ibc"),
