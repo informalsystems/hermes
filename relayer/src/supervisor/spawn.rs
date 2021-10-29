@@ -2,10 +2,12 @@ use itertools::Itertools;
 use tracing::{debug, error, warn};
 
 use ibc::{
-    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
-    ics04_channel::channel::{IdentifiedChannelEnd, State as ChannelState},
-    ics24_host::identifier::{ChainId, ConnectionId},
+    core::{
+        ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
+        ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
+        ics04_channel::channel::{IdentifiedChannelEnd, State as ChannelState},
+        ics24_host::identifier::{ChainId, ConnectionId},
+    },
     Height,
 };
 
@@ -282,7 +284,10 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                     return;
                 }
                 Err(e) => {
-                    error!("skipping workers for chain {}. reason: {}", chain_id, e);
+                    error!(
+                        "skipping workers for chain {}, client {} & conn {}. reason: {}",
+                        chain_id, client.client_id, connection_id, e
+                    );
                     return;
                 }
                 _ => {} // allowed

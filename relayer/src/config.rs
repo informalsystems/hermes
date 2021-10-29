@@ -11,10 +11,10 @@ use std::{fs, fs::File, io::Write, path::Path};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
-use crate::config::types::{MaxMsgNum, MaxTxSize};
+use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -99,6 +99,10 @@ pub mod default {
 
     pub fn clock_drift() -> Duration {
         Duration::from_secs(5)
+    }
+
+    pub fn max_block_time() -> Duration {
+        Duration::from_secs(10)
     }
 
     pub fn connection_delay() -> Duration {
@@ -310,6 +314,7 @@ pub struct ChainConfig {
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,
+    pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
     pub gas_adjustment: Option<f64>,
     #[serde(default)]
@@ -318,8 +323,12 @@ pub struct ChainConfig {
     pub max_tx_size: MaxTxSize,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
-    #[serde(with = "humantime_serde")]
+    #[serde(default = "default::max_block_time", with = "humantime_serde")]
+    pub max_block_time: Duration,
+    #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
+    #[serde(default)]
+    pub memo_prefix: Memo,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]

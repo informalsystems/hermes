@@ -1,6 +1,56 @@
 # CHANGELOG
 
+## v0.8.0-pre.1
+*October 22nd, 2021*
+
+This is a pre-release which depends on in-house forks of various Rust libraries.
+As such, it is advised to avoid depending on the `ibc` and `ibc-relayer` crates
+at version 0.8.0-pre.1.
+
+Hermes v0.8.0-pre.1 is considered stable and it is recommended for all
+users to update to this version.
+
+This release notably includes a new [`memo_prefix`][memo] configuration option
+for specifying a prefix to be included in the memo of each transaction submitted
+by Hermes.
+
+Moreover, Hermes is now able to handle `SendPacket` events originating from Tendermint
+ABCI's `BeginBlock` and `EndBlock` methods ([#1231](https://github.com/informalsystems/ibc-rs/issues/1231)).
+
+[memo]: https://github.com/informalsystems/ibc-rs/blob/v0.8.0-pre.1/config.toml#L161-L165
+
+### BREAKING CHANGES
+
+- [IBC Modules](modules)
+  - The `check_header_and_update_state` method of the `ClientDef`
+    trait (ICS02) has been expanded to facilitate ICS07
+    ([#1214](https://github.com/informalsystems/ibc-rs/issues/1214))
+
+### FEATURES
+
+- General
+  - Add support for the `tx.memo` field
+    ([#1433](https://github.com/informalsystems/ibc-rs/issues/1433))
+- [IBC Modules](modules)
+  - Add ICS07 verification functionality by using `tendermint-light-client`
+    ([#1214](https://github.com/informalsystems/ibc-rs/issues/1214))
+- [Relayer Library](relayer)
+  - Add a `default_gas` setting to be used for submitting a tx when tx simulation
+    fails ([#1457](https://github.com/informalsystems/ibc-rs/issues/1457))
+  - Update compatibility check for IBC-Go dependency
+    ([#1464](https://github.com/informalsystems/ibc-rs/issues/1464))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Handle SendPacket events originating from Tendermint ABCI's BeginBlock
+    and EndBlock methods ([#1231](https://github.com/informalsystems/ibc-rs/issues/1231))
+  - Improve error message when `create client` fails and add a health
+    check for the trusting period being smaller than the unbonding period
+    ([#1440](https://github.com/informalsystems/ibc-rs/issues/1440))
+
 ## v0.7.3
+*October 4th, 2021*
 
 This minor release most notably includes a fix for a bug introduced in v0.7.0
 where Hermes would always use the max gas when submitting transactions to
@@ -25,6 +75,7 @@ It also improves the handling of account sequence numbers
     ([#1392](https://github.com/informalsystems/ibc-rs/issues/1392))
 
 ## v0.7.2
+*September 24th, 2021*
 
 This minor release brings substantial performance improvements as well as
 support for chains using Secp256k1 signatures in consensus votes.
@@ -52,6 +103,7 @@ It also bumps the compatibility to Cosmos SDK 0.44.
 - Improve reliability of health check ([#1382](https://github.com/informalsystems/ibc-rs/issues/1376))
 
 ## v0.7.1
+*September 14th, 2021*
 
 This minor release of Hermes notably features support for Ethermint chains and transfer amounts expressed as a 256-bit unsigned integer.
 This release also fixes a bug where the chain runtime within the relayer would crash when failing to decode a invalid header included in a `ClientUpdate` IBC event.
@@ -91,6 +143,7 @@ This release also fixes a bug where the chain runtime within the relayer would c
 [#1333]: https://github.com/informalsystems/ibc-rs/issues/1333
 
 ## v0.7.0
+*August 24th, 2021*
 
 This release of Hermes is the first to be compatible with the development version of Cosmos SDK 0.43.
 Hermes 0.7.0 also improves the performance and reliability of the relayer, notably by waiting asynchronously for transactions to be confirmed.
@@ -151,6 +204,7 @@ Additionnally, Hermes now includes a REST server which exposes the relayer's int
 [#1297]: https://github.com/informalsystems/ibc-rs/issues/1297
 
 ## v0.6.2
+*August 2nd, 2021*
 
 This minor release of Hermes re-enables the `upgrade client`, `upgrade clients`,
 `tx raw upgrade-clients`, and `tx raw upgrade-chain`, and otherwise

@@ -24,13 +24,13 @@ extern crate alloc;
 
 pub mod application;
 pub mod commands;
+pub mod components;
 pub mod config;
 pub mod prelude;
 
 pub mod error;
 
 pub(crate) mod cli_utils;
-pub(crate) mod components;
 pub(crate) mod conclude;
 pub(crate) mod entry;
 

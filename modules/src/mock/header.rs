@@ -1,15 +1,13 @@
-use core::convert::TryFrom;
-
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
 
-use crate::ics02_client::client_consensus::AnyConsensusState;
-use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::Error;
-use crate::ics02_client::header::AnyHeader;
-use crate::ics02_client::header::Header;
+use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::error::Error;
+use crate::core::ics02_client::header::AnyHeader;
+use crate::core::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
 use crate::timestamp::Timestamp;
 use crate::Height;
@@ -52,8 +50,12 @@ impl MockHeader {
     pub fn new(height: Height) -> Self {
         Self {
             height,
-            timestamp: Default::default(),
+            timestamp: Timestamp::now(),
         }
+    }
+
+    pub fn with_timestamp(self, timestamp: Timestamp) -> Self {
+        Self { timestamp, ..self }
     }
 }
 
@@ -70,6 +72,10 @@ impl Header for MockHeader {
 
     fn height(&self) -> Height {
         self.height
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        self.timestamp
     }
 
     fn wrap_any(self) -> AnyHeader {
@@ -89,14 +95,14 @@ mod tests {
 
     #[test]
     fn encode_any() {
-        let header = MockHeader::new(Height::new(1, 10));
+        let header = MockHeader::new(Height::new(1, 10)).with_timestamp(Timestamp::none());
         let bytes = header.wrap_any().encode_vec().unwrap();
 
         assert_eq!(
             &bytes,
             &[
                 10, 16, 47, 105, 98, 99, 46, 109, 111, 99, 107, 46, 72, 101, 97, 100, 101, 114, 18,
-                6, 10, 4, 8, 1, 16, 10,
+                6, 10, 4, 8, 1, 16, 10
             ]
         );
     }

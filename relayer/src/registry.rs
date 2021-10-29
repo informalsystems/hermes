@@ -8,7 +8,7 @@ use flex_error::define_error;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{trace, warn};
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::{handle::ChainHandle, runtime::ChainRuntime, CosmosSdkChain},

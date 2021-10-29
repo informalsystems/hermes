@@ -7,7 +7,7 @@ use tracing::debug;
 
 use tendermint::abci::transaction::Hash;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};

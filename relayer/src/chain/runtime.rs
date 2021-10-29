@@ -6,26 +6,28 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::error;
 
 use ibc::{
+    core::{
+        ics02_client::{
+            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
+            client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
+            events::UpdateClient,
+            header::{AnyHeader, Header},
+            misbehaviour::MisbehaviourEvidence,
+        },
+        ics03_connection::{
+            connection::{ConnectionEnd, IdentifiedConnectionEnd},
+            version::Version,
+        },
+        ics04_channel::{
+            channel::{ChannelEnd, IdentifiedChannelEnd},
+            packet::{PacketMsgType, Sequence},
+        },
+        ics23_commitment::commitment::CommitmentPrefix,
+        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::{
-        client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
-        client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
-        events::UpdateClient,
-        header::{AnyHeader, Header},
-        misbehaviour::MisbehaviourEvidence,
-    },
-    ics03_connection::{
-        connection::{ConnectionEnd, IdentifiedConnectionEnd},
-        version::Version,
-    },
-    ics04_channel::{
-        channel::{ChannelEnd, IdentifiedChannelEnd},
-        packet::{PacketMsgType, Sequence},
-    },
-    ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
-    query::QueryTxRequest,
+    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
@@ -42,6 +44,7 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
+    chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -216,6 +219,10 @@ where
                             self.get_signer(reply_to)?
                         }
 
+                        Ok(ChainRequest::Config { reply_to }) => {
+                            self.get_config(reply_to)?
+                        }
+
                         Ok(ChainRequest::Key { reply_to }) => {
                             self.get_key(reply_to)?
                         }
@@ -228,8 +235,8 @@ where
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildClientState { height, reply_to }) => {
-                            self.build_client_state(height, reply_to)?
+                        Ok(ChainRequest::BuildClientState { height, dst_config, reply_to }) => {
+                            self.build_client_state(height, dst_config, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
@@ -248,8 +255,8 @@ where
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryLatestHeight { reply_to }) => {
-                            self.query_latest_height(reply_to)?
+                        Ok(ChainRequest::QueryStatus { reply_to }) => {
+                            self.query_status(reply_to)?
                         }
 
                         Ok(ChainRequest::QueryClients { request, reply_to }) => {
@@ -348,8 +355,12 @@ where
                             self.query_next_sequence_receive(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryPacketEventData { request, reply_to }) => {
+                        Ok(ChainRequest::QueryPacketEventDataFromTxs { request, reply_to }) => {
                             self.query_txs(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to }) => {
+                            self.query_blocks(request, reply_to)?
                         },
 
                         Err(e) => error!("received error via chain request channel: {}", e),
@@ -389,13 +400,18 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_latest_height(&self, reply_to: ReplyTo<Height>) -> Result<(), Error> {
-        let latest_height = self.chain.query_latest_height();
-        reply_to.send(latest_height).map_err(Error::send)
+    fn query_status(&self, reply_to: ReplyTo<StatusResponse>) -> Result<(), Error> {
+        let latest_timestamp = self.chain.query_status();
+        reply_to.send(latest_timestamp).map_err(Error::send)
     }
 
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn get_config(&self, reply_to: ReplyTo<ChainConfig>) -> Result<(), Error> {
+        let result = Ok(self.chain.config());
         reply_to.send(result).map_err(Error::send)
     }
 
@@ -437,11 +453,12 @@ where
     fn build_client_state(
         &self,
         height: Height,
+        dst_config: ChainConfig,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
         let client_state = self
             .chain
-            .build_client_state(height)
+            .build_client_state(height, dst_config)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(client_state).map_err(Error::send)
@@ -769,5 +786,17 @@ where
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
         reply_to.send(result).map_err(Error::send)
+    }
+
+    fn query_blocks(
+        &self,
+        request: QueryBlockRequest,
+        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_blocks(request);
+
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
     }
 }
