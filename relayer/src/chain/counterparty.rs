@@ -391,6 +391,7 @@ pub(crate) fn unreceived_acknowledgements_sequences(
         port_id: src_port_id.to_string(),
         channel_id: src_channel_id.to_string(),
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        packet_commitment_sequences: vec![],
     };
 
     let (acks, src_response_height) = src_chain

@@ -41,6 +41,7 @@ impl QueryPacketAcknowledgementsCmd {
             port_id: self.port_id.to_string(),
             channel_id: self.channel_id.to_string(),
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
+            packet_commitment_sequences: vec![],
         };
 
         // Transform the list fo raw packet state into the list of sequence numbers
