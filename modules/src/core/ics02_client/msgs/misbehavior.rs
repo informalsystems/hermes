@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use core::convert::TryFrom;
 
 use tendermint_proto::Protobuf;
 

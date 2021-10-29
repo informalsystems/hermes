@@ -5,8 +5,6 @@ use core::fmt;
 use std::thread;
 use std::time::Instant;
 
-use chrono::Utc;
-use ibc::timestamp::Timestamp;
 use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace};
@@ -40,6 +38,7 @@ use crate::chain::counterparty::{
     unreceived_acknowledgements_sequences, unreceived_packets_sequences,
 };
 use crate::chain::handle::ChainHandle;
+use crate::chain::StatusResponse;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
@@ -380,9 +379,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Some(ev) => ev.height(),
         };
 
-        let dst_height = self.dst_latest_height()?;
+        let dst_latest_info = self
+            .dst_chain()
+            .query_status()
+            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
+        let dst_latest_height = dst_latest_info.height;
         // Operational data targeting the source chain (e.g., Timeout packets)
-        let mut src_od = OperationalData::new(dst_height, OperationalDataTarget::Source);
+        let mut src_od = OperationalData::new(dst_latest_height, OperationalDataTarget::Source);
         // Operational data targeting the destination chain (e.g., SendPacket messages)
         let mut dst_od = OperationalData::new(src_height, OperationalDataTarget::Destination);
 
@@ -419,7 +422,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     } else {
                         self.build_recv_or_timeout_from_send_packet_event(
                             send_packet_ev,
-                            dst_height,
+                            &dst_latest_info,
                         )?
                     }
                 }
@@ -1203,16 +1206,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn build_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
-        dst_chain_height: Height,
+        dst_info: &StatusResponse,
     ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
         if self
-            .dst_channel(dst_chain_height)?
+            .dst_channel(dst_info.height)?
             .state_matches(&ChannelState::Closed)
         {
-            Ok(self.build_timeout_on_close_packet(&event.packet, dst_chain_height)?)
-        } else if packet.timed_out(&Timestamp::from_datetime(Utc::now()), dst_chain_height) {
-            Ok(self.build_timeout_packet(&event.packet, dst_chain_height)?)
+            Ok(self.build_timeout_on_close_packet(&event.packet, dst_info.height)?)
+        } else if packet.timed_out(&dst_info.timestamp, dst_info.height) {
+            Ok(self.build_timeout_packet(&event.packet, dst_info.height)?)
         } else {
             Ok(None)
         }
@@ -1221,9 +1224,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn build_recv_or_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
-        dst_chain_height: Height,
+        dst_info: &StatusResponse,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
-        let timeout = self.build_timeout_from_send_packet_event(event, dst_chain_height)?;
+        let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
         if timeout.is_some() {
             Ok((None, timeout))
         } else {
@@ -1310,7 +1313,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             return Ok(());
         }
 
-        let dst_current_height = self.dst_latest_height()?;
+        let dst_status = self
+            .dst_chain()
+            .query_status()
+            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
+
+        let dst_current_height = dst_status.height;
 
         // Intermediary data struct to help better manage the transfer from dst. operational data
         // to source operational data.
@@ -1335,7 +1343,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                                 self, e
                             );
                         } else if let Some(new_msg) =
-                            self.build_timeout_from_send_packet_event(e, dst_current_height)?
+                            self.build_timeout_from_send_packet_event(e, &dst_status)?
                         {
                             debug!(
                                 "[{}] refreshing schedule: found a timed-out msg in the op data {}",

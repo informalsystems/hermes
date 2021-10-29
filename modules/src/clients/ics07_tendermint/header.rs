@@ -1,15 +1,14 @@
-use crate::prelude::*;
-use core::convert::{TryFrom, TryInto};
+use core::cmp::Ordering;
 
 use bytes::Buf;
+use chrono::DateTime;
 use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
-use tendermint::Time;
 use tendermint_proto::Protobuf;
 
-use crate::timestamp::Timestamp;
+use crate::alloc::string::ToString;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
@@ -17,8 +16,8 @@ use crate::clients::ics07_tendermint::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics24_host::identifier::ChainId;
+use crate::timestamp::Timestamp;
 use crate::Height;
-use core::cmp::Ordering;
 
 /// Tendermint consensus header
 #[derive(Clone, PartialEq, Deserialize, Serialize)] // TODO: Add Eq bound once present in tendermint-rs
@@ -42,10 +41,6 @@ impl Header {
             ChainId::chain_version(self.signed_header.header.chain_id.as_str()),
             u64::from(self.signed_header.header.height),
         )
-    }
-
-    pub fn time(&self) -> Time {
-        self.signed_header.header.time
     }
 
     pub fn compatible_with(&self, other_header: &Header) -> bool {
@@ -83,7 +78,7 @@ impl crate::core::ics02_client::header::Header for Header {
     }
 
     fn timestamp(&self) -> Timestamp {
-        self.time().into()
+        Timestamp::from_datetime(DateTime::from(self.signed_header.header.time))
     }
 
     fn wrap_any(self) -> AnyHeader {
@@ -147,8 +142,7 @@ impl From<Header> for RawHeader {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
-    use core::convert::TryInto;
+    use alloc::vec;
 
     use subtle_encoding::hex;
     use tendermint::block::signed_header::SignedHeader;

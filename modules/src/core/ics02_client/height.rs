@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use core::cmp::Ordering;
-use core::convert::TryFrom;
+
 use core::num::ParseIntError;
 use core::str::FromStr;
 
@@ -139,6 +139,7 @@ impl core::fmt::Display for Height {
 }
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     HeightError {
         HeightConversion
             { height: String }

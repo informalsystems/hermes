@@ -54,6 +54,7 @@ impl RunningNode {
             gas_adjustment: Some(0.1),
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
+            max_block_time: Default::default(),
             clock_drift: Duration::from_secs(5),
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
             trust_threshold: Default::default(),

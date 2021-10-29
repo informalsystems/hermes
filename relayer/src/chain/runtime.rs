@@ -44,6 +44,7 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
+    chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -218,6 +219,10 @@ where
                             self.get_signer(reply_to)?
                         }
 
+                        Ok(ChainRequest::Config { reply_to }) => {
+                            self.get_config(reply_to)?
+                        }
+
                         Ok(ChainRequest::GetKey { reply_to }) => {
                             self.get_key(reply_to)?
                         }
@@ -234,8 +239,8 @@ where
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildClientState { height, reply_to }) => {
-                            self.build_client_state(height, reply_to)?
+                        Ok(ChainRequest::BuildClientState { height, dst_config, reply_to }) => {
+                            self.build_client_state(height, dst_config, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
@@ -254,8 +259,8 @@ where
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryLatestHeight { reply_to }) => {
-                            self.query_latest_height(reply_to)?
+                        Ok(ChainRequest::QueryStatus { reply_to }) => {
+                            self.query_status(reply_to)?
                         }
 
                         Ok(ChainRequest::QueryClients { request, reply_to }) => {
@@ -399,13 +404,18 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_latest_height(&self, reply_to: ReplyTo<Height>) -> Result<(), Error> {
-        let latest_height = self.chain.query_latest_height();
-        reply_to.send(latest_height).map_err(Error::send)
+    fn query_status(&self, reply_to: ReplyTo<StatusResponse>) -> Result<(), Error> {
+        let latest_timestamp = self.chain.query_status();
+        reply_to.send(latest_timestamp).map_err(Error::send)
     }
 
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn get_config(&self, reply_to: ReplyTo<ChainConfig>) -> Result<(), Error> {
+        let result = Ok(self.chain.config());
         reply_to.send(result).map_err(Error::send)
     }
 
@@ -457,11 +467,12 @@ where
     fn build_client_state(
         &self,
         height: Height,
+        dst_config: ChainConfig,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
         let client_state = self
             .chain
-            .build_client_state(height)
+            .build_client_state(height, dst_config)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(client_state).map_err(Error::send)

@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::convert::{TryFrom, TryInto};
+
 use core::time::Duration;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
@@ -117,7 +117,7 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use test_env_log::test;
 
     use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;

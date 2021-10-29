@@ -1,8 +1,8 @@
-use crate::prelude::*;
-use core::convert::TryFrom;
 use core::ops::Deref;
+
 use prost_types::Any;
 use serde_derive::{Deserialize, Serialize};
+use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
@@ -10,6 +10,7 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
+use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
@@ -62,14 +63,26 @@ impl Header for AnyHeader {
     fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(header) => header.timestamp(),
-
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(header) => header.timestamp,
+            Self::Mock(header) => header.timestamp(),
         }
     }
 
     fn wrap_any(self) -> AnyHeader {
         self
+    }
+}
+
+impl AnyHeader {
+    pub fn encode_to_string(&self) -> String {
+        let buf = Protobuf::encode_vec(self).expect("encoding shouldn't fail");
+        let encoded = hex::encode(buf);
+        String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8")
+    }
+
+    pub fn decode_from_string(s: &str) -> Result<Self, Error> {
+        let header_bytes = hex::decode(s).unwrap();
+        Protobuf::decode(header_bytes.as_ref()).map_err(Error::invalid_raw_header)
     }
 }
 

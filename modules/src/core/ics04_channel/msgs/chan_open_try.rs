@@ -10,7 +10,6 @@ use crate::tx_msg::Msg;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 use tendermint_proto::Protobuf;
 
-use core::convert::{TryFrom, TryInto};
 use core::str::FromStr;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenTry";
@@ -175,7 +174,7 @@ mod tests {
     use crate::core::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
     use ibc_proto::ibc::core::client::v1::Height;
     use test_env_log::test;

@@ -1,26 +1,29 @@
 [package]
-name       = "ibc-relayer"
-version    = "0.8.0-pre.1"
-edition    = "2018"
-license    = "Apache-2.0"
-readme     = "README.md"
-keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-repository = "https://github.com/informalsystems/ibc-rs"
-authors    = ["Informal Systems <hello@informal.systems>"]
-
-description = """
-    Implementation of an IBC Relayer in Rust, as a library.
+name         = "ibc-relayer"
+version      = "0.8.0"
+edition      = "2021"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.56"
+description  = """
+    Implementation of an IBC Relayer in Rust, as a library
 """
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
-default = ["flex-error/std", "flex-error/eyre_tracer"]
+default   = ["flex-error/std", "flex-error/eyre_tracer"]
 profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.8.0-pre.1", path = "../modules" }
-ibc-proto     = { version = "0.12.0-pre.1", path = "../proto" }
-ibc-telemetry = { version = "0.8.0-pre.1", path = "../telemetry", optional = true }
+ibc           = { version = "0.8.0", path = "../modules" }
+ibc-proto     = { version = "0.12.0", path = "../proto" }
+ibc-telemetry = { version = "0.8.0", path = "../telemetry", optional = true }
 
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 subtle-encoding = "0.5"
@@ -57,33 +60,33 @@ http = "0.2.4"
 flex-error = { version = "0.4.4", default-features = false }
 signature = "1.3.0"
 anyhow = "1.0.44"
-fraction = {version = "0.9.0", default-features = false }
+fraction = { version = "0.9.0", default-features = false }
 semver = "1.0"
 uint = "0.9"
 humantime = "2.1.0"
 
 [dependencies.tendermint]
-version = "=0.23.0-internal"
+version = "=0.23.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.0-internal"
+version = "=0.23.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.0-internal"
+version = "=0.23.0"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-proto]
-version = "=0.23.0-internal"
+version = "=0.23.0"
 
 [dev-dependencies]
-ibc = { version = "0.8.0-pre.1", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.8.0", path = "../modules", features = ["mocks"] }
 serial_test = "0.5.0"
 env_logger = "0.9.0"
 tracing-subscriber = { version = "0.3.1", features = ["fmt", "env-filter", "json"]}
 test-env-log = { version = "0.2.7", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.0-internal" }
+tendermint-testgen = { version = "=0.23.0" }

@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::convert::TryFrom;
+
 use core::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
@@ -101,7 +101,7 @@ impl core::fmt::Display for Sequence {
     }
 }
 
-#[derive(PartialEq, Deserialize, Serialize, Hash, Clone)]
+#[derive(Clone, Debug, Default, Hash, PartialEq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,
@@ -115,20 +115,20 @@ pub struct Packet {
 }
 
 impl Packet {
-    pub fn timed_out(&self, now: &Timestamp, dst_chain_height: Height) -> bool {
+    /// Checks whether a packet from a [`SendPacket`] event is
+    /// timed-out relative to the current state of the destination
+    /// chain.
+    ///
+    /// Checks both for time-out relative to the destination chain's
+    /// current timestamp `dst_chain_ts` as well as relative to
+    /// the height `dst_chain_height`.
+    ///
+    /// Note: a timed-out packet should result in a [`MsgTimeout`],
+    /// instead of the common-case where it results in [`MsgRecvPacket`].
+    pub fn timed_out(&self, dst_chain_ts: &Timestamp, dst_chain_height: Height) -> bool {
         (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
             || (self.timeout_timestamp != Timestamp::none()
-                && now.check_expiry(&self.timeout_timestamp) == Expired)
-    }
-}
-
-impl core::fmt::Debug for Packet {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "{:?} {:?} {:?}",
-            self.source_port, self.source_channel, self.sequence
-        )
+                && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired)
     }
 }
 
@@ -146,21 +146,6 @@ impl core::fmt::Display for Packet {
             self.timeout_height,
             self.timeout_timestamp
         )
-    }
-}
-
-impl Default for Packet {
-    fn default() -> Self {
-        Packet {
-            sequence: Sequence(0),
-            source_port: Default::default(),
-            source_channel: Default::default(),
-            destination_port: Default::default(),
-            destination_channel: Default::default(),
-            data: Vec::new(),
-            timeout_height: Default::default(),
-            timeout_timestamp: Default::default(),
-        }
     }
 }
 
@@ -288,7 +273,7 @@ pub mod test_utils {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use test_env_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
@@ -311,7 +296,7 @@ mod tests {
             Test {
                 name: "Good parameters".to_string(),
                 raw: default_raw_msg.clone(),
-                want_pass: true
+                want_pass: true,
             },
             Test {
                 name: "Src port validation: correct".to_string(),

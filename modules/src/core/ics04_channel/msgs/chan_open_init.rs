@@ -8,8 +8,6 @@ use crate::tx_msg::Msg;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 use tendermint_proto::Protobuf;
 
-use core::convert::{TryFrom, TryInto};
-
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenInit";
 
 ///
@@ -106,7 +104,7 @@ mod tests {
     use crate::core::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
     use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::prelude::*;
-    use core::convert::TryFrom;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
     use test_env_log::test;
 
