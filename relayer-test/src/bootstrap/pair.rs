@@ -74,6 +74,7 @@ fn spawn_chain_handle(
 
 pub fn boostrap_chain_pair(
     builder: &ChainBuilder,
+    config_modifier: impl FnOnce(&mut Config),
 ) -> Result<ChainDeployment<impl ChainHandle, impl ChainHandle>, Error> {
     let node_a = bootstrap_single_chain(&builder)?;
     let node_b = bootstrap_single_chain(&builder)?;
@@ -82,6 +83,8 @@ pub fn boostrap_chain_pair(
 
     add_chain_config(&mut config, node_a.value())?;
     add_chain_config(&mut config, node_b.value())?;
+
+    config_modifier(&mut config);
 
     let config_str = toml::to_string_pretty(&config)?;
 

@@ -16,6 +16,10 @@ pub fn random_u64_range(min: u64, max: u64) -> u64 {
     rng.gen_range(min..max)
 }
 
+pub fn random_string() -> String {
+    format!("{:x}", random_u64())
+}
+
 fn random_port() -> u16 {
     let mut rng = rand::thread_rng();
     rng.gen::<u16>()

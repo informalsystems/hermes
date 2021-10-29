@@ -1,5 +1,6 @@
 use eyre::Report as Error;
 use std::env;
+use std::sync::Once;
 use tracing_subscriber::{
     self as ts,
     filter::EnvFilter,
@@ -9,9 +10,13 @@ use tracing_subscriber::{
 
 use crate::config::TestConfig;
 
+static INIT: Once = Once::new();
+
 pub fn init_test() -> Result<TestConfig, Error> {
-    color_eyre::install()?;
-    install_logger();
+    INIT.call_once(|| {
+        color_eyre::install().unwrap();
+        install_logger();
+    });
 
     let chain_command_path = env::var("CHAIN_COMMAND_PATH").unwrap_or_else(|_| "gaiad".to_string());
 

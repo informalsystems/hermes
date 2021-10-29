@@ -60,7 +60,7 @@ impl RunningNode {
             gas_price: config::GasPrice::new(0.001, "stake".to_string()),
             packet_filter: Default::default(),
             address_type: Default::default(),
-            memo_prefix: config::types::Memo::new("testing memo"),
+            memo_prefix: Default::default(),
         })
     }
 }

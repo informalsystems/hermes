@@ -1,5 +1,6 @@
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::Config;
 use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
@@ -18,8 +19,9 @@ pub struct ChainChannelDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
 pub fn boostrap_chain_and_channel_pair(
     builder: &ChainBuilder,
     port: &PortId,
+    config_modifier: impl FnOnce(&mut Config),
 ) -> Result<ChainChannelDeployment<impl ChainHandle, impl ChainHandle>, Error> {
-    let chains = boostrap_chain_pair(&builder)?;
+    let chains = boostrap_chain_pair(&builder, config_modifier)?;
 
     let port_a = DualTagged::new(port);
     let port_b = DualTagged::new(port);
