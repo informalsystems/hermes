@@ -61,10 +61,10 @@ pub fn validate_connection_identifier(id: &str) -> Result<(), Error> {
 
 /// Default validator function for Port identifiers.
 ///
-/// A valid Identifier must be between 2-64 characters and only contain lowercase
+/// A valid Identifier must be between 2-128 characters and only contain lowercase
 /// alphabetic characters,
 pub fn validate_port_identifier(id: &str) -> Result<(), Error> {
-    validate_identifier(id, 2, 64)
+    validate_identifier(id, 2, 128)
 }
 
 /// Default validator function for Channel identifiers.
@@ -92,9 +92,9 @@ mod tests {
 
     #[test]
     fn parse_invalid_port_id_max() {
-        // invalid max port id (test string length is 65 chars)
+        // invalid max port id (test string length is 130 chars)
         let id = validate_port_identifier(
-            "9anxkcme6je544d5lnj46zqiiiygfqzf8w4bjecbnyj4lj6s7zlpst67yln64tixp",
+            "9anxkcme6je544d5lnj46zqiiiygfqzf8w4bjecbnyj4lj6s7zlpst67yln64tixp9anxkcme6je544d5lnj46zqiiiygfqzf8w4bjecbnyj4lj6s7zlpst67yln64tixp",
         );
         assert!(id.is_err())
     }
