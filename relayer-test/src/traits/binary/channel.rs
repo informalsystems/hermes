@@ -11,6 +11,43 @@ use crate::tagged::*;
 use super::super::base::{ConfigurableTestCase, NoTestConfig};
 use super::chain::{run_owned_binary_chain_test, OwnedBinaryChainTestCase};
 
+pub fn run_binary_channel_test<Test>(test: Test) -> Result<(), Error>
+where
+    Test: BinaryChannelTestCase + ConfigurableTestCase + TestCaseWithChannelPorts,
+{
+    run_owned_binary_channel_test(RunBinaryChannelTest(test))
+}
+
+pub fn run_two_way_binary_channel_test<Test>(test: Test) -> Result<(), Error>
+where
+    Test: BinaryChannelTestCase + ConfigurableTestCase + TestCaseWithChannelPorts,
+{
+    run_owned_binary_channel_test(RunTwoWayBinaryChannelTest(test))
+}
+
+pub fn run_owned_binary_channel_test<Test>(test: Test) -> Result<(), Error>
+where
+    Test: OwnedBinaryChannelTestCase + TestCaseWithChannelPorts + ConfigurableTestCase,
+{
+    run_owned_binary_chain_test(RunOwnedBinaryChannelTest(test))
+}
+
+pub trait BinaryChannelTestCase {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        chains: &ChainDeployment<ChainA, ChainB>,
+        channels: &Channel<ChainA, ChainB>,
+    ) -> Result<(), Error>;
+}
+
+pub trait OwnedBinaryChannelTestCase {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        chains: ChainDeployment<ChainA, ChainB>,
+        channels: Channel<ChainA, ChainB>,
+    ) -> Result<(), Error>;
+}
+
 pub trait TestCaseWithChannelPorts {
     fn channel_port_a(&self) -> String {
         "transfer".to_string()
@@ -21,15 +58,13 @@ pub trait TestCaseWithChannelPorts {
     }
 }
 
-impl<Test> TestCaseWithChannelPorts for NoTestConfig<Test> {}
+struct RunOwnedBinaryChannelTest<Test>(Test);
 
-pub trait OwnedBinaryChannelTestCase {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        chains: ChainDeployment<ChainA, ChainB>,
-        channels: Channel<ChainA, ChainB>,
-    ) -> Result<(), Error>;
-}
+struct RunBinaryChannelTest<Test>(Test);
+
+struct RunTwoWayBinaryChannelTest<Test>(Test);
+
+impl<Test> TestCaseWithChannelPorts for NoTestConfig<Test> {}
 
 impl<Test: OwnedBinaryChannelTestCase> OwnedBinaryChannelTestCase for NoTestConfig<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -40,8 +75,6 @@ impl<Test: OwnedBinaryChannelTestCase> OwnedBinaryChannelTestCase for NoTestConf
         self.0.run(chains, channels)
     }
 }
-
-struct RunOwnedBinaryChannelTest<Test>(Test);
 
 impl<Test> OwnedBinaryChainTestCase for RunOwnedBinaryChannelTest<Test>
 where
@@ -67,25 +100,10 @@ where
     }
 }
 
-pub fn run_owned_binary_channel_test<Test>(test: Test) -> Result<(), Error>
-where
-    Test: OwnedBinaryChannelTestCase + TestCaseWithChannelPorts + ConfigurableTestCase,
-{
-    run_owned_binary_chain_test(RunOwnedBinaryChannelTest(test))
-}
-
 impl<Test: ConfigurableTestCase> ConfigurableTestCase for RunOwnedBinaryChannelTest<Test> {
     fn modify_relayer_config(&self, config: &mut Config) {
         self.0.modify_relayer_config(config);
     }
-}
-
-pub trait BinaryChannelTestCase {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        chains: &ChainDeployment<ChainA, ChainB>,
-        channels: &Channel<ChainA, ChainB>,
-    ) -> Result<(), Error>;
 }
 
 impl<Test: BinaryChannelTestCase> BinaryChannelTestCase for NoTestConfig<Test> {
@@ -97,8 +115,6 @@ impl<Test: BinaryChannelTestCase> BinaryChannelTestCase for NoTestConfig<Test> {
         self.0.run(chains, channels)
     }
 }
-
-struct RunBinaryChannelTest<Test>(Test);
 
 impl<Test: BinaryChannelTestCase> OwnedBinaryChannelTestCase for RunBinaryChannelTest<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -125,15 +141,6 @@ impl<Test: ConfigurableTestCase> ConfigurableTestCase for RunBinaryChannelTest<T
         self.0.modify_relayer_config(config);
     }
 }
-
-pub fn run_binary_channel_test<Test>(test: Test) -> Result<(), Error>
-where
-    Test: BinaryChannelTestCase + ConfigurableTestCase + TestCaseWithChannelPorts,
-{
-    run_owned_binary_channel_test(RunBinaryChannelTest(test))
-}
-
-struct RunTwoWayBinaryChannelTest<Test>(Test);
 
 impl<Test: BinaryChannelTestCase> OwnedBinaryChannelTestCase for RunTwoWayBinaryChannelTest<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -166,11 +173,4 @@ impl<Test: ConfigurableTestCase> ConfigurableTestCase for RunTwoWayBinaryChannel
     fn modify_relayer_config(&self, config: &mut Config) {
         self.0.modify_relayer_config(config);
     }
-}
-
-pub fn run_two_way_binary_channel_test<Test>(test: Test) -> Result<(), Error>
-where
-    Test: BinaryChannelTestCase + ConfigurableTestCase + TestCaseWithChannelPorts,
-{
-    run_owned_binary_channel_test(RunTwoWayBinaryChannelTest(test))
 }

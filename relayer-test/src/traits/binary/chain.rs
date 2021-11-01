@@ -9,6 +9,34 @@ use crate::error::Error;
 
 use super::super::base::{run_basic_test, BasicTestCase, ConfigurableTestCase, NoTestConfig};
 
+pub fn run_binary_chain_test<Test>(test: Test) -> Result<(), Error>
+where
+    Test: BinaryChainTestCase + ConfigurableTestCase,
+{
+    run_owned_binary_chain_test(RunBinaryChainTest(test))
+}
+
+pub fn run_two_way_binary_chain_test<Test>(test: Test) -> Result<(), Error>
+where
+    Test: BinaryChainTestCase + ConfigurableTestCase,
+{
+    run_owned_binary_chain_test(RunTwoWayBinaryChainTest(test))
+}
+
+pub fn run_owned_binary_chain_test<Test>(test: Test) -> Result<(), Error>
+where
+    Test: OwnedBinaryChainTestCase + ConfigurableTestCase,
+{
+    run_basic_test(RunOwnedBinaryChainTest(test))
+}
+
+pub trait BinaryChainTestCase {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        deployment: &ChainDeployment<ChainA, ChainB>,
+    ) -> Result<(), Error>;
+}
+
 pub trait OwnedBinaryChainTestCase {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -17,6 +45,10 @@ pub trait OwnedBinaryChainTestCase {
 }
 
 struct RunOwnedBinaryChainTest<Test>(Test);
+
+struct RunBinaryChainTest<Test>(Test);
+
+struct RunTwoWayBinaryChainTest<Test>(Test);
 
 impl<Test> BasicTestCase for RunOwnedBinaryChainTest<Test>
 where
@@ -42,20 +74,6 @@ impl<Test: OwnedBinaryChainTestCase> OwnedBinaryChainTestCase for NoTestConfig<T
     }
 }
 
-pub fn run_owned_binary_chain_test<Test>(test: Test) -> Result<(), Error>
-where
-    Test: OwnedBinaryChainTestCase + ConfigurableTestCase,
-{
-    run_basic_test(RunOwnedBinaryChainTest(test))
-}
-
-pub trait BinaryChainTestCase {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        deployment: &ChainDeployment<ChainA, ChainB>,
-    ) -> Result<(), Error>;
-}
-
 impl<Test: BinaryChainTestCase> BinaryChainTestCase for NoTestConfig<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -64,8 +82,6 @@ impl<Test: BinaryChainTestCase> BinaryChainTestCase for NoTestConfig<Test> {
         self.0.run(deployment)
     }
 }
-
-struct RunBinaryChainTest<Test>(Test);
 
 impl<Test: BinaryChainTestCase> OwnedBinaryChainTestCase for RunBinaryChainTest<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -81,15 +97,6 @@ impl<Test: ConfigurableTestCase> ConfigurableTestCase for RunBinaryChainTest<Tes
         self.0.modify_relayer_config(config);
     }
 }
-
-pub fn run_binary_chain_test<Test>(test: Test) -> Result<(), Error>
-where
-    Test: BinaryChainTestCase + ConfigurableTestCase,
-{
-    run_owned_binary_chain_test(RunBinaryChainTest(test))
-}
-
-struct RunTwoWayBinaryChainTest<Test>(Test);
 
 impl<Test: BinaryChainTestCase> OwnedBinaryChainTestCase for RunTwoWayBinaryChainTest<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -110,11 +117,4 @@ impl<Test: ConfigurableTestCase> ConfigurableTestCase for RunTwoWayBinaryChainTe
     fn modify_relayer_config(&self, config: &mut Config) {
         self.0.modify_relayer_config(config);
     }
-}
-
-pub fn run_two_way_binary_chain_test<Test>(test: Test) -> Result<(), Error>
-where
-    Test: BinaryChainTestCase + ConfigurableTestCase,
-{
-    run_owned_binary_chain_test(RunTwoWayBinaryChainTest(test))
 }
