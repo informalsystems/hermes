@@ -109,7 +109,7 @@ impl From<MaxTxSize> for usize {
 /// The memo can be configured on a per-chain basis.
 ///
 #[derive(Clone, Debug, Default)]
-pub struct Memo(pub String);
+pub struct Memo(String);
 
 impl Memo {
     const MAX_LEN: usize = 50;

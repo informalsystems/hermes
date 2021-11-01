@@ -7,6 +7,7 @@ pub mod init;
 pub mod process;
 pub mod relayer;
 pub mod tagged;
+pub mod traits;
 pub mod util;
 
 #[cfg(test)]
