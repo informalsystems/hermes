@@ -30,6 +30,15 @@ pub struct Specs {
     pub ibc_go_version: Option<semver::Version>,
 }
 
+impl Specs {
+    pub fn ibc_go_pre_v1_2(&self) -> bool {
+        match &self.ibc_go_version {
+            Some(v) => v < &semver::Version::new(1, 2, 0),
+            None => true,
+        }
+    }
+}
+
 define_error! {
     Error {
         SdkModuleNotFound
