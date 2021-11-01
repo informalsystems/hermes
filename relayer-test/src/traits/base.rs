@@ -5,8 +5,6 @@ use crate::config::TestConfig;
 use crate::error::Error;
 use crate::init::init_test;
 
-pub trait TestWithDefault {}
-
 pub trait TestCase {
     fn run(&self) -> Result<(), Error>;
 }
@@ -37,4 +35,6 @@ pub trait ConfigurableTestCase {
     fn modify_relayer_config(&self, _config: &mut Config) {}
 }
 
-impl<Test: TestWithDefault> ConfigurableTestCase for Test {}
+pub struct NoTestConfig<Test>(pub Test);
+
+impl<Test> ConfigurableTestCase for NoTestConfig<Test> {}
