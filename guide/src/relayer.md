@@ -1,6 +1,7 @@
 # What is Hermes?
 
-Hermes is a an open-source Rust implementation of a relayer for the [Inter-Blockchain Communication protocol](https://cosmos.network/ibc) (IBC),
+Hermes is a an open-source Rust implementation of a relayer for the
+[Inter-Blockchain Communication protocol](https://ibcprotocol.org) (IBC),
 released under the [ibc-relayer-cli](https://crates.io/crates/ibc-relayer-cli) crate.
 
 The **Inter-Blockchain Communication protocol** is an end-to-end, connection-oriented,

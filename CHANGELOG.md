@@ -1,5 +1,46 @@
 # CHANGELOG
 
+## v0.8.0
+*October 29th, 2021*
+
+This is the final release of version 0.8.0, which now depends on the official releases of the `prost` and `tonic` crates.
+In addition to everything that's included in v0.8.0-pre.1, this release updates the minimum supported Rust version to 1.56, 
+and contains various bug fixes and performance improvements which make the relayer more reliable.
+
+#### Notice for operators
+A new setting was added to the Hermes configuration: `max_block_time`.
+This setting specifies the maximum time per block for this chain.
+The block time together with the clock drift are added to the source drift to estimate
+the maximum clock drift when creating a client on this chain.
+For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
+
+### BREAKING CHANGES
+
+- Update MSRV to Rust 1.56 and use the 2021 edition
+  ([#1519](https://github.com/informalsystems/ibc-rs/issues/1519))
+
+### BUG FIXES
+
+- Fix for client state clock drift ([#1445]):
+  * Added new config param `max_block_time` to prevent the problem for appearing in newly-created clients.
+  * Added a synchronous waiting in client update logic to allow destination chain to reach a new height
+    before submitting a client update message.
+
+[#1445]: https://github.com/informalsystems/ibc-rs/issues/1445
+
+### IMPROVEMENTS
+
+- General
+  - Update to official releases of `prost` 0.9 and `tonic` 0.6
+    ([#1502](https://github.com/informalsystems/ibc-rs/issues/1502))
+- [IBC Modules](modules)
+  - Support for converting `ibc::events::IbcEvent` into `tendermint::abci::Event` 
+    ([#838](https://github.com/informalsystems/ibc-rs/issues/838))
+  - Restructure the layout of the `ibc` crate to match `ibc-go`'s [layout](https://github.com/cosmos/ibc-go#contents)
+    ([#1436](https://github.com/informalsystems/ibc-rs/issues/1436))
+  - Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers
+    ([#1460](https://github.com/informalsystems/ibc-rs/issues/1460))
+
 ## v0.8.0-pre.1
 *October 22nd, 2021*
 

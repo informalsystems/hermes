@@ -17,6 +17,7 @@ repository:
 - [Forking](#forking) - fork the repo to make pull requests
 - [Changelog](#changelog) - changes must be recorded in the changelog
 - [Pull Requests](#pull-requests) - what makes a good pull request
+- [Releases](#releases) - how to release new version of the crates
 
 ## Decision Making
 
@@ -231,8 +232,6 @@ Our release process is as follows:
    the release description to `[📖 CHANGELOG](https://github.com/informalsystems/ibc-rs/blob/master/CHANGELOG.md#vXYZ)`.
 10. Wait an hour or so, and check that the CI job has uploaded the Hermes binaries to the release.
 11. All done! 🎉
-
-   
 
 [crates.io]: https://crates.io
 [crates.io-security]: https://codeandbitters.com/published-crate-analysis/
