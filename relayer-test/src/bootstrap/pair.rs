@@ -42,7 +42,7 @@ fn spawn_supervisor(config: &Config) -> (Supervisor<impl ChainHandle>, Superviso
     let (supervisor, sender) =
         <Supervisor<ProdChainHandle>>::new(Arc::new(RwLock::new(config.clone())), None);
 
-    (supervisor, SupervisorCmdSender(sender))
+    (supervisor, SupervisorCmdSender::new(sender))
 }
 
 fn add_chain_config(config: &mut Config, running_node: &RunningNode) -> Result<(), Error> {

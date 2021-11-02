@@ -93,7 +93,11 @@ impl<Test: BinaryChainTestCase> OwnedBinaryChainTestCase for RunBinaryChainTest<
         &self,
         deployment: ChainDeployment<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        self.0.run(&deployment)
+        let res = self.0.run(&deployment);
+
+        deployment.supervisor_cmd_sender.stop();
+
+        res
     }
 }
 
@@ -108,13 +112,21 @@ impl<Test: BinaryChainTestCase> OwnedBinaryChainTestCase for RunTwoWayBinaryChai
         &self,
         deployment: ChainDeployment<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        self.0.run(&deployment)?;
+        let res = self.0.run(&deployment);
 
-        let deployment = deployment.flip();
+        match res {
+            Ok(()) => {
+                let deployment = deployment.flip();
 
-        self.0.run(&deployment)?;
-
-        Ok(())
+                let res = self.0.run(&deployment);
+                deployment.supervisor_cmd_sender.stop();
+                res
+            }
+            Err(e) => {
+                deployment.supervisor_cmd_sender.stop();
+                Err(e)
+            }
+        }
     }
 }
 

@@ -1,8 +1,11 @@
-use crossbeam_channel::Sender;
+use core::time::Duration;
+use crossbeam_channel::{bounded, Sender};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::supervisor::cmd::SupervisorCmd;
+use std::cell::Cell;
+use tracing::info;
 
 use super::client_server::ChainClientServer;
 
@@ -37,10 +40,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ChainDeployment<ChainA, ChainB> {
 // send stop signal to the supervisor before stopping the
 // chain drivers to prevent the supervisor from raising
 // errors caused by closed connections.
-pub struct SupervisorCmdSender(pub Sender<SupervisorCmd>);
+pub struct SupervisorCmdSender {
+    sender: Sender<SupervisorCmd>,
+    stopped: Cell<bool>,
+}
+
+impl SupervisorCmdSender {
+    pub fn new(sender: Sender<SupervisorCmd>) -> Self {
+        Self {
+            sender,
+            stopped: Cell::new(false),
+        }
+    }
+
+    pub fn stop(&self) {
+        if !self.stopped.get() {
+            info!("stopping supervisor");
+            self.stopped.set(true);
+            let (sender, receiver) = bounded(1);
+            let _ = self.sender.send(SupervisorCmd::Stop(sender));
+            let _ = receiver.recv_timeout(Duration::from_secs(5));
+        }
+    }
+}
 
 impl Drop for SupervisorCmdSender {
     fn drop(&mut self) {
-        let _ = self.0.send(SupervisorCmd::Stop);
+        self.stop();
     }
 }

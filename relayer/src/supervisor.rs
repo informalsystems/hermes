@@ -421,7 +421,10 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                 SupervisorCmd::DumpState(reply_to) => {
                     self.dump_state(reply_to);
                 }
-                SupervisorCmd::Stop => return Ok(StepResult::Break),
+                SupervisorCmd::Stop(reply_to) => {
+                    let _ = reply_to.send(());
+                    return Ok(StepResult::Break);
+                }
             }
         }
 
