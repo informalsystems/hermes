@@ -1,12 +1,12 @@
 use alloc::collections::BTreeMap as HashMap;
 
-use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
+use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData, query::Query};
 
-use ibc::core::ics02_client::events::NewBlock;
-use ibc::core::ics02_client::height::Height;
+use ibc::core::ics02_client::{events as ClientEvents, height::Height};
+use ibc::core::ics03_connection::events as ConnectionEvents;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::events::{from_tx_response_event, IbcEvent, RawObject};
+use ibc::events::{IbcEvent, RawObject};
 
 pub fn get_all_events(
     chain_id: &ChainId,
@@ -21,7 +21,7 @@ pub fn get_all_events(
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
             );
 
-            vals.push((height, NewBlock::new(height).into()));
+            vals.push((height, ClientEvents::NewBlock::new(height).into()));
 
             if let Some(events) = &result.events {
                 let ibc_events =
@@ -38,9 +38,27 @@ pub fn get_all_events(
             );
 
             for abci_event in &tx_result.result.events {
-                if let Some(ibc_event) = from_tx_response_event(height, abci_event) {
-                    tracing::trace!("Extracted ibc_event {:?}", ibc_event);
-                    vals.push((height, ibc_event));
+                let query = result.query.clone();
+                if query == Query::eq("message.module", "ibc_client").to_string() {
+                    if let Some(mut client_event) = ClientEvents::try_from_tx(abci_event) {
+                        client_event.set_height(height);
+                        tracing::trace!("Extracted ibc_client event {:?}", client_event);
+                        vals.push((height, client_event));
+                    }
+                }
+                if query == Query::eq("message.module", "ibc_connection").to_string() {
+                    if let Some(mut conn_event) = ConnectionEvents::try_from_tx(abci_event) {
+                        conn_event.set_height(height);
+                        tracing::trace!("Extracted ibc_connection event {:?}", conn_event);
+                        vals.push((height, conn_event));
+                    }
+                }
+                if query == Query::eq("message.module", "ibc_channel").to_string() {
+                    if let Some(mut chan_event) = ChannelEvents::try_from_tx(abci_event) {
+                        chan_event.set_height(height);
+                        tracing::trace!("Extracted ibc_channel event {:?}", chan_event);
+                        vals.push((height, chan_event));
+                    }
                 }
             }
         }
