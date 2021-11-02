@@ -26,7 +26,7 @@ mocks = ["tendermint-testgen", "sha2"]
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.12.0", path = "../proto" }
-ics23 = { version = "0.6.6", default-features = false }
+ics23 = { version = "0.6.7", default-features = false }
 chrono = { version = "0.4.19", default-features = false }
 thiserror = { version = "1.0.30", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }

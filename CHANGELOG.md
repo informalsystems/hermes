@@ -21,12 +21,12 @@ For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commi
 
 ### BUG FIXES
 
-- Fix for client state clock drift ([#1445]):
+- Fix for "new header has a time from the future" chain error which would arise due to clock drift ([#1445](https://github.com/informalsystems/ibc-rs/issues/1445)):
   * Added new config param `max_block_time` to prevent the problem for appearing in newly-created clients.
   * Added a synchronous waiting in client update logic to allow destination chain to reach a new height
     before submitting a client update message.
-
-[#1445]: https://github.com/informalsystems/ibc-rs/issues/1445
+- Ensure Hermes does not send timeouts for packets that have not expired yet
+    ([#1504](https://github.com/informalsystems/ibc-rs/issues/1504))
 
 ### IMPROVEMENTS
 
@@ -40,6 +40,9 @@ For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commi
     ([#1436](https://github.com/informalsystems/ibc-rs/issues/1436))
   - Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers
     ([#1460](https://github.com/informalsystems/ibc-rs/issues/1460))
+- [Relayer Library](relayer)
+  - Improve performance of misbehaviour checks triggered by an `UpdateClient` event
+    ([#1417](https://github.com/informalsystems/ibc-rs/issues/1417))
 
 ## v0.8.0-pre.1
 *October 22nd, 2021*
@@ -1286,21 +1289,21 @@ Other highlights:
 [#195]: https://github.com/informalsystems/ibc-rs/pull/195
 [ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
 [#198]: https://github.com/informalsystems/ibc-rs/issues/198
-[ibc/ics02]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
+[ibc/ics02]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics02_client
 [#185]: https://github.com/informalsystems/ibc-rs/issues/185
-[ibc/ics03]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics03_connection
+[ibc/ics03]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics03_connection
 [#193]: https://github.com/informalsystems/ibc-rs/issues/193
-[ibc/ics04]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics04_channel
+[ibc/ics04]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics04_channel
 [#192]: https://github.com/informalsystems/ibc-rs/issues/192
 [ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
-[architecture/FSM-1]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/fsm-async-connection.md
+[architecture/FSM-1]: https://github.com/informalsystems/ibc-rs/blob/v0.1.0/docs/architecture/fsm-async-connection.md
 [#122]: https://github.com/informalsystems/ibc-rs/issues/122
 [architecture/ADR-003]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md
 [#119]: https://github.com/informalsystems/ibc-rs/issues/119
 [#194]: https://github.com/informalsystems/ibc-rs/issues/194
-[ibc/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics24_host
+[ibc/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics24_host
 [#168]: https://github.com/informalsystems/ibc-rs/issues/168
-[ibc/ics07]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics07_tendermint
+[ibc/ics07]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/clients/ics07_tendermint
 
 ## v0.0.2
 
