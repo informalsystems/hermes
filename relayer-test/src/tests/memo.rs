@@ -5,7 +5,7 @@ use serde_json as json;
 use tracing::{debug, info};
 
 use crate::error::Error;
-use crate::framework::base::TestWithRelayerConfigOverride;
+use crate::framework::binary::chain::TestWithRelayerConfigOverride;
 use crate::framework::binary::channel::{run_binary_channel_test, BinaryChannelTest};
 use crate::framework::overrides::{with_overrides, OnlyOverrideRelayerConfig};
 use crate::ibc::denom::derive_ibc_denom;

@@ -5,8 +5,10 @@ use crate::bootstrap::pair::boostrap_chain_pair;
 use crate::chain::builder::ChainBuilder;
 use crate::config::TestConfig;
 use crate::error::Error;
-use crate::framework::base::{run_basic_test, BasicTest, TestWithRelayerConfigOverride};
-use crate::framework::overrides::TestWithOverrides;
+use crate::framework::base::{run_basic_test, BasicTest};
+use crate::framework::overrides::{
+    HasOverrideRelayerConfig, OnlyOverrideChannelPorts, OverrideNone, TestWithOverrides,
+};
 use crate::types::binary::chains::ChainDeployment;
 
 pub fn run_binary_chain_test<Test>(test: Test) -> Result<(), Error>
@@ -30,6 +32,10 @@ where
     run_basic_test(RunOwnedBinaryChainTest(test))
 }
 
+pub trait TestWithRelayerConfigOverride {
+    fn modify_relayer_config(&self, _config: &mut Config) {}
+}
+
 pub trait BinaryChainTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -43,6 +49,20 @@ pub trait OwnedBinaryChainTest {
         deployment: ChainDeployment<ChainA, ChainB>,
     ) -> Result<(), Error>;
 }
+
+impl<Override, Test> TestWithRelayerConfigOverride for TestWithOverrides<Override, Test>
+where
+    Test: TestWithRelayerConfigOverride,
+    Override: HasOverrideRelayerConfig,
+{
+    fn modify_relayer_config(&self, config: &mut Config) {
+        self.test.modify_relayer_config(config)
+    }
+}
+
+impl<Test> TestWithRelayerConfigOverride for TestWithOverrides<OverrideNone, Test> {}
+
+impl<Test> TestWithRelayerConfigOverride for TestWithOverrides<OnlyOverrideChannelPorts, Test> {}
 
 struct RunOwnedBinaryChainTest<Test>(Test);
 
