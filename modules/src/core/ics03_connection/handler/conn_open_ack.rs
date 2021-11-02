@@ -33,6 +33,7 @@ pub(crate) fn process(
     let counterparty_matches =
         if let Some(counterparty_connection_id) = conn_end.counterparty().connection_id() {
             &msg.counterparty_connection_id == counterparty_connection_id
+            // TODO(hu55a1n1): check client_id as well
         } else {
             true
         };
@@ -42,16 +43,18 @@ pub(crate) fn process(
         return Err(Error::connection_mismatch(msg.connection_id().clone()));
     }
 
+    // The counterparty is the local chain.
+    let counterparty = Counterparty::new(
+        conn_end.client_id().clone(), // The local client identifier.
+        Some(msg.counterparty_connection_id().clone()), // This chain's connection id as known on counterparty.
+        ctx.commitment_prefix(),                        // Local commitment prefix.
+    );
+
     // Proof verification.
     let expected_conn = ConnectionEnd::new(
         State::TryOpen,
         conn_end.counterparty().client_id().clone(),
-        Counterparty::new(
-            // The counterparty is the local chain.
-            conn_end.client_id().clone(), // The local client identifier.
-            Some(msg.counterparty_connection_id().clone()), // This chain's connection id as known on counterparty.
-            ctx.commitment_prefix(),                        // Local commitment prefix.
-        ),
+        counterparty.clone(),
         vec![msg.version().clone()],
         conn_end.delay_period(),
     );
@@ -69,6 +72,7 @@ pub(crate) fn process(
 
     conn_end.set_state(State::Open);
     conn_end.set_version(msg.version().clone());
+    conn_end.set_counterparty(counterparty);
 
     let result = ConnectionResult {
         connection_id: msg.connection_id().clone(),
