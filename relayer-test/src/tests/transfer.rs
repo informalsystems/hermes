@@ -5,13 +5,13 @@ use crate::bootstrap::deployment::ChainDeployment;
 use crate::error::Error;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::relayer::channel::Channel;
-use crate::traits::base::NoTestConfig;
 use crate::traits::binary::channel::{run_two_way_binary_channel_test, BinaryChannelTestCase};
+use crate::traits::overrides::{with_overrides, OverrideNone};
 use crate::util::random::random_u64_range;
 
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
-    run_two_way_binary_channel_test(NoTestConfig(IbcTransferTest))
+    run_two_way_binary_channel_test(with_overrides(OverrideNone, IbcTransferTest))
 }
 
 struct IbcTransferTest;

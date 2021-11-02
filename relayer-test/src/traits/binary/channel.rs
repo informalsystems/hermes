@@ -8,7 +8,10 @@ use crate::error::Error;
 use crate::relayer::channel::{bootstrap_channel, Channel};
 use crate::tagged::*;
 
-use super::super::base::{ConfigurableTestCase, NoTestConfig};
+use super::super::base::ConfigurableTestCase;
+use super::super::overrides::{
+    HasOverrideChannelPorts, OnlyOverrideRelayerConfig, OverrideNone, TestWithOverrides,
+};
 use super::chain::{run_owned_binary_chain_test, OwnedBinaryChainTestCase};
 
 pub fn run_binary_channel_test<Test>(test: Test) -> Result<(), Error>
@@ -64,15 +67,33 @@ struct RunBinaryChannelTest<Test>(Test);
 
 struct RunTwoWayBinaryChannelTest<Test>(Test);
 
-impl<Test> TestCaseWithChannelPorts for NoTestConfig<Test> {}
+impl<Override, Test> TestCaseWithChannelPorts for TestWithOverrides<Override, Test>
+where
+    Override: HasOverrideChannelPorts,
+    Test: TestCaseWithChannelPorts,
+{
+    fn channel_port_a(&self) -> String {
+        self.test.channel_port_a()
+    }
 
-impl<Test: OwnedBinaryChannelTestCase> OwnedBinaryChannelTestCase for NoTestConfig<Test> {
+    fn channel_port_b(&self) -> String {
+        self.test.channel_port_b()
+    }
+}
+
+impl<Test> TestCaseWithChannelPorts for TestWithOverrides<OverrideNone, Test> {}
+
+impl<Test> TestCaseWithChannelPorts for TestWithOverrides<OnlyOverrideRelayerConfig, Test> {}
+
+impl<Override, Test: OwnedBinaryChannelTestCase> OwnedBinaryChannelTestCase
+    for TestWithOverrides<Override, Test>
+{
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         chains: ChainDeployment<ChainA, ChainB>,
         channels: Channel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        self.0.run(chains, channels)
+        self.test.run(chains, channels)
     }
 }
 
@@ -106,13 +127,15 @@ impl<Test: ConfigurableTestCase> ConfigurableTestCase for RunOwnedBinaryChannelT
     }
 }
 
-impl<Test: BinaryChannelTestCase> BinaryChannelTestCase for NoTestConfig<Test> {
+impl<Override, Test: BinaryChannelTestCase> BinaryChannelTestCase
+    for TestWithOverrides<Override, Test>
+{
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         chains: &ChainDeployment<ChainA, ChainB>,
         channels: &Channel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        self.0.run(chains, channels)
+        self.test.run(chains, channels)
     }
 }
 

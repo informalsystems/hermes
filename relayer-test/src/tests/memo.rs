@@ -9,15 +9,14 @@ use crate::error::Error;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::relayer::channel::Channel;
 use crate::traits::base::ConfigurableTestCase;
-use crate::traits::binary::channel::{
-    run_binary_channel_test, BinaryChannelTestCase, TestCaseWithChannelPorts,
-};
+use crate::traits::binary::channel::{run_binary_channel_test, BinaryChannelTestCase};
+use crate::traits::overrides::{with_overrides, OnlyOverrideRelayerConfig};
 use crate::util::random::{random_string, random_u64_range};
 
 #[test]
 fn test_memo() -> Result<(), Error> {
     let memo = Memo::new(&random_string());
-    run_binary_channel_test(MemoTest { memo })
+    run_binary_channel_test(with_overrides(OnlyOverrideRelayerConfig, MemoTest { memo }))
 }
 
 struct MemoTest {
@@ -31,8 +30,6 @@ impl ConfigurableTestCase for MemoTest {
         }
     }
 }
-
-impl TestCaseWithChannelPorts for MemoTest {}
 
 impl BinaryChannelTestCase for MemoTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(

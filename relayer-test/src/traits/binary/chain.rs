@@ -7,7 +7,8 @@ use crate::chain::builder::ChainBuilder;
 use crate::config::TestConfig;
 use crate::error::Error;
 
-use super::super::base::{run_basic_test, BasicTestCase, ConfigurableTestCase, NoTestConfig};
+use super::super::base::{run_basic_test, BasicTestCase, ConfigurableTestCase};
+use super::super::overrides::TestWithOverrides;
 
 pub fn run_binary_chain_test<Test>(test: Test) -> Result<(), Error>
 where
@@ -65,21 +66,25 @@ where
     }
 }
 
-impl<Test: OwnedBinaryChainTestCase> OwnedBinaryChainTestCase for NoTestConfig<Test> {
+impl<Overrides, Test: OwnedBinaryChainTestCase> OwnedBinaryChainTestCase
+    for TestWithOverrides<Overrides, Test>
+{
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         deployment: ChainDeployment<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        self.0.run(deployment)
+        self.test.run(deployment)
     }
 }
 
-impl<Test: BinaryChainTestCase> BinaryChainTestCase for NoTestConfig<Test> {
+impl<Overrides, Test: BinaryChainTestCase> BinaryChainTestCase
+    for TestWithOverrides<Overrides, Test>
+{
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         deployment: &ChainDeployment<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        self.0.run(deployment)
+        self.test.run(deployment)
     }
 }
 
