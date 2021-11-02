@@ -4,13 +4,13 @@ use ibc_relayer::config::{types::Memo, Config};
 use serde_json as json;
 use tracing::{debug, info};
 
-use crate::bootstrap::deployment::ChainDeployment;
 use crate::error::Error;
 use crate::ibc::denom::derive_ibc_denom;
-use crate::relayer::channel::Channel;
 use crate::traits::base::ConfigurableTestCase;
 use crate::traits::binary::channel::{run_binary_channel_test, BinaryChannelTestCase};
 use crate::traits::overrides::{with_overrides, OnlyOverrideRelayerConfig};
+use crate::types::binary::chains::ChainDeployment;
+use crate::types::binary::channel::Channel;
 use crate::util::random::{random_string, random_u64_range};
 
 #[test]

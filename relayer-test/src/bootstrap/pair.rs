@@ -10,13 +10,13 @@ use tracing::info;
 
 use crate::bootstrap::single::bootstrap_single_chain;
 use crate::chain::builder::ChainBuilder;
-use crate::chain::wallet::Wallet;
 use crate::tagged::*;
+use crate::types::wallet::Wallet;
 
-use super::client_server::ChainClientServer;
-use super::deployment::{ChainDeployment, SupervisorCmdSender};
-use super::running_node::RunningNode;
-use super::wallets::ChainWallets;
+use crate::types::binary::chains::{ChainDeployment, SupervisorCmdSender};
+use crate::types::single::client_server::ChainClientServer;
+use crate::types::single::node::RunningNode;
+use crate::types::wallets::ChainWallets;
 
 fn add_key_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,

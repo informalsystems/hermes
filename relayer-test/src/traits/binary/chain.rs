@@ -1,11 +1,11 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 
-use crate::bootstrap::deployment::ChainDeployment;
 use crate::bootstrap::pair::boostrap_chain_pair;
 use crate::chain::builder::ChainBuilder;
 use crate::config::TestConfig;
 use crate::error::Error;
+use crate::types::binary::chains::ChainDeployment;
 
 use super::super::base::{run_basic_test, BasicTestCase, ConfigurableTestCase};
 use super::super::overrides::TestWithOverrides;

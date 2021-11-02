@@ -1,5 +1,5 @@
-use crate::chain::wallet::Wallet;
 use crate::tagged::mono::Tagged;
+use crate::types::wallet::Wallet;
 
 pub struct ChainWallets {
     pub validator: Wallet,

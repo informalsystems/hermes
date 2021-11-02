@@ -6,11 +6,11 @@ use ibc_relayer::config;
 use ibc_relayer::keyring::Store;
 use tendermint_rpc::Url;
 
-use super::wallets::ChainWallets;
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
-use crate::process::ChildProcess;
 use crate::tagged::*;
+use crate::types::process::ChildProcess;
+use crate::types::wallets::ChainWallets;
 
 pub struct RunningNode {
     pub chain_driver: ChainDriver,

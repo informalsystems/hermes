@@ -3,10 +3,10 @@ use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 
-use crate::bootstrap::deployment::ChainDeployment;
+use crate::bootstrap::channel::bootstrap_channel_with_chains;
 use crate::error::Error;
-use crate::relayer::channel::{bootstrap_channel, Channel};
-use crate::tagged::*;
+use crate::types::binary::chains::ChainDeployment;
+use crate::types::binary::channel::Channel;
 
 use super::super::base::ConfigurableTestCase;
 use super::super::overrides::{
@@ -105,15 +105,10 @@ where
         &self,
         chains: ChainDeployment<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let port_a = DualTagged::new(PortId::from_str(&self.0.channel_port_a())?);
-        let port_b = DualTagged::new(PortId::from_str(&self.0.channel_port_b())?);
+        let port_a = PortId::from_str(&self.0.channel_port_a())?;
+        let port_b = PortId::from_str(&self.0.channel_port_b())?;
 
-        let channels = bootstrap_channel(
-            &chains.client_b_to_a,
-            &chains.client_a_to_b,
-            &port_a.as_ref(),
-            &port_b.as_ref(),
-        )?;
+        let channels = bootstrap_channel_with_chains(&chains, &port_a, &port_b)?;
 
         self.0.run(chains, channels)?;
 

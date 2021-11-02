@@ -11,11 +11,11 @@ use std::str;
 use toml;
 use tracing::{debug, trace};
 
-use super::wallet::{Wallet, WalletAddress, WalletId};
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::process::ChildProcess;
 use crate::tagged::*;
+use crate::types::process::ChildProcess;
+use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 use crate::util::file::pipe_to_file;
 use crate::util::random::random_u32;
 use crate::util::retry::assert_eventually_succeed;

@@ -7,7 +7,7 @@ use ibc_relayer::supervisor::cmd::SupervisorCmd;
 use std::cell::Cell;
 use tracing::info;
 
-use super::client_server::ChainClientServer;
+use crate::types::single::client_server::ChainClientServer;
 
 pub struct ChainDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub supervisor_cmd_sender: SupervisorCmdSender,

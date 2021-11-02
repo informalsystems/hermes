@@ -1,11 +1,11 @@
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::chain::handle::ChainHandle;
 
-use super::running_node::RunningNode;
-use super::wallets::ChainWallets;
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
 use crate::tagged::*;
+use crate::types::single::node::RunningNode;
+use crate::types::wallets::ChainWallets;
 
 pub struct ChainClientServer<ChainA: ChainHandle> {
     pub handle: ChainA,

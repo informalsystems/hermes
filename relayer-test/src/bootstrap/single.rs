@@ -9,8 +9,8 @@ use crate::tagged::mono::Tagged as MonoTagged;
 use crate::tagged::tag::Tag;
 use crate::util::random::{random_u32, random_u64_range};
 
-use super::running_node::RunningNode;
-use super::wallets::ChainWallets;
+use crate::types::single::node::RunningNode;
+use crate::types::wallets::ChainWallets;
 
 pub fn bootstrap_single_chain(
     builder: &ChainBuilder,

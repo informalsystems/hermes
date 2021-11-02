@@ -4,10 +4,9 @@ pub mod config;
 pub mod error;
 pub mod ibc;
 pub mod init;
-pub mod process;
-pub mod relayer;
 pub mod tagged;
 pub mod traits;
+pub mod types;
 pub mod util;
 
 #[cfg(test)]
