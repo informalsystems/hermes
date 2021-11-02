@@ -13,7 +13,7 @@ use crate::chain::builder::ChainBuilder;
 use crate::tagged::*;
 use crate::types::wallet::Wallet;
 
-use crate::types::binary::chains::{ChainDeployment, SupervisorCmdSender};
+use crate::types::binary::chains::{ConnectedChains, SupervisorCmdSender};
 use crate::types::single::client_server::ChainClientServer;
 use crate::types::single::node::RunningNode;
 use crate::types::wallets::ChainWallets;
@@ -75,7 +75,7 @@ fn spawn_chain_handle(
 pub fn boostrap_chain_pair(
     builder: &ChainBuilder,
     config_modifier: impl FnOnce(&mut Config),
-) -> Result<ChainDeployment<impl ChainHandle, impl ChainHandle>, Error> {
+) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error> {
     let node_a = bootstrap_single_chain(&builder)?;
     let node_b = bootstrap_single_chain(&builder)?;
 
@@ -100,7 +100,7 @@ pub fn boostrap_chain_pair(
     let client_a_to_b = ForeignClient::new(side_b.handle.clone(), side_a.handle.clone())?;
     let client_b_to_a = ForeignClient::new(side_a.handle.clone(), side_b.handle.clone())?;
 
-    Ok(ChainDeployment {
+    Ok(ConnectedChains {
         supervisor_cmd_sender,
         config,
         client_a_to_b,

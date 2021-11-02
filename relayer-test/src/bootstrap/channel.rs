@@ -8,11 +8,11 @@ use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::tagged::*;
-use crate::types::binary::chains::ChainDeployment;
+use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
 
 pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chains: &ChainDeployment<ChainA, ChainB>,
+    chains: &ConnectedChains<ChainA, ChainB>,
     port_a: &PortId,
     port_b: &PortId,
 ) -> Result<Channel<ChainA, ChainB>, Error> {

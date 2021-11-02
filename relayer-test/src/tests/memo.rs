@@ -9,7 +9,7 @@ use crate::framework::binary::chain::TestWithRelayerConfigOverride;
 use crate::framework::binary::channel::{run_binary_channel_test, BinaryChannelTest};
 use crate::framework::overrides::{with_overrides, OnlyOverrideRelayerConfig};
 use crate::ibc::denom::derive_ibc_denom;
-use crate::types::binary::chains::ChainDeployment;
+use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
 use crate::util::random::{random_string, random_u64_range};
 
@@ -34,7 +34,7 @@ impl TestWithRelayerConfigOverride for MemoTest {
 impl BinaryChannelTest for MemoTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        chains: &ChainDeployment<ChainA, ChainB>,
+        chains: &ConnectedChains<ChainA, ChainB>,
         channel: &Channel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         info!(

@@ -11,7 +11,7 @@ use crate::error::Error;
 use crate::framework::overrides::{
     HasOverrideChannelPorts, OnlyOverrideRelayerConfig, OverrideNone, TestWithOverrides,
 };
-use crate::types::binary::chains::ChainDeployment;
+use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
 
 pub fn run_binary_channel_test<Test>(test: Test) -> Result<(), Error>
@@ -38,7 +38,7 @@ where
 pub trait BinaryChannelTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        chains: &ChainDeployment<ChainA, ChainB>,
+        chains: &ConnectedChains<ChainA, ChainB>,
         channels: &Channel<ChainA, ChainB>,
     ) -> Result<(), Error>;
 }
@@ -46,7 +46,7 @@ pub trait BinaryChannelTest {
 pub trait OwnedBinaryChannelTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        chains: ChainDeployment<ChainA, ChainB>,
+        chains: ConnectedChains<ChainA, ChainB>,
         channels: Channel<ChainA, ChainB>,
     ) -> Result<(), Error>;
 }
@@ -90,7 +90,7 @@ impl<Override, Test: OwnedBinaryChannelTest> OwnedBinaryChannelTest
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        chains: ChainDeployment<ChainA, ChainB>,
+        chains: ConnectedChains<ChainA, ChainB>,
         channels: Channel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         self.test.run(chains, channels)
@@ -103,7 +103,7 @@ where
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        chains: ChainDeployment<ChainA, ChainB>,
+        chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let port_a = PortId::from_str(&self.0.channel_port_a())?;
         let port_b = PortId::from_str(&self.0.channel_port_b())?;
@@ -127,7 +127,7 @@ impl<Test: TestWithRelayerConfigOverride> TestWithRelayerConfigOverride
 impl<Override, Test: BinaryChannelTest> BinaryChannelTest for TestWithOverrides<Override, Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        chains: &ChainDeployment<ChainA, ChainB>,
+        chains: &ConnectedChains<ChainA, ChainB>,
         channels: &Channel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         self.test.run(chains, channels)
@@ -137,7 +137,7 @@ impl<Override, Test: BinaryChannelTest> BinaryChannelTest for TestWithOverrides<
 impl<Test: BinaryChannelTest> OwnedBinaryChannelTest for RunBinaryChannelTest<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        chains: ChainDeployment<ChainA, ChainB>,
+        chains: ConnectedChains<ChainA, ChainB>,
         channels: Channel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         self.0.run(&chains, &channels)
@@ -167,7 +167,7 @@ impl<Test: TestWithRelayerConfigOverride> TestWithRelayerConfigOverride
 impl<Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChannelTest<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        chains: ChainDeployment<ChainA, ChainB>,
+        chains: ConnectedChains<ChainA, ChainB>,
         channels: Channel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         self.0.run(&chains, &channels)?;

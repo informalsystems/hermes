@@ -9,7 +9,7 @@ use tracing::info;
 
 use crate::types::single::client_server::ChainClientServer;
 
-pub struct ChainDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
+pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub supervisor_cmd_sender: SupervisorCmdSender,
 
     pub side_a: ChainClientServer<ChainA>,
@@ -23,9 +23,9 @@ pub struct ChainDeployment<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub client_b_to_a: ForeignClient<ChainA, ChainB>,
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> ChainDeployment<ChainA, ChainB> {
-    pub fn flip(self) -> ChainDeployment<ChainB, ChainA> {
-        ChainDeployment {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
+    pub fn flip(self) -> ConnectedChains<ChainB, ChainA> {
+        ConnectedChains {
             supervisor_cmd_sender: self.supervisor_cmd_sender,
             config: self.config,
             client_a_to_b: self.client_b_to_a,
