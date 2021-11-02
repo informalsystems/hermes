@@ -21,11 +21,11 @@ For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commi
 
 ### BUG FIXES
 
-- Fix for client state clock drift ([#1445](https://github.com/informalsystems/ibc-rs/issues/1445)):
+- Fix for "new header has a time from the future" chain error which would arise due to clock drift ([#1445](https://github.com/informalsystems/ibc-rs/issues/1445)):
   * Added new config param `max_block_time` to prevent the problem for appearing in newly-created clients.
   * Added a synchronous waiting in client update logic to allow destination chain to reach a new height
     before submitting a client update message.
-- Fix for packet timeout computation 
+- Ensure Hermes does not send timeouts for packets that have not expired yet
     ([#1504](https://github.com/informalsystems/ibc-rs/issues/1504))
 
 ### IMPROVEMENTS
