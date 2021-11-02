@@ -5,40 +5,39 @@ use crate::bootstrap::pair::boostrap_chain_pair;
 use crate::chain::builder::ChainBuilder;
 use crate::config::TestConfig;
 use crate::error::Error;
+use crate::framework::base::{run_basic_test, BasicTest, TestWithRelayerConfigOverride};
+use crate::framework::overrides::TestWithOverrides;
 use crate::types::binary::chains::ChainDeployment;
-
-use super::super::base::{run_basic_test, BasicTestCase, ConfigurableTestCase};
-use super::super::overrides::TestWithOverrides;
 
 pub fn run_binary_chain_test<Test>(test: Test) -> Result<(), Error>
 where
-    Test: BinaryChainTestCase + ConfigurableTestCase,
+    Test: BinaryChainTest + TestWithRelayerConfigOverride,
 {
     run_owned_binary_chain_test(RunBinaryChainTest(test))
 }
 
 pub fn run_two_way_binary_chain_test<Test>(test: Test) -> Result<(), Error>
 where
-    Test: BinaryChainTestCase + ConfigurableTestCase,
+    Test: BinaryChainTest + TestWithRelayerConfigOverride,
 {
     run_owned_binary_chain_test(RunTwoWayBinaryChainTest(test))
 }
 
 pub fn run_owned_binary_chain_test<Test>(test: Test) -> Result<(), Error>
 where
-    Test: OwnedBinaryChainTestCase + ConfigurableTestCase,
+    Test: OwnedBinaryChainTest + TestWithRelayerConfigOverride,
 {
     run_basic_test(RunOwnedBinaryChainTest(test))
 }
 
-pub trait BinaryChainTestCase {
+pub trait BinaryChainTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         deployment: &ChainDeployment<ChainA, ChainB>,
     ) -> Result<(), Error>;
 }
 
-pub trait OwnedBinaryChainTestCase {
+pub trait OwnedBinaryChainTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         deployment: ChainDeployment<ChainA, ChainB>,
@@ -51,9 +50,9 @@ struct RunBinaryChainTest<Test>(Test);
 
 struct RunTwoWayBinaryChainTest<Test>(Test);
 
-impl<Test> BasicTestCase for RunOwnedBinaryChainTest<Test>
+impl<Test> BasicTest for RunOwnedBinaryChainTest<Test>
 where
-    Test: OwnedBinaryChainTestCase + ConfigurableTestCase,
+    Test: OwnedBinaryChainTest + TestWithRelayerConfigOverride,
 {
     fn run(&self, _config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
         let deployment = boostrap_chain_pair(&builder, |config| {
@@ -66,7 +65,7 @@ where
     }
 }
 
-impl<Overrides, Test: OwnedBinaryChainTestCase> OwnedBinaryChainTestCase
+impl<Overrides, Test: OwnedBinaryChainTest> OwnedBinaryChainTest
     for TestWithOverrides<Overrides, Test>
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -77,9 +76,7 @@ impl<Overrides, Test: OwnedBinaryChainTestCase> OwnedBinaryChainTestCase
     }
 }
 
-impl<Overrides, Test: BinaryChainTestCase> BinaryChainTestCase
-    for TestWithOverrides<Overrides, Test>
-{
+impl<Overrides, Test: BinaryChainTest> BinaryChainTest for TestWithOverrides<Overrides, Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         deployment: &ChainDeployment<ChainA, ChainB>,
@@ -88,7 +85,7 @@ impl<Overrides, Test: BinaryChainTestCase> BinaryChainTestCase
     }
 }
 
-impl<Test: BinaryChainTestCase> OwnedBinaryChainTestCase for RunBinaryChainTest<Test> {
+impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunBinaryChainTest<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         deployment: ChainDeployment<ChainA, ChainB>,
@@ -101,13 +98,15 @@ impl<Test: BinaryChainTestCase> OwnedBinaryChainTestCase for RunBinaryChainTest<
     }
 }
 
-impl<Test: ConfigurableTestCase> ConfigurableTestCase for RunBinaryChainTest<Test> {
+impl<Test: TestWithRelayerConfigOverride> TestWithRelayerConfigOverride
+    for RunBinaryChainTest<Test>
+{
     fn modify_relayer_config(&self, config: &mut Config) {
         self.0.modify_relayer_config(config);
     }
 }
 
-impl<Test: BinaryChainTestCase> OwnedBinaryChainTestCase for RunTwoWayBinaryChainTest<Test> {
+impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTest<Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         deployment: ChainDeployment<ChainA, ChainB>,
@@ -130,7 +129,9 @@ impl<Test: BinaryChainTestCase> OwnedBinaryChainTestCase for RunTwoWayBinaryChai
     }
 }
 
-impl<Test: ConfigurableTestCase> ConfigurableTestCase for RunTwoWayBinaryChainTest<Test> {
+impl<Test: TestWithRelayerConfigOverride> TestWithRelayerConfigOverride
+    for RunTwoWayBinaryChainTest<Test>
+{
     fn modify_relayer_config(&self, config: &mut Config) {
         self.0.modify_relayer_config(config);
     }

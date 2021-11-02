@@ -13,35 +13,35 @@ pub fn run_test(test: impl TestCase) -> Result<(), Error> {
     test.run()
 }
 
-pub fn run_basic_test(test: impl BasicTestCase) -> Result<(), Error> {
-    run_test(RunBasicTestCase(test))
+pub fn run_basic_test(test: impl BasicTest) -> Result<(), Error> {
+    run_test(RunBasicTest(test))
 }
 
 pub trait TestCase {
     fn run(&self) -> Result<(), Error>;
 }
 
-pub trait BasicTestCase {
+pub trait BasicTest {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error>;
 }
 
-pub trait ConfigurableTestCase {
+pub trait TestWithRelayerConfigOverride {
     fn modify_relayer_config(&self, _config: &mut Config) {}
 }
 
-struct RunBasicTestCase<Test>(Test);
+struct RunBasicTest<Test>(Test);
 
-impl<Test: BasicTestCase> TestCase for RunBasicTestCase<Test> {
+impl<Test: BasicTest> TestCase for RunBasicTest<Test> {
     fn run(&self) -> Result<(), Error> {
         let config = init_test()?;
         let builder = ChainBuilder::new_with_config(&config);
-        BasicTestCase::run(&self.0, &config, &builder)
+        BasicTest::run(&self.0, &config, &builder)
     }
 }
 
-impl<Override, Test> ConfigurableTestCase for TestWithOverrides<Override, Test>
+impl<Override, Test> TestWithRelayerConfigOverride for TestWithOverrides<Override, Test>
 where
-    Test: ConfigurableTestCase,
+    Test: TestWithRelayerConfigOverride,
     Override: HasOverrideRelayerConfig,
 {
     fn modify_relayer_config(&self, config: &mut Config) {
@@ -49,6 +49,6 @@ where
     }
 }
 
-impl<Test> ConfigurableTestCase for TestWithOverrides<OverrideNone, Test> {}
+impl<Test> TestWithRelayerConfigOverride for TestWithOverrides<OverrideNone, Test> {}
 
-impl<Test> ConfigurableTestCase for TestWithOverrides<OnlyOverrideChannelPorts, Test> {}
+impl<Test> TestWithRelayerConfigOverride for TestWithOverrides<OnlyOverrideChannelPorts, Test> {}

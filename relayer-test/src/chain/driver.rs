@@ -87,8 +87,9 @@ impl ChainDriver {
 
     pub fn exec(&self, args: &[&str]) -> Result<String, Error> {
         debug!(
-            "Executing command {} with arguments {:?}",
-            self.command_path, args
+            "Executing command: {} {}",
+            self.command_path,
+            itertools::join(args, " ")
         );
 
         let output = Command::new(&self.command_path).args(args).output()?;

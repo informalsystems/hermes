@@ -2,9 +2,9 @@ use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
 use crate::error::Error;
+use crate::framework::binary::channel::{run_two_way_binary_channel_test, BinaryChannelTest};
+use crate::framework::overrides::{with_overrides, OverrideNone};
 use crate::ibc::denom::derive_ibc_denom;
-use crate::traits::binary::channel::{run_two_way_binary_channel_test, BinaryChannelTestCase};
-use crate::traits::overrides::{with_overrides, OverrideNone};
 use crate::types::binary::chains::ChainDeployment;
 use crate::types::binary::channel::Channel;
 use crate::util::random::random_u64_range;
@@ -16,7 +16,7 @@ fn test_ibc_transfer() -> Result<(), Error> {
 
 struct IbcTransferTest;
 
-impl BinaryChannelTestCase for IbcTransferTest {
+impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         chains: &ChainDeployment<ChainA, ChainB>,
@@ -31,7 +31,13 @@ impl BinaryChannelTestCase for IbcTransferTest {
 
         let a_to_b_amount = random_u64_range(1000, 5000);
 
-        info!("Sending IBC transfer");
+        info!(
+            "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
+            chains.side_a.chain_id(),
+            chains.side_b.chain_id(),
+            a_to_b_amount,
+            denom_a
+        );
 
         chains.side_a.chain_driver().transfer_token(
             &channel.port_a,
@@ -49,8 +55,8 @@ impl BinaryChannelTestCase for IbcTransferTest {
         )?;
 
         info!(
-            "Waiting for user on chain B to receive transfer in denom {}",
-            denom_b.value().0
+            "Waiting for user on chain B to receive IBC transferred amount of {} {}",
+            a_to_b_amount, denom_b
         );
 
         chains.side_a.chain_driver().assert_eventual_wallet_amount(
@@ -77,6 +83,14 @@ impl BinaryChannelTestCase for IbcTransferTest {
             .query_balance(&chains.side_a.wallets().user2().address(), &denom_a)?;
 
         let b_to_a_amount = random_u64_range(500, a_to_b_amount);
+
+        info!(
+            "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
+            chains.side_b.chain_id(),
+            chains.side_a.chain_id(),
+            b_to_a_amount,
+            denom_b
+        );
 
         chains.side_b.chain_driver().transfer_token(
             &channel.port_b,

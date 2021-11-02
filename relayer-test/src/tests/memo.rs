@@ -5,10 +5,10 @@ use serde_json as json;
 use tracing::{debug, info};
 
 use crate::error::Error;
+use crate::framework::base::TestWithRelayerConfigOverride;
+use crate::framework::binary::channel::{run_binary_channel_test, BinaryChannelTest};
+use crate::framework::overrides::{with_overrides, OnlyOverrideRelayerConfig};
 use crate::ibc::denom::derive_ibc_denom;
-use crate::traits::base::ConfigurableTestCase;
-use crate::traits::binary::channel::{run_binary_channel_test, BinaryChannelTestCase};
-use crate::traits::overrides::{with_overrides, OnlyOverrideRelayerConfig};
 use crate::types::binary::chains::ChainDeployment;
 use crate::types::binary::channel::Channel;
 use crate::util::random::{random_string, random_u64_range};
@@ -23,7 +23,7 @@ struct MemoTest {
     memo: Memo,
 }
 
-impl ConfigurableTestCase for MemoTest {
+impl TestWithRelayerConfigOverride for MemoTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         for mut chain in config.chains.iter_mut() {
             chain.memo_prefix = self.memo.clone();
@@ -31,7 +31,7 @@ impl ConfigurableTestCase for MemoTest {
     }
 }
 
-impl BinaryChannelTestCase for MemoTest {
+impl BinaryChannelTest for MemoTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         chains: &ChainDeployment<ChainA, ChainB>,
@@ -83,7 +83,7 @@ fn assert_tx_memo_equals(tx_info: &json::Value, expected_memo: &str) -> Result<(
 
     let memo_field = &tx_info["txs"][0]["tx"]["body"]["memo"];
 
-    debug!("memo field value: {}", memo_field);
+    info!("memo field value: {}", memo_field);
 
     let memo_str = memo_field
         .as_str()

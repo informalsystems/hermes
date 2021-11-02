@@ -1,3 +1,4 @@
+use core::fmt::{self, Display};
 use eyre::Report as Error;
 use ibc::applications::ics20_fungible_token_transfer as token_transfer;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
@@ -19,4 +20,10 @@ pub fn derive_ibc_denom<ChainA, ChainB>(
     )?;
 
     Ok(MonoTagged::new(Denom(res)))
+}
+
+impl Display for Denom {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.0)
+    }
 }
