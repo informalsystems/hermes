@@ -155,6 +155,16 @@ pub struct EventMonitor {
     rt: Arc<TokioRuntime>,
 }
 
+fn ibc_queries() -> Vec<Query> {
+    vec![
+        Query::eq("message.module", "ibc_client"),
+        Query::eq("message.module", "ibc_connection"),
+        Query::eq("message.module", "ibc_channel"),
+        // This will be needed when we send misbehavior evidence to full node
+        // Query::eq("message.module", "evidence"),
+    ]
+}
+
 impl EventMonitor {
     /// Create an event monitor, and connect to a node
     pub fn new(
@@ -174,7 +184,8 @@ impl EventMonitor {
         let websocket_driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
 
         // TODO: move them to config file(?)
-        let event_queries = vec![Query::from(EventType::Tx), Query::from(EventType::NewBlock)];
+        let mut event_queries = vec![Query::from(EventType::NewBlock)];
+        event_queries.append(&mut ibc_queries());
 
         let monitor = Self {
             rt,
