@@ -1485,7 +1485,7 @@ impl ChainEndpoint for CosmosSdkChain {
             r.packet_commitment_sequences = vec![];
             r
         } else {
-            // if >= v1.2 populate the field `packet_commitment_sequences`
+            // if >= v1.2 leave the field `packet_commitment_sequences` populated
             request
         };
 

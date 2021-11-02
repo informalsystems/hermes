@@ -3,6 +3,7 @@
 //! is captured in a domain-type semver format in [`Specs`].
 
 use flex_error::define_error;
+use tracing::trace;
 
 use ibc_proto::cosmos::base::tendermint::v1beta1::VersionInfo;
 
@@ -68,10 +69,13 @@ define_error! {
 impl TryFrom<VersionInfo> for Specs {
     type Error = Error;
 
-    fn try_from(value: VersionInfo) -> Result<Self, Self::Error> {
+    fn try_from(raw_version: VersionInfo) -> Result<Self, Self::Error> {
         // Get the Cosmos SDK version
-        let sdk_version = parse_sdk_version(&value)?;
-        let ibc_go_version = parse_ibc_go_version(&value)?;
+        let sdk_version = parse_sdk_version(&raw_version)?;
+        let ibc_go_version = parse_ibc_go_version(&raw_version)?;
+
+        trace!("parsed version specification for {} {}@{} -> SDK={}; Ibc-Go status={:?}",
+            raw_version.app_name, raw_version.version, raw_version.git_commit, sdk_version, ibc_go_version);
 
         Ok(Self {
             sdk_version,
