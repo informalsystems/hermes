@@ -1884,6 +1884,31 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok((target, supporting))
     }
+
+    fn query_module_version(&self, port_id: &PortId) -> String {
+        use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
+        use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
+        let mut client = self.block_on(QueryClient::connect(self.grpc_addr.clone()))
+            .map_err(Error::grpc_transport);
+        // .map_err(Error::grpc_transport)?;
+
+        let request = tonic::Request::new(QueryAppVersionRequest {
+            port_id: todo!(),
+            connection_id: todo!(),
+            ordering: todo!(),
+            counterparty: todo!(),
+            proposed_version: todo!(),
+        });
+
+        // let response = client.account(request).await;
+        // let resp_account = response
+        //     .map_err(Error::grpc_status)?
+        //     .into_inner()
+        //     .account
+        //     .unwrap();
+
+        "".into()
+    }
 }
 
 fn packet_query(request: &QueryPacketEventDataRequest, seq: Sequence) -> Query {
