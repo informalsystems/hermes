@@ -1,6 +1,6 @@
 /// MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
 /// ICS20 enabled chains. See ICS Spec here:
-/// https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#data-structures
+/// <https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures>
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgTransfer {
     /// the port on which the packet will be sent
@@ -53,7 +53,7 @@ pub mod msg_client {
     impl<T> MsgClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
@@ -105,24 +105,6 @@ pub mod msg_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
-}
-/// FungibleTokenPacketData defines a struct for the packet payload
-/// See FungibleTokenPacketData spec:
-/// https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#data-structures
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct FungibleTokenPacketData {
-    /// the token denomination to be transferred
-    #[prost(string, tag = "1")]
-    pub denom: ::prost::alloc::string::String,
-    /// the token amount to be transferred
-    #[prost(uint64, tag = "2")]
-    pub amount: u64,
-    /// the sender address
-    #[prost(string, tag = "3")]
-    pub sender: ::prost::alloc::string::String,
-    /// the recipient address on the destination chain
-    #[prost(string, tag = "4")]
-    pub receiver: ::prost::alloc::string::String,
 }
 /// DenomTrace contains the base denomination for ICS20 fungible tokens and the
 /// source tracing information path.
@@ -223,7 +205,7 @@ pub mod query_client {
     impl<T> QueryClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {

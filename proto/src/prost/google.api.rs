@@ -1,5 +1,5 @@
 /// Defines the HTTP configuration for an API service. It contains a list of
-/// [HttpRule][google.api.HttpRule], each specifying the mapping of an RPC method
+/// \[HttpRule][google.api.HttpRule\], each specifying the mapping of an RPC method
 /// to one or more HTTP REST API methods.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Http {
@@ -217,16 +217,16 @@ pub struct Http {
 ///
 /// If a variable contains exactly one path segment, such as `"{var}"` or
 /// `"{var=*}"`, when such a variable is expanded into a URL path, all characters
-/// except `[-_.~0-9a-zA-Z]` are percent-encoded. Such variables show up in the
+/// except `\[-_.~0-9a-zA-Z\]` are percent-encoded. Such variables show up in the
 /// Discovery Document as `{var}`.
 ///
 /// If a variable contains one or more path segments, such as `"{var=foo/*}"`
 /// or `"{var=**}"`, when such a variable is expanded into a URL path, all
-/// characters except `[-_.~/0-9a-zA-Z]` are percent-encoded. Such variables
+/// characters except `\[-_.~/0-9a-zA-Z\]` are percent-encoded. Such variables
 /// show up in the Discovery Document as `{+var}`.
 ///
 /// NOTE: While the single segment variable matches the semantics of
-/// [RFC 6570](https://tools.ietf.org/html/rfc6570) Section 3.2.2
+/// [RFC 6570](<https://tools.ietf.org/html/rfc6570>) Section 3.2.2
 /// Simple String Expansion, the multi segment variable **does not** match
 /// RFC 6570 Reserved Expansion. The reason is that the Reserved Expansion
 /// does not expand special characters like `?` and `#`, which would lead
@@ -238,7 +238,7 @@ pub struct Http {
 pub struct HttpRule {
     /// Selects methods to which this rule applies.
     ///
-    /// Refer to [selector][google.api.DocumentationRule.selector] for syntax details.
+    /// Refer to \[selector][google.api.DocumentationRule.selector\] for syntax details.
     #[prost(string, tag = "1")]
     pub selector: ::prost::alloc::string::String,
     /// The name of the request field whose value is mapped to the HTTP body, or
