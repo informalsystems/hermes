@@ -21,12 +21,12 @@ For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commi
 
 ### BUG FIXES
 
-- Fix for client state clock drift ([#1445]):
+- Fix for client state clock drift ([#1445](https://github.com/informalsystems/ibc-rs/issues/1445)):
   * Added new config param `max_block_time` to prevent the problem for appearing in newly-created clients.
   * Added a synchronous waiting in client update logic to allow destination chain to reach a new height
     before submitting a client update message.
-
-[#1445]: https://github.com/informalsystems/ibc-rs/issues/1445
+- Fix for packet timeout computation 
+    ([#1504](https://github.com/informalsystems/ibc-rs/issues/1504))
 
 ### IMPROVEMENTS
 
@@ -40,6 +40,9 @@ For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commi
     ([#1436](https://github.com/informalsystems/ibc-rs/issues/1436))
   - Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers
     ([#1460](https://github.com/informalsystems/ibc-rs/issues/1460))
+- [Relayer Library](relayer)
+  - Improve performance of misbehaviour checks triggered by an `UpdateClient` event
+    ([#1417](https://github.com/informalsystems/ibc-rs/issues/1417))
 
 ## v0.8.0-pre.1
 *October 22nd, 2021*
