@@ -1,5 +1,6 @@
 //! Utilities for extracting and parsing versioning information
-//! of Cosmos-SDK chains into a domain-type semver format.
+//! of Cosmos-SDK chains. The extracted version specification
+//! is captured in a domain-type semver format in [`Specs`].
 
 use flex_error::define_error;
 
@@ -21,16 +22,20 @@ use ibc_proto::cosmos::base::tendermint::v1beta1::VersionInfo;
 const SDK_MODULE_NAME: &str = "cosmos/cosmos-sdk";
 const IBC_GO_MODULE_NAME: &str = "cosmos/ibc-go";
 
-/// Captures the version specification of a chain.
-/// Assumes that the chain runs on the
-/// Cosmos SDK. Stores both the SDK version
-/// as well as the IBC-go module version (if existing).
+/// Captures the version(s) specification of different
+/// modules of a chain.
+///
+/// Assumes that the chain runs on Cosmos SDK.
+/// Stores both the SDK version as well as
+/// the IBC-go module version (if existing).
 pub struct Specs {
     pub sdk_version: semver::Version,
     pub ibc_go_version: Option<semver::Version>,
 }
 
 impl Specs {
+    /// Returns true if this version specifies that the
+    /// ibc-go module version precedes v1.2.
     pub fn ibc_go_pre_v1_2(&self) -> bool {
         match &self.ibc_go_version {
             Some(v) => v < &semver::Version::new(1, 2, 0),
