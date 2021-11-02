@@ -7,7 +7,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -35,7 +35,8 @@ impl Runnable for QueryConnectionsCmd {
         debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         let req = QueryConnectionsRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
