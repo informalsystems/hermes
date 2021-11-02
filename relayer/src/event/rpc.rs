@@ -23,6 +23,12 @@ pub fn get_all_events(
 
             vals.push((height, NewBlock::new(height).into()));
 
+            tracing::trace!(
+                "Extracted NewBlock {:?}, {:?}",
+                height,
+                block.clone().unwrap().header.time
+            );
+
             if let Some(events) = &result.events {
                 let ibc_events =
                     send_packet_from_block_events(height, events.clone().into_iter().collect());

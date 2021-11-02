@@ -1,5 +1,4 @@
 use alloc::sync::Arc;
-use core::cmp::Ordering;
 
 use crossbeam_channel as channel;
 use flex_error::{define_error, TraceError};
@@ -22,10 +21,7 @@ use ibc::{
     core::ics02_client::height::Height, core::ics24_host::identifier::ChainId, events::IbcEvent,
 };
 
-use crate::util::{
-    retry::{retry_count, retry_with_index, RetryResult},
-    stream::try_group_while,
-};
+use crate::util::retry::{retry_count, retry_with_index, RetryResult};
 
 mod retry_strategy {
     use crate::util::retry::clamp_total;
@@ -433,6 +429,8 @@ impl EventMonitor {
 
     /// Collect the IBC events from the subscriptions
     fn process_batch(&self, batch: EventBatch) -> Result<()> {
+        trace!("process_batch {:?}", batch);
+
         self.tx_batch
             .send(Ok(batch))
             .map_err(|_| Error::channel_send_failed())?;
@@ -457,42 +455,62 @@ fn stream_batches(
 ) -> impl Stream<Item = Result<EventBatch>> {
     let id = chain_id.clone();
 
-    // Collect IBC events from each RPC event
-    let events = subscriptions
+    subscriptions
         .map_ok(move |rpc_event| collect_events(&id, rpc_event))
         .map_err(Error::canceled_or_generic)
-        .try_flatten();
-
-    // Group events by height
-    let grouped = try_group_while(events, |(h0, _), (h1, _)| h0 == h1);
-
-    // Convert each group to a batch
-    grouped.map_ok(move |events| {
-        let height = events
-            .first()
-            .map(|(h, _)| h)
-            .copied()
-            .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
-
-        let mut events = events.into_iter().map(|(_, e)| e).collect();
-        sort_events(&mut events);
-
-        EventBatch {
-            height,
-            events,
-            chain_id: chain_id.clone(),
-        }
-    })
+        .try_flatten()
+        .map(move |e| match e {
+            Ok((height, event)) => Ok(EventBatch {
+                height,
+                events: vec![event],
+                chain_id: chain_id.clone(),
+            }),
+            Err(e) => Err(e),
+        })
 }
 
-/// Sort the given events by putting the NewBlock event first,
-/// and leaving the other events as is.
-fn sort_events(events: &mut Vec<IbcEvent>) {
-    events.sort_by(|a, b| match (a, b) {
-        (IbcEvent::NewBlock(_), _) => Ordering::Less,
-        _ => Ordering::Equal,
-    })
-}
+// fn stream_batches(
+//     subscriptions: Box<SubscriptionStream>,
+//     chain_id: ChainId,
+// ) -> impl Stream<Item = Result<EventBatch>> {
+//     let id = chain_id.clone();
+
+//     // Collect IBC events from each RPC event
+//     let events = subscriptions
+//         .map_ok(move |rpc_event| collect_events(&id, rpc_event))
+//         .map_err(Error::canceled_or_generic)
+//         .try_flatten();
+
+//     // Group events by height
+//     let grouped = try_group_while(events, |(h0, _), (h1, _)| h0 == h1);
+
+//     // Convert each group to a batch
+//     grouped.map_ok(move |events| {
+//         let height = events
+//             .first()
+//             .map(|(h, _)| h)
+//             .copied()
+//             .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
+
+//         let events = events.into_iter().map(|(_, e)| e).collect();
+//         sort_events(&mut events);
+
+//         EventBatch {
+//             height,
+//             events,
+//             chain_id: chain_id.clone(),
+//         }
+//     })
+// }
+
+// /// Sort the given events by putting the NewBlock event first,
+// /// and leaving the other events as is.
+// fn sort_events(events: &mut Vec<IbcEvent>) {
+//     events.sort_by(|a, b| match (a, b) {
+//         (IbcEvent::NewBlock(_), _) => Ordering::Less,
+//         _ => Ordering::Equal,
+//     })
+// }
 
 async fn run_driver(
     driver: WebSocketClientDriver,
