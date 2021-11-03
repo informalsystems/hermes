@@ -40,22 +40,22 @@ pub fn get_all_events(
             );
 
             for abci_event in &tx_result.result.events {
-                let query = result.query.clone();
-                if query == queries::ibc_client().to_string() {
+                let query = &result.query;
+                if *query == queries::ibc_client().to_string() {
                     if let Some(mut client_event) = ClientEvents::try_from_tx(abci_event) {
                         client_event.set_height(height);
                         tracing::trace!("extracted ibc_client event {:?}", client_event);
                         vals.push((height, client_event));
                     }
                 }
-                if query == queries::ibc_connection().to_string() {
+                if *query == queries::ibc_connection().to_string() {
                     if let Some(mut conn_event) = ConnectionEvents::try_from_tx(abci_event) {
                         conn_event.set_height(height);
                         tracing::trace!("extracted ibc_connection event {:?}", conn_event);
                         vals.push((height, conn_event));
                     }
                 }
-                if query == queries::ibc_channel().to_string() {
+                if *query == queries::ibc_channel().to_string() {
                     if let Some(mut chan_event) = ChannelEvents::try_from_tx(abci_event) {
                         chan_event.set_height(height);
                         tracing::trace!("extracted ibc_channel event {:?}", chan_event);
