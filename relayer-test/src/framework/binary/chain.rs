@@ -1,15 +1,14 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 
-use crate::bootstrap::pair::boostrap_chain_pair;
-use crate::chain::builder::ChainBuilder;
-use crate::config::TestConfig;
+use super::node::{run_binary_node_test, BinaryNodeTest};
+use crate::bootstrap::pair::boostrap_chain_pair_with_nodes;
 use crate::error::Error;
-use crate::framework::base::{run_basic_test, BasicTest};
 use crate::framework::overrides::{
     HasOverrideRelayerConfig, OnlyOverrideChannelPorts, OverrideNone, TestWithOverrides,
 };
 use crate::types::binary::chains::ConnectedChains;
+use crate::types::single::node::RunningNode;
 
 pub fn run_binary_chain_test<Test>(test: Test) -> Result<(), Error>
 where
@@ -29,7 +28,7 @@ pub fn run_owned_binary_chain_test<Test>(test: Test) -> Result<(), Error>
 where
     Test: OwnedBinaryChainTest + TestWithRelayerConfigOverride,
 {
-    run_basic_test(RunOwnedBinaryChainTest(test))
+    run_binary_node_test(RunOwnedBinaryChainTest(test))
 }
 
 pub trait TestWithRelayerConfigOverride {
@@ -70,16 +69,16 @@ struct RunBinaryChainTest<Test>(Test);
 
 struct RunTwoWayBinaryChainTest<Test>(Test);
 
-impl<Test> BasicTest for RunOwnedBinaryChainTest<Test>
+impl<Test> BinaryNodeTest for RunOwnedBinaryChainTest<Test>
 where
     Test: OwnedBinaryChainTest + TestWithRelayerConfigOverride,
 {
-    fn run(&self, _config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let deployment = boostrap_chain_pair(&builder, |config| {
+    fn run(&self, node_a: RunningNode, node_b: RunningNode) -> Result<(), Error> {
+        let chains = boostrap_chain_pair_with_nodes(node_a, node_b, |config| {
             self.0.modify_relayer_config(config);
         })?;
 
-        self.0.run(deployment)?;
+        self.0.run(chains)?;
 
         Ok(())
     }

@@ -79,13 +79,13 @@ pub fn boostrap_chain_pair(
     let node_a = bootstrap_single_chain(&builder)?;
     let node_b = bootstrap_single_chain(&builder)?;
 
-    boostrap_chain_pair_with_nodes(config_modifier, node_a, node_b)
+    boostrap_chain_pair_with_nodes(node_a, node_b, config_modifier)
 }
 
 pub fn boostrap_chain_pair_with_nodes(
-    config_modifier: impl FnOnce(&mut Config),
     node_a: RunningNode,
     node_b: RunningNode,
+    config_modifier: impl FnOnce(&mut Config),
 ) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error> {
     let mut config = Config::default();
 
