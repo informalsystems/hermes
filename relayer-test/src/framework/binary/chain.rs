@@ -2,7 +2,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use tracing::info;
 
-use super::node::{run_binary_node_test, BinaryNodeTest};
+use super::node::{run_owned_binary_node_test, OwnedBinaryNodeTest};
 use crate::bootstrap::binary::chain::boostrap_chain_pair_with_nodes;
 use crate::config::TestConfig;
 use crate::error::Error;
@@ -30,7 +30,7 @@ pub fn run_owned_binary_chain_test<Test>(test: Test) -> Result<(), Error>
 where
     Test: OwnedBinaryChainTest + TestWithRelayerConfigOverride,
 {
-    run_binary_node_test(RunOwnedBinaryChainTest(test))
+    run_owned_binary_node_test(RunOwnedBinaryChainTest(test))
 }
 
 pub trait TestWithRelayerConfigOverride {
@@ -59,7 +59,7 @@ struct RunBinaryChainTest<Test>(Test);
 
 struct RunTwoWayBinaryChainTest<Test>(Test);
 
-impl<Test> BinaryNodeTest for RunOwnedBinaryChainTest<Test>
+impl<Test> OwnedBinaryNodeTest for RunOwnedBinaryChainTest<Test>
 where
     Test: OwnedBinaryChainTest + TestWithRelayerConfigOverride,
 {
@@ -75,7 +75,7 @@ where
 
         self.0.run(config, chains)?;
 
-        // No use hanging the test on owned failures, as the chains and channels
+        // No use hanging the test on owned failures, as the chains
         // are dropped in the inner test already.
 
         Ok(())
