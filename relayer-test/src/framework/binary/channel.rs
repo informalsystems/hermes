@@ -4,7 +4,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
 use super::chain::{
-    run_owned_binary_chain_test, OwnedBinaryChainTest, TestWithRelayerConfigOverride,
+    run_owned_binary_chain_test, OwnedBinaryChainTest, RelayerConfigOverride, SupervisorOverride,
 };
 use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
 use crate::config::TestConfig;
@@ -18,7 +18,7 @@ pub fn run_binary_channel_test<Test, Overrides>(
 ) -> Result<(), Error>
 where
     Test: BinaryChannelTest,
-    Overrides: TestWithRelayerConfigOverride + TestWithChannelPortsOverride,
+    Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
     run_owned_binary_channel_test(&RunBinaryChannelTest { test }, overrides)
 }
@@ -29,7 +29,7 @@ pub fn run_two_way_binary_channel_test<Test, Overrides>(
 ) -> Result<(), Error>
 where
     Test: BinaryChannelTest,
-    Overrides: TestWithRelayerConfigOverride + TestWithChannelPortsOverride,
+    Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
     run_owned_binary_channel_test(&RunTwoWayBinaryChannelTest { test }, overrides)
 }
@@ -40,7 +40,7 @@ pub fn run_owned_binary_channel_test<Test, Overrides>(
 ) -> Result<(), Error>
 where
     Test: OwnedBinaryChannelTest,
-    Overrides: TestWithRelayerConfigOverride + TestWithChannelPortsOverride,
+    Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
     run_owned_binary_chain_test(&RunOwnedBinaryChannelTest { test, overrides }, overrides)
 }
@@ -63,14 +63,10 @@ pub trait OwnedBinaryChannelTest {
     ) -> Result<(), Error>;
 }
 
-pub trait TestWithChannelPortsOverride {
-    fn channel_port_a(&self) -> String {
-        "transfer".to_string()
-    }
+pub trait PortsOverride {
+    fn channel_port_a(&self) -> String;
 
-    fn channel_port_b(&self) -> String {
-        "transfer".to_string()
-    }
+    fn channel_port_b(&self) -> String;
 }
 
 pub struct RunOwnedBinaryChannelTest<'a, Test, Overrides> {
@@ -89,7 +85,7 @@ pub struct RunTwoWayBinaryChannelTest<'a, Test> {
 impl<'a, Test, Overrides> OwnedBinaryChainTest for RunOwnedBinaryChannelTest<'a, Test, Overrides>
 where
     Test: OwnedBinaryChannelTest,
-    Overrides: TestWithChannelPortsOverride,
+    Overrides: PortsOverride,
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,

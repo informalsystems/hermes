@@ -17,8 +17,7 @@ use crate::util::random::{random_string, random_u64_range};
 fn test_memo() -> Result<(), Error> {
     let memo = Memo::new(&random_string());
     let test = MemoTest { memo };
-    let overrides = with_overrides(&test);
-    run_binary_channel_test(&test, &overrides)
+    run_binary_channel_test(&test, &with_overrides(&test))
 }
 
 struct MemoTest {

@@ -8,7 +8,7 @@ use super::node::{run_owned_binary_node_test, OwnedBinaryNodeTest};
 use crate::bootstrap::binary::chain::boostrap_chain_pair_with_nodes;
 use crate::config::TestConfig;
 use crate::error::Error;
-use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
+use crate::relayer::supervisor::SupervisorHandle;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::single::node::RunningNode;
 
@@ -18,7 +18,7 @@ pub fn run_binary_chain_test<Test, Overrides>(
 ) -> Result<(), Error>
 where
     Test: BinaryChainTest,
-    Overrides: TestWithRelayerConfigOverride,
+    Overrides: RelayerConfigOverride + SupervisorOverride,
 {
     run_owned_binary_chain_test(&RunBinaryChainTest { test }, overrides)
 }
@@ -29,7 +29,7 @@ pub fn run_two_way_binary_chain_test<Test, Overrides>(
 ) -> Result<(), Error>
 where
     Test: BinaryChainTest,
-    Overrides: TestWithRelayerConfigOverride,
+    Overrides: RelayerConfigOverride + SupervisorOverride,
 {
     run_owned_binary_chain_test(&RunTwoWayBinaryChainTest { test }, overrides)
 }
@@ -40,24 +40,21 @@ pub fn run_owned_binary_chain_test<Test, Overrides>(
 ) -> Result<(), Error>
 where
     Test: OwnedBinaryChainTest,
-    Overrides: TestWithRelayerConfigOverride,
+    Overrides: RelayerConfigOverride + SupervisorOverride,
 {
     run_owned_binary_node_test(RunOwnedBinaryChainTest { test, overrides })
 }
 
-pub trait TestWithRelayerConfigOverride {
-    fn modify_relayer_config(&self, _config: &mut Config) {}
+pub trait RelayerConfigOverride {
+    fn modify_relayer_config(&self, config: &mut Config);
 }
 
-pub trait TestWithSupervisorOverride {
+pub trait SupervisorOverride {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
         registry: &SharedRegistry<impl ChainHandle + 'static>,
-    ) -> Option<SupervisorHandle> {
-        let handle = spawn_supervisor(config.clone(), registry.clone());
-        Some(handle)
-    }
+    ) -> Option<SupervisorHandle>;
 }
 
 pub trait BinaryChainTest {
@@ -92,7 +89,7 @@ pub struct RunTwoWayBinaryChainTest<'a, Test> {
 impl<'a, Test, Overrides> OwnedBinaryNodeTest for RunOwnedBinaryChainTest<'a, Test, Overrides>
 where
     Test: OwnedBinaryChainTest,
-    Overrides: TestWithRelayerConfigOverride,
+    Overrides: RelayerConfigOverride + SupervisorOverride,
 {
     fn run(
         &self,
@@ -104,7 +101,9 @@ where
             self.overrides.modify_relayer_config(config);
         })?;
 
-        let _supervisor = spawn_supervisor(chains.config.clone(), chains.registry.clone());
+        let _supervisor = self
+            .overrides
+            .spawn_supervisor(&chains.config, &chains.registry);
 
         self.test.run(config, chains)?;
 

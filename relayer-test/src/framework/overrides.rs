@@ -3,11 +3,11 @@ use ibc_relayer::config::Config;
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
 
-use crate::framework::binary::chain::{TestWithRelayerConfigOverride, TestWithSupervisorOverride};
-use crate::framework::binary::channel::TestWithChannelPortsOverride;
+use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
+use crate::framework::binary::channel::PortsOverride;
 use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 
-pub fn default_overrides() -> impl AllTestOverrides {
+pub fn default_overrides() -> WithOverrides<'static, DefaultOverrides> {
     WithOverrides {
         overrides: &DefaultOverrides,
     }
@@ -15,7 +15,7 @@ pub fn default_overrides() -> impl AllTestOverrides {
 
 pub fn with_overrides<'a, Overrides: TestOverrides>(
     overrides: &'a Overrides,
-) -> impl AllTestOverrides + 'a {
+) -> WithOverrides<'a, Overrides> {
     WithOverrides { overrides }
 }
 
@@ -25,13 +25,10 @@ pub struct WithOverrides<'a, Overrides> {
     pub overrides: &'a Overrides,
 }
 
-pub trait AllTestOverrides:
-    TestWithRelayerConfigOverride + TestWithSupervisorOverride + TestWithChannelPortsOverride
-{
-}
-
 pub trait TestOverrides {
-    fn modify_relayer_config(&self, _config: &mut Config) {}
+    fn modify_relayer_config(&self, _config: &mut Config) {
+        // No modification by default
+    }
 
     fn spawn_supervisor(
         &self,
@@ -53,19 +50,13 @@ pub trait TestOverrides {
 
 impl TestOverrides for DefaultOverrides {}
 
-impl<Overrides> AllTestOverrides for Overrides where
-    Overrides:
-        TestWithRelayerConfigOverride + TestWithSupervisorOverride + TestWithChannelPortsOverride
-{
-}
-
-impl<'a, Overrides: TestOverrides> TestWithRelayerConfigOverride for WithOverrides<'a, Overrides> {
+impl<'a, Overrides: TestOverrides> RelayerConfigOverride for WithOverrides<'a, Overrides> {
     fn modify_relayer_config(&self, config: &mut Config) {
         self.overrides.modify_relayer_config(config)
     }
 }
 
-impl<'a, Overrides: TestOverrides> TestWithSupervisorOverride for WithOverrides<'a, Overrides> {
+impl<'a, Overrides: TestOverrides> SupervisorOverride for WithOverrides<'a, Overrides> {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
@@ -75,7 +66,7 @@ impl<'a, Overrides: TestOverrides> TestWithSupervisorOverride for WithOverrides<
     }
 }
 
-impl<'a, Overrides: TestOverrides> TestWithChannelPortsOverride for WithOverrides<'a, Overrides> {
+impl<'a, Overrides: TestOverrides> PortsOverride for WithOverrides<'a, Overrides> {
     fn channel_port_a(&self) -> String {
         self.overrides.channel_port_a()
     }
