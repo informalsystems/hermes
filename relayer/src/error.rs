@@ -5,7 +5,7 @@ use core::time::Duration;
 use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
-use prost::DecodeError;
+use prost::{DecodeError, EncodeError};
 use tendermint::Error as TendermintError;
 use tendermint_light_client::{
     components::io::IoError as LightClientIoError, errors::Error as LightClientError,
@@ -328,6 +328,11 @@ define_error! {
             { payload_type: String }
             [ TraceError<DecodeError> ]
             |e| { format!("Error decoding protocol buffer for {}", e.payload_type) },
+
+        ProtobufEncode
+            { payload_type: String }
+            [ TraceError<EncodeError> ]
+            |e| { format!("Error encoding protocol buffer for {}", e.payload_type) },
 
         Cbor
             [ TraceError<serde_cbor::Error> ]
