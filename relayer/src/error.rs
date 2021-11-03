@@ -86,15 +86,15 @@ define_error! {
             |_| { "event monitor error" },
 
         Grpc
-            |_| { "GRPC error" },
+            |_| { "gRPC error" },
 
         GrpcStatus
             { status: GrpcStatus }
-            |e| { format!("GRPC call return error status {0}", e.status) },
+            |e| { format!("gRPC call failed with status: {0}", e.status) },
 
         GrpcTransport
             [ TraceError<TransportError> ]
-            |_| { "error in underlying transport when making GRPC call" },
+            |_| { "error in underlying transport when making gRPC call" },
 
         GrpcResponseParam
             { param: String }
