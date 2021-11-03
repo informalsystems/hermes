@@ -1,7 +1,7 @@
 use core::time::Duration;
 use crossbeam_channel::{bounded, Sender};
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::config::Config;
+use ibc_relayer::config::SharedConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::supervisor::cmd::SupervisorCmd;
 use std::cell::Cell;
@@ -16,7 +16,7 @@ pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
 
     pub side_b: ChainClientServer<ChainB>,
 
-    pub config: Config,
+    pub config: SharedConfig,
 
     pub client_a_to_b: ForeignClient<ChainB, ChainA>,
 

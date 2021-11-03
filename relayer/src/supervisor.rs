@@ -20,7 +20,7 @@ use crate::{
     event,
     event::monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,
-    registry::Registry,
+    registry::SharedRegistry,
     rest,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
@@ -53,7 +53,7 @@ pub type RwArc<T> = Arc<RwLock<T>>;
 /// worker, based on the [`Object`] associated with each event.
 pub struct Supervisor<Chain: ChainHandle> {
     config: RwArc<Config>,
-    registry: Registry<Chain>,
+    registry: SharedRegistry<Chain>,
     workers: WorkerMap,
 
     cmd_rx: Receiver<SupervisorCmd>,
@@ -74,7 +74,15 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         config: RwArc<Config>,
         rest_rx: Option<rest::Receiver>,
     ) -> (Self, Sender<SupervisorCmd>) {
-        let registry = Registry::new(config.clone());
+        let registry = SharedRegistry::new(config.clone());
+        Self::new_with_registry(config, registry, rest_rx)
+    }
+
+    pub fn new_with_registry(
+        config: RwArc<Config>,
+        registry: SharedRegistry<Chain>,
+        rest_rx: Option<rest::Receiver>,
+    ) -> (Self, Sender<SupervisorCmd>) {
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx);
         let client_state_filter = FilterPolicy::default();
@@ -92,10 +100,6 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         };
 
         (supervisor, cmd_tx)
-    }
-
-    pub fn get_registry(&mut self) -> &mut Registry<Chain> {
-        &mut self.registry
     }
 
     /// Returns `true` if the relayer should filter based on
@@ -143,20 +147,22 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             }
         }
 
+        let mut registry = self.registry.write();
+
         // Second, apply the client filter
         let client_filter_outcome = match object {
             Object::Client(client) => self
                 .client_state_filter
-                .control_client_object(&mut self.registry, client),
+                .control_client_object(&mut registry, client),
             Object::Connection(conn) => self
                 .client_state_filter
-                .control_conn_object(&mut self.registry, conn),
+                .control_conn_object(&mut registry, conn),
             Object::Channel(chan) => self
                 .client_state_filter
-                .control_chan_object(&mut self.registry, chan),
+                .control_chan_object(&mut registry, chan),
             Object::Packet(u) => self
                 .client_state_filter
-                .control_packet_object(&mut self.registry, u),
+                .control_packet_object(&mut registry, u),
         };
 
         match client_filter_outcome {
@@ -351,8 +357,8 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Create a new `SpawnContext` for spawning workers.
     fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_, Chain> {
         SpawnContext::new(
-            &self.config,
-            &mut self.registry,
+            self.config.clone(),
+            self.registry.clone(),
             &mut self.client_state_filter,
             &mut self.workers,
             mode,
@@ -488,7 +494,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
         // At least one chain runtime should be available, otherwise the supervisor
         // cannot do anything and will hang indefinitely.
-        if self.registry.size() == 0 {
+        if self.registry.read().size() == 0 {
             return Err(Error::no_chains_available());
         }
 
@@ -505,7 +511,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Returns a representation of the supervisor's internal state
     /// as a [`SupervisorState`].
     fn state(&self) -> SupervisorState {
-        let chains = self.registry.chains().map(|c| c.id()).collect_vec();
+        let chains = self.registry.read().chains().map(|c| c.id()).collect_vec();
         SupervisorState::new(chains, self.workers.objects())
     }
 

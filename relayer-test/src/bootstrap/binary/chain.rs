@@ -1,8 +1,9 @@
 use eyre::Report as Error;
 
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
-use ibc_relayer::config::Config;
+use ibc_relayer::config::{Config, SharedConfig};
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::supervisor::Supervisor;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -31,10 +32,14 @@ pub fn boostrap_chain_pair_with_nodes(
 
     info!("hermes config:\n{}", config_str);
 
-    let (mut supervisor, supervisor_cmd_sender) = spawn_supervisor(&config);
+    let config = Arc::new(RwLock::new(config));
 
-    let side_a = spawn_chain_handle(|| {}, &mut supervisor, node_a)?;
-    let side_b = spawn_chain_handle(|| {}, &mut supervisor, node_b)?;
+    let registry = new_registry(config.clone());
+
+    let (supervisor, supervisor_cmd_sender) = spawn_supervisor(config.clone(), registry.clone());
+
+    let side_a = spawn_chain_handle(|| {}, &registry, node_a)?;
+    let side_b = spawn_chain_handle(|| {}, &registry, node_b)?;
 
     run_supervisor(supervisor);
 
@@ -71,9 +76,15 @@ fn add_keys_to_chain_handle<Chain: ChainHandle>(
     Ok(())
 }
 
-fn spawn_supervisor(config: &Config) -> (Supervisor<impl ChainHandle>, SupervisorCmdSender) {
-    let (supervisor, sender) =
-        <Supervisor<ProdChainHandle>>::new(Arc::new(RwLock::new(config.clone())), None);
+fn new_registry(config: SharedConfig) -> SharedRegistry<impl ChainHandle + 'static> {
+    <SharedRegistry<ProdChainHandle>>::new(config)
+}
+
+fn spawn_supervisor(
+    config: SharedConfig,
+    registry: SharedRegistry<impl ChainHandle + 'static>,
+) -> (Supervisor<impl ChainHandle>, SupervisorCmdSender) {
+    let (supervisor, sender) = Supervisor::new_with_registry(config, registry, None);
 
     (supervisor, SupervisorCmdSender::new(sender))
 }
@@ -93,11 +104,11 @@ fn run_supervisor(mut supervisor: Supervisor<impl ChainHandle + 'static>) {
 
 fn spawn_chain_handle(
     _: impl Tag,
-    supervisor: &mut Supervisor<impl ChainHandle + 'static>,
+    registry: &SharedRegistry<impl ChainHandle + 'static>,
     node: RunningNode,
 ) -> Result<ChainClientServer<impl ChainHandle>, Error> {
     let chain_id = &node.chain_driver.chain_id;
-    let handle = supervisor.get_registry().get_or_spawn(chain_id)?;
+    let handle = registry.get_or_spawn(chain_id)?;
     let node = MonoTagged::new(node);
 
     add_keys_to_chain_handle(&handle, &node.wallets())?;
