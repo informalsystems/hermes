@@ -294,23 +294,17 @@ impl ChainDriver {
             "denom-traces",
         ])
     }
-}
 
-impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
-    pub fn query_balance(
-        &self,
-        wallet_id: &MonoTagged<ChainA, &WalletAddress>,
-        denom: &MonoTagged<ChainA, &Denom>,
-    ) -> Result<u64, Error> {
-        let res = self.value().exec(&[
+    pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<u64, Error> {
+        let res = self.exec(&[
             "--node",
-            &self.value().rpc_listen_address(),
+            &self.rpc_listen_address(),
             "query",
             "bank",
             "balances",
-            &wallet_id.value().0,
+            &wallet_id.0,
             "--denom",
-            denom.value().0.as_str(),
+            denom.0.as_str(),
             "--output",
             "json",
         ])?;
@@ -327,30 +321,16 @@ impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
         Ok(amount)
     }
 
-    pub fn query_memo(&self, tx_hash: &str) -> Result<String, Error> {
-        let res = self.value().exec(&[
-            "--node",
-            &self.value().rpc_listen_address(),
-            "query",
-            "tx",
-            "--type",
-            "hash",
-            tx_hash,
-        ])?;
-
-        Ok(res)
-    }
-
     pub fn assert_eventual_wallet_amount(
         &self,
-        user: &MonoTagged<ChainA, &Wallet>,
+        user: &Wallet,
         target_amount: u64,
-        denom: &MonoTagged<ChainA, &Denom>,
+        denom: &Denom,
     ) -> Result<(), Error> {
         assert_eventually_succeed(
             "wallet reach expected amount",
             || {
-                let amount = self.query_balance(&user.address(), denom)?;
+                let amount = self.query_balance(&user.address, denom)?;
 
                 if amount == target_amount {
                     Ok(())
@@ -367,5 +347,25 @@ impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
         )?;
 
         Ok(())
+    }
+}
+
+impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
+    pub fn query_balance(
+        &self,
+        wallet_id: &MonoTagged<ChainA, &WalletAddress>,
+        denom: &MonoTagged<ChainA, &Denom>,
+    ) -> Result<u64, Error> {
+        self.value().query_balance(wallet_id.value(), denom.value())
+    }
+
+    pub fn assert_eventual_wallet_amount(
+        &self,
+        user: &MonoTagged<ChainA, &Wallet>,
+        target_amount: u64,
+        denom: &MonoTagged<ChainA, &Denom>,
+    ) -> Result<(), Error> {
+        self.value()
+            .assert_eventual_wallet_amount(user.value(), target_amount, denom.value())
     }
 }

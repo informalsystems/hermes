@@ -61,11 +61,11 @@ fn run_supervisor(mut supervisor: Supervisor<impl ChainHandle + 'static>) {
 fn spawn_chain_handle(
     _: impl Tag,
     supervisor: &mut Supervisor<impl ChainHandle + 'static>,
-    node: MonoTagged<impl Tag, RunningNode>,
+    node: RunningNode,
 ) -> Result<ChainClientServer<impl ChainHandle>, Error> {
-    let chain_id = node.chain_id();
-    let handle = supervisor.get_registry().get_or_spawn(chain_id.value())?;
-    let node = node.retag();
+    let chain_id = &node.chain_driver.chain_id;
+    let handle = supervisor.get_registry().get_or_spawn(chain_id)?;
+    let node = MonoTagged::new(node);
 
     add_keys_to_chain_handle(&handle, &node.wallets())?;
 
@@ -79,10 +79,18 @@ pub fn boostrap_chain_pair(
     let node_a = bootstrap_single_chain(&builder)?;
     let node_b = bootstrap_single_chain(&builder)?;
 
+    boostrap_chain_pair_with_nodes(config_modifier, node_a, node_b)
+}
+
+pub fn boostrap_chain_pair_with_nodes(
+    config_modifier: impl FnOnce(&mut Config),
+    node_a: RunningNode,
+    node_b: RunningNode,
+) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error> {
     let mut config = Config::default();
 
-    add_chain_config(&mut config, node_a.value())?;
-    add_chain_config(&mut config, node_b.value())?;
+    add_chain_config(&mut config, &node_a)?;
+    add_chain_config(&mut config, &node_b)?;
 
     config_modifier(&mut config);
 

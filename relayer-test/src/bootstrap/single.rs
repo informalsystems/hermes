@@ -5,16 +5,12 @@ use crate::chain::builder::ChainBuilder;
 use crate::chain::config;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::tagged::mono::Tagged as MonoTagged;
-use crate::tagged::tag::Tag;
 use crate::util::random::{random_u32, random_u64_range};
 
 use crate::types::single::node::RunningNode;
 use crate::types::wallets::ChainWallets;
 
-pub fn bootstrap_single_chain(
-    builder: &ChainBuilder,
-) -> Result<MonoTagged<impl Tag, RunningNode>, Error> {
+pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<RunningNode, Error> {
     let stake_denom = Denom("stake".to_string());
     let denom = Denom(format!("coin{:x}", random_u32()));
     let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
@@ -65,6 +61,8 @@ pub fn bootstrap_single_chain(
 
     let chain_process = chain_driver.start()?;
 
+    chain_driver.assert_eventual_wallet_amount(&relayer, initial_amount, &denom)?;
+
     let wallets = ChainWallets {
         validator,
         relayer,
@@ -72,18 +70,12 @@ pub fn bootstrap_single_chain(
         user2,
     };
 
-    let deployment = <MonoTagged<(), _>>::new(RunningNode {
+    let node = RunningNode {
         chain_driver,
         chain_process,
         denom,
         wallets,
-    });
+    };
 
-    deployment.chain_driver().assert_eventual_wallet_amount(
-        &deployment.wallets().relayer(),
-        initial_amount,
-        &deployment.denom(),
-    )?;
-
-    Ok(deployment)
+    Ok(node)
 }
