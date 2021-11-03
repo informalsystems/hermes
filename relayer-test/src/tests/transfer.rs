@@ -4,7 +4,7 @@ use tracing::info;
 use crate::config::TestConfig;
 use crate::error::Error;
 use crate::framework::binary::channel::{run_two_way_binary_channel_test, BinaryChannelTest};
-use crate::framework::overrides::{with_overrides, OverrideNone};
+use crate::framework::overrides::default_overrides;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
@@ -12,7 +12,7 @@ use crate::util::random::random_u64_range;
 
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
-    run_two_way_binary_channel_test(with_overrides(OverrideNone, IbcTransferTest))
+    run_two_way_binary_channel_test(&IbcTransferTest, &default_overrides())
 }
 
 struct IbcTransferTest;

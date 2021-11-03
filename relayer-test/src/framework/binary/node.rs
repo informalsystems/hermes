@@ -10,7 +10,7 @@ pub fn run_binary_node_test(test: impl BinaryNodeTest) -> Result<(), Error> {
 }
 
 pub fn run_owned_binary_node_test(test: impl OwnedBinaryNodeTest) -> Result<(), Error> {
-    run_basic_test(RunOwnedBinaryNodeTest(test))
+    run_basic_test(&RunOwnedBinaryNodeTest(test))
 }
 
 pub trait BinaryNodeTest {

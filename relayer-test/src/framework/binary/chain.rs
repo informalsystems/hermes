@@ -1,41 +1,63 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
+use ibc_relayer::config::SharedConfig;
+use ibc_relayer::registry::SharedRegistry;
 use tracing::info;
 
 use super::node::{run_owned_binary_node_test, OwnedBinaryNodeTest};
 use crate::bootstrap::binary::chain::boostrap_chain_pair_with_nodes;
 use crate::config::TestConfig;
 use crate::error::Error;
-use crate::framework::overrides::{
-    HasOverrideRelayerConfig, OnlyOverrideChannelPorts, OverrideNone, TestWithOverrides,
-};
-use crate::relayer::supervisor::spawn_supervisor;
+use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::single::node::RunningNode;
 
-pub fn run_binary_chain_test<Test>(test: Test) -> Result<(), Error>
+pub fn run_binary_chain_test<Test, Overrides>(
+    test: &Test,
+    overrides: &Overrides,
+) -> Result<(), Error>
 where
-    Test: BinaryChainTest + TestWithRelayerConfigOverride,
+    Test: BinaryChainTest,
+    Overrides: TestWithRelayerConfigOverride,
 {
-    run_owned_binary_chain_test(RunBinaryChainTest(test))
+    run_owned_binary_chain_test(&RunBinaryChainTest { test }, overrides)
 }
 
-pub fn run_two_way_binary_chain_test<Test>(test: Test) -> Result<(), Error>
+pub fn run_two_way_binary_chain_test<Test, Overrides>(
+    test: &Test,
+    overrides: &Overrides,
+) -> Result<(), Error>
 where
-    Test: BinaryChainTest + TestWithRelayerConfigOverride,
+    Test: BinaryChainTest,
+    Overrides: TestWithRelayerConfigOverride,
 {
-    run_owned_binary_chain_test(RunTwoWayBinaryChainTest(test))
+    run_owned_binary_chain_test(&RunTwoWayBinaryChainTest { test }, overrides)
 }
 
-pub fn run_owned_binary_chain_test<Test>(test: Test) -> Result<(), Error>
+pub fn run_owned_binary_chain_test<Test, Overrides>(
+    test: &Test,
+    overrides: &Overrides,
+) -> Result<(), Error>
 where
-    Test: OwnedBinaryChainTest + TestWithRelayerConfigOverride,
+    Test: OwnedBinaryChainTest,
+    Overrides: TestWithRelayerConfigOverride,
 {
-    run_owned_binary_node_test(RunOwnedBinaryChainTest(test))
+    run_owned_binary_node_test(RunOwnedBinaryChainTest { test, overrides })
 }
 
 pub trait TestWithRelayerConfigOverride {
     fn modify_relayer_config(&self, _config: &mut Config) {}
+}
+
+pub trait TestWithSupervisorOverride {
+    fn spawn_supervisor(
+        &self,
+        config: &SharedConfig,
+        registry: &SharedRegistry<impl ChainHandle + 'static>,
+    ) -> Option<SupervisorHandle> {
+        let handle = spawn_supervisor(config.clone(), registry.clone());
+        Some(handle)
+    }
 }
 
 pub trait BinaryChainTest {
@@ -54,15 +76,23 @@ pub trait OwnedBinaryChainTest {
     ) -> Result<(), Error>;
 }
 
-struct RunOwnedBinaryChainTest<Test>(Test);
+pub struct RunOwnedBinaryChainTest<'a, Test, Overrides> {
+    pub test: &'a Test,
+    pub overrides: &'a Overrides,
+}
 
-struct RunBinaryChainTest<Test>(Test);
+pub struct RunBinaryChainTest<'a, Test> {
+    pub test: &'a Test,
+}
 
-struct RunTwoWayBinaryChainTest<Test>(Test);
+pub struct RunTwoWayBinaryChainTest<'a, Test> {
+    pub test: &'a Test,
+}
 
-impl<Test> OwnedBinaryNodeTest for RunOwnedBinaryChainTest<Test>
+impl<'a, Test, Overrides> OwnedBinaryNodeTest for RunOwnedBinaryChainTest<'a, Test, Overrides>
 where
-    Test: OwnedBinaryChainTest + TestWithRelayerConfigOverride,
+    Test: OwnedBinaryChainTest,
+    Overrides: TestWithRelayerConfigOverride,
 {
     fn run(
         &self,
@@ -71,12 +101,12 @@ where
         node_b: RunningNode,
     ) -> Result<(), Error> {
         let chains = boostrap_chain_pair_with_nodes(node_a, node_b, |config| {
-            self.0.modify_relayer_config(config);
+            self.overrides.modify_relayer_config(config);
         })?;
 
         let _supervisor = spawn_supervisor(chains.config.clone(), chains.registry.clone());
 
-        self.0.run(config, chains)?;
+        self.test.run(config, chains)?;
 
         // No use hanging the test on owned failures, as the chains
         // are dropped in the inner test already.
@@ -85,7 +115,7 @@ where
     }
 }
 
-impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunBinaryChainTest<Test> {
+impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunBinaryChainTest<'a, Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -97,7 +127,7 @@ impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunBinaryChainTest<Test> {
             chains.side_b.chain_id()
         );
 
-        self.0
+        self.test
             .run(config, &chains)
             .map_err(config.hang_on_error())?;
 
@@ -105,7 +135,7 @@ impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunBinaryChainTest<Test> {
     }
 }
 
-impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTest<Test> {
+impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTest<'a, Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -117,7 +147,7 @@ impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTest<Te
             chains.side_b.chain_id()
         );
 
-        self.0
+        self.test
             .run(config, &chains)
             .map_err(config.hang_on_error())?;
 
@@ -129,61 +159,10 @@ impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTest<Te
 
         let chains = chains.flip();
 
-        self.0
+        self.test
             .run(config, &chains)
             .map_err(config.hang_on_error())?;
 
         Ok(())
-    }
-}
-
-impl<Override, Test> TestWithRelayerConfigOverride for TestWithOverrides<Override, Test>
-where
-    Test: TestWithRelayerConfigOverride,
-    Override: HasOverrideRelayerConfig,
-{
-    fn modify_relayer_config(&self, config: &mut Config) {
-        self.test.modify_relayer_config(config)
-    }
-}
-
-impl<Test> TestWithRelayerConfigOverride for TestWithOverrides<OverrideNone, Test> {}
-
-impl<Test> TestWithRelayerConfigOverride for TestWithOverrides<OnlyOverrideChannelPorts, Test> {}
-
-impl<Overrides, Test: OwnedBinaryChainTest> OwnedBinaryChainTest
-    for TestWithOverrides<Overrides, Test>
-{
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        config: &TestConfig,
-        deployment: ConnectedChains<ChainA, ChainB>,
-    ) -> Result<(), Error> {
-        self.test.run(config, deployment)
-    }
-}
-impl<Overrides, Test: BinaryChainTest> BinaryChainTest for TestWithOverrides<Overrides, Test> {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        config: &TestConfig,
-        deployment: &ConnectedChains<ChainA, ChainB>,
-    ) -> Result<(), Error> {
-        self.test.run(config, deployment)
-    }
-}
-
-impl<Test: TestWithRelayerConfigOverride> TestWithRelayerConfigOverride
-    for RunBinaryChainTest<Test>
-{
-    fn modify_relayer_config(&self, config: &mut Config) {
-        self.0.modify_relayer_config(config);
-    }
-}
-
-impl<Test: TestWithRelayerConfigOverride> TestWithRelayerConfigOverride
-    for RunTwoWayBinaryChainTest<Test>
-{
-    fn modify_relayer_config(&self, config: &mut Config) {
-        self.0.modify_relayer_config(config);
     }
 }

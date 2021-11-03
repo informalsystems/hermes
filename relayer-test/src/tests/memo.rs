@@ -6,9 +6,8 @@ use tracing::{debug, info};
 
 use crate::config::TestConfig;
 use crate::error::Error;
-use crate::framework::binary::chain::TestWithRelayerConfigOverride;
 use crate::framework::binary::channel::{run_binary_channel_test, BinaryChannelTest};
-use crate::framework::overrides::{with_overrides, OnlyOverrideRelayerConfig};
+use crate::framework::overrides::{with_overrides, TestOverrides};
 use crate::ibc::denom::derive_ibc_denom;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
@@ -17,14 +16,16 @@ use crate::util::random::{random_string, random_u64_range};
 #[test]
 fn test_memo() -> Result<(), Error> {
     let memo = Memo::new(&random_string());
-    run_binary_channel_test(with_overrides(OnlyOverrideRelayerConfig, MemoTest { memo }))
+    let test = MemoTest { memo };
+    let overrides = with_overrides(&test);
+    run_binary_channel_test(&test, &overrides)
 }
 
 struct MemoTest {
     memo: Memo,
 }
 
-impl TestWithRelayerConfigOverride for MemoTest {
+impl TestOverrides for MemoTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         for mut chain in config.chains.iter_mut() {
             chain.memo_prefix = self.memo.clone();

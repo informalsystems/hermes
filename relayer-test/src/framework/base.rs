@@ -5,12 +5,12 @@ use crate::config::TestConfig;
 use crate::error::Error;
 use crate::init::init_test;
 
-pub fn run_test(test: impl TestCase) -> Result<(), Error> {
+pub fn run_test<Test: TestCase>(test: &Test) -> Result<(), Error> {
     test.run()
 }
 
-pub fn run_basic_test(test: impl BasicTest) -> Result<(), Error> {
-    run_test(RunBasicTest(test))
+pub fn run_basic_test<Test: BasicTest>(test: &Test) -> Result<(), Error> {
+    run_test(&RunBasicTest { test })
 }
 
 pub trait TestCase {
@@ -21,16 +21,18 @@ pub trait BasicTest {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error>;
 }
 
-struct RunBasicTest<Test>(Test);
+pub struct RunBasicTest<'a, Test> {
+    pub test: &'a Test,
+}
 
-impl<Test: BasicTest> TestCase for RunBasicTest<Test> {
+impl<'a, Test: BasicTest> TestCase for RunBasicTest<'a, Test> {
     fn run(&self) -> Result<(), Error> {
         let config = init_test()?;
         let builder = ChainBuilder::new_with_config(&config);
 
         info!("starting test");
 
-        BasicTest::run(&self.0, &config, &builder)?;
+        self.test.run(&config, &builder)?;
 
         Ok(())
     }
