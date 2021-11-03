@@ -157,26 +157,12 @@ impl Config {
     }
 
     pub fn handshake_enabled(&self) -> bool {
-        self.global.strategy == Strategy::HandshakeAndPackets
+        // FIXME(hu55a1n1)
+        unimplemented!()
     }
 
     pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
         self.chains.iter().map(|c| (&c.id, c)).collect()
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub enum Strategy {
-    #[serde(rename = "packets")]
-    Packets,
-
-    #[serde(rename = "all")]
-    HandshakeAndPackets,
-}
-
-impl Default for Strategy {
-    fn default() -> Self {
-        Self::Packets
     }
 }
 
@@ -254,7 +240,6 @@ impl fmt::Display for LogLevel {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
-    pub strategy: Strategy,
     pub log_level: LogLevel,
     #[serde(default = "default::filter")]
     pub filter: bool,
@@ -267,7 +252,6 @@ pub struct GlobalConfig {
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
-            strategy: Strategy::default(),
             log_level: LogLevel::default(),
             filter: default::filter(),
             clear_packets_interval: default::clear_packets_interval(),

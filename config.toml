@@ -1,12 +1,6 @@
 # The global section has parameters that apply globally to the relayer operation.
 [global]
 
-# Specify the strategy to be used by the relayer. Default: 'packets'
-# Two options are currently supported:
-#   - 'all': Relay packets and perform channel and connection handshakes.
-#   - 'packets': Relay packets only.
-strategy = 'packets'
-
 # Enable or disable the filtering mechanism. Default: 'false'
 # Valid options are 'true', 'false'.
 # Currently Hermes supports two filters:

@@ -1,5 +1,4 @@
 [global]
-strategy = 'packets'
 log_level = 'error'
 
 [[chains]]
