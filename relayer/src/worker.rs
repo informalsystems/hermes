@@ -107,7 +107,7 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
                     path.clone(),
                     chains,
                     cmd_rx,
-                    config.global.clear_packets_interval,
+                    config.mode.packets.clear_interval,
                     config.global.tx_confirmation,
                 ),
             ),

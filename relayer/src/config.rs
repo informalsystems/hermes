@@ -243,8 +243,6 @@ pub struct GlobalConfig {
     pub log_level: LogLevel,
     #[serde(default = "default::filter")]
     pub filter: bool,
-    #[serde(default = "default::clear_packets_interval")]
-    pub clear_packets_interval: u64,
     #[serde(default = "default::tx_confirmation")]
     pub tx_confirmation: bool,
 }
@@ -254,7 +252,6 @@ impl Default for GlobalConfig {
         Self {
             log_level: LogLevel::default(),
             filter: default::filter(),
-            clear_packets_interval: default::clear_packets_interval(),
             tx_confirmation: default::tx_confirmation(),
         }
     }

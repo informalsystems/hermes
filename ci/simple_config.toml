@@ -1,7 +1,6 @@
 [global]
 log_level = 'trace'
 filter = false
-clear_packets_interval = 100
 
 [telemetry]
 enabled = false
