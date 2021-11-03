@@ -1475,18 +1475,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        // TODO: Request should be a domain type
-        let version_compatible_request = if self.version_specs.ibc_go_pre_v1_2() {
-            // if < v1.2 overwrite with empty `packet_commitment_sequences` field
-            let mut r = request;
-            r.packet_commitment_sequences = vec![];
-            r
-        } else {
-            // if >= v1.2 leave the request unchanged
-            request
-        };
-
-        let request = tonic::Request::new(version_compatible_request);
+        let request = tonic::Request::new(request);
 
         let response = self
             .block_on(client.packet_acknowledgements(request))
