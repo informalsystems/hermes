@@ -155,14 +155,30 @@ pub struct EventMonitor {
     rt: Arc<TokioRuntime>,
 }
 
-fn ibc_queries() -> Vec<Query> {
-    vec![
-        Query::eq("message.module", "ibc_client"),
-        Query::eq("message.module", "ibc_connection"),
-        Query::eq("message.module", "ibc_channel"),
-        // This will be needed when we send misbehavior evidence to full node
-        // Query::eq("message.module", "evidence"),
-    ]
+pub mod ibc_queries {
+    use tendermint_rpc::query::Query;
+
+    pub fn all() -> Vec<Query> {
+        vec![
+            client(),
+            connection(),
+            channel(),
+            // This will be needed when we send misbehavior evidence to full node
+            // Query::eq("message.module", "evidence"),
+        ]
+    }
+
+    pub fn client() -> Query {
+        Query::eq("message.module", "ibc_client")
+    }
+
+    pub fn connection() -> Query {
+        Query::eq("message.module", "ibc_connection")
+    }
+
+    pub fn channel() -> Query {
+        Query::eq("message.module", "ibc_channel")
+    }
 }
 
 impl EventMonitor {
@@ -185,7 +201,7 @@ impl EventMonitor {
 
         // TODO: move them to config file(?)
         let mut event_queries = vec![Query::from(EventType::NewBlock)];
-        event_queries.append(&mut ibc_queries());
+        event_queries.append(&mut ibc_queries::all());
 
         let monitor = Self {
             rt,
