@@ -8,6 +8,7 @@ use ibc::{core::ics02_client::events::UpdateClient, events::IbcEvent};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
+    config::Config,
     foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
     object::Client,
     telemetry,
@@ -36,7 +37,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
     }
 
     /// Run the event loop for events associated with a [`Client`].
-    pub fn run(self) -> Result<(), RunError> {
+    pub fn run(self, config: &Config) -> Result<(), RunError> {
         let mut client = ForeignClient::restore(
             self.client.dst_client_id.clone(),
             self.chains.b.clone(),
@@ -49,7 +50,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         );
 
         // initial check for evidence of misbehaviour for all updates
-        let skip_misbehaviour = self.detect_misbehaviour(&client, None);
+        let skip_misbehaviour =
+            !config.mode.clients.misbehaviour && self.detect_misbehaviour(&client, None);
 
         // remember the time of the last refresh so we backoff
         let mut last_refresh = Instant::now() - Duration::from_secs(61);

@@ -113,18 +113,18 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
             ),
         };
 
-        let thread_handle = std::thread::spawn(move || worker.run(msg_tx));
+        let thread_handle = std::thread::spawn(move || worker.run(config, msg_tx));
         WorkerHandle::new(id, object, cmd_tx, thread_handle)
     }
 
     /// Run the worker event loop.
-    fn run(self, msg_tx: Sender<WorkerMsg>) {
+    fn run(self, config: &Config, msg_tx: Sender<WorkerMsg>) {
         let id = self.id();
         let object = self.object();
         let name = format!("{}#{}", object.short_name(), id);
 
         let result = match self {
-            Self::Client(_, w) => w.run(),
+            Self::Client(_, w) => w.run(config),
             Self::Connection(_, w) => w.run(),
             Self::Channel(_, w) => w.run(),
             Self::Packet(_, w) => w.run(),
