@@ -10,7 +10,12 @@ pub fn run_binary_node_test(test: impl BinaryNodeTest) -> Result<(), Error> {
 }
 
 pub trait BinaryNodeTest {
-    fn run(&self, node_a: RunningNode, node_b: RunningNode) -> Result<(), Error>;
+    fn run(
+        &self,
+        config: &TestConfig,
+        node_a: RunningNode,
+        node_b: RunningNode,
+    ) -> Result<(), Error>;
 }
 
 pub struct RunBinaryNodeTest<Test>(pub Test);
@@ -19,11 +24,13 @@ impl<Test> BasicTest for RunBinaryNodeTest<Test>
 where
     Test: BinaryNodeTest,
 {
-    fn run(&self, _config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
+    fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
         let node_a = bootstrap_single_chain(builder, "alpha")?;
         let node_b = bootstrap_single_chain(builder, "beta")?;
 
-        self.0.run(node_a, node_b)?;
+        self.0
+            .run(config, node_a, node_b)
+            .map_err(config.hang_on_error())?;
 
         Ok(())
     }

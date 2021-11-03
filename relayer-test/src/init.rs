@@ -22,9 +22,15 @@ pub fn init_test() -> Result<TestConfig, Error> {
 
     let chain_store_dir = env::var("CHAIN_STORE_DIR").unwrap_or_else(|_| "data".to_string());
 
+    let hang_on_fail = env::var("HANG_ON_FAIL")
+        .ok()
+        .map(|val| val == "1")
+        .unwrap_or(false);
+
     Ok(TestConfig {
         chain_command_path,
         chain_store_dir,
+        hang_on_fail,
     })
 }
 

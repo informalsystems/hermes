@@ -1,6 +1,7 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
+use crate::config::TestConfig;
 use crate::error::Error;
 use crate::framework::binary::channel::{run_two_way_binary_channel_test, BinaryChannelTest};
 use crate::framework::overrides::{with_overrides, OverrideNone};
@@ -19,6 +20,7 @@ struct IbcTransferTest;
 impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
+        _config: &TestConfig,
         chains: &ConnectedChains<ChainA, ChainB>,
         channel: &Channel<ChainA, ChainB>,
     ) -> Result<(), Error> {

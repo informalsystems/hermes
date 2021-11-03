@@ -6,7 +6,6 @@ use crate::error::Error;
 use crate::init::init_test;
 
 pub fn run_test(test: impl TestCase) -> Result<(), Error> {
-    info!("starting test");
     test.run()
 }
 
@@ -28,6 +27,11 @@ impl<Test: BasicTest> TestCase for RunBasicTest<Test> {
     fn run(&self) -> Result<(), Error> {
         let config = init_test()?;
         let builder = ChainBuilder::new_with_config(&config);
-        BasicTest::run(&self.0, &config, &builder)
+
+        info!("starting test");
+
+        BasicTest::run(&self.0, &config, &builder)?;
+
+        Ok(())
     }
 }
