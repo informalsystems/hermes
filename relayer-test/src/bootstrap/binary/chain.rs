@@ -1,16 +1,14 @@
 use eyre::Report as Error;
-
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
-use ibc_relayer::supervisor::Supervisor;
 use std::sync::Arc;
 use std::sync::RwLock;
 use tracing::info;
 
 use crate::tagged::*;
-use crate::types::binary::chains::{ConnectedChains, SupervisorCmdSender};
+use crate::types::binary::chains::ConnectedChains;
 use crate::types::single::client_server::ChainClientServer;
 use crate::types::single::node::RunningNode;
 use crate::types::wallet::Wallet;
@@ -36,19 +34,15 @@ pub fn boostrap_chain_pair_with_nodes(
 
     let registry = new_registry(config.clone());
 
-    let (supervisor, supervisor_cmd_sender) = spawn_supervisor(config.clone(), registry.clone());
-
     let side_a = spawn_chain_handle(|| {}, &registry, node_a)?;
     let side_b = spawn_chain_handle(|| {}, &registry, node_b)?;
-
-    run_supervisor(supervisor);
 
     let client_a_to_b = ForeignClient::new(side_b.handle.clone(), side_a.handle.clone())?;
     let client_b_to_a = ForeignClient::new(side_a.handle.clone(), side_b.handle.clone())?;
 
     Ok(ConnectedChains {
-        supervisor_cmd_sender,
         config,
+        registry,
         client_a_to_b,
         client_b_to_a,
         side_a,
@@ -76,17 +70,8 @@ fn add_keys_to_chain_handle<Chain: ChainHandle>(
     Ok(())
 }
 
-fn new_registry(config: SharedConfig) -> SharedRegistry<impl ChainHandle + 'static> {
+fn new_registry(config: SharedConfig) -> SharedRegistry<ProdChainHandle> {
     <SharedRegistry<ProdChainHandle>>::new(config)
-}
-
-fn spawn_supervisor(
-    config: SharedConfig,
-    registry: SharedRegistry<impl ChainHandle + 'static>,
-) -> (Supervisor<impl ChainHandle>, SupervisorCmdSender) {
-    let (supervisor, sender) = Supervisor::new_with_registry(config, registry, None);
-
-    (supervisor, SupervisorCmdSender::new(sender))
 }
 
 fn add_chain_config(config: &mut Config, running_node: &RunningNode) -> Result<(), Error> {
@@ -94,12 +79,6 @@ fn add_chain_config(config: &mut Config, running_node: &RunningNode) -> Result<(
 
     config.chains.push(chain_config);
     Ok(())
-}
-
-fn run_supervisor(mut supervisor: Supervisor<impl ChainHandle + 'static>) {
-    std::thread::spawn(move || {
-        supervisor.run_without_health_check().unwrap();
-    });
 }
 
 fn spawn_chain_handle(

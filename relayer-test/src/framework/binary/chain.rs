@@ -9,6 +9,7 @@ use crate::error::Error;
 use crate::framework::overrides::{
     HasOverrideRelayerConfig, OnlyOverrideChannelPorts, OverrideNone, TestWithOverrides,
 };
+use crate::relayer::supervisor::spawn_supervisor;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::single::node::RunningNode;
 
@@ -72,6 +73,8 @@ where
         let chains = boostrap_chain_pair_with_nodes(node_a, node_b, |config| {
             self.0.modify_relayer_config(config);
         })?;
+
+        let _supervisor = spawn_supervisor(chains.config.clone(), chains.registry.clone());
 
         self.0.run(config, chains)?;
 

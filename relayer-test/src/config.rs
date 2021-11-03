@@ -1,4 +1,4 @@
-use core::fmt::Debug;
+use core::fmt::{Debug, Display};
 use tracing::error;
 
 use crate::util::hang::hang;
@@ -10,7 +10,7 @@ pub struct TestConfig {
 }
 
 impl TestConfig {
-    pub fn hang_on_error<E: Debug>(&self) -> impl FnOnce(E) -> E {
+    pub fn hang_on_error<E: Debug + Display>(&self) -> impl FnOnce(E) -> E {
         let hang_on_fail = self.hang_on_fail;
         move |e| {
             if hang_on_fail {
@@ -19,7 +19,7 @@ impl TestConfig {
 
                 hang();
             } else {
-                error!("test failure occured. set HANG_ON_FAIL=1 to hang the test on failure for debugging: {:?}",
+                error!("test failure occured. set HANG_ON_FAIL=1 to hang the test on failure for debugging: {}",
                     e);
             }
 

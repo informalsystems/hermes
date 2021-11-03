@@ -5,6 +5,7 @@ pub mod error;
 pub mod framework;
 pub mod ibc;
 pub mod init;
+pub mod relayer;
 pub mod tagged;
 pub mod types;
 pub mod util;
