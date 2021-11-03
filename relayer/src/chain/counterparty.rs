@@ -380,9 +380,7 @@ pub fn packet_acknowledgedgments(
         port_id: port_id.to_string(),
         channel_id: channel_id.to_string(),
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        packet_commitment_sequences: vec![],
-        // TODO - pass commit_sequences if the chain supports it
-        // packet_commitment_sequences: commit_sequences,
+        packet_commitment_sequences: commit_sequences.clone(),
     };
 
     let (acks, response_height) = chain

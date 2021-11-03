@@ -1476,20 +1476,17 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_transport)?;
 
         // TODO: Request should be a domain type
-        // Need to translate from domain -> raw type `QueryPacketAcknowledgementsRequest`
-        let request_compat = if self.version_specs.ibc_go_pre_v1_2()
-            && !request.packet_commitment_sequences.is_empty()
-        {
-            // if < v.12 leave the field `packet_commitment_sequences` empty.
+        let version_compatible_request = if self.version_specs.ibc_go_pre_v1_2() {
+            // if < v1.2 overwrite with empty `packet_commitment_sequences` field
             let mut r = request;
             r.packet_commitment_sequences = vec![];
             r
         } else {
-            // if >= v1.2 leave the field `packet_commitment_sequences` populated
+            // if >= v1.2 leave the request unchanged
             request
         };
 
-        let request = tonic::Request::new(request_compat);
+        let request = tonic::Request::new(version_compatible_request);
 
         let response = self
             .block_on(client.packet_acknowledgements(request))
