@@ -98,6 +98,7 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
                     chains,
                     cmd_rx,
                     config.mode.clients.misbehaviour,
+                    config.mode.clients.refresh,
                 ),
             ),
             Object::Connection(connection) => Self::Connection(

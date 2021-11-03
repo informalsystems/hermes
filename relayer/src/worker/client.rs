@@ -21,6 +21,7 @@ pub struct ClientWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
     misbehaviour: bool,
+    refresh: bool,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
@@ -29,12 +30,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         misbehaviour: bool,
+        refresh: bool,
     ) -> Self {
         Self {
             client,
             chains,
             cmd_rx,
             misbehaviour,
+            refresh,
         }
     }
 
@@ -63,7 +66,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
             // Clients typically need refresh every 2/3 of their
             // trusting period (which can e.g., two weeks).
             // Backoff refresh checking to attempt it every minute.
-            if last_refresh.elapsed() > Duration::from_secs(60) {
+            if self.refresh && last_refresh.elapsed() > Duration::from_secs(60) {
                 // Run client refresh, exit only if expired or frozen
                 match client.refresh() {
                     Ok(Some(_)) => {
