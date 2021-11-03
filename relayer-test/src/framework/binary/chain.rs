@@ -97,7 +97,7 @@ where
         node_a: RunningNode,
         node_b: RunningNode,
     ) -> Result<(), Error> {
-        let chains = boostrap_chain_pair_with_nodes(node_a, node_b, |config| {
+        let chains = boostrap_chain_pair_with_nodes(&config, node_a, node_b, |config| {
             self.overrides.modify_relayer_config(config);
         })?;
 

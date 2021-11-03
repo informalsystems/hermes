@@ -3,18 +3,22 @@ use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
+use std::fs;
 use std::sync::Arc;
 use std::sync::RwLock;
 use tracing::info;
 
+use crate::config::TestConfig;
 use crate::tagged::*;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::single::client_server::ChainClientServer;
 use crate::types::single::node::RunningNode;
 use crate::types::wallet::Wallet;
 use crate::types::wallets::ChainWallets;
+use crate::util::random::random_u32;
 
 pub fn boostrap_chain_pair_with_nodes(
+    test_config: &TestConfig,
     node_a: RunningNode,
     node_b: RunningNode,
     config_modifier: impl FnOnce(&mut Config),
@@ -28,7 +32,18 @@ pub fn boostrap_chain_pair_with_nodes(
 
     let config_str = toml::to_string_pretty(&config)?;
 
-    info!("hermes config:\n{}", config_str);
+    let relayer_config_dir = format!("{}/relayer", test_config.chain_store_dir);
+
+    fs::create_dir_all(&relayer_config_dir)?;
+
+    let config_path = format!("{}/config-{:x}.toml", relayer_config_dir, random_u32());
+
+    fs::write(&config_path, &config_str)?;
+
+    info!(
+        "written hermes config.toml to {}:\n{}",
+        config_path, config_str
+    );
 
     let config = Arc::new(RwLock::new(config));
 
@@ -42,6 +57,7 @@ pub fn boostrap_chain_pair_with_nodes(
 
     Ok(ConnectedChains {
         config,
+        config_path,
         registry,
         client_a_to_b,
         client_b_to_a,

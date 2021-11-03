@@ -8,6 +8,8 @@ use crate::types::single::client_server::ChainClientServer;
 pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub config: SharedConfig,
 
+    pub config_path: String,
+
     pub registry: SharedRegistry<ProdChainHandle>,
 
     pub side_a: ChainClientServer<ChainA>,
@@ -23,6 +25,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
     pub fn flip(self) -> ConnectedChains<ChainB, ChainA> {
         ConnectedChains {
             config: self.config,
+            config_path: self.config_path,
             registry: self.registry,
             client_a_to_b: self.client_b_to_a,
             client_b_to_a: self.client_a_to_b,
