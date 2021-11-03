@@ -115,6 +115,7 @@ pub mod default {
 pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
+    pub mode: ModeConfig,
     #[serde(default)]
     pub rest: RestConfig,
     #[serde(default)]
@@ -177,6 +178,46 @@ impl Default for Strategy {
     fn default() -> Self {
         Self::Packets
     }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct ModeConfig {
+    pub clients: Clients,
+    pub connections: Connections,
+    pub channels: Channels,
+    pub packets: Packets,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Clients {
+    pub enabled: bool,
+    #[serde(default)]
+    pub refresh: bool,
+    #[serde(default)]
+    pub misbehaviour: bool,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Connections {
+    pub enabled: bool,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Channels {
+    pub enabled: bool,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Packets {
+    pub enabled: bool,
+    #[serde(default = "default::clear_packets_interval")]
+    pub clear_interval: u64,
+    #[serde(default)]
+    pub clear_on_start: bool,
+    #[serde(default)]
+    pub filter: bool,
+    #[serde(default)]
+    pub tx_confirmation: bool,
 }
 
 /// Log levels are wrappers over [`tracing_core::Level`].
