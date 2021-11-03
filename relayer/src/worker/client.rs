@@ -8,7 +8,6 @@ use ibc::{core::ics02_client::events::UpdateClient, events::IbcEvent};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
-    config::Config,
     foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
     object::Client,
     telemetry,
@@ -21,6 +20,7 @@ pub struct ClientWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     client: Client,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
+    misbehaviour: bool,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
@@ -28,16 +28,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         client: Client,
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
+        misbehaviour: bool,
     ) -> Self {
         Self {
             client,
             chains,
             cmd_rx,
+            misbehaviour,
         }
     }
 
     /// Run the event loop for events associated with a [`Client`].
-    pub fn run(self, config: &Config) -> Result<(), RunError> {
+    pub fn run(self) -> Result<(), RunError> {
         let mut client = ForeignClient::restore(
             self.client.dst_client_id.clone(),
             self.chains.b.clone(),
@@ -50,8 +52,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         );
 
         // initial check for evidence of misbehaviour for all updates
-        let skip_misbehaviour =
-            !config.mode.clients.misbehaviour && self.detect_misbehaviour(&client, None);
+        let skip_misbehaviour = !self.misbehaviour || self.detect_misbehaviour(&client, None);
 
         // remember the time of the last refresh so we backoff
         let mut last_refresh = Instant::now() - Duration::from_secs(61);

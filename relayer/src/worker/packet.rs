@@ -26,6 +26,7 @@ pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
     clear_packets_interval: u64,
+    clear_packets_on_start: Option<bool>,
     with_tx_confirmation: bool,
 }
 
@@ -35,19 +36,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         clear_packets_interval: u64,
+        clear_packets_on_start: bool,
         with_tx_confirmation: bool,
     ) -> Self {
+        let clear_packets_on_start = Some(clear_packets_on_start);
         Self {
             path,
             chains,
             cmd_rx,
             clear_packets_interval,
+            clear_packets_on_start,
             with_tx_confirmation,
         }
     }
 
     /// Run the event loop for events associated with a [`Packet`].
-    pub fn run(self) -> Result<(), RunError> {
+    pub fn run(mut self) -> Result<(), RunError> {
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),
             self.chains.b.clone(),
@@ -110,7 +114,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
     /// also refreshes and executes any scheduled operational
     /// data that is ready.
     fn step(
-        &self,
+        &mut self,
         cmd: Option<WorkerCmd>,
         link: &mut Link<ChainA, ChainB>,
         index: u64,
@@ -125,10 +129,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                     height,
                     new_block: _,
                 } => {
-                    // Schedule the clearing of pending packets. This should happen
-                    // once at start, and _forced_ at predefined block intervals.
-                    let force_packet_clearing = self.clear_packets_interval != 0
-                        && height.revision_height % self.clear_packets_interval == 0;
+                    let (first_run, clear_on_start) = {
+                        match self.clear_packets_on_start.take() {
+                            None => (false, false),
+                            Some(clear_on_start) => (true, clear_on_start),
+                        }
+                    };
+
+                    // Schedule the clearing of pending packets. This may happen once at start,
+                    // and may be _forced_ at predefined block intervals.
+                    let force_packet_clearing = (first_run && clear_on_start)
+                        || (self.clear_packets_interval != 0
+                            && height.revision_height % self.clear_packets_interval == 0);
 
                     link.a_to_b
                         .schedule_packet_clearing(Some(height), force_packet_clearing)

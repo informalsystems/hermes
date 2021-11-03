@@ -91,9 +91,15 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
         debug!("spawning worker for object {}", object.short_name(),);
 
         let worker = match &object {
-            Object::Client(client) => {
-                Self::Client(id, ClientWorker::new(client.clone(), chains, cmd_rx))
-            }
+            Object::Client(client) => Self::Client(
+                id,
+                ClientWorker::new(
+                    client.clone(),
+                    chains,
+                    cmd_rx,
+                    config.mode.clients.misbehaviour,
+                ),
+            ),
             Object::Connection(connection) => Self::Connection(
                 id,
                 ConnectionWorker::new(connection.clone(), chains, cmd_rx),
@@ -108,23 +114,24 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
                     chains,
                     cmd_rx,
                     config.mode.packets.clear_interval,
+                    config.mode.packets.clear_on_start,
                     config.global.tx_confirmation,
                 ),
             ),
         };
 
-        let thread_handle = std::thread::spawn(move || worker.run(config, msg_tx));
+        let thread_handle = std::thread::spawn(move || worker.run(msg_tx));
         WorkerHandle::new(id, object, cmd_tx, thread_handle)
     }
 
     /// Run the worker event loop.
-    fn run(self, config: &Config, msg_tx: Sender<WorkerMsg>) {
+    fn run(self, msg_tx: Sender<WorkerMsg>) {
         let id = self.id();
         let object = self.object();
         let name = format!("{}#{}", object.short_name(), id);
 
         let result = match self {
-            Self::Client(_, w) => w.run(config),
+            Self::Client(_, w) => w.run(),
             Self::Connection(_, w) => w.run(),
             Self::Channel(_, w) => w.run(),
             Self::Packet(_, w) => w.run(),
