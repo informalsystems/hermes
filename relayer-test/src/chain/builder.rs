@@ -23,9 +23,9 @@ impl ChainBuilder {
         Self::new(&config.chain_command_path, &config.chain_store_dir)
     }
 
-    pub fn new_chain(&self) -> ChainDriver {
+    pub fn new_chain(&self, prefix: &str) -> ChainDriver {
         let chain_num = random_u32();
-        let chain_id = ChainId::from_string(&format!("ibc-{:x}", chain_num));
+        let chain_id = ChainId::from_string(&format!("ibc-{}-{:x}", prefix, chain_num));
 
         let rpc_port = random_unused_tcp_port();
         let grpc_port = random_unused_tcp_port();

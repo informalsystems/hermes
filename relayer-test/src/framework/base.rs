@@ -1,9 +1,12 @@
+use tracing::info;
+
 use crate::chain::builder::ChainBuilder;
 use crate::config::TestConfig;
 use crate::error::Error;
 use crate::init::init_test;
 
 pub fn run_test(test: impl TestCase) -> Result<(), Error> {
+    info!("starting test");
     test.run()
 }
 

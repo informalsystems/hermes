@@ -1,8 +1,9 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
+use tracing::info;
 
 use super::node::{run_binary_node_test, BinaryNodeTest};
-use crate::bootstrap::pair::boostrap_chain_pair_with_nodes;
+use crate::bootstrap::binary::chain::boostrap_chain_pair_with_nodes;
 use crate::error::Error;
 use crate::framework::overrides::{
     HasOverrideRelayerConfig, OnlyOverrideChannelPorts, OverrideNone, TestWithOverrides,
@@ -109,11 +110,36 @@ impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunBinaryChainTest<Test> {
         &self,
         deployment: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let res = self.0.run(&deployment);
+        self.0.run(&deployment)?;
 
-        deployment.supervisor_cmd_sender.stop();
+        Ok(())
+    }
+}
 
-        res
+impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTest<Test> {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        chains: ConnectedChains<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        info!(
+            "running two-way chain test, from {} to {}",
+            chains.side_a.chain_id(),
+            chains.side_b.chain_id()
+        );
+
+        self.0.run(&chains)?;
+
+        info!(
+            "running two-way chain test in the opposite direction, from {} to {}",
+            chains.side_b.chain_id(),
+            chains.side_a.chain_id()
+        );
+
+        let chains = chains.flip();
+
+        self.0.run(&chains)?;
+
+        Ok(())
     }
 }
 
@@ -122,29 +148,6 @@ impl<Test: TestWithRelayerConfigOverride> TestWithRelayerConfigOverride
 {
     fn modify_relayer_config(&self, config: &mut Config) {
         self.0.modify_relayer_config(config);
-    }
-}
-
-impl<Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTest<Test> {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        deployment: ConnectedChains<ChainA, ChainB>,
-    ) -> Result<(), Error> {
-        let res = self.0.run(&deployment);
-
-        match res {
-            Ok(()) => {
-                let deployment = deployment.flip();
-
-                let res = self.0.run(&deployment);
-                deployment.supervisor_cmd_sender.stop();
-                res
-            }
-            Err(e) => {
-                deployment.supervisor_cmd_sender.stop();
-                Err(e)
-            }
-        }
     }
 }
 

@@ -20,8 +20,8 @@ where
     Test: BinaryNodeTest,
 {
     fn run(&self, _config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node_a = bootstrap_single_chain(builder)?;
-        let node_b = bootstrap_single_chain(builder)?;
+        let node_a = bootstrap_single_chain(builder, "alpha")?;
+        let node_b = bootstrap_single_chain(builder, "beta")?;
 
         self.0.run(node_a, node_b)?;
 

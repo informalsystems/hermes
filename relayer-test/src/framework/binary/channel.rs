@@ -2,11 +2,12 @@ use core::str::FromStr;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
+use tracing::info;
 
 use super::chain::{
     run_owned_binary_chain_test, OwnedBinaryChainTest, TestWithRelayerConfigOverride,
 };
-use crate::bootstrap::channel::bootstrap_channel_with_chains;
+use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
 use crate::error::Error;
 use crate::framework::overrides::{
     HasOverrideChannelPorts, OnlyOverrideRelayerConfig, OverrideNone, TestWithOverrides,
@@ -66,20 +67,6 @@ struct RunOwnedBinaryChannelTest<Test>(Test);
 struct RunBinaryChannelTest<Test>(Test);
 
 struct RunTwoWayBinaryChannelTest<Test>(Test);
-
-impl<Override, Test> TestWithChannelPortsOverride for TestWithOverrides<Override, Test>
-where
-    Override: HasOverrideChannelPorts,
-    Test: TestWithChannelPortsOverride,
-{
-    fn channel_port_a(&self) -> String {
-        self.test.channel_port_a()
-    }
-
-    fn channel_port_b(&self) -> String {
-        self.test.channel_port_b()
-    }
-}
 
 impl<Test> TestWithChannelPortsOverride for TestWithOverrides<OverrideNone, Test> {}
 
@@ -144,8 +131,67 @@ impl<Test: BinaryChannelTest> OwnedBinaryChannelTest for RunBinaryChannelTest<Te
     }
 }
 
+impl<Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChannelTest<Test> {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channels: Channel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        info!(
+            "running two-way chain test, from {}/{} to {}/{}",
+            chains.side_a.chain_id(),
+            channels.channel_id_a,
+            chains.side_b.chain_id(),
+            channels.channel_id_b,
+        );
+
+        self.0.run(&chains, &channels)?;
+
+        info!(
+            "running two-way chain test in the opposite direction, from {}/{} to {}/{}",
+            chains.side_b.chain_id(),
+            channels.channel_id_b,
+            chains.side_a.chain_id(),
+            channels.channel_id_a,
+        );
+
+        let chains = chains.flip();
+        let channels = channels.flip();
+
+        self.0.run(&chains, &channels)?;
+
+        Ok(())
+    }
+}
+
+impl<Override, Test> TestWithChannelPortsOverride for TestWithOverrides<Override, Test>
+where
+    Override: HasOverrideChannelPorts,
+    Test: TestWithChannelPortsOverride,
+{
+    fn channel_port_a(&self) -> String {
+        self.test.channel_port_a()
+    }
+
+    fn channel_port_b(&self) -> String {
+        self.test.channel_port_b()
+    }
+}
+
 impl<Test: TestWithChannelPortsOverride> TestWithChannelPortsOverride
     for RunBinaryChannelTest<Test>
+{
+    fn channel_port_a(&self) -> String {
+        self.0.channel_port_a()
+    }
+
+    fn channel_port_b(&self) -> String {
+        self.0.channel_port_b()
+    }
+}
+
+impl<Test: TestWithChannelPortsOverride> TestWithChannelPortsOverride
+    for RunTwoWayBinaryChannelTest<Test>
 {
     fn channel_port_a(&self) -> String {
         self.0.channel_port_a()
@@ -161,35 +207,6 @@ impl<Test: TestWithRelayerConfigOverride> TestWithRelayerConfigOverride
 {
     fn modify_relayer_config(&self, config: &mut Config) {
         self.0.modify_relayer_config(config);
-    }
-}
-
-impl<Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChannelTest<Test> {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channels: Channel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
-        self.0.run(&chains, &channels)?;
-
-        let chains = chains.flip();
-        let channels = channels.flip();
-
-        self.0.run(&chains, &channels)?;
-
-        Ok(())
-    }
-}
-
-impl<Test: TestWithChannelPortsOverride> TestWithChannelPortsOverride
-    for RunTwoWayBinaryChannelTest<Test>
-{
-    fn channel_port_a(&self) -> String {
-        self.0.channel_port_a()
-    }
-
-    fn channel_port_b(&self) -> String {
-        self.0.channel_port_b()
     }
 }
 

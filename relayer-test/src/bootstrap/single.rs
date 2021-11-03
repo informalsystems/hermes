@@ -10,12 +10,12 @@ use crate::util::random::{random_u32, random_u64_range};
 use crate::types::single::node::RunningNode;
 use crate::types::wallets::ChainWallets;
 
-pub fn bootstrap_single_chain(builder: &ChainBuilder) -> Result<RunningNode, Error> {
+pub fn bootstrap_single_chain(builder: &ChainBuilder, prefix: &str) -> Result<RunningNode, Error> {
     let stake_denom = Denom("stake".to_string());
     let denom = Denom(format!("coin{:x}", random_u32()));
     let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
 
-    let chain_driver = builder.new_chain();
+    let chain_driver = builder.new_chain(prefix);
 
     info!("created new chain: {}", chain_driver.chain_id);
 
