@@ -196,7 +196,7 @@ impl EventMonitor {
     /// Set the queries to subscribe to.
     ///
     /// ## Note
-    /// For this change to take effect, one has to [`subscribe`] again.
+    /// For this change to take effect, one has to [`subscribe`](Self::subscribe) again.
     pub fn set_queries(&mut self, queries: Vec<Query>) {
         self.event_queries = queries;
     }
@@ -204,7 +204,7 @@ impl EventMonitor {
     /// Add a new query to subscribe to.
     ///
     /// ## Note
-    /// For this change to take effect, one has to [`subscribe`] again.
+    /// For this change to take effect, one has to [`subscribe`](Self::subscribe) again.
     pub fn add_query(&mut self, query: Query) {
         self.event_queries.push(query);
     }

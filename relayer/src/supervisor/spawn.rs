@@ -452,7 +452,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         Ok(())
     }
 
-    /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+    /// Spawns all the [`Worker`](crate::worker::Worker)s that will
+    /// handle a given channel for a given source chain.
     pub fn spawn_workers_for_channel(
         &mut self,
         chain: Chain,

@@ -16,7 +16,7 @@ pub fn derive_ibc_denom(
 }
 
 /// Derive the transferred token denomination using
-/// https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md
+/// <https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md>
 pub fn derive_ibc_denom_with_path(transfer_path: &str) -> Result<String, Error> {
     let mut hasher = Sha256::new();
     hasher.update(transfer_path.as_bytes());

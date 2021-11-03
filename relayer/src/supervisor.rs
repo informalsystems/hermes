@@ -738,14 +738,15 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     }
 }
 
-/// Describes the result of [`collect_events`].
+/// Describes the result of [`collect_events`](Supervisor::collect_events).
 #[derive(Clone, Debug)]
 pub struct CollectedEvents {
     /// The height at which these events were emitted from the chain.
     pub height: Height,
     /// The chain from which the events were emitted.
     pub chain_id: ChainId,
-    /// [`NewBlock`] event collected from the [`EventBatch`].
+    /// [`NewBlock`](ibc::events::IbcEventType::NewBlock) event
+    /// collected from the [`EventBatch`].
     pub new_block: Option<IbcEvent>,
     /// Mapping between [`Object`]s and their associated [`IbcEvent`]s.
     pub per_object: HashMap<Object, Vec<IbcEvent>>,
@@ -761,7 +762,8 @@ impl CollectedEvents {
         }
     }
 
-    /// Whether the collected events include a [`NewBlock`] event.
+    /// Whether the collected events include a
+    /// [`NewBlock`](ibc::events::IbcEventType::NewBlock) event.
     pub fn has_new_block(&self) -> bool {
         self.new_block.is_some()
     }

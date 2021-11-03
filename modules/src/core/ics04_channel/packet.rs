@@ -115,16 +115,19 @@ pub struct Packet {
 }
 
 impl Packet {
-    /// Checks whether a packet from a [`SendPacket`] event is
-    /// timed-out relative to the current state of the destination
-    /// chain.
+    /// Checks whether a packet from a
+    /// [`SendPacket`](crate::core::ics04_channel::events::SendPacket)
+    /// event is timed-out relative to the current state of the
+    /// destination chain.
     ///
     /// Checks both for time-out relative to the destination chain's
     /// current timestamp `dst_chain_ts` as well as relative to
     /// the height `dst_chain_height`.
     ///
-    /// Note: a timed-out packet should result in a [`MsgTimeout`],
-    /// instead of the common-case where it results in [`MsgRecvPacket`].
+    /// Note: a timed-out packet should result in a
+    /// [`MsgTimeout`](crate::core::ics04_channel::msgs::timeout::MsgTimeout),
+    /// instead of the common-case where it results in
+    /// [`MsgRecvPacket`](crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket).
     pub fn timed_out(&self, dst_chain_ts: &Timestamp, dst_chain_height: Height) -> bool {
         (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
             || (self.timeout_timestamp != Timestamp::none()
