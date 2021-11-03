@@ -308,7 +308,7 @@ impl CosmosSdkChain {
         };
 
         let mut tx_bytes = Vec::new();
-        prost::Message::encode(&tx_raw, &mut tx_bytes).unwrap();
+        prost::Message::encode(&tx_raw, &mut tx_bytes).map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
         let response = self.block_on(broadcast_tx_sync(self, tx_bytes))?;
 
@@ -485,7 +485,7 @@ impl CosmosSdkChain {
 
         // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
         let mut tx_bytes = vec![];
-        prost::Message::encode(&tx, &mut tx_bytes).unwrap(); // FIXME: Handle error here
+        prost::Message::encode(&tx, &mut tx_bytes).map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
         #[allow(deprecated)]
         let req = SimulateRequest {
@@ -514,7 +514,7 @@ impl CosmosSdkChain {
 
     fn key_bytes(&self, key: &KeyEntry) -> Result<Vec<u8>, Error> {
         let mut pk_buf = Vec::new();
-        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
+        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).map_err(|e| Error::protobuf_encode(String::from("Key bytes"), e))?;
         Ok(pk_buf)
     }
 
@@ -613,7 +613,7 @@ impl CosmosSdkChain {
 
         // A protobuf serialization of a SignDoc
         let mut signdoc_buf = Vec::new();
-        prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
+        prost::Message::encode(&sign_doc, &mut signdoc_buf).map_err(|e| Error::protobuf_encode(String::from("SignDoc"), e))?;
 
         // Sign doc
         let signed = self
@@ -894,7 +894,7 @@ impl ChainEndpoint for CosmosSdkChain {
         for msg in proto_msgs.iter() {
             msg_batch.push(msg.clone());
             let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf).unwrap();
+            prost::Message::encode(msg, &mut buf).map_err(|e| Error::protobuf_encode(String::from("Message"), e))?;
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
@@ -950,7 +950,7 @@ impl ChainEndpoint for CosmosSdkChain {
         for msg in proto_msgs.iter() {
             msg_batch.push(msg.clone());
             let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf).unwrap();
+            prost::Message::encode(msg, &mut buf).map_err(|e| Error::protobuf_encode(String::from("Messages"), e))?;
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
@@ -2170,7 +2170,7 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
 
     // A protobuf serialization of a AuthInfo
     let mut auth_buf = Vec::new();
-    prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
+    prost::Message::encode(&auth_info, &mut auth_buf).map_err(|e| Error::protobuf_encode(String::from("AuthInfo"), e))?;
     Ok((auth_info, auth_buf))
 }
 
@@ -2186,7 +2186,7 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u
 
     // A protobuf serialization of a TxBody
     let mut body_buf = Vec::new();
-    prost::Message::encode(&body, &mut body_buf).unwrap();
+    prost::Message::encode(&body, &mut body_buf).map_err(|e| Error::protobuf_encode(String::from("TxBody"), e))?;
     Ok((body, body_buf))
 }
 
