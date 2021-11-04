@@ -62,16 +62,17 @@ RUST_LOG=info RUST_BACKTRACE=1 \
     example_test
 ```
 
-We use the environment variables `RUST_LOG` to control the log level, and `RUST_BACKTRACE` to display backtrace when errors occurred. The test flag `--test-threads=1` is set so that Rust do not run multiple tests in parallel, as it can make it difficult to follow the logs. Finally we specify the name of the test, which in our case is `example_test`, so that only that test is being run.
+We use the environment variables `RUST_LOG` to control the log level, and `RUST_BACKTRACE` to display backtrace when errors occurred. The test flag `--test-threads=1` is set so that Rust do not run multiple tests in parallel, as it can make it difficult to follow the logs. Finally we specify the name of the test, which in our case is `example_test`, so that only that test is being run. See [TestConfig](crate::types::config::TestConfig) for more information about configuring how the tests should be run.
 
 After starting the test, we may see the logs such as following shown:
 
 ```text
-INFO ibc_relayer_test: started new chain ibc-alpha-43044935 at with home path /path/to/data/ibc-alpha-43044935 and RPC address http://localhost:56723.
+INFO ibc_relayer_test: starting test with test config: TestConfig { chain_command_path: "gaiad", chain_store_dir: "/path/to/data/test-2970732058", hang_on_fail: false }
+INFO ibc_relayer_test: started new chain ibc-alpha-43044935 at with home path /path/to/data/test-2970732058/ibc-alpha-43044935 and RPC address http://localhost:56723.
 INFO ibc_relayer_test: user wallet for chain ibc-alpha-43044935 - id: user1-34693377, address: cosmos1yyld4h2wwqz57dsqz4tmrmrsw6qw7unve884y5
-INFO ibc_relayer_test: you can manually interact with the chain using commands starting with: gaiad --home '/path/to/data/ibc-alpha-43044935' --node http://localhost:56723
+INFO ibc_relayer_test: you can manually interact with the chain using commands starting with: gaiad --home '/path/to/data/test-2970732058/ibc-alpha-43044935' --node http://localhost:56723
 ...
-INFO ibc_relayer_test: written hermes config.toml to /path/to/data/relayer/config-61e5e82f.toml
+INFO ibc_relayer_test: written hermes config.toml to /path/to/data/test-2970732058/config-61e5e82f.toml
 ...
 WARN ibc_relayer_test: hanging the test indefinitely. you can still interact with any spawned chains and relayers
 ```
@@ -81,7 +82,7 @@ You can find in the logs information about how to manually interact with the cha
 Using the log information, we can for example use `gaiad` to query for the balance of the accounts created by the test by running something like:
 
 ```bash
-$ gaiad --home '/path/to/data/ibc-alpha-43044935' \
+$ gaiad --home '/path/to/data/test-2970732058/ibc-alpha-43044935' \
     --node http://localhost:56723 query bank balances \
     cosmos1yyld4h2wwqz57dsqz4tmrmrsw6qw7unve884y5
 balances:
@@ -93,3 +94,5 @@ pagination:
   next_key: null
   total: "0"
 ```
+
+We can also see the data and configuration files generated in the absolute path shown in the log, which looks something like `/path/to/data/test-2970732058`. The sub-directory `test-2970732058` is randomly generated at the beginning of a test case, so that all data related to that test case belongs to the same directory.

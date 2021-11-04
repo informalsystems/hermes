@@ -1,5 +1,7 @@
-/**
- */
+/*!
+    Helper functions for bootstrapping two relayer chain handles
+    with connected foreign clients.
+*/
 use eyre::Report as Error;
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
@@ -18,6 +20,15 @@ use crate::types::single::node::FullNode;
 use crate::types::wallet::{ChainWallets, Wallet};
 use crate::util::random::random_u32;
 
+/**
+   Bootstraps two relayer chain handles with connected foreign clients.
+
+   Takes two [`FullNode`] values representing two different running
+   full nodes, and return a [`ConnectedChains`] that contain the given
+   full nodes together with the corresponding two [`ChainHandle`]s and
+   [`ForeignClient`]s. Also accepts an [`FnOnce`] closure that modifies
+   the relayer's [`Config`] before the chain handles are initialized.
+*/
 pub fn boostrap_chain_pair_with_nodes(
     test_config: &TestConfig,
     node_a: FullNode,

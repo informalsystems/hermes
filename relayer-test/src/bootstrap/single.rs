@@ -1,5 +1,5 @@
-/**
-   Functions for bootstrapping a single full node.
+/*!
+   Helper functions for bootstrapping a single full node.
 */
 use core::time::Duration;
 use tracing::info;
@@ -14,7 +14,23 @@ use crate::types::single::node::FullNode;
 use crate::types::wallet::ChainWallets;
 
 /**
-   Bootstrap a single full node.
+   Bootstrap a single full node with the provided [`ChainBuilder`] and
+   a prefix for the chain ID.
+
+   The function would generate random postfix attached to the end of
+   a chain ID. So for example having a prefix `"alpha"` may generate
+   a chain with the ID `"ibc-alpha-f5a2a988"`
+
+   The bootstrap function also tries to use as many random parameters
+   when intitializing the chain, such as using random denomination
+   and wallets. This is to help ensure that the test is written to
+   only work with specific hardcoded parameters.
+
+   TODO: Due to the limitation of the `gaiad` command, currently
+   parameters such as the stake denomination (`stake`) and the wallet
+   address prefix (`cosmos`) cannot be overridden. It would be
+   great to be able to randomize these parameters in the future
+   as well.
 */
 pub fn bootstrap_single_node(builder: &ChainBuilder, prefix: &str) -> Result<FullNode, Error> {
     let stake_denom = Denom("stake".to_string());
