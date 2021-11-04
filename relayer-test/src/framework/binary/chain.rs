@@ -37,7 +37,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
-    run_owned_binary_node_test(RunOwnedBinaryChainTest { test })
+    run_owned_binary_node_test(&RunOwnedBinaryChainTest { test })
 }
 
 pub trait RelayerConfigOverride {

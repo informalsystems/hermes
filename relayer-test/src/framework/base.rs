@@ -1,3 +1,8 @@
+/*!
+    Base infrastructure for the test framework. Includes basic setup for
+    initializing the logger and loading the test configuration.
+*/
+
 use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
@@ -5,10 +10,16 @@ use crate::config::TestConfig;
 use crate::error::Error;
 use crate::init::init_test;
 
+/**
+   Runs a primitive test case implementing [`TestCase`].
+*/
 pub fn run_test<Test: TestCase>(test: &Test) -> Result<(), Error> {
     test.run()
 }
 
+/**
+   Runs a basic test case implementing [`BasicTest`].
+*/
 pub fn run_basic_test<Test: BasicTest>(test: &Test) -> Result<(), Error> {
     run_test(&RunBasicTest { test })
 }

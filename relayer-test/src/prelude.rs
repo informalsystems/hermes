@@ -1,3 +1,7 @@
+/*!
+    Re-export of common constructs that are used by test cases.
+*/
+
 pub use eyre::eyre;
 pub use ibc_relayer::chain::handle::ChainHandle;
 pub use ibc_relayer::config::Config;
