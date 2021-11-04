@@ -3,8 +3,11 @@
 EXTENDS Integers, FiniteSets, TLC
 
 (********************** TYPE ANNOTATIONS FOR APALACHE ************************)
-\* operator for type annotations
-a <: b == a
+
+\* @typeAlias: CHAIN_ID = Str;
+\* @typeAlias: CLIENT_ID = Int;
+\* @typeAlias: HEIGHT = [ revision_number: Int, revision_height: Int ];
+Typedefs == TRUE
 
 ActionType == [
     type |-> STRING,
@@ -18,9 +21,7 @@ ActionType == [
     counterpartyClientId |-> Int,
     counterpartyConnectionId |-> Int
 ]
-AsAction(a) == a <: ActionType
-AsSetAction(S) == S <: {ActionType}
-AsSetInt(S) == S <: {Int}
+
 (******************* END OF TYPE ANNOTATIONS FOR APALACHE ********************)
 
 (******************************** Utils **************************************)
@@ -32,34 +33,42 @@ AsSetInt(S) == S <: {Int}
 \* - - If x's block number is higher, x is higher.
 \* - - If x's block number is lower, x is lower.
 \* - - If x and y have the same revision and block number, the heights are equal.
+\* @type: (HEIGHT, HEIGHT) => Bool;
 HeightLT(a, b) ==
     \/ a.revision_number < b.revision_number
     \/ (a.revision_number = b.revision_number /\ a.revision_height < b.revision_height)
 
+\* @type: (HEIGHT, HEIGHT) => Bool;
 HeightLTE(a, b) ==
     \/ a.revision_number < b.revision_number
     \/ (a.revision_number = b.revision_number /\ a.revision_height < b.revision_height)
     \/ a = b
 
+\* @type: (HEIGHT, HEIGHT) => Bool;
 HeightGT(a, b) ==
     \/ a.revision_number > b.revision_number
     \/ (a.revision_number = b.revision_number /\ a.revision_height > b.revision_height)
 
+\* @type: (HEIGHT, HEIGHT) => Bool;
 HeightGTE(a, b) ==
     \/ a.revision_number > b.revision_number
     \/ (a.revision_number = b.revision_number /\ a.revision_height > b.revision_height)
     \/ a = b
 
 \* Checks if the block is higher but the revision is the same
+\* @type: (HEIGHT, HEIGHT) => Bool;
 HigherRevisionHeight(a, b) ==
     /\ a.revision_number = b.revision_number
     /\ a.revision_height > b.revision_height
 
 \* Checks if the revision is higher
+\* @type: (HEIGHT, HEIGHT) => Bool;
 HigherRevisionNumber(a, b) ==
     /\ a.revision_number > b.revision_number
 
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x
+
+\* @type: (Set(HEIGHT)) => HEIGHT;
 FindMaxHeight(S) == CHOOSE x \in S: \A y \in S: HeightLTE(y, x)
 
 (*****************************************************************************)
