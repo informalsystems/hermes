@@ -7,20 +7,17 @@ EXTENDS Integers, FiniteSets, TLC
 \* @typeAlias: CHAIN_ID = Str;
 \* @typeAlias: CLIENT_ID = Int;
 \* @typeAlias: HEIGHT = [ revision_number: Int, revision_height: Int ];
+\* @typeAlias: CLIENT = [ heights: Set(HEIGHT) ];
+\* @typeAlias: CLIENTS = CLIENT_ID -> CLIENT;
+\* @typeAlias: CHAIN = [ height: HEIGHT, clients:  CLIENTS, clientIdCounter: Int ];
+\* @typeAlias: CHAINS = CHAIN_ID -> CHAIN;
+\* @typeAlias: ACTION = [ type: Str, chainId: CHAIN_ID, clientState: HEIGHT, consensusState: HEIGHT,
+\*   clientId: CLIENT_ID, header: HEIGHT, previousConnectionId: Int, counterpartyChainId: CHAIN_ID,
+\*   counterpartyClientId: CLIENT_ID, counterpartyConnectionId: Int];
+\* 
 Typedefs == TRUE
 
-ActionType == [
-    type |-> STRING,
-    chainId |-> STRING,
-    clientState |-> Int,
-    consensusState |-> Int,
-    clientId |-> Int,
-    header |-> Int,
-    previousConnectionId |-> Int,
-    counterpartyChainId |-> STRING,
-    counterpartyClientId |-> Int,
-    counterpartyConnectionId |-> Int
-]
+
 
 (******************* END OF TYPE ANNOTATIONS FOR APALACHE ********************)
 
