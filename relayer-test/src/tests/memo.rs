@@ -7,7 +7,7 @@ use tracing::{debug, info};
 use crate::config::TestConfig;
 use crate::error::Error;
 use crate::framework::binary::channel::{run_binary_channel_test, BinaryChannelTest};
-use crate::framework::overrides::{with_overrides, TestOverrides};
+use crate::framework::overrides::TestOverrides;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
@@ -17,7 +17,7 @@ use crate::util::random::{random_string, random_u64_range};
 fn test_memo() -> Result<(), Error> {
     let memo = Memo::new(&random_string());
     let test = MemoTest { memo };
-    run_binary_channel_test(&test, &with_overrides(&test))
+    run_binary_channel_test(&test)
 }
 
 struct MemoTest {

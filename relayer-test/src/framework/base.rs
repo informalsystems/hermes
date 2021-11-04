@@ -13,6 +13,12 @@ pub fn run_basic_test<Test: BasicTest>(test: &Test) -> Result<(), Error> {
     run_test(&RunBasicTest { test })
 }
 
+pub trait HasOverrides {
+    type Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides;
+}
+
 pub trait TestCase {
     fn run(&self) -> Result<(), Error>;
 }

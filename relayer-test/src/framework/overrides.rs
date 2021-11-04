@@ -3,27 +3,10 @@ use ibc_relayer::config::Config;
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
 
+use crate::framework::base::HasOverrides;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::PortsOverride;
 use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
-
-pub fn default_overrides() -> WithOverrides<'static, DefaultOverrides> {
-    WithOverrides {
-        overrides: &DefaultOverrides,
-    }
-}
-
-pub fn with_overrides<'a, Overrides: TestOverrides>(
-    overrides: &'a Overrides,
-) -> WithOverrides<'a, Overrides> {
-    WithOverrides { overrides }
-}
-
-pub struct DefaultOverrides;
-
-pub struct WithOverrides<'a, Overrides> {
-    pub overrides: &'a Overrides,
-}
 
 pub trait TestOverrides {
     fn modify_relayer_config(&self, _config: &mut Config) {
@@ -48,30 +31,36 @@ pub trait TestOverrides {
     }
 }
 
-impl TestOverrides for DefaultOverrides {}
+impl<Test: TestOverrides> HasOverrides for Test {
+    type Overrides = Self;
 
-impl<'a, Overrides: TestOverrides> RelayerConfigOverride for WithOverrides<'a, Overrides> {
-    fn modify_relayer_config(&self, config: &mut Config) {
-        self.overrides.modify_relayer_config(config)
+    fn get_overrides(&self) -> &Self {
+        self
     }
 }
 
-impl<'a, Overrides: TestOverrides> SupervisorOverride for WithOverrides<'a, Overrides> {
+impl<Test: TestOverrides> RelayerConfigOverride for Test {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        TestOverrides::modify_relayer_config(self, config)
+    }
+}
+
+impl<Test: TestOverrides> SupervisorOverride for Test {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
         registry: &SharedRegistry<impl ChainHandle + 'static>,
     ) -> Option<SupervisorHandle> {
-        self.overrides.spawn_supervisor(config, registry)
+        TestOverrides::spawn_supervisor(self, config, registry)
     }
 }
 
-impl<'a, Overrides: TestOverrides> PortsOverride for WithOverrides<'a, Overrides> {
+impl<Test: TestOverrides> PortsOverride for Test {
     fn channel_port_a(&self) -> String {
-        self.overrides.channel_port_a()
+        TestOverrides::channel_port_a(self)
     }
 
     fn channel_port_b(&self) -> String {
-        self.overrides.channel_port_b()
+        TestOverrides::channel_port_b(self)
     }
 }

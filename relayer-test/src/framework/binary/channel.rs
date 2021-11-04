@@ -9,40 +9,35 @@ use super::chain::{
 use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
 use crate::config::TestConfig;
 use crate::error::Error;
+use crate::framework::base::HasOverrides;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
 
-pub fn run_binary_channel_test<Test, Overrides>(
-    test: &Test,
-    overrides: &Overrides,
-) -> Result<(), Error>
+pub fn run_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryChannelTest,
+    Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
-    run_owned_binary_channel_test(&RunBinaryChannelTest { test }, overrides)
+    run_owned_binary_channel_test(&RunBinaryChannelTest { test })
 }
 
-pub fn run_two_way_binary_channel_test<Test, Overrides>(
-    test: &Test,
-    overrides: &Overrides,
-) -> Result<(), Error>
+pub fn run_two_way_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryChannelTest,
+    Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
-    run_owned_binary_channel_test(&RunTwoWayBinaryChannelTest { test }, overrides)
+    run_owned_binary_channel_test(&RunTwoWayBinaryChannelTest { test })
 }
 
-pub fn run_owned_binary_channel_test<Test, Overrides>(
-    test: &Test,
-    overrides: &Overrides,
-) -> Result<(), Error>
+pub fn run_owned_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: OwnedBinaryChannelTest,
+    Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
-    run_owned_binary_chain_test(&RunOwnedBinaryChannelTest { test, overrides }, overrides)
+    run_owned_binary_chain_test(&RunOwnedBinaryChannelTest { test })
 }
 
 pub trait BinaryChannelTest {
@@ -69,9 +64,8 @@ pub trait PortsOverride {
     fn channel_port_b(&self) -> String;
 }
 
-pub struct RunOwnedBinaryChannelTest<'a, Test, Overrides> {
+pub struct RunOwnedBinaryChannelTest<'a, Test> {
     pub test: &'a Test,
-    pub overrides: &'a Overrides,
 }
 
 pub struct RunBinaryChannelTest<'a, Test> {
@@ -82,9 +76,10 @@ pub struct RunTwoWayBinaryChannelTest<'a, Test> {
     pub test: &'a Test,
 }
 
-impl<'a, Test, Overrides> OwnedBinaryChainTest for RunOwnedBinaryChannelTest<'a, Test, Overrides>
+impl<'a, Test, Overrides> OwnedBinaryChainTest for RunOwnedBinaryChannelTest<'a, Test>
 where
     Test: OwnedBinaryChannelTest,
+    Test: HasOverrides<Overrides = Overrides>,
     Overrides: PortsOverride,
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -92,8 +87,8 @@ where
         config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let port_a = PortId::from_str(&self.overrides.channel_port_a())?;
-        let port_b = PortId::from_str(&self.overrides.channel_port_b())?;
+        let port_a = PortId::from_str(&self.test.get_overrides().channel_port_a())?;
+        let port_b = PortId::from_str(&self.test.get_overrides().channel_port_b())?;
 
         let channels = bootstrap_channel_with_chains(&chains, &port_a, &port_b)?;
 
@@ -156,5 +151,38 @@ impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChan
             .map_err(config.hang_on_error())?;
 
         Ok(())
+    }
+}
+
+impl<'a, Test, Overrides> HasOverrides for RunOwnedBinaryChannelTest<'a, Test>
+where
+    Test: HasOverrides<Overrides = Overrides>,
+{
+    type Overrides = Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        self.test.get_overrides()
+    }
+}
+
+impl<'a, Test, Overrides> HasOverrides for RunBinaryChannelTest<'a, Test>
+where
+    Test: HasOverrides<Overrides = Overrides>,
+{
+    type Overrides = Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        self.test.get_overrides()
+    }
+}
+
+impl<'a, Test, Overrides> HasOverrides for RunTwoWayBinaryChannelTest<'a, Test>
+where
+    Test: HasOverrides<Overrides = Overrides>,
+{
+    type Overrides = Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        self.test.get_overrides()
     }
 }

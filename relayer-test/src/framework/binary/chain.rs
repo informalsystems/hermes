@@ -8,41 +8,36 @@ use super::node::{run_owned_binary_node_test, OwnedBinaryNodeTest};
 use crate::bootstrap::binary::chain::boostrap_chain_pair_with_nodes;
 use crate::config::TestConfig;
 use crate::error::Error;
+use crate::framework::base::HasOverrides;
 use crate::relayer::supervisor::SupervisorHandle;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::single::node::RunningNode;
 
-pub fn run_binary_chain_test<Test, Overrides>(
-    test: &Test,
-    overrides: &Overrides,
-) -> Result<(), Error>
+pub fn run_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryChainTest,
+    Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
-    run_owned_binary_chain_test(&RunBinaryChainTest { test }, overrides)
+    run_owned_binary_chain_test(&RunBinaryChainTest { test })
 }
 
-pub fn run_two_way_binary_chain_test<Test, Overrides>(
-    test: &Test,
-    overrides: &Overrides,
-) -> Result<(), Error>
+pub fn run_two_way_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryChainTest,
+    Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
-    run_owned_binary_chain_test(&RunTwoWayBinaryChainTest { test }, overrides)
+    run_owned_binary_chain_test(&RunTwoWayBinaryChainTest { test })
 }
 
-pub fn run_owned_binary_chain_test<Test, Overrides>(
-    test: &Test,
-    overrides: &Overrides,
-) -> Result<(), Error>
+pub fn run_owned_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: OwnedBinaryChainTest,
+    Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
-    run_owned_binary_node_test(RunOwnedBinaryChainTest { test, overrides })
+    run_owned_binary_node_test(RunOwnedBinaryChainTest { test })
 }
 
 pub trait RelayerConfigOverride {
@@ -73,9 +68,8 @@ pub trait OwnedBinaryChainTest {
     ) -> Result<(), Error>;
 }
 
-pub struct RunOwnedBinaryChainTest<'a, Test, Overrides> {
+pub struct RunOwnedBinaryChainTest<'a, Test> {
     pub test: &'a Test,
-    pub overrides: &'a Overrides,
 }
 
 pub struct RunBinaryChainTest<'a, Test> {
@@ -86,9 +80,10 @@ pub struct RunTwoWayBinaryChainTest<'a, Test> {
     pub test: &'a Test,
 }
 
-impl<'a, Test, Overrides> OwnedBinaryNodeTest for RunOwnedBinaryChainTest<'a, Test, Overrides>
+impl<'a, Test, Overrides> OwnedBinaryNodeTest for RunOwnedBinaryChainTest<'a, Test>
 where
     Test: OwnedBinaryChainTest,
+    Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
     fn run(
@@ -98,11 +93,12 @@ where
         node_b: RunningNode,
     ) -> Result<(), Error> {
         let chains = boostrap_chain_pair_with_nodes(&config, node_a, node_b, |config| {
-            self.overrides.modify_relayer_config(config);
+            self.test.get_overrides().modify_relayer_config(config);
         })?;
 
         let _supervisor = self
-            .overrides
+            .test
+            .get_overrides()
             .spawn_supervisor(&chains.config, &chains.registry);
 
         self.test.run(config, chains)?;
@@ -163,5 +159,38 @@ impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTes
             .map_err(config.hang_on_error())?;
 
         Ok(())
+    }
+}
+
+impl<'a, Test, Overrides> HasOverrides for RunOwnedBinaryChainTest<'a, Test>
+where
+    Test: HasOverrides<Overrides = Overrides>,
+{
+    type Overrides = Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        self.test.get_overrides()
+    }
+}
+
+impl<'a, Test, Overrides> HasOverrides for RunBinaryChainTest<'a, Test>
+where
+    Test: HasOverrides<Overrides = Overrides>,
+{
+    type Overrides = Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        self.test.get_overrides()
+    }
+}
+
+impl<'a, Test, Overrides> HasOverrides for RunTwoWayBinaryChainTest<'a, Test>
+where
+    Test: HasOverrides<Overrides = Overrides>,
+{
+    type Overrides = Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        self.test.get_overrides()
     }
 }
