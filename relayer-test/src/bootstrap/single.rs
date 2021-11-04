@@ -1,3 +1,6 @@
+/**
+   Functions for bootstrapping a single full node.
+*/
 use core::time::Duration;
 use tracing::info;
 
@@ -7,10 +10,13 @@ use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::util::random::{random_u32, random_u64_range};
 
-use crate::types::single::node::RunningNode;
-use crate::types::wallets::ChainWallets;
+use crate::types::single::node::FullNode;
+use crate::types::wallet::ChainWallets;
 
-pub fn bootstrap_single_chain(builder: &ChainBuilder, prefix: &str) -> Result<RunningNode, Error> {
+/**
+   Bootstrap a single full node.
+*/
+pub fn bootstrap_single_node(builder: &ChainBuilder, prefix: &str) -> Result<FullNode, Error> {
     let stake_denom = Denom("stake".to_string());
     let denom = Denom(format!("coin{:x}", random_u32()));
     let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
@@ -87,7 +93,7 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder, prefix: &str) -> Result<Ru
         user2,
     };
 
-    let node = RunningNode {
+    let node = FullNode {
         chain_driver,
         chain_process,
         denom,

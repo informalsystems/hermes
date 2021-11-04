@@ -11,12 +11,12 @@ use tracing::info;
 
 use super::node::{run_owned_binary_node_test, OwnedBinaryNodeTest};
 use crate::bootstrap::binary::chain::boostrap_chain_pair_with_nodes;
-use crate::config::TestConfig;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::relayer::supervisor::SupervisorHandle;
 use crate::types::binary::chains::ConnectedChains;
-use crate::types::single::node::RunningNode;
+use crate::types::config::TestConfig;
+use crate::types::single::node::FullNode;
 
 /**
    Runs a test case that implements [`BinaryChainTest`].
@@ -159,12 +159,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
-    fn run(
-        &self,
-        config: &TestConfig,
-        node_a: RunningNode,
-        node_b: RunningNode,
-    ) -> Result<(), Error> {
+    fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
         let chains = boostrap_chain_pair_with_nodes(&config, node_a, node_b, |config| {
             self.test.get_overrides().modify_relayer_config(config);
         })?;

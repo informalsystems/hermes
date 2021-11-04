@@ -3,12 +3,12 @@
    running without setting up the relayer.
 */
 
-use crate::bootstrap::single::bootstrap_single_chain;
+use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
-use crate::config::TestConfig;
 use crate::error::Error;
 use crate::framework::base::{run_basic_test, BasicTest};
-use crate::types::single::node::RunningNode;
+use crate::types::config::TestConfig;
+use crate::types::single::node::FullNode;
 
 /**
    Runs a test case that implements [`BinaryNodeTest`].
@@ -28,7 +28,7 @@ pub fn run_owned_binary_node_test<Test: OwnedBinaryNodeTest>(test: &Test) -> Res
    This trait is implemented for test cases that need to have two full nodes
    running without the relayer being setup.
 
-   The test case is given two references to [`RunningNode`] which represents
+   The test case is given two references to [`FullNode`] which represents
    the two running full nodes.
 
    Test writers can use this to implement more advanced test cases which
@@ -36,17 +36,12 @@ pub fn run_owned_binary_node_test<Test: OwnedBinaryNodeTest>(test: &Test) -> Res
    and stopped at a suitable time within the test.
 */
 pub trait BinaryNodeTest {
-    fn run(
-        &self,
-        config: &TestConfig,
-        node_a: &RunningNode,
-        node_b: &RunningNode,
-    ) -> Result<(), Error>;
+    fn run(&self, config: &TestConfig, node_a: &FullNode, node_b: &FullNode) -> Result<(), Error>;
 }
 
 /**
    An owned version of [`BinaryNodeTest`], which the test case is given owned
-   [`RunningNode`] values instead of just references.
+   [`FullNode`] values instead of just references.
 
    Since the test case is given full ownership, the running full node will
    be stopped at the end of the test case. The test framework cannot use
@@ -54,12 +49,7 @@ pub trait BinaryNodeTest {
    the termination of the full nodes if the test case return errors.
 */
 pub trait OwnedBinaryNodeTest {
-    fn run(
-        &self,
-        config: &TestConfig,
-        node_a: RunningNode,
-        node_b: RunningNode,
-    ) -> Result<(), Error>;
+    fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error>;
 }
 
 /**
@@ -83,8 +73,8 @@ where
     Test: OwnedBinaryNodeTest,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node_a = bootstrap_single_chain(builder, "alpha")?;
-        let node_b = bootstrap_single_chain(builder, "beta")?;
+        let node_a = bootstrap_single_node(builder, "alpha")?;
+        let node_b = bootstrap_single_node(builder, "beta")?;
 
         self.test.run(config, node_a, node_b)?;
 
@@ -99,12 +89,7 @@ impl<'a, Test> OwnedBinaryNodeTest for RunBinaryNodeTest<'a, Test>
 where
     Test: BinaryNodeTest,
 {
-    fn run(
-        &self,
-        config: &TestConfig,
-        node_a: RunningNode,
-        node_b: RunningNode,
-    ) -> Result<(), Error> {
+    fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
         self.test
             .run(config, &node_a, &node_b)
             .map_err(config.hang_on_error())?;

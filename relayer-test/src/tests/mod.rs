@@ -8,4 +8,5 @@
 pub mod memo;
 pub mod transfer;
 
+#[cfg(any(doc, feature = "example"))]
 pub mod example;

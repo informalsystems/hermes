@@ -1,7 +1,7 @@
 use ibc::core::ics24_host::identifier::ChainId;
 
 use super::driver::ChainDriver;
-use crate::config::TestConfig;
+use crate::types::config::TestConfig;
 use crate::util::random::{random_u32, random_unused_tcp_port};
 
 #[derive(Debug)]

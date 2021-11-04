@@ -1,3 +1,5 @@
+/**
+ */
 use eyre::Report as Error;
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
@@ -8,19 +10,18 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use tracing::info;
 
-use crate::config::TestConfig;
 use crate::tagged::*;
 use crate::types::binary::chains::ConnectedChains;
+use crate::types::config::TestConfig;
 use crate::types::single::client_server::ChainClientServer;
-use crate::types::single::node::RunningNode;
-use crate::types::wallet::Wallet;
-use crate::types::wallets::ChainWallets;
+use crate::types::single::node::FullNode;
+use crate::types::wallet::{ChainWallets, Wallet};
 use crate::util::random::random_u32;
 
 pub fn boostrap_chain_pair_with_nodes(
     test_config: &TestConfig,
-    node_a: RunningNode,
-    node_b: RunningNode,
+    node_a: FullNode,
+    node_b: FullNode,
     config_modifier: impl FnOnce(&mut Config),
 ) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error> {
     let mut config = Config::default();
@@ -91,7 +92,7 @@ fn new_registry(config: SharedConfig) -> SharedRegistry<ProdChainHandle> {
     <SharedRegistry<ProdChainHandle>>::new(config)
 }
 
-fn add_chain_config(config: &mut Config, running_node: &RunningNode) -> Result<(), Error> {
+fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), Error> {
     let chain_config = running_node.generate_chain_config()?;
 
     config.chains.push(chain_config);
@@ -101,7 +102,7 @@ fn add_chain_config(config: &mut Config, running_node: &RunningNode) -> Result<(
 fn spawn_chain_handle(
     _: impl Tag,
     registry: &SharedRegistry<impl ChainHandle + 'static>,
-    node: RunningNode,
+    node: FullNode,
 ) -> Result<ChainClientServer<impl ChainHandle>, Error> {
     let chain_id = &node.chain_driver.chain_id;
     let handle = registry.get_or_spawn(chain_id)?;

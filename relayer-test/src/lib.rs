@@ -2,11 +2,9 @@
 
 pub mod bootstrap;
 pub mod chain;
-pub mod config;
 pub mod error;
 pub mod framework;
 pub mod ibc;
-pub mod init;
 pub mod prelude;
 pub mod relayer;
 pub mod tagged;

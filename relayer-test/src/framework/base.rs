@@ -5,10 +5,10 @@
 
 use tracing::info;
 
+use crate::bootstrap::init::init_test;
 use crate::chain::builder::ChainBuilder;
-use crate::config::TestConfig;
 use crate::error::Error;
-use crate::init::init_test;
+use crate::types::config::TestConfig;
 
 /**
    Runs a primitive test case implementing [`PrimitiveTest`].

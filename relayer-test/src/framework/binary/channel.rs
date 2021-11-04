@@ -13,11 +13,11 @@ use super::chain::{
     run_owned_binary_chain_test, OwnedBinaryChainTest, RelayerConfigOverride, SupervisorOverride,
 };
 use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
-use crate::config::TestConfig;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
+use crate::types::config::TestConfig;
 
 /**
    Runs a test case that implements [`BinaryChannelTest`].

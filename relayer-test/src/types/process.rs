@@ -1,9 +1,15 @@
+/*!
+   Define wrapper type around [`std::process::Child`] to kill the
+   child process when the value is dropped.
+*/
+
 use eyre::Report as Error;
 use std::process::Child;
 
-// A lightweight wrapper around std::process::Child
-// to ensure that the process is killed when the handle
-// is dropped.
+/**
+   A lightweight wrapper around std::process::Child to ensure that the
+   process is killed when the handle is dropped.
+*/
 pub struct ChildProcess {
     child: Child,
     waited: bool,

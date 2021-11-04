@@ -39,3 +39,6 @@ subtle-encoding = "0.5.1"
 sha2 = "0.9.8"
 crossbeam-channel = "0.5.1"
 prost-types = { version = "0.9", default-features = false }
+
+[features]
+example = []

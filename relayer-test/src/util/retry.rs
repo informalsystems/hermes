@@ -5,10 +5,12 @@ use tracing::debug;
 
 use crate::error::Error;
 
-/// A simplified version of retry logic used for testing.
-/// We do not need complicated retry logic as we need this
-/// only to test eventual consistency which should reach
-// within a few seconds.
+/**
+   A simplified version of retry logic used for testing.
+   We do not need complicated retry logic as we need this
+   only to test eventual consistency which should reach
+   within a few seconds.
+*/
 pub fn assert_eventually_succeed<R>(
     task_name: &str,
     task: impl Fn() -> Result<R, Error>,

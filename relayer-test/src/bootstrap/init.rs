@@ -1,3 +1,8 @@
+/*!
+   Functions for initializing each test at the beginning of a Rust test
+   session.
+*/
+
 use eyre::Report as Error;
 use std::env;
 use std::fs;
@@ -9,10 +14,14 @@ use tracing_subscriber::{
     util::SubscriberInitExt,
 };
 
-use crate::config::TestConfig;
+use crate::types::config::TestConfig;
 
 static INIT: Once = Once::new();
 
+/**
+   Initialize the test with a global logger and error handlers,
+   read the environment variables and return a [`TestConfig`].
+*/
 pub fn init_test() -> Result<TestConfig, Error> {
     INIT.call_once(|| {
         color_eyre::install().unwrap();
@@ -37,7 +46,11 @@ pub fn init_test() -> Result<TestConfig, Error> {
     })
 }
 
-fn install_logger() {
+/**
+   Install the [`tracing_subscriber`] logger handlers so that logs will
+   be displayed during test.
+*/
+pub fn install_logger() {
     // Use log level INFO by default if RUST_LOG is not set.
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
