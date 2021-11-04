@@ -337,8 +337,7 @@ impl CosmosSdkChain {
     ///
     /// It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
     /// they do not individually verify. For example for the following batch:
-    ///
-    ///     [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
+    /// [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
     ///
     /// If the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check.
     /// In this case we use the `default_gas` param.
