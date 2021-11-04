@@ -6,14 +6,23 @@ EXTENDS Integers, FiniteSets, TLC
 
 \* @typeAlias: CHAIN_ID = Str;
 \* @typeAlias: CLIENT_ID = Int;
+\* @typeAlias: CONNECTION_ID = Int;
 \* @typeAlias: HEIGHT = [ revision_number: Int, revision_height: Int ];
 \* @typeAlias: CLIENT = [ heights: Set(HEIGHT) ];
 \* @typeAlias: CLIENTS = CLIENT_ID -> CLIENT;
-\* @typeAlias: CHAIN = [ height: HEIGHT, clients:  CLIENTS, clientIdCounter: Int ];
-\* @typeAlias: CHAINS = CHAIN_ID -> CHAIN;
+\*
+\* @typeAlias: CONNECTION = [ state: Str, chainId: CHAIN_ID, clientId: CLIENT_ID,
+\*   connectionId: CONNECTION_ID, counterpartyChainId: CHAIN_ID,
+\*   counterpartyClientId: CLIENT_ID, counterpartyConnectionId: CONNECTION_ID ];
+\* @typeAlias: CONNECTIONS = CONNECTION_ID -> CONNECTION;
+\*
 \* @typeAlias: ACTION = [ type: Str, chainId: CHAIN_ID, clientState: HEIGHT, consensusState: HEIGHT,
 \*   clientId: CLIENT_ID, header: HEIGHT, previousConnectionId: Int, counterpartyChainId: CHAIN_ID,
 \*   counterpartyClientId: CLIENT_ID, counterpartyConnectionId: Int];
+\*
+\* @typeAlias: CHAIN = [ height: HEIGHT, clients:  CLIENTS, clientIdCounter: Int,
+\*   connections: CONNECTIONS, connectionIdCounter: Int, connectionProofs: Set(ACTION) ];
+\* @typeAlias: CHAINS = CHAIN_ID -> CHAIN;
 \* 
 Typedefs == TRUE
 
