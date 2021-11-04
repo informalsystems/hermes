@@ -1,4 +1,4 @@
-name: End to End testing
+name: End to End testing (Future Gaia)
 on:
   pull_request:
     paths:
