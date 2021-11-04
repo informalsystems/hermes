@@ -477,3 +477,16 @@ impl Error {
         Error::channel_send()
     }
 }
+
+impl GrpcStatusSubdetail {
+    pub fn is_account_sequence_mismatch(&self) -> bool {
+        if self.status.code() != tonic::Code::InvalidArgument {
+            return false;
+        }
+
+        self.status
+            .message()
+            .trim_start()
+            .starts_with("account sequence mismatch")
+    }
+}
