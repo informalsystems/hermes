@@ -1,3 +1,9 @@
+/*!
+   Constructs for running test cases with two full nodes together with the
+   relayer setup with chain handles and foreign clients, as well as
+   connected IBC channels with completed handshakes.
+*/
+
 use core::str::FromStr;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -13,6 +19,9 @@ use crate::framework::base::HasOverrides;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
 
+/**
+   Runs a test case that implements [`BinaryChannelTest`].
+*/
 pub fn run_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryChannelTest,
@@ -22,6 +31,11 @@ where
     run_owned_binary_channel_test(&RunBinaryChannelTest { test })
 }
 
+/**
+   Runs a test case that implements [`BinaryChannelTest`], with
+   the test case being executed twice, with the second time having the position
+   of the two chains flipped.
+*/
 pub fn run_two_way_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryChannelTest,
@@ -31,6 +45,9 @@ where
     run_owned_binary_channel_test(&RunTwoWayBinaryChannelTest { test })
 }
 
+/**
+   Runs a test case that implements [`OwnedBinaryChannelTest`].
+*/
 pub fn run_owned_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: OwnedBinaryChannelTest,
@@ -40,6 +57,18 @@ where
     run_owned_binary_chain_test(&RunOwnedBinaryChannelTest { test })
 }
 
+/**
+   This trait is implemented for test cases that need to have two
+   full nodes running together with the relayer setup with chain
+   handles and foreign clients, together with connected IBC channels
+   with completed handshakes.
+
+   The test case is given a reference to [`ConnectedChains`],
+   and a reference to [`Channel`].
+
+   Test writers can use this to implement test cases that only
+   need the chains and relayers setup without the channel handshake.
+*/
 pub trait BinaryChannelTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -49,6 +78,16 @@ pub trait BinaryChannelTest {
     ) -> Result<(), Error>;
 }
 
+/**
+   An owned version of [`BinaryChannelTest`], which the test case is given
+   owned [`ConnectedChains`] and [`Channel`] values instead of just references.
+
+   Since the test case is given full ownership, the running full node will
+   and relayer will be stopped at the end of the test case.
+   The test framework cannot use functions such as
+   [`hang_on_error`](TestConfig::hang_on_error) to suspend
+   the termination of the full nodes if the test case return errors.
+*/
 pub trait OwnedBinaryChannelTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -58,20 +97,51 @@ pub trait OwnedBinaryChannelTest {
     ) -> Result<(), Error>;
 }
 
+/**
+   An internal trait that can be implemented by test cases to override
+   the port IDs used when creating the channels.
+
+   This is called by [`RunOwnedBinaryChannelTest`] before creating
+   the IBC channels.
+
+   Test writers should implement
+   [`TestOverrides`](crate::framework::overrides::TestOverrides)
+   for their test cases instead of implementing this trait directly.
+*/
 pub trait PortsOverride {
+    /**
+       Return the port ID for chain A.
+    */
     fn channel_port_a(&self) -> String;
 
+    /**
+       Return the port ID for chain B.
+    */
     fn channel_port_b(&self) -> String;
 }
 
+/**
+   A wrapper type that lifts a test case that implements [`OwnedBinaryChannelTest`]
+   into a test case the implements [`OwnedBinaryChainTest`].
+*/
 pub struct RunOwnedBinaryChannelTest<'a, Test> {
     pub test: &'a Test,
 }
 
+/**
+   A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
+   into a test case the implements [`OwnedBinaryChannelTest`]. During execution,
+   the underlying [`BinaryChannelTest`] is run twice, with the second time
+   having the position of the two chains flipped.
+*/
 pub struct RunBinaryChannelTest<'a, Test> {
     pub test: &'a Test,
 }
 
+/**
+   A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
+   into a test case the implements [`OwnedBinaryChannelTest`].
+*/
 pub struct RunTwoWayBinaryChannelTest<'a, Test> {
     pub test: &'a Test,
 }

@@ -6,6 +6,7 @@ pub use eyre::eyre;
 pub use ibc_relayer::chain::handle::ChainHandle;
 pub use ibc_relayer::config::Config;
 pub use ibc_relayer::config::SharedConfig;
+pub use ibc_relayer::foreign_client::ForeignClient;
 pub use ibc_relayer::registry::SharedRegistry;
 pub use tracing::{debug, error, info, warn};
 

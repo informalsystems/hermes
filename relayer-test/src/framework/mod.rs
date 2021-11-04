@@ -17,6 +17,19 @@
    making it easier to write _declarative_ tests. On the
    other hand, the [`bootstrap`](crate::bootstrap) module
    allows the same test setup to be done in an _imperative_ way.
+
+   ## Common Test Cases
+
+   Here is a short list of common traits that are used for
+   defining simple test scenarios:
+
+   - [`BinaryNodeTest`](binary::node::BinaryNodeTest) -
+     Test with two full nodes running without setting up the relayer.
+   - [`BinaryChainTest`](binary::chain::BinaryChainTest) -
+     Test with two full nodes running with the relayer setup with chain handles.
+   - [`BinaryChannelTest`](binary::channel::BinaryChannelTest) -
+     Test with two full nodes running with the relayer setup with chain handles
+     together with channels that are already connected.
 */
 
 pub mod base;

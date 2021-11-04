@@ -1,3 +1,7 @@
+/*!
+   Constructs for implementing overrides for test cases.
+*/
+
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::config::SharedConfig;
@@ -8,11 +12,43 @@ use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride}
 use crate::framework::binary::channel::PortsOverride;
 use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 
+/**
+   This trait should be implemented for all test cases to allow overriding
+   some parts of the behavior during the test setup.
+
+   Since all methods in this trait have default implementation, test cases
+   that do not need any override can have an empty implementation body for
+   this trait.
+
+   The trait provides generic implementation of the specialized traits such as
+   [`RelayerConfigOverride`]. As a result, it is sufficient for test
+   writers to only implement this trait instead of implementing the
+   numerous override traits.
+
+   When a new override trait is defined, the same trait method should
+   also be defined inside this trait with a default method body.
+*/
 pub trait TestOverrides {
+    /**
+       Modify the relayer config before initializing the relayer. Does no
+       modification by default.
+
+       Implemented for [`RelayerConfigOverride`].
+    */
     fn modify_relayer_config(&self, _config: &mut Config) {
         // No modification by default
     }
 
+    /**
+       Optionally spawns the relayer supervisor after the relayer chain
+       handles and foreign clients are initialized. Default behavior
+       is to spawn the supervisor using [`spawn_supervisor`].
+
+       Test writers can disable the spawning of supervisor by overriding
+       this method and making it do nothing and return `None`.
+
+       Implemented for [`SupervisorOverride`].
+    */
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
@@ -22,10 +58,22 @@ pub trait TestOverrides {
         Some(handle)
     }
 
+    /**
+       Return the port ID used for creating the channel for the first chain.
+       Returns the "transfer" port by default.
+
+       Implemented for [`PortsOverride`].
+    */
     fn channel_port_a(&self) -> String {
         "transfer".to_string()
     }
 
+    /**
+       Return the port ID used for creating the channel for the second chain.
+       Returns the "transfer" port by default.
+
+       Implemented for [`PortsOverride`].
+    */
     fn channel_port_b(&self) -> String {
         "transfer".to_string()
     }

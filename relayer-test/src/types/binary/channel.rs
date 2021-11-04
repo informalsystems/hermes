@@ -1,16 +1,15 @@
-use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel as BaseChannel;
 
-use crate::tagged::dual::Tagged;
+use crate::types::id::*;
 
 #[derive(Debug)]
 pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub channel: BaseChannel<ChainA, ChainB>,
-    pub channel_id_a: Tagged<ChainA, ChainB, ChannelId>,
-    pub channel_id_b: Tagged<ChainB, ChainA, ChannelId>,
-    pub port_a: Tagged<ChainA, ChainB, PortId>,
-    pub port_b: Tagged<ChainB, ChainA, PortId>,
+    pub channel_id_a: ChannelId<ChainA, ChainB>,
+    pub channel_id_b: ChannelId<ChainB, ChainA>,
+    pub port_a: PortId<ChainA, ChainB>,
+    pub port_b: PortId<ChainB, ChainA>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
