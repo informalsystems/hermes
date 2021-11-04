@@ -2,27 +2,39 @@
 
 EXTENDS ICS02, ICS03
 
-\* ids of existing chains
-CONSTANT ChainIds
-\* max height which chains can reach
-CONSTANT MaxRevisionHeight
+CONSTANTS
+  \* ids of existing chains
+  \* @type: Set(CHAIN_ID);
+  ChainIds,
+  \* max height which chains can reach
+  \* @type: Int;
+  MaxRevisionHeight,
+  \* max revision which chains can reach
+  \* @type: Int;
+  MaxRevisionNumber,
+  \* max number of client to be created per chain
+  \* @type: Int;
+  MaxClientsPerChain,
+  \* max number of connections to be created per chain
+  \* @type: Int;
+  MaxConnectionsPerChain
+
 ASSUME MaxRevisionHeight >= 0
-\* max revision which chains can reach
-CONSTANT MaxRevisionNumber
 ASSUME MaxRevisionNumber >= 0
-\* max number of client to be created per chain
-CONSTANT MaxClientsPerChain
 ASSUME MaxClientsPerChain >= 0
-\* max number of connections to be created per chain
-CONSTANT MaxConnectionsPerChain
 ASSUME MaxConnectionsPerChain >= 0
 
-\* mapping from chain id to its data
-VARIABLE chains
-\* last action performed
-VARIABLE action
-\* string with the outcome of the last operation
-VARIABLE actionOutcome
+VARIABLES
+  \* mapping from chain id to its data
+  \* @type: CHAINS;
+  chains,
+  \* last action performed
+  \* @type: ACTION;
+  action,
+  \* string with the outcome of the last operation
+  \* @type: Str;
+  actionOutcome
+
 vars == <<chains, action, actionOutcome>>
 
 \* set of possible height tuples
@@ -43,7 +55,7 @@ ConnectionStates == {
 \* set of possible actions
 NoneActions == [
     type: {"None"}
-] <: {ActionType}
+]
 
 CreateClientActions == [
     type: {"Ics02CreateClient"},
@@ -52,21 +64,21 @@ CreateClientActions == [
     clientState: Heights,
     \* `consensusState` contains simply a height
     consensusState: Heights
-] <: {ActionType}
+]
 UpdateClientActions == [
     type: {"Ics02UpdateClient"},
     chainId: ChainIds,
     clientId: ClientIds,
     \* `header` contains simply a height
     header: Heights
-] <: {ActionType}
+]
 UpgradeClientActions == [
     type: {"Ics07UpgradeClient"},
     chainId: ChainIds,
     clientId: ClientIds,
     \* `header` contains simply a height
     header: Heights
-] <: {ActionType}
+]
 ClientActions ==
     CreateClientActions \union
     UpdateClientActions \union
@@ -78,7 +90,7 @@ ConnectionOpenInitActions == [
     clientId: ClientIds,
     counterpartyChainId: ChainIds,
     counterpartyClientId: ClientIds
-] <: {ActionType}
+]
 ConnectionOpenTryActions == [
     type: {"Ics03ConnectionOpenTry"},
     chainId: ChainIds,
@@ -90,7 +102,7 @@ ConnectionOpenTryActions == [
     counterpartyChainId: ChainIds,
     counterpartyClientId: ClientIds,
     counterpartyConnectionId: ConnectionIds
-] <: {ActionType}
+]
 ConnectionOpenAckActions == [
     type: {"Ics03ConnectionOpenAck"},
     chainId: ChainIds,
@@ -99,7 +111,7 @@ ConnectionOpenAckActions == [
     clientState: Heights,
     counterpartyChainId: ChainIds,
     counterpartyConnectionId: ConnectionIds
-] <: {ActionType}
+]
 ConnectionOpenConfirmActions == [
     type: {"Ics03ConnectionOpenConfirm"},
     chainId: ChainIds,
@@ -108,7 +120,7 @@ ConnectionOpenConfirmActions == [
     clientState: Heights,
     counterpartyChainId: ChainIds,
     counterpartyConnectionId: ConnectionIds
-] <: {ActionType}
+]
 ConnectionActions ==
     ConnectionOpenInitActions \union
     ConnectionOpenTryActions \union
@@ -194,6 +206,7 @@ Chains == [
 (***************************** Specification *********************************)
 
 \* update block height if outcome was ok
+\* @type: (HEIGHT, [outcome: Str], Str) => HEIGHT;
 UpdateRevisionHeight(height, result, okOutcome) ==
     IF result.outcome = okOutcome THEN
         \* <<height[1], height[2] + 1>>
@@ -202,6 +215,7 @@ UpdateRevisionHeight(height, result, okOutcome) ==
         height
 
 \* update revision height if outcome was ok
+\* @type: (HEIGHT, [outcome: Str], Str) => HEIGHT;
 UpdateRevisionNumber(height, result, okOutcome) ==
     IF result.outcome = okOutcome THEN
         [ revision_number |-> height.revision_number + 1, revision_height |-> height.revision_height ]
@@ -210,6 +224,7 @@ UpdateRevisionNumber(height, result, okOutcome) ==
 
 
 \* update connection proofs if outcome was ok
+\* @type: (Set(ACTION), [outcome: Str], Str) => Set(ACTION);
 UpdateConnectionProofs(connectionProofs, result, okOutcome) ==
     IF result.outcome = okOutcome THEN
         connectionProofs \union {result.action}
@@ -512,10 +527,14 @@ ConnectionOpenConfirmAction(chainId) ==
 
 Init ==
     \* create a client and a connection with none values
-    LET clientNone == [
-        heights |-> AsSetInt({})
+    LET 
+      \* @type: CLIENT;
+      clientNone == [
+        heights |-> {}
     ] IN
-    LET connectionNone == [
+    LET 
+       \* @type: CONNECTION;
+       connectionNone == [
         state |-> "Uninitialized",
         chainId |-> ChainIdNone,
         clientId |-> ClientIdNone,
@@ -525,16 +544,18 @@ Init ==
         counterpartyConnectionId |-> ConnectionIdNone
     ] IN
     \* create an empty chain
-    LET emptyChain == [
+    LET 
+       \* @type: CHAIN;
+       emptyChain == [
         height |-> [ revision_number |-> 1, revision_height |-> 1 ],
         clients |-> [clientId \in ClientIds |-> clientNone],
         clientIdCounter |-> 0,
         connections |-> [connectionId \in ConnectionIds |-> connectionNone],
         connectionIdCounter |-> 0,
-        connectionProofs |-> AsSetAction({})
+        connectionProofs |-> {}
     ] IN
     /\ chains = [chainId \in ChainIds |-> emptyChain]
-    /\ action = AsAction([type |-> "None"])
+    /\ action = [type |-> "None"]
     /\ actionOutcome = "None"
 
 Next ==
