@@ -15,6 +15,7 @@ use tracing_subscriber::{
 };
 
 use crate::types::config::TestConfig;
+use crate::util::random::random_u32;
 
 static INIT: Once = Once::new();
 
@@ -30,7 +31,11 @@ pub fn init_test() -> Result<TestConfig, Error> {
 
     let chain_command_path = env::var("CHAIN_COMMAND_PATH").unwrap_or_else(|_| "gaiad".to_string());
 
-    let chain_store_dir = env::var("CHAIN_STORE_DIR").unwrap_or_else(|_| "data".to_string());
+    let base_chain_store_dir = env::var("CHAIN_STORE_DIR").unwrap_or_else(|_| "data".to_string());
+
+    let chain_store_dir = format!("{}/test-{}", base_chain_store_dir, random_u32());
+
+    fs::create_dir_all(&chain_store_dir)?;
 
     let chain_store_dir = fs::canonicalize(chain_store_dir)?;
 

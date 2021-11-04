@@ -56,9 +56,10 @@ pub struct RunBasicTest<'a, Test> {
 impl<'a, Test: BasicTest> PrimitiveTest for RunBasicTest<'a, Test> {
     fn run(&self) -> Result<(), Error> {
         let config = init_test()?;
-        let builder = ChainBuilder::new_with_config(&config);
 
-        info!("starting test");
+        info!("starting test with test config: {:?}", config);
+
+        let builder = ChainBuilder::new_with_config(&config);
 
         self.test.run(&config, &builder)?;
 

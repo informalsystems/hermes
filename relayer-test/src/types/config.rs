@@ -13,6 +13,7 @@ use crate::util::hang::hang;
    from the [`init_test`](crate::bootstrap::init::init_test) function
    based on the test environment variables.
 */
+#[derive(Debug)]
 pub struct TestConfig {
     /**
        The command that the [`ChainDriver`](crate::chain::driver::ChainDriver)
