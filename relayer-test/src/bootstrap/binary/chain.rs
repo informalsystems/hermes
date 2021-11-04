@@ -32,17 +32,18 @@ pub fn boostrap_chain_pair_with_nodes(
 
     let config_str = toml::to_string_pretty(&config)?;
 
-    let relayer_config_dir = format!("{}/relayer", test_config.chain_store_dir);
+    let relayer_config_dir = test_config.chain_store_dir.join("relayer");
 
     fs::create_dir_all(&relayer_config_dir)?;
 
-    let config_path = format!("{}/config-{:x}.toml", relayer_config_dir, random_u32());
+    let config_path = relayer_config_dir.join(format!("config-{:x}.toml", random_u32()));
 
     fs::write(&config_path, &config_str)?;
 
     info!(
         "written hermes config.toml to {}:\n{}",
-        config_path, config_str
+        config_path.display(),
+        config_str
     );
 
     let config = Arc::new(RwLock::new(config));

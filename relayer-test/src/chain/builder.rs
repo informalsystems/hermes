@@ -20,7 +20,10 @@ impl ChainBuilder {
     }
 
     pub fn new_with_config(config: &TestConfig) -> Self {
-        Self::new(&config.chain_command_path, &config.chain_store_dir)
+        Self::new(
+            &config.chain_command_path,
+            &format!("{}", config.chain_store_dir.display()),
+        )
     }
 
     pub fn new_chain(&self, prefix: &str) -> ChainDriver {

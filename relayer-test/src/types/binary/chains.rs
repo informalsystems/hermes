@@ -2,13 +2,14 @@ use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
+use std::path::PathBuf;
 
 use crate::types::single::client_server::ChainClientServer;
 
 pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub config: SharedConfig,
 
-    pub config_path: String,
+    pub config_path: PathBuf,
 
     pub registry: SharedRegistry<ProdChainHandle>,
 

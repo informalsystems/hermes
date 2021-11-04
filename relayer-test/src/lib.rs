@@ -7,12 +7,13 @@ pub mod error;
 pub mod framework;
 pub mod ibc;
 pub mod init;
+pub mod prelude;
 pub mod relayer;
 pub mod tagged;
 pub mod types;
 pub mod util;
 
-#[cfg(test)]
+#[cfg(any(test, doc))]
 #[macro_use]
 pub mod tests;
 

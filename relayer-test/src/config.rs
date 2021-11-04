@@ -1,11 +1,12 @@
 use core::fmt::{Debug, Display};
+use std::path::PathBuf;
 use tracing::error;
 
 use crate::util::hang::hang;
 
 pub struct TestConfig {
     pub chain_command_path: String,
-    pub chain_store_dir: String,
+    pub chain_store_dir: PathBuf,
     pub hang_on_fail: bool,
 }
 

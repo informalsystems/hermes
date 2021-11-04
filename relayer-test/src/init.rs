@@ -1,5 +1,6 @@
 use eyre::Report as Error;
 use std::env;
+use std::fs;
 use std::sync::Once;
 use tracing_subscriber::{
     self as ts,
@@ -21,6 +22,8 @@ pub fn init_test() -> Result<TestConfig, Error> {
     let chain_command_path = env::var("CHAIN_COMMAND_PATH").unwrap_or_else(|_| "gaiad".to_string());
 
     let chain_store_dir = env::var("CHAIN_STORE_DIR").unwrap_or_else(|_| "data".to_string());
+
+    let chain_store_dir = fs::canonicalize(chain_store_dir)?;
 
     let hang_on_fail = env::var("HANG_ON_FAIL")
         .ok()

@@ -1,16 +1,8 @@
-use eyre::eyre;
-use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::{types::Memo, Config};
 use serde_json as json;
-use tracing::{debug, info};
 
-use crate::config::TestConfig;
-use crate::error::Error;
-use crate::framework::binary::channel::{run_binary_channel_test, BinaryChannelTest};
-use crate::framework::overrides::TestOverrides;
 use crate::ibc::denom::derive_ibc_denom;
-use crate::types::binary::chains::ConnectedChains;
-use crate::types::binary::channel::Channel;
+use crate::prelude::*;
 use crate::util::random::{random_string, random_u64_range};
 
 #[test]
@@ -20,7 +12,7 @@ fn test_memo() -> Result<(), Error> {
     run_binary_channel_test(&test)
 }
 
-struct MemoTest {
+pub struct MemoTest {
     memo: Memo,
 }
 

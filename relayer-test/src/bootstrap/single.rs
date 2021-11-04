@@ -17,8 +17,6 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder, prefix: &str) -> Result<Ru
 
     let chain_driver = builder.new_chain(prefix);
 
-    info!("created new chain: {}", chain_driver.chain_id);
-
     chain_driver.initialize()?;
 
     let validator = chain_driver.add_random_wallet("validator")?;
@@ -62,6 +60,25 @@ pub fn bootstrap_single_chain(builder: &ChainBuilder, prefix: &str) -> Result<Ru
     let chain_process = chain_driver.start()?;
 
     chain_driver.assert_eventual_wallet_amount(&relayer, initial_amount, &denom)?;
+
+    info!(
+        "started new chain {} at with home path {} and RPC address {}.",
+        chain_driver.chain_id,
+        chain_driver.home_path,
+        chain_driver.rpc_address(),
+    );
+
+    info!(
+        "user wallet for chain {} - id: {}, address: {}",
+        chain_driver.chain_id, user1.id.0, user1.address.0,
+    );
+
+    info!(
+        "you can manually interact with the chain using commands starting with:\n{} --home '{}' --node {}",
+        chain_driver.command_path,
+        chain_driver.home_path,
+        chain_driver.rpc_address(),
+    );
 
     let wallets = ChainWallets {
         validator,
