@@ -13,9 +13,8 @@ use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, trace};
 
 use tendermint_rpc::{
-    event::Event as RpcEvent,
-    query::{EventType, Query},
-    Error as RpcError, SubscriptionClient, Url, WebSocketClient, WebSocketClientDriver,
+    event::Event as RpcEvent, query::Query, Error as RpcError, SubscriptionClient, Url,
+    WebSocketClient, WebSocketClientDriver,
 };
 
 use ibc::{
@@ -155,6 +154,39 @@ pub struct EventMonitor {
     rt: Arc<TokioRuntime>,
 }
 
+// TODO: These are SDK specific, should be eventually moved.
+pub mod queries {
+    use tendermint_rpc::query::{EventType, Query};
+
+    pub fn all() -> Vec<Query> {
+        // Note: Tendermint-go supports max 5 query specifiers!
+        vec![
+            new_block(),
+            ibc_client(),
+            ibc_connection(),
+            ibc_channel(),
+            // This will be needed when we send misbehavior evidence to full node
+            // Query::eq("message.module", "evidence"),
+        ]
+    }
+
+    pub fn new_block() -> Query {
+        Query::from(EventType::NewBlock)
+    }
+
+    pub fn ibc_client() -> Query {
+        Query::eq("message.module", "ibc_client")
+    }
+
+    pub fn ibc_connection() -> Query {
+        Query::eq("message.module", "ibc_connection")
+    }
+
+    pub fn ibc_channel() -> Query {
+        Query::eq("message.module", "ibc_channel")
+    }
+}
+
 impl EventMonitor {
     /// Create an event monitor, and connect to a node
     pub fn new(
@@ -174,7 +206,7 @@ impl EventMonitor {
         let websocket_driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
 
         // TODO: move them to config file(?)
-        let event_queries = vec![Query::from(EventType::Tx), Query::from(EventType::NewBlock)];
+        let event_queries = queries::all();
 
         let monitor = Self {
             rt,
@@ -191,22 +223,6 @@ impl EventMonitor {
         };
 
         Ok((monitor, rx_batch, tx_cmd))
-    }
-
-    /// Set the queries to subscribe to.
-    ///
-    /// ## Note
-    /// For this change to take effect, one has to [`subscribe`](Self::subscribe) again.
-    pub fn set_queries(&mut self, queries: Vec<Query>) {
-        self.event_queries = queries;
-    }
-
-    /// Add a new query to subscribe to.
-    ///
-    /// ## Note
-    /// For this change to take effect, one has to [`subscribe`](Self::subscribe) again.
-    pub fn add_query(&mut self, query: Query) {
-        self.event_queries.push(query);
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
