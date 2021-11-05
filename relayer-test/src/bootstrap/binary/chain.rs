@@ -16,7 +16,7 @@ use crate::types::binary::chains::ConnectedChains;
 use crate::types::config::TestConfig;
 use crate::types::single::client_server::ChainClientServer;
 use crate::types::single::node::FullNode;
-use crate::types::wallet::{ChainWallets, Wallet};
+use crate::types::wallet::{TestWallets, Wallet};
 use crate::util::random::random_u32;
 
 /**
@@ -130,7 +130,7 @@ fn add_key_to_chain_handle<Chain: ChainHandle>(
 
 fn add_keys_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
-    wallets: &ChainWallets,
+    wallets: &TestWallets,
 ) -> Result<(), Error> {
     add_key_to_chain_handle(chain, &wallets.relayer)?;
     add_key_to_chain_handle(chain, &wallets.user1)?;

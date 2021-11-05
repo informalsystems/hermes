@@ -46,11 +46,29 @@ pub struct Wallet {
    trait to generate additional wallets during test setup.
 */
 #[derive(Debug)]
-pub struct ChainWallets {
+pub struct TestWallets {
     pub validator: Wallet,
     pub relayer: Wallet,
     pub user1: Wallet,
     pub user2: Wallet,
+}
+
+pub trait TaggedWallet<Chain> {
+    fn id(&self) -> MonoTagged<Chain, &WalletId>;
+
+    fn address(&self) -> MonoTagged<Chain, &WalletAddress>;
+
+    fn key(&self) -> MonoTagged<Chain, &KeyEntry>;
+}
+
+pub trait TaggedTestWallets<Chain> {
+    fn validator(&self) -> MonoTagged<Chain, &Wallet>;
+
+    fn relayer(&self) -> MonoTagged<Chain, &Wallet>;
+
+    fn user1(&self) -> MonoTagged<Chain, &Wallet>;
+
+    fn user2(&self) -> MonoTagged<Chain, &Wallet>;
 }
 
 impl Wallet {
@@ -63,34 +81,34 @@ impl Wallet {
     }
 }
 
-impl<'a, Chain> MonoTagged<Chain, &'a Wallet> {
-    pub fn id<'b>(&'b self) -> MonoTagged<Chain, &'b WalletId> {
+impl<'a, Chain> TaggedWallet<Chain> for MonoTagged<Chain, &'a Wallet> {
+    fn id(&self) -> MonoTagged<Chain, &WalletId> {
         self.map_ref(|w| &w.id)
     }
 
-    pub fn address<'b>(&'b self) -> MonoTagged<Chain, &'b WalletAddress> {
+    fn address(&self) -> MonoTagged<Chain, &WalletAddress> {
         self.map_ref(|w| &w.address)
     }
 
-    pub fn key<'b>(&'b self) -> MonoTagged<Chain, &'b KeyEntry> {
+    fn key(&self) -> MonoTagged<Chain, &KeyEntry> {
         self.map_ref(|w| &w.key)
     }
 }
 
-impl<'a, Chain> MonoTagged<Chain, &'a ChainWallets> {
-    pub fn validator(&self) -> MonoTagged<Chain, &Wallet> {
+impl<'a, Chain> TaggedTestWallets<Chain> for MonoTagged<Chain, &'a TestWallets> {
+    fn validator(&self) -> MonoTagged<Chain, &Wallet> {
         self.map_ref(|w| &w.validator)
     }
 
-    pub fn relayer(&self) -> MonoTagged<Chain, &Wallet> {
+    fn relayer(&self) -> MonoTagged<Chain, &Wallet> {
         self.map_ref(|w| &w.relayer)
     }
 
-    pub fn user1(&self) -> MonoTagged<Chain, &Wallet> {
+    fn user1(&self) -> MonoTagged<Chain, &Wallet> {
         self.map_ref(|w| &w.user1)
     }
 
-    pub fn user2(&self) -> MonoTagged<Chain, &Wallet> {
+    fn user2(&self) -> MonoTagged<Chain, &Wallet> {
         self.map_ref(|w| &w.user2)
     }
 }

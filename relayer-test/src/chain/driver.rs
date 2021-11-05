@@ -21,6 +21,7 @@ use crate::util::random::random_u32;
 use crate::util::retry::assert_eventually_succeed;
 
 pub mod query_txs;
+pub mod tagged;
 pub mod transfer;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
@@ -350,20 +351,35 @@ impl ChainDriver {
     }
 }
 
-impl<'a, ChainA> MonoTagged<ChainA, &'a ChainDriver> {
-    pub fn query_balance(
+pub trait TaggedChainDriver<Chain> {
+    fn query_balance(
         &self,
-        wallet_id: &MonoTagged<ChainA, &WalletAddress>,
-        denom: &MonoTagged<ChainA, &Denom>,
+        wallet_id: &MonoTagged<Chain, &WalletAddress>,
+        denom: &MonoTagged<Chain, &Denom>,
+    ) -> Result<u64, Error>;
+
+    fn assert_eventual_wallet_amount(
+        &self,
+        user: &MonoTagged<Chain, &Wallet>,
+        target_amount: u64,
+        denom: &MonoTagged<Chain, &Denom>,
+    ) -> Result<(), Error>;
+}
+
+impl<'a, Chain> TaggedChainDriver<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+    fn query_balance(
+        &self,
+        wallet_id: &MonoTagged<Chain, &WalletAddress>,
+        denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<u64, Error> {
         self.value().query_balance(wallet_id.value(), denom.value())
     }
 
-    pub fn assert_eventual_wallet_amount(
+    fn assert_eventual_wallet_amount(
         &self,
-        user: &MonoTagged<ChainA, &Wallet>,
+        user: &MonoTagged<Chain, &Wallet>,
         target_amount: u64,
-        denom: &MonoTagged<ChainA, &Denom>,
+        denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<(), Error> {
         self.value()
             .assert_eventual_wallet_amount(user.value(), target_amount, denom.value())

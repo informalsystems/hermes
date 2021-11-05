@@ -10,13 +10,13 @@ use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
 use crate::types::process::ChildProcess;
 use crate::types::tagged::*;
-use crate::types::wallet::ChainWallets;
+use crate::types::wallet::TestWallets;
 
 pub struct FullNode {
     pub chain_driver: ChainDriver,
     pub chain_process: ChildProcess,
     pub denom: Denom,
-    pub wallets: ChainWallets,
+    pub wallets: TestWallets,
 }
 
 impl<Chain> MonoTagged<Chain, FullNode> {
@@ -28,7 +28,7 @@ impl<Chain> MonoTagged<Chain, FullNode> {
         self.map_ref(|c| &c.chain_driver)
     }
 
-    pub fn wallets<'a>(&'a self) -> MonoTagged<Chain, &'a ChainWallets> {
+    pub fn wallets<'a>(&'a self) -> MonoTagged<Chain, &'a TestWallets> {
         self.map_ref(|c| &c.wallets)
     }
 

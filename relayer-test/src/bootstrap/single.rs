@@ -11,7 +11,7 @@ use crate::ibc::denom::Denom;
 use crate::util::random::{random_u32, random_u64_range};
 
 use crate::types::single::node::FullNode;
-use crate::types::wallet::ChainWallets;
+use crate::types::wallet::TestWallets;
 
 /**
    Bootstrap a single full node with the provided [`ChainBuilder`] and
@@ -102,7 +102,7 @@ pub fn bootstrap_single_node(builder: &ChainBuilder, prefix: &str) -> Result<Ful
         chain_driver.rpc_address(),
     );
 
-    let wallets = ChainWallets {
+    let wallets = TestWallets {
         validator,
         relayer,
         user1,
