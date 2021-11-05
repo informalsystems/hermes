@@ -2,7 +2,7 @@
     A quick demo of how a test with full setup can be written.
 
     ```rust
-    use crate::prelude::*;
+    # use ibc_relayer_test::prelude::*;
 
     #[test]
     pub fn example_test() -> Result<(), Error> {
