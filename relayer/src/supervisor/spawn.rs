@@ -393,11 +393,13 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<(), Error> {
-        let handshake_enabled = self
+        let config_conn_enabled = self
             .config
             .read()
             .expect("poisoned lock")
-            .handshake_enabled();
+            .mode
+            .connections
+            .enabled;
 
         let counterparty_chain = self
             .registry
@@ -425,7 +427,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             );
         } else if !conn_state_dst.is_open()
             && conn_state_dst.less_or_equal_progress(conn_state_src)
-            && handshake_enabled
+            && config_conn_enabled
         {
             // create worker for connection handshake that will advance the remote state
             let connection_object = Object::Connection(Connection {
@@ -460,11 +462,13 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         connection: &IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), Error> {
-        let handshake_enabled = self
+        let config_chan_enabled = self
             .config
             .read()
             .expect("poisoned lock")
-            .handshake_enabled();
+            .mode
+            .connections
+            .enabled;
 
         let counterparty_chain = self
             .registry
@@ -548,7 +552,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             }
         } else if !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
-            && handshake_enabled
+            && config_chan_enabled
         {
             // create worker for channel handshake that will advance the remote state
             let channel_object = Object::Channel(Channel {
