@@ -6,8 +6,6 @@ EXTENDS IBC
 ICS02CreateOKTest ==
     /\ actionOutcome = "Ics02CreateOk"
 
-ICS02CreateOKTestInv == ~ICS02CreateOKTest
-
 \* ICS02UpdateClient tests
 ICS02UpdateOKTest ==
     /\ actionOutcome = "Ics02UpdateOk"
@@ -48,6 +46,7 @@ ICS03ConnectionMismatchTest ==
 
 \* TODO: the following test should fail but doesn't because proofs are not yet
 \*       verified in the implementation
+\* Test is replaced with <Test> to avoid triggering Modelator
 \* ICS03InvalidProof<Test> ==
 \*     /\ actionOutcome = "Ics03InvalidProof"
 
