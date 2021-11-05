@@ -2,6 +2,26 @@
 log_level = 'trace'
 filter = false
 
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+filter = false
+tx_confirmation = true
+
 [telemetry]
 enabled = false
 host = '127.0.0.1'
