@@ -182,13 +182,11 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     {
         if enabled {
             if let Some(object) = object_ctor() {
-                if self.workers.contains(&object) {
-                    collected
-                        .per_object
-                        .entry(object)
-                        .or_default()
-                        .push(event.clone());
-                }
+                collected
+                    .per_object
+                    .entry(object)
+                    .or_default()
+                    .push(event.clone());
             }
         }
     }
@@ -212,7 +210,12 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                 }
                 IbcEvent::UpdateClient(ref update) => {
                     self.collect_event(&mut collected, event, mode.clients.enabled, || {
-                        Object::for_update_client(update, src_chain).ok()
+                        // Collect update client events only if the worker exists
+                        if let Ok(object) = Object::for_update_client(update, src_chain) {
+                            self.workers.contains(&object).then(|| object)
+                        } else {
+                            None
+                        }
                     });
                 }
                 IbcEvent::OpenInitConnection(..)
