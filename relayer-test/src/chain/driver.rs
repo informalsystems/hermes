@@ -1,3 +1,7 @@
+/*!
+   Implementation of [`ChainDriver`].
+*/
+
 use core::str::FromStr;
 use core::time::Duration;
 use eyre::eyre;
@@ -25,24 +29,50 @@ pub mod transfer;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
-/// The name `ChainDriver` is inspired by [WebDriver](https://developer.mozilla.org/en-US/docs/Web/WebDriver),
-/// which is the term used to describe programs that control spawning of the web browsers. In our case,
-/// the ChainDriver is used to spawn and manage Gaia chains.
-///
-/// In the future, we will want to turn this into one or more `ChainDriver` traits so that they can
-/// be used to spawn multiple chain implementations other than one version of Gaia.
+/**
+    A driver for interacting with a chain full nodes through command line.
+
+    The name `ChainDriver` is inspired by
+    [WebDriver](https://developer.mozilla.org/en-US/docs/Web/WebDriver),
+    which is the term used to describe programs that control spawning of the
+    web browsers. In our case, the ChainDriver is used to spawn and manage
+    chain full nodes.
+
+    Currently the `ChainDriver` is hardcoded to support only a single version
+    of Gaia chain. In the future, we will want to turn this into one or more
+    `ChainDriver` traits so that they can be used to spawn multiple chain
+    implementations other than a single version of Gaia.
+*/
 
 pub struct ChainDriver {
+    /**
+       The filesystem path to the Gaia CLI. Defaults to `gaiad`.
+    */
     pub command_path: String,
 
+    /**
+       The ID of the chain.
+    */
     pub chain_id: ChainId,
 
+    /**
+       The home directory for the full node to store data files.
+    */
     pub home_path: String,
 
+    /**
+       The port used for RPC.
+    */
     pub rpc_port: u16,
 
+    /**
+       The port used for GRPC.
+    */
     pub grpc_port: u16,
 
+    /**
+       The port used for P2P. (Currently unused other than for setup)
+    */
     pub p2p_port: u16,
 }
 
@@ -65,26 +95,55 @@ impl ChainDriver {
         }
     }
 
+    /// Returns the full URL for the RPC address.
     pub fn rpc_address(&self) -> String {
         format!("http://localhost:{}", self.rpc_port)
     }
 
+    /// Returns the full URL for the WebSocket address.
     pub fn websocket_address(&self) -> String {
         format!("ws://localhost:{}/websocket", self.rpc_port)
     }
 
+    /// Returns the full URL for the GRPC address.
     pub fn grpc_address(&self) -> String {
         format!("http://localhost:{}", self.grpc_port)
     }
 
+    /**
+        Returns the full URL for the RPC address to listen to when starting
+        the full node.
+
+        This is somehow different from [`rpc_address`](ChainDriver::rpc_adddress)
+        as it requires the `"tcp://"` scheme.
+    */
     pub fn rpc_listen_address(&self) -> String {
         format!("tcp://localhost:{}", self.rpc_port)
     }
 
+    /**
+        Returns the full URL for the GRPC address to listen to when starting
+        the full node.
+
+        This is somehow different from [`grpc_address`](ChainDriver::grpc_adddress)
+        as it requires no scheme to be specified.
+    */
     pub fn grpc_listen_address(&self) -> String {
         format!("localhost:{}", self.grpc_port)
     }
 
+    /**
+       Execute the gaiad command with the given command line arguments, and
+       returns the STDOUT result as String.
+
+       This is not the most efficient way of interacting with the CLI, but
+       is sufficient for testing purposes of interacting with the `gaiad`
+       commmand.
+
+       The function also output debug logs that show what command is being
+       executed, so that users can manually re-run the commands by
+       copying from the logs.
+    */
     pub fn exec(&self, args: &[&str]) -> Result<String, Error> {
         debug!(
             "Executing command: {} {}",
@@ -109,12 +168,12 @@ impl ChainDriver {
         }
     }
 
-    pub fn help(&self) -> Result<(), Error> {
-        self.exec(&["--help"])?;
+    /**
+       Initialized the chain data stores.
 
-        Ok(())
-    }
-
+       This is used by
+       [`bootstrap_single_node`](crate::bootstrap::single::bootstrap_single_node).
+    */
     pub fn initialize(&self) -> Result<(), Error> {
         self.exec(&[
             "--home",
@@ -128,6 +187,12 @@ impl ChainDriver {
         Ok(())
     }
 
+    /**
+       Write the string content to a file path relative to the chain home
+       directory.
+
+       This is not efficient but is sufficient for testing purposes.
+    */
     pub fn write_file(&self, file_path: &str, content: &str) -> Result<(), Error> {
         let full_path = PathBuf::from(&self.home_path).join(file_path);
         let full_path_str = format!("{}", full_path.display());
@@ -136,18 +201,30 @@ impl ChainDriver {
         Ok(())
     }
 
+    /**
+       Read the content at a file path relative to the chain home
+       directory, and return the result as a string.
+
+       This is not efficient but is sufficient for testing purposes.
+    */
     pub fn read_file(&self, file_path: &str) -> Result<String, Error> {
         let full_path = PathBuf::from(&self.home_path).join(file_path);
         let res = fs::read_to_string(full_path)?;
         Ok(res)
     }
 
+    /**
+       Add a wallet with random ID to the full node's keyring.
+    */
     pub fn add_random_wallet(&self, prefix: &str) -> Result<Wallet, Error> {
         let num = random_u32();
         let wallet_id = format!("{}-{:x}", prefix, num);
         self.add_wallet(&wallet_id)
     }
 
+    /**
+       Add a wallet with the given ID to the full node's keyring.
+    */
     pub fn add_wallet(&self, wallet_id: &str) -> Result<Wallet, Error> {
         let seed_content = self.exec(&[
             "--home",
@@ -182,6 +259,10 @@ impl ChainDriver {
         Ok(Wallet::new(wallet_id.to_string(), wallet_address, key))
     }
 
+    /**
+       Add a wallet address to the genesis account list for an uninitialized
+       full node.
+    */
     pub fn add_genesis_account(
         &self,
         wallet: &WalletAddress,
@@ -205,6 +286,10 @@ impl ChainDriver {
         Ok(())
     }
 
+    /**
+       Add a wallet ID with the given stake amount to be the genesis validator
+       for an uninitialized chain.
+    */
     pub fn add_genesis_validator(
         &self,
         wallet_id: &WalletId,
@@ -228,12 +313,18 @@ impl ChainDriver {
         Ok(())
     }
 
+    /**
+       Call `gaiad collect-gentxs` to generate the genesis transactions.
+    */
     pub fn collect_gen_txs(&self) -> Result<(), Error> {
         self.exec(&["--home", &self.home_path, "collect-gentxs"])?;
 
         Ok(())
     }
 
+    /**
+       Modify the Gaia chain config which is saved in toml format.
+    */
     pub fn update_chain_config(
         &self,
         cont: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
@@ -251,6 +342,12 @@ impl ChainDriver {
         Ok(())
     }
 
+    /**
+       Start a full node by running in the background `gaiad start`.
+
+       Returns a [`ChildProcess`] that stops the full node process when the
+       value is dropped.
+    */
     pub fn start(&self) -> Result<ChildProcess, Error> {
         let mut child = Command::new(&self.command_path)
             .args(&[
@@ -285,16 +382,9 @@ impl ChainDriver {
         Ok(ChildProcess::new(child))
     }
 
-    pub fn query_denom_traces(&self) -> Result<String, Error> {
-        self.exec(&[
-            "--node",
-            &self.rpc_listen_address(),
-            "query",
-            "ibc-transfer",
-            "denom-traces",
-        ])
-    }
-
+    /**
+       Query for the balances for a given wallet address and denomination
+    */
     pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<u64, Error> {
         let res = self.exec(&[
             "--node",
@@ -321,6 +411,10 @@ impl ChainDriver {
         Ok(amount)
     }
 
+    /**
+       Assert that a wallet should eventually have the expected amount in the
+       given denomination.
+    */
     pub fn assert_eventual_wallet_amount(
         &self,
         user: &Wallet,

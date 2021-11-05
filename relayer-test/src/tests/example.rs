@@ -1,4 +1,14 @@
+/*!
+   An simple example of fully managed test that be written with minimal
+   boilerplate.
+*/
+
 use crate::prelude::*;
+
+#[test]
+fn example_test() -> Result<(), Error> {
+    run_binary_channel_test(&ExampleTest)
+}
 
 struct ExampleTest;
 
@@ -13,9 +23,4 @@ impl BinaryChannelTest for ExampleTest {
     ) -> Result<(), Error> {
         hang()
     }
-}
-
-#[test]
-fn example_test() -> Result<(), Error> {
-    run_binary_channel_test(&ExampleTest)
 }

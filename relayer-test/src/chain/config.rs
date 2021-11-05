@@ -1,3 +1,11 @@
+/*!
+    Helper functions for modifying the Gaia chain config in TOML.
+
+    Since we do not need to understand the full structure of the
+    CosmosSDK config, we are updating the config as dynamic TOML
+    values instead of serializing them into proper types.
+*/
+
 use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use toml::Value;

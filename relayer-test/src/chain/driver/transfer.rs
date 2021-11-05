@@ -1,3 +1,7 @@
+/*!
+   Methods for performing IBC token transfer on a chain.
+*/
+
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::error::Error;
@@ -6,15 +10,19 @@ use crate::types::wallet::WalletAddress;
 
 use super::ChainDriver;
 
-// We use gaiad instead of the internal raw tx transfer to transfer tokens,
-// as the current chain implementation cannot dynamically switch the sender,
-// and instead always use the configured relayer wallet for sending tokens.
+/**
+    Submits an IBC token transfer transaction.
+
+    We use gaiad instead of the internal raw tx transfer to transfer tokens,
+    as the current chain implementation cannot dynamically switch the sender,
+    and instead always use the configured relayer wallet for sending tokens.
+*/
 pub fn transfer_token(
     driver: &ChainDriver,
     port_id: &PortId,
     channel_id: &ChannelId,
     sender: &WalletAddress,
-    receiver: &WalletAddress,
+    recipient: &WalletAddress,
     amount: u64,
     denom: &Denom,
 ) -> Result<(), Error> {
@@ -26,7 +34,7 @@ pub fn transfer_token(
         "transfer",
         port_id.as_str(),
         channel_id.as_str(),
-        &receiver.0,
+        &recipient.0,
         &format!("{}{}", amount, denom.0),
         "--from",
         &sender.0,

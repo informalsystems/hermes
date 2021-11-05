@@ -1,3 +1,7 @@
+/*!
+   Methods for tagged version of the chain driver.
+*/
+
 use serde_json as json;
 
 use crate::error::Error;
@@ -10,13 +14,35 @@ use super::query_txs::query_recipient_transactions;
 use super::transfer::transfer_token;
 use super::ChainDriver;
 
+/**
+   A [`ChainDriver`] may be tagged with a `Chain` tag in the form
+   [`MonoTagged<Chain, ChainDriver>`].
+
+   It would implement the [`TaggedChainDriver`] trait to provide tagged
+   version of the chain methods.
+
+   The tagged chain driver methods help ensure that the `ChainDriver`
+   methods are used with the values associated to the correct chain.
+*/
 pub trait TaggedChainDriver<Chain> {
+    /**
+       Tagged version of [`ChainDriver::query_balance`].
+
+       Query for the balance of a wallet that belongs to `Chain`
+       in the denomination that belongs to `Chain`.
+    */
     fn query_balance(
         &self,
         wallet_id: &MonoTagged<Chain, &WalletAddress>,
         denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<u64, Error>;
 
+    /**
+       Tagged version of [`ChainDriver::assert_eventual_wallet_amount`].
+
+       Assert that a wallet belongs to `Chain` would reach the target
+       amount in the denomination that belongs to `Chain`.
+    */
     fn assert_eventual_wallet_amount(
         &self,
         user: &MonoTagged<Chain, &Wallet>,
@@ -24,16 +50,42 @@ pub trait TaggedChainDriver<Chain> {
         denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<(), Error>;
 
+    /**
+       Tagged version of [`transfer_token`]. Submits an IBC token transfer
+       transaction to `Chain` to any other `Counterparty` chain.
+
+       The following parameters are accepted:
+
+       - A `PortId` on `Chain` that corresponds to a channel connected to
+         `Counterparty`.
+
+       - A `ChannelId` on `Chain` that corresponds to a channel connected to
+         `Counterparty`.
+
+       - The wallet address of the sender on `Chain`.
+
+       - The wallet address of the recipient on `Counterparty`.
+
+       - The transfer amount.
+
+       - The denomination of the amount on `Chain`.
+    */
     fn transfer_token<Counterparty>(
         &self,
         port_id: &PortId<Chain, Counterparty>,
         channel_id: &ChannelId<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &WalletAddress>,
-        receiver: &MonoTagged<Counterparty, &WalletAddress>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
         amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<(), Error>;
 
+    /**
+        Taggged version of [`query_recipient_transactions`].
+
+        Query for the transactions related to a wallet on `Chain`
+        receiving token transfer from others.
+    */
     fn query_recipient_transactions(
         &self,
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
@@ -64,7 +116,7 @@ impl<'a, Chain> TaggedChainDriver<Chain> for MonoTagged<Chain, &'a ChainDriver> 
         port_id: &PortId<Chain, Counterparty>,
         channel_id: &ChannelId<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &WalletAddress>,
-        receiver: &MonoTagged<Counterparty, &WalletAddress>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
         amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<(), Error> {
@@ -73,7 +125,7 @@ impl<'a, Chain> TaggedChainDriver<Chain> for MonoTagged<Chain, &'a ChainDriver> 
             port_id.value(),
             channel_id.value(),
             sender.value(),
-            receiver.value(),
+            recipient.value(),
             amount,
             denom.value(),
         )
