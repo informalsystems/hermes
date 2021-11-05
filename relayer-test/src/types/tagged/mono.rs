@@ -1,5 +1,20 @@
 /*!
    Tagged data types with a single type tag.
+
+   This is mainly used to tag data types that are associated
+   to a single chain and do not uniquely correspond to any
+   resource on a counterparty chain.
+
+    Example:
+
+    - [`Tagged<Chain, ChainId>`](crate::types::id::ChainId) -
+      A chain ID belongs to a chain and do not uniquely
+      correspond to a counterparty chain.
+
+    - [`Tagged<Chain, Wallet>`](crate::types::wallet::Wallet) -
+      A wallet belongs to a chain and do not uniquely
+      correspond to a counterparty chain
+
 */
 
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};

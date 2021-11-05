@@ -14,7 +14,6 @@ use tracing::{debug, trace};
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::types::process::ChildProcess;
-use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 use crate::util::file::pipe_to_file;
 use crate::util::random::random_u32;
@@ -348,40 +347,5 @@ impl ChainDriver {
         )?;
 
         Ok(())
-    }
-}
-
-pub trait TaggedChainDriver<Chain> {
-    fn query_balance(
-        &self,
-        wallet_id: &MonoTagged<Chain, &WalletAddress>,
-        denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<u64, Error>;
-
-    fn assert_eventual_wallet_amount(
-        &self,
-        user: &MonoTagged<Chain, &Wallet>,
-        target_amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<(), Error>;
-}
-
-impl<'a, Chain> TaggedChainDriver<Chain> for MonoTagged<Chain, &'a ChainDriver> {
-    fn query_balance(
-        &self,
-        wallet_id: &MonoTagged<Chain, &WalletAddress>,
-        denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<u64, Error> {
-        self.value().query_balance(wallet_id.value(), denom.value())
-    }
-
-    fn assert_eventual_wallet_amount(
-        &self,
-        user: &MonoTagged<Chain, &Wallet>,
-        target_amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<(), Error> {
-        self.value()
-            .assert_eventual_wallet_amount(user.value(), target_amount, denom.value())
     }
 }
