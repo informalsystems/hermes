@@ -78,7 +78,7 @@ where
 
         self.test.run(config, node_a, node_b)?;
 
-        // No use hanging the test on owned failures, as the nodes
+        // No use suspending the test on owned failures, as the nodes
         // are dropped in the inner test already.
 
         Ok(())

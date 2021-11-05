@@ -171,7 +171,7 @@ where
 
         self.test.run(config, chains)?;
 
-        // No use hanging the test on owned failures, as the chains
+        // No use suspending the test on owned failures, as the chains
         // are dropped in the inner test already.
 
         Ok(())

@@ -14,4 +14,4 @@ pub mod util;
 #[macro_use]
 pub mod tests;
 
-pub use util::hang::hang;
+pub use util::suspend::suspend;

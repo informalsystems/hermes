@@ -114,7 +114,7 @@ impl ChainDriver {
         Returns the full URL for the RPC address to listen to when starting
         the full node.
 
-        This is somehow different from [`rpc_address`](ChainDriver::rpc_adddress)
+        This is somehow different from [`rpc_address`](ChainDriver::rpc_address)
         as it requires the `"tcp://"` scheme.
     */
     pub fn rpc_listen_address(&self) -> String {
@@ -125,7 +125,7 @@ impl ChainDriver {
         Returns the full URL for the GRPC address to listen to when starting
         the full node.
 
-        This is somehow different from [`grpc_address`](ChainDriver::grpc_adddress)
+        This is somehow different from [`grpc_address`](ChainDriver::grpc_address)
         as it requires no scheme to be specified.
     */
     pub fn grpc_listen_address(&self) -> String {

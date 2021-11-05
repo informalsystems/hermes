@@ -20,7 +20,7 @@
             _chains: &ConnectedChains<ChainA, ChainB>,
             _channel: &Channel<ChainA, ChainB>,
         ) -> Result<(), Error> {
-            hang()
+            suspend()
         }
     }
     ```
@@ -31,7 +31,7 @@
     trait so that the test framework sets up the relayer with two chains
     running together with connected channels.
 
-    Inside our test, we simply call the [`hang`](crate::hang) function to
+    Inside our test, we simply call the [`suspend`](crate::suspend) function to
     suspend the test indefinitely. While this means that the test would never
     pass, we can use this as a starting point to do _manual testing_ with the
     chains that have been setup by the test, and figure out how to continue
@@ -61,7 +61,7 @@
     about configuring how the tests should be run.
 
     For this example, we disable the test from running by default, since
-    it uses [`hang`] and is never going to pass. Here we explicitly pass
+    it uses [`suspend`] and is never going to pass. Here we explicitly pass
     `--features example` so that the `example` feature is activated and this
     test will run. Finally we specify the name of the test, which in our case
     is `example_test`, so that only that test is being run.
@@ -76,7 +76,7 @@
     ...
     INFO ibc_relayer_test: written hermes config.toml to /path/to/data/test-2970732058/config-61e5e82f.toml
     ...
-    WARN ibc_relayer_test: hanging the test indefinitely. you can still interact with any spawned chains and relayers
+    WARN ibc_relayer_test: suspending the test indefinitely. you can still interact with any spawned chains and relayers
     ```
 
     You can find in the logs information about how to manually interact with
@@ -127,6 +127,6 @@ impl BinaryChannelTest for ExampleTest {
         _chains: &ConnectedChains<ChainA, ChainB>,
         _channel: &Channel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        hang()
+        suspend()
     }
 }

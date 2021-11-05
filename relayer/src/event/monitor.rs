@@ -125,11 +125,8 @@ pub enum MonitorCmd {
 /// event handler.
 ///
 /// The default events that are queried are:
-/// - [`EventType::NewBlock`]
-/// - [`EventType::Tx`]
-///
-/// Those can be extending or overriden using
-/// [`EventMonitor::add_query`] and [`EventMonitor::set_queries`].
+/// - [`EventType::NewBlock`](tendermint_rpc::query::EventType::NewBlock)
+/// - [`EventType::Tx`](tendermint_rpc::query::EventType::Tx)
 pub struct EventMonitor {
     chain_id: ChainId,
     /// WebSocket to collect events from

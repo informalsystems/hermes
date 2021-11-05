@@ -6,7 +6,7 @@ use core::fmt::{Debug, Display};
 use std::path::PathBuf;
 use tracing::error;
 
-use crate::util::hang::hang;
+use crate::util::suspend::suspend;
 
 /**
    The test config to be passed to each test case. Currently this is loaded
@@ -37,23 +37,23 @@ pub struct TestConfig {
        environment variable.
 
        Note that this will resolve to `"relayer-test/data"` relative to the
-       root project directory, as `cargo test` will automatically change the
+       root project directory, as `cargo test` will automatically csuspende the
        working directory to the sub crate's directory.
     */
     pub chain_store_dir: PathBuf,
 
     /**
-       Whether to hang a test case when it fails whenever possible.
+       Whether to suspend a test case when it fails whenever possible.
        Defaults to `false`. This can be overrideen by setting `HANG_ON_FAIL=1`.
 
        Note that even when this is enabled, not all test case will necessary
-       hang on failure. The hang-on-failure hook is handled by individual
+       suspend on failure. The suspend-on-failure hook is handled by individual
        test runners such as
        [`RunBinaryChainTest`](crate::framework::binary::chain::RunBinaryChainTest),
-       which will hang the test case only if the test has been setup
+       which will suspend the test case only if the test has been setup
        successfully and only for the case when the runner holds the required
        reference for the underlying resources. Because otherwise there is
-       no point hanging the test if the underlying chains or relayers are
+       no point suspending the test if the underlying chains or relayers are
        no longer running.
     */
     pub hang_on_fail: bool,
@@ -68,12 +68,12 @@ impl TestConfig {
         let hang_on_fail = self.hang_on_fail;
         move |e| {
             if hang_on_fail {
-                error!("test failure occured with HANG_ON_FAIL=1, hanging the test to allow debugging: {:?}",
+                error!("test failure occured with HANG_ON_FAIL=1, suspending the test to allow debugging: {:?}",
                     e);
 
-                hang()
+                suspend()
             } else {
-                error!("test failure occured. set HANG_ON_FAIL=1 to hang the test on failure for debugging: {}",
+                error!("test failure occured. set HANG_ON_FAIL=1 to suspend the test on failure for debugging: {}",
                     e);
                 e
             }

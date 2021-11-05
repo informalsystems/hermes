@@ -20,7 +20,7 @@ pub use crate::types::single::node::FullNode;
 pub use crate::types::wallet::{
     TaggedTestWallets, TaggedWallet, TestWallets, Wallet, WalletAddress, WalletId,
 };
-pub use crate::util::hang::hang;
+pub use crate::util::suspend::suspend;
 
 pub use crate::framework::binary::channel::{
     run_binary_channel_test, run_owned_binary_channel_test, run_two_way_binary_channel_test,

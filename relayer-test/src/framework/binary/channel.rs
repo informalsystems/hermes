@@ -164,7 +164,7 @@ where
 
         self.test.run(config, chains, channels)?;
 
-        // No use hanging the test on owned failures, as the chains and channels
+        // No use suspending the test on owned failures, as the chains and channels
         // are dropped in the inner test already.
 
         Ok(())
