@@ -8,8 +8,8 @@ use tendermint_rpc::Url;
 
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
-use crate::tagged::*;
 use crate::types::process::ChildProcess;
+use crate::types::tagged::*;
 use crate::types::wallet::ChainWallets;
 
 pub struct FullNode {

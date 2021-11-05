@@ -7,7 +7,6 @@ pub mod framework;
 pub mod ibc;
 pub mod prelude;
 pub mod relayer;
-pub mod tagged;
 pub mod types;
 pub mod util;
 

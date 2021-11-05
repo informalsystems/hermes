@@ -1,7 +1,7 @@
 use serde_json as json;
 
 use crate::error::Error;
-use crate::tagged::*;
+use crate::types::tagged::*;
 use crate::types::wallet::WalletAddress;
 
 use super::ChainDriver;

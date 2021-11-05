@@ -1,9 +1,9 @@
 /*!
-   This module contains the [tagged version](crate::tagged) of the
+   This module contains the [tagged version](crate::types::tagged) of the
    identifier types defined in [`ibc::core::ics24_host::identifier`].
 */
 
-use crate::tagged::*;
+use crate::types::tagged::*;
 use ibc::core::ics24_host::identifier as base;
 
 /**

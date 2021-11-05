@@ -12,9 +12,9 @@ use ibc_relayer::config::default;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::tagged::*;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::Channel;
+use crate::types::tagged::*;
 
 /**
    Create a new connnected [`Channel`] based on the provided [`ConnectedChains`].

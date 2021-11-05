@@ -13,4 +13,5 @@ pub mod config;
 pub mod id;
 pub mod process;
 pub mod single;
+pub mod tagged;
 pub mod wallet;

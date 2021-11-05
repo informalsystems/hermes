@@ -3,7 +3,7 @@ use eyre::Report as Error;
 use ibc::applications::ics20_fungible_token_transfer as token_transfer;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 
-use crate::tagged::*;
+use crate::types::tagged::*;
 
 #[derive(Debug)]
 pub struct Denom(pub String);

@@ -2,7 +2,7 @@ use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::tagged::*;
+use crate::types::tagged::*;
 use crate::types::wallet::WalletAddress;
 
 use super::ChainDriver;

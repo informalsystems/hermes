@@ -12,7 +12,6 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use tracing::info;
 
-use crate::tagged::*;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::config::TestConfig;
 use crate::types::single::client_server::ChainClientServer;
@@ -60,6 +59,9 @@ pub fn boostrap_chain_pair_with_nodes(
 
     let registry = new_registry(config.clone());
 
+    // Pass in unique closure expressions `||{}` as the first argument so that
+    // the returned chains are considered different types by Rust.
+    // See [`spawn_chain_handle`] for more details.
     let side_a = spawn_chain_handle(|| {}, &registry, node_a)?;
     let side_b = spawn_chain_handle(|| {}, &registry, node_b)?;
 
@@ -77,22 +79,62 @@ pub fn boostrap_chain_pair_with_nodes(
     })
 }
 
+/**
+   Spawn a new chain handle using the given [`SharedRegistry`] and
+   [`FullNode`].
+
+   The function accepts a proxy type `Seed` that should be unique
+   accross multiple calls so that the returned [`ChainClientServer`]
+   would be tagged by a unique [`ChainHandle`] type.
+
+   For example, the following test should fail to compile:
+
+   ```rust,compile_fail
+   # use ibc_relayer_test::bootstrap::binary::chain::spawn_chain_handle;
+   fn same<T>(_: T, _: T) {}
+
+   let chain_a = spawn_chain_handle(|| {}, todo!(), todo!()).unwrap();
+   let chain_b = spawn_chain_handle(|| {}, todo!(), todo!()).unwrap();
+   same(chain_a, chain_b); // error
+   ```
+
+   The reason is that Rust would give each closure expression `||{}` a
+   [unique anonymous type](https://doc.rust-lang.org/reference/types/closure.html).
+   When we instantiate two chains with different closure types,
+   the resulting values would be considered by Rust to have different types.
+
+   With this we can treat `chain_a` and `chain_b` having different types
+   so that we do not accidentally mix them up later in the code.
+*/
+pub fn spawn_chain_handle<Seed>(
+    _: Seed,
+    registry: &SharedRegistry<impl ChainHandle + 'static>,
+    node: FullNode,
+) -> Result<ChainClientServer<impl ChainHandle>, Error> {
+    let chain_id = &node.chain_driver.chain_id;
+    let handle = registry.get_or_spawn(chain_id)?;
+
+    add_keys_to_chain_handle(&handle, &node.wallets)?;
+
+    Ok(ChainClientServer::new(handle, node))
+}
+
 fn add_key_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
-    wallet: &MonoTagged<Chain, &Wallet>,
+    wallet: &Wallet,
 ) -> Result<(), Error> {
-    chain.add_key(wallet.value().id.0.clone(), wallet.value().key.clone())?;
+    chain.add_key(wallet.id.0.clone(), wallet.key.clone())?;
 
     Ok(())
 }
 
 fn add_keys_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
-    wallets: &MonoTagged<Chain, &ChainWallets>,
+    wallets: &ChainWallets,
 ) -> Result<(), Error> {
-    add_key_to_chain_handle(chain, &wallets.relayer())?;
-    add_key_to_chain_handle(chain, &wallets.user1())?;
-    add_key_to_chain_handle(chain, &wallets.user2())?;
+    add_key_to_chain_handle(chain, &wallets.relayer)?;
+    add_key_to_chain_handle(chain, &wallets.user1)?;
+    add_key_to_chain_handle(chain, &wallets.user2)?;
 
     Ok(())
 }
@@ -106,18 +148,4 @@ fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), 
 
     config.chains.push(chain_config);
     Ok(())
-}
-
-fn spawn_chain_handle(
-    _: impl Tag,
-    registry: &SharedRegistry<impl ChainHandle + 'static>,
-    node: FullNode,
-) -> Result<ChainClientServer<impl ChainHandle>, Error> {
-    let chain_id = &node.chain_driver.chain_id;
-    let handle = registry.get_or_spawn(chain_id)?;
-    let node = MonoTagged::new(node);
-
-    add_keys_to_chain_handle(&handle, &node.wallets())?;
-
-    Ok(ChainClientServer::new(handle, node))
 }

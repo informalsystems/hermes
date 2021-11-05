@@ -52,12 +52,21 @@ impl<Tag, Value> Tagged<Tag, Value> {
     }
 }
 
-impl<'a, Tag, Value> Tagged<Tag, &'a Value> {
-    pub fn cloned(&self) -> Tagged<Tag, Value>
-    where
-        Value: Clone,
-    {
+impl<'a, Tag, Value: Clone> Tagged<Tag, &'a Value> {
+    pub fn cloned(&self) -> Tagged<Tag, Value> {
         Tagged::new(self.0.clone())
+    }
+}
+
+impl<'a, Tag, Value> AsRef<Value> for Tagged<Tag, &'a Value> {
+    fn as_ref(&self) -> &Value {
+        self.value()
+    }
+}
+
+impl<Tag, Value> AsRef<Value> for Tagged<Tag, Value> {
+    fn as_ref(&self) -> &Value {
+        self.value()
     }
 }
 

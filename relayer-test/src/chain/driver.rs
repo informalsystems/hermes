@@ -13,8 +13,8 @@ use tracing::{debug, trace};
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::tagged::*;
 use crate::types::process::ChildProcess;
+use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 use crate::util::file::pipe_to_file;
 use crate::util::random::random_u32;

@@ -56,6 +56,18 @@ impl<'a, TagA, TagB, Value> Tagged<TagA, TagB, &'a Value> {
     }
 }
 
+impl<'a, TagA, TagB, Value> AsRef<Value> for Tagged<TagA, TagB, &'a Value> {
+    fn as_ref(&self) -> &Value {
+        self.value()
+    }
+}
+
+impl<TagA, TagB, Value> AsRef<Value> for Tagged<TagA, TagB, Value> {
+    fn as_ref(&self) -> &Value {
+        self.value()
+    }
+}
+
 impl<Tag1, Tag2, Value> Tagged<Tag1, Tag2, Option<Value>> {
     pub fn transpose(self) -> Option<Tagged<Tag1, Tag2, Value>> {
         self.0.map(Tagged::new)

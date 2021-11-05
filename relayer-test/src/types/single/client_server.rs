@@ -3,8 +3,8 @@ use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
-use crate::tagged::*;
 use crate::types::single::node::FullNode;
+use crate::types::tagged::*;
 use crate::types::wallet::ChainWallets;
 
 pub struct ChainClientServer<ChainA: ChainHandle> {
@@ -14,8 +14,11 @@ pub struct ChainClientServer<ChainA: ChainHandle> {
 }
 
 impl<ChainA: ChainHandle> ChainClientServer<ChainA> {
-    pub fn new(handle: ChainA, node: MonoTagged<ChainA, FullNode>) -> Self {
-        Self { handle, node }
+    pub fn new(handle: ChainA, node: FullNode) -> Self {
+        Self {
+            handle,
+            node: MonoTagged::new(node),
+        }
     }
 
     pub fn chain_id<'a>(&'a self) -> MonoTagged<ChainA, &'a ChainId> {

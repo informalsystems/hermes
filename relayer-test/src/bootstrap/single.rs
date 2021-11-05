@@ -19,7 +19,7 @@ use crate::types::wallet::ChainWallets;
 
    The function would generate random postfix attached to the end of
    a chain ID. So for example having a prefix `"alpha"` may generate
-   a chain with the ID `"ibc-alpha-f5a2a988"`
+   a chain with an ID  like `"ibc-alpha-f5a2a988"`
 
    The bootstrap function also tries to use as many random parameters
    when intitializing the chain, such as using random denomination
