@@ -479,6 +479,21 @@ impl Error {
 }
 
 impl GrpcStatusSubdetail {
+    /// Check whether this gRPC error matches
+    /// - status: InvalidArgument
+    /// - message: verification failed: ... failed packet acknowledgement verification for client: client state height < proof height ...
+    pub fn is_client_state_height_too_low(&self) -> bool {
+        if self.status.code() != tonic::Code::InvalidArgument {
+            return false;
+        }
+
+        let msg = self.status.message();
+        msg.contains("verification failed") && msg.contains("client state height < proof height")
+    }
+
+    /// Check whether this gRPC error matches
+    /// - status: InvalidArgument
+    /// - message: account sequence mismatch ...
     pub fn is_account_sequence_mismatch(&self) -> bool {
         if self.status.code() != tonic::Code::InvalidArgument {
             return false;

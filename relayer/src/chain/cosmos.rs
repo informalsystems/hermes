@@ -2281,14 +2281,11 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
 /// Determine whether the given error yielded by `tx_simulate`
 /// can be recovered from by submitting the tx anyway.
-///
-/// At the moment, we have only seen this happen for
-/// account sequence mismatch errors, for reasons yet to be determined.
 fn can_recover_from_simulation_failure(e: &Error) -> bool {
     use crate::error::ErrorDetail::*;
 
     match e.detail() {
-        GrpcStatus(detail) => detail.is_account_sequence_mismatch(),
+        GrpcStatus(detail) => detail.is_client_state_height_too_low(),
         _ => false,
     }
 }
