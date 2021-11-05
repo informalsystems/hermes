@@ -286,13 +286,13 @@ impl CosmosSdkChain {
             signatures: vec![signed_doc],
         };
 
-        let simulated_gas = self.simulate_gas(simulate_tx)?;
-        let adjusted_fee = self.fee_with_gas(simulated_gas);
+        let estimated_gas = self.estimate_gas(simulate_tx)?;
+        let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
             "[{}] send_tx: using {} gas, fee {}",
             self.id(),
-            simulated_gas,
+            estimated_gas,
             PrettyFee(&adjusted_fee)
         );
 
@@ -341,13 +341,13 @@ impl CosmosSdkChain {
     ///
     /// If the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check.
     /// In this case we use the `default_gas` param.
-    fn simulate_gas(&self, tx: Tx) -> Result<u64, Error> {
+    fn estimate_gas(&self, tx: Tx) -> Result<u64, Error> {
         let simulated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
 
         match simulated_gas {
             Ok(Some(gas_info)) => {
                 debug!(
-                    "[{}] simulate_gas: tx simulation successful, gas amount used: {:?}",
+                    "[{}] estimate_gas: tx simulation successful, gas amount used: {:?}",
                     self.id(),
                     gas_info.gas_used
                 );
@@ -357,7 +357,7 @@ impl CosmosSdkChain {
 
             Ok(None) => {
                 warn!(
-                    "[{}] simulate_gas: tx simulation successful but no gas amount used was returned, falling back on default gas: {}",
+                    "[{}] estimate_gas: tx simulation successful but no gas amount used was returned, falling back on default gas: {}",
                     self.id(),
                     self.default_gas()
                 );
@@ -370,7 +370,7 @@ impl CosmosSdkChain {
             // See `can_recover_from_simulation_failure` for more info.
             Err(e) if can_recover_from_simulation_failure(&e) => {
                 warn!(
-                    "[{}] simulate_gas: failed to simulate tx, falling back on default gas because the error is potentially recoverable: {}",
+                    "[{}] estimate_gas: failed to simulate tx, falling back on default gas because the error is potentially recoverable: {}",
                     self.id(),
                     e.detail()
                 );
@@ -380,7 +380,7 @@ impl CosmosSdkChain {
 
             Err(e) => {
                 error!(
-                    "[{}] simulate_gas: failed to simulate tx with non-recoverable error: {}",
+                    "[{}] estimate_gas: failed to simulate tx with non-recoverable error: {}",
                     self.id(),
                     e.detail()
                 );
