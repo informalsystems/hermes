@@ -152,6 +152,34 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
     }
 
     /**
+        Perform operation with the reference to the underlying reference,
+        and have result reference with the same lifetime that preserve the tags.
+
+        Example:
+
+        ```rust
+        # use ibc_relayer_test::types::tagged::dual::Tagged;
+        struct Person { name: String, age: u8 }
+        struct Alice;
+        struct Wonderland;
+
+        let person: Tagged<Alice, Wonderland, Person> = Tagged::new(Person {
+            name: "Alice".to_string(),
+            age: 30,
+        });
+
+        let name: Tagged<Alice, Wonderland, &str> = person
+            .map_ref(|person| person.name.as_str());
+        ```
+    */
+    pub fn map_ref<'a, T: ?Sized>(
+        &'a self,
+        mapper: impl FnOnce(&'a Value) -> &'a T,
+    ) -> Tagged<TagA, TagB, &'a T> {
+        Tagged::new(mapper(self.value()))
+    }
+
+    /**
         Perform an operation consuming the original tagged value, and return
         a result value preserving the original tag.
 
@@ -177,7 +205,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
 
     /**
         Perform operation with the reference to the underlying reference,
-        and have two tags switched in the result.
+        and have two tags flipped in the result.
 
         Example:
 
@@ -189,9 +217,78 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         let val1: Tagged<Foo, Bar, i64> = Tagged::new(42);
         let val2: Tagged<Bar, Foo, String> = val1.contra_map(|x| format!("{}", x));
         ```
+
+        This is mainly useful for accessing IBC data structures that may contain
+        information about the counterparty chain. For example, consider
+        a tagged and simplified version of
+        [`ConnectionEnd`](ibc::core::ics03_connection::connection::ConnectionEnd):
+
+        ```rust
+        # use ibc::core::ics24_host::identifier::ConnectionId;
+        # use ibc_relayer_test::types::tagged::dual::Tagged;
+        struct ConnectionEnd {
+            connection_id: ConnectionId,
+            counterparty_connection_id: ConnectionId,
+        }
+
+        fn process_connection_end<ChainA, ChainB>(
+            connection_end: Tagged<ChainA, ChainB, ConnectionEnd>)
+        {
+            let connection_id: Tagged<ChainA, ChainB, ConnectionId> =
+                connection_end.map(|c| c.connection_id.clone());
+
+            let counterparty_connection_id: Tagged<ChainB, ChainA, ConnectionId> =
+                connection_end.contra_map(|c| c.connection_id.clone());
+
+            // do something
+        }
+        ```
+
+        The `ConnectionEnd` data type above is a _bidirectional_ data type that
+        contains fields that are specific to both chains: the connection ID
+        and the counterparty connection ID. But when we tag the `ConnectionEnd`
+        type, we have to choose one dominant chain to appear at the first position.
+
+        When we extract the `connection_id` field, we use `map` to preserve the
+        tag ordering to say that the connection ID _belongs_ to the `ChainA`,
+        and corresponds to a connection to the counterparty `ChainB`.
+
+        When we extract the `counterparty_connection_id` field, we use
+        `contra_map` to flip the tag ordering to say that the connection ID
+        _belongs_ to the counterparty `ChainB`, and corresponds to a connection
+        to `ChainA`.
     */
     pub fn contra_map<T>(&self, mapper: impl FnOnce(&Value) -> T) -> Tagged<TagB, TagA, T> {
         Tagged::new(mapper(&self.0))
+    }
+
+    /**
+       Perform operation with the reference to the underlying reference,
+       and have the result reference with the same lifetime and have the
+       two tags flipped in the result.
+
+       Example:
+
+       ```rust
+       # use ibc_relayer_test::types::tagged::dual::Tagged;
+       struct Person { name: String, age: u8 }
+       struct Alice;
+       struct Wonderland;
+
+       let person: Tagged<Alice, Wonderland, Person> = Tagged::new(Person {
+           name: "Alice".to_string(),
+           age: 30,
+       });
+
+       let name: Tagged<Wonderland, Alice, &str> = person
+           .contra_map_ref(|person| person.name.as_str());
+       ```
+    */
+    pub fn contra_map_ref<'a, T: ?Sized>(
+        &'a self,
+        mapper: impl FnOnce(&'a Value) -> &'a T,
+    ) -> Tagged<TagB, TagA, &'a T> {
+        Tagged::new(mapper(self.value()))
     }
 
     /**
