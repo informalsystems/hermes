@@ -3,17 +3,22 @@
 EXTENDS ICS02
 
 \* retrieves `connectionId`'s data
+\* @type: (CONNECTIONS, CONNECTION_ID) => CONNECTION;
 ICS03_GetConnection(connections, connectionId) ==
     connections[connectionId]
 
 \* check if `connectionId` exists
+\* @type: (CONNECTIONS, CONNECTION_ID) => Bool;
 ICS03_ConnectionExists(connections, connectionId) ==
     ICS03_GetConnection(connections, connectionId).state /= "Uninitialized"
 
 \* update `connectionId`'s data
+\* @type: (CONNECTIONS, CONNECTION_ID, CONNECTION) => CONNECTIONS;
 ICS03_SetConnection(connections, connectionId, connection) ==
     [connections EXCEPT ![connectionId] = connection]
 
+\* @type: (CHAIN, CHAIN_ID, CLIENT_ID, CHAIN_ID, CLIENT_ID) 
+\*   => [connections: CONNECTIONS, connectionIdCounter: Int, action: ACTION, outcome: Str];
 ICS03_ConnectionOpenInit(
     chain,
     chainId,
@@ -21,13 +26,13 @@ ICS03_ConnectionOpenInit(
     counterpartyChainId,
     counterpartyClientId
 ) ==
-    LET action_ == AsAction([
+    LET action_ == [
         type |-> "Ics03ConnectionOpenInit",
         chainId |-> chainId,
         clientId |-> clientId,
         counterpartyChainId |-> counterpartyChainId,
         counterpartyClientId |-> counterpartyClientId
-    ]) IN
+    ] IN
     \* check if the client exists
     IF ~ICS02_ClientExists(chain.clients, clientId) THEN
         \* if the client does not exist, then set an error outcome
@@ -73,6 +78,8 @@ ICS03_ConnectionOpenInit(
                 outcome |-> "Ics03ConnectionOpenInitOk"
             ]
 
+\* @type: (CHAIN, CHAIN_ID, CLIENT_ID, CONNECTION_ID, HEIGHT, CHAIN_ID, CLIENT_ID, CONNECTION_ID) 
+\*   => [connections: CONNECTIONS, connectionIdCounter: Int, action: ACTION, outcome: Str];
 ICS03_ConnectionOpenTry(
     chain,
     chainId,
@@ -83,7 +90,7 @@ ICS03_ConnectionOpenTry(
     counterpartyClientId,
     counterpartyConnectionId
 ) ==
-    LET action_ == AsAction([
+    LET action_ == [
         type |-> "Ics03ConnectionOpenTry",
         chainId |-> chainId,
         clientId |-> clientId,
@@ -92,7 +99,7 @@ ICS03_ConnectionOpenTry(
         counterpartyChainId |-> counterpartyChainId,
         counterpartyClientId |-> counterpartyClientId,
         counterpartyConnectionId |-> counterpartyConnectionId
-    ]) IN
+    ] IN
     \* check if client's claimed height is higher than the chain's height
     IF HeightGT(height, chain.height) THEN
         \* if client's height is too advanced, then set an error outcome
@@ -231,6 +238,8 @@ ICS03_ConnectionOpenTry(
                             outcome |-> "Ics03ConnectionOpenTryOk"
                         ]
 
+\* @type: (CHAIN, CHAIN_ID, CONNECTION_ID, HEIGHT, CHAIN_ID, CONNECTION_ID) 
+\*   => [connections: CONNECTIONS, action: ACTION, outcome: Str];
 ICS03_ConnectionOpenAck(
     chain,
     chainId,
@@ -239,14 +248,14 @@ ICS03_ConnectionOpenAck(
     counterpartyChainId,
     counterpartyConnectionId
 ) ==
-    LET action_ == AsAction([
+    LET action_ == [
         type |-> "Ics03ConnectionOpenAck",
         chainId |-> chainId,
         connectionId |-> connectionId,
         clientState |-> height,
         counterpartyChainId |-> counterpartyChainId,
         counterpartyConnectionId |-> counterpartyConnectionId
-    ]) IN
+    ] IN
     LET clients == chain.clients IN
     LET connections == chain.connections IN
     LET connectionProofs == chain.connectionProofs IN
@@ -335,6 +344,8 @@ ICS03_ConnectionOpenAck(
                             outcome |-> "Ics03ConnectionOpenAckOk"
                         ]
 
+\* @type: (CHAIN, CHAIN_ID, CONNECTION_ID, HEIGHT, CHAIN_ID, CONNECTION_ID) 
+\*   => [connections: CONNECTIONS, action: ACTION, outcome: Str];
 ICS03_ConnectionOpenConfirm(
     chain,
     chainId,
@@ -343,14 +354,14 @@ ICS03_ConnectionOpenConfirm(
     counterpartyChainId,
     counterpartyConnectionId
 ) ==
-    LET action_ == AsAction([
+    LET action_ == [
         type |-> "Ics03ConnectionOpenConfirm",
         chainId |-> chainId,
         connectionId |-> connectionId,
         clientState |-> height,
         counterpartyChainId |-> counterpartyChainId,
         counterpartyConnectionId |-> counterpartyConnectionId
-    ]) IN
+    ] IN
     LET clients == chain.clients IN
     LET connections == chain.connections IN
     LET connectionProofs == chain.connectionProofs IN
