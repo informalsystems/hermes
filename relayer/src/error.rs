@@ -474,6 +474,9 @@ define_error! {
         EmptyBaseAccount
             |_| { "Empty BaseAccount within EthAccount" },
 
+        EmptyQueryAccount
+            { address: String }
+            |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) }
     }
 }
 

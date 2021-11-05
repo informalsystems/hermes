@@ -2112,14 +2112,20 @@ async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAc
     .await
     .map_err(Error::grpc_transport)?;
 
-    let request = tonic::Request::new(QueryAccountRequest { address });
+    let request = tonic::Request::new(QueryAccountRequest { address: address.clone() });
 
     let response = client.account(request).await;
-    let resp_account = response
+
+    // Querying for an account might fail, i.e. if the account doesn't actually exist
+    let resp_account = match response
         .map_err(Error::grpc_status)?
         .into_inner()
-        .account
-        .unwrap();
+        .account 
+    {
+        Some(account) => account,
+        None => return Err(Error::empty_query_account(address)),
+    };
+
     if resp_account.type_url == "/cosmos.auth.v1beta1.BaseAccount" {
         Ok(BaseAccount::decode(resp_account.value.as_slice())
             .map_err(|e| Error::protobuf_decode("BaseAccount".to_string(), e))?)
