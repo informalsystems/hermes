@@ -89,7 +89,6 @@ Relevant snippet:
 
 ```toml
 [global]
-strategy = 'packets'
 log_level = 'error'
 ```
 
