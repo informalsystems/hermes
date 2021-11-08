@@ -29,7 +29,7 @@ impl BinaryChannelTest for MemoTest {
         &self,
         _config: &TestConfig,
         chains: &ConnectedChains<ChainA, ChainB>,
-        channel: &Channel<ChainA, ChainB>,
+        channel: &ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         info!(
             "testing IBC transfer with memo configured: \"{}\"",
@@ -41,8 +41,8 @@ impl BinaryChannelTest for MemoTest {
         let a_to_b_amount = random_u64_range(1000, 5000);
 
         chains.node_a.chain_driver().transfer_token(
-            &channel.port_a,
-            &channel.channel_id_a,
+            &channel.port_a.as_ref(),
+            &channel.channel_id_a.as_ref(),
             &chains.node_a.wallets().user1().address(),
             &chains.node_b.wallets().user1().address(),
             a_to_b_amount,

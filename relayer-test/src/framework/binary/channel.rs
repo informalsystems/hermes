@@ -16,7 +16,7 @@ use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::types::binary::chains::ConnectedChains;
-use crate::types::binary::channel::Channel;
+use crate::types::binary::channel::ConnectedChannel;
 use crate::types::config::TestConfig;
 
 /**
@@ -74,7 +74,7 @@ pub trait BinaryChannelTest {
         &self,
         config: &TestConfig,
         chains: &ConnectedChains<ChainA, ChainB>,
-        channels: &Channel<ChainA, ChainB>,
+        channels: &ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error>;
 }
 
@@ -93,7 +93,7 @@ pub trait OwnedBinaryChannelTest {
         &self,
         config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
-        channels: Channel<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error>;
 }
 
@@ -176,7 +176,7 @@ impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunBinaryChannelTes
         &self,
         config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
-        channels: Channel<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         self.test
             .run(config, &chains, &channels)
@@ -191,7 +191,7 @@ impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChan
         &self,
         config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
-        channels: Channel<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         info!(
             "running two-way channel test, from {}/{} to {}/{}",

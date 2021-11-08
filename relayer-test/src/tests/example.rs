@@ -18,7 +18,7 @@
             &self,
             _config: &TestConfig,
             _chains: &ConnectedChains<ChainA, ChainB>,
-            _channel: &Channel<ChainA, ChainB>,
+            _channel: &ConnectedChannel<ChainA, ChainB>,
         ) -> Result<(), Error> {
             suspend()
         }
@@ -125,7 +125,7 @@ impl BinaryChannelTest for ExampleTest {
         &self,
         _config: &TestConfig,
         _chains: &ConnectedChains<ChainA, ChainB>,
-        _channel: &Channel<ChainA, ChainB>,
+        _channel: &ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         suspend()
     }

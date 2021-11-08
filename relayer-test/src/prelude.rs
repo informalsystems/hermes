@@ -14,7 +14,7 @@ pub use crate::chain::driver::{tagged::TaggedChainDriver, ChainDriver};
 pub use crate::error::Error;
 pub use crate::framework::overrides::TestOverrides;
 pub use crate::types::binary::chains::ConnectedChains;
-pub use crate::types::binary::channel::Channel;
+pub use crate::types::binary::channel::ConnectedChannel;
 pub use crate::types::config::TestConfig;
 pub use crate::types::single::node::FullNode;
 pub use crate::types::wallet::{

@@ -16,7 +16,7 @@ impl BinaryChannelTest for IbcTransferTest {
         &self,
         _config: &TestConfig,
         chains: &ConnectedChains<ChainA, ChainB>,
-        channel: &Channel<ChainA, ChainB>,
+        channel: &ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
 
@@ -36,8 +36,8 @@ impl BinaryChannelTest for IbcTransferTest {
         );
 
         chains.node_a.chain_driver().transfer_token(
-            &channel.port_a,
-            &channel.channel_id_a,
+            &channel.port_a.as_ref(),
+            &channel.channel_id_a.as_ref(),
             &chains.node_a.wallets().user1().address(),
             &chains.node_b.wallets().user1().address(),
             a_to_b_amount,
@@ -89,8 +89,8 @@ impl BinaryChannelTest for IbcTransferTest {
         );
 
         chains.node_b.chain_driver().transfer_token(
-            &channel.port_b,
-            &channel.channel_id_b,
+            &channel.port_b.as_ref(),
+            &channel.channel_id_b.as_ref(),
             &chains.node_b.wallets().user1().address(),
             &chains.node_a.wallets().user2().address(),
             b_to_a_amount,

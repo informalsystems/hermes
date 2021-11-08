@@ -13,7 +13,8 @@ use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::types::binary::chains::ConnectedChains;
-use crate::types::binary::channel::Channel;
+use crate::types::binary::channel::ConnectedChannel;
+use crate::types::id::PortIdRef;
 use crate::types::tagged::*;
 
 /**
@@ -26,7 +27,7 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: &ConnectedChains<ChainA, ChainB>,
     port_a: &PortId,
     port_b: &PortId,
-) -> Result<Channel<ChainA, ChainB>, Error> {
+) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let channel = bootstrap_channel(
         &chains.client_b_to_a,
         &chains.client_a_to_b,
@@ -50,9 +51,9 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
 pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_b_to_a: &ForeignClient<ChainA, ChainB>,
     client_a_to_b: &ForeignClient<ChainB, ChainA>,
-    port_a: &DualTagged<ChainA, ChainB, &PortId>,
-    port_b: &DualTagged<ChainB, ChainA, &PortId>,
-) -> Result<Channel<ChainA, ChainB>, Error> {
+    port_a: &PortIdRef<ChainA, ChainB>,
+    port_b: &PortIdRef<ChainB, ChainA>,
+) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let connection = Connection::new(
         client_b_to_a.clone(),
         client_a_to_b.clone(),
@@ -79,7 +80,7 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         .ok_or_else(|| eyre!("expect channel id"))?
         .clone();
 
-    let res = Channel {
+    let res = ConnectedChannel {
         channel,
         channel_id_a: DualTagged::new(channel_id_a),
         channel_id_b: DualTagged::new(channel_id_b),

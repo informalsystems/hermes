@@ -6,7 +6,7 @@ use serde_json as json;
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::types::id::{ChannelId, PortId};
+use crate::types::id::{ChannelIdRef, PortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
 
@@ -72,8 +72,8 @@ pub trait TaggedChainDriver<Chain> {
     */
     fn transfer_token<Counterparty>(
         &self,
-        port_id: &PortId<Chain, Counterparty>,
-        channel_id: &ChannelId<Chain, Counterparty>,
+        port_id: &PortIdRef<Chain, Counterparty>,
+        channel_id: &ChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &WalletAddress>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         amount: u64,
@@ -113,8 +113,8 @@ impl<'a, Chain> TaggedChainDriver<Chain> for MonoTagged<Chain, &'a ChainDriver> 
 
     fn transfer_token<Counterparty>(
         &self,
-        port_id: &PortId<Chain, Counterparty>,
-        channel_id: &ChannelId<Chain, Counterparty>,
+        port_id: &PortIdRef<Chain, Counterparty>,
+        channel_id: &ChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &WalletAddress>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         amount: u64,
