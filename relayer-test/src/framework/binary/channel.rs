@@ -195,9 +195,9 @@ impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChan
     ) -> Result<(), Error> {
         info!(
             "running two-way channel test, from {}/{} to {}/{}",
-            chains.side_a.chain_id(),
+            chains.chain_id_a(),
             channels.channel_id_a,
-            chains.side_b.chain_id(),
+            chains.chain_id_b(),
             channels.channel_id_b,
         );
 
@@ -207,9 +207,9 @@ impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChan
 
         info!(
             "running two-way channel test in the opposite direction, from {}/{} to {}/{}",
-            chains.side_b.chain_id(),
+            chains.chain_id_b(),
             channels.channel_id_b,
-            chains.side_a.chain_id(),
+            chains.chain_id_a(),
             channels.channel_id_a,
         );
 

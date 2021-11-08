@@ -1,3 +1,7 @@
+/*!
+   Type definitions for channel connected between two chains.
+*/
+
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel as BaseChannel;
 

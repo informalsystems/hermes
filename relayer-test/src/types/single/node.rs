@@ -20,19 +20,19 @@ pub struct FullNode {
 }
 
 impl<Chain> MonoTagged<Chain, FullNode> {
-    pub fn chain_id<'a>(&'a self) -> MonoTagged<Chain, &'a ChainId> {
+    pub fn chain_id(&self) -> MonoTagged<Chain, &ChainId> {
         self.map_ref(|c| &c.chain_driver.chain_id)
     }
 
-    pub fn chain_driver<'a>(&'a self) -> MonoTagged<Chain, &'a ChainDriver> {
+    pub fn chain_driver(&self) -> MonoTagged<Chain, &ChainDriver> {
         self.map_ref(|c| &c.chain_driver)
     }
 
-    pub fn wallets<'a>(&'a self) -> MonoTagged<Chain, &'a TestWallets> {
+    pub fn wallets(&self) -> MonoTagged<Chain, &TestWallets> {
         self.map_ref(|c| &c.wallets)
     }
 
-    pub fn denom<'a>(&'a self) -> MonoTagged<Chain, &'a Denom> {
+    pub fn denom(&self) -> MonoTagged<Chain, &Denom> {
         self.map_ref(|c| &c.denom)
     }
 }

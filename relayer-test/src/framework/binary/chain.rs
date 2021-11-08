@@ -160,7 +160,7 @@ where
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
     fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
-        let chains = boostrap_chain_pair_with_nodes(&config, node_a, node_b, |config| {
+        let chains = boostrap_chain_pair_with_nodes(config, node_a, node_b, |config| {
             self.test.get_overrides().modify_relayer_config(config);
         })?;
 
@@ -186,8 +186,8 @@ impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunBinaryChainTest<'a, 
     ) -> Result<(), Error> {
         info!(
             "running one-way chain test, from {} to {}",
-            chains.side_a.chain_id(),
-            chains.side_b.chain_id()
+            chains.chain_id_a(),
+            chains.chain_id_b(),
         );
 
         self.test
@@ -206,8 +206,8 @@ impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTes
     ) -> Result<(), Error> {
         info!(
             "running two-way chain test, from {} to {}",
-            chains.side_a.chain_id(),
-            chains.side_b.chain_id()
+            chains.chain_id_a(),
+            chains.chain_id_b(),
         );
 
         self.test
@@ -216,8 +216,8 @@ impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTes
 
         info!(
             "running two-way chain test in the opposite direction, from {} to {}",
-            chains.side_b.chain_id(),
-            chains.side_a.chain_id()
+            chains.chain_id_b(),
+            chains.chain_id_a(),
         );
 
         let chains = chains.flip();

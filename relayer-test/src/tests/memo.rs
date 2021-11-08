@@ -36,15 +36,15 @@ impl BinaryChannelTest for MemoTest {
             self.memo
         );
 
-        let denom_a = chains.side_a.denom();
+        let denom_a = chains.node_a.denom();
 
         let a_to_b_amount = random_u64_range(1000, 5000);
 
-        chains.side_a.chain_driver().transfer_token(
+        chains.node_a.chain_driver().transfer_token(
             &channel.port_a,
             &channel.channel_id_a,
-            &chains.side_a.wallets().user1().address(),
-            &chains.side_b.wallets().user1().address(),
+            &chains.node_a.wallets().user1().address(),
+            &chains.node_b.wallets().user1().address(),
             a_to_b_amount,
             &denom_a,
         )?;
@@ -55,18 +55,18 @@ impl BinaryChannelTest for MemoTest {
             &denom_a,
         )?;
 
-        chains.side_b.chain_driver().assert_eventual_wallet_amount(
-            &chains.side_b.wallets().user1(),
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &chains.node_b.wallets().user1(),
             a_to_b_amount,
             &denom_b.as_ref(),
         )?;
 
         let tx_info = chains
-            .side_b
+            .node_b
             .chain_driver()
-            .query_recipient_transactions(&chains.side_b.wallets().user1().address())?;
+            .query_recipient_transactions(&chains.node_b.wallets().user1().address())?;
 
-        assert_tx_memo_equals(&tx_info, &self.memo.as_str())?;
+        assert_tx_memo_equals(&tx_info, self.memo.as_str())?;
 
         Ok(())
     }

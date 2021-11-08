@@ -401,7 +401,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         &mut self,
         subscriptions: &mut Vec<(Chain, Subscription)>,
     ) -> Result<StepResult, Error> {
-        if let Some((chain, batch)) = try_recv_multiple(&subscriptions) {
+        if let Some((chain, batch)) = try_recv_multiple(subscriptions) {
             self.handle_batch(chain.clone(), batch);
         }
 

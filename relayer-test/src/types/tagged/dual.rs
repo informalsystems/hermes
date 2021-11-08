@@ -90,7 +90,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         let val2: Tagged<Foo, Bar, &i64> = val1.as_ref();
         ```
     */
-    pub fn as_ref<'a>(&'a self) -> Tagged<TagA, TagB, &'a Value> {
+    pub fn as_ref(&self) -> Tagged<TagA, TagB, &Value> {
         Tagged::new(&self.0)
     }
 
