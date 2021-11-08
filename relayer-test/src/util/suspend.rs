@@ -1,3 +1,7 @@
+/*!
+   Utilities for suspending the test.
+*/
+
 use core::time::Duration;
 use std::thread::sleep;
 use tracing::warn;

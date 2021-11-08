@@ -10,6 +10,7 @@ use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use toml::Value;
 
+/// Set the `rpc` field in the full node config.
 pub fn set_rpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
     config
         .get_mut("rpc")
@@ -24,6 +25,7 @@ pub fn set_rpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+/// Set the `p2p` field in the full node config.
 pub fn set_p2p_port(config: &mut Value, port: u16) -> Result<(), Error> {
     config
         .get_mut("p2p")
@@ -38,10 +40,11 @@ pub fn set_p2p_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+/// Set the `consensus.timeout_commit` field in the full node config.
 pub fn set_timeout_commit(config: &mut Value, duration: Duration) -> Result<(), Error> {
     config
         .get_mut("consensus")
-        .ok_or_else(|| eyre!("expect p2p section"))?
+        .ok_or_else(|| eyre!("expect consensus section"))?
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
         .insert(
@@ -52,10 +55,11 @@ pub fn set_timeout_commit(config: &mut Value, duration: Duration) -> Result<(), 
     Ok(())
 }
 
+/// Set the `consensus.timeout_propose` field in the full node config.
 pub fn set_timeout_propose(config: &mut Value, duration: Duration) -> Result<(), Error> {
     config
         .get_mut("consensus")
-        .ok_or_else(|| eyre!("expect p2p section"))?
+        .ok_or_else(|| eyre!("expect consensus section"))?
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
         .insert(
@@ -66,6 +70,7 @@ pub fn set_timeout_propose(config: &mut Value, duration: Duration) -> Result<(),
     Ok(())
 }
 
+/// Set the `log_level` field in the full node config.
 pub fn set_log_level(config: &mut Value, log_level: &str) -> Result<(), Error> {
     config
         .as_table_mut()

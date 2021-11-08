@@ -16,6 +16,7 @@ pub struct ChildProcess {
 }
 
 impl ChildProcess {
+    /// Create a new [`ChildProcess`] from the primitive [`Child`] type.
     pub fn new(child: Child) -> Self {
         Self {
             child,
@@ -23,6 +24,7 @@ impl ChildProcess {
         }
     }
 
+    /// Wait for the child process to terminate.
     pub fn wait(&mut self) -> Result<(), Error> {
         if !self.waited {
             self.waited = true;
@@ -32,6 +34,7 @@ impl ChildProcess {
         Ok(())
     }
 
+    /// Kill the underlying child process.
     pub fn kill(&mut self) -> Result<(), Error> {
         self.child.kill()?;
         self.wait()?;

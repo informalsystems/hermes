@@ -26,7 +26,7 @@ pub struct ChainBuilder {
     */
     pub command_path: String,
 
-    /*
+    /**
        The filesystem path to store the data files used by the chain.
     */
     pub base_store_dir: String,

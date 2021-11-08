@@ -9,7 +9,7 @@ use ibc_relayer::registry::SharedRegistry;
 use std::path::PathBuf;
 
 use crate::types::id::ChainIdRef;
-use crate::types::single::node::FullNode;
+use crate::types::single::node::{FullNode, TaggedFullNode};
 use crate::types::tagged::*;
 
 /**

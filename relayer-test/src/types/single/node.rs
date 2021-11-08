@@ -1,3 +1,7 @@
+/*!
+   Type definition for a single running full node.
+*/
+
 use core::str::FromStr;
 use core::time::Duration;
 use eyre::Report as Error;
@@ -12,32 +16,77 @@ use crate::types::process::ChildProcess;
 use crate::types::tagged::*;
 use crate::types::wallet::TestWallets;
 
+/**
+   Represents a full node running as a child process managed by the test.
+*/
 pub struct FullNode {
+    /**
+       The [`ChainDriver`] used to communicate with the full node.
+    */
     pub chain_driver: ChainDriver,
+
+    /**
+       The type holding the underlying child process, which will kill the
+       full node when [`FullNode`] is dropped.
+    */
     pub chain_process: ChildProcess,
+
+    /**
+       The currency denomination which the wallets have been loaded
+       with initial balance during the chain setup.
+    */
     pub denom: Denom,
+
+    /**
+       The test wallets with more than sufficient account balance that
+       can be used for testing.
+    */
     pub wallets: TestWallets,
 }
 
-impl<Chain> MonoTagged<Chain, FullNode> {
-    pub fn chain_id(&self) -> MonoTagged<Chain, &ChainId> {
+/**
+   Extra methods for [`FullNode`] that is [tagged](crate::types::tagged).
+
+   This trait is auto implemented for `MonoTagged<Chain, FullNode>` so
+   that we can call methods on it directly.
+*/
+pub trait TaggedFullNode<Chain> {
+    /// Get the [`ChainId`] tagged with the given `Chain`.
+    fn chain_id(&self) -> MonoTagged<Chain, &ChainId>;
+
+    /// Get the [`ChainDriver`] tagged with the given `Chain`.
+    fn chain_driver(&self) -> MonoTagged<Chain, &ChainDriver>;
+
+    /// Get the [`TestWallets`] tagged with the given `Chain`.
+    fn wallets(&self) -> MonoTagged<Chain, &TestWallets>;
+
+    /// Get the [`Denom`] tagged with the given `Chain`.
+    fn denom(&self) -> MonoTagged<Chain, &Denom>;
+}
+
+impl<Chain> TaggedFullNode<Chain> for MonoTagged<Chain, FullNode> {
+    fn chain_id(&self) -> MonoTagged<Chain, &ChainId> {
         self.map_ref(|c| &c.chain_driver.chain_id)
     }
 
-    pub fn chain_driver(&self) -> MonoTagged<Chain, &ChainDriver> {
+    fn chain_driver(&self) -> MonoTagged<Chain, &ChainDriver> {
         self.map_ref(|c| &c.chain_driver)
     }
 
-    pub fn wallets(&self) -> MonoTagged<Chain, &TestWallets> {
+    fn wallets(&self) -> MonoTagged<Chain, &TestWallets> {
         self.map_ref(|c| &c.wallets)
     }
 
-    pub fn denom(&self) -> MonoTagged<Chain, &Denom> {
+    fn denom(&self) -> MonoTagged<Chain, &Denom> {
         self.map_ref(|c| &c.denom)
     }
 }
 
 impl FullNode {
+    /**
+       Generate the relayer's chain config based on the configuration of
+       the full node.
+    */
     pub fn generate_chain_config(&self) -> Result<config::ChainConfig, Error> {
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
@@ -47,7 +96,12 @@ impl FullNode {
             rpc_timeout: Duration::from_secs(10),
             account_prefix: "cosmos".to_string(),
             key_name: self.wallets.relayer.id.0.clone(),
+
+            // By default we use in-memory key store to avoid polluting
+            // ~/.hermes/keys. See
+            // https://github.com/informalsystems/ibc-rs/issues/1541
             key_store_type: Store::Memory,
+
             store_prefix: "ibc".to_string(),
             default_gas: None,
             max_gas: Some(3000000),

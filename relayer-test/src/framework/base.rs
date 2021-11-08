@@ -33,8 +33,14 @@ pub fn run_basic_test<Test: BasicTest>(test: &Test) -> Result<(), Error> {
    [TestOverrides](crate::framework::overrides::TestOverrides).
 */
 pub trait HasOverrides {
+    /**
+       The inner type that implements the override traits.
+    */
     type Overrides;
 
+    /**
+       Get the reference to the inner override type.
+    */
     fn get_overrides(&self) -> &Self::Overrides;
 }
 
@@ -42,14 +48,28 @@ pub trait HasOverrides {
    A primitive test case provides no additional logic.
 */
 pub trait PrimitiveTest {
+    /// Test runner
     fn run(&self) -> Result<(), Error>;
 }
 
+/**
+   A basic test has the minimal test setup that is essential for almost all
+   tests.
+
+   The test runner is given a [`TestConfig`] and [`ChainBuilder`], which
+   provides the essential customization for how the tests should be run.
+*/
 pub trait BasicTest {
+    /// Test runner
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error>;
 }
 
+/**
+   A wrapper type that lifts a test case that implements [`BasicTest`]
+   into a test case that implements [`PrimitiveTest`].
+*/
 pub struct RunBasicTest<'a, Test> {
+    /// Inner test
     pub test: &'a Test,
 }
 

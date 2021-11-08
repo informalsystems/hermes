@@ -70,6 +70,7 @@ where
    need the chains and relayers setup without the channel handshake.
 */
 pub trait BinaryChannelTest {
+    /// Test runner
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -89,6 +90,7 @@ pub trait BinaryChannelTest {
    the termination of the full nodes if the test case return errors.
 */
 pub trait OwnedBinaryChannelTest {
+    /// Test runner
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -125,6 +127,7 @@ pub trait PortsOverride {
    into a test case the implements [`OwnedBinaryChainTest`].
 */
 pub struct RunOwnedBinaryChannelTest<'a, Test> {
+    /// Inner test
     pub test: &'a Test,
 }
 
@@ -135,6 +138,7 @@ pub struct RunOwnedBinaryChannelTest<'a, Test> {
    having the position of the two chains flipped.
 */
 pub struct RunBinaryChannelTest<'a, Test> {
+    /// Inner test
     pub test: &'a Test,
 }
 
@@ -143,6 +147,7 @@ pub struct RunBinaryChannelTest<'a, Test> {
    into a test case the implements [`OwnedBinaryChannelTest`].
 */
 pub struct RunTwoWayBinaryChannelTest<'a, Test> {
+    /// Inner test
     pub test: &'a Test,
 }
 

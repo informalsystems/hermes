@@ -1,3 +1,7 @@
+/*!
+   Utilities for retrying test operations.
+*/
+
 use core::time::Duration;
 use eyre::eyre;
 use std::thread::sleep;

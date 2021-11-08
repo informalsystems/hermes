@@ -67,6 +67,7 @@ where
    need the chains and relayers setup without the channel handshake.
 */
 pub trait BinaryChainTest {
+    /// Test runner
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -85,6 +86,7 @@ pub trait BinaryChainTest {
    the termination of the full nodes if the test case return errors.
 */
 pub trait OwnedBinaryChainTest {
+    /// Test runner
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -104,6 +106,7 @@ pub trait OwnedBinaryChainTest {
    for their test cases instead of implementing this trait directly.
 */
 pub trait RelayerConfigOverride {
+    /// Modify the relayer config
     fn modify_relayer_config(&self, config: &mut Config);
 }
 
@@ -120,6 +123,7 @@ pub trait RelayerConfigOverride {
    for their test cases instead of implementing this trait directly.
 */
 pub trait SupervisorOverride {
+    /// Optionally spawn the supervisor
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
@@ -132,6 +136,7 @@ pub trait SupervisorOverride {
    into a test case the implements [`OwnedBinaryNodeTest`].
 */
 pub struct RunOwnedBinaryChainTest<'a, Test> {
+    /// Inner test
     pub test: &'a Test,
 }
 
@@ -140,6 +145,7 @@ pub struct RunOwnedBinaryChainTest<'a, Test> {
    into a test case the implements [`OwnedBinaryChainTest`].
 */
 pub struct RunBinaryChainTest<'a, Test> {
+    /// Inner test
     pub test: &'a Test,
 }
 
@@ -150,6 +156,7 @@ pub struct RunBinaryChainTest<'a, Test> {
    having the position of the two chains flipped.
 */
 pub struct RunTwoWayBinaryChainTest<'a, Test> {
+    /// Inner test
     pub test: &'a Test,
 }
 

@@ -36,6 +36,7 @@ pub fn run_owned_binary_node_test<Test: OwnedBinaryNodeTest>(test: &Test) -> Res
    and stopped at a suitable time within the test.
 */
 pub trait BinaryNodeTest {
+    /// Test runner
     fn run(&self, config: &TestConfig, node_a: &FullNode, node_b: &FullNode) -> Result<(), Error>;
 }
 
@@ -49,6 +50,7 @@ pub trait BinaryNodeTest {
    the termination of the full nodes if the test case return errors.
 */
 pub trait OwnedBinaryNodeTest {
+    /// Test runner
     fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error>;
 }
 
@@ -57,6 +59,7 @@ pub trait OwnedBinaryNodeTest {
    into a test case the implements [`OwnedBinaryNodeTest`].
 */
 pub struct RunBinaryNodeTest<'a, Test> {
+    /// Inner test
     pub test: &'a Test,
 }
 
@@ -65,6 +68,7 @@ pub struct RunBinaryNodeTest<'a, Test> {
    into a test case that implements [`BasicTest`].
 */
 pub struct RunOwnedBinaryNodeTest<'a, Test> {
+    /// Inner test
     pub test: &'a Test,
 }
 

@@ -26,8 +26,14 @@ pub struct WalletAddress(pub String);
 */
 #[derive(Debug)]
 pub struct Wallet {
+    /// The ID of the wallet for accessing it from the key store.
     pub id: WalletId,
+
+    /// The address for receiving tokens for this wallet.
     pub address: WalletAddress,
+
+    /// The wallet key information in the form of [`KeyEntry`] that
+    /// is used by the relayer.
     pub key: KeyEntry,
 }
 
@@ -47,31 +53,58 @@ pub struct Wallet {
 */
 #[derive(Debug)]
 pub struct TestWallets {
+    /// The validator wallet.
     pub validator: Wallet,
+
+    /// The relayer wallet. This is used by the relayer by default.
     pub relayer: Wallet,
+
+    /// The first user wallet that can be used for testing.
     pub user1: Wallet,
+
+    /// The second user wallet that can be used for testing.
     pub user2: Wallet,
 }
 
+/**
+   Extra methods for [`Wallet`] that is [tagged](crate::types::tagged).
+
+   This trait is auto implemented for `MonoTagged<Chain, Wallet>` so
+   that we can call methods on it directly.
+*/
 pub trait TaggedWallet<Chain> {
+    /// Get the [`WalletId`] tagged with the given `Chain`.
     fn id(&self) -> MonoTagged<Chain, &WalletId>;
 
+    /// Get the [`WalletAddress`] tagged with the given `Chain`.
     fn address(&self) -> MonoTagged<Chain, &WalletAddress>;
 
+    /// Get the [`KeyEntry`] tagged with the given `Chain`.
     fn key(&self) -> MonoTagged<Chain, &KeyEntry>;
 }
 
+/**
+   Extra methods for [`TestWallets`] that is [tagged](crate::types::tagged).
+
+   This trait is auto implemented for `MonoTagged<Chain, TestWallets>` so
+   that we can call methods on it directly.
+*/
 pub trait TaggedTestWallets<Chain> {
+    /// Get the validator [`Wallet`] tagged with the given `Chain`.
     fn validator(&self) -> MonoTagged<Chain, &Wallet>;
 
+    /// Get the relayer [`Wallet`] tagged with the given `Chain`.
     fn relayer(&self) -> MonoTagged<Chain, &Wallet>;
 
+    /// Get the first user [`Wallet`] tagged with the given `Chain`.
     fn user1(&self) -> MonoTagged<Chain, &Wallet>;
 
+    /// Get the second user [`Wallet`] tagged with the given `Chain`.
     fn user2(&self) -> MonoTagged<Chain, &Wallet>;
 }
 
 impl Wallet {
+    /// Create a new [`Wallet`]
     pub fn new(id: String, address: String, key: KeyEntry) -> Self {
         Self {
             id: WalletId(id),

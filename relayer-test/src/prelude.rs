@@ -16,7 +16,7 @@ pub use crate::framework::overrides::TestOverrides;
 pub use crate::types::binary::chains::ConnectedChains;
 pub use crate::types::binary::channel::ConnectedChannel;
 pub use crate::types::config::TestConfig;
-pub use crate::types::single::node::FullNode;
+pub use crate::types::single::node::{FullNode, TaggedFullNode};
 pub use crate::types::wallet::{
     TaggedTestWallets, TaggedWallet, TestWallets, Wallet, WalletAddress, WalletId,
 };

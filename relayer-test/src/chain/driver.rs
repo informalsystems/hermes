@@ -77,6 +77,7 @@ pub struct ChainDriver {
 }
 
 impl ChainDriver {
+    /// Create a new [`ChainDriver`]
     pub fn new(
         command_path: String,
         chain_id: ChainId,

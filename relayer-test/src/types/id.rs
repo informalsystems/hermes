@@ -11,6 +11,10 @@ use ibc::core::ics24_host::identifier as base;
 */
 pub type ChainId<Chain> = MonoTagged<Chain, base::ChainId>;
 
+/**
+   A reference to [`ChainId`](base::ChainId) tagged with the chain it
+   belongs to.
+*/
 pub type ChainIdRef<'a, Chain> = MonoTagged<Chain, &'a base::ChainId>;
 
 /**

@@ -47,6 +47,10 @@ pub fn spawn_supervisor(
 }
 
 impl SupervisorHandle {
+    /**
+       Create a new [`SupervisorHandle`] based on the underlying [`SupervisorCmd`]
+       sender.
+    */
     pub fn new(sender: Sender<SupervisorCmd>) -> Self {
         Self {
             sender,
