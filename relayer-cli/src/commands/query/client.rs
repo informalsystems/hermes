@@ -17,7 +17,7 @@ use ibc_relayer::chain::ChainEndpoint;
 use ibc_relayer::chain::CosmosSdkChain;
 
 use crate::application::app_config;
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
@@ -50,7 +50,8 @@ impl Runnable for QueryClientStateCmd {
         };
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+            .unwrap_or_else(exit_with_unrecoverable_error);
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
         match chain.query_client_state(&self.client_id, height) {
@@ -102,7 +103,8 @@ impl Runnable for QueryClientConsensusCmd {
         debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
             Ok(cs) => cs.chain_id(),
@@ -185,7 +187,8 @@ impl Runnable for QueryClientHeaderCmd {
         debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
             Ok(cs) => cs.chain_id(),
@@ -248,7 +251,8 @@ impl Runnable for QueryClientConnectionsCmd {
         debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         let req = QueryClientConnectionsRequest {
             client_id: self.client_id.to_string(),
