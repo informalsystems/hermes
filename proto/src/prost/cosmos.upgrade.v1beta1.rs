@@ -146,7 +146,7 @@ pub mod query_client {
     impl<T> QueryClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
@@ -220,6 +220,8 @@ pub mod query_client {
         #[doc = " as a trusted kernel for the next version of this chain. It will only be"]
         #[doc = " stored at the last height of this chain."]
         #[doc = " UpgradedConsensusState RPC not supported with legacy querier"]
+        #[doc = " This rpc is deprecated now that IBC has its own replacement"]
+        #[doc = " (https://github.com/cosmos/ibc-go/blob/2c880a22e9f9cc75f62b527ca94aa75ce1106001/proto/ibc/core/client/v1/query.proto#L54)"]
         pub async fn upgraded_consensus_state(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryUpgradedConsensusStateRequest>,
