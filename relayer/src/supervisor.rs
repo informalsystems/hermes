@@ -93,14 +93,24 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Returns `false` otherwise.
     fn client_filter_enabled(&self) -> bool {
         // Currently just a wrapper over the global filter.
-        self.config.read().expect("poisoned lock").global.filter
+        self.config
+            .read()
+            .expect("poisoned lock")
+            .mode
+            .packets
+            .filter
     }
 
     /// Returns `true` if the relayer should filter based on
     /// channel identifiers.
     /// Returns `false` otherwise.
     fn channel_filter_enabled(&self) -> bool {
-        self.config.read().expect("poisoned lock").global.filter
+        self.config
+            .read()
+            .expect("poisoned lock")
+            .mode
+            .packets
+            .filter
     }
 
     fn relay_packets_on_channel(

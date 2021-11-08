@@ -66,7 +66,12 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
 
     fn client_filter_enabled(&self) -> bool {
         // Currently just a wrapper over the global filter.
-        self.config.read().expect("poisoned lock").global.filter
+        self.config
+            .read()
+            .expect("poisoned lock")
+            .mode
+            .packets
+            .filter
     }
 
     pub fn spawn_workers(&mut self) {

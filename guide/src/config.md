@@ -50,7 +50,6 @@ Here is a full example of a configuration file with two chains configured:
 ```toml
 [global]
 log_level = 'info'
-filter = false
 
 [mode]
 

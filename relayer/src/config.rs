@@ -146,7 +146,7 @@ impl Config {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> bool {
-        if !self.global.filter {
+        if !self.mode.packets.filter {
             return true;
         }
 
@@ -154,11 +154,6 @@ impl Config {
             None => false,
             Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
         }
-    }
-
-    pub fn handshake_enabled(&self) -> bool {
-        // FIXME(hu55a1n1)
-        unimplemented!()
     }
 
     pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
@@ -193,17 +188,28 @@ pub struct Channels {
     pub enabled: bool,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Packets {
     pub enabled: bool,
     #[serde(default = "default::clear_packets_interval")]
     pub clear_interval: u64,
     #[serde(default)]
     pub clear_on_start: bool,
-    #[serde(default)]
+    #[serde(default = "default::filter")]
     pub filter: bool,
-    #[serde(default)]
+    #[serde(default = "default::tx_confirmation")]
     pub tx_confirmation: bool,
+}
+
+impl Default for Packets {
+    fn default() -> Self {
+        Self {
+            clear_interval: default::clear_packets_interval(),
+            filter: default::filter(),
+            tx_confirmation: default::tx_confirmation(),
+            ..Default::default()
+        }
+    }
 }
 
 /// Log levels are wrappers over [`tracing_core::Level`].
@@ -241,18 +247,12 @@ impl fmt::Display for LogLevel {
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
     pub log_level: LogLevel,
-    #[serde(default = "default::filter")]
-    pub filter: bool,
-    #[serde(default = "default::tx_confirmation")]
-    pub tx_confirmation: bool,
 }
 
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             log_level: LogLevel::default(),
-            filter: default::filter(),
-            tx_confirmation: default::tx_confirmation(),
         }
     }
 }

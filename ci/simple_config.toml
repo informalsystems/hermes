@@ -1,6 +1,5 @@
 [global]
 log_level = 'trace'
-filter = false
 
 [mode]
 

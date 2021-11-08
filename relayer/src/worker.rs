@@ -116,7 +116,7 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
                     cmd_rx,
                     config.mode.packets.clear_interval,
                     config.mode.packets.clear_on_start,
-                    config.global.tx_confirmation,
+                    config.mode.packets.tx_confirmation,
                 ),
             ),
         };
