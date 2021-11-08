@@ -115,6 +115,7 @@ pub mod default {
 pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
+    #[serde(default)]
     pub mode: ModeConfig,
     #[serde(default)]
     pub rest: RestConfig,
@@ -204,10 +205,12 @@ pub struct Packets {
 impl Default for Packets {
     fn default() -> Self {
         Self {
+            enabled: false,
             clear_interval: default::clear_packets_interval(),
+            clear_on_start: false,
             filter: default::filter(),
             tx_confirmation: default::tx_confirmation(),
-            ..Default::default()
+
         }
     }
 }
