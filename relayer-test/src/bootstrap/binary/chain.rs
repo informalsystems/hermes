@@ -68,17 +68,17 @@ pub fn boostrap_chain_pair_with_nodes(
     let client_a_to_b = ForeignClient::new(handle_b.clone(), handle_a.clone())?;
     let client_b_to_a = ForeignClient::new(handle_a.clone(), handle_b.clone())?;
 
-    Ok(ConnectedChains {
-        config,
+    Ok(ConnectedChains::new(
         config_path,
+        config,
         registry,
         handle_a,
         handle_b,
-        node_a: MonoTagged::new(node_a),
-        node_b: MonoTagged::new(node_b),
+        MonoTagged::new(node_a),
+        MonoTagged::new(node_b),
         client_a_to_b,
         client_b_to_a,
-    })
+    ))
 }
 
 /**

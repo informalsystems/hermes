@@ -7,6 +7,7 @@ use ibc_relayer::config::SharedConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
 use std::path::PathBuf;
+use tracing::info;
 
 use crate::types::id::ChainIdRef;
 use crate::types::single::node::{FullNode, TaggedFullNode};
@@ -46,13 +47,19 @@ pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
 
     /**
         The [`ChainHandle`] for chain A.
+
+        The handle is wrapped in [`DropChainHandle`] to stop the chain
+        handle when this is dropped.
     */
-    pub handle_a: ChainA,
+    pub handle_a: DropChainHandle<ChainA>,
 
     /**
         The [`ChainHandle`] for chain B.
+
+        The handle is wrapped in [`DropChainHandle`] to stop the chain
+        handle when this is dropped.
     */
-    pub handle_b: ChainB,
+    pub handle_b: DropChainHandle<ChainB>,
 
     /**
        The tagged [`FullNode`] for chain A.
@@ -82,6 +89,44 @@ pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
+    pub fn new(
+        config_path: PathBuf,
+        config: SharedConfig,
+        registry: SharedRegistry<ProdChainHandle>,
+        handle_a: ChainA,
+        handle_b: ChainB,
+        node_a: MonoTagged<ChainA, FullNode>,
+        node_b: MonoTagged<ChainB, FullNode>,
+        client_a_to_b: ForeignClient<ChainB, ChainA>,
+        client_b_to_a: ForeignClient<ChainA, ChainB>,
+    ) -> Self {
+        Self {
+            config_path,
+            config,
+            registry,
+            handle_a: DropChainHandle(handle_a),
+            handle_b: DropChainHandle(handle_b),
+            node_a,
+            node_b,
+            client_a_to_b,
+            client_b_to_a,
+        }
+    }
+
+    /**
+      Get a reference to the chain handle for chain A.
+    */
+    pub fn handle_a(&self) -> &ChainA {
+        &self.handle_a.0
+    }
+
+    /**
+      Get a reference to the chain handle for chain B.
+    */
+    pub fn handle_b(&self) -> &ChainB {
+        &self.handle_b.0
+    }
+
     /**
        The chain ID of chain A.
     */
@@ -114,5 +159,26 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
             client_a_to_b: self.client_b_to_a,
             client_b_to_a: self.client_a_to_b,
         }
+    }
+}
+
+/**
+   Newtype wrapper for [`ChainHandle`] to stop the chain handle when
+   this value is dropped.
+
+   Note that we cannot stop the chain on drop for [`ProdChainHandle`]
+   itself, as the chain handles can be cloned. But for testing purposes,
+   we alway stop the chain handle when this "canonical" chain handle
+   is dropped.
+
+   This is necessary as otherwise the chain handle will display error
+   logs when the full node is terminated at the end of tests.
+*/
+pub struct DropChainHandle<Chain: ChainHandle>(pub Chain);
+
+impl<Chain: ChainHandle> Drop for DropChainHandle<Chain> {
+    fn drop(&mut self) {
+        info!("stopping chain handle {}", self.0.id());
+        let _ = self.0.shutdown();
     }
 }
