@@ -30,17 +30,28 @@ This crate contains the main data structures and on-chain logic of the IBC proto
 
 > Note: The naming of directories in the `ibc` crate follow a slightly different convention compared to the other crates in `ibc-rs`. This is because this crate implements the [ICS standards][ics-standards]. Modules in the `ibc` crate that implement a piece of the ICS standard are prefixed with the standard's designation. For example, the `modules/src/ics02_client` implements [ICS 02][ics02], which specifies the Client abstraction. These prefixes may be removed in the future. 
 
-#### Clients (ICS 02)
+#### Core
+
+##### Client (ICS 02)
 
 Clients encapsulate all of the verification methods of another IBC-enabled chain in order to ensure that the other chain adheres to the IBC protocol and does not exhibit misbehaviour. Clients "track" the metadata of the other chain's blocks, and each chain has a client for every other chain that it communicates with. 
 
-#### Connections (ICS 03)
+##### Connection (ICS 03)
 
 Connections associate a chain with another chain by connecting a client on the local chain with a client on the remote chain. This association is pair-wise unique and is established between two chains following a 4-step handshake process. 
 
-#### Channels (ICS 04)
+##### Channel (ICS 04)
 
 Channels are an abstraction layer that facilitate communication between applications and the chains those applications are built upon. One important function that channels can fulfill is guaranteeing that data packets sent between an application and its chain are well-ordered. 
+
+#### Applications
+
+
+#### Clients
+
+
+#### Relayer
+
 
 ### `relayer`
 
