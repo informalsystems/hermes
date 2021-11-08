@@ -117,7 +117,6 @@ mod retry_strategy {
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
-    version_specs: version::Specs,
     rpc_client: HttpClient,
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
@@ -771,11 +770,9 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
 
         // Retrieve the version specification of this chain
-        let version_specs = rt.block_on(fetch_version_specs(&config.id, &grpc_addr))?;
 
         let chain = Self {
             config,
-            version_specs,
             rpc_client,
             grpc_addr,
             rt,
@@ -2237,8 +2234,10 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             )
         })?;
 
+    let version_specs = fetch_version_specs(&chain.config.id, &chain.grpc_addr).await?;
+
     // Checkup on the underlying SDK & IBC-go versions
-    if let Err(diagnostic) = compatibility::run_diagnostic(&chain.version_specs) {
+    if let Err(diagnostic) = compatibility::run_diagnostic(&version_specs) {
         return Err(Error::sdk_module_version(
             chain_id.clone(),
             grpc_address.clone(),
