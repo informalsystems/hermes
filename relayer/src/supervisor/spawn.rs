@@ -425,9 +425,9 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                 connection.connection_id,
                 chain.id()
             );
-        } else if !conn_state_dst.is_open()
+        } else if config_conn_enabled
+            && !conn_state_dst.is_open()
             && conn_state_dst.less_or_equal_progress(conn_state_src)
-            && config_conn_enabled
         {
             // create worker for connection handshake that will advance the remote state
             let connection_object = Object::Connection(Connection {
@@ -462,13 +462,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         connection: &IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), Error> {
-        let config_chan_enabled = self
-            .config
-            .read()
-            .expect("poisoned lock")
-            .mode
-            .connections
-            .enabled;
+        let config = self.config.read().expect("poisoned lock");
+        let mode = &config.mode;
 
         let counterparty_chain = self
             .registry
@@ -492,7 +487,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             chan_state_dst
         );
 
-        if chan_state_src.is_open()
+        if mode.clients.enabled
+            && chan_state_src.is_open()
             && chan_state_dst.is_open()
             && self.relay_packets_on_channel(&chain, &channel)
         {
@@ -532,7 +528,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             };
 
             // If there are any outstanding packets or acks to send, spawn the worker
-            if has_packets() || has_acks() {
+            if mode.packets.enabled && has_packets() || has_acks() {
                 // create the Packet object and spawn worker
                 let path_object = Object::Packet(Packet {
                     dst_chain_id: counterparty_chain.id(),
@@ -550,9 +546,9 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                     )
                     .then(|| debug!("spawned Packet worker: {}", path_object.short_name()));
             }
-        } else if !chan_state_dst.is_open()
+        } else if mode.channels.enabled
+            && !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
-            && config_chan_enabled
         {
             // create worker for channel handshake that will advance the remote state
             let channel_object = Object::Channel(Channel {
