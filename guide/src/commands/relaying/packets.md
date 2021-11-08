@@ -9,11 +9,26 @@ This section describes the configuration and commands that can be used to start 
 
 ## The `start` Command
 
-To relay packets only use `packets` as strategy in the `global` section of the configuration file:
+To relay packets only configure the `mode` section of the configuration file like so:
 ```toml
 [global]
-strategy = 'packets'
 log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+# ...
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+# ...
 ```
 
 Then start hermes using the start command:
