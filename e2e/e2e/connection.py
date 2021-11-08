@@ -269,7 +269,7 @@ def verify_state(c: Config,
     chan_enabled = mode['channels']['enabled']
     packets_enabled = mode['packets']['enabled']
 
-    # verify connection state on both chains, should be 'Open' for 'all' strategy, 'Init' otherwise
+    # verify connection state on both chains, should be 'Open' or 'Init' depending on config 'mode'
     if clients_enabled and conn_enabled and chan_enabled and packets_enabled:
         sleep(10.0)
         for i in range(20):
