@@ -210,7 +210,6 @@ impl Default for Packets {
             clear_on_start: false,
             filter: default::filter(),
             tx_confirmation: default::tx_confirmation(),
-
         }
     }
 }
