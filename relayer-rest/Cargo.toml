@@ -18,7 +18,7 @@ ibc               = { version = "0.8.0", path = "../modules" }
 ibc-relayer       = { version = "0.8.0", path = "../relayer" }
 
 crossbeam-channel = "0.5"
-rouille           = "3.3"
+rouille           = "3.4"
 serde             = "1.0.130"
 tracing           = "0.1"
 
