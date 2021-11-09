@@ -6,6 +6,8 @@ use core::{
     str::FromStr,
     time::Duration,
 };
+use num_bigint::BigInt;
+use num_rational::BigRational;
 use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
@@ -2379,13 +2381,12 @@ fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
 }
 
 /// Multiply `a` with `f` and round to result up to the nearest integer.
-fn mul_ceil(a: u64, f: f64) -> u64 {
-    use fraction::Fraction as F;
+fn mul_ceil(a: u64, f: f64) -> BigInt {
+    debug_assert!(f.is_finite());
 
-    // Safe to unwrap below as are multiplying two finite fractions
-    // together, and rounding them to the nearest integer.
-    let n = (F::from(a) * F::from(f)).ceil();
-    n.numer().unwrap() / n.denom().unwrap()
+    let a = BigInt::from(a);
+    let f = BigRational::from_float(f).expect("f is finite");
+    (f * a).ceil().to_integer()
 }
 
 /// Compute the `max_clock_drift` for a (new) client state
