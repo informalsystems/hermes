@@ -433,7 +433,7 @@ impl CosmosSdkChain {
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
         crate::time!("query");
     
-        // Creating a Path from a constant; this should never fail
+        // SAFETY: Creating a Path from a constant; this should never fail
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).expect("Turning IBC query path constant into a Tendermint ABCI path");
 
         let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
@@ -463,7 +463,7 @@ impl CosmosSdkChain {
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         let prev_height = Height::try_from(height.value() - 1).map_err(Error::invalid_height)?;
     
-        // Creating a Path from a constant; this should never fail
+        // SAFETY: Creating a Path from a constant; this should never fail
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH).expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
         let response: QueryResponse = self.block_on(abci_query(
             self,
