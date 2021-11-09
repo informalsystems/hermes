@@ -1,3 +1,8 @@
+/*!
+    Functions for performing IBC transfer that works similar to
+    `hermes tx raw ft-transfer`.
+ */
+
 use core::time::Duration;
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -9,6 +14,30 @@ use crate::types::binary::channel::ConnectedChannel;
 use crate::types::tagged::*;
 use crate::types::wallet::WalletAddress;
 
+/**
+    Perform the same operation as `hermes tx raw ft-transfer`.
+
+    The function call skips the checks done in the CLI, as we already
+    have the necessary information given to us by the test framework.
+
+    Note that we cannot change the sender's wallet in this case,
+    as the current `send_tx` implementation in
+    [`CosmosSdkChain`](ibc_relayer::chain::cosmos::CosmosSdkChain)
+    always use the signer wallet configured in the
+    [`ChainConfig`](ibc_relayer::config::ChainConfig).
+
+    Currently the only way you can transfer using a different wallet
+    is to create a brand new [`ChainHandle`] with the new wallet
+    specified in the [`ChainConfig`](ibc_relayer::config::ChainConfig).
+
+    Alternatively, it is recommended that for simple case of IBC token
+    transfer, test authors should instead use the
+    [`transfer_token`](crate::chain::driver::transfer::transfer_token)
+    function provided by [`ChainDriver`](crate::chain::driver::ChainDriver).
+    That uses the `gaiad tx ibc-transfer` command to do the IBC transfer,
+    which is much simpler as compared to the current way the relayer code
+    is organized.
+ */
 pub fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     src_handle: &SrcChain,
     dst_handle: &DstChain,
@@ -31,7 +60,11 @@ pub fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
         number_msgs: number_messages,
     };
 
-    let events = build_and_send_transfer_messages(src_handle, dst_handle, &transfer_options)?;
+    let events = build_and_send_transfer_messages(
+        src_handle,
+        dst_handle,
+        &transfer_options
+    )?;
 
     Ok(events)
 }

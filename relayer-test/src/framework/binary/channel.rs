@@ -64,7 +64,7 @@ where
    with completed handshakes.
 
    The test case is given a reference to [`ConnectedChains`],
-   and a reference to [`Channel`].
+   and a reference to [`ConnectedChannel`].
 
    Test writers can use this to implement test cases that only
    need the chains and relayers setup without the channel handshake.
@@ -81,7 +81,7 @@ pub trait BinaryChannelTest {
 
 /**
    An owned version of [`BinaryChannelTest`], which the test case is given
-   owned [`ConnectedChains`] and [`Channel`] values instead of just references.
+   owned [`ConnectedChains`] and [`ConnectedChannel`] values instead of just references.
 
    Since the test case is given full ownership, the running full node will
    and relayer will be stopped at the end of the test case.

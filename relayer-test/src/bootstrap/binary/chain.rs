@@ -86,8 +86,8 @@ pub fn boostrap_chain_pair_with_nodes(
    [`FullNode`].
 
    The function accepts a proxy type `Seed` that should be unique
-   accross multiple calls so that the returned [`ChainClientServer`]
-   would be tagged by a unique [`ChainHandle`] type.
+   accross multiple calls so that the returned [`ChainHandle`]
+   have a unique type.
 
    For example, the following test should fail to compile:
 

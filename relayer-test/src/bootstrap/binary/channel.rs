@@ -18,7 +18,7 @@ use crate::types::id::PortIdRef;
 use crate::types::tagged::*;
 
 /**
-   Create a new connnected [`Channel`] based on the provided [`ConnectedChains`].
+   Create a new [`ConnectedChannel`] based on the provided [`ConnectedChains`].
 
    Also accepts the [`PortId`] that should be used for the two sides of the
    channel.
