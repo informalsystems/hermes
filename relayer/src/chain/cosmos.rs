@@ -308,7 +308,8 @@ impl CosmosSdkChain {
         };
 
         let mut tx_bytes = Vec::new();
-        prost::Message::encode(&tx_raw, &mut tx_bytes).map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
+        prost::Message::encode(&tx_raw, &mut tx_bytes)
+            .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
         let response = self.block_on(broadcast_tx_sync(self, tx_bytes))?;
 
@@ -432,9 +433,10 @@ impl CosmosSdkChain {
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
         crate::time!("query");
-    
+
         // SAFETY: Creating a Path from a constant; this should never fail
-        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).expect("Turning IBC query path constant into a Tendermint ABCI path");
+        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH)
+            .expect("Turning IBC query path constant into a Tendermint ABCI path");
 
         let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
@@ -462,9 +464,10 @@ impl CosmosSdkChain {
         height: Height,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         let prev_height = Height::try_from(height.value() - 1).map_err(Error::invalid_height)?;
-    
+
         // SAFETY: Creating a Path from a constant; this should never fail
-        let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH).expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
+        let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
+            .expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
         let response: QueryResponse = self.block_on(abci_query(
             self,
             path,
@@ -485,7 +488,8 @@ impl CosmosSdkChain {
 
         // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
         let mut tx_bytes = vec![];
-        prost::Message::encode(&tx, &mut tx_bytes).map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
+        prost::Message::encode(&tx, &mut tx_bytes)
+            .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
         #[allow(deprecated)]
         let req = SimulateRequest {
@@ -514,7 +518,8 @@ impl CosmosSdkChain {
 
     fn key_bytes(&self, key: &KeyEntry) -> Result<Vec<u8>, Error> {
         let mut pk_buf = Vec::new();
-        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).map_err(|e| Error::protobuf_encode(String::from("Key bytes"), e))?;
+        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf)
+            .map_err(|e| Error::protobuf_encode(String::from("Key bytes"), e))?;
         Ok(pk_buf)
     }
 
@@ -613,7 +618,8 @@ impl CosmosSdkChain {
 
         // A protobuf serialization of a SignDoc
         let mut signdoc_buf = Vec::new();
-        prost::Message::encode(&sign_doc, &mut signdoc_buf).map_err(|e| Error::protobuf_encode(String::from("SignDoc"), e))?;
+        prost::Message::encode(&sign_doc, &mut signdoc_buf)
+            .map_err(|e| Error::protobuf_encode(String::from("SignDoc"), e))?;
 
         // Sign doc
         let signed = self
@@ -894,7 +900,8 @@ impl ChainEndpoint for CosmosSdkChain {
         for msg in proto_msgs.iter() {
             msg_batch.push(msg.clone());
             let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf).map_err(|e| Error::protobuf_encode(String::from("Message"), e))?;
+            prost::Message::encode(msg, &mut buf)
+                .map_err(|e| Error::protobuf_encode(String::from("Message"), e))?;
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
@@ -950,7 +957,8 @@ impl ChainEndpoint for CosmosSdkChain {
         for msg in proto_msgs.iter() {
             msg_batch.push(msg.clone());
             let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf).map_err(|e| Error::protobuf_encode(String::from("Messages"), e))?;
+            prost::Message::encode(msg, &mut buf)
+                .map_err(|e| Error::protobuf_encode(String::from("Messages"), e))?;
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
@@ -2112,16 +2120,14 @@ async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAc
     .await
     .map_err(Error::grpc_transport)?;
 
-    let request = tonic::Request::new(QueryAccountRequest { address: address.clone() });
+    let request = tonic::Request::new(QueryAccountRequest {
+        address: address.clone(),
+    });
 
     let response = client.account(request).await;
 
     // Querying for an account might fail, i.e. if the account doesn't actually exist
-    let resp_account = match response
-        .map_err(Error::grpc_status)?
-        .into_inner()
-        .account 
-    {
+    let resp_account = match response.map_err(Error::grpc_status)?.into_inner().account {
         Some(account) => account,
         None => return Err(Error::empty_query_account(address)),
     };
@@ -2176,7 +2182,8 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
 
     // A protobuf serialization of a AuthInfo
     let mut auth_buf = Vec::new();
-    prost::Message::encode(&auth_info, &mut auth_buf).map_err(|e| Error::protobuf_encode(String::from("AuthInfo"), e))?;
+    prost::Message::encode(&auth_info, &mut auth_buf)
+        .map_err(|e| Error::protobuf_encode(String::from("AuthInfo"), e))?;
     Ok((auth_info, auth_buf))
 }
 
@@ -2192,7 +2199,8 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u
 
     // A protobuf serialization of a TxBody
     let mut body_buf = Vec::new();
-    prost::Message::encode(&body, &mut body_buf).map_err(|e| Error::protobuf_encode(String::from("TxBody"), e))?;
+    prost::Message::encode(&body, &mut body_buf)
+        .map_err(|e| Error::protobuf_encode(String::from("TxBody"), e))?;
     Ok((body, body_buf))
 }
 
