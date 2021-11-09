@@ -5,6 +5,7 @@ use tracing::{error, info, trace, warn};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
+    config::Packets as PacketsConfig,
     link::{Link, LinkParameters, RelaySummary},
     object::Packet,
     telemetry,
@@ -25,9 +26,7 @@ pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     path: Packet,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
-    clear_packets_interval: u64,
-    clear_packets_on_start: Option<bool>,
-    with_tx_confirmation: bool,
+    packets_cfg: PacketsConfig,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
@@ -35,18 +34,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         path: Packet,
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
-        clear_packets_interval: u64,
-        clear_packets_on_start: bool,
-        with_tx_confirmation: bool,
+        packets_cfg: PacketsConfig,
     ) -> Self {
-        let clear_packets_on_start = Some(clear_packets_on_start);
         Self {
             path,
             chains,
             cmd_rx,
-            clear_packets_interval,
-            clear_packets_on_start,
-            with_tx_confirmation,
+            packets_cfg,
         }
     }
 
@@ -59,7 +53,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                 src_port_id: self.path.src_port_id.clone(),
                 src_channel_id: self.path.src_channel_id.clone(),
             },
-            self.with_tx_confirmation,
+            self.packets_cfg.tx_confirmation,
         )
         .map_err(RunError::link)?;
 
@@ -129,18 +123,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                     height,
                     new_block: _,
                 } => {
-                    let (first_run, clear_on_start) = {
-                        match self.clear_packets_on_start.take() {
-                            None => (false, false),
-                            Some(clear_on_start) => (true, clear_on_start),
-                        }
+                    let clear_on_start = if self.packets_cfg.clear_on_start {
+                        self.packets_cfg.clear_on_start = false;
+                        true
+                    } else {
+                        false
                     };
 
                     // Schedule the clearing of pending packets. This may happen once at start,
                     // and may be _forced_ at predefined block intervals.
-                    let force_packet_clearing = (first_run && clear_on_start)
-                        || (self.clear_packets_interval != 0
-                            && height.revision_height % self.clear_packets_interval == 0);
+                    let force_packet_clearing = clear_on_start
+                        || (self.packets_cfg.clear_interval != 0
+                            && height.revision_height % self.packets_cfg.clear_interval == 0);
 
                     link.a_to_b
                         .schedule_packet_clearing(Some(height), force_packet_clearing)
