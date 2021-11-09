@@ -252,7 +252,6 @@ of the config file will look as follows:
 
 ```toml
 [global]
-strategy = 'packets'
 log_level = 'error'
 log_json = 'false'
 ```
