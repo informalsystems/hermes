@@ -118,7 +118,7 @@ Most errors occur within the relayer as a result of either I/O operations or use
 
 The [flex-error][flex-error] library is the main tool used to handle errors in the code. This [demo][flex-error-demo] showcases some of the main patterns of how `flex-error` is used. For a more real-world example, [this][relayer-errors] file defines all of the possible errors for the relayer.
 
-[flex-error] https://github.com/informalsystems/flex-error
+[flex-error]: https://github.com/informalsystems/flex-error
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
 [ibc-standards]: https://github.com/cosmos/ibc#standardisation
 [ibc-client]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
