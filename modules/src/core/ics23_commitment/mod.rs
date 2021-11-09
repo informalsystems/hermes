@@ -1,4 +1,4 @@
-//! ICS 23: Commitment implementation of a cryptographic scheme that verifies 
+//! ICS 23: Commitment implementation of a cryptographic scheme that verifies
 //! state transitions between chains.
 
 pub mod commitment;

@@ -1,4 +1,4 @@
-//! The designs and logic pertaining to the transport, authentication, and 
+//! The designs and logic pertaining to the transport, authentication, and
 //! ordering layers of the IBC protocol.
 
 pub mod ics02_client;
