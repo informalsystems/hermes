@@ -163,6 +163,7 @@ impl Config {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ModeConfig {
     pub clients: Clients,
     pub connections: Connections,
@@ -171,6 +172,7 @@ pub struct ModeConfig {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Clients {
     pub enabled: bool,
     #[serde(default)]
@@ -180,16 +182,19 @@ pub struct Clients {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Connections {
     pub enabled: bool,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Channels {
     pub enabled: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Packets {
     pub enabled: bool,
     #[serde(default = "default::clear_packets_interval")]
