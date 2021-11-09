@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 use flex_error::{define_error, TraceError};
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc_relayer::config::Config;
+use ibc_relayer::config::{Config, ModeConfig};
 use tendermint_light_client::types::TrustThreshold;
 use tracing_subscriber::filter::ParseError;
 
@@ -34,6 +34,13 @@ define_error! {
             |e| {
                 format!("config file specifies an invalid log level ('{0}'), caused by",
                     e.log_level)
+            },
+
+        InvalidMode
+            { reason: String, }
+            |e| {
+                format!("config file specifies invalid mode config, caused by: {0}",
+                    e.reason)
             },
 
         DuplicateChains
@@ -66,6 +73,19 @@ pub fn validate_config(config: &Config) -> Result<(), Error> {
         }
 
         validate_trust_threshold(&c.id, c.trust_threshold)?;
+    }
+
+    // Check for invalid mode config
+    validate_mode(&config.mode)?;
+
+    Ok(())
+}
+
+fn validate_mode(mode: &ModeConfig) -> Result<(), Error> {
+    if mode.clients.enabled && !mode.clients.refresh && !mode.clients.misbehaviour {
+        return Err(Error::invalid_mode(
+            "either `refresh` or `misbehaviour` must be set to true if `clients.enabled` is set to true".to_string(),
+        ));
     }
 
     Ok(())
