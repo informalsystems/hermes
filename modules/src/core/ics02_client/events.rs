@@ -97,7 +97,7 @@ pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, Error> {
 
 /// NewBlock event signals the committing & execution of a new block.
 // TODO - find a better place for NewBlock
-#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
 pub struct NewBlock {
     pub height: Height,
 }
@@ -180,7 +180,7 @@ impl core::fmt::Display for Attributes {
 }
 
 /// CreateClient event signals the creation of a new on-chain client (IBC client).
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct CreateClient(pub Attributes);
 
 impl CreateClient {
@@ -224,7 +224,7 @@ impl core::fmt::Display for CreateClient {
 }
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct UpdateClient {
     pub common: Attributes,
     pub header: Option<AnyHeader>,
@@ -291,7 +291,7 @@ impl core::fmt::Display for UpdateClient {
 
 /// ClientMisbehaviour event signals the update of an on-chain client (IBC Client) with evidence of
 /// misbehaviour.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct ClientMisbehaviour(pub Attributes);
 
 impl ClientMisbehaviour {

@@ -101,7 +101,7 @@ impl core::fmt::Display for Sequence {
     }
 }
 
-#[derive(Clone, Debug, Default, Hash, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Hash, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,
