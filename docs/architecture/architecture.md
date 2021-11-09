@@ -60,7 +60,7 @@ Consists of various packet encoding and processing semantics which underpin the 
 
 ##### Fungible Token Transfer (ICS 20)
 
-
+Specifies the packet data structure, state machine handling logic, and encoding details used for transferring fungible tokens between IBC chains. This process preserves asset fungibility and ownership while limiting the impact of Byzantine faults. 
 
 #### Clients
 
