@@ -24,15 +24,3 @@ nix shell github:informalsystems/cosmos.nix#gaia4
 
 See [`tests::example`](crate::tests::example) for an example test with
 access to a full test setup.
-
-## Manual Tests
-
-Currently there are tests that require manual human observation of the
-relayer's behavior through the log messages to decide whether the test
-is working as expected. The test suite allows such test to be written
-behind the `"manual"` feature flag.
-
-To write any test that require manual verification, add `#[cfg(feature = "manual")]` for the given module so that the test will only run when the
-`"manual"` feature is enabled manually. It is also fine to use
-[`suspend`](crate::suspend) inside the manual test, as the CI is not
-going to run the test.

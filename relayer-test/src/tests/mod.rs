@@ -9,7 +9,7 @@ pub mod memo;
 pub mod transfer;
 
 #[cfg(any(doc, feature = "manual"))]
-pub mod simulation;
+pub mod manual;
 
 #[cfg(any(doc, feature = "example"))]
 pub mod example;
