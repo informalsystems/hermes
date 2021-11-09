@@ -54,7 +54,7 @@ impl QueryUnreceivedPacketsCmd {
             self.chain_id, channel
         );
 
-        unreceived_packets(&chains.src, &chains.dst, channel).map_err(Error::supervisor)
+        unreceived_packets(&chains.src, &chains.dst, &channel).map_err(Error::supervisor)
     }
 }
 

@@ -101,7 +101,7 @@ impl core::fmt::Display for Sequence {
     }
 }
 
-#[derive(Clone, Debug, Default, Hash, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Hash, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,
@@ -317,7 +317,7 @@ mod tests {
             Test {
                 name: "Bad src port, name too long".to_string(),
                 raw: RawPacket {
-                    source_port: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
+                    source_port: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstuabcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
@@ -341,7 +341,7 @@ mod tests {
             Test {
                 name: "Bad dst port, name too long".to_string(),
                 raw: RawPacket {
-                    destination_port: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
+                    destination_port: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstuabcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfas".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

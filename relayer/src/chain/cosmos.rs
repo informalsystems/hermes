@@ -92,6 +92,7 @@ use crate::{
 use super::{ChainEndpoint, HealthCheck};
 
 mod compatibility;
+pub mod version;
 
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
@@ -116,6 +117,7 @@ mod retry_strategy {
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
+    version_specs: version::Specs,
     rpc_client: HttpClient,
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
@@ -768,8 +770,12 @@ impl ChainEndpoint for CosmosSdkChain {
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
 
+        // Retrieve the version specification of this chain
+        let version_specs = rt.block_on(fetch_version_specs(&config.id, &grpc_addr))?;
+
         let chain = Self {
             config,
+            version_specs,
             rpc_client,
             grpc_addr,
             rt,
@@ -2223,39 +2229,8 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             )
         })?;
 
-    // Construct a grpc client
-    let mut client = ServiceClient::connect(chain.grpc_addr.clone())
-        .await
-        .map_err(|e| {
-            Error::health_check_grpc_transport(
-                chain_id.clone(),
-                grpc_address.clone(),
-                "tendermint::ServiceClient".to_string(),
-                e,
-            )
-        })?;
-
-    let request = tonic::Request::new(GetNodeInfoRequest {});
-
-    let response = client.get_node_info(request).await.map_err(|e| {
-        Error::health_check_grpc_status(
-            chain_id.clone(),
-            grpc_address.clone(),
-            "tendermint::ServiceClient".to_string(),
-            e,
-        )
-    })?;
-
-    let version = response.into_inner().application_version.ok_or_else(|| {
-        Error::health_check_invalid_version(
-            chain_id.clone(),
-            grpc_address.clone(),
-            "tendermint::GetNodeInfoRequest".to_string(),
-        )
-    })?;
-
-    // Checkup on the underlying SDK version
-    if let Err(diagnostic) = compatibility::run_diagnostic(version) {
+    // Checkup on the underlying SDK & IBC-go versions
+    if let Err(diagnostic) = compatibility::run_diagnostic(&chain.version_specs) {
         return Err(Error::sdk_module_version(
             chain_id.clone(),
             grpc_address.clone(),
@@ -2264,6 +2239,50 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+/// Queries the chain to obtain the version information.
+async fn fetch_version_specs(
+    chain_id: &ChainId,
+    grpc_address: &Uri,
+) -> Result<version::Specs, Error> {
+    let grpc_addr_string = grpc_address.to_string();
+
+    // Construct a gRPC client
+    let mut client = ServiceClient::connect(grpc_address.clone())
+        .await
+        .map_err(|e| {
+            Error::fetch_version_grpc_transport(
+                chain_id.clone(),
+                grpc_addr_string.clone(),
+                "tendermint::ServiceClient".to_string(),
+                e,
+            )
+        })?;
+
+    let request = tonic::Request::new(GetNodeInfoRequest {});
+
+    let response = client.get_node_info(request).await.map_err(|e| {
+        Error::fetch_version_grpc_status(
+            chain_id.clone(),
+            grpc_addr_string.clone(),
+            "tendermint::ServiceClient".to_string(),
+            e,
+        )
+    })?;
+
+    let version = response.into_inner().application_version.ok_or_else(|| {
+        Error::fetch_version_invalid_version_response(
+            chain_id.clone(),
+            grpc_addr_string.clone(),
+            "tendermint::GetNodeInfoRequest".to_string(),
+        )
+    })?;
+
+    // Parse the raw version info into a domain-type `version::Specs`
+    version
+        .try_into()
+        .map_err(|e| Error::fetch_version_parsing(chain_id.clone(), grpc_addr_string.clone(), e))
 }
 
 struct PrettyFee<'a>(&'a Fee);

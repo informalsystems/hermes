@@ -512,19 +512,15 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             let counterparty_channel = counterparty_channel.unwrap();
 
             let has_packets = || -> bool {
-                !unreceived_packets(&counterparty_chain, &chain, counterparty_channel.clone())
+                !unreceived_packets(&counterparty_chain, &chain, &counterparty_channel)
                     .unwrap_or_default()
                     .is_empty()
             };
 
             let has_acks = || -> bool {
-                !unreceived_acknowledgements(
-                    &counterparty_chain,
-                    &chain,
-                    counterparty_channel.clone(),
-                )
-                .unwrap_or_default()
-                .is_empty()
+                !unreceived_acknowledgements(&counterparty_chain, &chain, &counterparty_channel)
+                    .unwrap_or_default()
+                    .is_empty()
             };
 
             // If there are any outstanding packets or acks to send, spawn the worker

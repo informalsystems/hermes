@@ -94,9 +94,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.44"
+version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61604a8f862e1d5c3229fdd78f8b02c68dcf73a4c4b05fd636d12240aaa242c1"
+checksum = "ee10e43ae4a853c0a3591d4e2ada1719e553be18199d9da9d4a83f5927c2f5c7"
 
 [[package]]
 name = "arrayvec"
@@ -2365,9 +2365,9 @@ dependencies = [
 
 [[package]]
 name = "rouille"
-version = "3.3.1"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfc1bcf3b32bd9ef568402e750404c369ff172a6a34597c858f8ccf5f3bed013"
+checksum = "660f081d053ac1dce7c2683a3f2818d9b60a293bc142e7d3de36fd5541ebb671"
 dependencies = [
  "base64",
  "brotli2",
@@ -2383,7 +2383,7 @@ dependencies = [
  "serde_json",
  "sha1",
  "threadpool",
- "time 0.3.4",
+ "time 0.3.2",
  "tiny_http",
  "url",
 ]
@@ -2656,9 +2656,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f690853975602e1bfe1ccbf50504d67174e3bcf340f23b5ea9992e0587a52d8"
+checksum = "e466864e431129c7e0d3476b92f20458e5879919a0596c6472738d9fa2d342f8"
 dependencies = [
  "itoa",
  "ryu",
@@ -3143,9 +3143,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.4"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99beeb0daeac2bd1e86ac2c21caddecb244b39a093594da1a661ec2060c7aedd"
+checksum = "3e0a10c9a9fb3a5dce8c2239ed670f1a2569fcf42da035f5face1b19860d52b0"
 dependencies = [
  "libc",
 ]

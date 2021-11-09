@@ -31,6 +31,7 @@ use ibc::{
     relayer::ics18_relayer::error as relayer_error,
 };
 
+use crate::chain::cosmos::version;
 use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
 use crate::event::monitor;
 use crate::keyring::errors::Error as KeyringError;
@@ -356,7 +357,18 @@ define_error! {
                     e.endpoint, e.chain_id, e.address)
             },
 
-        HealthCheckGrpcTransport
+        FetchVersionParsing
+            {
+                chain_id: ChainId,
+                address: String,
+            }
+            [ version::Error ]
+            |e| {
+                format!("failed while parsing version info for chain {0}:{1}; caused by: {2}",
+                    e.chain_id, e.address, e.source)
+            },
+
+        FetchVersionGrpcTransport
             {
                 chain_id: ChainId,
                 address: String,
@@ -364,11 +376,11 @@ define_error! {
             }
             [ DisplayOnly<tonic::transport::Error> ]
             |e| {
-                format!("health check failed for endpoint {0} on the gRPC interface of chain {1}:{2}",
+                format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
             },
 
-        HealthCheckGrpcStatus
+        FetchVersionGrpcStatus
             {
                 chain_id: ChainId,
                 address: String,
@@ -376,18 +388,18 @@ define_error! {
                 status: tonic::Status
             }
             |e| {
-                format!("health check failed for endpoint {0} on the gRPC interface of chain {1}:{2}; caused by: {3}",
+                format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}; caused by: {3}",
                     e.endpoint, e.chain_id, e.address, e.status)
             },
 
-        HealthCheckInvalidVersion
+        FetchVersionInvalidVersionResponse
             {
                 chain_id: ChainId,
                 address: String,
                 endpoint: String,
             }
             |e| {
-                format!("health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}; the gRPC response contains no application version information",
+                format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}; the gRPC response contains no application version information",
                     e.endpoint, e.chain_id, e.address)
             },
 
