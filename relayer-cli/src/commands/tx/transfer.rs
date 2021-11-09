@@ -92,14 +92,14 @@ impl TxIcs20MsgTransferCmd {
         &self,
         config: &Config,
     ) -> Result<TransferOptions, Box<dyn std::error::Error>> {
-        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
+        config.find_chain(&self.src_chain_id).ok_or_else(|| {
             format!(
                 "missing configuration for source chain '{}'",
                 self.src_chain_id
             )
         })?;
 
-        let dest_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
+        config.find_chain(&self.dst_chain_id).ok_or_else(|| {
             format!(
                 "missing configuration for destination chain '{}'",
                 self.dst_chain_id
@@ -120,8 +120,6 @@ impl TxIcs20MsgTransferCmd {
         }
 
         let opts = TransferOptions {
-            packet_src_chain_config: src_chain_config.clone(),
-            packet_dst_chain_config: dest_chain_config.clone(),
             packet_src_port_id: self.src_port_id.clone(),
             packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount,

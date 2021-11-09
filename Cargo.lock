@@ -1451,6 +1451,7 @@ dependencies = [
  "ibc-relayer-cli",
  "ibc-telemetry",
  "itertools",
+ "prost",
  "prost-types",
  "rand 0.8.4",
  "rusty-fork",

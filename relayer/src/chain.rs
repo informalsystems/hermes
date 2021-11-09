@@ -44,7 +44,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
-pub(crate) mod cosmos;
+pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
 pub mod runtime;

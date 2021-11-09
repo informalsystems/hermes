@@ -9,7 +9,7 @@ use serde::de::Unexpected;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Clone, Copy)]
-pub struct MaxMsgNum(usize);
+pub struct MaxMsgNum(pub usize);
 
 impl MaxMsgNum {
     const DEFAULT: usize = 30;

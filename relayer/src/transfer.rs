@@ -13,7 +13,6 @@ use ibc::Height;
 use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
-use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::util::bigint::U256;
 
@@ -74,8 +73,6 @@ impl FromStr for Amount {
 
 #[derive(Clone, Debug)]
 pub struct TransferOptions {
-    pub packet_src_chain_config: ChainConfig,
-    pub packet_dst_chain_config: ChainConfig,
     pub packet_src_port_id: PortId,
     pub packet_src_channel_id: ChannelId,
     pub amount: Amount,
@@ -86,9 +83,9 @@ pub struct TransferOptions {
     pub number_msgs: usize,
 }
 
-pub fn build_and_send_transfer_messages<Chain: ChainHandle>(
-    packet_src_chain: &Chain, // the chain whose account is debited
-    packet_dst_chain: &Chain, // the chain whose account eventually gets credited
+pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
+    packet_src_chain: &SrcChain, // the chain whose account is debited
+    packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
     opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, PacketError> {
     let receiver = match &opts.receiver {

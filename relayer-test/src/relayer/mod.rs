@@ -18,4 +18,6 @@
    the original code.
 */
 
+pub mod transfer;
+
 pub mod supervisor;
