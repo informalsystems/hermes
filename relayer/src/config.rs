@@ -271,10 +271,10 @@ impl Default for RestConfig {
     }
 }
 
-/// It defines the address generation method
-/// TODO: Ethermint `pk_type` to be restricted
-/// after the Cosmos SDK release with ethsecp256k1
-/// https://github.com/cosmos/cosmos-sdk/pull/9981
+/// Defines the address generation method
+// TODO: Ethermint `pk_type` to be restricted
+// after the Cosmos SDK release with ethsecp256k1
+// https://github.com/cosmos/cosmos-sdk/pull/9981
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(
     rename_all = "lowercase",

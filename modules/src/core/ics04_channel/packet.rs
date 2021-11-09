@@ -115,7 +115,7 @@ pub struct Packet {
 }
 
 impl Packet {
-    /// Checks whether a packet from a [`SendPacket`] event is
+    /// Checks whether a packet from a `SendPacket` event is
     /// timed-out relative to the current state of the destination
     /// chain.
     ///
@@ -123,8 +123,8 @@ impl Packet {
     /// current timestamp `dst_chain_ts` as well as relative to
     /// the height `dst_chain_height`.
     ///
-    /// Note: a timed-out packet should result in a [`MsgTimeout`],
-    /// instead of the common-case where it results in [`MsgRecvPacket`].
+    /// Note: a timed-out packet should result in a `MsgTimeout`,
+    /// instead of the common-case where it results in `MsgRecvPacket`.
     pub fn timed_out(&self, dst_chain_ts: &Timestamp, dst_chain_height: Height) -> bool {
         (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
             || (self.timeout_timestamp != Timestamp::none()

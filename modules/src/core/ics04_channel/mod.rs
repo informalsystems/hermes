@@ -1,4 +1,4 @@
-//! ICS 04: IBC Channel implementation that facilitates communication between
+//! ICS 04: Channel implementation that facilitates communication between
 //! applications and the chains those applications are built upon.
 
 pub mod channel;

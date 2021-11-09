@@ -1,5 +1,5 @@
-//! ICS 05: Port implementation that specifies the allocation system by which modules can bind to
-//! uniquely named ports.
+//! ICS 05: Port implementation specifies the allocation scheme used by modules to 
+//! bind to uniquely named ports.
 
 pub mod capabilities;
 pub mod context;
