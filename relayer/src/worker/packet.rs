@@ -136,7 +136,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                 } => {
                     // Schedule the clearing of pending packets. This may happen once at start,
                     // and may be _forced_ at predefined block intervals.
-                    let force_packet_clearing = self.clear_packets_on_start()
+                    let force_packet_clearing = self.clear_packets()
                         || (self.packets_cfg.clear_interval != 0
                             && height.revision_height % self.packets_cfg.clear_interval == 0);
 
