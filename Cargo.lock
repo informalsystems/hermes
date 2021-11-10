@@ -1862,8 +1862,9 @@ checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
 
 [[package]]
 name = "oneline-eyre"
-version = "0.3.0"
-source = "git+https://github.com/informalsystems/oneline-eyre#3e9555a6201a9bd5583061f8911c477745835756"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "862f17a1e689c0ce8ca158ea48e776c5101c5d14fdfbed3e01c15f89604c3097"
 dependencies = [
  "eyre",
 ]

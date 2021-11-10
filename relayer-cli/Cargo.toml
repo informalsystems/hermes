@@ -38,7 +38,7 @@ tracing = "0.1.29"
 tracing-subscriber = { version = "0.3.1", features = ["fmt", "env-filter", "json"]}
 eyre = "0.6.5"
 color-eyre = "0.5"
-oneline-eyre = { git = "https://github.com/informalsystems/oneline-eyre" }
+oneline-eyre = "0.1"
 futures = "0.3.17"
 toml = "0.5.8"
 serde_derive = "1.0.116"
