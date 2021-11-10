@@ -837,10 +837,10 @@ refresh = true
 misbehaviour = true
 
 [mode.connections]
-enabled = false
+enabled = true
 
 [mode.channels]
-enabled = false
+enabled = true
 
 [mode.packets]
 enabled = true
