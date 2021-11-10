@@ -46,7 +46,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         }
     }
 
-    fn clear_packets_on_start(&mut self) -> bool {
+    fn clear_packets(&mut self) -> bool {
         if self.first_run {
             self.first_run = false;
             self.packets_cfg.clear_on_start
