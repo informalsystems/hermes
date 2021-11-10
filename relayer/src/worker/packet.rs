@@ -27,6 +27,7 @@ pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
     packets_cfg: PacketsConfig,
+    first_run: bool,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
@@ -41,6 +42,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             chains,
             cmd_rx,
             packets_cfg,
+            first_run: true,
+        }
+    }
+
+    fn clear_packets_on_start(&mut self) -> bool {
+        if self.first_run {
+            self.first_run = false;
+            self.packets_cfg.clear_on_start
+        } else {
+            false
         }
     }
 
@@ -123,16 +134,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                     height,
                     new_block: _,
                 } => {
-                    let clear_on_start = if self.packets_cfg.clear_on_start {
-                        self.packets_cfg.clear_on_start = false;
-                        true
-                    } else {
-                        false
-                    };
-
                     // Schedule the clearing of pending packets. This may happen once at start,
                     // and may be _forced_ at predefined block intervals.
-                    let force_packet_clearing = clear_on_start
+                    let force_packet_clearing = self.clear_packets_on_start()
                         || (self.packets_cfg.clear_interval != 0
                             && height.revision_height % self.packets_cfg.clear_interval == 0);
 
