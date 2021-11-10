@@ -18,6 +18,5 @@ fn main() -> eyre::Result<()> {
 }
 
 fn compact_logs() -> bool {
-    let backtrace = std::env::var("RUST_BACKTRACE").unwrap_or("".to_string());
-    backtrace.is_empty() || backtrace == "0"
+    matches!(std::env::var("RUST_BACKTRACE").as_deref(), Ok("" | "0"))
 }
