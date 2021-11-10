@@ -1,4 +1,4 @@
-name: End to End testing (Current Gaia)
+name: End to End testing (Gaia - v5.0.8)
 on:
   pull_request:
     paths:
