@@ -4,12 +4,13 @@
 #![forbid(unsafe_code)]
 
 use ibc_relayer_cli::application::APPLICATION;
+use ibc_relayer_cli::components::enable_ansi;
 
 /// Boot Cli
 fn main() -> eyre::Result<()> {
     if compact_logs() {
         oneline_eyre::install()?;
-    } else {
+    } else if enable_ansi() {
         color_eyre::install()?;
     }
 
