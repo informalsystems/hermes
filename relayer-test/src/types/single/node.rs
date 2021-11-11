@@ -29,7 +29,7 @@ pub struct FullNode {
        The type holding the underlying child process, which will kill the
        full node when [`FullNode`] is dropped.
     */
-    pub chain_process: ChildProcess,
+    pub chain_process: Option<ChildProcess>,
 
     /**
        The currency denomination which the wallets have been loaded
@@ -83,6 +83,15 @@ impl<Chain> TaggedFullNode<Chain> for MonoTagged<Chain, FullNode> {
 }
 
 impl FullNode {
+    pub fn replicate(&self) -> Self {
+        Self {
+            chain_driver: self.chain_driver.clone(),
+            chain_process: None,
+            denom: self.denom.clone(),
+            wallets: self.wallets.clone(),
+        }
+    }
+
     /**
        Generate the relayer's chain config based on the configuration of
        the full node.

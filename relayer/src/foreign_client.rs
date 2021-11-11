@@ -288,6 +288,25 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             return Err(ForeignClientError::same_chain_id(src_chain.id()));
         }
 
+        Self::unsafe_new(dst_chain, src_chain)
+    }
+
+    /**
+       Unsafe creation of a new foreign client that allows both the destination and
+       source to be the same chains.
+
+       In IBC this should be supported, although we have not thoroughly tested it.
+       By default, we still require the two chains to be different so that users
+       do not accidentally misconfigure the client.
+
+       However for testing purposes and for cases when we do want to create
+       self-connected IBC clients, we can use this method instead to create
+       the foreign client.
+    */
+    pub fn unsafe_new(
+        dst_chain: DstChain,
+        src_chain: SrcChain,
+    ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         let mut client = ForeignClient {
             id: ClientId::default(),
             dst_chain,

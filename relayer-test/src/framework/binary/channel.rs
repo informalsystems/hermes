@@ -28,7 +28,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
-    run_owned_binary_channel_test(&RunBinaryChannelTest { test })
+    run_owned_binary_channel_test(&RunBinaryChannelTest::new(test))
 }
 
 /**
@@ -42,7 +42,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
-    run_owned_binary_channel_test(&RunTwoWayBinaryChannelTest { test })
+    run_owned_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
 
 /**
@@ -54,7 +54,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
-    run_owned_binary_chain_test(&RunOwnedBinaryChannelTest { test })
+    run_owned_binary_chain_test(&RunOwnedBinaryChannelTest::new(test))
 }
 
 /**
@@ -149,6 +149,33 @@ pub struct RunBinaryChannelTest<'a, Test> {
 pub struct RunTwoWayBinaryChannelTest<'a, Test> {
     /// Inner test
     pub test: &'a Test,
+}
+
+impl<'a, Test> RunOwnedBinaryChannelTest<'a, Test>
+where
+    Test: OwnedBinaryChannelTest,
+{
+    pub fn new(test: &'a Test) -> Self {
+        Self { test }
+    }
+}
+
+impl<'a, Test> RunBinaryChannelTest<'a, Test>
+where
+    Test: BinaryChannelTest,
+{
+    pub fn new(test: &'a Test) -> Self {
+        Self { test }
+    }
+}
+
+impl<'a, Test> RunTwoWayBinaryChannelTest<'a, Test>
+where
+    Test: BinaryChannelTest,
+{
+    pub fn new(test: &'a Test) -> Self {
+        Self { test }
+    }
 }
 
 impl<'a, Test, Overrides> OwnedBinaryChainTest for RunOwnedBinaryChannelTest<'a, Test>

@@ -10,13 +10,13 @@ use crate::types::tagged::*;
 /**
    Newtype wrapper for a wallet ID as identified by the chain and relayer.
 */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WalletId(pub String);
 
 /**
    Newtype wrapper for the address a wallet corresponds to.
 */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WalletAddress(pub String);
 
 /**
@@ -24,7 +24,7 @@ pub struct WalletAddress(pub String);
    and also the public/private key information in the form of
    [KeyEntry](ibc_relayer::keyring::KeyEntry).
 */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Wallet {
     /// The ID of the wallet for accessing it from the key store.
     pub id: WalletId,
@@ -51,7 +51,7 @@ pub struct Wallet {
    [`TestOverrides`](crate::framework::overrides::TestOverrides)
    trait to generate additional wallets during test setup.
 */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TestWallets {
     /// The validator wallet.
     pub validator: Wallet,

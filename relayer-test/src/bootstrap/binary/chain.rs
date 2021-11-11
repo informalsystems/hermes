@@ -8,6 +8,7 @@ use ibc_relayer::config::{Config, SharedConfig};
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
 use std::fs;
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::RwLock;
 use tracing::info;
@@ -17,7 +18,6 @@ use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
 use crate::types::wallet::{TestWallets, Wallet};
-use crate::util::random::random_u32;
 
 /**
    Bootstraps two relayer chain handles with connected foreign clients.
@@ -41,19 +41,9 @@ pub fn boostrap_chain_pair_with_nodes(
 
     config_modifier(&mut config);
 
-    let config_str = toml::to_string_pretty(&config)?;
+    let config_path = test_config.chain_store_dir.join("relayer-config.toml");
 
-    let config_path = test_config
-        .chain_store_dir
-        .join(format!("config-{:x}.toml", random_u32()));
-
-    fs::write(&config_path, &config_str)?;
-
-    info!(
-        "written hermes config.toml to {}:\n{}",
-        config_path.display(),
-        config_str
-    );
+    save_relayer_config(&config, &config_path)?;
 
     let config = Arc::new(RwLock::new(config));
 
@@ -78,6 +68,54 @@ pub fn boostrap_chain_pair_with_nodes(
         MonoTagged::new(node_b),
         client_a_to_b,
         client_b_to_a,
+    ))
+}
+
+/**
+   Work similary to [`boostrap_chain_pair_with_nodes`], but bootstraps a
+   single chain to be connected with itself.
+
+   Self-connected chains are in fact allowed in IBC. Although we do not
+   have a clear use case for it yet, it is important to verify that
+   tests that pass with two connected chains should also pass with
+   self-connected chains.
+
+   Returns a [`ConnectedChains`] with the two underlying chains
+   being the same chain.
+*/
+pub fn boostrap_self_connected_chain(
+    test_config: &TestConfig,
+    node: FullNode,
+    config_modifier: impl FnOnce(&mut Config),
+) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error> {
+    let mut config = Config::default();
+
+    add_chain_config(&mut config, &node)?;
+
+    config_modifier(&mut config);
+
+    let config_path = test_config.chain_store_dir.join("relayer-config.toml");
+
+    save_relayer_config(&config, &config_path)?;
+
+    let config = Arc::new(RwLock::new(config));
+
+    let registry = new_registry(config.clone());
+
+    let handle = spawn_chain_handle(|| {}, &registry, &node)?;
+
+    let foreign_client = ForeignClient::unsafe_new(handle.clone(), handle.clone())?;
+
+    Ok(ConnectedChains::new(
+        config_path,
+        config,
+        registry,
+        handle.clone(),
+        handle,
+        MonoTagged::new(node.replicate()),
+        MonoTagged::new(node),
+        foreign_client.clone(),
+        foreign_client,
     ))
 }
 
@@ -149,5 +187,19 @@ fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), 
     let chain_config = running_node.generate_chain_config()?;
 
     config.chains.push(chain_config);
+    Ok(())
+}
+
+fn save_relayer_config(config: &Config, config_path: &Path) -> Result<(), Error> {
+    let config_str = toml::to_string_pretty(&config)?;
+
+    fs::write(&config_path, &config_str)?;
+
+    info!(
+        "written hermes config.toml to {}:\n{}",
+        config_path.display(),
+        config_str
+    );
+
     Ok(())
 }

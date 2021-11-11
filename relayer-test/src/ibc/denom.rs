@@ -12,7 +12,7 @@ use crate::types::tagged::*;
 /**
    A newtype wrapper to represent a denomination string.
 */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Denom(pub String);
 
 /**

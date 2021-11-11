@@ -1,3 +1,5 @@
+use crate::framework::binary::chain::run_self_connected_binary_chain_test;
+use crate::framework::binary::channel::{RunBinaryChannelTest, RunOwnedBinaryChannelTest};
 use crate::ibc::denom::derive_ibc_denom;
 use crate::prelude::*;
 use crate::util::random::random_u64_range;
@@ -5,6 +7,17 @@ use crate::util::random::random_u64_range;
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
     run_two_way_binary_channel_test(&IbcTransferTest)
+}
+
+/*
+   Test that IBC token transfer can still work with a single
+   chain that is connected to itself.
+*/
+#[test]
+fn test_self_connected_ibc_transfer() -> Result<(), Error> {
+    run_self_connected_binary_chain_test(&RunOwnedBinaryChannelTest::new(
+        &RunBinaryChannelTest::new(&IbcTransferTest),
+    ))
 }
 
 pub struct IbcTransferTest;

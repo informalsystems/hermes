@@ -111,7 +111,7 @@ pub fn bootstrap_single_node(builder: &ChainBuilder, prefix: &str) -> Result<Ful
 
     let node = FullNode {
         chain_driver,
-        chain_process,
+        chain_process: Some(chain_process),
         denom,
         wallets,
     };

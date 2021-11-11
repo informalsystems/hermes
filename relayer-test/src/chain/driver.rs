@@ -44,6 +44,7 @@ const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
     implementations other than a single version of Gaia.
 */
 
+#[derive(Debug, Clone)]
 pub struct ChainDriver {
     /**
        The filesystem path to the Gaia CLI. Defaults to `gaiad`.

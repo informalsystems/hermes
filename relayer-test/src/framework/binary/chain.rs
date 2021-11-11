@@ -11,8 +11,12 @@ use tracing::info;
 
 use super::node::{run_owned_binary_node_test, OwnedBinaryNodeTest};
 use crate::bootstrap::binary::chain::boostrap_chain_pair_with_nodes;
+use crate::bootstrap::binary::chain::boostrap_self_connected_chain;
+use crate::bootstrap::single::bootstrap_single_node;
+use crate::chain::builder::ChainBuilder;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
+use crate::framework::base::{run_basic_test, BasicTest};
 use crate::relayer::supervisor::SupervisorHandle;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::config::TestConfig;
@@ -27,7 +31,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
-    run_owned_binary_chain_test(&RunBinaryChainTest { test })
+    run_owned_binary_chain_test(&RunBinaryChainTest::new(test))
 }
 
 /**
@@ -41,7 +45,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
-    run_owned_binary_chain_test(&RunTwoWayBinaryChainTest { test })
+    run_owned_binary_chain_test(&RunTwoWayBinaryChainTest::new(test))
 }
 
 /**
@@ -53,7 +57,21 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
-    run_owned_binary_node_test(&RunOwnedBinaryChainTest { test })
+    run_owned_binary_node_test(&RunOwnedBinaryChainTest::new(test))
+}
+
+/**
+   Runs a test case that implements [`OwnedBinaryChainTest`], with
+   the test case being executed with a single chain that is connected
+   to itself.
+*/
+pub fn run_self_connected_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(), Error>
+where
+    Test: OwnedBinaryChainTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: RelayerConfigOverride + SupervisorOverride,
+{
+    run_basic_test(&RunSelfConnectedBinaryChainTest::new(test))
 }
 
 /**
@@ -151,13 +169,62 @@ pub struct RunBinaryChainTest<'a, Test> {
 
 /**
    A wrapper type that lifts a test case that implements [`BinaryChainTest`]
-   into a test case the implements [`OwnedBinaryChainTest`]. During execution,
-   the underlying [`BinaryChainTest`] is run twice, with the second time
-   having the position of the two chains flipped.
+   into a test case the implements [`OwnedBinaryChainTest`].
+
+   During execution, the underlying [`BinaryChainTest`] is run twice, with
+   the second time having the position of the two chains flipped.
 */
 pub struct RunTwoWayBinaryChainTest<'a, Test> {
     /// Inner test
     pub test: &'a Test,
+}
+
+/**
+   A wrapper type that lifts a test case that implements [`OwnedBinaryChainTest`]
+   into a test case that implements [`BasicTest`].
+
+   During execution, the test case is given a [`ConnectedChains`] with a
+   single underlying chain that is connected to itself.
+*/
+pub struct RunSelfConnectedBinaryChainTest<'a, Test> {
+    /// Inner test
+    pub test: &'a Test,
+}
+
+impl<'a, Test> RunOwnedBinaryChainTest<'a, Test>
+where
+    Test: OwnedBinaryChainTest,
+{
+    pub fn new(test: &'a Test) -> Self {
+        Self { test }
+    }
+}
+
+impl<'a, Test> RunBinaryChainTest<'a, Test>
+where
+    Test: BinaryChainTest,
+{
+    pub fn new(test: &'a Test) -> Self {
+        Self { test }
+    }
+}
+
+impl<'a, Test> RunTwoWayBinaryChainTest<'a, Test>
+where
+    Test: BinaryChainTest,
+{
+    pub fn new(test: &'a Test) -> Self {
+        Self { test }
+    }
+}
+
+impl<'a, Test> RunSelfConnectedBinaryChainTest<'a, Test>
+where
+    Test: OwnedBinaryChainTest,
+{
+    pub fn new(test: &'a Test) -> Self {
+        Self { test }
+    }
 }
 
 impl<'a, Test, Overrides> OwnedBinaryNodeTest for RunOwnedBinaryChainTest<'a, Test>
@@ -237,6 +304,33 @@ impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTes
     }
 }
 
+impl<'a, Test, Overrides> BasicTest for RunSelfConnectedBinaryChainTest<'a, Test>
+where
+    Test: OwnedBinaryChainTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: RelayerConfigOverride + SupervisorOverride,
+{
+    fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
+        let node = bootstrap_single_node(builder, "refl")?;
+
+        let chains = boostrap_self_connected_chain(config, node, |config| {
+            self.test.get_overrides().modify_relayer_config(config);
+        })?;
+
+        let _supervisor = self
+            .test
+            .get_overrides()
+            .spawn_supervisor(&chains.config, &chains.registry);
+
+        self.test.run(config, chains)?;
+
+        // No use suspending the test on owned failures, as the chains
+        // are dropped in the inner test already.
+
+        Ok(())
+    }
+}
+
 impl<'a, Test, Overrides> HasOverrides for RunOwnedBinaryChainTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
@@ -260,6 +354,17 @@ where
 }
 
 impl<'a, Test, Overrides> HasOverrides for RunTwoWayBinaryChainTest<'a, Test>
+where
+    Test: HasOverrides<Overrides = Overrides>,
+{
+    type Overrides = Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        self.test.get_overrides()
+    }
+}
+
+impl<'a, Test, Overrides> HasOverrides for RunSelfConnectedBinaryChainTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
