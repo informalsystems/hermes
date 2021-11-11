@@ -410,8 +410,19 @@ define_error! {
                 genesis_bound: u64,
             }
             |e| {
-                format!("semantic config validation failed for option `max_tx_size` chain '{}', reason: `max_tx_size` = {} is greater than {}% of the genesis block param `max_size` = {}",
+                format!("semantic config validation failed for option `max_tx_size` for chain '{}', reason: `max_tx_size` = {} is greater than {}% of the consensus parameter `max_size` = {}",
                     e.chain_id, e.configured_bound, GENESIS_MAX_BYTES_MAX_FRACTION * 100.0, e.genesis_bound)
+            },
+
+        ConfigValidationMaxGasTooHigh
+            {
+                chain_id: ChainId,
+                configured_max_gas: u64,
+                consensus_max_gas: i64,
+            }
+            |e| {
+                format!("semantic config validation failed for option `max_gas` for chain '{}', reason: `max_gas` = {} is greater than the consensus parameter `max_gas` = {}",
+                    e.chain_id, e.configured_max_gas, e.consensus_max_gas)
             },
 
         ConfigValidationTrustingPeriodSmallerThanZero

@@ -197,6 +197,24 @@ impl CosmosSdkChain {
             ));
         }
 
+        // Check that the configured max gas is lower or equal to the consensus params max gas.
+        let consensus_max_gas = result.consensus_params.block.max_gas;
+
+        // If the consensus max gas is < 0, this check does not make sense.
+        if consensus_max_gas >= 0 {
+            let consensus_max_gas: u64 = consensus_max_gas
+                .try_into()
+                .expect("cannot over or underflow because it is positive");
+
+            if self.max_gas() > consensus_max_gas {
+                return Err(Error::config_validation_max_gas_too_high(
+                    self.id().clone(),
+                    self.max_gas(),
+                    result.consensus_params.block.max_gas,
+                ));
+            }
+        }
+
         Ok(())
     }
 
