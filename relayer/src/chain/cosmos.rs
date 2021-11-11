@@ -200,7 +200,7 @@ impl CosmosSdkChain {
         // Check that the configured max gas is lower or equal to the consensus params max gas.
         let consensus_max_gas = result.consensus_params.block.max_gas;
 
-        // If the consensus max gas is < 0, this check does not make sense.
+        // If the consensus max gas is < 0, we don't need to perform the check.
         if consensus_max_gas >= 0 {
             let consensus_max_gas: u64 = consensus_max_gas
                 .try_into()
@@ -305,6 +305,17 @@ impl CosmosSdkChain {
         };
 
         let estimated_gas = self.estimate_gas(simulate_tx)?;
+
+        if estimated_gas > self.max_gas() {
+            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+
+            return Err(Error::tx_simulate_gas_estimate_exceeded(
+                self.id().clone(),
+                estimated_gas,
+                self.max_gas(),
+            ));
+        }
+
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
