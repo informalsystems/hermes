@@ -181,6 +181,8 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         }
     }
 
+    /// If `enabled`, build an `Object` using the provided `object_ctor`
+    /// and add the given `event` to the `collected` events for this `object`.
     fn collect_event<F>(
         &self,
         collected: &mut CollectedEvents,
