@@ -162,7 +162,7 @@ impl Config {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ModeConfig {
     pub clients: Clients,
@@ -171,7 +171,7 @@ pub struct ModeConfig {
     pub packets: Packets,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Clients {
     pub enabled: bool,
@@ -181,19 +181,19 @@ pub struct Clients {
     pub misbehaviour: bool,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Connections {
     pub enabled: bool,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Channels {
     pub enabled: bool,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Packets {
     pub enabled: bool,

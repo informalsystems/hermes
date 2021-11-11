@@ -93,7 +93,7 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
         let worker = match &object {
             Object::Client(client) => Self::Client(
                 id,
-                ClientWorker::new(client.clone(), chains, cmd_rx, config.mode.clients.clone()),
+                ClientWorker::new(client.clone(), chains, cmd_rx, config.mode.clients),
             ),
             Object::Connection(connection) => Self::Connection(
                 id,
@@ -104,7 +104,7 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
             }
             Object::Packet(path) => Self::Packet(
                 id,
-                PacketWorker::new(path.clone(), chains, cmd_rx, config.mode.packets.clone()),
+                PacketWorker::new(path.clone(), chains, cmd_rx, config.mode.packets),
             ),
         };
 

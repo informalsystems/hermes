@@ -212,8 +212,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     ) -> CollectedEvents {
         let mut collected = CollectedEvents::new(batch.height, batch.chain_id.clone());
 
-        let config = self.config.read().expect("poisoned lock");
-        let mode = &config.mode;
+        let mode = self.config.read().expect("poisoned lock").mode;
 
         for event in &batch.events {
             match event {
