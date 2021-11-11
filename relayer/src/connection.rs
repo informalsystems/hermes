@@ -205,8 +205,20 @@ impl<Chain: ChainHandle> ConnectionSide<Chain> {
             connection_id,
         }
     }
+
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.connection_id.as_ref()
+    }
+
+    pub fn map_chain<ChainB: ChainHandle>(
+        self,
+        mapper: impl FnOnce(Chain) -> ChainB,
+    ) -> ConnectionSide<ChainB> {
+        ConnectionSide {
+            chain: mapper(self.chain),
+            client_id: self.client_id,
+            connection_id: self.connection_id,
+        }
     }
 }
 
@@ -1084,6 +1096,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             self.dst_chain(),
             self.src_chain(),
         )
+    }
+
+    pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
+        self,
+        mapper_a: impl Fn(ChainA) -> ChainC,
+        mapper_b: impl Fn(ChainB) -> ChainD,
+    ) -> Connection<ChainC, ChainD> {
+        Connection {
+            delay_period: self.delay_period,
+            a_side: self.a_side.map_chain(mapper_a),
+            b_side: self.b_side.map_chain(mapper_b),
+        }
     }
 }
 

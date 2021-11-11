@@ -395,6 +395,15 @@ pub struct PortChannelId {
     pub port_id: PortId,
 }
 
+impl PortChannelId {
+    pub fn new(channel_id: ChannelId, port_id: PortId) -> Self {
+        Self {
+            channel_id,
+            port_id,
+        }
+    }
+}
+
 impl Display for PortChannelId {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "{}/{}", self.port_id, self.channel_id)

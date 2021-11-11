@@ -17,15 +17,15 @@ pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
     pub foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
 }
 
-pub struct I<const TAG: usize>;
+pub struct Size<const TAG: usize>;
 
-pub type TaggedHandle<Handle, const TAG: usize> = MonoTagged<I<TAG>, Handle>;
+pub type TaggedHandle<Handle, const TAG: usize> = MonoTagged<Size<TAG>, Handle>;
 
 pub type TaggedFullNode<'a, Handle, const TAG: usize> =
     MonoTagged<TaggedHandle<Handle, TAG>, &'a FullNode>;
 
 pub type TaggedForeignClient<Handle, const FIRST: usize, const SECOND: usize> =
-    ForeignClient<MonoTagged<I<FIRST>, Handle>, MonoTagged<I<SECOND>, Handle>>;
+    ForeignClient<MonoTagged<Size<FIRST>, Handle>, MonoTagged<Size<SECOND>, Handle>>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
     pub fn full_node_at<const POS: usize>(&self) -> Result<TaggedFullNode<Handle, POS>, Error> {
@@ -40,7 +40,7 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
 
     pub fn foreign_client_at<const FIRST: usize, const SECOND: usize>(
         &self,
-    ) -> Result<TaggedForeignClient<Handle, FIRST, SECOND>, Error> {
+    ) -> Result<TaggedForeignClient<Handle, SECOND, FIRST>, Error> {
         let client = self.raw_foreign_client_at(FIRST, SECOND)?;
 
         Ok(ForeignClient::restore(
