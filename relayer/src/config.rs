@@ -171,6 +171,15 @@ pub struct ModeConfig {
     pub packets: Packets,
 }
 
+impl ModeConfig {
+    pub fn all_disabled(&self) -> bool {
+        !self.clients.enabled
+            && !self.connections.enabled
+            && !self.channels.enabled
+            && !self.packets.enabled
+    }
+}
+
 #[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Clients {
