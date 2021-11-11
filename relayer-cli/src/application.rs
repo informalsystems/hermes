@@ -131,7 +131,7 @@ impl Application for CliApp {
         if let Err(diagnostic) = validate_config(&config) {
             match diagnostic {
                 Diagnostic::Warning(e) => {
-                    tracing::warn!("relayer may be misconfigured: {}", e.detail());
+                    tracing::warn!("relayer may be misconfigured: {}", e);
                 }
                 Diagnostic::Error(e) => {
                     return Err(FrameworkErrorKind::ConfigError.context(e).into());
