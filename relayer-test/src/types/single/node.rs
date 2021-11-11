@@ -82,6 +82,24 @@ impl<Chain> TaggedFullNode<Chain> for MonoTagged<Chain, FullNode> {
     }
 }
 
+impl<'a, Chain> TaggedFullNode<Chain> for MonoTagged<Chain, &'a FullNode> {
+    fn chain_id(&self) -> MonoTagged<Chain, &ChainId> {
+        self.map_ref(|c| &c.chain_driver.chain_id)
+    }
+
+    fn chain_driver(&self) -> MonoTagged<Chain, &ChainDriver> {
+        self.map_ref(|c| &c.chain_driver)
+    }
+
+    fn wallets(&self) -> MonoTagged<Chain, &TestWallets> {
+        self.map_ref(|c| &c.wallets)
+    }
+
+    fn denom(&self) -> MonoTagged<Chain, &Denom> {
+        self.map_ref(|c| &c.denom)
+    }
+}
+
 impl FullNode {
     pub fn replicate(&self) -> Self {
         Self {

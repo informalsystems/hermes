@@ -21,6 +21,7 @@ use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt::{self, Debug, Display};
 use core::iter::{IntoIterator, Iterator};
 use core::marker::PhantomData;
+use serde::{Serialize, Serializer};
 
 use super::dual::Tagged as DualTagged;
 
@@ -307,6 +308,15 @@ impl<'a, Tag, Value> AsRef<Value> for Tagged<Tag, &'a Value> {
 impl<Tag, Value> AsRef<Value> for Tagged<Tag, Value> {
     fn as_ref(&self) -> &Value {
         self.value()
+    }
+}
+
+impl<Tag, Value: Serialize> Serialize for Tagged<Tag, Value> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.serialize(serializer)
     }
 }
 
