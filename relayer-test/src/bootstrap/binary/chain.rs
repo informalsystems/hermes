@@ -159,7 +159,7 @@ pub fn spawn_chain_handle<Seed>(
     Ok(handle)
 }
 
-fn add_key_to_chain_handle<Chain: ChainHandle>(
+pub fn add_key_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallet: &Wallet,
 ) -> Result<(), Error> {
@@ -168,7 +168,7 @@ fn add_key_to_chain_handle<Chain: ChainHandle>(
     Ok(())
 }
 
-fn add_keys_to_chain_handle<Chain: ChainHandle>(
+pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallets: &TestWallets,
 ) -> Result<(), Error> {
@@ -179,18 +179,18 @@ fn add_keys_to_chain_handle<Chain: ChainHandle>(
     Ok(())
 }
 
-fn new_registry(config: SharedConfig) -> SharedRegistry<ProdChainHandle> {
+pub fn new_registry(config: SharedConfig) -> SharedRegistry<ProdChainHandle> {
     <SharedRegistry<ProdChainHandle>>::new(config)
 }
 
-fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), Error> {
+pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), Error> {
     let chain_config = running_node.generate_chain_config()?;
 
     config.chains.push(chain_config);
     Ok(())
 }
 
-fn save_relayer_config(config: &Config, config_path: &Path) -> Result<(), Error> {
+pub fn save_relayer_config(config: &Config, config_path: &Path) -> Result<(), Error> {
     let config_str = toml::to_string_pretty(&config)?;
 
     fs::write(&config_path, &config_str)?;
