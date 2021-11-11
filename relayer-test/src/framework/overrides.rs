@@ -7,9 +7,11 @@ use ibc_relayer::config::Config;
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
 
+use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::PortsOverride;
+use crate::framework::binary::node::NodeConfigOverride;
 use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 
 /**
@@ -29,6 +31,20 @@ use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
    also be defined inside this trait with a default method body.
 */
 pub trait TestOverrides {
+    /**
+        Modify the full node config before the chain gets initialized.
+
+        The config is in the dynamic-typed [`toml::Value`] format, as we do not
+        want to model the full format of the node config in Rust. Test authors
+        can use the helper methods in [`chain::config`](crate::chain::config)
+        to modify common config fields.
+
+        Implemented for [`NodeConfigOverride`].
+    */
+    fn modify_node_config(&self, _config: &mut toml::Value) -> Result<(), Error> {
+        Ok(())
+    }
+
     /**
        Modify the relayer config before initializing the relayer. Does no
        modification by default.
@@ -84,6 +100,12 @@ impl<Test: TestOverrides> HasOverrides for Test {
 
     fn get_overrides(&self) -> &Self {
         self
+    }
+}
+
+impl<Test: TestOverrides> NodeConfigOverride for Test {
+    fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
+        TestOverrides::modify_node_config(self, config)
     }
 }
 

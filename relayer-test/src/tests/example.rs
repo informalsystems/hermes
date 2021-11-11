@@ -37,6 +37,10 @@
     chains that have been setup by the test, and figure out how to continue
     writing our test.
 
+    We also implement [`TestOverrides`] for [`ExampleTest`] with an empty body.
+    The [`TestOverrides`] trait allows us to override some behavior of the
+    test case by implement methods that override the default behavior.
+
     Finally, we define the `example_test` function with the `#[test]` pragma
     as the entry point for Rust to execute the test. We call the runner function
     [`run_binary_channel_test`](crate::framework::binary::channel::run_binary_channel_test),

@@ -2,6 +2,7 @@
    Helper functions for bootstrapping a single full node.
 */
 use core::time::Duration;
+use toml;
 use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
@@ -32,7 +33,11 @@ use crate::types::wallet::TestWallets;
    great to be able to randomize these parameters in the future
    as well.
 */
-pub fn bootstrap_single_node(builder: &ChainBuilder, prefix: &str) -> Result<FullNode, Error> {
+pub fn bootstrap_single_node(
+    builder: &ChainBuilder,
+    prefix: &str,
+    config_modifier: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
+) -> Result<FullNode, Error> {
     let stake_denom = Denom("stake".to_string());
     let denom = Denom(format!("coin{:x}", random_u32()));
     let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
@@ -75,6 +80,8 @@ pub fn bootstrap_single_node(builder: &ChainBuilder, prefix: &str) -> Result<Ful
         config::set_p2p_port(config, chain_driver.p2p_port)?;
         config::set_timeout_commit(config, Duration::from_secs(1))?;
         config::set_timeout_propose(config, Duration::from_secs(1))?;
+
+        config_modifier(config)?;
 
         Ok(())
     })?;

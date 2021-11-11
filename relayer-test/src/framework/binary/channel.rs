@@ -12,6 +12,7 @@ use tracing::info;
 use super::chain::{
     run_owned_binary_chain_test, OwnedBinaryChainTest, RelayerConfigOverride, SupervisorOverride,
 };
+use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
@@ -26,7 +27,7 @@ pub fn run_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
     run_owned_binary_channel_test(&RunBinaryChannelTest::new(test))
 }
@@ -40,7 +41,7 @@ pub fn run_two_way_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
     run_owned_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
@@ -52,7 +53,7 @@ pub fn run_owned_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(),
 where
     Test: OwnedBinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride + PortsOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
     run_owned_binary_chain_test(&RunOwnedBinaryChannelTest::new(test))
 }

@@ -9,7 +9,7 @@ use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
 use tracing::info;
 
-use super::node::{run_owned_binary_node_test, OwnedBinaryNodeTest};
+use super::node::{run_owned_binary_node_test, NodeConfigOverride, OwnedBinaryNodeTest};
 use crate::bootstrap::binary::chain::boostrap_chain_pair_with_nodes;
 use crate::bootstrap::binary::chain::boostrap_self_connected_chain;
 use crate::bootstrap::single::bootstrap_single_node;
@@ -29,7 +29,7 @@ pub fn run_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
     run_owned_binary_chain_test(&RunBinaryChainTest::new(test))
 }
@@ -43,7 +43,7 @@ pub fn run_two_way_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(),
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
     run_owned_binary_chain_test(&RunTwoWayBinaryChainTest::new(test))
 }
@@ -55,7 +55,7 @@ pub fn run_owned_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(), E
 where
     Test: OwnedBinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
     run_owned_binary_node_test(&RunOwnedBinaryChainTest::new(test))
 }
@@ -69,7 +69,7 @@ pub fn run_self_connected_binary_chain_test<Test, Overrides>(test: &Test) -> Res
 where
     Test: OwnedBinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
     run_basic_test(&RunSelfConnectedBinaryChainTest::new(test))
 }
@@ -308,10 +308,12 @@ impl<'a, Test, Overrides> BasicTest for RunSelfConnectedBinaryChainTest<'a, Test
 where
     Test: OwnedBinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node = bootstrap_single_node(builder, "refl")?;
+        let node = bootstrap_single_node(builder, "refl", |config| {
+            self.test.get_overrides().modify_node_config(config)
+        })?;
 
         let chains = boostrap_self_connected_chain(config, node, |config| {
             self.test.get_overrides().modify_relayer_config(config);
