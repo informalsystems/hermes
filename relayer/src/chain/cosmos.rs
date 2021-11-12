@@ -199,6 +199,24 @@ impl CosmosSdkChain {
             ));
         }
 
+        // Check that the configured max gas is lower or equal to the consensus params max gas.
+        let consensus_max_gas = result.consensus_params.block.max_gas;
+
+        // If the consensus max gas is < 0, we don't need to perform the check.
+        if consensus_max_gas >= 0 {
+            let consensus_max_gas: u64 = consensus_max_gas
+                .try_into()
+                .expect("cannot over or underflow because it is positive");
+
+            if self.max_gas() > consensus_max_gas {
+                return Err(Error::config_validation_max_gas_too_high(
+                    self.id().clone(),
+                    self.max_gas(),
+                    result.consensus_params.block.max_gas,
+                ));
+            }
+        }
+
         Ok(())
     }
 
@@ -289,6 +307,17 @@ impl CosmosSdkChain {
         };
 
         let estimated_gas = self.estimate_gas(simulate_tx)?;
+
+        if estimated_gas > self.max_gas() {
+            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+
+            return Err(Error::tx_simulate_gas_estimate_exceeded(
+                self.id().clone(),
+                estimated_gas,
+                self.max_gas(),
+            ));
+        }
+
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
@@ -339,45 +368,58 @@ impl CosmosSdkChain {
     /// Try to simulate the given tx in order to estimate how much gas will be needed to submit it.
     ///
     /// It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
-    /// they do not individually verify. For example for the following batch
+    /// they do not individually verify. For example for the following batch:
     /// [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
-    /// if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
+    ///
+    /// If the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check.
     /// In this case we use the `default_gas` param.
     fn estimate_gas(&self, tx: Tx) -> Result<u64, Error> {
-        let estimated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
+        let simulated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
 
-        if let Ok(ref gas) = estimated_gas {
-            debug!(
-                "[{}] send_tx: tx simulation successful, simulated gas: {:?}",
-                self.id(),
-                gas
-            );
-        }
+        match simulated_gas {
+            Ok(Some(gas_info)) => {
+                debug!(
+                    "[{}] estimate_gas: tx simulation successful, gas amount used: {:?}",
+                    self.id(),
+                    gas_info.gas_used
+                );
 
-        let estimated_gas = estimated_gas.map_or_else(
-            |e| {
-                error!(
-                    "[{}] send_tx: failed to estimate gas, falling back on default gas, error: {}",
+                Ok(gas_info.gas_used)
+            }
+
+            Ok(None) => {
+                warn!(
+                    "[{}] estimate_gas: tx simulation successful but no gas amount used was returned, falling back on default gas: {}",
+                    self.id(),
+                    self.default_gas()
+                );
+
+                Ok(self.default_gas())
+            }
+
+            // If there is a chance that the tx will be accepted once actually submitted, we fall
+            // back on the max gas and will attempt to send it anyway.
+            // See `can_recover_from_simulation_failure` for more info.
+            Err(e) if can_recover_from_simulation_failure(&e) => {
+                warn!(
+                    "[{}] estimate_gas: failed to simulate tx, falling back on default gas because the error is potentially recoverable: {}",
                     self.id(),
                     e.detail()
                 );
 
-                self.default_gas()
-            },
-            |gas_info| gas_info.map_or(self.default_gas(), |g| g.gas_used),
-        );
+                Ok(self.default_gas())
+            }
 
-        if estimated_gas > self.max_gas() {
-            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+            Err(e) => {
+                error!(
+                    "[{}] estimate_gas: failed to simulate tx with non-recoverable error: {}",
+                    self.id(),
+                    e.detail()
+                );
 
-            return Err(Error::tx_simulate_gas_estimate_exceeded(
-                self.id().clone(),
-                estimated_gas,
-                self.max_gas(),
-            ));
+                Err(e)
+            }
         }
-
-        Ok(estimated_gas)
     }
 
     /// The default amount of gas the relayer is willing to pay for a transaction,
@@ -2299,6 +2341,17 @@ async fn fetch_version_specs(
     version
         .try_into()
         .map_err(|e| Error::fetch_version_parsing(chain_id.clone(), grpc_addr_string.clone(), e))
+}
+
+/// Determine whether the given error yielded by `tx_simulate`
+/// can be recovered from by submitting the tx anyway.
+fn can_recover_from_simulation_failure(e: &Error) -> bool {
+    use crate::error::ErrorDetail::*;
+
+    match e.detail() {
+        GrpcStatus(detail) => detail.is_client_state_height_too_low(),
+        _ => false,
+    }
 }
 
 struct PrettyFee<'a>(&'a Fee);
