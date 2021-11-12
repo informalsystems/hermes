@@ -8,14 +8,20 @@ use ibc_relayer::config::default;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::types::nary::channel::ConnectedChannels;
+use crate::types::nary::channel::{ConnectedChannels, DynamicConnectedChannels};
+use crate::util::array::{assert_same_dimension, into_nested_vec};
 
-pub fn bootstrap_channels<Handle: ChainHandle, const SIZE: usize>(
-    foreign_clients: &[[ForeignClient<Handle, Handle>; SIZE]; SIZE],
-    ports: &[[PortId; SIZE]; SIZE],
-) -> Result<ConnectedChannels<Handle, SIZE>, Error> {
-    let mut channels: Vec<[Channel<Handle, Handle>; SIZE]> = Vec::new();
-    let mut port_channel_ids: Vec<[PortChannelId; SIZE]> = Vec::new();
+pub fn bootstrap_channels_dynamic<Handle: ChainHandle>(
+    foreign_clients: &Vec<Vec<ForeignClient<Handle, Handle>>>,
+    ports: &Vec<Vec<PortId>>,
+) -> Result<DynamicConnectedChannels<Handle>, Error> {
+    let size = foreign_clients.len();
+
+    assert_same_dimension(size, &foreign_clients)?;
+    assert_same_dimension(size, &ports)?;
+
+    let mut channels: Vec<Vec<Channel<Handle, Handle>>> = Vec::new();
+    let mut port_channel_ids: Vec<Vec<PortChannelId>> = Vec::new();
 
     for (i, foreign_clients_b) in foreign_clients.iter().enumerate() {
         let mut channels_b: Vec<Channel<Handle, Handle>> = Vec::new();
@@ -23,13 +29,7 @@ pub fn bootstrap_channels<Handle: ChainHandle, const SIZE: usize>(
 
         for (j, foreign_client) in foreign_clients_b.iter().enumerate() {
             if i <= j {
-                let counter_foreign_client = foreign_clients
-                    .get(j)
-                    .ok_or_else(|| eyre!("expected to get counter foreign client at {}/{}", j, i))?
-                    .get(i)
-                    .ok_or_else(|| {
-                        eyre!("expected to get counter foreign client at {}/{}", j, i)
-                    })?;
+                let counter_foreign_client = &foreign_clients[j][i];
 
                 let connection = Connection::new(
                     foreign_client.clone(),
@@ -37,17 +37,8 @@ pub fn bootstrap_channels<Handle: ChainHandle, const SIZE: usize>(
                     default::connection_delay(),
                 )?;
 
-                let port_a = ports
-                    .get(i)
-                    .ok_or_else(|| eyre!("expected to get port at {}/{}", i, j))?
-                    .get(j)
-                    .ok_or_else(|| eyre!("expected to get port at {}/{}", i, j))?;
-
-                let port_b = ports
-                    .get(j)
-                    .ok_or_else(|| eyre!("expected to get counter port at {}/{}", j, i))?
-                    .get(i)
-                    .ok_or_else(|| eyre!("expected to get counter port at {}/{}", j, i))?;
+                let port_a = &ports[i][j];
+                let port_b = &ports[j][i];
 
                 let channel = Channel::new(
                     connection,
@@ -66,13 +57,7 @@ pub fn bootstrap_channels<Handle: ChainHandle, const SIZE: usize>(
                 channels_b.push(channel);
                 port_channel_ids_b.push(PortChannelId::new(channel_id_a, port_a.clone()));
             } else {
-                let counter_channel = channels
-                    .get(j)
-                    .ok_or_else(|| eyre!("expected to get counter foreign client at {}/{}", j, i))?
-                    .get(i)
-                    .ok_or_else(|| {
-                        eyre!("expected to get counter foreign client at {}/{}", j, i)
-                    })?;
+                let counter_channel = &channels[j][i];
 
                 let channel = counter_channel.clone().flipped();
 
@@ -89,28 +74,22 @@ pub fn bootstrap_channels<Handle: ChainHandle, const SIZE: usize>(
             }
         }
 
-        let channels_b_array: [Channel<Handle, Handle>; SIZE] = channels_b
-            .try_into()
-            .map_err(|_| eyre!("expected channels array to be of size {}", SIZE))?;
-
-        let port_channel_ids_b_array: [PortChannelId; SIZE] = port_channel_ids_b
-            .try_into()
-            .map_err(|_| eyre!("expected port channel ids array to be of size {}", SIZE))?;
-
-        channels.push(channels_b_array);
-        port_channel_ids.push(port_channel_ids_b_array);
+        channels.push(channels_b);
+        port_channel_ids.push(port_channel_ids_b);
     }
 
-    let channels: [[Channel<Handle, Handle>; SIZE]; SIZE] = channels
-        .try_into()
-        .map_err(|_| eyre!("expected channels array to be of size {}", SIZE))?;
-
-    let port_channel_ids: [[PortChannelId; SIZE]; SIZE] = port_channel_ids
-        .try_into()
-        .map_err(|_| eyre!("expected port channel ids array to be of size {}", SIZE))?;
-
-    Ok(ConnectedChannels {
+    Ok(DynamicConnectedChannels {
         channels,
         port_channel_ids,
     })
+}
+
+pub fn bootstrap_channels<Handle: ChainHandle, const SIZE: usize>(
+    foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
+    ports: [[PortId; SIZE]; SIZE],
+) -> Result<ConnectedChannels<Handle, SIZE>, Error> {
+    let channels =
+        bootstrap_channels_dynamic(&into_nested_vec(foreign_clients), &into_nested_vec(ports))?;
+
+    Ok(channels.try_into()?)
 }

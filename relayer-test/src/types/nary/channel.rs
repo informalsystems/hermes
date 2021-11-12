@@ -1,3 +1,4 @@
+use core::convert::TryFrom;
 use eyre::eyre;
 use ibc::core::ics24_host::identifier::{ChannelId, PortChannelId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
@@ -6,6 +7,17 @@ use ibc_relayer::channel::Channel;
 use super::chains::TaggedHandle;
 use crate::error::Error;
 use crate::types::tagged::*;
+use crate::util::array::try_into_nested_array;
+
+pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
+    pub channels: [[Channel<Handle, Handle>; SIZE]; SIZE],
+    pub port_channel_ids: [[PortChannelId; SIZE]; SIZE],
+}
+
+pub struct DynamicConnectedChannels<Handle: ChainHandle> {
+    pub channels: Vec<Vec<Channel<Handle, Handle>>>,
+    pub port_channel_ids: Vec<Vec<PortChannelId>>,
+}
 
 pub type TaggedChannel<Handle, const FIRST: usize, const SECOND: usize> =
     Channel<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>>;
@@ -18,11 +30,6 @@ pub type TaggedPortId<Handle, const FIRST: usize, const SECOND: usize> =
 
 pub type TaggedPortChannelId<Handle, const FIRST: usize, const SECOND: usize> =
     DualTagged<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>, PortChannelId>;
-
-pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
-    pub channels: [[Channel<Handle, Handle>; SIZE]; SIZE],
-    pub port_channel_ids: [[PortChannelId; SIZE]; SIZE],
-}
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
     pub fn channel_at<const FIRST: usize, const SECOND: usize>(
@@ -93,5 +100,18 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
                     )
                 })
         }
+    }
+}
+
+impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChannels<Handle>>
+    for ConnectedChannels<Handle, SIZE>
+{
+    type Error = Error;
+
+    fn try_from(channels: DynamicConnectedChannels<Handle>) -> Result<Self, Error> {
+        Ok(ConnectedChannels {
+            channels: try_into_nested_array(channels.channels)?,
+            port_channel_ids: try_into_nested_array(channels.port_channel_ids)?,
+        })
     }
 }

@@ -1,5 +1,7 @@
+use core::convert::TryFrom;
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::SharedConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
 use std::path::PathBuf;
@@ -8,13 +10,24 @@ use crate::error::Error;
 use crate::types::binary::chains::DropChainHandle;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
+use crate::util::array::{try_into_array, try_into_nested_array};
 
 pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
     pub config_path: PathBuf,
+    pub config: SharedConfig,
     pub registry: SharedRegistry<Handle>,
     pub chain_handles: [DropChainHandle<Handle>; SIZE],
     pub full_nodes: [FullNode; SIZE],
     pub foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
+}
+
+pub struct DynamicConnectedChains<Handle: ChainHandle> {
+    pub config_path: PathBuf,
+    pub config: SharedConfig,
+    pub registry: SharedRegistry<Handle>,
+    pub chain_handles: Vec<DropChainHandle<Handle>>,
+    pub full_nodes: Vec<FullNode>,
+    pub foreign_clients: Vec<Vec<ForeignClient<Handle, Handle>>>,
 }
 
 pub struct Size<const TAG: usize>;
@@ -92,5 +105,22 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
                     )
                 })
         }
+    }
+}
+
+impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChains<Handle>>
+    for ConnectedChains<Handle, SIZE>
+{
+    type Error = Error;
+
+    fn try_from(chains: DynamicConnectedChains<Handle>) -> Result<Self, Error> {
+        Ok(ConnectedChains {
+            config_path: chains.config_path,
+            config: chains.config,
+            registry: chains.registry,
+            chain_handles: try_into_array(chains.chain_handles)?,
+            full_nodes: try_into_array(chains.full_nodes)?,
+            foreign_clients: try_into_nested_array(chains.foreign_clients)?,
+        })
     }
 }
