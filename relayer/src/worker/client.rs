@@ -48,8 +48,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         );
 
         info!(
-            "[{}] running client worker & initial misbehaviour detection",
-            client
+            "[{}] running client worker with misbehaviour={} and refresh={}",
+            client, self.clients_cfg.misbehaviour, self.clients_cfg.refresh
         );
 
         // initial check for evidence of misbehaviour for all updates
