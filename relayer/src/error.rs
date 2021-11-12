@@ -5,7 +5,7 @@ use core::time::Duration;
 use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
-use prost::DecodeError;
+use prost::{DecodeError, EncodeError};
 use tendermint::Error as TendermintError;
 use tendermint_light_client::{
     components::io::IoError as LightClientIoError, errors::Error as LightClientError,
@@ -330,6 +330,11 @@ define_error! {
             [ TraceError<DecodeError> ]
             |e| { format!("Error decoding protocol buffer for {}", e.payload_type) },
 
+        ProtobufEncode
+            { payload_type: String }
+            [ TraceError<EncodeError> ]
+            |e| { format!("Error encoding protocol buffer for {}", e.payload_type) },
+
         Cbor
             [ TraceError<serde_cbor::Error> ]
             | _ | { "error decoding CBOR payload" },
@@ -481,6 +486,9 @@ define_error! {
         EmptyBaseAccount
             |_| { "Empty BaseAccount within EthAccount" },
 
+        EmptyQueryAccount
+            { address: String }
+            |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) }
     }
 }
 
