@@ -825,12 +825,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let dst_channel_id = self.dst_channel_id();
 
         let (commit_sequences, sequences, src_response_height) = unreceived_packets_sequences(
-            self.src_chain(),
-            src_channel_id,
-            self.src_port_id(),
             self.dst_chain(),
-            dst_channel_id,
             self.dst_port_id(),
+            dst_channel_id,
+            self.src_chain(),
+            self.src_port_id(),
+            src_channel_id,
         )
         .map_err(LinkError::supervisor)?;
 
@@ -941,20 +941,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_channel_id = self.src_channel_id();
         let dst_channel_id = self.dst_channel_id();
 
-        let (acked_sequences, sequences, src_response_height) =
+        let (acks_on_src, unreceived_acks_by_dst, src_response_height) =
             unreceived_acknowledgements_sequences(
-                self.src_chain(),
-                src_channel_id,
-                self.src_port_id(),
                 self.dst_chain(),
-                dst_channel_id,
                 self.dst_port_id(),
+                dst_channel_id,
+                self.src_chain(),
+                self.src_port_id(),
+                src_channel_id,
             )
             .map_err(LinkError::supervisor)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
-        let sequences: Vec<Sequence> = sequences.into_iter().map(From::from).collect();
+        let sequences: Vec<Sequence> = unreceived_acks_by_dst.into_iter().map(From::from).collect();
         if sequences.is_empty() {
             return Ok((events_result, query_height));
         }
@@ -963,9 +963,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             "[{}] packets that have acknowledgments on {}: [{:?}..{:?}] (total={})",
             self,
             self.src_chain().id(),
-            acked_sequences.first(),
-            acked_sequences.last(),
-            acked_sequences.len()
+            acks_on_src.first(),
+            acks_on_src.last(),
+            acks_on_src.len()
         );
 
         debug!(

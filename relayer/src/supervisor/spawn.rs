@@ -498,7 +498,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             && self.relay_packets_on_channel(&chain, &channel)
         {
             if mode.clients.enabled {
-                // spawn the client worker
+                // Spawn the client worker
                 let client_object = Object::Client(Client {
                     dst_client_id: client.client_id.clone(),
                     dst_chain_id: chain.id(),
@@ -516,28 +516,25 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             }
 
             if mode.packets.enabled {
-                // Safe to unwrap because the inner channel end has state open
-                let counterparty_channel = counterparty_channel.unwrap();
+                // SAFETY: Safe to unwrap because the inner channel end has state open
+                let counterparty_channel =
+                    counterparty_channel.expect("inner channel end is in state OPEN");
 
                 let has_packets = || -> bool {
-                    !unreceived_packets(&counterparty_chain, &chain, counterparty_channel.clone())
+                    !unreceived_packets(&counterparty_chain, &chain, &counterparty_channel)
                         .unwrap_or_default()
                         .is_empty()
                 };
 
                 let has_acks = || -> bool {
-                    !unreceived_acknowledgements(
-                        &counterparty_chain,
-                        &chain,
-                        counterparty_channel.clone(),
-                    )
-                    .unwrap_or_default()
-                    .is_empty()
+                    !unreceived_acknowledgements(&counterparty_chain, &chain, &counterparty_channel)
+                        .unwrap_or_default()
+                        .is_empty()
                 };
 
                 // If there are any outstanding packets or acks to send, spawn the worker
                 if has_packets() || has_acks() {
-                    // create the Packet object and spawn worker
+                    // Create the Packet object and spawn worker
                     let path_object = Object::Packet(Packet {
                         dst_chain_id: counterparty_chain.id(),
                         src_chain_id: chain.id(),

@@ -329,7 +329,7 @@ impl TryFrom<Packet> for Vec<Tag> {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenInit(pub Attributes);
 
 impl OpenInit {
@@ -372,7 +372,7 @@ impl From<OpenInit> for AbciEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenTry(pub Attributes);
 
 impl OpenTry {
@@ -415,7 +415,7 @@ impl From<OpenTry> for AbciEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenAck(pub Attributes);
 
 impl OpenAck {
@@ -462,7 +462,7 @@ impl From<OpenAck> for AbciEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenConfirm(pub Attributes);
 
 impl OpenConfirm {
@@ -505,7 +505,7 @@ impl From<OpenConfirm> for AbciEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct CloseInit(pub Attributes);
 
 impl CloseInit {
@@ -572,7 +572,7 @@ impl core::fmt::Display for CloseInit {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct CloseConfirm(pub Attributes);
 
 impl CloseConfirm {
@@ -609,7 +609,7 @@ impl From<CloseConfirm> for AbciEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct SendPacket {
     pub height: Height,
     pub packet: Packet,
@@ -674,7 +674,7 @@ impl core::fmt::Display for SendPacket {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct ReceivePacket {
     pub height: Height,
     pub packet: Packet,
@@ -713,7 +713,7 @@ impl core::fmt::Display for ReceivePacket {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct WriteAcknowledgement {
     pub height: Height,
     pub packet: Packet,
@@ -778,7 +778,7 @@ impl core::fmt::Display for WriteAcknowledgement {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct AcknowledgePacket {
     pub height: Height,
     pub packet: Packet,
@@ -823,7 +823,7 @@ impl core::fmt::Display for AcknowledgePacket {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct TimeoutPacket {
     pub height: Height,
     pub packet: Packet,
@@ -874,7 +874,7 @@ impl core::fmt::Display for TimeoutPacket {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct TimeoutOnClosePacket {
     pub height: Height,
     pub packet: Packet,

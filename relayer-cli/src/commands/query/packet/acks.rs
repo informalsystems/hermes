@@ -3,13 +3,13 @@ use serde::Serialize;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsRequest;
-use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::handle::ProdChainHandle;
 
-use crate::cli_utils::spawn_chain_runtime;
+use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
+use ibc_relayer::chain::counterparty::acknowledgements_on_chain;
 
 #[derive(Serialize, Debug)]
 struct PacketSeqs {
@@ -35,22 +35,17 @@ impl QueryPacketAcknowledgementsCmd {
 
         debug!("Options: {:?}", self);
 
-        let chain = spawn_chain_runtime(&*config, &self.chain_id)?;
+        let (chains, channel) = spawn_chain_counterparty::<ProdChainHandle>(
+            &config,
+            &self.chain_id,
+            &self.port_id,
+            &self.channel_id,
+        )?;
 
-        let grpc_request = QueryPacketAcknowledgementsRequest {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
+        let (seqs, height) = acknowledgements_on_chain(&chains.src, &chains.dst, &channel)
+            .map_err(Error::supervisor)?;
 
-        // Transform the list fo raw packet state into the list of sequence numbers
-        chain
-            .query_packet_acknowledgements(grpc_request)
-            .map_err(Error::relayer)
-            .map(|(packet, height)| PacketSeqs {
-                seqs: packet.iter().map(|p| p.sequence).collect(),
-                height,
-            })
+        Ok(PacketSeqs { seqs, height })
     }
 }
 

@@ -14,7 +14,7 @@ use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::chain::runtime::ChainRuntime;
 use ibc_relayer::chain::CosmosSdkChain;
 
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::app_config;
 
@@ -46,7 +46,7 @@ impl Runnable for QueryTxEventsCmd {
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain =
             ChainRuntime::<CosmosSdkChain>::spawn::<ProdChainHandle>(chain_config.clone(), rt)
-                .unwrap();
+                .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = Hash::from_str(self.hash.as_str())
             .map_err(|e| Error::invalid_hash(self.hash.clone(), e))

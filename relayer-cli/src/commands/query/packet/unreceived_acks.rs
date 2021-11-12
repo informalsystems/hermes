@@ -46,7 +46,7 @@ impl QueryUnreceivedAcknowledgementCmd {
             self.chain_id, channel
         );
 
-        unreceived_acknowledgements(&chains.src, &chains.dst, channel).map_err(Error::supervisor)
+        unreceived_acknowledgements(&chains.src, &chains.dst, &channel).map_err(Error::supervisor)
     }
 }
 

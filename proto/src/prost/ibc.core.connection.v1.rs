@@ -1,5 +1,5 @@
 // ICS03 - Connection Data Structures as defined in
-// https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#data-structures
+// <https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#data-structures>
 
 /// ConnectionEnd defines a stateful object on a chain connected to another
 /// separate one.
@@ -260,7 +260,7 @@ pub mod msg_client {
     impl<T> MsgClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
@@ -512,7 +512,7 @@ pub mod query_client {
     impl<T> QueryClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
