@@ -2,6 +2,7 @@
    Types for information about a chain wallet.
 */
 
+use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use core::fmt::{self, Display};
 use ibc_relayer::keyring::KeyEntry;
 
@@ -143,6 +144,24 @@ impl<'a, Chain> TaggedTestWallets<Chain> for MonoTagged<Chain, &'a TestWallets> 
 
     fn user2(&self) -> MonoTagged<Chain, &Wallet> {
         self.map_ref(|w| &w.user2)
+    }
+}
+
+impl ExportEnv for TestWallets {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        self.validator
+            .export_env(&mut prefix_writer("VALIDATOR", writer));
+        self.relayer
+            .export_env(&mut prefix_writer("RELAYER", writer));
+        self.user1.export_env(&mut prefix_writer("USER1", writer));
+        self.user2.export_env(&mut prefix_writer("USER2", writer));
+    }
+}
+
+impl ExportEnv for Wallet {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        writer.write_env("KEY_ID", &self.id.0);
+        writer.write_env("ADDRESS", &self.address.0);
     }
 }
 

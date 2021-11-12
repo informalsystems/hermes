@@ -18,6 +18,7 @@ use crate::framework::base::HasOverrides;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::config::TestConfig;
+use crate::types::env::write_env;
 
 /**
    Runs a test case that implements [`BinaryChannelTest`].
@@ -193,6 +194,12 @@ where
         let port_b = self.test.get_overrides().channel_port_b();
 
         let channels = bootstrap_channel_with_chains(&chains, &port_a, &port_b)?;
+
+        let env_path = config.chain_store_dir.join("binary-channels.env");
+
+        write_env(&env_path, &(&chains, &channels))?;
+
+        info!("written channel environment to {}", env_path.display());
 
         self.test.run(config, chains, channels)?;
 

@@ -9,6 +9,7 @@ use ibc_relayer::registry::SharedRegistry;
 use std::path::PathBuf;
 use tracing::info;
 
+use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::id::ChainIdRef;
 use crate::types::single::node::{FullNode, TaggedFullNode};
 use crate::types::tagged::*;
@@ -159,6 +160,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
             client_a_to_b: self.client_b_to_a,
             client_b_to_a: self.client_a_to_b,
         }
+    }
+}
+
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChains<ChainA, ChainB> {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        writer.write_env("RELAYER_CONFIG", &format!("{}", self.config_path.display()));
+
+        writer.write_env("CHAIN_ID_A", &format!("{}", self.node_a.chain_id()));
+        writer.write_env("CHAIN_ID_B", &format!("{}", self.node_b.chain_id()));
+
+        self.node_a.export_env(&mut prefix_writer("NODE_A", writer));
+        self.node_b.export_env(&mut prefix_writer("NODE_B", writer));
     }
 }
 

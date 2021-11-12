@@ -12,6 +12,7 @@ use tendermint_rpc::Url;
 
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
+use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
 use crate::types::tagged::*;
 use crate::types::wallet::TestWallets;
@@ -144,5 +145,14 @@ impl FullNode {
             address_type: Default::default(),
             memo_prefix: Default::default(),
         })
+    }
+}
+
+impl ExportEnv for FullNode {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        self.chain_driver.export_env(writer);
+        writer.write_env("DENOM", &self.denom.0);
+        self.wallets
+            .export_env(&mut prefix_writer("WALLETS", writer));
     }
 }

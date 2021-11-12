@@ -20,6 +20,7 @@ use crate::framework::base::{run_basic_test, BasicTest};
 use crate::relayer::supervisor::SupervisorHandle;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::config::TestConfig;
+use crate::types::env::write_env;
 use crate::types::single::node::FullNode;
 
 /**
@@ -237,6 +238,12 @@ where
         let chains = boostrap_chain_pair_with_nodes(config, node_a, node_b, |config| {
             self.test.get_overrides().modify_relayer_config(config);
         })?;
+
+        let env_path = config.chain_store_dir.join("binary-chains.env");
+
+        write_env(&env_path, &chains)?;
+
+        info!("written chains environment to {}", env_path.display());
 
         let _supervisor = self
             .test

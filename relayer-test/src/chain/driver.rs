@@ -17,6 +17,7 @@ use tracing::{debug, trace};
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
+use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 use crate::util::file::pipe_to_file;
@@ -75,6 +76,15 @@ pub struct ChainDriver {
        The port used for P2P. (Currently unused other than for setup)
     */
     pub p2p_port: u16,
+}
+
+impl ExportEnv for ChainDriver {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        writer.write_env("CMD", &self.command_path);
+        writer.write_env("HOME", &self.home_path);
+        writer.write_env("RPC_ADDR", &self.rpc_address());
+        writer.write_env("GRPC_ADDR", &self.grpc_address());
+    }
 }
 
 impl ChainDriver {

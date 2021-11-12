@@ -5,6 +5,7 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;
 
+use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::id::{ChannelId, PortId};
 
 /**
@@ -63,5 +64,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChannel<ChainA, ChainB> 
             port_a: self.port_b,
             port_b: self.port_a,
         }
+    }
+}
+
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChannel<ChainA, ChainB> {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        writer.write_env("CHANNEL_ID_A", &format!("{}", self.channel_id_a));
+        writer.write_env("PORT_A", &format!("{}", self.port_a));
+        writer.write_env("CHANNEL_ID_B", &format!("{}", self.channel_id_b));
+        writer.write_env("PORT_B", &format!("{}", self.port_b));
     }
 }
