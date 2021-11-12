@@ -48,7 +48,7 @@ Channels are an abstraction layer that facilitate communication between applicat
 
 ##### Port (ICS 05)
 
-The port standard specifies an allocation scheme by which modules can bind to uniquely-named ports allocated by the IBS handler in order to facilitate module-to-module traffic. These ports are used to open channels and can be transferred or released by the module which originally bound them.
+The port standard specifies an allocation scheme by which modules can bind to uniquely-named ports allocated by the IBC handler in order to facilitate module-to-module traffic. These ports are used to open channels and can be transferred or released by the module which originally bound them.
 
 ##### Commitment (ICS 23)
 
@@ -119,8 +119,9 @@ Most errors occur within the relayer as a result of either I/O operations or use
 The [flex-error][flex-error] library is the main tool used to handle errors in the code. This [demo][flex-error-demo] showcases some of the main patterns of how `flex-error` is used. For a more real-world example, [this][relayer-errors] file defines all of the possible errors for the relayer.
 
 [flex-error]: https://github.com/informalsystems/flex-error
+[flex-error-demo]: https://github.com/informalsystems/flex-error/blob/master/flex-error-demo-full/src/mains.rs
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
-[ibc-standards]: https://github.com/cosmos/ibc#standardisation
+[ics-standards]: https://github.com/cosmos/ibc#standardisation
 [ibc-client]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
 [ibc-connection]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics03_connection
 [ibc-channel]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics04_channel
