@@ -4,7 +4,6 @@
    connected IBC channels with completed handshakes.
 */
 
-use core::str::FromStr;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
@@ -115,12 +114,12 @@ pub trait PortsOverride {
     /**
        Return the port ID for chain A.
     */
-    fn channel_port_a(&self) -> String;
+    fn channel_port_a(&self) -> PortId;
 
     /**
        Return the port ID for chain B.
     */
-    fn channel_port_b(&self) -> String;
+    fn channel_port_b(&self) -> PortId;
 }
 
 /**
@@ -190,8 +189,8 @@ where
         config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let port_a = PortId::from_str(&self.test.get_overrides().channel_port_a())?;
-        let port_b = PortId::from_str(&self.test.get_overrides().channel_port_b())?;
+        let port_a = self.test.get_overrides().channel_port_a();
+        let port_b = self.test.get_overrides().channel_port_b();
 
         let channels = bootstrap_channel_with_chains(&chains, &port_a, &port_b)?;
 

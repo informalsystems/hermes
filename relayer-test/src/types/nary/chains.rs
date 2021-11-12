@@ -1,13 +1,13 @@
-use core::convert::TryFrom;
+use core::convert::{From, TryFrom};
 use eyre::eyre;
-use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
 use std::path::PathBuf;
 
 use crate::error::Error;
-use crate::types::binary::chains::DropChainHandle;
+use crate::types::binary::chains::{ConnectedChains as BinaryConnectedChains, DropChainHandle};
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
 use crate::util::array::{try_into_array, try_into_nested_array};
@@ -15,7 +15,7 @@ use crate::util::array::{try_into_array, try_into_nested_array};
 pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
     pub config_path: PathBuf,
     pub config: SharedConfig,
-    pub registry: SharedRegistry<Handle>,
+    pub registry: SharedRegistry<ProdChainHandle>,
     pub chain_handles: [DropChainHandle<Handle>; SIZE],
     pub full_nodes: [FullNode; SIZE],
     pub foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
@@ -24,7 +24,7 @@ pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
 pub struct DynamicConnectedChains<Handle: ChainHandle> {
     pub config_path: PathBuf,
     pub config: SharedConfig,
-    pub registry: SharedRegistry<Handle>,
+    pub registry: SharedRegistry<ProdChainHandle>,
     pub chain_handles: Vec<DropChainHandle<Handle>>,
     pub full_nodes: Vec<FullNode>,
     pub foreign_clients: Vec<Vec<ForeignClient<Handle, Handle>>>,
@@ -122,5 +122,27 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChains<Hand
             full_nodes: try_into_array(chains.full_nodes)?,
             foreign_clients: try_into_nested_array(chains.foreign_clients)?,
         })
+    }
+}
+
+impl<Handle: ChainHandle> From<ConnectedChains<Handle, 2>>
+    for BinaryConnectedChains<Handle, Handle>
+{
+    fn from(chains: ConnectedChains<Handle, 2>) -> Self {
+        let [handle_a, handle_b] = chains.chain_handles;
+        let [node_a, node_b] = chains.full_nodes;
+        let [[_, client_a_to_b], [client_b_to_a, _]] = chains.foreign_clients;
+
+        BinaryConnectedChains {
+            config_path: chains.config_path,
+            config: chains.config,
+            registry: chains.registry,
+            handle_a,
+            handle_b,
+            node_a: MonoTagged::new(node_a),
+            node_b: MonoTagged::new(node_b),
+            client_a_to_b,
+            client_b_to_a,
+        }
     }
 }

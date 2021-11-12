@@ -32,8 +32,8 @@ pub fn bootstrap_channels_dynamic<Handle: ChainHandle>(
                 let counter_foreign_client = &foreign_clients[j][i];
 
                 let connection = Connection::new(
-                    foreign_client.clone(),
                     counter_foreign_client.clone(),
+                    foreign_client.clone(),
                     default::connection_delay(),
                 )?;
 

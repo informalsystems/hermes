@@ -23,6 +23,23 @@ pub fn into_nested_vec<T, const SIZE: usize>(array: [[T; SIZE]; SIZE]) -> Vec<Ve
     array.map(|array_b| array_b.into()).into()
 }
 
+pub fn map_nested_array<T, R, const SIZE: usize>(
+    array: [[T; SIZE]; SIZE],
+    mapper: impl Fn(T) -> Result<R, Error>,
+) -> Result<[[R; SIZE]; SIZE], Error> {
+    let mapped = into_nested_vec(array)
+        .into_iter()
+        .map(|inner| {
+            inner
+                .into_iter()
+                .map(&mapper)
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    try_into_nested_array(mapped)
+}
+
 pub fn assert_same_dimension<T>(size: usize, list: &Vec<Vec<T>>) -> Result<(), Error> {
     if list.len() != size {
         return Err(eyre!(

@@ -6,6 +6,7 @@ use ibc_relayer::channel::Channel;
 
 use super::chains::TaggedHandle;
 use crate::error::Error;
+use crate::types::binary::channel::ConnectedChannel as BinaryConnectedChannel;
 use crate::types::tagged::*;
 use crate::util::array::try_into_nested_array;
 
@@ -113,5 +114,22 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChannels<Ha
             channels: try_into_nested_array(channels.channels)?,
             port_channel_ids: try_into_nested_array(channels.port_channel_ids)?,
         })
+    }
+}
+
+impl<Handle: ChainHandle> From<ConnectedChannels<Handle, 2>>
+    for BinaryConnectedChannel<Handle, Handle>
+{
+    fn from(channels: ConnectedChannels<Handle, 2>) -> Self {
+        let [[_, channel], _] = channels.channels;
+        let [[_, port_channel_id_a], [port_channel_id_b, _]] = channels.port_channel_ids;
+
+        Self {
+            channel,
+            channel_id_a: DualTagged::new(port_channel_id_a.channel_id),
+            channel_id_b: DualTagged::new(port_channel_id_b.channel_id),
+            port_a: DualTagged::new(port_channel_id_a.port_id),
+            port_b: DualTagged::new(port_channel_id_b.port_id),
+        }
     }
 }

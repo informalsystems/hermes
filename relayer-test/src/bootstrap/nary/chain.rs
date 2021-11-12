@@ -1,13 +1,13 @@
 use core::convert::TryInto;
-use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
-use ibc_relayer::config::{Config, SharedConfig};
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
 use std::sync::Arc;
 use std::sync::RwLock;
 
 use crate::bootstrap::binary::chain::{
-    add_chain_config, add_keys_to_chain_handle, save_relayer_config,
+    add_chain_config, add_keys_to_chain_handle, new_registry, save_relayer_config,
 };
 use crate::error::Error;
 use crate::types::binary::chains::DropChainHandle;
@@ -90,8 +90,4 @@ pub fn spawn_chain_handle<Handle: ChainHandle>(
     add_keys_to_chain_handle(&handle, &node.wallets)?;
 
     Ok(handle)
-}
-
-pub fn new_registry(config: SharedConfig) -> SharedRegistry<impl ChainHandle> {
-    <SharedRegistry<ProdChainHandle>>::new(config)
 }

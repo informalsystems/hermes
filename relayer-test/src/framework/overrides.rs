@@ -2,6 +2,7 @@
    Constructs for implementing overrides for test cases.
 */
 
+use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::config::SharedConfig;
@@ -12,6 +13,7 @@ use crate::framework::base::HasOverrides;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::PortsOverride;
 use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
 use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 
 /**
@@ -80,8 +82,8 @@ pub trait TestOverrides {
 
        Implemented for [`PortsOverride`].
     */
-    fn channel_port_a(&self) -> String {
-        "transfer".to_string()
+    fn channel_port_a(&self) -> PortId {
+        PortId::unsafe_new("transfer")
     }
 
     /**
@@ -90,8 +92,8 @@ pub trait TestOverrides {
 
        Implemented for [`PortsOverride`].
     */
-    fn channel_port_b(&self) -> String {
-        "transfer".to_string()
+    fn channel_port_b(&self) -> PortId {
+        PortId::unsafe_new("transfer")
     }
 }
 
@@ -126,11 +128,23 @@ impl<Test: TestOverrides> SupervisorOverride for Test {
 }
 
 impl<Test: TestOverrides> PortsOverride for Test {
-    fn channel_port_a(&self) -> String {
+    fn channel_port_a(&self) -> PortId {
         TestOverrides::channel_port_a(self)
     }
 
-    fn channel_port_b(&self) -> String {
+    fn channel_port_b(&self) -> PortId {
         TestOverrides::channel_port_b(self)
+    }
+}
+
+impl<Test: TestOverrides> NaryPortsOverride<2> for Test {
+    fn channel_ports(&self) -> [[PortId; 2]; 2] {
+        let port_a = self.channel_port_a();
+        let port_b = self.channel_port_b();
+
+        [
+            [port_a.clone(), port_b.clone()],
+            [port_b.clone(), port_a.clone()],
+        ]
     }
 }

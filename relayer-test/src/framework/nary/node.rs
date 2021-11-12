@@ -1,0 +1,62 @@
+use crate::bootstrap::single::bootstrap_single_node;
+use crate::chain::builder::ChainBuilder;
+use crate::error::Error;
+use crate::framework::base::HasOverrides;
+use crate::framework::base::{run_basic_test, BasicTest};
+use crate::framework::binary::node::NodeConfigOverride;
+use crate::types::config::TestConfig;
+use crate::types::single::node::FullNode;
+use crate::util::array::try_into_array;
+
+pub fn run_owned_nary_node_test<Test, Overrides, const SIZE: usize>(
+    test: &Test,
+) -> Result<(), Error>
+where
+    Test: OwnedNaryNodeTest<SIZE>,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: NodeConfigOverride,
+{
+    run_basic_test(&RunOwnedNaryNodeTest { test })
+}
+
+pub trait OwnedNaryNodeTest<const SIZE: usize> {
+    fn run(&self, config: &TestConfig, nodes: [FullNode; SIZE]) -> Result<(), Error>;
+}
+
+pub struct RunOwnedNaryNodeTest<'a, Test, const SIZE: usize> {
+    pub test: &'a Test,
+}
+
+impl<'a, Test, Overrides, const SIZE: usize> BasicTest for RunOwnedNaryNodeTest<'a, Test, SIZE>
+where
+    Test: OwnedNaryNodeTest<SIZE>,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: NodeConfigOverride,
+{
+    fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
+        let mut nodes = Vec::new();
+
+        for i in 0..SIZE {
+            let node = bootstrap_single_node(builder, &format!("{}", i), |config| {
+                self.test.get_overrides().modify_node_config(config)
+            })?;
+
+            nodes.push(node);
+        }
+
+        self.test.run(config, try_into_array(nodes)?)?;
+
+        Ok(())
+    }
+}
+
+impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunOwnedNaryNodeTest<'a, Test, SIZE>
+where
+    Test: HasOverrides<Overrides = Overrides>,
+{
+    type Overrides = Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        self.test.get_overrides()
+    }
+}

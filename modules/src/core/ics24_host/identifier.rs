@@ -293,6 +293,10 @@ impl PartialEq<str> for ConnectionId {
 pub struct PortId(String);
 
 impl PortId {
+    pub fn unsafe_new(id: &str) -> Self {
+        Self(id.to_string())
+    }
+
     /// Get this identifier as a borrowed `&str`
     pub fn as_str(&self) -> &str {
         &self.0
