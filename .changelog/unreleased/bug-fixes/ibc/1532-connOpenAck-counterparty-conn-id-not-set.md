@@ -1,0 +1,1 @@
+- Set the `counterparty_connection_id` correctly in the ICS03 `connOpenAck` handler (i.e. `ics03_connection::handler::conn_open_ack::process()`).
