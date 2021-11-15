@@ -10,7 +10,6 @@ use crate::bootstrap::binary::chain::{
     add_chain_config, add_keys_to_chain_handle, new_registry, save_relayer_config,
 };
 use crate::error::Error;
-use crate::types::binary::chains::DropChainHandle;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::{ConnectedChains, DynamicConnectedChains};
 use crate::types::single::node::FullNode;
@@ -52,7 +51,7 @@ pub fn boostrap_chains_with_any_nodes(
 
     for node in full_nodes.iter() {
         let handle = spawn_chain_handle(&registry, &node)?;
-        chain_handles.push(DropChainHandle(handle));
+        chain_handles.push(handle);
     }
 
     let mut foreign_clients: Vec<Vec<ForeignClient<_, _>>> = Vec::new();
@@ -61,7 +60,7 @@ pub fn boostrap_chains_with_any_nodes(
         let mut foreign_clients_b = Vec::new();
 
         for handle_b in chain_handles.iter() {
-            let foreign_client = ForeignClient::unsafe_new(handle_b.0.clone(), handle_a.0.clone())?;
+            let foreign_client = ForeignClient::unsafe_new(handle_b.clone(), handle_a.clone())?;
             foreign_clients_b.push(foreign_client);
         }
 

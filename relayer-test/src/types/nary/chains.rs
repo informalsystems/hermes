@@ -7,7 +7,7 @@ use ibc_relayer::registry::SharedRegistry;
 use std::path::PathBuf;
 
 use crate::error::Error;
-use crate::types::binary::chains::{ConnectedChains as BinaryConnectedChains, DropChainHandle};
+use crate::types::binary::chains::ConnectedChains as BinaryConnectedChains;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
 use crate::util::array::{try_into_array, try_into_nested_array};
@@ -16,7 +16,7 @@ pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
     pub config_path: PathBuf,
     pub config: SharedConfig,
     pub registry: SharedRegistry<ProdChainHandle>,
-    pub chain_handles: [DropChainHandle<Handle>; SIZE],
+    pub chain_handles: [Handle; SIZE],
     pub full_nodes: [FullNode; SIZE],
     pub foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
 }
@@ -25,7 +25,7 @@ pub struct DynamicConnectedChains<Handle: ChainHandle> {
     pub config_path: PathBuf,
     pub config: SharedConfig,
     pub registry: SharedRegistry<ProdChainHandle>,
-    pub chain_handles: Vec<DropChainHandle<Handle>>,
+    pub chain_handles: Vec<Handle>,
     pub full_nodes: Vec<FullNode>,
     pub foreign_clients: Vec<Vec<ForeignClient<Handle, Handle>>>,
 }
@@ -79,7 +79,6 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
         } else {
             self.chain_handles
                 .get(pos)
-                .map(|handle| &handle.0)
                 .ok_or_else(|| eyre!("failed to get chain handle at position {}", pos))
         }
     }

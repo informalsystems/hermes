@@ -35,13 +35,16 @@ where
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
         let mut nodes = Vec::new();
+        let mut node_processes = Vec::new();
 
         for i in 0..SIZE {
-            let node = bootstrap_single_node(builder, &format!("{}", i), |config| {
-                self.test.get_overrides().modify_node_config(config)
-            })?;
+            let (node, node_process) =
+                bootstrap_single_node(builder, &format!("{}", i), |config| {
+                    self.test.get_overrides().modify_node_config(config)
+                })?;
 
             nodes.push(node);
+            node_processes.push(node_process)
         }
 
         self.test.run(config, try_into_array(nodes)?)?;

@@ -7,6 +7,7 @@ use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::node::NodeConfigOverride;
+use crate::types::binary::chains::DropChainHandle;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::ConnectedChains;
 use crate::types::single::node::FullNode;
@@ -52,6 +53,12 @@ where
             .test
             .get_overrides()
             .spawn_supervisor(&chains.config, &chains.registry);
+
+        let _drop_handles = chains
+            .chain_handles
+            .iter()
+            .map(|handle| DropChainHandle(handle.clone()))
+            .collect::<Vec<_>>();
 
         self.test.run(config, chains)?;
 

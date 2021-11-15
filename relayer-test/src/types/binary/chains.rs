@@ -52,7 +52,7 @@ pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
         The handle is wrapped in [`DropChainHandle`] to stop the chain
         handle when this is dropped.
     */
-    pub handle_a: DropChainHandle<ChainA>,
+    pub handle_a: ChainA,
 
     /**
         The [`ChainHandle`] for chain B.
@@ -60,7 +60,7 @@ pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
         The handle is wrapped in [`DropChainHandle`] to stop the chain
         handle when this is dropped.
     */
-    pub handle_b: DropChainHandle<ChainB>,
+    pub handle_b: ChainB,
 
     /**
        The tagged [`FullNode`] for chain A.
@@ -105,8 +105,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
             config_path,
             config,
             registry,
-            handle_a: DropChainHandle(handle_a),
-            handle_b: DropChainHandle(handle_b),
+            handle_a: handle_a,
+            handle_b: handle_b,
             node_a,
             node_b,
             client_a_to_b,
@@ -118,14 +118,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
       Get a reference to the chain handle for chain A.
     */
     pub fn handle_a(&self) -> &ChainA {
-        &self.handle_a.0
+        &self.handle_a
     }
 
     /**
       Get a reference to the chain handle for chain B.
     */
     pub fn handle_b(&self) -> &ChainB {
-        &self.handle_b.0
+        &self.handle_b
     }
 
     /**

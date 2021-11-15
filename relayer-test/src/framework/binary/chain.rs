@@ -18,7 +18,7 @@ use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::{run_basic_test, BasicTest};
 use crate::relayer::supervisor::SupervisorHandle;
-use crate::types::binary::chains::ConnectedChains;
+use crate::types::binary::chains::{ConnectedChains, DropChainHandle};
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
 use crate::types::single::node::FullNode;
@@ -250,10 +250,10 @@ where
             .get_overrides()
             .spawn_supervisor(&chains.config, &chains.registry);
 
-        self.test.run(config, chains)?;
+        let _drop_handle_a = DropChainHandle(chains.handle_a.clone());
+        let _drop_handle_b = DropChainHandle(chains.handle_b.clone());
 
-        // No use suspending the test on owned failures, as the chains
-        // are dropped in the inner test already.
+        self.test.run(config, chains)?;
 
         Ok(())
     }
@@ -318,7 +318,7 @@ where
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node = bootstrap_single_node(builder, "refl", |config| {
+        let (node, _node_process) = bootstrap_single_node(builder, "refl", |config| {
             self.test.get_overrides().modify_node_config(config)
         })?;
 
@@ -331,10 +331,9 @@ where
             .get_overrides()
             .spawn_supervisor(&chains.config, &chains.registry);
 
-        self.test.run(config, chains)?;
+        let _drop_handle = DropChainHandle(chains.handle_a.clone());
 
-        // No use suspending the test on owned failures, as the chains
-        // are dropped in the inner test already.
+        self.test.run(config, chains)?;
 
         Ok(())
     }

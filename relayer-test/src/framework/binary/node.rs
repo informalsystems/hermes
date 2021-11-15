@@ -113,11 +113,11 @@ where
     Overrides: NodeConfigOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node_a = bootstrap_single_node(builder, "alpha", |config| {
+        let (node_a, _node_process_a) = bootstrap_single_node(builder, "alpha", |config| {
             self.test.get_overrides().modify_node_config(config)
         })?;
 
-        let node_b = bootstrap_single_node(builder, "beta", |config| {
+        let (node_b, _node_process_b) = bootstrap_single_node(builder, "beta", |config| {
             self.test.get_overrides().modify_node_config(config)
         })?;
 

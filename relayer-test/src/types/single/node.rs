@@ -13,7 +13,6 @@ use tendermint_rpc::Url;
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
-use crate::types::process::ChildProcess;
 use crate::types::tagged::*;
 use crate::types::wallet::TestWallets;
 
@@ -25,12 +24,6 @@ pub struct FullNode {
        The [`ChainDriver`] used to communicate with the full node.
     */
     pub chain_driver: ChainDriver,
-
-    /**
-       The type holding the underlying child process, which will kill the
-       full node when [`FullNode`] is dropped.
-    */
-    pub chain_process: Option<ChildProcess>,
 
     /**
        The currency denomination which the wallets have been loaded
@@ -101,16 +94,17 @@ impl<'a, Chain> TaggedFullNode<Chain> for MonoTagged<Chain, &'a FullNode> {
     }
 }
 
-impl FullNode {
-    pub fn replicate(&self) -> Self {
+impl Clone for FullNode {
+    fn clone(&self) -> Self {
         Self {
             chain_driver: self.chain_driver.clone(),
-            chain_process: None,
             denom: self.denom.clone(),
             wallets: self.wallets.clone(),
         }
     }
+}
 
+impl FullNode {
     /**
        Generate the relayer's chain config based on the configuration of
        the full node.

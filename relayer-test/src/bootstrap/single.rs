@@ -9,10 +9,10 @@ use crate::chain::builder::ChainBuilder;
 use crate::chain::config;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::util::random::{random_u32, random_u64_range};
-
+use crate::types::process::ChildProcess;
 use crate::types::single::node::FullNode;
 use crate::types::wallet::TestWallets;
+use crate::util::random::{random_u32, random_u64_range};
 
 /**
    Bootstrap a single full node with the provided [`ChainBuilder`] and
@@ -37,7 +37,7 @@ pub fn bootstrap_single_node(
     builder: &ChainBuilder,
     prefix: &str,
     config_modifier: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
-) -> Result<FullNode, Error> {
+) -> Result<(FullNode, ChildProcess), Error> {
     let stake_denom = Denom("stake".to_string());
     let denom = Denom(format!("coin{:x}", random_u32()));
     let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
@@ -118,10 +118,9 @@ pub fn bootstrap_single_node(
 
     let node = FullNode {
         chain_driver,
-        chain_process: Some(chain_process),
         denom,
         wallets,
     };
 
-    Ok(node)
+    Ok((node, chain_process))
 }

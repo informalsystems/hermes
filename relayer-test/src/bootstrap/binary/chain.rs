@@ -58,7 +58,7 @@ pub fn boostrap_chain_pair_with_nodes(
     let client_a_to_b = ForeignClient::new(handle_b.clone(), handle_a.clone())?;
     let client_b_to_a = ForeignClient::new(handle_a.clone(), handle_b.clone())?;
 
-    Ok(ConnectedChains::new(
+    let chains = ConnectedChains::new(
         config_path,
         config,
         registry,
@@ -68,7 +68,9 @@ pub fn boostrap_chain_pair_with_nodes(
         MonoTagged::new(node_b),
         client_a_to_b,
         client_b_to_a,
-    ))
+    );
+
+    Ok(chains)
 }
 
 /**
@@ -112,7 +114,7 @@ pub fn boostrap_self_connected_chain(
         registry,
         handle.clone(),
         handle,
-        MonoTagged::new(node.replicate()),
+        MonoTagged::new(node.clone()),
         MonoTagged::new(node),
         foreign_client.clone(),
         foreign_client,
