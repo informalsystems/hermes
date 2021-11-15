@@ -191,9 +191,10 @@ impl CosmosSdkChain {
             })?;
 
         let max_bound = result.consensus_params.block.max_bytes;
-        let max_allowed = mul_ceil(max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
+        let max_allowed = mul_ceil(max_bound, GENESIS_MAX_BYTES_MAX_FRACTION);
+        let max_tx_size = BigInt::from(self.max_tx_size());
 
-        if self.max_tx_size() > max_allowed {
+        if max_tx_size > max_allowed {
             return Err(Error::config_validation_tx_size_out_of_bounds(
                 self.id().clone(),
                 self.max_tx_size(),
@@ -451,10 +452,15 @@ impl CosmosSdkChain {
     /// The actual gas cost, when a transaction is executed, may be slightly higher than the
     /// one returned by the simulation.
     fn apply_adjustment_to_gas(&self, gas_amount: u64) -> u64 {
-        min(
-            gas_amount + mul_ceil(gas_amount, self.gas_adjustment()),
-            self.max_gas(),
-        )
+        debug_assert!(self.gas_adjustment() <= 1.0);
+
+        let (_, digits) = mul_ceil(gas_amount, self.gas_adjustment()).to_u64_digits();
+        debug_assert!(digits.len() == 1);
+
+        let adjustment = digits[0];
+        let gas = gas_amount.checked_add(adjustment).unwrap_or(u64::MAX);
+
+        min(gas, self.max_gas())
     }
 
     /// The maximum fee the relayer pays for a transaction
