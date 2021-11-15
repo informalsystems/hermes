@@ -2,7 +2,7 @@
     A quick demo of how a test with full setup can be written.
 
     ```rust
-    # use ibc_relayer_test::prelude::*;
+    # use ibc_integration_test::prelude::*;
 
     #[test]
     pub fn example_test() -> Result<(), Error> {
@@ -17,8 +17,8 @@
         fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
             &self,
             _config: &TestConfig,
-            _chains: &ConnectedChains<ChainA, ChainB>,
-            _channel: &ConnectedChannel<ChainA, ChainB>,
+            _chains: ConnectedChains<ChainA, ChainB>,
+            _channel: ConnectedChannel<ChainA, ChainB>,
         ) -> Result<(), Error> {
             suspend()
         }
@@ -73,14 +73,14 @@
     After starting the test, we may see the logs such as following shown:
 
     ```text
-    INFO ibc_relayer_test: starting test with test config: TestConfig { chain_command_path: "gaiad", chain_store_dir: "/path/to/data/test-2970732058", hang_on_fail: false }
-    INFO ibc_relayer_test: started new chain ibc-alpha-43044935 at with home path /path/to/data/test-2970732058/ibc-alpha-43044935 and RPC address http://localhost:56723.
-    INFO ibc_relayer_test: user wallet for chain ibc-alpha-43044935 - id: user1-34693377, address: cosmos1yyld4h2wwqz57dsqz4tmrmrsw6qw7unve884y5
-    INFO ibc_relayer_test: you can manually interact with the chain using commands starting with: gaiad --home '/path/to/data/test-2970732058/ibc-alpha-43044935' --node http://localhost:56723
+    INFO ibc_integration_test: starting test with test config: TestConfig { chain_command_path: "gaiad", chain_store_dir: "/path/to/data/test-2970732058", hang_on_fail: false }
+    INFO ibc_integration_test: started new chain ibc-alpha-43044935 at with home path /path/to/data/test-2970732058/ibc-alpha-43044935 and RPC address http://localhost:56723.
+    INFO ibc_integration_test: user wallet for chain ibc-alpha-43044935 - id: user1-34693377, address: cosmos1yyld4h2wwqz57dsqz4tmrmrsw6qw7unve884y5
+    INFO ibc_integration_test: you can manually interact with the chain using commands starting with: gaiad --home '/path/to/data/test-2970732058/ibc-alpha-43044935' --node http://localhost:56723
     ...
-    INFO ibc_relayer_test: written hermes config.toml to /path/to/data/test-2970732058/config-61e5e82f.toml
+    INFO ibc_integration_test: written hermes config.toml to /path/to/data/test-2970732058/config-61e5e82f.toml
     ...
-    WARN ibc_relayer_test: suspending the test indefinitely. you can still interact with any spawned chains and relayers
+    WARN ibc_integration_test: suspending the test indefinitely. you can still interact with any spawned chains and relayers
     ```
 
     You can find in the logs information about how to manually interact with

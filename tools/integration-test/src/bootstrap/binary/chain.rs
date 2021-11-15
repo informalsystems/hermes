@@ -132,7 +132,7 @@ pub fn boostrap_self_connected_chain(
    For example, the following test should fail to compile:
 
    ```rust,compile_fail
-   # use ibc_relayer_test::bootstrap::binary::chain::spawn_chain_handle;
+   # use ibc_integration_test::bootstrap::binary::chain::spawn_chain_handle;
    fn same<T>(_: T, _: T) {}
 
    let chain_a = spawn_chain_handle(|| {}, todo!(), todo!()).unwrap();
