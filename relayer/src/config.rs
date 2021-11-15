@@ -162,7 +162,7 @@ impl Config {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ModeConfig {
     pub clients: Clients,
@@ -180,6 +180,26 @@ impl ModeConfig {
     }
 }
 
+impl Default for ModeConfig {
+    fn default() -> Self {
+        Self {
+            clients: Clients {
+                enabled: true,
+                refresh: true,
+                misbehaviour: true,
+            },
+            connections: Connections { enabled: false },
+            channels: Channels { enabled: false },
+            packets: Packets {
+                enabled: true,
+                clear_interval: default::clear_packets_interval(),
+                clear_on_start: true,
+                filter: false,
+                tx_confirmation: true,
+            },
+        }
+    }
+}
 #[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Clients {
