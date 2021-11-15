@@ -66,7 +66,12 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
 
     fn client_filter_enabled(&self) -> bool {
         // Currently just a wrapper over the global filter.
-        self.config.read().expect("poisoned lock").global.filter
+        self.config
+            .read()
+            .expect("poisoned lock")
+            .mode
+            .packets
+            .filter
     }
 
     pub fn spawn_workers(&mut self) {
@@ -393,11 +398,13 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<(), Error> {
-        let handshake_enabled = self
+        let config_conn_enabled = self
             .config
             .read()
             .expect("poisoned lock")
-            .handshake_enabled();
+            .mode
+            .connections
+            .enabled;
 
         let counterparty_chain = self
             .registry
@@ -423,9 +430,9 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                 connection.connection_id,
                 chain.id()
             );
-        } else if !conn_state_dst.is_open()
+        } else if config_conn_enabled
+            && !conn_state_dst.is_open()
             && conn_state_dst.less_or_equal_progress(conn_state_src)
-            && handshake_enabled
         {
             // create worker for connection handshake that will advance the remote state
             let connection_object = Object::Connection(Connection {
@@ -460,11 +467,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         connection: &IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), Error> {
-        let handshake_enabled = self
-            .config
-            .read()
-            .expect("poisoned lock")
-            .handshake_enabled();
+        let config = self.config.read().expect("poisoned lock");
+        let mode = &config.mode;
 
         let counterparty_chain = self
             .registry
@@ -488,63 +492,69 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             chan_state_dst
         );
 
-        if chan_state_src.is_open()
+        if (mode.clients.enabled || mode.packets.enabled)
+            && chan_state_src.is_open()
             && chan_state_dst.is_open()
             && self.relay_packets_on_channel(&chain, &channel)
         {
-            // spawn the client worker
-            let client_object = Object::Client(Client {
-                dst_client_id: client.client_id.clone(),
-                dst_chain_id: chain.id(),
-                src_chain_id: client.client_state.chain_id(),
-            });
-
-            self.workers
-                .spawn(
-                    counterparty_chain.clone(),
-                    chain.clone(),
-                    &client_object,
-                    &self.config.read().expect("poisoned lock"),
-                )
-                .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
-
-            // Safe to unwrap because the inner channel end has state open
-            let counterparty_channel = counterparty_channel.unwrap();
-
-            let has_packets = || -> bool {
-                !unreceived_packets(&counterparty_chain, &chain, &counterparty_channel)
-                    .unwrap_or_default()
-                    .is_empty()
-            };
-
-            let has_acks = || -> bool {
-                !unreceived_acknowledgements(&counterparty_chain, &chain, &counterparty_channel)
-                    .unwrap_or_default()
-                    .is_empty()
-            };
-
-            // If there are any outstanding packets or acks to send, spawn the worker
-            if has_packets() || has_acks() {
-                // create the Packet object and spawn worker
-                let path_object = Object::Packet(Packet {
-                    dst_chain_id: counterparty_chain.id(),
-                    src_chain_id: chain.id(),
-                    src_channel_id: channel.channel_id,
-                    src_port_id: channel.port_id,
+            if mode.clients.enabled {
+                // Spawn the client worker
+                let client_object = Object::Client(Client {
+                    dst_client_id: client.client_id.clone(),
+                    dst_chain_id: chain.id(),
+                    src_chain_id: client.client_state.chain_id(),
                 });
 
                 self.workers
                     .spawn(
-                        chain.clone(),
                         counterparty_chain.clone(),
-                        &path_object,
+                        chain.clone(),
+                        &client_object,
                         &self.config.read().expect("poisoned lock"),
                     )
-                    .then(|| debug!("spawned Packet worker: {}", path_object.short_name()));
+                    .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
             }
-        } else if !chan_state_dst.is_open()
+
+            if mode.packets.enabled {
+                // SAFETY: Safe to unwrap because the inner channel end has state open
+                let counterparty_channel =
+                    counterparty_channel.expect("inner channel end is in state OPEN");
+
+                let has_packets = || -> bool {
+                    !unreceived_packets(&counterparty_chain, &chain, &counterparty_channel)
+                        .unwrap_or_default()
+                        .is_empty()
+                };
+
+                let has_acks = || -> bool {
+                    !unreceived_acknowledgements(&counterparty_chain, &chain, &counterparty_channel)
+                        .unwrap_or_default()
+                        .is_empty()
+                };
+
+                // If there are any outstanding packets or acks to send, spawn the worker
+                if has_packets() || has_acks() {
+                    // Create the Packet object and spawn worker
+                    let path_object = Object::Packet(Packet {
+                        dst_chain_id: counterparty_chain.id(),
+                        src_chain_id: chain.id(),
+                        src_channel_id: channel.channel_id,
+                        src_port_id: channel.port_id,
+                    });
+
+                    self.workers
+                        .spawn(
+                            chain.clone(),
+                            counterparty_chain.clone(),
+                            &path_object,
+                            &self.config.read().expect("poisoned lock"),
+                        )
+                        .then(|| debug!("spawned Packet worker: {}", path_object.short_name()));
+                }
+            }
+        } else if mode.channels.enabled
+            && !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
-            && handshake_enabled
         {
             // create worker for channel handshake that will advance the remote state
             let channel_object = Object::Channel(Channel {

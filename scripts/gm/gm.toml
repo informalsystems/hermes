@@ -59,9 +59,6 @@ binary="./hermes"
 # Hermes configuration file path.
 config="$HOME/.hermes/config.toml"
 
-# Hermes configuration strategy paremeter.
-strategy="packets"
-
 # Hermes configuration log_level parameter.
 log_level="info"
 

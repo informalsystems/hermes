@@ -116,6 +116,8 @@ pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
     #[serde(default)]
+    pub mode: ModeConfig,
+    #[serde(default)]
     pub rest: RestConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
@@ -145,7 +147,7 @@ impl Config {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> bool {
-        if !self.global.filter {
+        if !self.mode.packets.filter {
             return true;
         }
 
@@ -155,27 +157,74 @@ impl Config {
         }
     }
 
-    pub fn handshake_enabled(&self) -> bool {
-        self.global.strategy == Strategy::HandshakeAndPackets
-    }
-
     pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
         self.chains.iter().map(|c| (&c.id, c)).collect()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub enum Strategy {
-    #[serde(rename = "packets")]
-    Packets,
-
-    #[serde(rename = "all")]
-    HandshakeAndPackets,
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModeConfig {
+    pub clients: Clients,
+    pub connections: Connections,
+    pub channels: Channels,
+    pub packets: Packets,
 }
 
-impl Default for Strategy {
+impl ModeConfig {
+    pub fn all_disabled(&self) -> bool {
+        !self.clients.enabled
+            && !self.connections.enabled
+            && !self.channels.enabled
+            && !self.packets.enabled
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Clients {
+    pub enabled: bool,
+    #[serde(default)]
+    pub refresh: bool,
+    #[serde(default)]
+    pub misbehaviour: bool,
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Connections {
+    pub enabled: bool,
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Channels {
+    pub enabled: bool,
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Packets {
+    pub enabled: bool,
+    #[serde(default = "default::clear_packets_interval")]
+    pub clear_interval: u64,
+    #[serde(default)]
+    pub clear_on_start: bool,
+    #[serde(default = "default::filter")]
+    pub filter: bool,
+    #[serde(default = "default::tx_confirmation")]
+    pub tx_confirmation: bool,
+}
+
+impl Default for Packets {
     fn default() -> Self {
-        Self::Packets
+        Self {
+            enabled: false,
+            clear_interval: default::clear_packets_interval(),
+            clear_on_start: false,
+            filter: default::filter(),
+            tx_confirmation: default::tx_confirmation(),
+        }
     }
 }
 
@@ -213,24 +262,13 @@ impl fmt::Display for LogLevel {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
-    pub strategy: Strategy,
     pub log_level: LogLevel,
-    #[serde(default = "default::filter")]
-    pub filter: bool,
-    #[serde(default = "default::clear_packets_interval")]
-    pub clear_packets_interval: u64,
-    #[serde(default = "default::tx_confirmation")]
-    pub tx_confirmation: bool,
 }
 
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
-            strategy: Strategy::default(),
             log_level: LogLevel::default(),
-            filter: default::filter(),
-            clear_packets_interval: default::clear_packets_interval(),
-            tx_confirmation: default::tx_confirmation(),
         }
     }
 }
