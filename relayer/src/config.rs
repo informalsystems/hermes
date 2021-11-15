@@ -193,12 +193,12 @@ impl Default for ModeConfig {
                 misbehaviour: true,
             },
             connections: Connections { enabled: false },
-            channels: Channels { enabled: true },
+            channels: Channels { enabled: false },
             packets: Packets {
                 enabled: true,
                 clear_interval: default::clear_packets_interval(),
                 clear_on_start: true,
-                filter: true,
+                filter: false,
                 tx_confirmation: true,
             },
         }
