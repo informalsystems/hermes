@@ -9,7 +9,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
 use super::chain::{
-    run_owned_binary_chain_test, OwnedBinaryChainTest, RelayerConfigOverride, SupervisorOverride,
+    run_binary_chain_test, BinaryChainTest, RelayerConfigOverride, SupervisorOverride,
 };
 use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
@@ -27,23 +27,23 @@ use crate::types::env::write_env;
 */
 pub fn run_two_way_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
-    Test: OwnedBinaryChannelTest,
+    Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
-    run_owned_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
+    run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
 
 /**
-   Runs a test case that implements [`OwnedBinaryChannelTest`].
+   Runs a test case that implements [`BinaryChannelTest`].
 */
-pub fn run_owned_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
+pub fn run_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
-    Test: OwnedBinaryChannelTest,
+    Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
-    run_owned_binary_chain_test(&RunOwnedBinaryChannelTest::new(test))
+    run_binary_chain_test(&RunBinaryChannelTest::new(test))
 }
 
 /**
@@ -56,7 +56,7 @@ where
    [`hang_on_error`](TestConfig::hang_on_error) to suspend
    the termination of the full nodes if the test case return errors.
 */
-pub trait OwnedBinaryChannelTest {
+pub trait BinaryChannelTest {
     /// Test runner
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -70,7 +70,7 @@ pub trait OwnedBinaryChannelTest {
    An internal trait that can be implemented by test cases to override
    the port IDs used when creating the channels.
 
-   This is called by [`RunOwnedBinaryChannelTest`] before creating
+   This is called by [`RunBinaryChannelTest`] before creating
    the IBC channels.
 
    Test writers should implement
@@ -90,26 +90,26 @@ pub trait PortsOverride {
 }
 
 /**
-   A wrapper type that lifts a test case that implements [`OwnedBinaryChannelTest`]
-   into a test case the implements [`OwnedBinaryChainTest`].
+   A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
+   into a test case the implements [`BinaryChainTest`].
 */
-pub struct RunOwnedBinaryChannelTest<'a, Test> {
+pub struct RunBinaryChannelTest<'a, Test> {
     /// Inner test
     pub test: &'a Test,
 }
 
 /**
    A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
-   into a test case the implements [`OwnedBinaryChannelTest`].
+   into a test case the implements [`BinaryChannelTest`].
 */
 pub struct RunTwoWayBinaryChannelTest<'a, Test> {
     /// Inner test
     pub test: &'a Test,
 }
 
-impl<'a, Test> RunOwnedBinaryChannelTest<'a, Test>
+impl<'a, Test> RunBinaryChannelTest<'a, Test>
 where
-    Test: OwnedBinaryChannelTest,
+    Test: BinaryChannelTest,
 {
     pub fn new(test: &'a Test) -> Self {
         Self { test }
@@ -118,16 +118,16 @@ where
 
 impl<'a, Test> RunTwoWayBinaryChannelTest<'a, Test>
 where
-    Test: OwnedBinaryChannelTest,
+    Test: BinaryChannelTest,
 {
     pub fn new(test: &'a Test) -> Self {
         Self { test }
     }
 }
 
-impl<'a, Test, Overrides> OwnedBinaryChainTest for RunOwnedBinaryChannelTest<'a, Test>
+impl<'a, Test, Overrides> BinaryChainTest for RunBinaryChannelTest<'a, Test>
 where
-    Test: OwnedBinaryChannelTest,
+    Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: PortsOverride,
 {
@@ -156,9 +156,7 @@ where
     }
 }
 
-impl<'a, Test: OwnedBinaryChannelTest> OwnedBinaryChannelTest
-    for RunTwoWayBinaryChannelTest<'a, Test>
-{
+impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTest<'a, Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -196,7 +194,7 @@ impl<'a, Test: OwnedBinaryChannelTest> OwnedBinaryChannelTest
     }
 }
 
-impl<'a, Test, Overrides> HasOverrides for RunOwnedBinaryChannelTest<'a, Test>
+impl<'a, Test, Overrides> HasOverrides for RunBinaryChannelTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

@@ -8,28 +8,26 @@ use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
 use crate::util::array::try_into_array;
 
-pub fn run_owned_nary_node_test<Test, Overrides, const SIZE: usize>(
-    test: &Test,
-) -> Result<(), Error>
+pub fn run_nary_node_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Result<(), Error>
 where
-    Test: OwnedNaryNodeTest<SIZE>,
+    Test: NaryNodeTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride,
 {
-    run_basic_test(&RunOwnedNaryNodeTest { test })
+    run_basic_test(&RunNaryNodeTest { test })
 }
 
-pub trait OwnedNaryNodeTest<const SIZE: usize> {
+pub trait NaryNodeTest<const SIZE: usize> {
     fn run(&self, config: &TestConfig, nodes: [FullNode; SIZE]) -> Result<(), Error>;
 }
 
-pub struct RunOwnedNaryNodeTest<'a, Test, const SIZE: usize> {
+pub struct RunNaryNodeTest<'a, Test, const SIZE: usize> {
     pub test: &'a Test,
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> BasicTest for RunOwnedNaryNodeTest<'a, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> BasicTest for RunNaryNodeTest<'a, Test, SIZE>
 where
-    Test: OwnedNaryNodeTest<SIZE>,
+    Test: NaryNodeTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride,
 {
@@ -53,7 +51,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunOwnedNaryNodeTest<'a, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunNaryNodeTest<'a, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

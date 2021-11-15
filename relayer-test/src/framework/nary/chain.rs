@@ -1,6 +1,6 @@
 use ibc_relayer::chain::handle::ChainHandle;
 
-use super::node::{run_owned_nary_node_test, OwnedNaryNodeTest};
+use super::node::{run_nary_node_test, NaryNodeTest};
 
 use crate::bootstrap::nary::chain::boostrap_chains_with_nodes;
 use crate::error::Error;
@@ -12,18 +12,16 @@ use crate::types::config::TestConfig;
 use crate::types::nary::chains::ConnectedChains;
 use crate::types::single::node::FullNode;
 
-pub fn run_owned_nary_chain_test<Test, Overrides, const SIZE: usize>(
-    test: &Test,
-) -> Result<(), Error>
+pub fn run_nary_chain_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Result<(), Error>
 where
-    Test: OwnedNaryChainTest<SIZE>,
+    Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
-    run_owned_nary_node_test(&RunOwnedNaryChainTest::new(test))
+    run_nary_node_test(&RunNaryChainTest::new(test))
 }
 
-pub trait OwnedNaryChainTest<const SIZE: usize> {
+pub trait NaryChainTest<const SIZE: usize> {
     /// Test runner
     fn run<Handle: ChainHandle>(
         &self,
@@ -32,15 +30,14 @@ pub trait OwnedNaryChainTest<const SIZE: usize> {
     ) -> Result<(), Error>;
 }
 
-pub struct RunOwnedNaryChainTest<'a, Test, const SIZE: usize> {
+pub struct RunNaryChainTest<'a, Test, const SIZE: usize> {
     /// Inner test
     pub test: &'a Test,
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> OwnedNaryNodeTest<SIZE>
-    for RunOwnedNaryChainTest<'a, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> NaryNodeTest<SIZE> for RunNaryChainTest<'a, Test, SIZE>
 where
-    Test: OwnedNaryChainTest<SIZE>,
+    Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
@@ -66,16 +63,16 @@ where
     }
 }
 
-impl<'a, Test, const SIZE: usize> RunOwnedNaryChainTest<'a, Test, SIZE>
+impl<'a, Test, const SIZE: usize> RunNaryChainTest<'a, Test, SIZE>
 where
-    Test: OwnedNaryChainTest<SIZE>,
+    Test: NaryChainTest<SIZE>,
 {
     pub fn new(test: &'a Test) -> Self {
         Self { test }
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunOwnedNaryChainTest<'a, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunNaryChainTest<'a, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

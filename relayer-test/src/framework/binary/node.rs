@@ -22,47 +22,20 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride,
 {
-    run_owned_binary_node_test(&RunBinaryNodeTest { test })
-}
-
-/**
-   Runs a test case that implements [`OwnedBinaryNodeTest`].
-*/
-pub fn run_owned_binary_node_test<Test, Overrides>(test: &Test) -> Result<(), Error>
-where
-    Test: OwnedBinaryNodeTest,
-    Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride,
-{
-    run_basic_test(&RunOwnedBinaryNodeTest { test })
+    run_basic_test(&RunBinaryNodeTest { test })
 }
 
 /**
    This trait is implemented for test cases that need to have two full nodes
    running without the relayer being setup.
 
-   The test case is given two references to [`FullNode`] which represents
-   the two running full nodes.
+   The test case is given two [`FullNode`] which represents the two running full nodes.
 
    Test writers can use this to implement more advanced test cases which
    require manual setup of the relayer, so that the relayer can be started
    and stopped at a suitable time within the test.
 */
 pub trait BinaryNodeTest {
-    /// Test runner
-    fn run(&self, config: &TestConfig, node_a: &FullNode, node_b: &FullNode) -> Result<(), Error>;
-}
-
-/**
-   An owned version of [`BinaryNodeTest`], which the test case is given owned
-   [`FullNode`] values instead of just references.
-
-   Since the test case is given full ownership, the running full node will
-   be stopped at the end of the test case. The test framework cannot use
-   functions such as [`hang_on_error`](TestConfig::hang_on_error) to suspend
-   the termination of the full nodes if the test case return errors.
-*/
-pub trait OwnedBinaryNodeTest {
     /// Test runner
     fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error>;
 }
@@ -76,7 +49,7 @@ pub trait OwnedBinaryNodeTest {
    can use the helper methods in [`chain::config`](crate::chain::config)
    to modify common config fields.
 
-   This is called by [`RunOwnedBinaryNodeTest`] before the full nodes are
+   This is called by [`RunBinaryNodeTest`] before the full nodes are
    initialized and started.
 
    Test writers should implement
@@ -90,25 +63,16 @@ pub trait NodeConfigOverride {
 
 /**
    A wrapper type that lifts a test case that implements [`BinaryNodeTest`]
-   into a test case the implements [`OwnedBinaryNodeTest`].
+   into a test case that implements [`BasicTest`].
 */
 pub struct RunBinaryNodeTest<'a, Test> {
     /// Inner test
     pub test: &'a Test,
 }
 
-/**
-   A wrapper type that lifts a test case that implements [`OwnedBinaryNodeTest`]
-   into a test case that implements [`BasicTest`].
-*/
-pub struct RunOwnedBinaryNodeTest<'a, Test> {
-    /// Inner test
-    pub test: &'a Test,
-}
-
-impl<'a, Test, Overrides> BasicTest for RunOwnedBinaryNodeTest<'a, Test>
+impl<'a, Test, Overrides> BasicTest for RunBinaryNodeTest<'a, Test>
 where
-    Test: OwnedBinaryNodeTest,
+    Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride,
 {
@@ -123,34 +87,20 @@ where
 
         self.test.run(config, node_a, node_b)?;
 
-        // No use suspending the test on owned failures, as the nodes
-        // are dropped in the inner test already.
-
         Ok(())
     }
 }
 
-impl<'a, Test> OwnedBinaryNodeTest for RunBinaryNodeTest<'a, Test>
+impl<'a, Test> BinaryNodeTest for RunBinaryNodeTest<'a, Test>
 where
     Test: BinaryNodeTest,
 {
     fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
         self.test
-            .run(config, &node_a, &node_b)
+            .run(config, node_a, node_b)
             .map_err(config.hang_on_error())?;
 
         Ok(())
-    }
-}
-
-impl<'a, Test, Overrides> HasOverrides for RunOwnedBinaryNodeTest<'a, Test>
-where
-    Test: HasOverrides<Overrides = Overrides>,
-{
-    type Overrides = Overrides;
-
-    fn get_overrides(&self) -> &Self::Overrides {
-        self.test.get_overrides()
     }
 }
 
