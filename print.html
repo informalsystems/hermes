@@ -5,7 +5,10 @@
         <meta charset="UTF-8">
         <title>Hermes (IBC Relayer CLI) Documentation</title>
         <meta name="robots" content="noindex" />
+
+
         <!-- Custom HTML head -->
+
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,15 +20,18 @@
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
         <link rel="stylesheet" href="css/print.css" media="print">
+
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
         <link rel="stylesheet" href="fonts/fonts.css">
+
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="highlight.css">
         <link rel="stylesheet" href="tomorrow-night.css">
         <link rel="stylesheet" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
+
     </head>
     <body>
         <!-- Provide site root to javascript -->
@@ -111,6 +117,7 @@
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+
                     </div>
                 </div>
 
@@ -124,6 +131,7 @@
                         </ul>
                     </div>
                 </div>
+
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script type="text/javascript">
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
@@ -577,10 +585,27 @@ please refer to the <a href="./commands/keys/index.html">Keys</a> sections in or
 <h2 id="example-configuration-file"><a class="header" href="#example-configuration-file">Example configuration file</a></h2>
 <p>Here is a full example of a configuration file with two chains configured:</p>
 <pre><code class="language-toml">[global]
-strategy = 'all'
 log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
 filter = false
-clear_packets_interval = 100
+tx_confirmation = true
 
 [rest]
 enabled = true
@@ -964,13 +989,45 @@ git checkout v0.8.0-pre.1
 <pre><code class="language-toml"># The global section has parameters that apply globally to the relayer operation.
 [global]
 
-# Specify the strategy to be used by the relayer. Default: 'packets'
-# Two options are currently supported:
-#   - 'all': Relay packets and perform channel and connection handshakes.
-#   - 'packets': Relay packets only.
-strategy = 'packets'
+# Specify the verbosity for the relayer logging output. Default: 'info'
+# Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
+log_level = 'info'
 
-# Enable or disable the filtering mechanism. Default: 'false'
+
+# Specify the mode to be used by the relayer. [Required]
+[mode]
+
+# Specify the client mode.
+[mode.clients]
+# Whether or not to enable the client workers. [Required]
+enabled = false
+# Whether or not to enable periodic refresh of clients. [Default: false]
+refresh = true
+# Whether or not to enable misbehaviour detection for clients. [Default: false]
+misbehaviour = true
+
+# Specify the connections mode.
+[mode.connections]
+# Whether or not to enable the connection workers. [Required]
+enabled = false
+
+# Specify the channels mode.
+[mode.channels]
+# Whether or not to enable the channel workers. [Required]
+enabled = false
+
+# Specify the packets mode.
+[mode.packets]
+# Whether or not to enable the packet workers. [Required]
+enabled = false
+# Parametrize the periodic packet clearing feature.
+# Interval (in number of blocks) at which pending packets
+# should be eagerly cleared. A value of '0' will disable
+# periodic packet clearing. [Default: 100]
+clear_interval = 100
+# Whether or not to clear packets on start. [Default: false]
+clear_on_start = true
+# Enable or disable the filtering mechanism.
 # Valid options are 'true', 'false'.
 # Currently Hermes supports two filters:
 # 1. Packet filtering on a per-chain basis; see the chain-specific
@@ -979,24 +1036,14 @@ strategy = 'packets'
 #   is parametrized with (numerator = 1, denominator = 3), so that clients with
 #   thresholds different than this will be ignored.
 # If set to 'true', both of the above filters will be enabled.
+# [Default: false]
 filter = false
-
-# Specify the verbosity for the relayer logging output. Default: 'info'
-# Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
-log_level = 'info'
-
-# Parametrize the periodic packet clearing feature.
-# Interval (in number of blocks) at which pending packets
-# should be eagerly cleared. A value of '0' will disable
-# periodic packet clearing. Default: 100
-clear_packets_interval = 100
-
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
 # (to any chain in this config file) have delivered successfully.
 # Experimental feature. Affects telemetry if set to false.
-# Default: true.
+# [Default: true]
 tx_confirmation = true
 
 
@@ -1464,8 +1511,27 @@ With all these established, you have <a href="tutorials/local-chains/relay-paths
 <li>
 <p>Paste the following configuration in the standard Hermes configuration file at <code>~/.hermes/config.toml</code>:</p>
 <pre><code class="language-toml">[global]
-strategy = 'packets'
 log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+filter = false
+tx_confirmation = true
 
 [[chains]]
 id = 'ibc-0'
@@ -3096,10 +3162,25 @@ over one or multiple paths.</p>
 <li><a href="commands/relaying/packets.html#packet-delay">Packet Delay</a></li>
 </ul>
 <h2 id="the-start-command-1"><a class="header" href="#the-start-command-1">The <code>start</code> Command</a></h2>
-<p>To relay packets only use <code>packets</code> as strategy in the <code>global</code> section of the configuration file:</p>
+<p>To relay packets only configure the <code>mode</code> section of the configuration file like so:</p>
 <pre><code class="language-toml">[global]
-strategy = 'packets'
 log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+# ...
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+# ...
 </code></pre>
 <p>Then start hermes using the start command:</p>
 <pre><code class="language-shell">hermes start
@@ -3133,10 +3214,25 @@ For more information on the misbehavior detector see <a href="commands/relaying/
 <p>This section describes the configuration and commands that can be used to start the relayer and relay both handshake and packets
 for connections and channels.</p>
 <h2 id="the-start-command-2"><a class="header" href="#the-start-command-2">The <code>start</code> Command</a></h2>
-<p>To relay packets and handshake messages use <code>all</code> as strategy in the <code>global</code> section of the configuration file:</p>
+<p>To relay packets and handshake messages configure the <code>mode</code> section of the configuration file like so:</p>
 <pre><code class="language-toml">[global]
-strategy = 'all'
 log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+# ...
+
+[mode.connections]
+enabled = true
+
+[mode.channels]
+enabled = true
+
+[mode.packets]
+enabled = true
+# ...
 </code></pre>
 <p>Then start hermes using the start command:</p>
 <pre><code class="language-shell">hermes start
@@ -3147,10 +3243,10 @@ log_level = 'info'
 channels or connections that are not in open state. It then listens to IBC events emitted by any of
 the configured chains.</p>
 <p>Assuming the events are coming from a <code>source</code> chain, the relayer determines the <code>destination</code> chain and builds the handshake messages based on these events. These are then sent to the <code>destination</code> chain.</p>
-<p>In addition to the events described in <a href="commands/relaying/packets.html#packet-relaying">Packet Relaying</a>, in the <code>all</code> strategy mode the following IBC events are handled:</p>
+<p>In addition to the events described in <a href="commands/relaying/packets.html#packet-relaying">Packet Relaying</a>, the following IBC events may be handled:</p>
 <ul>
 <li>
-<p>Channels:</p>
+<p>Channels (if <code>mode.channels.enabled=true</code>):</p>
 <ul>
 <li><code>chan_open_init</code>: the relayer builds a <code>MsgChannelOpenTry</code> message</li>
 <li><code>chan_open_try</code>: the relayer builds a <code>MsgChannelOpenAck</code> message</li>
@@ -3159,7 +3255,7 @@ the configured chains.</p>
 </ul>
 </li>
 <li>
-<p>Connections:</p>
+<p>Connections (if <code>mode.connections.enabled=true</code>):</p>
 <ul>
 <li><code>conn_open_init</code>: the relayer builds a <code>MsgConnOpenTry</code> message</li>
 <li><code>conn_open_try</code>: the relayer builds a <code>MsgConnOpenAck</code> message</li>
@@ -5521,7 +5617,6 @@ This file is loaded by default from <code>$HOME/.hermes/config.toml</code>, but 
 with the <code>-c</code> flag, eg. <code>hermes -c ./path/to/my/config.toml some command</code>.</p>
 <p>Relevant snippet:</p>
 <pre><code class="language-toml">[global]
-strategy = 'packets'
 log_level = 'error'
 </code></pre>
 <p>Valid options for <code>log_level</code> are: 'error', 'warn', 'info', 'debug', 'trace'.
@@ -5906,22 +6001,31 @@ Success: CreateClient(
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+
+
                         <div style="clear: both"></div>
                     </nav>
                 </div>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
             </nav>
 
         </div>
 
+
+
+
         <script type="text/javascript">
             window.playground_copyable = true;
         </script>
+
+
         <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+
         <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
         <script src="book.js" type="text/javascript" charset="utf-8"></script>
@@ -5929,10 +6033,12 @@ Success: CreateClient(
         <!-- Custom JS scripts -->
         <script type="text/javascript" src="mermaid.min.js"></script>
         <script type="text/javascript" src="mermaid-init.js"></script>
+
         <script type="text/javascript">
         window.addEventListener('load', function() {
             window.setTimeout(window.print, 100);
         });
         </script>
+
     </body>
 </html>
