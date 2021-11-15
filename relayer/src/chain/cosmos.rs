@@ -2007,8 +2007,7 @@ fn packet_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .filter_map(|ev| filter_matching_event(ev, request, seq))
-        .next()
+        .find_map(|ev| filter_matching_event(ev, request, seq))
 }
 
 // Extracts from the Tx the update client event for the requested client and height.
