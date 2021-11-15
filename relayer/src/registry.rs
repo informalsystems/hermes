@@ -38,6 +38,7 @@ define_error! {
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 ///
 /// The purpose of this type is to avoid spawning multiple runtimes for a single `ChainId`.
+#[derive(Debug)]
 pub struct Registry<Chain: ChainHandle> {
     config: RwArc<Config>,
     handles: HashMap<ChainId, Chain>,

@@ -19,7 +19,7 @@ use crate::relayer::transfer::tx_raw_ft_transfer;
 
 #[test]
 fn test_simulation() -> Result<(), Error> {
-    run_binary_channel_test(&SimulationTest)
+    run_owned_binary_channel_test(&SimulationTest)
 }
 
 const MAX_MSGS: usize = 5;
@@ -34,17 +34,17 @@ impl TestOverrides for SimulationTest {
     }
 }
 
-impl BinaryChannelTest for SimulationTest {
+impl OwnedBinaryChannelTest for SimulationTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        chains: &ConnectedChains<ChainA, ChainB>,
-        channel: &ConnectedChannel<ChainA, ChainB>,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         tx_raw_ft_transfer(
             chains.handle_a(),
             chains.handle_b(),
-            channel,
+            &channel,
             &chains.node_b.wallets().user1().address(),
             &chains.node_a.denom(),
             9999,

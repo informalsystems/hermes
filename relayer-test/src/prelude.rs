@@ -23,13 +23,11 @@ pub use crate::types::wallet::{
 pub use crate::util::suspend::suspend;
 
 pub use crate::framework::binary::channel::{
-    run_binary_channel_test, run_owned_binary_channel_test, run_two_way_binary_channel_test,
-    BinaryChannelTest, OwnedBinaryChannelTest,
+    run_owned_binary_channel_test, run_two_way_binary_channel_test, OwnedBinaryChannelTest,
 };
 
 pub use crate::framework::binary::chain::{
-    run_binary_chain_test, run_owned_binary_chain_test, run_two_way_binary_chain_test,
-    BinaryChainTest, OwnedBinaryChainTest,
+    run_owned_binary_chain_test, run_two_way_binary_chain_test, OwnedBinaryChainTest,
 };
 
 pub use crate::framework::binary::node::{

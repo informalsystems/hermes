@@ -1,5 +1,5 @@
 use crate::framework::binary::chain::run_self_connected_binary_chain_test;
-use crate::framework::binary::channel::{RunBinaryChannelTest, RunOwnedBinaryChannelTest};
+use crate::framework::binary::channel::RunOwnedBinaryChannelTest;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::prelude::*;
 use crate::util::random::random_u64_range;
@@ -15,9 +15,7 @@ fn test_ibc_transfer() -> Result<(), Error> {
 */
 #[test]
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
-    run_self_connected_binary_chain_test(&RunOwnedBinaryChannelTest::new(
-        &RunBinaryChannelTest::new(&IbcTransferTest),
-    ))
+    run_self_connected_binary_chain_test(&RunOwnedBinaryChannelTest::new(&IbcTransferTest))
 }
 
 #[cfg(feature = "experimental")]
@@ -27,21 +25,19 @@ fn test_nary_ibc_transfer() -> Result<(), Error> {
         run_owned_nary_channel_test, RunBinaryAsNaryChannelTest,
     };
 
-    run_owned_nary_channel_test(&RunBinaryAsNaryChannelTest::new(
-        &RunBinaryChannelTest::new(&IbcTransferTest),
-    ))
+    run_owned_nary_channel_test(&RunBinaryAsNaryChannelTest::new(&IbcTransferTest))
 }
 
 pub struct IbcTransferTest;
 
 impl TestOverrides for IbcTransferTest {}
 
-impl BinaryChannelTest for IbcTransferTest {
+impl OwnedBinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        chains: &ConnectedChains<ChainA, ChainB>,
-        channel: &ConnectedChannel<ChainA, ChainB>,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
 

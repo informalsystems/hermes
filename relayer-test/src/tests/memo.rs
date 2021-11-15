@@ -9,7 +9,7 @@ use crate::util::random::{random_string, random_u64_range};
 fn test_memo() -> Result<(), Error> {
     let memo = Memo::new(&random_string());
     let test = MemoTest { memo };
-    run_binary_channel_test(&test)
+    run_owned_binary_channel_test(&test)
 }
 
 pub struct MemoTest {
@@ -24,12 +24,12 @@ impl TestOverrides for MemoTest {
     }
 }
 
-impl BinaryChannelTest for MemoTest {
+impl OwnedBinaryChannelTest for MemoTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        chains: &ConnectedChains<ChainA, ChainB>,
-        channel: &ConnectedChannel<ChainA, ChainB>,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         info!(
             "testing IBC transfer with memo configured: \"{}\"",

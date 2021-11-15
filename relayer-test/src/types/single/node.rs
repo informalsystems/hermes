@@ -19,6 +19,7 @@ use crate::types::wallet::TestWallets;
 /**
    Represents a full node running as a child process managed by the test.
 */
+#[derive(Debug, Clone)]
 pub struct FullNode {
     /**
        The [`ChainDriver`] used to communicate with the full node.
@@ -91,16 +92,6 @@ impl<'a, Chain> TaggedFullNode<Chain> for MonoTagged<Chain, &'a FullNode> {
 
     fn denom(&self) -> MonoTagged<Chain, &Denom> {
         self.map_ref(|c| &c.denom)
-    }
-}
-
-impl Clone for FullNode {
-    fn clone(&self) -> Self {
-        Self {
-            chain_driver: self.chain_driver.clone(),
-            denom: self.denom.clone(),
-            wallets: self.wallets.clone(),
-        }
     }
 }
 

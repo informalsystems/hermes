@@ -24,25 +24,13 @@ use crate::types::env::write_env;
 use crate::types::single::node::FullNode;
 
 /**
-   Runs a test case that implements [`BinaryChainTest`].
-*/
-pub fn run_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(), Error>
-where
-    Test: BinaryChainTest,
-    Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
-{
-    run_owned_binary_chain_test(&RunBinaryChainTest::new(test))
-}
-
-/**
    Runs a test case that implements [`BinaryChainTest`], with
    the test case being executed twice, with the second time having the
    position of the two chains flipped.
 */
 pub fn run_two_way_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
-    Test: BinaryChainTest,
+    Test: OwnedBinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
@@ -73,25 +61,6 @@ where
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
     run_basic_test(&RunSelfConnectedBinaryChainTest::new(test))
-}
-
-/**
-   This trait is implemented for test cases that need to have two
-   full nodes running together with the relayer setup with chain
-   handles and foreign clients.
-
-   The test case is given a reference to [`ConnectedChains`].
-
-   Test writers can use this to implement test cases that only
-   need the chains and relayers setup without the channel handshake.
-*/
-pub trait BinaryChainTest {
-    /// Test runner
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        config: &TestConfig,
-        chains: &ConnectedChains<ChainA, ChainB>,
-    ) -> Result<(), Error>;
 }
 
 /**
@@ -201,18 +170,9 @@ where
     }
 }
 
-impl<'a, Test> RunBinaryChainTest<'a, Test>
-where
-    Test: BinaryChainTest,
-{
-    pub fn new(test: &'a Test) -> Self {
-        Self { test }
-    }
-}
-
 impl<'a, Test> RunTwoWayBinaryChainTest<'a, Test>
 where
-    Test: BinaryChainTest,
+    Test: OwnedBinaryChainTest,
 {
     pub fn new(test: &'a Test) -> Self {
         Self { test }
@@ -259,27 +219,7 @@ where
     }
 }
 
-impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunBinaryChainTest<'a, Test> {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        config: &TestConfig,
-        chains: ConnectedChains<ChainA, ChainB>,
-    ) -> Result<(), Error> {
-        info!(
-            "running one-way chain test, from {} to {}",
-            chains.chain_id_a(),
-            chains.chain_id_b(),
-        );
-
-        self.test
-            .run(config, &chains)
-            .map_err(config.hang_on_error())?;
-
-        Ok(())
-    }
-}
-
-impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTest<'a, Test> {
+impl<'a, Test: OwnedBinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTest<'a, Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -292,7 +232,7 @@ impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTes
         );
 
         self.test
-            .run(config, &chains)
+            .run(config, chains.clone())
             .map_err(config.hang_on_error())?;
 
         info!(
@@ -304,7 +244,7 @@ impl<'a, Test: BinaryChainTest> OwnedBinaryChainTest for RunTwoWayBinaryChainTes
         let chains = chains.flip();
 
         self.test
-            .run(config, &chains)
+            .run(config, chains)
             .map_err(config.hang_on_error())?;
 
         Ok(())

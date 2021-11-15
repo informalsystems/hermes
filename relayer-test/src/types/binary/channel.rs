@@ -17,7 +17,7 @@ use crate::types::id::{ChannelId, PortId};
 
    TODO: Also embed connected connection and client information here.
 */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConnectedChannel<ChainA: ChainHandle, ChainB: ChainHandle> {
     /**
        The underlying relayer [`Channel`].

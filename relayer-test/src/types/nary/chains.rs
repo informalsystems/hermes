@@ -12,6 +12,7 @@ use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
 use crate::util::array::{try_into_array, try_into_nested_array};
 
+#[derive(Clone)]
 pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
     pub config_path: PathBuf,
     pub config: SharedConfig,
@@ -21,6 +22,7 @@ pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
     pub foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
 }
 
+#[derive(Clone)]
 pub struct DynamicConnectedChains<Handle: ChainHandle> {
     pub config_path: PathBuf,
     pub config: SharedConfig,

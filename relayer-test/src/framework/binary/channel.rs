@@ -21,25 +21,13 @@ use crate::types::config::TestConfig;
 use crate::types::env::write_env;
 
 /**
-   Runs a test case that implements [`BinaryChannelTest`].
-*/
-pub fn run_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
-where
-    Test: BinaryChannelTest,
-    Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
-{
-    run_owned_binary_channel_test(&RunBinaryChannelTest::new(test))
-}
-
-/**
    Runs a test case that implements [`BinaryChannelTest`], with
    the test case being executed twice, with the second time having the position
    of the two chains flipped.
 */
 pub fn run_two_way_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
-    Test: BinaryChannelTest,
+    Test: OwnedBinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
@@ -56,28 +44,6 @@ where
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
     run_owned_binary_chain_test(&RunOwnedBinaryChannelTest::new(test))
-}
-
-/**
-   This trait is implemented for test cases that need to have two
-   full nodes running together with the relayer setup with chain
-   handles and foreign clients, together with connected IBC channels
-   with completed handshakes.
-
-   The test case is given a reference to [`ConnectedChains`],
-   and a reference to [`ConnectedChannel`].
-
-   Test writers can use this to implement test cases that only
-   need the chains and relayers setup without the channel handshake.
-*/
-pub trait BinaryChannelTest {
-    /// Test runner
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        config: &TestConfig,
-        chains: &ConnectedChains<ChainA, ChainB>,
-        channels: &ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error>;
 }
 
 /**
@@ -134,17 +100,6 @@ pub struct RunOwnedBinaryChannelTest<'a, Test> {
 
 /**
    A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
-   into a test case the implements [`OwnedBinaryChannelTest`]. During execution,
-   the underlying [`BinaryChannelTest`] is run twice, with the second time
-   having the position of the two chains flipped.
-*/
-pub struct RunBinaryChannelTest<'a, Test> {
-    /// Inner test
-    pub test: &'a Test,
-}
-
-/**
-   A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
    into a test case the implements [`OwnedBinaryChannelTest`].
 */
 pub struct RunTwoWayBinaryChannelTest<'a, Test> {
@@ -161,18 +116,9 @@ where
     }
 }
 
-impl<'a, Test> RunBinaryChannelTest<'a, Test>
-where
-    Test: BinaryChannelTest,
-{
-    pub fn new(test: &'a Test) -> Self {
-        Self { test }
-    }
-}
-
 impl<'a, Test> RunTwoWayBinaryChannelTest<'a, Test>
 where
-    Test: BinaryChannelTest,
+    Test: OwnedBinaryChannelTest,
 {
     pub fn new(test: &'a Test) -> Self {
         Self { test }
@@ -210,22 +156,9 @@ where
     }
 }
 
-impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunBinaryChannelTest<'a, Test> {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        config: &TestConfig,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channels: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
-        self.test
-            .run(config, &chains, &channels)
-            .map_err(config.hang_on_error())?;
-
-        Ok(())
-    }
-}
-
-impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChannelTest<'a, Test> {
+impl<'a, Test: OwnedBinaryChannelTest> OwnedBinaryChannelTest
+    for RunTwoWayBinaryChannelTest<'a, Test>
+{
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -241,7 +174,7 @@ impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChan
         );
 
         self.test
-            .run(config, &chains, &channels)
+            .run(config, chains.clone(), channels.clone())
             .map_err(config.hang_on_error())?;
 
         info!(
@@ -256,7 +189,7 @@ impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChan
         let channels = channels.flip();
 
         self.test
-            .run(config, &chains, &channels)
+            .run(config, chains, channels)
             .map_err(config.hang_on_error())?;
 
         Ok(())
@@ -264,17 +197,6 @@ impl<'a, Test: BinaryChannelTest> OwnedBinaryChannelTest for RunTwoWayBinaryChan
 }
 
 impl<'a, Test, Overrides> HasOverrides for RunOwnedBinaryChannelTest<'a, Test>
-where
-    Test: HasOverrides<Overrides = Overrides>,
-{
-    type Overrides = Overrides;
-
-    fn get_overrides(&self) -> &Self::Overrides {
-        self.test.get_overrides()
-    }
-}
-
-impl<'a, Test, Overrides> HasOverrides for RunBinaryChannelTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

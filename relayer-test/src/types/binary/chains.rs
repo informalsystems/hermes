@@ -18,6 +18,7 @@ use crate::types::tagged::*;
    Two connected chains including the full node, chain handles, and
    the corresponding foreign clients.
 */
+#[derive(Clone)]
 pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
     /**
        The path to the relayer config saved on the filesystem.

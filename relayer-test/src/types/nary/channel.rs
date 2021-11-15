@@ -10,11 +10,13 @@ use crate::types::binary::channel::ConnectedChannel as BinaryConnectedChannel;
 use crate::types::tagged::*;
 use crate::util::array::try_into_nested_array;
 
+#[derive(Debug, Clone)]
 pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
     pub channels: [[Channel<Handle, Handle>; SIZE]; SIZE],
     pub port_channel_ids: [[PortChannelId; SIZE]; SIZE],
 }
 
+#[derive(Debug, Clone)]
 pub struct DynamicConnectedChannels<Handle: ChainHandle> {
     pub channels: Vec<Vec<Channel<Handle, Handle>>>,
     pub port_channel_ids: Vec<Vec<PortChannelId>>,
