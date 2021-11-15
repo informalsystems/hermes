@@ -7,6 +7,7 @@ use crate::framework::base::HasOverrides;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::BinaryChannelTest;
 use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::overrides::TestOverrides;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::ConnectedChains;
 use crate::types::nary::channel::ConnectedChannels;
@@ -119,5 +120,17 @@ where
 
     fn get_overrides(&self) -> &Self::Overrides {
         self.test.get_overrides()
+    }
+}
+
+impl<Test: TestOverrides> PortsOverride<2> for Test {
+    fn channel_ports(&self) -> [[PortId; 2]; 2] {
+        let port_a = self.channel_port_a();
+        let port_b = self.channel_port_b();
+
+        [
+            [port_a.clone(), port_b.clone()],
+            [port_b.clone(), port_a.clone()],
+        ]
     }
 }

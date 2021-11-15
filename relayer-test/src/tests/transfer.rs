@@ -9,7 +9,7 @@ fn test_ibc_transfer() -> Result<(), Error> {
     run_two_way_binary_channel_test(&IbcTransferTest)
 }
 
-/*
+/**
    Test that IBC token transfer can still work with a single
    chain that is connected to itself.
 */
@@ -18,6 +18,13 @@ fn test_self_connected_ibc_transfer() -> Result<(), Error> {
     run_self_connected_binary_chain_test(&RunBinaryChannelTest::new(&IbcTransferTest))
 }
 
+/**
+   Run the IBC transfer test as an N-ary chain test case with SIZE=2.
+
+   The work on N-ary chain is currently still work in progress, so we put
+   this behind the "experimental" feature flag so that normal developers
+   are not obligated to understand how this test works yet.
+*/
 #[cfg(feature = "experimental")]
 #[test]
 fn test_nary_ibc_transfer() -> Result<(), Error> {
