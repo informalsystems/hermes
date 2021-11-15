@@ -25,7 +25,6 @@
     ```
 */
 
-
 use ibc_integration_test::prelude::*;
 use ibc_relayer::keyring::Store;
 

@@ -12,13 +12,13 @@ use crate::types::nary::channel::{ConnectedChannels, DynamicConnectedChannels};
 use crate::util::array::{assert_same_dimension, into_nested_vec};
 
 pub fn bootstrap_channels_dynamic<Handle: ChainHandle>(
-    foreign_clients: &Vec<Vec<ForeignClient<Handle, Handle>>>,
-    ports: &Vec<Vec<PortId>>,
+    foreign_clients: &[Vec<ForeignClient<Handle, Handle>>],
+    ports: &[Vec<PortId>],
 ) -> Result<DynamicConnectedChannels<Handle>, Error> {
     let size = foreign_clients.len();
 
-    assert_same_dimension(size, &foreign_clients)?;
-    assert_same_dimension(size, &ports)?;
+    assert_same_dimension(size, foreign_clients)?;
+    assert_same_dimension(size, ports)?;
 
     let mut channels: Vec<Vec<Channel<Handle, Handle>>> = Vec::new();
     let mut port_channel_ids: Vec<Vec<PortChannelId>> = Vec::new();
@@ -91,5 +91,5 @@ pub fn bootstrap_channels<Handle: ChainHandle, const SIZE: usize>(
     let channels =
         bootstrap_channels_dynamic(&into_nested_vec(foreign_clients), &into_nested_vec(ports))?;
 
-    Ok(channels.try_into()?)
+    channels.try_into()
 }

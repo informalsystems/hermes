@@ -40,7 +40,7 @@ pub fn map_nested_array<T, R, const SIZE: usize>(
     try_into_nested_array(mapped)
 }
 
-pub fn assert_same_dimension<T>(size: usize, list: &Vec<Vec<T>>) -> Result<(), Error> {
+pub fn assert_same_dimension<T>(size: usize, list: &[Vec<T>]) -> Result<(), Error> {
     if list.len() != size {
         return Err(eyre!(
             "expect nested vector to have the dimension {} x {}",

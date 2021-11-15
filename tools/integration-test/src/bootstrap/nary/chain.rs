@@ -34,7 +34,7 @@ pub fn boostrap_chains_with_any_nodes(
     let mut config = Config::default();
 
     for node in full_nodes.iter() {
-        add_chain_config(&mut config, &node)?;
+        add_chain_config(&mut config, node)?;
     }
 
     config_modifier(&mut config);
@@ -50,7 +50,7 @@ pub fn boostrap_chains_with_any_nodes(
     let mut chain_handles = Vec::new();
 
     for node in full_nodes.iter() {
-        let handle = spawn_chain_handle(&registry, &node)?;
+        let handle = spawn_chain_handle(&registry, node)?;
         chain_handles.push(handle);
     }
 

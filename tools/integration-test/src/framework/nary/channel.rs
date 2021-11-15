@@ -128,9 +128,6 @@ impl<Test: TestOverrides> PortsOverride<2> for Test {
         let port_a = self.channel_port_a();
         let port_b = self.channel_port_b();
 
-        [
-            [port_a.clone(), port_b.clone()],
-            [port_b.clone(), port_a.clone()],
-        ]
+        [[port_a.clone(), port_b.clone()], [port_b, port_a]]
     }
 }
