@@ -7,9 +7,9 @@ members = [
     "relayer",
     "relayer-cli",
     "relayer-rest",
-    "relayer-test",
     "telemetry",
     "proto",
+    "tools/integration-test",
 ]
 
 exclude = [

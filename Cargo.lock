@@ -1314,6 +1314,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-integration-test"
+version = "0.8.0"
+dependencies = [
+ "color-eyre",
+ "crossbeam-channel 0.5.1",
+ "env_logger",
+ "eyre",
+ "hex",
+ "ibc",
+ "ibc-proto",
+ "ibc-relayer",
+ "ibc-relayer-cli",
+ "itertools",
+ "prost",
+ "prost-types",
+ "rand 0.8.4",
+ "serde",
+ "serde_json",
+ "sha2",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-rpc",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
 name = "ibc-proto"
 version = "0.12.0"
 dependencies = [
@@ -1434,38 +1463,6 @@ dependencies = [
  "toml",
  "tracing",
  "ureq",
-]
-
-[[package]]
-name = "ibc-relayer-test"
-version = "0.8.0"
-dependencies = [
- "color-eyre",
- "crossbeam-channel 0.5.1",
- "env_logger",
- "eyre",
- "hex",
- "ibc",
- "ibc-proto",
- "ibc-relayer",
- "ibc-relayer-cli",
- "ibc-telemetry",
- "itertools",
- "prost",
- "prost-types",
- "rand 0.8.4",
- "rusty-fork",
- "serde",
- "serde_json",
- "sha2",
- "subtle-encoding",
- "tendermint",
- "tendermint-rpc",
- "test-env-log",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -2467,18 +2464,6 @@ dependencies = [
  "rustls 0.19.1",
  "schannel",
  "security-framework",
-]
-
-[[package]]
-name = "rusty-fork"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb3dcc6e454c328bb824492db107ab7c0ae8fcffe4ad210136ef014458c1bc4f"
-dependencies = [
- "fnv",
- "quick-error",
- "tempfile",
- "wait-timeout",
 ]
 
 [[package]]
