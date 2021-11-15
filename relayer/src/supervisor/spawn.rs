@@ -468,8 +468,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         connection: &IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), Error> {
-        let config = self.config.read().expect("poisoned lock");
-        let mode = &config.mode;
+        let mode = &self.config.read().expect("poisoned lock").mode;
 
         let counterparty_chain = self
             .registry
@@ -579,7 +578,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
     }
 
     fn relay_packets_on_channel(
-        &mut self,
+        &self,
         chain: &impl ChainHandle,
         channel: &IdentifiedChannelEnd,
     ) -> bool {
