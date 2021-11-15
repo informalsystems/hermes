@@ -1,6 +1,25 @@
 [global]
-strategy = 'naive'
 log_level = 'error' # valid options: 'error', 'warn', 'info', 'debug', 'trace'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+filter = false
+tx_confirmation = true
 
 [[chains]]
 id = 'ibc-0'

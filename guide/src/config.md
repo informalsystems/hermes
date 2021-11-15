@@ -49,10 +49,27 @@ Here is a full example of a configuration file with two chains configured:
 
 ```toml
 [global]
-strategy = 'all'
 log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
 filter = false
-clear_packets_interval = 100
+tx_confirmation = true
 
 [rest]
 enabled = true

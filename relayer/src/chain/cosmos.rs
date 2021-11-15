@@ -92,6 +92,7 @@ use crate::{
 use super::{ChainEndpoint, HealthCheck};
 
 mod compatibility;
+pub mod version;
 
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
@@ -116,6 +117,7 @@ mod retry_strategy {
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
+    version_specs: version::Specs,
     rpc_client: HttpClient,
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
@@ -195,6 +197,24 @@ impl CosmosSdkChain {
                 self.max_tx_size(),
                 max_bound,
             ));
+        }
+
+        // Check that the configured max gas is lower or equal to the consensus params max gas.
+        let consensus_max_gas = result.consensus_params.block.max_gas;
+
+        // If the consensus max gas is < 0, we don't need to perform the check.
+        if consensus_max_gas >= 0 {
+            let consensus_max_gas: u64 = consensus_max_gas
+                .try_into()
+                .expect("cannot over or underflow because it is positive");
+
+            if self.max_gas() > consensus_max_gas {
+                return Err(Error::config_validation_max_gas_too_high(
+                    self.id().clone(),
+                    self.max_gas(),
+                    result.consensus_params.block.max_gas,
+                ));
+            }
         }
 
         Ok(())
@@ -287,6 +307,17 @@ impl CosmosSdkChain {
         };
 
         let estimated_gas = self.estimate_gas(simulate_tx)?;
+
+        if estimated_gas > self.max_gas() {
+            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+
+            return Err(Error::tx_simulate_gas_estimate_exceeded(
+                self.id().clone(),
+                estimated_gas,
+                self.max_gas(),
+            ));
+        }
+
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
@@ -308,7 +339,8 @@ impl CosmosSdkChain {
         };
 
         let mut tx_bytes = Vec::new();
-        prost::Message::encode(&tx_raw, &mut tx_bytes).unwrap();
+        prost::Message::encode(&tx_raw, &mut tx_bytes)
+            .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
         let response = self.block_on(broadcast_tx_sync(self, tx_bytes))?;
 
@@ -336,45 +368,58 @@ impl CosmosSdkChain {
     /// Try to simulate the given tx in order to estimate how much gas will be needed to submit it.
     ///
     /// It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
-    /// they do not individually verify. For example for the following batch
+    /// they do not individually verify. For example for the following batch:
     /// [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
-    /// if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
+    ///
+    /// If the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check.
     /// In this case we use the `default_gas` param.
     fn estimate_gas(&self, tx: Tx) -> Result<u64, Error> {
-        let estimated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
+        let simulated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
 
-        if let Ok(ref gas) = estimated_gas {
-            debug!(
-                "[{}] send_tx: tx simulation successful, simulated gas: {:?}",
-                self.id(),
-                gas
-            );
-        }
+        match simulated_gas {
+            Ok(Some(gas_info)) => {
+                debug!(
+                    "[{}] estimate_gas: tx simulation successful, gas amount used: {:?}",
+                    self.id(),
+                    gas_info.gas_used
+                );
 
-        let estimated_gas = estimated_gas.map_or_else(
-            |e| {
-                error!(
-                    "[{}] send_tx: failed to estimate gas, falling back on default gas, error: {}",
+                Ok(gas_info.gas_used)
+            }
+
+            Ok(None) => {
+                warn!(
+                    "[{}] estimate_gas: tx simulation successful but no gas amount used was returned, falling back on default gas: {}",
+                    self.id(),
+                    self.default_gas()
+                );
+
+                Ok(self.default_gas())
+            }
+
+            // If there is a chance that the tx will be accepted once actually submitted, we fall
+            // back on the max gas and will attempt to send it anyway.
+            // See `can_recover_from_simulation_failure` for more info.
+            Err(e) if can_recover_from_simulation_failure(&e) => {
+                warn!(
+                    "[{}] estimate_gas: failed to simulate tx, falling back on default gas because the error is potentially recoverable: {}",
                     self.id(),
                     e.detail()
                 );
 
-                self.default_gas()
-            },
-            |gas_info| gas_info.map_or(self.default_gas(), |g| g.gas_used),
-        );
+                Ok(self.default_gas())
+            }
 
-        if estimated_gas > self.max_gas() {
-            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+            Err(e) => {
+                error!(
+                    "[{}] estimate_gas: failed to simulate tx with non-recoverable error: {}",
+                    self.id(),
+                    e.detail()
+                );
 
-            return Err(Error::tx_simulate_gas_estimate_exceeded(
-                self.id().clone(),
-                estimated_gas,
-                self.max_gas(),
-            ));
+                Err(e)
+            }
         }
-
-        Ok(estimated_gas)
     }
 
     /// The default amount of gas the relayer is willing to pay for a transaction,
@@ -433,7 +478,9 @@ impl CosmosSdkChain {
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
-        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
+        // SAFETY: Creating a Path from a constant; this should never fail
+        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH)
+            .expect("Turning IBC query path constant into a Tendermint ABCI path");
 
         let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
@@ -462,7 +509,9 @@ impl CosmosSdkChain {
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         let prev_height = Height::try_from(height.value() - 1).map_err(Error::invalid_height)?;
 
-        let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH).unwrap();
+        // SAFETY: Creating a Path from a constant; this should never fail
+        let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
+            .expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
         let response: QueryResponse = self.block_on(abci_query(
             self,
             path,
@@ -483,7 +532,8 @@ impl CosmosSdkChain {
 
         // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
         let mut tx_bytes = vec![];
-        prost::Message::encode(&tx, &mut tx_bytes).unwrap(); // FIXME: Handle error here
+        prost::Message::encode(&tx, &mut tx_bytes)
+            .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
         #[allow(deprecated)]
         let req = SimulateRequest {
@@ -512,7 +562,8 @@ impl CosmosSdkChain {
 
     fn key_bytes(&self, key: &KeyEntry) -> Result<Vec<u8>, Error> {
         let mut pk_buf = Vec::new();
-        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
+        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf)
+            .map_err(|e| Error::protobuf_encode(String::from("Key bytes"), e))?;
         Ok(pk_buf)
     }
 
@@ -611,7 +662,8 @@ impl CosmosSdkChain {
 
         // A protobuf serialization of a SignDoc
         let mut signdoc_buf = Vec::new();
-        prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
+        prost::Message::encode(&sign_doc, &mut signdoc_buf)
+            .map_err(|e| Error::protobuf_encode(String::from("SignDoc"), e))?;
 
         // Sign doc
         let signed = self
@@ -768,8 +820,12 @@ impl ChainEndpoint for CosmosSdkChain {
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
 
+        // Retrieve the version specification of this chain
+        let version_specs = rt.block_on(fetch_version_specs(&config.id, &grpc_addr))?;
+
         let chain = Self {
             config,
+            version_specs,
             rpc_client,
             grpc_addr,
             rt,
@@ -892,7 +948,8 @@ impl ChainEndpoint for CosmosSdkChain {
         for msg in proto_msgs.iter() {
             msg_batch.push(msg.clone());
             let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf).unwrap();
+            prost::Message::encode(msg, &mut buf)
+                .map_err(|e| Error::protobuf_encode(String::from("Message"), e))?;
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
@@ -948,7 +1005,8 @@ impl ChainEndpoint for CosmosSdkChain {
         for msg in proto_msgs.iter() {
             msg_batch.push(msg.clone());
             let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf).unwrap();
+            prost::Message::encode(msg, &mut buf)
+                .map_err(|e| Error::protobuf_encode(String::from("Messages"), e))?;
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
@@ -2135,14 +2193,18 @@ async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAc
     .await
     .map_err(Error::grpc_transport)?;
 
-    let request = tonic::Request::new(QueryAccountRequest { address });
+    let request = tonic::Request::new(QueryAccountRequest {
+        address: address.clone(),
+    });
 
     let response = client.account(request).await;
-    let resp_account = response
-        .map_err(Error::grpc_status)?
-        .into_inner()
-        .account
-        .unwrap();
+
+    // Querying for an account might fail, i.e. if the account doesn't actually exist
+    let resp_account = match response.map_err(Error::grpc_status)?.into_inner().account {
+        Some(account) => account,
+        None => return Err(Error::empty_query_account(address)),
+    };
+
     if resp_account.type_url == "/cosmos.auth.v1beta1.BaseAccount" {
         Ok(BaseAccount::decode(resp_account.value.as_slice())
             .map_err(|e| Error::protobuf_decode("BaseAccount".to_string(), e))?)
@@ -2193,7 +2255,8 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
 
     // A protobuf serialization of a AuthInfo
     let mut auth_buf = Vec::new();
-    prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
+    prost::Message::encode(&auth_info, &mut auth_buf)
+        .map_err(|e| Error::protobuf_encode(String::from("AuthInfo"), e))?;
     Ok((auth_info, auth_buf))
 }
 
@@ -2209,7 +2272,8 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u
 
     // A protobuf serialization of a TxBody
     let mut body_buf = Vec::new();
-    prost::Message::encode(&body, &mut body_buf).unwrap();
+    prost::Message::encode(&body, &mut body_buf)
+        .map_err(|e| Error::protobuf_encode(String::from("TxBody"), e))?;
     Ok((body, body_buf))
 }
 
@@ -2248,39 +2312,8 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             )
         })?;
 
-    // Construct a grpc client
-    let mut client = ServiceClient::connect(chain.grpc_addr.clone())
-        .await
-        .map_err(|e| {
-            Error::health_check_grpc_transport(
-                chain_id.clone(),
-                grpc_address.clone(),
-                "tendermint::ServiceClient".to_string(),
-                e,
-            )
-        })?;
-
-    let request = tonic::Request::new(GetNodeInfoRequest {});
-
-    let response = client.get_node_info(request).await.map_err(|e| {
-        Error::health_check_grpc_status(
-            chain_id.clone(),
-            grpc_address.clone(),
-            "tendermint::ServiceClient".to_string(),
-            e,
-        )
-    })?;
-
-    let version = response.into_inner().application_version.ok_or_else(|| {
-        Error::health_check_invalid_version(
-            chain_id.clone(),
-            grpc_address.clone(),
-            "tendermint::GetNodeInfoRequest".to_string(),
-        )
-    })?;
-
-    // Checkup on the underlying SDK version
-    if let Err(diagnostic) = compatibility::run_diagnostic(version) {
+    // Checkup on the underlying SDK & IBC-go versions
+    if let Err(diagnostic) = compatibility::run_diagnostic(&chain.version_specs) {
         return Err(Error::sdk_module_version(
             chain_id.clone(),
             grpc_address.clone(),
@@ -2289,6 +2322,61 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+/// Queries the chain to obtain the version information.
+async fn fetch_version_specs(
+    chain_id: &ChainId,
+    grpc_address: &Uri,
+) -> Result<version::Specs, Error> {
+    let grpc_addr_string = grpc_address.to_string();
+
+    // Construct a gRPC client
+    let mut client = ServiceClient::connect(grpc_address.clone())
+        .await
+        .map_err(|e| {
+            Error::fetch_version_grpc_transport(
+                chain_id.clone(),
+                grpc_addr_string.clone(),
+                "tendermint::ServiceClient".to_string(),
+                e,
+            )
+        })?;
+
+    let request = tonic::Request::new(GetNodeInfoRequest {});
+
+    let response = client.get_node_info(request).await.map_err(|e| {
+        Error::fetch_version_grpc_status(
+            chain_id.clone(),
+            grpc_addr_string.clone(),
+            "tendermint::ServiceClient".to_string(),
+            e,
+        )
+    })?;
+
+    let version = response.into_inner().application_version.ok_or_else(|| {
+        Error::fetch_version_invalid_version_response(
+            chain_id.clone(),
+            grpc_addr_string.clone(),
+            "tendermint::GetNodeInfoRequest".to_string(),
+        )
+    })?;
+
+    // Parse the raw version info into a domain-type `version::Specs`
+    version
+        .try_into()
+        .map_err(|e| Error::fetch_version_parsing(chain_id.clone(), grpc_addr_string.clone(), e))
+}
+
+/// Determine whether the given error yielded by `tx_simulate`
+/// can be recovered from by submitting the tx anyway.
+fn can_recover_from_simulation_failure(e: &Error) -> bool {
+    use crate::error::ErrorDetail::*;
+
+    match e.detail() {
+        GrpcStatus(detail) => detail.is_client_state_height_too_low(),
+        _ => false,
+    }
 }
 
 struct PrettyFee<'a>(&'a Fee);

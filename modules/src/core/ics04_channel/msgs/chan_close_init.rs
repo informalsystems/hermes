@@ -140,7 +140,7 @@ mod tests {
             Test {
                 name: "Bad port, name too long".to_string(),
                 raw: RawMsgChannelCloseInit {
-                    port_id: "abcdefsdfasdfasdfasdfasdfasdfadsfasdgafsgadfasdfasdfasdfsdfasdfaghijklmnopqrstu".to_string(),
+                    port_id: "abcdefsdfasdfasdfasdfasdfasdfadsfasdgafsgadfasdfasdfasdfsdfasdfaghijklmnopqrstuabcdefsdfasdfasdfasdfasdfasdfadsfasdgafsgadfasdfasdfasdfsdfasdfaghijklmnopqrstu".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
