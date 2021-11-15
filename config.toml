@@ -1,13 +1,45 @@
 # The global section has parameters that apply globally to the relayer operation.
 [global]
 
-# Specify the strategy to be used by the relayer. Default: 'packets'
-# Two options are currently supported:
-#   - 'all': Relay packets and perform channel and connection handshakes.
-#   - 'packets': Relay packets only.
-strategy = 'packets'
+# Specify the verbosity for the relayer logging output. Default: 'info'
+# Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
+log_level = 'info'
 
-# Enable or disable the filtering mechanism. Default: 'false'
+
+# Specify the mode to be used by the relayer. [Required]
+[mode]
+
+# Specify the client mode.
+[mode.clients]
+# Whether or not to enable the client workers. [Required]
+enabled = false
+# Whether or not to enable periodic refresh of clients. [Default: false]
+refresh = true
+# Whether or not to enable misbehaviour detection for clients. [Default: false]
+misbehaviour = true
+
+# Specify the connections mode.
+[mode.connections]
+# Whether or not to enable the connection workers. [Required]
+enabled = false
+
+# Specify the channels mode.
+[mode.channels]
+# Whether or not to enable the channel workers. [Required]
+enabled = false
+
+# Specify the packets mode.
+[mode.packets]
+# Whether or not to enable the packet workers. [Required]
+enabled = false
+# Parametrize the periodic packet clearing feature.
+# Interval (in number of blocks) at which pending packets
+# should be eagerly cleared. A value of '0' will disable
+# periodic packet clearing. [Default: 100]
+clear_interval = 100
+# Whether or not to clear packets on start. [Default: false]
+clear_on_start = true
+# Enable or disable the filtering mechanism.
 # Valid options are 'true', 'false'.
 # Currently Hermes supports two filters:
 # 1. Packet filtering on a per-chain basis; see the chain-specific
@@ -16,24 +48,14 @@ strategy = 'packets'
 #   is parametrized with (numerator = 1, denominator = 3), so that clients with
 #   thresholds different than this will be ignored.
 # If set to 'true', both of the above filters will be enabled.
+# [Default: false]
 filter = false
-
-# Specify the verbosity for the relayer logging output. Default: 'info'
-# Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
-log_level = 'info'
-
-# Parametrize the periodic packet clearing feature.
-# Interval (in number of blocks) at which pending packets
-# should be eagerly cleared. A value of '0' will disable
-# periodic packet clearing. Default: 100
-clear_packets_interval = 100
-
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
 # (to any chain in this config file) have delivered successfully.
 # Experimental feature. Affects telemetry if set to false.
-# Default: true.
+# [Default: true]
 tx_confirmation = true
 
 # The REST section defines parameters for Hermes' built-in RESTful API.

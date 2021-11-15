@@ -107,14 +107,24 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Returns `false` otherwise.
     fn client_filter_enabled(&self) -> bool {
         // Currently just a wrapper over the global filter.
-        self.config.read().expect("poisoned lock").global.filter
+        self.config
+            .read()
+            .expect("poisoned lock")
+            .mode
+            .packets
+            .filter
     }
 
     /// Returns `true` if the relayer should filter based on
     /// channel identifiers.
     /// Returns `false` otherwise.
     fn channel_filter_enabled(&self) -> bool {
-        self.config.read().expect("poisoned lock").global.filter
+        self.config
+            .read()
+            .expect("poisoned lock")
+            .mode
+            .packets
+            .filter
     }
 
     fn relay_packets_on_channel(
@@ -187,6 +197,28 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         }
     }
 
+    /// If `enabled`, build an `Object` using the provided `object_ctor`
+    /// and add the given `event` to the `collected` events for this `object`.
+    fn collect_event<F>(
+        &self,
+        collected: &mut CollectedEvents,
+        event: &IbcEvent,
+        enabled: bool,
+        object_ctor: F,
+    ) where
+        F: FnOnce() -> Option<Object>,
+    {
+        if enabled {
+            if let Some(object) = object_ctor() {
+                collected
+                    .per_object
+                    .entry(object)
+                    .or_default()
+                    .push(event.clone());
+            }
+        }
+    }
+
     /// Collect the events we are interested in from an [`EventBatch`],
     /// and maps each [`IbcEvent`] to their corresponding [`Object`].
     pub fn collect_events(
@@ -196,11 +228,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     ) -> CollectedEvents {
         let mut collected = CollectedEvents::new(batch.height, batch.chain_id.clone());
 
-        let handshake_enabled = self
-            .config
-            .read()
-            .expect("poisoned lock")
-            .handshake_enabled();
+        let mode = self.config.read().expect("poisoned lock").mode;
 
         for event in &batch.events {
             match event {
@@ -208,144 +236,81 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                     collected.new_block = Some(event.clone());
                 }
                 IbcEvent::UpdateClient(ref update) => {
-                    if let Ok(object) = Object::for_update_client(update, src_chain) {
+                    self.collect_event(&mut collected, event, mode.clients.enabled, || {
                         // Collect update client events only if the worker exists
-                        if self.workers.contains(&object) {
-                            collected
-                                .per_object
-                                .entry(object)
-                                .or_default()
-                                .push(event.clone());
+                        if let Ok(object) = Object::for_update_client(update, src_chain) {
+                            self.workers.contains(&object).then(|| object)
+                        } else {
+                            None
                         }
-                    }
+                    });
                 }
                 IbcEvent::OpenInitConnection(..)
                 | IbcEvent::OpenTryConnection(..)
                 | IbcEvent::OpenAckConnection(..) => {
-                    if !handshake_enabled {
-                        continue;
-                    }
-
-                    let object = event
-                        .connection_attributes()
-                        .map(|attr| Object::connection_from_conn_open_events(attr, src_chain));
-
-                    if let Some(Ok(object)) = object {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.connections.enabled, || {
+                        event
+                            .connection_attributes()
+                            .map(|attr| {
+                                Object::connection_from_conn_open_events(attr, src_chain).ok()
+                            })
+                            .flatten()
+                    });
                 }
                 IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
-                    if !handshake_enabled {
-                        continue;
-                    }
-
-                    let object = event
-                        .channel_attributes()
-                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
-
-                    if let Some(Ok(object)) = object {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.channels.enabled, || {
+                        event
+                            .channel_attributes()
+                            .map(|attr| Object::channel_from_chan_open_events(attr, src_chain).ok())
+                            .flatten()
+                    });
                 }
                 IbcEvent::OpenAckChannel(ref open_ack) => {
                     // Create client and packet workers here as channel end must be opened
-                    if let Ok(client_object) =
-                        Object::client_from_chan_open_events(open_ack.attributes(), src_chain)
-                    {
-                        collected
-                            .per_object
-                            .entry(client_object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.clients.enabled, || {
+                        Object::client_from_chan_open_events(open_ack.attributes(), src_chain).ok()
+                    });
 
-                    if let Ok(packet_object) =
-                        Object::packet_from_chan_open_events(open_ack.attributes(), src_chain)
-                    {
-                        collected
-                            .per_object
-                            .entry(packet_object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::packet_from_chan_open_events(open_ack.attributes(), src_chain).ok()
+                    });
 
                     // If handshake message relaying is enabled create worker to send the MsgChannelOpenConfirm message
-                    if handshake_enabled {
-                        if let Ok(channel_object) =
-                            Object::channel_from_chan_open_events(open_ack.attributes(), src_chain)
-                        {
-                            collected
-                                .per_object
-                                .entry(channel_object)
-                                .or_default()
-                                .push(event.clone());
-                        }
-                    }
+                    self.collect_event(&mut collected, event, mode.channels.enabled, || {
+                        Object::channel_from_chan_open_events(open_ack.attributes(), src_chain).ok()
+                    });
                 }
                 IbcEvent::OpenConfirmChannel(ref open_confirm) => {
                     // Create client worker here as channel end must be opened
-                    if let Ok(client_object) =
+                    self.collect_event(&mut collected, event, mode.clients.enabled, || {
                         Object::client_from_chan_open_events(open_confirm.attributes(), src_chain)
-                    {
-                        collected
-                            .per_object
-                            .entry(client_object)
-                            .or_default()
-                            .push(event.clone());
-                    }
-                    if let Ok(packet_object) =
+                            .ok()
+                    });
+
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
                         Object::packet_from_chan_open_events(open_confirm.attributes(), src_chain)
-                    {
-                        collected
-                            .per_object
-                            .entry(packet_object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                            .ok()
+                    });
                 }
                 IbcEvent::SendPacket(ref packet) => {
-                    if let Ok(object) = Object::for_send_packet(packet, src_chain) {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::for_send_packet(packet, src_chain).ok()
+                    });
                 }
                 IbcEvent::TimeoutPacket(ref packet) => {
-                    if let Ok(object) = Object::for_timeout_packet(packet, src_chain) {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::for_timeout_packet(packet, src_chain).ok()
+                    });
                 }
                 IbcEvent::WriteAcknowledgement(ref packet) => {
-                    if let Ok(object) = Object::for_write_ack(packet, src_chain) {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::for_write_ack(packet, src_chain).ok()
+                    });
                 }
                 IbcEvent::CloseInitChannel(ref packet) => {
-                    if let Ok(object) = Object::for_close_init_channel(packet, src_chain) {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::for_close_init_channel(packet, src_chain).ok()
+                    });
                 }
                 _ => (),
             }

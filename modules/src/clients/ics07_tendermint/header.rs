@@ -20,7 +20,7 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// Tendermint consensus header
-#[derive(Clone, PartialEq, Deserialize, Serialize)] // TODO: Add Eq bound once present in tendermint-rs
+#[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Header {
     pub signed_header: SignedHeader, // contains the commitment root
     pub validator_set: ValidatorSet, // the validator set that signed Header
