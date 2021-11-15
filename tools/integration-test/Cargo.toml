@@ -43,3 +43,7 @@ default = []
 example = []
 manual = []
 experimental = []
+
+[[bin]]
+name = "test_setup_with_binary_channel"
+doc = true
