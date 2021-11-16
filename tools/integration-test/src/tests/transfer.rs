@@ -18,6 +18,21 @@ fn test_self_connected_ibc_transfer() -> Result<(), Error> {
     run_self_connected_binary_chain_test(&RunBinaryChannelTest::new(&IbcTransferTest))
 }
 
+/**
+   Run the IBC transfer test as an N-ary chain test case with SIZE=2.
+
+   The work on N-ary chain is currently still work in progress, so we put
+   this behind the "experimental" feature flag so that normal developers
+   are not obligated to understand how this test works yet.
+*/
+#[cfg(feature = "experimental")]
+#[test]
+fn test_nary_ibc_transfer() -> Result<(), Error> {
+    use crate::framework::nary::channel::{run_nary_channel_test, RunBinaryAsNaryChannelTest};
+
+    run_nary_channel_test(&RunBinaryAsNaryChannelTest::new(&IbcTransferTest))
+}
+
 pub struct IbcTransferTest;
 
 impl TestOverrides for IbcTransferTest {}

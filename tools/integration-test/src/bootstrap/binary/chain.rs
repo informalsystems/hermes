@@ -128,7 +128,7 @@ pub fn boostrap_self_connected_chain(
    client collects information from `ChainA` and submits them as transactions
    to `ChainB`.
 
-   The returned `ForeignClient` is tagged in contravariant position, i.e.
+   The returned `ForeignClient` is tagged in contravariant ordering, i.e.
    `ChainB` then `ChainB`, because `ForeignClient` takes the the destination
    chain in the first position.
 */
