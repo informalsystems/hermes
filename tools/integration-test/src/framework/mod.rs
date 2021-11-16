@@ -35,6 +35,3 @@
 pub mod base;
 pub mod binary;
 pub mod overrides;
-
-#[cfg(feature = "experimental")]
-pub mod nary;
