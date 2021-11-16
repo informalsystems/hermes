@@ -22,7 +22,7 @@ telemetry = ["ibc-telemetry"]
 
 [dependencies]
 ibc           = { version = "0.8.0", path = "../modules" }
-ibc-proto     = { version = "0.12.0", path = "../proto" }
+ibc-proto     = { version = "0.13.0", path = "../proto" }
 ibc-telemetry = { version = "0.8.0", path = "../telemetry", optional = true }
 
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
