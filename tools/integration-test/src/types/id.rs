@@ -17,6 +17,10 @@ pub type ChainId<Chain> = MonoTagged<Chain, base::ChainId>;
 */
 pub type ChainIdRef<'a, Chain> = MonoTagged<Chain, &'a base::ChainId>;
 
+pub type ClientId<ChainA, ChainB> = DualTagged<ChainA, ChainB, base::ClientId>;
+
+pub type ClientIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a base::ClientId>;
+
 /**
    A [`PortId`](base::PortId) tagged with first, the host chain that has
    the port ID, and second, the counterparty chain that the port ID

@@ -3,9 +3,10 @@
     with connected foreign clients.
 */
 use eyre::Report as Error;
+use ibc::core::ics24_host::identifier::ClientId;
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
-use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::foreign_client::{extract_client_id, ForeignClient};
 use ibc_relayer::registry::SharedRegistry;
 use std::fs;
 use std::path::Path;
@@ -18,6 +19,7 @@ use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
 use crate::types::wallet::{TestWallets, Wallet};
+use crate::util::random::random_u64_range;
 
 /**
    Bootstraps two relayer chain handles with connected foreign clients.
@@ -55,8 +57,8 @@ pub fn boostrap_chain_pair_with_nodes(
     let handle_a = spawn_chain_handle(|| {}, &registry, &node_a)?;
     let handle_b = spawn_chain_handle(|| {}, &registry, &node_b)?;
 
-    let client_a_to_b = ForeignClient::new(handle_b.clone(), handle_a.clone())?;
-    let client_b_to_a = ForeignClient::new(handle_a.clone(), handle_b.clone())?;
+    let client_a_to_b = bootstrap_foreign_client(&handle_a, &handle_b)?;
+    let client_b_to_a = bootstrap_foreign_client(&handle_b, &handle_a)?;
 
     let chains = ConnectedChains::new(
         config_path,
@@ -106,7 +108,7 @@ pub fn boostrap_self_connected_chain(
 
     let handle = spawn_chain_handle(|| {}, &registry, &node)?;
 
-    let foreign_client = ForeignClient::unsafe_new(handle.clone(), handle.clone())?;
+    let foreign_client = bootstrap_foreign_client(&handle, &handle)?;
 
     Ok(ConnectedChains::new(
         config_path,
@@ -118,6 +120,34 @@ pub fn boostrap_self_connected_chain(
         MonoTagged::new(node),
         foreign_client.clone(),
         foreign_client,
+    ))
+}
+
+pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain_a: &ChainA,
+    chain_b: &ChainB,
+) -> Result<ForeignClient<ChainB, ChainA>, Error> {
+    let mut client_id = ClientId::default();
+    let foreign_client = ForeignClient::unsafe_new(chain_b.clone(), chain_a.clone())?;
+
+    for i in 0..random_u64_range(1, 5) {
+        info!("creating new client id {} on chain {}", i + 1, chain_b.id());
+        let event = foreign_client.build_create_client_and_send()?;
+        client_id = extract_client_id(&event)?.clone();
+    }
+
+    info!(
+        "created foreign client from chain {} to chain {} with client id {} on chain {}",
+        chain_a.id(),
+        chain_b.id(),
+        client_id,
+        chain_b.id()
+    );
+
+    Ok(ForeignClient::restore(
+        client_id,
+        chain_b.clone(),
+        chain_a.clone(),
     ))
 }
 

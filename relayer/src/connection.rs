@@ -282,6 +282,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         Ok(c)
     }
+
     pub fn restore_from_event(
         chain: ChainA,
         counterparty_chain: ChainB,
