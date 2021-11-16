@@ -2422,7 +2422,9 @@ mod tests {
         Height,
     };
 
-    use crate::chain::cosmos::client_id_suffix;
+    use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
+
+    use super::calculate_fee;
 
     #[test]
     fn mul_ceil() {
@@ -2443,6 +2445,22 @@ mod tests {
         assert_eq!(super::mul_ceil(304_000, 0.001), 305.into());
         assert_eq!(super::mul_ceil(340_000, 0.001), 341.into());
         assert_eq!(super::mul_ceil(340_001, 0.001), 341.into());
+    }
+
+    /// Before https://github.com/informalsystems/ibc-rs/pull/1568,
+    /// this test would have panic'ed with:
+    ///
+    /// thread 'chain::cosmos::tests::fee_overflow' panicked at 'attempt to multiply with overflow'
+    #[test]
+    fn fee_overflow() {
+        let gas_amount = 90000000000000_u64;
+        let gas_price = GasPrice {
+            price: 1000000000000.0,
+            denom: "uatom".to_string(),
+        };
+
+        let fee = calculate_fee(gas_amount, &gas_price);
+        assert_eq!(&fee.amount, "90000000000000000000000000");
     }
 
     #[test]
