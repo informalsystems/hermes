@@ -160,7 +160,7 @@ fn validate_gas_settings(
 ) -> Result<(), Diagnostic<Error>> {
     match gas_adjustment {
         Some(gas_adjustment) if !(0.0..=1.0).contains(&gas_adjustment) => {
-            return Err(Diagnostic::Error(Error::invalid_gas_adjustment(
+            Err(Diagnostic::Error(Error::invalid_gas_adjustment(
                 gas_adjustment,
                 id.clone(),
                 "gas adjustment must be between 0.0 and 1.0 inclusive".to_string(),
