@@ -2426,13 +2426,23 @@ mod tests {
 
     #[test]
     fn mul_ceil() {
-        assert_eq!(super::mul_ceil(300_000, 0.001), 300);
-        assert_eq!(super::mul_ceil(300_004, 0.001), 301);
-        assert_eq!(super::mul_ceil(300_040, 0.001), 301);
-        assert_eq!(super::mul_ceil(300_400, 0.001), 301);
-        assert_eq!(super::mul_ceil(304_000, 0.001), 304);
-        assert_eq!(super::mul_ceil(340_000, 0.001), 340);
-        assert_eq!(super::mul_ceil(340_001, 0.001), 341);
+        // Because 0.001 cannot be expressed precisely
+        // as a 64-bit floating point number (it is
+        // stored as 0.001000000047497451305389404296875),
+        // `num_rational::BigRational` will represent it as
+        // 1152921504606847/1152921504606846976 instead
+        // which will sometimes round up to the next
+        // integer in the computations below.
+        // This is not a problem for the way we compute the fee
+        // and gas adjustment as those are already based on simulated
+        // gas which is not 100% precise.
+        assert_eq!(super::mul_ceil(300_000, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(300_004, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(300_040, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(300_400, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(304_000, 0.001), 305.into());
+        assert_eq!(super::mul_ceil(340_000, 0.001), 341.into());
+        assert_eq!(super::mul_ceil(340_001, 0.001), 341.into());
     }
 
     #[test]
