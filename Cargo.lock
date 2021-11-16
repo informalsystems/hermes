@@ -2943,9 +2943,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50d1cdb0236becb17ab35a2ed1566503e412fd910944dc940239857bb7663652"
+checksum = "02880339f0e89dc7de809cb300a7dbe5e066c71937a7a55472438ae02e4a841b"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2974,9 +2974,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a1f94250d30e3011130a09756b05985d8dbfbd562cf261b5a17e36d89a37992"
+checksum = "2aff01e0eacdcfb75e8a1bbbc2d71286f7b6db3eda82c52ad7ca4f619ebb90cc"
 dependencies = [
  "flex-error",
  "serde",
@@ -2988,9 +2988,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10698a05e70e337626f463077aec0699a51561ce4a06cd5c5634a3437e23ebdd"
+checksum = "2e7c4fe20856c514b6c37550f2f391183a5d4831820fec2e0703a19fc1523259"
 dependencies = [
  "chrono",
  "contracts",
@@ -3009,9 +3009,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff16a7b42bdbcf31c8cd10a4cffc7631f2a301360ba3a3f71dde48eabfa5bced"
+checksum = "d1b8319fcf0860833eabe3278cf2d94ca20ef04bee6a77d892f986026fb1c252"
 dependencies = [
  "bytes",
  "chrono",
@@ -3027,9 +3027,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7842dcd5edb60b077572aa92ff8b29fc810b9b463310f9810a2607474130db4"
+checksum = "d9c88786eeb1b408530fa7a8151aa9639cc04a6210cd8b5fa27aaafbd1e2a091"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3061,9 +3061,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-testgen"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48d6bbba4af526c02e6c32d63390147de79eac5071a111b822ad191660843076"
+checksum = "a6df4b2bc95b5c65ab661c8ab0e0054dd61b4e4c4edd53c2831c317e40042eac"
 dependencies = [
  "chrono",
  "ed25519-dalek",
