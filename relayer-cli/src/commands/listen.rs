@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 use core::{fmt, ops::Deref, str::FromStr};
 use std::thread;
 
-use abscissa_core::{application::fatal_error, Command, Options, Runnable};
+use abscissa_core::{application::fatal_error, Clap, Command, Runnable};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info};
@@ -46,7 +46,7 @@ impl fmt::Display for EventFilter {
 }
 
 impl FromStr for EventFilter {
-    type Err = Box<dyn std::error::Error>;
+    type Err = Box<dyn std::error::Error + Send + Sync + 'static>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -57,14 +57,15 @@ impl FromStr for EventFilter {
     }
 }
 
-#[derive(Command, Debug, Options)]
+#[derive(Command, Debug, Clap)]
 pub struct ListenCmd {
     /// Identifier of the chain to listen for events from
-    #[options(free)]
     chain_id: ChainId,
 
     /// Add an event type to listen for, can be repeated. Listen for all events by default (available: Tx, NewBlock)
-    #[options(short = "e", long = "event", meta = "EVENT")]
+    // FIXME: Vec is derived as multiple_values(true), not multiple_occurrences(true).
+    // See https://github.com/clap-rs/clap/issues/1772
+    #[clap(short = 'e', long = "event", value_name = "EVENT")]
     events: Vec<EventFilter>,
 }
 

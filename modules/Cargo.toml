@@ -65,8 +65,8 @@ tendermint-rpc = { version = "=0.23.1", features = ["http-client", "websocket-cl
 tendermint-testgen = { version = "=0.23.1" } # Needed for generating (synthetic) light blocks.
 
 # pin clap to avoid miscompilations with modelator
-clap = "=3.0.0-beta.4"
-clap_derive = "=3.0.0-beta.4"
+clap = "=3.0.0-beta.5"
+clap_derive = "=3.0.0-beta.5"
 
 [[test]]
 name = "mbt"

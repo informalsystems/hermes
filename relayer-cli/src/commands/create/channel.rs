@@ -1,4 +1,5 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
+use clap::AppSettings;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
@@ -15,44 +16,49 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
+#[clap(setting(AppSettings::DisableVersionFlag))]
 pub struct CreateChannelCommand {
-    #[options(
-        free,
-        required,
-        help = "identifier of the side `a` chain for the new channel"
+    #[clap(
+        required = true,
+        about = "identifier of the side `a` chain for the new channel"
     )]
     chain_a_id: ChainId,
 
-    #[options(
-        free,
-        help = "identifier of the side `b` chain for the new channel (optional)"
-    )]
+    #[clap(about = "identifier of the side `b` chain for the new channel (optional)")]
     chain_b_id: Option<ChainId>,
 
-    #[options(
-        help = "identifier of the connection on chain `a` to use in creating the new channel"
+    #[clap(
+        short,
+        long,
+        about = "identifier of the connection on chain `a` to use in creating the new channel"
     )]
     connection_a: Option<ConnectionId>,
 
-    #[options(
-        no_short,
-        required,
-        help = "identifier of the side `a` port for the new channel"
+    #[clap(
+        long,
+        required = true,
+        about = "identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
 
-    #[options(
-        no_short,
-        required,
-        help = "identifier of the side `b` port for the new channel"
+    #[clap(
+        long,
+        required = true,
+        about = "identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
 
-    #[options(help = "the channel ordering, valid options 'unordered' (default) and 'ordered'")]
+    #[clap(
+        short,
+        long,
+        about = "the channel ordering, valid options 'unordered' (default) and 'ordered'",
+        default_value = "Order::default"
+    )]
     order: Order,
 
-    #[options(help = "the version for the new channel")]
+    // FIXME: rename to avoid confusion with the common --version flag?
+    #[clap(short, long, about = "the version for the new channel")]
     version: Option<String>,
 }
 

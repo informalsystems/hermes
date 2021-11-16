@@ -1,31 +1,29 @@
-use abscissa_core::{config, Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 use std::ops::Deref;
 
-use crate::application::CliApp;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic};
 use crate::conclude::Output;
 use crate::prelude::*;
 use ibc::core::ics02_client::client_state::ClientState;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct MisbehaviourCmd {
-    #[options(
-        free,
-        required,
-        help = "identifier of the chain where client updates are monitored for misbehaviour"
+    #[clap(
+        required = true,
+        about = "identifier of the chain where client updates are monitored for misbehaviour"
     )]
     chain_id: ChainId,
 
-    #[options(
-        free,
-        required,
-        help = "identifier of the client to be monitored for misbehaviour"
+    #[clap(
+        required = true,
+        about = "identifier of the client to be monitored for misbehaviour"
     )]
     client_id: ClientId,
 }
@@ -45,7 +43,7 @@ impl Runnable for MisbehaviourCmd {
 pub fn monitor_misbehaviour(
     chain_id: &ChainId,
     client_id: &ClientId,
-    config: &config::Reader<CliApp>,
+    config: &Config,
 ) -> Result<Option<IbcEvent>, Box<dyn std::error::Error>> {
     let chain = spawn_chain_runtime(config, chain_id)
         .map_err(|e| format!("could not spawn the chain runtime for {}: {}", chain_id, e))?;
@@ -95,7 +93,7 @@ pub fn monitor_misbehaviour(
 
 fn misbehaviour_handling<Chain: ChainHandle>(
     chain: Chain,
-    config: &config::Reader<CliApp>,
+    config: &Config,
     client_id: ClientId,
     update: Option<UpdateClient>,
 ) -> Result<(), Box<dyn std::error::Error>> {

@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 
-use abscissa_core::{Options, Runnable};
+use abscissa_core::{Clap, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
@@ -10,9 +10,9 @@ use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct QueryConnectionsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 }
 
