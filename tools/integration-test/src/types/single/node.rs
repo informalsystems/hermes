@@ -4,22 +4,25 @@
 
 use core::str::FromStr;
 use core::time::Duration;
+use eyre::eyre;
 use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::config;
 use ibc_relayer::keyring::Store;
+use std::sync::{Arc, RwLock};
 use tendermint_rpc::Url;
 
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
+use crate::types::process::ChildProcess;
 use crate::types::tagged::*;
 use crate::types::wallet::TestWallets;
 
 /**
    Represents a full node running as a child process managed by the test.
 */
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct FullNode {
     /**
        The [`ChainDriver`] used to communicate with the full node.
@@ -37,6 +40,21 @@ pub struct FullNode {
        can be used for testing.
     */
     pub wallets: TestWallets,
+
+    /**
+       The child process that is running the full node.
+
+       The full node is killed when the `Arc` shared pointer is dropped.
+       Test frameworks should keep a reference to the shared pointer
+       so that the full node is kept alive even in the event that the
+       test exited with errors, so that
+       [`hang_on_error`](crate::types::config::TestConfig::hang_on_error)
+       can be used for manual interaction with the full node.
+
+       Test authors can acquire the child process and kill the full node
+       in the middle of tests using [`kill`](FullNode::kill).
+    */
+    pub process: Arc<RwLock<ChildProcess>>,
 }
 
 /**
@@ -130,6 +148,13 @@ impl FullNode {
             address_type: Default::default(),
             memo_prefix: Default::default(),
         })
+    }
+
+    pub fn kill(&self) -> Result<(), Error> {
+        self.process
+            .write()
+            .map_err(|_| eyre!("poisoned mutex"))?
+            .kill()
     }
 }
 

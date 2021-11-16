@@ -249,9 +249,11 @@ where
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let (node, _node_process) = bootstrap_single_node(builder, "refl", |config| {
+        let node = bootstrap_single_node(builder, "refl", |config| {
             self.test.get_overrides().modify_node_config(config)
         })?;
+
+        let _node_process = node.process.clone();
 
         let chains = boostrap_self_connected_chain(config, node, |config| {
             self.test.get_overrides().modify_relayer_config(config);

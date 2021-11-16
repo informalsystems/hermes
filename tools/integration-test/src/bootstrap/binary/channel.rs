@@ -1,6 +1,5 @@
 /*!
-    Helper functions for bootstrapping a channel with full handshake already
-    established between two chains.
+    Helper functions for bootstrapping a channel between two chains.
 */
 
 use eyre::{eyre, Report as Error};
@@ -41,14 +40,8 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
 }
 
 /**
-    Create a new connected channel between two chains using new IBC client
-    and connection.
-
-    TODO: Bootstrap the channels in such a way that the two channels
-    have random-ish IDs. Since Cosmos SDK is generating the IDs sequentially,
-    this would mean we have to create dummy client/connection/channel
-    a random amount of times before we create the actual one that is
-    going to be used.
+    Create a new [`ConnectedChannel`] between two chains using foreign clients
+    with initialized client IDs.
 */
 pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_b_to_a: &ForeignClient<ChainA, ChainB>,
@@ -67,6 +60,9 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     )
 }
 
+/**
+   Create a new [`ConnectedChannel`] using existing [`ConnectedConnection`].
+*/
 pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a: &ChainA,
     chain_b: &ChainB,

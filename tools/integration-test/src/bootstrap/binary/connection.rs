@@ -1,3 +1,7 @@
+/*!
+    Helper functions for bootstrapping a connection between two chains.
+*/
+
 use eyre::{eyre, Report as Error};
 use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -13,6 +17,10 @@ use crate::types::binary::connection::ConnectedConnection;
 use crate::types::id::ClientIdRef;
 use crate::util::random::random_u64_range;
 
+/**
+   Create a new [`ConnectedConnection`] using the foreign clients with
+   initialized client IDs.
+*/
 pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_b_to_a: &ForeignClient<ChainA, ChainB>,
     client_a_to_b: &ForeignClient<ChainB, ChainA>,

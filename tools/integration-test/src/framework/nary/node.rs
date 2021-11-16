@@ -36,13 +36,12 @@ where
         let mut node_processes = Vec::new();
 
         for i in 0..SIZE {
-            let (node, node_process) =
-                bootstrap_single_node(builder, &format!("{}", i), |config| {
-                    self.test.get_overrides().modify_node_config(config)
-                })?;
+            let node = bootstrap_single_node(builder, &format!("{}", i), |config| {
+                self.test.get_overrides().modify_node_config(config)
+            })?;
 
+            node_processes.push(node.process.clone());
             nodes.push(node);
-            node_processes.push(node_process)
         }
 
         self.test.run(config, try_into_array(nodes)?)?;

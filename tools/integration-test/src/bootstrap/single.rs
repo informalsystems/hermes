@@ -2,6 +2,7 @@
    Helper functions for bootstrapping a single full node.
 */
 use core::time::Duration;
+use std::sync::{Arc, RwLock};
 use toml;
 use tracing::info;
 
@@ -9,7 +10,6 @@ use crate::chain::builder::ChainBuilder;
 use crate::chain::config;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::types::process::ChildProcess;
 use crate::types::single::node::FullNode;
 use crate::types::wallet::TestWallets;
 use crate::util::random::{random_u32, random_u64_range};
@@ -37,7 +37,7 @@ pub fn bootstrap_single_node(
     builder: &ChainBuilder,
     prefix: &str,
     config_modifier: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
-) -> Result<(FullNode, ChildProcess), Error> {
+) -> Result<FullNode, Error> {
     let stake_denom = Denom("stake".to_string());
     let denom = Denom(format!("coin{:x}", random_u32()));
     let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
@@ -86,7 +86,7 @@ pub fn bootstrap_single_node(
         Ok(())
     })?;
 
-    let chain_process = chain_driver.start()?;
+    let process = chain_driver.start()?;
 
     chain_driver.assert_eventual_wallet_amount(&relayer, initial_amount, &denom)?;
 
@@ -120,7 +120,8 @@ pub fn bootstrap_single_node(
         chain_driver,
         denom,
         wallets,
+        process: Arc::new(RwLock::new(process)),
     };
 
-    Ok((node, chain_process))
+    Ok(node)
 }
