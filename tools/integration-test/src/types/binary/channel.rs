@@ -5,6 +5,7 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;
 
+use super::connection::ConnectedConnection;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::id::{ChannelId, PortId};
 
@@ -19,6 +20,8 @@ use crate::types::id::{ChannelId, PortId};
 */
 #[derive(Debug, Clone)]
 pub struct ConnectedChannel<ChainA: ChainHandle, ChainB: ChainHandle> {
+    pub connection: ConnectedConnection<ChainA, ChainB>,
+
     /**
        The underlying relayer [`Channel`].
     */
@@ -58,6 +61,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChannel<ChainA, ChainB> 
     */
     pub fn flip(self) -> ConnectedChannel<ChainB, ChainA> {
         ConnectedChannel {
+            connection: self.connection.flip(),
             channel: self.channel.flipped(),
             channel_id_a: self.channel_id_b,
             channel_id_b: self.channel_id_a,
@@ -69,6 +73,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChannel<ChainA, ChainB> 
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChannel<ChainA, ChainB> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
+        self.connection.export_env(writer);
         writer.write_env("CHANNEL_ID_A", &format!("{}", self.channel_id_a));
         writer.write_env("PORT_A", &format!("{}", self.port_a));
         writer.write_env("CHANNEL_ID_B", &format!("{}", self.channel_id_b));

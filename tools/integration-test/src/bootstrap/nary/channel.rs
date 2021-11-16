@@ -20,10 +20,12 @@ pub fn bootstrap_channels_dynamic<Handle: ChainHandle>(
     assert_same_dimension(size, foreign_clients)?;
     assert_same_dimension(size, ports)?;
 
+    let mut connections: Vec<Vec<Connection<Handle, Handle>>> = Vec::new();
     let mut channels: Vec<Vec<Channel<Handle, Handle>>> = Vec::new();
     let mut port_channel_ids: Vec<Vec<PortChannelId>> = Vec::new();
 
     for (i, foreign_clients_b) in foreign_clients.iter().enumerate() {
+        let mut connections_b: Vec<Connection<Handle, Handle>> = Vec::new();
         let mut channels_b: Vec<Channel<Handle, Handle>> = Vec::new();
         let mut port_channel_ids_b: Vec<PortChannelId> = Vec::new();
 
@@ -36,6 +38,8 @@ pub fn bootstrap_channels_dynamic<Handle: ChainHandle>(
                     foreign_client.clone(),
                     default::connection_delay(),
                 )?;
+
+                connections_b.push(connection.clone());
 
                 let port_a = &ports[i][j];
                 let port_b = &ports[j][i];
@@ -57,6 +61,7 @@ pub fn bootstrap_channels_dynamic<Handle: ChainHandle>(
                 channels_b.push(channel);
                 port_channel_ids_b.push(PortChannelId::new(channel_id_a, port_a.clone()));
             } else {
+                let counter_connection = &connections[j][i];
                 let counter_channel = &channels[j][i];
 
                 let channel = counter_channel.clone().flipped();
@@ -69,16 +74,19 @@ pub fn bootstrap_channels_dynamic<Handle: ChainHandle>(
 
                 let port_a = channel.a_side.port_id().clone();
 
+                connections_b.push(counter_connection.clone());
                 channels_b.push(channel);
                 port_channel_ids_b.push(PortChannelId::new(channel_id_a, port_a));
             }
         }
 
+        connections.push(connections_b);
         channels.push(channels_b);
         port_channel_ids.push(port_channel_ids_b);
     }
 
     Ok(DynamicConnectedChannels {
+        connections,
         channels,
         port_channel_ids,
     })

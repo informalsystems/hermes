@@ -4,3 +4,5 @@
 
 pub mod chains;
 pub mod channel;
+pub mod client;
+pub mod connection;
