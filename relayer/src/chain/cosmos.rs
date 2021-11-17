@@ -2386,7 +2386,7 @@ fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
     }
 }
 
-/// Multiply `a` with `f` and round to result up to the nearest integer.
+/// Multiply `a` with `f` and round the result up to the nearest integer.
 fn mul_ceil(a: u64, f: f64) -> BigInt {
     debug_assert!(f.is_finite());
 
