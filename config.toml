@@ -23,12 +23,14 @@ misbehaviour = true
 
 # Specify the connections mode.
 [mode.connections]
-# Whether or not to enable the connection workers. [Required]
+
+# Whether or not to enable the connection workers for handshake completion. [Required]
 enabled = false
 
 # Specify the channels mode.
 [mode.channels]
-# Whether or not to enable the channel workers. [Required]
+
+# Whether or not to enable the channel workers for handshake completion. [Required]
 enabled = false
 
 # Specify the packets mode.
