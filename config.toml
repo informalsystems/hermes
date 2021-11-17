@@ -11,6 +11,7 @@ log_level = 'info'
 
 # Specify the client mode.
 [mode.clients]
+
 # Whether or not to enable the client workers. [Required]
 enabled = false
 
@@ -18,6 +19,7 @@ enabled = false
 # Note: Even if this is disabled, clients will be refreshed automatically if
 #      traffic there is activity on a connection or channel they are involved with.
 refresh = true
+
 # Whether or not to enable misbehaviour detection for clients. [Default: false]
 misbehaviour = true
 
@@ -35,15 +37,19 @@ enabled = false
 
 # Specify the packets mode.
 [mode.packets]
+
 # Whether or not to enable the packet workers. [Required]
 enabled = false
+
 # Parametrize the periodic packet clearing feature.
 # Interval (in number of blocks) at which pending packets
 # should be eagerly cleared. A value of '0' will disable
 # periodic packet clearing. [Default: 100]
 clear_interval = 100
+
 # Whether or not to clear packets on start. [Default: false]
 clear_on_start = true
+
 # Enable or disable the filtering mechanism.
 # Valid options are 'true', 'false'.
 # Currently Hermes supports two filters:
@@ -55,6 +61,7 @@ clear_on_start = true
 # If set to 'true', both of the above filters will be enabled.
 # [Default: false]
 filter = false
+
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
