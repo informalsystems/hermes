@@ -1,5 +1,5 @@
 use alloc::sync::Arc;
-use std::{option::Option, thread};
+use std::thread;
 
 use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
