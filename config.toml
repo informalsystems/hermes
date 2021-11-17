@@ -13,7 +13,7 @@ log_level = 'info'
 [mode.clients]
 
 # Whether or not to enable the client workers. [Required]
-enabled = false
+enabled = true
 
 # Whether or not to enable periodic refresh of clients. [Default: true]
 # Note: Even if this is disabled, clients will be refreshed automatically if
@@ -39,7 +39,7 @@ enabled = false
 [mode.packets]
 
 # Whether or not to enable the packet workers. [Required]
-enabled = false
+enabled = true
 
 # Parametrize the periodic packet clearing feature.
 # Interval (in number of blocks) at which pending packets
