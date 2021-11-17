@@ -452,10 +452,10 @@ impl CosmosSdkChain {
     /// The actual gas cost, when a transaction is executed, may be slightly higher than the
     /// one returned by the simulation.
     fn apply_adjustment_to_gas(&self, gas_amount: u64) -> u64 {
-        debug_assert!(self.gas_adjustment() <= 1.0);
+        assert!(self.gas_adjustment() <= 1.0);
 
         let (_, digits) = mul_ceil(gas_amount, self.gas_adjustment()).to_u64_digits();
-        debug_assert!(digits.len() == 1);
+        assert!(digits.len() == 1);
 
         let adjustment = digits[0];
         let gas = gas_amount.checked_add(adjustment).unwrap_or(u64::MAX);
@@ -2388,7 +2388,7 @@ fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
 
 /// Multiply `a` with `f` and round the result up to the nearest integer.
 fn mul_ceil(a: u64, f: f64) -> BigInt {
-    debug_assert!(f.is_finite());
+    assert!(f.is_finite());
 
     let a = BigInt::from(a);
     let f = BigRational::from_float(f).expect("f is finite");
