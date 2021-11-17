@@ -95,6 +95,10 @@ impl EventMonitorCtrl {
         }
     }
 
+    pub fn enable(&mut self, event_receiver: EventReceiver, tx_monitor_cmd: TxMonitorCmd) {
+        *self = Self::live(event_receiver, tx_monitor_cmd);
+    }
+
     pub fn recv(&self) -> &EventReceiver {
         match self {
             Self::None { ref never } => never,
@@ -417,15 +421,20 @@ where
 
     fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
         if !self.event_monitor_ctrl.is_live() {
-            // Start the event monitor
-            let (event_receiver, tx_monitor_cmd) =
-                self.chain.init_event_monitor(self.rt.clone())?;
-
-            self.event_monitor_ctrl = EventMonitorCtrl::live(event_receiver, tx_monitor_cmd);
+            self.enable_event_monitor()?;
         }
 
         let subscription = self.event_bus.subscribe();
         reply_to.send(Ok(subscription)).map_err(Error::send)
+    }
+
+    fn enable_event_monitor(&mut self) -> Result<(), Error> {
+        let (event_receiver, tx_monitor_cmd) = self.chain.init_event_monitor(self.rt.clone())?;
+
+        self.event_monitor_ctrl
+            .enable(event_receiver, tx_monitor_cmd);
+
+        Ok(())
     }
 
     fn send_messages_and_wait_commit(
