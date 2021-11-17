@@ -29,16 +29,8 @@ pub(crate) fn process(
         && conn_end.versions().contains(msg.version())
         || conn_end.state_matches(&State::TryOpen)
             && conn_end.versions().get(0).eq(&Some(msg.version()));
-    // Check that, if we have a counterparty connection id, then it matches the one in the message.
-    let counterparty_matches =
-        if let Some(counterparty_connection_id) = conn_end.counterparty().connection_id() {
-            &msg.counterparty_connection_id == counterparty_connection_id
-            // TODO(hu55a1n1): check client_id as well
-        } else {
-            true
-        };
 
-    if !state_is_consistent || !counterparty_matches {
+    if !state_is_consistent {
         // Old connection end is in incorrect state, propagate the error.
         return Err(Error::connection_mismatch(msg.connection_id().clone()));
     }
