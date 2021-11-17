@@ -49,7 +49,7 @@ define_error! {
 }
 
 impl Error {
-    fn canceled_or_generic(e: RpcError) -> Self {
+    pub fn canceled_or_generic(e: RpcError) -> Self {
         use tendermint_rpc::error::ErrorDetail;
 
         match e.detail() {

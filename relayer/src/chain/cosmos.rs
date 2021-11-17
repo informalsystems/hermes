@@ -692,7 +692,7 @@ impl CosmosSdkChain {
             .map(|res| res.response.hash.to_string())
             .join(", ");
 
-        warn!(
+        debug!(
             "[{}] waiting for commit of tx hashes(s) {}",
             self.id(),
             hashes
