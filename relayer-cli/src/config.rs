@@ -57,8 +57,19 @@ define_error! {
                 reason: String
             }
             |e| {
-                format!("config file specifies an invalid trust threshold ({0}) for the chain with id {1}, caused by: {2}",
+                format!("config file specifies an invalid `trust_threshold` ({0}) for the chain with id {1}, caused by: {2}",
                     e.threshold, e.chain_id, e.reason)
+            },
+
+        InvalidGasAdjustment
+            {
+                gas_adjustment: f64,
+                chain_id: ChainId,
+                reason: String
+            }
+            |e| {
+                format!("config file specifies an invalid `gas_adjustment` ({0}) for the chain with id {1}, caused by: {2}",
+                    e.gas_adjustment, e.chain_id, e.reason)
             },
     }
 }
@@ -80,6 +91,9 @@ pub fn validate_config(config: &Config) -> Result<(), Diagnostic<Error>> {
         }
 
         validate_trust_threshold(&c.id, c.trust_threshold)?;
+
+        // Validate gas-related settings
+        validate_gas_settings(&c.id, c.gas_adjustment)?;
     }
 
     // Check for invalid mode config
@@ -138,4 +152,20 @@ fn validate_trust_threshold(
     }
 
     Ok(())
+}
+
+fn validate_gas_settings(
+    id: &ChainId,
+    gas_adjustment: Option<f64>,
+) -> Result<(), Diagnostic<Error>> {
+    match gas_adjustment {
+        Some(gas_adjustment) if !(0.0..=1.0).contains(&gas_adjustment) => {
+            Err(Diagnostic::Error(Error::invalid_gas_adjustment(
+                gas_adjustment,
+                id.clone(),
+                "gas adjustment must be between 0.0 and 1.0 inclusive".to_string(),
+            )))
+        }
+        _ => Ok(()),
+    }
 }
