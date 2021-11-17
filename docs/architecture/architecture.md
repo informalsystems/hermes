@@ -26,7 +26,7 @@ This section talks briefly about the various directories and modules in `ibc-rs`
 
 > Note: While the name of the directory is `modules`, the name of the crate is `ibc`. 
 
-This crate contains the main data structures and on-chain logic of the IBC protocol. These are the fundamental pieces that make up the IBC protocol. There is the conceptual notion of 'handlers', which are pieces of code that each handle a particular type of message. The most notable handlers are the [client][ibc-client], [connection][ibc-connection], and [channel][ibc-channel] handlers.
+This crate contains the main data structures and on-chain logic of the IBC protocol; the fundamental pieces. There is the conceptual notion of 'handlers', which are pieces of code that each handle a particular type of message. The most notable handlers are the [client][ibc-client], [connection][ibc-connection], and [channel][ibc-channel] handlers.
 
 > Note: The naming of directories in the `ibc` crate follow a slightly different convention compared to the other crates in `ibc-rs`. This is because this crate implements the [ICS standards][ics-standards]. Modules in the `ibc` crate that implement a piece of the ICS standard are prefixed with the standard's designation. For example, the `modules/src/ics02_client` implements [ICS 02][ics02], which specifies the Client abstraction. These prefixes may be removed in the future. 
 
@@ -122,9 +122,9 @@ The [flex-error][flex-error] library is the main tool used to handle errors in t
 [flex-error-demo]: https://github.com/informalsystems/flex-error/blob/master/flex-error-demo-full/src/main.rs
 [ibc-specs]: https://github.com/cosmos/ibc#interchain-standards
 [ics-standards]: https://github.com/cosmos/ibc#standardisation
-[ibc-client]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
-[ibc-connection]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics03_connection
-[ibc-channel]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics04_channel
+[ibc-client]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics02_client
+[ibc-connection]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics03_connection
+[ibc-channel]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics04_channel
 [ics02]: https://github.com/cosmos/ibc/blob/master/spec/core/ics-002-client-semantics/README.md
 [layout-image]: assets/ibc-rs-layout.png
 [relayer-errors]: https://github.com/informalsystems/ibc-rs/blob/master/relayer/src/error.rs
