@@ -12,8 +12,10 @@ use std::{fs, fs::File, io::Write, path::Path};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
+use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
+use ibc_proto::ics23::ProofSpec;
 
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
@@ -109,6 +111,10 @@ pub mod default {
 
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
+    }
+
+    pub fn proof_specs() -> Vec<ProofSpec> {
+        ProofSpecs::cosmos().into()
     }
 }
 
@@ -394,6 +400,8 @@ pub struct ChainConfig {
     pub trusting_period: Option<Duration>,
     #[serde(default)]
     pub memo_prefix: Memo,
+    #[serde(default = "default::proof_specs")]
+    pub proof_specs: Vec<ProofSpec>,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
