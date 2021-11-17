@@ -15,7 +15,6 @@ use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
-use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::ZERO_DURATION;
 use crate::Height;
@@ -29,7 +28,7 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub frozen_height: Height,
     pub latest_height: Height,
-    // pub proof_specs: ::core::vec::Vec<super::super::super::super::ics23::ProofSpec>,
+    pub proof_specs: Vec<ibc_proto::ics23::ProofSpec>,
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
 }
@@ -52,6 +51,7 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
+        proof_specs: Vec<ibc_proto::ics23::ProofSpec>,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
     ) -> Result<ClientState, Error> {
@@ -99,6 +99,7 @@ impl ClientState {
             max_clock_drift,
             frozen_height,
             latest_height,
+            proof_specs,
             upgrade_path,
             allow_update,
         })
@@ -228,6 +229,7 @@ impl TryFrom<RawClientState> for ClientState {
                 after_expiry: raw.allow_update_after_expiry,
                 after_misbehaviour: raw.allow_update_after_misbehaviour,
             },
+            proof_specs: raw.proof_specs,
         })
     }
 }
@@ -242,7 +244,7 @@ impl From<ClientState> for RawClientState {
             max_clock_drift: Some(value.max_clock_drift.into()),
             frozen_height: Some(value.frozen_height.into()),
             latest_height: Some(value.latest_height.into()),
-            proof_specs: ProofSpecs::cosmos().into(),
+            proof_specs: value.proof_specs,
             allow_update_after_expiry: value.allow_update.after_expiry,
             allow_update_after_misbehaviour: value.allow_update.after_misbehaviour,
             upgrade_path: value.upgrade_path,
