@@ -12,7 +12,6 @@ pub mod binary;
 pub mod config;
 pub mod env;
 pub mod id;
-pub mod nary;
 pub mod process;
 pub mod single;
 pub mod tagged;
