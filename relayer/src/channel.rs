@@ -122,6 +122,8 @@ pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub b_side: ChannelSide<ChainB>,
     pub connection_delay: Duration,
     pub version: Option<String>,
+    pub a_version: Option<String>,
+    pub b_version: Option<String>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
@@ -166,6 +168,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ),
             connection_delay: connection.delay_period,
             version: Some(version),
+            a_version: None,
+            b_version: None,
         };
 
         channel.handshake()?;
@@ -223,6 +227,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             // The event does not include the version.
             // The message handlers `build_chan_open..` determine the version from channel query.
             version: Some(version),
+            a_version: None,
+            b_version: None,
         })
     }
 
@@ -279,6 +285,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ),
             connection_delay: a_connection.delay_period(),
             version: Some(a_channel.version.clone()),
+            a_version: None,
+            b_version: None,
         };
 
         if a_channel.state_matches(&State::Init) && a_channel.remote.channel_id.is_none() {
@@ -351,6 +359,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             b_side: self.a_side.clone(),
             connection_delay: self.connection_delay,
             version: self.version.clone(),
+            a_version: None,
+            b_version: None,
         }
     }
 
