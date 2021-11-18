@@ -8,6 +8,7 @@ use tendermint_light_client::light_client::Options;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
+use ibc_proto::ics23::ProofSpec;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
@@ -28,7 +29,7 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub frozen_height: Height,
     pub latest_height: Height,
-    pub proof_specs: Vec<ibc_proto::ics23::ProofSpec>,
+    pub proof_specs: Vec<ProofSpec>,
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
 }
@@ -51,7 +52,7 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
-        proof_specs: Vec<ibc_proto::ics23::ProofSpec>,
+        proof_specs: Vec<ProofSpec>,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
     ) -> Result<ClientState, Error> {
