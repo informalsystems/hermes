@@ -22,6 +22,14 @@ impl From<Version> for String {
     }
 }
 
+impl From<&str> for Version {
+    fn from(raw_version: &str) -> Self {
+        Self {
+            0: raw_version.into(),
+        }
+    }
+}
+
 impl Default for Version {
     fn default() -> Self {
         Version("".to_string())

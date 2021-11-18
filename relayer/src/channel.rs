@@ -25,6 +25,7 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
+use crate::channel::version::HandshakeContext;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
 use crate::object::Channel as WorkerChannelObject;
@@ -33,6 +34,7 @@ use crate::util::retry::retry_with_index;
 use crate::util::retry::RetryResult;
 
 pub mod error;
+mod version;
 
 mod retry_strategy {
     use core::time::Duration;
@@ -696,6 +698,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
+
+        // TODO(Adi): FIX unwrap.
+        let _version =
+            version::resolve(HandshakeContext::ChanOpenInit, self.dst_port_id()).unwrap();
 
         let channel = ChannelEnd::new(
             State::Init,

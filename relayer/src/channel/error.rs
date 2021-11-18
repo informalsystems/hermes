@@ -191,5 +191,13 @@ define_error! {
                 format_args!("channel object cannot be built from event: {}",
                     e.event)
             },
+
+        InvalidPortId
+            { port_id: PortId }
+            | e | {
+                format_args!("could not resolve channel version because the port is invalid: {0}",
+                    e.port_id)
+            },
+
     }
 }
