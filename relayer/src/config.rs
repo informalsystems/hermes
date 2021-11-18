@@ -15,7 +15,6 @@ use tendermint_light_client::types::TrustThreshold;
 use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
-use ibc_proto::ics23::ProofSpec;
 
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
@@ -113,8 +112,8 @@ pub mod default {
         ZERO_DURATION
     }
 
-    pub fn proof_specs() -> Vec<ProofSpec> {
-        ProofSpecs::cosmos().into()
+    pub fn proof_specs() -> ProofSpecs {
+        ProofSpecs::cosmos()
     }
 }
 
@@ -401,7 +400,7 @@ pub struct ChainConfig {
     #[serde(default)]
     pub memo_prefix: Memo,
     #[serde(default = "default::proof_specs")]
-    pub proof_specs: Vec<ProofSpec>,
+    pub proof_specs: ProofSpecs,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]

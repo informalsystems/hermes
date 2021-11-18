@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use ibc_proto::ics23::ProofSpec as ProtoProofSpec;
 use ics23::ProofSpec;
+use serde::{Deserialize, Serialize};
 
 /// An array of proof specifications.
 ///
@@ -9,19 +10,18 @@ use ics23::ProofSpec;
 /// Additionally, this type also aids in the conversion from `ProofSpec` types from crate `ics23`
 /// into proof specifications as represented in the `ibc_proto` type; see the
 /// `From` trait(s) below.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct ProofSpecs {
-    specs: Vec<ProofSpec>,
+    specs: Vec<ProtoProofSpec>,
 }
 
 impl ProofSpecs {
     /// Returns the specification for Cosmos-SDK proofs
     pub fn cosmos() -> Self {
-        Self {
-            specs: vec![
+        vec![
                 ics23::iavl_spec(),       // Format of proofs-iavl (iavl merkle proofs)
                 ics23::tendermint_spec(), // Format of proofs-tendermint (crypto/ merkle SimpleProof)
-            ],
-        }
+            ].into()
     }
 }
 
@@ -42,5 +42,22 @@ impl From<ProofSpecs> for Vec<ProtoProofSpec> {
             raw_specs.push(decoded);
         }
         raw_specs
+    }
+}
+
+impl From<Vec<ProofSpec>> for ProofSpecs {
+    fn from(proto_specs: Vec<ProofSpec>) -> Self {
+        let mut specs = Vec::new();
+        for ds in proto_specs {
+            // Both `ProofSpec` types implement trait `prost::Message`. Convert by encoding, then
+            // decoding into the destination type.
+            // Safety note: the source and target data structures are identical, hence the
+            // encode/decode conversion here should be infallible.
+            let mut encoded = Vec::new();
+            prost::Message::encode(&ds, &mut encoded).unwrap();
+            let decoded: ProtoProofSpec = prost::Message::decode(&*encoded).unwrap();
+            specs.push(decoded);
+        }
+        Self { specs }
     }
 }
