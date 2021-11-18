@@ -1305,6 +1305,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-integration-test"
+version = "0.8.0"
+dependencies = [
+ "color-eyre",
+ "crossbeam-channel 0.5.1",
+ "env_logger",
+ "eyre",
+ "hex",
+ "ibc",
+ "ibc-proto",
+ "ibc-relayer",
+ "ibc-relayer-cli",
+ "itertools",
+ "prost",
+ "prost-types",
+ "rand 0.8.4",
+ "serde",
+ "serde_json",
+ "sha2",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-rpc",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
 name = "ibc-proto"
 version = "0.12.0"
 dependencies = [

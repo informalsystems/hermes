@@ -2,7 +2,7 @@
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use alloc::sync::Arc;
-use std::sync::RwLock;
+use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use flex_error::define_error;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -38,11 +38,18 @@ define_error! {
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 ///
 /// The purpose of this type is to avoid spawning multiple runtimes for a single `ChainId`.
+#[derive(Debug)]
 pub struct Registry<Chain: ChainHandle> {
     config: RwArc<Config>,
     handles: HashMap<ChainId, Chain>,
     rt: Arc<TokioRuntime>,
 }
+
+#[derive(Clone)]
+pub struct SharedRegistry<Chain: ChainHandle> {
+    pub registry: RwArc<Registry<Chain>>,
+}
+
 impl<Chain: ChainHandle> Registry<Chain> {
     /// Construct a new [`Registry`] using the provided shared [`Config`]
     pub fn new(config: RwArc<Config>) -> Self {
@@ -110,6 +117,36 @@ impl<Chain: ChainHandle> Registry<Chain> {
                 warn!(chain.id = %chain_id, "chain runtime might have failed to shutdown properly: {}", e);
             }
         }
+    }
+}
+
+impl<Chain: ChainHandle> SharedRegistry<Chain> {
+    pub fn new(config: RwArc<Config>) -> Self {
+        let registry = Registry::from_shared(config);
+
+        Self {
+            registry: Arc::new(RwLock::new(registry)),
+        }
+    }
+
+    pub fn get_or_spawn(&self, chain_id: &ChainId) -> Result<Chain, SpawnError> {
+        self.registry.write().unwrap().get_or_spawn(chain_id)
+    }
+
+    pub fn spawn(&self, chain_id: &ChainId) -> Result<bool, SpawnError> {
+        self.write().spawn(chain_id)
+    }
+
+    pub fn shutdown(&self, chain_id: &ChainId) {
+        self.write().shutdown(chain_id)
+    }
+
+    pub fn write(&self) -> RwLockWriteGuard<'_, Registry<Chain>> {
+        self.registry.write().unwrap()
+    }
+
+    pub fn read(&self) -> RwLockReadGuard<'_, Registry<Chain>> {
+        self.registry.read().unwrap()
     }
 }
 

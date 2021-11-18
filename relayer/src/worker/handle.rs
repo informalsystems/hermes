@@ -15,7 +15,8 @@ use crate::{event::monitor::EventBatch, object::Object};
 use super::error::WorkerError;
 use super::{WorkerCmd, WorkerId};
 
-/// Handle to a [`Worker`], for sending [`WorkerCmd`]s to it.
+/// Handle to a [`Worker`](crate::worker::Worker),
+/// for sending [`WorkerCmd`]s to it.
 pub struct WorkerHandle {
     id: WorkerId,
     object: Object,

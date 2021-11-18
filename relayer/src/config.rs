@@ -6,6 +6,7 @@ pub mod types;
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::BTreeSet as HashSet;
 use core::{fmt, time::Duration};
+use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
@@ -16,6 +17,7 @@ use ibc::timestamp::ZERO_DURATION;
 
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
+use crate::keyring::Store;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -125,6 +127,8 @@ pub struct Config {
     pub chains: Vec<ChainConfig>,
 }
 
+pub type SharedConfig = Arc<RwLock<Config>>;
+
 impl Config {
     pub fn has_chain(&self, id: &ChainId) -> bool {
         self.chains.iter().any(|c| c.id == *id)
@@ -200,6 +204,7 @@ impl Default for ModeConfig {
         }
     }
 }
+
 #[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Clients {
@@ -332,7 +337,7 @@ impl Default for RestConfig {
 /// It defines the address generation method
 /// TODO: Ethermint `pk_type` to be restricted
 /// after the Cosmos SDK release with ethsecp256k1
-/// https://github.com/cosmos/cosmos-sdk/pull/9981
+/// <https://github.com/cosmos/cosmos-sdk/pull/9981>
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(
     rename_all = "lowercase",
@@ -371,6 +376,8 @@ pub struct ChainConfig {
     pub rpc_timeout: Duration,
     pub account_prefix: String,
     pub key_name: String,
+    #[serde(default)]
+    pub key_store_type: Store,
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,

@@ -155,6 +155,10 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
+    fn add_key(&mut self, _key_name: &str, _key: KeyEntry) -> Result<(), Error> {
+        unimplemented!()
+    }
+
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         unimplemented!()
     }
@@ -451,6 +455,7 @@ pub mod test_utils {
             key_name: "".to_string(),
             store_prefix: "".to_string(),
             default_gas: None,
+            key_store_type: Default::default(),
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,

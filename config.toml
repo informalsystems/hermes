@@ -58,7 +58,6 @@ filter = false
 # [Default: true]
 tx_confirmation = true
 
-
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
 [rest]

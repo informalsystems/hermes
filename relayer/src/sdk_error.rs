@@ -174,7 +174,7 @@ pub fn sdk_error_from_tx_result(result: &TxResult) -> SdkError {
 /// Converts error codes originating from `broadcast_tx_sync` responses
 /// into IBC relayer domain-type errors.
 /// See [`tendermint_rpc::endpoint::broadcast::tx_sync::Response`].
-/// Cf: https://github.com/cosmos/cosmos-sdk/blob/v0.42.10/types/errors/errors.go
+/// Cf: <https://github.com/cosmos/cosmos-sdk/blob/v0.42.10/types/errors/errors.go>
 pub fn sdk_error_from_tx_sync_error_code(code: u32) -> SdkError {
     match code {
         // The primary reason (we know of) causing broadcast_tx_sync to fail

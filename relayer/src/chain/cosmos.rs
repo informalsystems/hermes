@@ -24,6 +24,7 @@ use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::{EventType, Query};
+use tendermint_rpc::Url;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };
@@ -80,7 +81,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::event::monitor::{EventMonitor, EventReceiver};
-use crate::keyring::{KeyEntry, KeyRing, Store};
+use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
@@ -119,7 +120,6 @@ mod retry_strategy {
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
-    version_specs: version::Specs,
     rpc_client: HttpClient,
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
@@ -345,7 +345,11 @@ impl CosmosSdkChain {
         prost::Message::encode(&tx_raw, &mut tx_bytes)
             .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
-        let response = self.block_on(broadcast_tx_sync(self, tx_bytes))?;
+        let response = self.block_on(broadcast_tx_sync(
+            self.rpc_client(),
+            &self.config.rpc_addr,
+            tx_bytes,
+        ))?;
 
         match response.code {
             tendermint::abci::Code::Ok => {
@@ -822,18 +826,16 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
         // Initialize key store and load key
-        let keybase = KeyRing::new(Store::Test, &config.account_prefix, &config.id)
+        let keybase = KeyRing::new(config.key_store_type, &config.account_prefix, &config.id)
             .map_err(Error::key_base)?;
 
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
 
         // Retrieve the version specification of this chain
-        let version_specs = rt.block_on(fetch_version_specs(&config.id, &grpc_addr))?;
 
         let chain = Self {
             config,
-            version_specs,
             rpc_client,
             grpc_addr,
             rt,
@@ -1040,7 +1042,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let key = self
             .keybase()
             .get_key(&self.config.key_name)
-            .map_err(Error::key_base)?;
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
 
         let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
         Ok(Signer::new(bech32))
@@ -1059,9 +1061,17 @@ impl ChainEndpoint for CosmosSdkChain {
         let key = self
             .keybase()
             .get_key(&self.config.key_name)
-            .map_err(Error::key_base)?;
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
 
         Ok(key)
+    }
+
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error> {
+        self.keybase_mut()
+            .add_key(key_name, key)
+            .map_err(Error::key_base)?;
+
+        Ok(())
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -2157,12 +2167,15 @@ async fn abci_query(
 }
 
 /// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
-async fn broadcast_tx_sync(chain: &CosmosSdkChain, data: Vec<u8>) -> Result<Response, Error> {
-    let response = chain
-        .rpc_client()
+pub async fn broadcast_tx_sync(
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    data: Vec<u8>,
+) -> Result<Response, Error> {
+    let response = rpc_client
         .broadcast_tx_sync(data.into())
         .await
-        .map_err(|e| Error::rpc(chain.config.rpc_addr.clone(), e))?;
+        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
     Ok(response)
 }
@@ -2229,7 +2242,10 @@ pub struct TxSyncResult {
     events: Vec<IbcEvent>,
 }
 
-fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, Vec<u8>), Error> {
+pub fn auth_info_and_bytes(
+    signer_info: SignerInfo,
+    fee: Fee,
+) -> Result<(AuthInfo, Vec<u8>), Error> {
     let auth_info = AuthInfo {
         signer_infos: vec![signer_info],
         fee: Some(fee),
@@ -2242,7 +2258,7 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     Ok((auth_info, auth_buf))
 }
 
-fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
+pub fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
     // Create TxBody
     let body = TxBody {
         messages: proto_msgs.to_vec(),
@@ -2294,8 +2310,10 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             )
         })?;
 
+    let version_specs = fetch_version_specs(&chain.config.id, &chain.grpc_addr).await?;
+
     // Checkup on the underlying SDK & IBC-go versions
-    if let Err(diagnostic) = compatibility::run_diagnostic(&chain.version_specs) {
+    if let Err(diagnostic) = compatibility::run_diagnostic(&version_specs) {
         return Err(Error::sdk_module_version(
             chain_id.clone(),
             grpc_address.clone(),
