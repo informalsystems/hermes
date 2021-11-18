@@ -18,7 +18,7 @@ use super::ChainDriver;
    A [`ChainDriver`] may be tagged with a `Chain` tag in the form
    [`MonoTagged<Chain, ChainDriver>`].
 
-   It would implement the [`TaggedChainDriver`] trait to provide tagged
+   It would implement the [`TaggedChainDriverExt`] trait to provide tagged
    version of the chain methods.
 
    The tagged chain driver methods help ensure that the `ChainDriver`

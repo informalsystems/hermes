@@ -7,7 +7,7 @@
 
     Example:
 
-    - [`Tagged<Chain, ChainId>`](crate::types::id::ChainId) -
+    - [`Tagged<Chain, ChainId>`](crate::types::id::TaggedChainId) -
       A chain ID belongs to a chain and do not uniquely
       correspond to a counterparty chain.
 

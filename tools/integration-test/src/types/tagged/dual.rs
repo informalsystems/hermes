@@ -7,7 +7,7 @@
 
     Example:
 
-    - [`Tagged<ChainA, ChainB, ChannelId>`](crate::types::id::ChannelId) -
+    - [`Tagged<ChainA, ChainB, ChannelId>`](crate::types::id::TaggedChannelId) -
       A channel ID belongs to a chain `ChainA`, and it is also uniquely
       corresponds to a channel connected to a counterparty chain `ChainB`.
 */
