@@ -267,6 +267,7 @@ mod tests {
     use crate::test::test_serialization_roundtrip;
     use crate::timestamp::ZERO_DURATION;
     use crate::Height;
+    use ibc_proto::ics23::ProofSpec;
 
     #[test]
     fn serialization_roundtrip_no_proof() {
@@ -295,6 +296,7 @@ mod tests {
             max_clock_drift: Duration,
             latest_height: Height,
             frozen_height: Height,
+            proof_specs: Vec<ProofSpec>,
             upgrade_path: Vec<String>,
             allow_update: AllowUpdate,
         }
@@ -308,6 +310,7 @@ mod tests {
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height::new(0, 10),
             frozen_height: Height::default(),
+            proof_specs: vec![],
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
                 after_expiry: false,
@@ -375,6 +378,7 @@ mod tests {
                 p.max_clock_drift,
                 p.latest_height,
                 p.frozen_height,
+                p.proof_specs,
                 p.upgrade_path,
                 p.allow_update,
             );
@@ -416,6 +420,7 @@ pub mod test_util {
                     u64::from(tm_header.height),
                 ),
                 Height::zero(),
+                vec![],
                 vec!["".to_string()],
                 AllowUpdate {
                     after_expiry: false,

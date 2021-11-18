@@ -356,6 +356,7 @@ impl ChainEndpoint for MockChain {
             self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
             Height::zero(),
+            vec![],
             vec!["upgrade/upgradedClient".to_string()],
             AllowUpdate {
                 after_expiry: false,
@@ -468,6 +469,7 @@ pub mod test_utils {
             packet_filter: PacketFilter::default(),
             address_type: AddressType::default(),
             memo_prefix: Default::default(),
+            proof_specs: Default::default(),
         }
     }
 }
