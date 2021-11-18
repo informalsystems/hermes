@@ -1,5 +1,48 @@
 # CHANGELOG
 
+## v0.9.0
+DATE
+
+SUMMARY
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Set the connection counterparty in the ICS 003 [`connOpenAck` handler][conn-open-ack-handler]
+    ([#1532](https://github.com/informalsystems/ibc-rs/issues/1532))
+
+[conn-open-ack-handler]: https://github.com/informalsystems/ibc-rs/blob/master/modules/src/core/ics03_connection/handler/conn_open_ack.rs
+
+### FEATURES
+
+- General
+  - Support for compatibility with gaia Vega upgrade (protos matching ibc-go v1.2.2 and SDK v0.44.3)
+    ([#1408](https://github.com/informalsystems/ibc-rs/issues/1408))
+  - Optimize the WS client to subscribe to IBC events only (instead of all Tx
+    events) ([#1534](https://github.com/informalsystems/ibc-rs/issues/1534))
+- [Relayer Library](relayer)
+  - Allow for more granular control of relaying modes. The `mode` configuration section replaces the `strategy` option.
+    ([#1518](https://github.com/informalsystems/ibc-rs/issues/1518))
+
+### IMPROVEMENTS
+
+- General
+  - Upgrade IBC-rs TLA+ MBT models to modern Apalache type annotations
+    ([#1544](https://github.com/informalsystems/ibc-rs/issues/1544))
+- [IBC Modules](modules)
+  - Derive `PartialEq` and `Eq` on `IbcEvent` and inner types
+    ([#1546](https://github.com/informalsystems/ibc-rs/issues/1546))
+- [Relayer Library](relayer)
+  - The relayer will now avoid submitting a tx after the simulation failed
+    (in all but one special case) to avoid wasting fees unnecessarily
+    ([#1479](https://github.com/informalsystems/ibc-rs/issues/1479))
+- [Relayer CLI](relayer-cli)
+  - Output errors on a single line if ANSI output is disabled
+    ([#1515](https://github.com/informalsystems/ibc-rs/issues/1515))
+  - Compute fee amount using big integers to prevent overflow
+    when using denominations with high decimal places
+    ([#1555](https://github.com/informalsystems/ibc-rs/issues/1555))
+
 ## v0.8.0
 *October 29th, 2021*
 
