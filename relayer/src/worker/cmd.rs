@@ -2,7 +2,7 @@ use ibc::{core::ics02_client::events::NewBlock, Height};
 
 use crate::event::monitor::EventBatch;
 
-/// A command for a [`Worker`].
+/// A command for a [`Worker`](crate::worker::Worker).
 #[derive(Debug, Clone)]
 pub enum WorkerCmd {
     /// A batch of packet events need to be relayed

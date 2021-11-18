@@ -5,11 +5,26 @@ for connections and channels.
 
 ## The `start` Command
 
-To relay packets and handshake messages use `all` as strategy in the `global` section of the configuration file:
+To relay packets and handshake messages configure the `mode` section of the configuration file like so:
 ```toml
 [global]
-strategy = 'all'
 log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+# ...
+
+[mode.connections]
+enabled = true
+
+[mode.channels]
+enabled = true
+
+[mode.packets]
+enabled = true
+# ...
 ```
 
 Then start hermes using the start command:
@@ -28,15 +43,15 @@ the configured chains.
 
 Assuming the events are coming from a `source` chain, the relayer determines the `destination` chain and builds the handshake messages based on these events. These are then sent to the `destination` chain.
 
-In addition to the events described in [Packet Relaying](packets.md#packet-relaying), in the `all` strategy mode the following IBC events are handled:
+In addition to the events described in [Packet Relaying](packets.md#packet-relaying), the following IBC events may be handled:
 
-- Channels:
+- Channels (if `mode.channels.enabled=true`):
   - `chan_open_init`: the relayer builds a `MsgChannelOpenTry` message
   - `chan_open_try`: the relayer builds a `MsgChannelOpenAck` message
   - `chan_open_ack`: the relayer builds a `MsgChannelOpenConfirm` message
   - `chan_open_confirm`: no message is sent out, channel opening is finished
 
-- Connections:
+- Connections (if `mode.connections.enabled=true`):
   - `conn_open_init`: the relayer builds a `MsgConnOpenTry` message
   - `conn_open_try`: the relayer builds a `MsgConnOpenAck` message
   - `conn_open_ack`: the relayer builds a `MsgConnOpenConfirm` message

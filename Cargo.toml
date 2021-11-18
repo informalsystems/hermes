@@ -9,6 +9,7 @@ members = [
     "relayer-rest",
     "telemetry",
     "proto",
+    "tools/integration-test",
 ]
 
 exclude = [
@@ -22,4 +23,3 @@ exclude = [
 # tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 # tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 # tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
-

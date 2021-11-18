@@ -136,7 +136,7 @@ impl From<Attributes> for Vec<Tag> {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenInit(Attributes);
 
 impl OpenInit {
@@ -176,7 +176,7 @@ impl From<OpenInit> for AbciEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenTry(Attributes);
 
 impl OpenTry {
@@ -216,7 +216,7 @@ impl From<OpenTry> for AbciEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenAck(Attributes);
 
 impl OpenAck {
@@ -256,7 +256,7 @@ impl From<OpenAck> for AbciEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {

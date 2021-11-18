@@ -1,0 +1,70 @@
+name: Rust
+on:
+  pull_request:
+    paths:
+      - .github/workflows/rust.yml
+      - Cargo.toml
+      - ci/**
+      - e2e/**
+      - proto/**
+      - modules/**
+      - relayer/**
+      - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
+  push:
+    branches: master
+    paths:
+      - .github/workflows/rust.yml
+      - Cargo.toml
+      - ci/**
+      - e2e/**
+      - proto/**
+      - modules/**
+      - relayer/**
+      - relayer-cli/**
+      - relayer-rest/**
+      - telemetry/**
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 1
+  CARGO_PROFILE_RELEASE_DEBUG: 1
+  RUST_BACKTRACE: short
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        gaiad:
+          - gaia4
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v15
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v10
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --no-fail-fast --no-run
+      - env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+        run: |
+          nix shell github:informalsystems/cosmos.nix#${{ matrix.gaiad }} -c cargo \
+            test -p ibc-integration-test --no-fail-fast -- \
+            --nocapture --test-threads=1

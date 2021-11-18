@@ -1,8 +1,25 @@
 [global]
-strategy = 'all'
 log_level = 'trace'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
 filter = false
-clear_packets_interval = 100
+tx_confirmation = true
 
 [telemetry]
 enabled = false

@@ -9,7 +9,7 @@ use serde::de::Unexpected;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Clone, Copy)]
-pub struct MaxMsgNum(usize);
+pub struct MaxMsgNum(pub usize);
 
 impl MaxMsgNum {
     const DEFAULT: usize = 30;
@@ -113,6 +113,10 @@ pub struct Memo(String);
 
 impl Memo {
     const MAX_LEN: usize = 50;
+
+    pub fn new(memo: &str) -> Self {
+        Self(memo.to_string())
+    }
 
     pub fn apply_suffix(&mut self, suffix: &str) {
         // Add a separator if the memo

@@ -331,7 +331,8 @@ ICS03_ConnectionOpenAck(
                         \* verification passed; update the connection state to
                         \* "Open"
                         LET updatedConnection == [connection EXCEPT
-                            !.state = "Open"
+                            !.state = "Open",
+                            !.counterpartyConnectionId = counterpartyConnectionId
                         ] IN
                         \* return result with updated state
                         [

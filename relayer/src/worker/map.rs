@@ -24,7 +24,8 @@ pub struct WorkerMap {
 
 impl WorkerMap {
     /// Create a new worker map, which will spawn workers with
-    /// the given channel for sending messages back to the [`Supervisor`].
+    /// the given channel for sending messages back to the
+    /// [`Supervisor`](crate::supervisor::Supervisor).
     pub fn new(msg_tx: Sender<WorkerMsg>) -> Self {
         Self {
             workers: HashMap::new(),
