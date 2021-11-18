@@ -8,7 +8,6 @@
 use std::path::PathBuf;
 
 use abscissa_core::{config::Override, Clap, Command, Configurable, FrameworkError, Runnable};
-use clap::IntoApp;
 use tracing::{error, info};
 
 use crate::DEFAULT_CONFIG_PATH;
@@ -127,9 +126,8 @@ impl Configurable<Config> for CliCmd {
     /// settings from command-line options.
     fn process_config(&self, mut config: Config) -> Result<Config, FrameworkError> {
         // Alter the memo for all chains to include a suffix with Hermes build details
-        let app = CliCmd::into_app();
         let web = "https://hermes.informal.systems";
-        let suffix = format!("{} {} ({})", app.get_name(), app.render_long_version(), web);
+        let suffix = format!("{} {} ({})", CliCmd::name(), "0.8", web);
         for ccfg in config.chains.iter_mut() {
             ccfg.memo_prefix.apply_suffix(&suffix);
         }
