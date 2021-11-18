@@ -94,6 +94,33 @@
    implementations of `ChainHandle`s that corresponding to different
    chain implementations.
 
+
+   The use of tagged identifiers are especially useful for avoiding confusion
+   when using data types that have tags in _contravariant_ ordering,
+   such as
+   [`ForeignClient`](ibc_relayer::foreign_client::ForeignClient).
+   Whereas most relayer constructs such as
+   `Connection<ChainA, ChainB>`  would mean
+   "a connection from chain A to chain B", a
+   `ForeignClient<ChainA, ChainB>` actually means "a foreign client from
+   chain B to chain A". As a result, if we want to always refer to
+   "from chain A to chain B", then we would have to instead write
+   `ForeignClient<ChainB, ChainA>`.
+
+   The use of contravariant ordering can be very confusing for developers
+   who are new to the code base, and we cannot expect developers to always
+   remember which construct requires contravariant ordering. We also cannot
+   easily refactor legacy constructs such as `ForeignClient` to use covariant
+   ordering, as we would have to search for the entire code base to
+   replace the ordering, and there is no guarantee to do the refactoring
+   correctly.
+
+   With tagged identifiers, we can alleviate some of the confusion by
+   leaving it to the type system to track which identifier belong to
+   which chain. This way if a developer ever think that
+   `ForeignClient<ChainA, ChainB>` means "foreign client from chain A
+   to chain B", the compiler will correct them of the mistake with a
+   type error.
 */
 
 pub mod dual;
