@@ -4,7 +4,6 @@
 #![forbid(unsafe_code)]
 
 use ibc_relayer_cli::application::APPLICATION;
-use ibc_relayer_cli::components::enable_ansi;
 
 fn main() -> eyre::Result<()> {
     install_error_reporter()?;
@@ -16,14 +15,11 @@ fn install_error_reporter() -> eyre::Result<()> {
     if !backtrace_enabled() {
         // If backtraces are disabled, display errors in single line.
         oneline_eyre::install()
-    } else if enable_ansi() {
-        // Else, if backtraces are enabled and we are in a terminal
-        // supporting color, display full error logs in color.
-        color_eyre::install()
     } else {
-        // Otherwise, backtraces are enabled and we are piping to logs, so use the
-        // default error report handler, which displays multiline errors
-        // without color.
+        // Otherwise, backtraces are enabled, so use the
+        // default error report handler. The impl for
+        // Application::framework_components takes care about
+        // initialization of color_eyre.
         Ok(())
     }
 }
