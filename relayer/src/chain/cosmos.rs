@@ -6,6 +6,8 @@ use core::{
     str::FromStr,
     time::Duration,
 };
+use num_bigint::BigInt;
+use num_rational::BigRational;
 use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
@@ -189,9 +191,10 @@ impl CosmosSdkChain {
             })?;
 
         let max_bound = result.consensus_params.block.max_bytes;
-        let max_allowed = mul_ceil(max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
+        let max_allowed = mul_ceil(max_bound, GENESIS_MAX_BYTES_MAX_FRACTION);
+        let max_tx_size = BigInt::from(self.max_tx_size());
 
-        if self.max_tx_size() > max_allowed {
+        if max_tx_size > max_allowed {
             return Err(Error::config_validation_tx_size_out_of_bounds(
                 self.id().clone(),
                 self.max_tx_size(),
@@ -453,10 +456,15 @@ impl CosmosSdkChain {
     /// The actual gas cost, when a transaction is executed, may be slightly higher than the
     /// one returned by the simulation.
     fn apply_adjustment_to_gas(&self, gas_amount: u64) -> u64 {
-        min(
-            gas_amount + mul_ceil(gas_amount, self.gas_adjustment()),
-            self.max_gas(),
-        )
+        assert!(self.gas_adjustment() <= 1.0);
+
+        let (_, digits) = mul_ceil(gas_amount, self.gas_adjustment()).to_u64_digits();
+        assert!(digits.len() == 1);
+
+        let adjustment = digits[0];
+        let gas = gas_amount.checked_add(adjustment).unwrap_or(u64::MAX);
+
+        min(gas, self.max_gas())
     }
 
     /// The maximum fee the relayer pays for a transaction
@@ -2017,8 +2025,7 @@ fn packet_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .filter_map(|ev| filter_matching_event(ev, request, seq))
-        .next()
+        .find_map(|ev| filter_matching_event(ev, request, seq))
 }
 
 // Extracts from the Tx the update client event for the requested client and height.
@@ -2397,14 +2404,13 @@ fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
     }
 }
 
-/// Multiply `a` with `f` and round to result up to the nearest integer.
-fn mul_ceil(a: u64, f: f64) -> u64 {
-    use fraction::Fraction as F;
+/// Multiply `a` with `f` and round the result up to the nearest integer.
+fn mul_ceil(a: u64, f: f64) -> BigInt {
+    assert!(f.is_finite());
 
-    // Safe to unwrap below as are multiplying two finite fractions
-    // together, and rounding them to the nearest integer.
-    let n = (F::from(a) * F::from(f)).ceil();
-    n.numer().unwrap() / n.denom().unwrap()
+    let a = BigInt::from(a);
+    let f = BigRational::from_float(f).expect("f is finite");
+    (f * a).ceil().to_integer()
 }
 
 /// Compute the `max_clock_drift` for a (new) client state
@@ -2434,17 +2440,45 @@ mod tests {
         Height,
     };
 
-    use crate::chain::cosmos::client_id_suffix;
+    use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
+
+    use super::calculate_fee;
 
     #[test]
     fn mul_ceil() {
-        assert_eq!(super::mul_ceil(300_000, 0.001), 300);
-        assert_eq!(super::mul_ceil(300_004, 0.001), 301);
-        assert_eq!(super::mul_ceil(300_040, 0.001), 301);
-        assert_eq!(super::mul_ceil(300_400, 0.001), 301);
-        assert_eq!(super::mul_ceil(304_000, 0.001), 304);
-        assert_eq!(super::mul_ceil(340_000, 0.001), 340);
-        assert_eq!(super::mul_ceil(340_001, 0.001), 341);
+        // Because 0.001 cannot be expressed precisely
+        // as a 64-bit floating point number (it is
+        // stored as 0.001000000047497451305389404296875),
+        // `num_rational::BigRational` will represent it as
+        // 1152921504606847/1152921504606846976 instead
+        // which will sometimes round up to the next
+        // integer in the computations below.
+        // This is not a problem for the way we compute the fee
+        // and gas adjustment as those are already based on simulated
+        // gas which is not 100% precise.
+        assert_eq!(super::mul_ceil(300_000, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(300_004, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(300_040, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(300_400, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(304_000, 0.001), 305.into());
+        assert_eq!(super::mul_ceil(340_000, 0.001), 341.into());
+        assert_eq!(super::mul_ceil(340_001, 0.001), 341.into());
+    }
+
+    /// Before https://github.com/informalsystems/ibc-rs/pull/1568,
+    /// this test would have panic'ed with:
+    ///
+    /// thread 'chain::cosmos::tests::fee_overflow' panicked at 'attempt to multiply with overflow'
+    #[test]
+    fn fee_overflow() {
+        let gas_amount = 90000000000000_u64;
+        let gas_price = GasPrice {
+            price: 1000000000000.0,
+            denom: "uatom".to_string(),
+        };
+
+        let fee = calculate_fee(gas_amount, &gas_price);
+        assert_eq!(&fee.amount, "90000000000000000000000000");
     }
 
     #[test]
