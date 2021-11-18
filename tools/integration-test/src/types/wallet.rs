@@ -90,7 +90,7 @@ pub trait TaggedWallet<Chain> {
    This trait is auto implemented for `MonoTagged<Chain, TestWallets>` so
    that we can call methods on it directly.
 */
-pub trait TaggedTestWallets<Chain> {
+pub trait TaggedTestWalletsExt<Chain> {
     /// Get the validator [`Wallet`] tagged with the given `Chain`.
     fn validator(&self) -> MonoTagged<Chain, &Wallet>;
 
@@ -129,7 +129,7 @@ impl<'a, Chain> TaggedWallet<Chain> for MonoTagged<Chain, &'a Wallet> {
     }
 }
 
-impl<'a, Chain> TaggedTestWallets<Chain> for MonoTagged<Chain, &'a TestWallets> {
+impl<'a, Chain> TaggedTestWalletsExt<Chain> for MonoTagged<Chain, &'a TestWallets> {
     fn validator(&self) -> MonoTagged<Chain, &Wallet> {
         self.map_ref(|w| &w.validator)
     }

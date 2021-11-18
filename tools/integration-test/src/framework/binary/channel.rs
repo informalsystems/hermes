@@ -111,6 +111,7 @@ impl<'a, Test> RunBinaryChannelTest<'a, Test>
 where
     Test: BinaryChannelTest,
 {
+    /// Create a new [`RunBinaryChannelTest`]
     pub fn new(test: &'a Test) -> Self {
         Self { test }
     }
@@ -120,6 +121,7 @@ impl<'a, Test> RunTwoWayBinaryChannelTest<'a, Test>
 where
     Test: BinaryChannelTest,
 {
+    /// Create a new [`BinaryChannelTest`]
     pub fn new(test: &'a Test) -> Self {
         Self { test }
     }

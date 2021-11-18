@@ -6,7 +6,7 @@ use serde_json as json;
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::types::id::{ChannelIdRef, PortIdRef};
+use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
 
@@ -24,7 +24,7 @@ use super::ChainDriver;
    The tagged chain driver methods help ensure that the `ChainDriver`
    methods are used with the values associated to the correct chain.
 */
-pub trait TaggedChainDriver<Chain> {
+pub trait TaggedChainDriverExt<Chain> {
     /**
        Tagged version of [`ChainDriver::query_balance`].
 
@@ -72,8 +72,8 @@ pub trait TaggedChainDriver<Chain> {
     */
     fn transfer_token<Counterparty>(
         &self,
-        port_id: &PortIdRef<Chain, Counterparty>,
-        channel_id: &ChannelIdRef<Chain, Counterparty>,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &WalletAddress>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         amount: u64,
@@ -92,7 +92,7 @@ pub trait TaggedChainDriver<Chain> {
     ) -> Result<json::Value, Error>;
 }
 
-impl<'a, Chain> TaggedChainDriver<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
     fn query_balance(
         &self,
         wallet_id: &MonoTagged<Chain, &WalletAddress>,
@@ -113,8 +113,8 @@ impl<'a, Chain> TaggedChainDriver<Chain> for MonoTagged<Chain, &'a ChainDriver> 
 
     fn transfer_token<Counterparty>(
         &self,
-        port_id: &PortIdRef<Chain, Counterparty>,
-        channel_id: &ChannelIdRef<Chain, Counterparty>,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &WalletAddress>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         amount: u64,

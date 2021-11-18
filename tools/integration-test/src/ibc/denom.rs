@@ -6,7 +6,7 @@ use core::fmt::{self, Display};
 use eyre::Report as Error;
 use ibc::applications::ics20_fungible_token_transfer as token_transfer;
 
-use crate::types::id::{ChannelIdRef, PortIdRef};
+use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 
 /**
@@ -14,6 +14,16 @@ use crate::types::tagged::*;
 */
 #[derive(Debug, Clone)]
 pub struct Denom(pub String);
+
+/**
+   Type alias for [`Denom`] tagged with the chain it belongs to.
+*/
+pub type TaggedDenom<Chain> = MonoTagged<Chain, Denom>;
+
+/**
+   Type alias for [`&Denom`](Denom) tagged with the chain it belongs to.
+*/
+pub type TaggedDenomRef<'a, Chain> = MonoTagged<Chain, &'a Denom>;
 
 /**
    A tagged version of [`derive_ibc_denom`](token_transfer::derive_ibc_denom)
@@ -35,10 +45,10 @@ pub struct Denom(pub String);
    Returns the derived denomination on `ChainB`.
 */
 pub fn derive_ibc_denom<ChainA, ChainB>(
-    port_id: &PortIdRef<ChainB, ChainA>,
-    channel_id: &ChannelIdRef<ChainB, ChainA>,
-    denom: &MonoTagged<ChainA, &Denom>,
-) -> Result<MonoTagged<ChainB, Denom>, Error> {
+    port_id: &TaggedPortIdRef<ChainB, ChainA>,
+    channel_id: &TaggedChannelIdRef<ChainB, ChainA>,
+    denom: &TaggedDenomRef<ChainA>,
+) -> Result<TaggedDenom<ChainB>, Error> {
     let res = token_transfer::derive_ibc_denom(
         port_id.value(),
         channel_id.value(),

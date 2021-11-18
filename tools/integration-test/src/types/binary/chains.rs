@@ -10,8 +10,8 @@ use std::path::PathBuf;
 use tracing::info;
 
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
-use crate::types::id::ChainIdRef;
-use crate::types::single::node::{FullNode, TaggedFullNode};
+use crate::types::id::TaggedChainIdRef;
+use crate::types::single::node::{FullNode, TaggedFullNodeExt};
 use crate::types::tagged::*;
 
 /**
@@ -91,6 +91,9 @@ pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
+    /**
+       Create a new [`ConnectedChains`]
+    */
     pub fn new(
         config_path: PathBuf,
         config: SharedConfig,
@@ -132,14 +135,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
     /**
        The chain ID of chain A.
     */
-    pub fn chain_id_a(&self) -> ChainIdRef<ChainA> {
+    pub fn chain_id_a(&self) -> TaggedChainIdRef<ChainA> {
         self.node_a.chain_id()
     }
 
     /**
        The chain ID of chain B.
     */
-    pub fn chain_id_b(&self) -> ChainIdRef<ChainB> {
+    pub fn chain_id_b(&self) -> TaggedChainIdRef<ChainB> {
         self.node_b.chain_id()
     }
 

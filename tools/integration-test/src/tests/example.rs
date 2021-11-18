@@ -73,42 +73,40 @@
     After starting the test, we may see the logs such as following shown:
 
     ```text
-    INFO ibc_integration_test: starting test with test config: TestConfig { chain_command_path: "gaiad", chain_store_dir: "/path/to/data/test-2970732058", hang_on_fail: false }
-    INFO ibc_integration_test: started new chain ibc-alpha-43044935 at with home path /path/to/data/test-2970732058/ibc-alpha-43044935 and RPC address http://localhost:56723.
-    INFO ibc_integration_test: user wallet for chain ibc-alpha-43044935 - id: user1-34693377, address: cosmos1yyld4h2wwqz57dsqz4tmrmrsw6qw7unve884y5
-    INFO ibc_integration_test: you can manually interact with the chain using commands starting with: gaiad --home '/path/to/data/test-2970732058/ibc-alpha-43044935' --node http://localhost:56723
+    $ cargo test -p ibc-integration-test --features example -- --nocapture --test-threads=1 example_test
     ...
-    INFO ibc_integration_test: written hermes config.toml to /path/to/data/test-2970732058/config-61e5e82f.toml
+    INFO created new chain/client/connection/channel from ibc-alpha-c4aed8f9/07-tendermint-4/connection-6/channel-1 to ibc-beta-fcb867bb/07-tendermint-6/connection-1/channel-6
+    INFO written channel environment to /path/to/ibc-rs/tools/integration-test/data/test-1094235493/binary-channels.env
+    WARN suspending the test indefinitely. you can still interact with any spawned chains and relayers
     ...
-    WARN ibc_integration_test: suspending the test indefinitely. you can still interact with any spawned chains and relayers
     ```
 
-    You can find in the logs information about how to manually interact with
-    the chains that have been setup by the test. Near the last line of the
-    logs, you can also find a warning that states that the test have been
-    suspended indefinitely. We can also notice that the chains are created
-    with random IDs and listening on random ports.
+    Near the last line of the logs, you can find in the logs information about
+    the path to the environment variables exported by the test.  you can also
+    find a warning that states that the test have been suspended indefinitely.
+    We can also notice that the chains are created with random IDs and
+    listening on random ports.
 
     Using the log information, we can for example use `gaiad` to query for
     the balance of the accounts created by the test by running something like:
 
     ```bash
-    $ gaiad --home '/path/to/data/test-2970732058/ibc-alpha-43044935' \
-        --node http://localhost:56723 query bank balances \
-        cosmos1yyld4h2wwqz57dsqz4tmrmrsw6qw7unve884y5
+    $ source /path/to/ibc-rs/tools/integration-test/data/test-1094235493/binary-channels.env
+    $ gaiad --home "$NODE_A_HOME" --node $NODE_A_RPC_ADDR query bank balances $NODE_A_WALLETS_USER1_ADDRESS
     balances:
-    - amount: "4397308370871"
-    denom: coin42984fae
-    - amount: "4397308370871"
+    - amount: "6902395390297"
+    denom: coin95143d31
+    - amount: "6902395390297"
     denom: stake
     pagination:
     next_key: null
     total: "0"
     ```
 
-    We can also see the data and configuration files generated in the absolute
-    path shown in the log, which looks something like `/path/to/data/test-2970732058`.
-    The sub-directory `test-2970732058` is randomly generated at the beginning
+    The test data and configuration files are stored at the absolute path shown
+    in the log, which looks something like
+    `/path/to/ibc-rs/tools/integration-test/data/test-1094235493`.
+    The sub-directory `test-1094235493` is randomly generated at the beginning
     of a test case, so that all data related to that test case belongs to the
     same directory.
 */

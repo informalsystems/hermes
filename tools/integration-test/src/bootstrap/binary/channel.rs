@@ -14,7 +14,7 @@ use super::connection::bootstrap_connection;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::binary::connection::ConnectedConnection;
-use crate::types::id::PortIdRef;
+use crate::types::id::TaggedPortIdRef;
 use crate::types::tagged::*;
 use crate::util::random::random_u64_range;
 
@@ -46,8 +46,8 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
 pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_b_to_a: &ForeignClient<ChainA, ChainB>,
     client_a_to_b: &ForeignClient<ChainB, ChainA>,
-    port_a: &PortIdRef<ChainA, ChainB>,
-    port_b: &PortIdRef<ChainB, ChainA>,
+    port_a: &TaggedPortIdRef<ChainA, ChainB>,
+    port_b: &TaggedPortIdRef<ChainB, ChainA>,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let connection = bootstrap_connection(client_b_to_a, client_a_to_b)?;
 
@@ -67,8 +67,8 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
     chain_a: &ChainA,
     chain_b: &ChainB,
     connection: ConnectedConnection<ChainA, ChainB>,
-    port_a: &PortIdRef<ChainA, ChainB>,
-    port_b: &PortIdRef<ChainB, ChainA>,
+    port_a: &TaggedPortIdRef<ChainA, ChainB>,
+    port_b: &TaggedPortIdRef<ChainB, ChainA>,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     pad_channel_id(chain_a, chain_b, &connection, port_a)?;
     pad_channel_id(chain_b, chain_a, &connection.clone().flip(), port_b)?;
@@ -129,7 +129,7 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a: &ChainA,
     chain_b: &ChainB,
     connection: &ConnectedConnection<ChainA, ChainB>,
-    port_id: &PortIdRef<ChainA, ChainB>,
+    port_id: &TaggedPortIdRef<ChainA, ChainB>,
 ) -> Result<(), Error> {
     let client_id_a = &connection.client.client_id_a;
     let client_id_b = &connection.client.client_id_b;

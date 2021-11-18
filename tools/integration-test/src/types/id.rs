@@ -4,61 +4,69 @@
 */
 
 use crate::types::tagged::*;
-use ibc::core::ics24_host::identifier as base;
+use ibc::core::ics24_host::identifier::*;
 
 /**
-   A [`ChainId`](base::ChainId) tagged with the chain it belongs to.
+   A [`ChainId`] tagged with the chain it belongs to.
 */
-pub type ChainId<Chain> = MonoTagged<Chain, base::ChainId>;
+pub type TaggedChainId<Chain> = MonoTagged<Chain, ChainId>;
 
 /**
-   A reference to [`ChainId`](base::ChainId) tagged with the chain it
+   A reference to [`ChainId`] tagged with the chain it
    belongs to.
 */
-pub type ChainIdRef<'a, Chain> = MonoTagged<Chain, &'a base::ChainId>;
-
-pub type ClientId<ChainA, ChainB> = DualTagged<ChainA, ChainB, base::ClientId>;
-
-pub type ClientIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a base::ClientId>;
+pub type TaggedChainIdRef<'a, Chain> = MonoTagged<Chain, &'a ChainId>;
 
 /**
-   A [`PortId`](base::PortId) tagged with first, the host chain that has
+   A [`ClientId`] tagged with first, the chain it belongs to, and second,
+   the counterparty chain that the client ID corresponds to.
+*/
+pub type TaggedClientId<ChainA, ChainB> = DualTagged<ChainA, ChainB, ClientId>;
+
+/**
+   A reference to [`ClientId`] tagged with first, the chain it belongs to,
+   and second, the counterparty chain that the client ID corresponds to.
+*/
+pub type TaggedClientIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a ClientId>;
+
+/**
+   A [`PortId`] tagged with first, the host chain that has
    the port ID, and second, the counterparty chain that the port ID
    corresponds to.
 */
-pub type PortId<ChainA, ChainB> = DualTagged<ChainA, ChainB, base::PortId>;
+pub type TaggedPortId<ChainA, ChainB> = DualTagged<ChainA, ChainB, PortId>;
 
 /**
-   A reference to [`PortId`](base::PortId) tagged with first, the host chain
+   A reference to [`PortId`](PortId) tagged with first, the host chain
    that has the port ID, and second, the counterparty chain that the port ID
    corresponds to.
 */
-pub type PortIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a base::PortId>;
+pub type TaggedPortIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a PortId>;
 
 /**
-   A [`ChannelId`](base::ChannelId) tagged with first, the host chain that
+   A [`ChannelId`] tagged with first, the host chain that
    has the channel ID, and second, the counterparty chain that the channel
    ID corresponds to.
 */
-pub type ChannelId<ChainA, ChainB> = DualTagged<ChainA, ChainB, base::ChannelId>;
+pub type TaggedChannelId<ChainA, ChainB> = DualTagged<ChainA, ChainB, ChannelId>;
 
 /**
-   A reference to [`ChannelId`](base::ChannelId) tagged with first, the host
+   A reference to [`ChannelId`] tagged with first, the host
    chain that has the channel ID, and second, the counterparty chain that the
    channel ID corresponds to.
 */
-pub type ChannelIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a base::ChannelId>;
+pub type TaggedChannelIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a ChannelId>;
 
 /**
-   A [`ConnectionId`](base::ConnectionId) tagged with first, the host chain
+   A [`ConnectionId`] tagged with first, the host chain
    that has the connection ID, and second, the counterparty chain that the
    connection ID corresponds to.
 */
-pub type ConnectionId<ChainA, ChainB> = DualTagged<ChainA, ChainB, base::ConnectionId>;
+pub type TaggedConnectionId<ChainA, ChainB> = DualTagged<ChainA, ChainB, ConnectionId>;
 
 /**
-   A reference to [`ConnectionId`](base::ConnectionId) tagged with first,
+   A reference to [`ConnectionId`] tagged with first,
    the host chain that has the connection ID, and second, the counterparty
    chain that the connection ID corresponds to.
 */
-pub type ConnectionIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a base::ConnectionId>;
+pub type TaggedConnectionIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a ConnectionId>;

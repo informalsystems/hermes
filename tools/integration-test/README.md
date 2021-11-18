@@ -1,4 +1,4 @@
-# IBC Relayer Test Suite
+# IBC Relayer Integration Test Suite
 
 ## Overview
 
@@ -9,7 +9,7 @@ The `ibc-relayer-test` crate provides the infrastructure and framework for writi
 This documentation is best viewed as Rustdoc HTML pages. You can run the following command to build and view the documentation using `cargo doc`:
 
 ```bash
-cargo doc -p ibc-relayer-test --open
+cargo doc -p ibc-integration-test --open
 ```
 
 ## Installation

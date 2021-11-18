@@ -123,6 +123,15 @@ pub fn boostrap_self_connected_chain(
     ))
 }
 
+/**
+   Bootstrap a foreign client from `ChainA` to `ChainB`, i.e. the foreign
+   client collects information from `ChainA` and submits them as transactions
+   to `ChainB`.
+
+   The returned `ForeignClient` is tagged in contravariant position, i.e.
+   `ChainB` then `ChainB`, because `ForeignClient` takes the the destination
+   chain in the first position.
+*/
 pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a: &ChainA,
     chain_b: &ChainB,
@@ -191,6 +200,13 @@ pub fn spawn_chain_handle<Seed>(
     Ok(handle)
 }
 
+/**
+   Add a wallet key to a [`ChainHandle`]'s key store.
+
+   Note that if the [`ChainConfig`](ibc_relayer::config::ChainConfig) is
+   configured to use in-memory store only, the added key would not be
+   accessible through external CLI.
+*/
 pub fn add_key_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallet: &Wallet,
@@ -200,6 +216,10 @@ pub fn add_key_to_chain_handle<Chain: ChainHandle>(
     Ok(())
 }
 
+/**
+   Add multiple wallets provided in [`TestWallets`] into the
+   [`ChainHandle`]'s key store.
+*/
 pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallets: &TestWallets,
@@ -211,10 +231,18 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
     Ok(())
 }
 
+/**
+   Create a new [`SharedRegistry`] that uses [`ProdChainHandle`]
+   as the [`ChainHandle`] implementation.
+*/
 pub fn new_registry(config: SharedConfig) -> SharedRegistry<ProdChainHandle> {
     <SharedRegistry<ProdChainHandle>>::new(config)
 }
 
+/**
+   Generate [`ChainConfig`](ibc_relayer::config::ChainConfig) from a running
+   [`FullNode`] and add it to the relayer's [`Config`].
+*/
 pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), Error> {
     let chain_config = running_node.generate_chain_config()?;
 
@@ -222,6 +250,16 @@ pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<
     Ok(())
 }
 
+/**
+   Save a relayer's [`Config`] to the filesystem to make it accessible
+   through external CLI.
+
+   Note that the saved config file will not be updated if the
+   [`SharedConfig`] is reloaded within the test. So test authors that
+   test on the config reloading functionality of the relayer would have to
+   call this function again to save the updated relayer config to the
+   filesystem.
+*/
 pub fn save_relayer_config(config: &Config, config_path: &Path) -> Result<(), Error> {
     let config_str = toml::to_string_pretty(&config)?;
 

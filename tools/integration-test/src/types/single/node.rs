@@ -63,7 +63,7 @@ pub struct FullNode {
    This trait is auto implemented for `MonoTagged<Chain, FullNode>` so
    that we can call methods on it directly.
 */
-pub trait TaggedFullNode<Chain> {
+pub trait TaggedFullNodeExt<Chain> {
     /// Get the [`ChainId`] tagged with the given `Chain`.
     fn chain_id(&self) -> MonoTagged<Chain, &ChainId>;
 
@@ -77,7 +77,7 @@ pub trait TaggedFullNode<Chain> {
     fn denom(&self) -> MonoTagged<Chain, &Denom>;
 }
 
-impl<Chain> TaggedFullNode<Chain> for MonoTagged<Chain, FullNode> {
+impl<Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, FullNode> {
     fn chain_id(&self) -> MonoTagged<Chain, &ChainId> {
         self.map_ref(|c| &c.chain_driver.chain_id)
     }
@@ -95,7 +95,7 @@ impl<Chain> TaggedFullNode<Chain> for MonoTagged<Chain, FullNode> {
     }
 }
 
-impl<'a, Chain> TaggedFullNode<Chain> for MonoTagged<Chain, &'a FullNode> {
+impl<'a, Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, &'a FullNode> {
     fn chain_id(&self) -> MonoTagged<Chain, &ChainId> {
         self.map_ref(|c| &c.chain_driver.chain_id)
     }
@@ -150,6 +150,13 @@ impl FullNode {
         })
     }
 
+    /**
+       Kill the underlying child process of the full node, thereby terminating it.
+
+       Test writers can use this to kill the full node in the middle of tests, and
+       then restart it using
+       [`ChainDriver::start`](crate::chain::driver::ChainDriver::start).
+    */
     pub fn kill(&self) -> Result<(), Error> {
         self.process
             .write()

@@ -156,6 +156,7 @@ impl<'a, Test> RunBinaryChainTest<'a, Test>
 where
     Test: BinaryChainTest,
 {
+    /// Create a new [`RunBinaryChainTest`]
     pub fn new(test: &'a Test) -> Self {
         Self { test }
     }
@@ -165,6 +166,7 @@ impl<'a, Test> RunTwoWayBinaryChainTest<'a, Test>
 where
     Test: BinaryChainTest,
 {
+    /// Create a new [`RunTwoWayBinaryChainTest`]
     pub fn new(test: &'a Test) -> Self {
         Self { test }
     }
@@ -174,6 +176,7 @@ impl<'a, Test> RunSelfConnectedBinaryChainTest<'a, Test>
 where
     Test: BinaryChainTest,
 {
+    /// Create a new [`RunSelfConnectedBinaryChainTest`]
     pub fn new(test: &'a Test) -> Self {
         Self { test }
     }

@@ -14,7 +14,7 @@ use crate::relayer::connection::TaggedConnectionExt;
 use crate::relayer::foreign_client::TaggedForeignClientExt;
 use crate::types::binary::client::ConnectedClients;
 use crate::types::binary::connection::ConnectedConnection;
-use crate::types::id::ClientIdRef;
+use crate::types::id::TaggedClientIdRef;
 use crate::util::random::random_u64_range;
 
 /**
@@ -89,8 +89,8 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
 pub fn pad_connection_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a: &ChainA,
     chain_b: &ChainB,
-    client_id_a: &ClientIdRef<ChainA, ChainB>,
-    client_id_b: &ClientIdRef<ChainB, ChainA>,
+    client_id_a: &TaggedClientIdRef<ChainA, ChainB>,
+    client_id_b: &TaggedClientIdRef<ChainB, ChainA>,
 ) -> Result<(), Error> {
     for i in 0..random_u64_range(1, 8) {
         info!(
