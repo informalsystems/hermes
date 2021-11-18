@@ -34,23 +34,23 @@ This crate contains the main data structures and on-chain logic of the IBC proto
 
 Consists of the designs and logic pertaining to the transport, authentication, and ordering layers of the IBC protocol, the fundamental pieces. 
 
-##### Client (ICS 02)
+##### ICS 02 - Client
 
 Clients encapsulate all of the verification methods of another IBC-enabled chain in order to ensure that the other chain adheres to the IBC protocol and does not exhibit misbehaviour. Clients "track" the metadata of the other chain's blocks, and each chain has a client for every other chain that it communicates with. 
 
-##### Connection (ICS 03)
+##### ICS 03 - Connection
 
 Connections associate a chain with another chain by connecting a client on the local chain with a client on the remote chain. This association is pair-wise unique and is established between two chains following a 4-step handshake process. 
 
-##### Channel (ICS 04)
+##### ICS 04 - Channel
 
 Channels are an abstraction layer that facilitate communication between applications and the chains those applications are built upon. One important function that channels can fulfill is guaranteeing that data packets sent between an application and its chain are well-ordered. 
 
-##### Port (ICS 05)
+##### ICS 05 - Port
 
 The port standard specifies an allocation scheme by which modules can bind to uniquely-named ports allocated by the IBC handler in order to facilitate module-to-module traffic. These ports are used to open channels and can be transferred or released by the module which originally bound them.
 
-##### Commitment (ICS 23)
+##### ICS 23 - Commitment
 
 Commitments (sometimes called _vector commitments_) define an efficient cryptographic construction to prove inclusion or non-inclusion of values in at particular paths in state. This scheme provides a guarantee of a particular state transition that has occurred on one chain which can be verified on another chain.
 
@@ -58,7 +58,7 @@ Commitments (sometimes called _vector commitments_) define an efficient cryptogr
 
 Consists of various packet encoding and processing semantics which underpin the various types of transactions that users can perform on any IBC-compliant chain.
 
-##### Fungible Token Transfer (ICS 20)
+##### ICS 20 - Fungible Token Transfer
 
 Specifies the packet data structure, state machine handling logic, and encoding details used for transferring fungible tokens between IBC chains. This process preserves asset fungibility and ownership while limiting the impact of Byzantine faults. 
 
@@ -66,7 +66,7 @@ Specifies the packet data structure, state machine handling logic, and encoding 
 
 Consists of implementations of client verification algorithms (following the base client interface that is defined in `Core`) for specific types of chains. A chain uses these verification algorithms to verify the state of a remote chain.
 
-##### Tendermint (ICS 07)
+##### ICS 07 - Tendermint
 
 The Tendermint client implements a client verification algorithm for blockchains which use the Tendermint consensus algorithm. This enables state machines of various sorts replicated using the Tendermint consensus algorithm to interface with other replicated state machines or solo machines over IBC. 
 
@@ -74,7 +74,7 @@ The Tendermint client implements a client verification algorithm for blockchains
 
 Contains utilities for testing the `ibc` crate against the Hermes IBC relayer. It acts as scaffolding for gluing the `ibc` crate with Hermes for testing purposes. 
 
-##### Relayer (ICS 18)
+##### ICS 18 - Relayer
 
 Relayer algorithms are the "physical" connection layer of IBC — off-chain processes responsible for relaying data between two chains running the IBC protocol by scanning the state of each chain, constructing appropriate datagrams, and executing them on the opposite chain as allowed by the protocol.
 
