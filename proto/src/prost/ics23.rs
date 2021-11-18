@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 ///*
 ///ExistenceProof takes a key and a value and a set of steps to perform on it.
 ///The result of peforming all these steps will provide a "root hash", which can
@@ -81,7 +79,7 @@ pub mod commitment_proof {
 ///
 ///Then combine the bytes, and hash it
 ///output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
-#[derive(Clone, PartialEq, Eq, ::prost::Message, Serialize, Deserialize)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Eq, Clone, PartialEq, ::prost::Message)]
 pub struct LeafOp {
     #[prost(enumeration = "HashOp", tag = "1")]
     pub hash: i32,
@@ -112,7 +110,7 @@ pub struct LeafOp {
 ///Any special data, like prepending child with the length, or prepending the entire operation with
 ///some value to differentiate from leaf nodes, should be included in prefix and suffix.
 ///If either of prefix or suffix is empty, we just treat it as an empty string
-#[derive(Clone, PartialEq, ::prost::Message, Serialize, Deserialize)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Eq, Clone, PartialEq, ::prost::Message)]
 pub struct InnerOp {
     #[prost(enumeration = "HashOp", tag = "1")]
     pub hash: i32,
@@ -132,7 +130,7 @@ pub struct InnerOp {
 ///generate a given hash (by interpretting the preimage differently).
 ///We need this for proper security, requires client knows a priori what
 ///tree format server uses. But not in code, rather a configuration object.
-#[derive(Clone, PartialEq, Eq, ::prost::Message, Serialize, Deserialize)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Eq, Clone, PartialEq, ::prost::Message)]
 pub struct ProofSpec {
     /// any field in the ExistenceProof must be the same as in this spec.
     /// except Prefix, which is just the first bytes of prefix (spec can be longer)
@@ -156,7 +154,7 @@ pub struct ProofSpec {
 ///isLeftMost(spec: InnerSpec, op: InnerOp)
 ///isRightMost(spec: InnerSpec, op: InnerOp)
 ///isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
-#[derive(Clone, PartialEq, Eq, ::prost::Message, Serialize, Deserialize)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Eq, Clone, PartialEq, ::prost::Message)]
 pub struct InnerSpec {
     /// Child order is the ordering of the children node, must count from 0
     /// iavl tree is [0, 1] (left then right)
