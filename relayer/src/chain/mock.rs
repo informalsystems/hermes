@@ -18,6 +18,7 @@ use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectio
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::downcast;
@@ -426,6 +427,10 @@ impl ChainEndpoint for MockChain {
         _height: Height,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         unimplemented!()
+    }
+
+    fn query_app_version(&self, _port_id: &PortId) -> Version {
+        todo!()
     }
 }
 

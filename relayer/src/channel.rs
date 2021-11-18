@@ -1,10 +1,12 @@
 #![allow(clippy::borrowed_box)]
 
 use core::time::Duration;
+
 use prost_types::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
+pub use error::ChannelError;
 use ibc::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State,
 };
@@ -14,6 +16,7 @@ use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use ibc::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
 use ibc::tx_msg::Msg;
@@ -30,7 +33,6 @@ use crate::util::retry::retry_with_index;
 use crate::util::retry::RetryResult;
 
 pub mod error;
-pub use error::ChannelError;
 
 mod retry_strategy {
     use core::time::Duration;
@@ -122,8 +124,8 @@ pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub b_side: ChannelSide<ChainB>,
     pub connection_delay: Duration,
     pub version: Option<String>,
-    pub a_version: Option<String>,
-    pub b_version: Option<String>,
+    pub a_version: Option<Version>,
+    pub b_version: Option<Version>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
@@ -139,8 +141,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let b_side_chain = connection.dst_chain();
         let version = version.unwrap_or(
             b_side_chain
-                .module_version(&b_port)
-                .map_err(|e| ChannelError::query(b_side_chain.id(), e))?,
+                .app_version(&b_port)
+                .map_err(|e| ChannelError::query(b_side_chain.id(), e))?
+                .into(),
         );
 
         let src_connection_id = connection
@@ -190,7 +193,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let channel_id = channel_event_attributes.channel_id.clone();
 
         let version = counterparty_chain
-            .module_version(&channel_event_attributes.counterparty_port_id)
+            .app_version(&channel_event_attributes.counterparty_port_id)
             .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
 
         let connection_id = channel_event_attributes.connection_id.clone();
@@ -226,7 +229,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             connection_delay: connection.delay_period(),
             // The event does not include the version.
             // The message handlers `build_chan_open..` determine the version from channel query.
-            version: Some(version),
+            version: Some(version.into()),
             a_version: None,
             b_version: None,
         })
@@ -669,8 +672,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn dst_version(&self) -> Result<String, ChannelError> {
         Ok(self.version.clone().unwrap_or(
             self.dst_chain()
-                .module_version(self.dst_port_id())
-                .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?,
+                .app_version(self.dst_port_id())
+                .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?
+                .into(),
         ))
     }
 
@@ -679,8 +683,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn src_version(&self) -> Result<String, ChannelError> {
         Ok(self.version.clone().unwrap_or(
             self.src_chain()
-                .module_version(self.src_port_id())
-                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?,
+                .app_version(self.src_port_id())
+                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?
+                .into(),
         ))
     }
 

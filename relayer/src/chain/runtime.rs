@@ -19,6 +19,7 @@ use ibc::{
             version::Version,
         },
         ics04_channel::{
+            self,
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
@@ -228,7 +229,7 @@ where
                         }
 
                         Ok(ChainRequest::ModuleVersion { port_id, reply_to }) => {
-                            self.module_version(port_id, reply_to)?
+                            self.app_version(port_id, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
@@ -420,8 +421,12 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn module_version(&self, port_id: PortId, reply_to: ReplyTo<String>) -> Result<(), Error> {
-        let result = self.chain.query_module_version(&port_id);
+    fn app_version(
+        &self,
+        port_id: PortId,
+        reply_to: ReplyTo<ics04_channel::Version>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_app_version(&port_id);
         reply_to.send(Ok(result)).map_err(Error::send)
     }
 

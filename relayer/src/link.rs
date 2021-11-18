@@ -155,6 +155,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             ),
             connection_delay: a_connection.delay_period(),
             version: None,
+            a_version: None,
+            b_version: None,
         };
 
         Link::new(channel, with_tx_confirmation)

@@ -39,6 +39,7 @@ use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientS
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest,
 };
@@ -1943,20 +1944,21 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((target, supporting))
     }
 
-    fn query_module_version(&self, port_id: &PortId) -> String {
-        use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
-        use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
-        let mut client = self.block_on(QueryClient::connect(self.grpc_addr.clone()))
-            .map_err(Error::grpc_transport);
-        // .map_err(Error::grpc_transport)?;
+    fn query_app_version(&self, _port_id: &PortId) -> ics04_channel::Version {
+        // use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
+        // use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
 
-        let request = tonic::Request::new(QueryAppVersionRequest {
-            port_id: todo!(),
-            connection_id: todo!(),
-            ordering: todo!(),
-            counterparty: todo!(),
-            proposed_version: todo!(),
-        });
+        // let mut client = self.block_on(QueryClient::connect(self.grpc_addr.clone()))
+        //     .map_err(Error::grpc_transport);
+        // // .map_err(Error::grpc_transport)?;
+        //
+        // let request = tonic::Request::new(QueryAppVersionRequest {
+        //     port_id: todo!(),
+        //     connection_id: todo!(),
+        //     ordering: todo!(),
+        //     counterparty: todo!(),
+        //     proposed_version: todo!(),
+        // });
 
         // let response = client.account(request).await;
         // let resp_account = response
@@ -1965,7 +1967,7 @@ impl ChainEndpoint for CosmosSdkChain {
         //     .account
         //     .unwrap();
 
-        "".into()
+        Default::default()
     }
 }
 

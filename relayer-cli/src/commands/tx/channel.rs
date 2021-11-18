@@ -102,6 +102,8 @@ impl Runnable for TxRawChanOpenInitCmd {
                 None,
             ),
             version: None,
+            a_version: None,
+            b_version: None,
         };
 
         info!("Message ChanOpenInit: {:?}", channel);
@@ -186,6 +188,8 @@ impl Runnable for TxRawChanOpenTryCmd {
                 self.dst_chan_id.clone(),
             ),
             version: None,
+            a_version: None,
+            b_version: None,
         };
 
         info!("Message ChanOpenTry: {:?}", channel);
@@ -222,6 +226,8 @@ impl Runnable for TxRawChanOpenTryCmd {
                         self.dst_chan_id.clone(),
                     ),
                     version: None,
+                    a_version: None,
+                    b_version: None,
                 }
             }
         );
@@ -287,6 +293,8 @@ impl Runnable for TxRawChanOpenAckCmd {
                         Some(self.dst_chan_id.clone()),
                     ),
                     version: None,
+                    a_version: None,
+                    b_version: None,
                 }
             }
         );
@@ -352,6 +360,8 @@ impl Runnable for TxRawChanOpenConfirmCmd {
                         Some(self.dst_chan_id.clone()),
                     ),
                     version: None,
+                    a_version: None,
+                    b_version: None,
                 }
             }
         );
@@ -417,6 +427,8 @@ impl Runnable for TxRawChanCloseInitCmd {
                         Some(self.dst_chan_id.clone()),
                     ),
                     version: None,
+                    a_version: None,
+                    b_version: None,
                 }
             }
         );
@@ -482,6 +494,8 @@ impl Runnable for TxRawChanCloseConfirmCmd {
                         Some(self.dst_chan_id.clone()),
                     ),
                     version: None,
+                    a_version: None,
+                    b_version: None,
                 }
             }
         );

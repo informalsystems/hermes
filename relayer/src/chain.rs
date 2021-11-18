@@ -14,6 +14,7 @@ use ibc::core::ics02_client::client_state::{
 use ibc::core::ics02_client::header::Header;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
+use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
@@ -232,17 +233,7 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error>;
 
-    // TODO: Introduce a newtype for the module version string
-    fn query_module_version(&self, port_id: &PortId) -> String {
-        // TODO - query the chain, currently hardcoded
-        if port_id.as_str() == "transfer" {
-            "ics20-1".to_string()
-        } else if port_id.as_str() == "ibcaccount" {
-            "ics27-1".to_string()
-        } else {
-            "".to_string()
-        }
-    }
+    fn query_app_version(&self, port_id: &PortId) -> ics04_channel::Version;
 
     fn query_channel_client_state(
         &self,

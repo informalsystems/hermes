@@ -12,6 +12,7 @@ use ibc::{
         ics02_client::misbehaviour::MisbehaviourEvidence,
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics03_connection::version::Version,
+        ics04_channel,
         ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
         ics04_channel::packet::{PacketMsgType, Sequence},
         ics23_commitment::commitment::CommitmentPrefix,
@@ -127,7 +128,7 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Key { reply_to })
     }
 
-    fn module_version(&self, port_id: &PortId) -> Result<String, Error> {
+    fn app_version(&self, port_id: &PortId) -> Result<ics04_channel::Version, Error> {
         self.send(|reply_to| ChainRequest::ModuleVersion {
             port_id: port_id.clone(),
             reply_to,

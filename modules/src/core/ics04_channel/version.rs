@@ -1,10 +1,10 @@
-use crate::prelude::*;
-
+use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use crate::core::ics04_channel::error::Error;
+use crate::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Version(String);
 
 impl Protobuf<String> for Version {}

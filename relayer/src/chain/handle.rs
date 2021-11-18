@@ -18,6 +18,7 @@ use ibc::{
             version::Version,
         },
         ics04_channel::{
+            self,
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
@@ -131,7 +132,7 @@ pub enum ChainRequest {
 
     ModuleVersion {
         port_id: PortId,
-        reply_to: ReplyTo<String>,
+        reply_to: ReplyTo<ics04_channel::Version>,
     },
 
     QueryStatus {
@@ -359,7 +360,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
-    fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
+    fn app_version(&self, port_id: &PortId) -> Result<ics04_channel::Version, Error>;
 
     fn query_status(&self) -> Result<StatusResponse, Error>;
 
