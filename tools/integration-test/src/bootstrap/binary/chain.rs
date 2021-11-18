@@ -12,7 +12,7 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::RwLock;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::config::TestConfig;
@@ -137,10 +137,11 @@ pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_b: &ChainB,
 ) -> Result<ForeignClient<ChainB, ChainA>, Error> {
     let mut client_id = ClientId::default();
-    let foreign_client = ForeignClient::unsafe_new(chain_b.clone(), chain_a.clone())?;
+    let foreign_client =
+        ForeignClient::restore(ClientId::default(), chain_b.clone(), chain_a.clone());
 
-    for i in 0..random_u64_range(1, 8) {
-        info!("creating new client id {} on chain {}", i + 1, chain_b.id());
+    for i in 0..random_u64_range(1, 6) {
+        debug!("creating new client id {} on chain {}", i + 1, chain_b.id());
         let event = foreign_client.build_create_client_and_send()?;
         client_id = extract_client_id(&event)?.clone();
     }

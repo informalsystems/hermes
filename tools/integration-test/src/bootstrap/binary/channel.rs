@@ -8,7 +8,7 @@ use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::{Channel, ChannelSide};
 use ibc_relayer::foreign_client::ForeignClient;
-use tracing::info;
+use tracing::{debug, info};
 
 use super::connection::bootstrap_connection;
 use crate::types::binary::chains::ConnectedChains;
@@ -94,7 +94,7 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
         .clone();
 
     info!(
-        "created new channel chain/client/connection/channel from {}/{}/{}/{} to {}/{}/{}/{}",
+        "created new chain/client/connection/channel from {}/{}/{}/{} to {}/{}/{}/{}",
         chain_a.id(),
         connection.client.client_id_a,
         connection.connection_id_a,
@@ -134,9 +134,9 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     let client_id_a = &connection.client.client_id_a;
     let client_id_b = &connection.client.client_id_b;
 
-    for i in 0..random_u64_range(1, 8) {
-        info!(
-            "creating new connection id {} on chain/connection/client {}/{}/{}",
+    for i in 0..random_u64_range(1, 6) {
+        debug!(
+            "creating new channel id {} on chain/connection/client {}/{}/{}",
             i + 1,
             chain_a.id(),
             connection.connection_id_a,

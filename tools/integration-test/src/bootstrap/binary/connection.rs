@@ -8,7 +8,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::default;
 use ibc_relayer::connection::{Connection, ConnectionSide};
 use ibc_relayer::foreign_client::ForeignClient;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::relayer::connection::TaggedConnectionExt;
 use crate::relayer::foreign_client::TaggedForeignClientExt;
@@ -52,7 +52,7 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
         .cloned();
 
     info!(
-        "created new connection from chain/client/connection {}/{}/{} to {}/{}/{}",
+        "created new chain/client/connection from {}/{}/{} to {}/{}/{}",
         chain_a.id(),
         client_id_a,
         connection_id_a,
@@ -92,8 +92,8 @@ pub fn pad_connection_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_id_a: &TaggedClientIdRef<ChainA, ChainB>,
     client_id_b: &TaggedClientIdRef<ChainB, ChainA>,
 ) -> Result<(), Error> {
-    for i in 0..random_u64_range(1, 8) {
-        info!(
+    for i in 0..random_u64_range(1, 6) {
+        debug!(
             "creating new connection id {} on chain {}",
             i + 1,
             chain_a.id()
