@@ -230,7 +230,7 @@ mod tests {
             max_clock_drift: Duration::from_millis(3000),
             latest_height: Height::new(0, u64::from(tm_header.height)),
             frozen_height: Height::zero(),
-            proof_specs: vec![],
+            proof_specs: Default::default(),
             allow_update: AllowUpdate {
                 after_expiry: false,
                 after_misbehaviour: false,

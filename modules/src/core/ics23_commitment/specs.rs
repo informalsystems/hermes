@@ -10,10 +10,8 @@ use serde::{Deserialize, Serialize};
 /// Additionally, this type also aids in the conversion from `ProofSpec` types from crate `ics23`
 /// into proof specifications as represented in the `ibc_proto` type; see the
 /// `From` trait(s) below.
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct ProofSpecs {
-    specs: Vec<ProtoProofSpec>,
-}
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
+pub struct ProofSpecs(Vec<ProtoProofSpec>);
 
 impl ProofSpecs {
     /// Returns the specification for Cosmos-SDK proofs
@@ -32,7 +30,7 @@ impl ProofSpecs {
 impl From<ProofSpecs> for Vec<ProtoProofSpec> {
     fn from(domain_specs: ProofSpecs) -> Self {
         let mut raw_specs = Vec::new();
-        for ds in domain_specs.specs.iter() {
+        for ds in domain_specs.0.iter() {
             // Both `ProofSpec` types implement trait `prost::Message`. Convert by encoding, then
             // decoding into the destination type.
             // Safety note: the source and target data structures are identical, hence the
@@ -59,6 +57,12 @@ impl From<Vec<ProofSpec>> for ProofSpecs {
             let decoded: ProtoProofSpec = prost::Message::decode(&*encoded).unwrap();
             specs.push(decoded);
         }
-        Self { specs }
+        Self(specs)
+    }
+}
+
+impl From<Vec<ProtoProofSpec>> for ProofSpecs {
+    fn from(specs: Vec<ProtoProofSpec>) -> Self {
+        Self(specs)
     }
 }

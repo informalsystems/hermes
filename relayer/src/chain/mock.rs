@@ -356,7 +356,7 @@ impl ChainEndpoint for MockChain {
             self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
             Height::zero(),
-            vec![],
+            Default::default(),
             vec!["upgrade/upgradedClient".to_string()],
             AllowUpdate {
                 after_expiry: false,

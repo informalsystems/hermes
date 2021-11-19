@@ -8,7 +8,6 @@ use tendermint_light_client::light_client::Options;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
-use ibc_proto::ics23::ProofSpec;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
@@ -16,6 +15,7 @@ use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
+use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::ZERO_DURATION;
 use crate::Height;
@@ -29,7 +29,7 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub frozen_height: Height,
     pub latest_height: Height,
-    pub proof_specs: Vec<ProofSpec>,
+    pub proof_specs: ProofSpecs,
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
 }
@@ -52,7 +52,7 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
-        proof_specs: Vec<ProofSpec>,
+        proof_specs: ProofSpecs,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
     ) -> Result<ClientState, Error> {
@@ -230,7 +230,7 @@ impl TryFrom<RawClientState> for ClientState {
                 after_expiry: raw.allow_update_after_expiry,
                 after_misbehaviour: raw.allow_update_after_misbehaviour,
             },
-            proof_specs: raw.proof_specs,
+            proof_specs: raw.proof_specs.into(),
         })
     }
 }
@@ -245,7 +245,7 @@ impl From<ClientState> for RawClientState {
             max_clock_drift: Some(value.max_clock_drift.into()),
             frozen_height: Some(value.frozen_height.into()),
             latest_height: Some(value.latest_height.into()),
-            proof_specs: value.proof_specs,
+            proof_specs: value.proof_specs.into(),
             allow_update_after_expiry: value.allow_update.after_expiry,
             allow_update_after_misbehaviour: value.allow_update.after_misbehaviour,
             upgrade_path: value.upgrade_path,
@@ -264,11 +264,11 @@ mod tests {
 
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::core::ics02_client::trust_threshold::TrustThreshold;
+    use crate::core::ics23_commitment::specs::ProofSpecs;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::test::test_serialization_roundtrip;
     use crate::timestamp::ZERO_DURATION;
     use crate::Height;
-    use ibc_proto::ics23::ProofSpec;
 
     #[test]
     fn serialization_roundtrip_no_proof() {
@@ -297,7 +297,7 @@ mod tests {
             max_clock_drift: Duration,
             latest_height: Height,
             frozen_height: Height,
-            proof_specs: Vec<ProofSpec>,
+            proof_specs: ProofSpecs,
             upgrade_path: Vec<String>,
             allow_update: AllowUpdate,
         }
@@ -311,7 +311,7 @@ mod tests {
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height::new(0, 10),
             frozen_height: Height::default(),
-            proof_specs: vec![],
+            proof_specs: Default::default(),
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
                 after_expiry: false,
@@ -421,7 +421,7 @@ pub mod test_util {
                     u64::from(tm_header.height),
                 ),
                 Height::zero(),
-                vec![],
+                Default::default(),
                 vec!["".to_string()],
                 AllowUpdate {
                     after_expiry: false,
