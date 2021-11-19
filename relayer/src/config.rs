@@ -411,13 +411,13 @@ pub struct ChainConfig {
 mod proof_specs_serde {
     use core::fmt;
     use ibc::core::ics23_commitment::specs::ProofSpecs;
-    use serde::{de, Deserializer, Serializer};
+    use serde::{de, ser, Deserializer, Serializer};
 
     pub fn serialize<S: Serializer>(
         proof_specs: &ProofSpecs,
         serializer: S,
     ) -> Result<S::Ok, S::Error> {
-        let json_str = serde_json::to_string(proof_specs).unwrap();
+        let json_str = serde_json::to_string(proof_specs).map_err(ser::Error::custom)?;
         serializer.serialize_str(&json_str)
     }
 
@@ -431,7 +431,7 @@ mod proof_specs_serde {
         }
 
         fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-            Ok(serde_json::from_str(v).unwrap())
+            serde_json::from_str(v).map_err(E::custom)
         }
 
         fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
