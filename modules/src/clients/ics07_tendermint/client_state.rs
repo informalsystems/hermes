@@ -311,7 +311,7 @@ mod tests {
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height::new(0, 10),
             frozen_height: Height::default(),
-            proof_specs: Default::default(),
+            proof_specs: ProofSpecs::default(),
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
                 after_expiry: false,
