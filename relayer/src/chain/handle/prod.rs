@@ -129,11 +129,11 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Key { reply_to })
     }
 
-    fn app_version(&self, request: QueryAppVersionRequest) -> Result<ics04_channel::Version, Error> {
-        self.send(|reply_to| ChainRequest::AppVersion {
-            request,
-            reply_to,
-        })
+    fn app_version(
+        &self,
+        request: QueryAppVersionRequest,
+    ) -> Result<ics04_channel::Version, Error> {
+        self.send(|reply_to| ChainRequest::AppVersion { request, reply_to })
     }
 
     fn query_status(&self) -> Result<StatusResponse, Error> {

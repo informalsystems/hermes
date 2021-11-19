@@ -361,7 +361,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
-    fn app_version(&self, request: QueryAppVersionRequest) -> Result<ics04_channel::Version, Error>;
+    fn app_version(&self, request: QueryAppVersionRequest)
+        -> Result<ics04_channel::Version, Error>;
 
     fn query_status(&self) -> Result<StatusResponse, Error>;
 

@@ -11,7 +11,10 @@ use ibc::{
     core::ics04_channel::Version,
 };
 
-use crate::{chain::handle::ChainHandle, channel::{ChannelError, Channel}};
+use crate::{
+    chain::handle::ChainHandle,
+    channel::{Channel, ChannelError},
+};
 
 /// Defines the context in which to resolve a channel version.
 ///
@@ -27,12 +30,12 @@ pub enum ResolveContext {
 /// be used during a channel open handshake, depending on
 /// the channel handshake step and the port identifier.
 pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
-    step: ResolveContext,
+    ctx: ResolveContext,
     channel: &Channel<ChainA, ChainB>,
 ) -> Result<Version, ChannelError> {
     let port_id = channel.dst_port_id();
 
-    match step {
+    match ctx {
         ResolveContext::ChanOpenInit => {
             // Resolve by using the predefined application version.
             if port_id.as_str() == ics20_fungible_token_transfer::PORT_ID {
@@ -53,7 +56,8 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
             // Resolve the version by querying the application version on destination chain
             warn!("resolving channel version by calling destination chain");
             let request = channel.assemble_app_version_request();
-            channel.dst_chain()
+            channel
+                .dst_chain()
                 .app_version(request)
                 .map_err(|e| ChannelError::query(channel.dst_chain().id(), e))
         }

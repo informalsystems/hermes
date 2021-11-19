@@ -17,9 +17,11 @@ use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
-use ibc::Height;
 use ibc::tx_msg::Msg;
-use ibc_proto::ibc::core::channel::v1::{QueryConnectionChannelsRequest, Counterparty as ProtoCounterparty};
+use ibc::Height;
+use ibc_proto::ibc::core::channel::v1::{
+    Counterparty as ProtoCounterparty, QueryConnectionChannelsRequest,
+};
 use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
@@ -78,6 +80,7 @@ pub struct ChannelSide<Chain: ChainHandle> {
     connection_id: ConnectionId,
     port_id: PortId,
     channel_id: Option<ChannelId>,
+    version: Option<Version>,
 }
 
 impl<Chain: ChainHandle> ChannelSide<Chain> {
@@ -87,6 +90,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
         connection_id: ConnectionId,
         port_id: PortId,
         channel_id: Option<ChannelId>,
+        version: Option<Version>,
     ) -> ChannelSide<Chain> {
         Self {
             chain,
@@ -94,6 +98,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
             connection_id,
             port_id,
             channel_id,
+            version,
         }
     }
 
@@ -124,9 +129,6 @@ pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub a_side: ChannelSide<ChainA>,
     pub b_side: ChannelSide<ChainB>,
     pub connection_delay: Duration,
-    pub version: Option<String>,
-    pub a_version: Option<Version>,
-    pub b_version: Option<Version>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
@@ -139,22 +141,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         b_port: PortId,
         version: Option<String>,
     ) -> Result<Self, ChannelError> {
-        // let b_side_chain = connection.dst_chain();
-        let version = version.unwrap();
-        // TODO(ADI) Fix unwrap.
-        // _or(
-        //     b_side_chain
-        //         .app_version(&b_port)
-        //         .map_err(|e| ChannelError::query(b_side_chain.id(), e))?
-        //         .into(),
-        // );
-
         let src_connection_id = connection
             .src_connection_id()
             .ok_or_else(|| ChannelError::missing_local_connection(connection.src_chain().id()))?;
         let dst_connection_id = connection
             .dst_connection_id()
             .ok_or_else(|| ChannelError::missing_local_connection(connection.dst_chain().id()))?;
+
+        let domain_version = version.map(Into::into);
 
         let mut channel = Self {
             ordering,
@@ -164,6 +158,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 src_connection_id.clone(),
                 a_port,
                 Default::default(),
+                domain_version.clone(),
             ),
             b_side: ChannelSide::new(
                 connection.dst_chain(),
@@ -171,11 +166,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 dst_connection_id.clone(),
                 b_port,
                 Default::default(),
+                domain_version,
             ),
             connection_delay: connection.delay_period,
-            version: Some(version),
-            a_version: None,
-            b_version: None,
         };
 
         channel.handshake()?;
@@ -194,12 +187,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id.clone();
-
-        // TODO(Adi) FIX
-        let version = "";
-            // counterparty_chain
-            // .app_version(&channel_event_attributes.counterparty_port_id)
-            // .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
 
         let connection_id = channel_event_attributes.connection_id.clone();
         let connection = chain
@@ -223,6 +210,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 connection_id,
                 port_id,
                 channel_id,
+                // The event does not include the version.
+                // The message handlers `build_chan_open..` determine the version from channel query.
+                // TODO(Adi): Investigate proto correctness wrt version.
+                None,
             ),
             b_side: ChannelSide::new(
                 counterparty_chain,
@@ -230,13 +221,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 counterparty_connection_id.clone(),
                 channel_event_attributes.counterparty_port_id.clone(),
                 channel_event_attributes.counterparty_channel_id.clone(),
+                None,
             ),
             connection_delay: connection.delay_period(),
-            // The event does not include the version.
-            // The message handlers `build_chan_open..` determine the version from channel query.
-            version: Some(version.into()),
-            a_version: None,
-            b_version: None,
         })
     }
 
@@ -283,6 +270,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_connection_id.clone(),
                 channel.src_port_id.clone(),
                 Some(channel.src_channel_id.clone()),
+                // TODO(Adi): Investigate proto correctness.
+                None,
             ),
             b_side: ChannelSide::new(
                 counterparty_chain.clone(),
@@ -290,11 +279,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 b_connection_id.clone(),
                 a_channel.remote.port_id.clone(),
                 a_channel.remote.channel_id.clone(),
+                None,
             ),
             connection_delay: a_connection.delay_period(),
-            version: Some(a_channel.version.clone()),
-            a_version: None,
-            b_version: None,
         };
 
         if a_channel.state_matches(&State::Init) && a_channel.remote.channel_id.is_none() {
@@ -366,9 +353,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
             connection_delay: self.connection_delay,
-            version: self.version.clone(),
-            a_version: None,
-            b_version: None,
         }
     }
 
@@ -705,8 +689,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
         // TODO(Adi): FIX unwrap.
-        let _version =
-            version::resolve(ResolveContext::ChanOpenInit, self).unwrap();
+        let _version = version::resolve(ResolveContext::ChanOpenInit, self).unwrap();
 
         let channel = ChannelEnd::new(
             State::Init,
@@ -727,12 +710,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     fn assemble_app_version_request(&self) -> QueryAppVersionRequest {
-        let counterparty = self.src_channel_id().map(|cid|
-            ProtoCounterparty {
-                port_id: self.src_port_id().to_string(),
-                channel_id: cid.to_string(),
-            }
-        );
+        let counterparty = self.src_channel_id().map(|cid| ProtoCounterparty {
+            port_id: self.src_port_id().to_string(),
+            channel_id: cid.to_string(),
+        });
 
         // {
         //     None => None,
@@ -744,7 +725,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             connection_id: self.dst_connection_id().to_string(),
             ordering: self.ordering as i32, // TODO(Adi): Safe?
             counterparty,
-            proposed_version: Version::default().into()
+            proposed_version: Version::default().into(),
         }
     }
 
