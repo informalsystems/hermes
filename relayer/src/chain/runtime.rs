@@ -225,13 +225,18 @@ where
                             self.get_config(reply_to)?
                         }
 
-                        Ok(ChainRequest::Key { reply_to }) => {
+                        Ok(ChainRequest::GetKey { reply_to }) => {
                             self.get_key(reply_to)?
                         }
 
                         Ok(ChainRequest::AppVersion { request, reply_to }) => {
                             self.app_version(request, reply_to)?
                         }
+
+                        Ok(ChainRequest::AddKey { key_name, key, reply_to }) => {
+                            self.add_key(key_name, key, reply_to)?
+                        }
+
 
                         Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
@@ -429,6 +434,16 @@ where
     ) -> Result<(), Error> {
         let result = self.chain.query_app_version(request);
         reply_to.send(Ok(result)).map_err(Error::send)
+    }
+
+    fn add_key(
+        &mut self,
+        key_name: String,
+        key: KeyEntry,
+        reply_to: ReplyTo<()>,
+    ) -> Result<(), Error> {
+        let result = self.chain.add_key(&key_name, key);
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn build_header(

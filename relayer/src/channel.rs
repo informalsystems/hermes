@@ -121,6 +121,20 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
     pub fn channel_id(&self) -> Option<&ChannelId> {
         self.channel_id.as_ref()
     }
+
+    pub fn map_chain<ChainB: ChainHandle>(
+        self,
+        mapper: impl Fn(Chain) -> ChainB,
+    ) -> ChannelSide<ChainB> {
+        ChannelSide {
+            chain: mapper(self.chain),
+            client_id: self.client_id,
+            connection_id: self.connection_id,
+            port_id: self.port_id,
+            channel_id: self.channel_id,
+            version: self.version,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -1229,6 +1243,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             IbcEvent::CloseConfirmChannel(_) => Ok(result),
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
             _ => Err(ChannelError::invalid_event(result)),
+        }
+    }
+
+    pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
+        self,
+        mapper_a: impl Fn(ChainA) -> ChainC,
+        mapper_b: impl Fn(ChainB) -> ChainD,
+    ) -> Channel<ChainC, ChainD> {
+        Channel {
+            ordering: self.ordering,
+            a_side: self.a_side.map_chain(mapper_a),
+            b_side: self.b_side.map_chain(mapper_b),
+            connection_delay: self.connection_delay,
         }
     }
 }

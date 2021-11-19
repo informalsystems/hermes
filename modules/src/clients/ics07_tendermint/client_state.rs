@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use core::str::FromStr;
+use core::convert::{TryFrom, TryInto};
 use core::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -196,8 +196,7 @@ impl TryFrom<RawClientState> for ClientState {
             .ok_or_else(Error::missing_trusting_period)?;
 
         Ok(Self {
-            chain_id: ChainId::from_str(raw.chain_id.as_str())
-                .map_err(Error::invalid_chain_identifier)?,
+            chain_id: ChainId::from_string(raw.chain_id.as_str()),
             trust_level: trust_level
                 .try_into()
                 .map_err(|e| Error::invalid_trust_threshold(format!("{}", e)))?,

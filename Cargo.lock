@@ -817,15 +817,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fraction"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aba3510011eee8825018be07f08d9643421de007eaf62a3bde58d89b058abfa7"
-dependencies = [
- "num",
-]
-
-[[package]]
 name = "funty"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1314,6 +1305,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-integration-test"
+version = "0.8.0"
+dependencies = [
+ "color-eyre",
+ "crossbeam-channel 0.5.1",
+ "env_logger",
+ "eyre",
+ "hex",
+ "ibc",
+ "ibc-proto",
+ "ibc-relayer",
+ "ibc-relayer-cli",
+ "itertools",
+ "prost",
+ "prost-types",
+ "rand 0.8.4",
+ "serde",
+ "serde_json",
+ "sha2",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-rpc",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
 name = "ibc-proto"
 version = "0.12.0"
 dependencies = [
@@ -1340,7 +1360,6 @@ dependencies = [
  "dirs-next",
  "env_logger",
  "flex-error",
- "fraction",
  "futures",
  "hdpath",
  "hex",
@@ -1352,6 +1371,8 @@ dependencies = [
  "ibc-telemetry",
  "itertools",
  "k256",
+ "num-bigint",
+ "num-rational",
  "prost",
  "prost-types",
  "retry",
@@ -1403,6 +1424,7 @@ dependencies = [
  "ibc-telemetry",
  "itertools",
  "once_cell",
+ "oneline-eyre",
  "prost",
  "prost-types",
  "regex",
@@ -1763,26 +1785,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "num"
-version = "0.2.1"
+name = "num-bigint"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8536030f9fea7127f841b45bb6243b27255787fb4eb83958aa1ef9d2fdc0c36"
-dependencies = [
- "num-complex",
- "num-integer",
- "num-iter",
- "num-rational",
- "num-traits",
-]
-
-[[package]]
-name = "num-complex"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"
+checksum = "f93ab6289c7b344a8a9f60f88d80aa20032336fe78da341afc91c8a2341fc75f"
 dependencies = [
  "autocfg",
+ "num-integer",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -1807,25 +1818,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-iter"
-version = "0.1.42"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2021c8337a54d21aca0d59a92577a029af9431cb59b909b03252b9c164fad59"
-dependencies = [
- "autocfg",
- "num-integer",
- "num-traits",
-]
-
-[[package]]
 name = "num-rational"
-version = "0.2.4"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
+checksum = "d41702bd167c2df5520b384281bc111a4b5efcf7fbc4c9c222c815b07e0a6a6a"
 dependencies = [
  "autocfg",
+ "num-bigint",
  "num-integer",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -1858,6 +1860,15 @@ name = "once_cell"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
+
+[[package]]
+name = "oneline-eyre"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "862f17a1e689c0ce8ca158ea48e776c5101c5d14fdfbed3e01c15f89604c3097"
+dependencies = [
+ "eyre",
+]
 
 [[package]]
 name = "opaque-debug"
@@ -2656,9 +2667,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.69"
+version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e466864e431129c7e0d3476b92f20458e5879919a0596c6472738d9fa2d342f8"
+checksum = "e277c495ac6cd1a01a58d0a0c574568b4d1ddf14f59965c6a58b8d96400b54f3"
 dependencies = [
  "itoa",
  "ryu",
@@ -3604,9 +3615,9 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "ureq"
-version = "2.3.0"
+version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dd912a3d096959150c4d71ac752e13f1683085922658c205b89b40fe8ebe07f"
+checksum = "c5c448dcb78ec38c7d59ec61f87f70a98ea19171e06c139357e012ee226fec90"
 dependencies = [
  "base64",
  "chunked_transfer",

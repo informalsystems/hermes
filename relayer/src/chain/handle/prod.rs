@@ -126,7 +126,15 @@ impl ChainHandle for ProdChainHandle {
     }
 
     fn get_key(&self) -> Result<KeyEntry, Error> {
-        self.send(|reply_to| ChainRequest::Key { reply_to })
+        self.send(|reply_to| ChainRequest::GetKey { reply_to })
+    }
+
+    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
+        self.send(|reply_to| ChainRequest::AddKey {
+            key_name,
+            key,
+            reply_to,
+        })
     }
 
     fn app_version(

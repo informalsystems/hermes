@@ -4,6 +4,9 @@ pub mod error;
 pub mod msgs;
 pub mod relay_application_logic;
 
+mod denom;
+pub use denom::*;
+
 /// The port identifier that the ICS20 applications
 /// typically bind with.
 pub const PORT_ID: &str = "transfer";

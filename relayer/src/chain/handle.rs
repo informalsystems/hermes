@@ -127,13 +127,19 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Signer>,
     },
 
-    Key {
+    GetKey {
         reply_to: ReplyTo<KeyEntry>,
     },
 
     AppVersion {
         request: QueryAppVersionRequest,
         reply_to: ReplyTo<ics04_channel::Version>,
+    },
+
+    AddKey {
+        key_name: String,
+        key: KeyEntry,
+        reply_to: ReplyTo<()>,
     },
 
     QueryStatus {
@@ -363,6 +369,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn app_version(&self, request: QueryAppVersionRequest)
         -> Result<ics04_channel::Version, Error>;
+
+    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
 
     fn query_status(&self) -> Result<StatusResponse, Error>;
 
