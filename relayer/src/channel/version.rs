@@ -26,9 +26,10 @@ pub enum ResolveContext {
     Other,
 }
 
-/// Resolves the [`ics04_channel::Version`] that should
+/// Resolves the [`Version`] that should
 /// be used during a channel open handshake, depending on
-/// the channel handshake step and the port identifier.
+/// the channel handshake step [`ResolveContext`] as well as
+/// on the current state of the channel.
 pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
     ctx: ResolveContext,
     channel: &Channel<ChainA, ChainB>,

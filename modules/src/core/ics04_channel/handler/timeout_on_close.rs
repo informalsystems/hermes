@@ -76,7 +76,7 @@ pub fn process(
         *source_channel_end.ordering(),
         expected_counterparty,
         expected_connection_hops,
-        source_channel_end.version(),
+        source_channel_end.version().clone(),
     );
 
     verify_channel_proofs(

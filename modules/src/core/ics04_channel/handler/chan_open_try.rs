@@ -29,7 +29,7 @@ pub(crate) fn process(
                 && old_channel_end.order_matches(msg.channel.ordering())
                 && old_channel_end.connection_hops_matches(msg.channel.connection_hops())
                 && old_channel_end.counterparty_matches(msg.channel.counterparty())
-                && old_channel_end.version_matches(&msg.channel.version())
+                && old_channel_end.version_matches(msg.channel.version())
             {
                 // A ChannelEnd already exists and all validation passed.
                 Ok((old_channel_end, prev_id.clone()))
@@ -89,10 +89,6 @@ pub(crate) fn process(
 
     // Channel capabilities
     let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
-
-    if msg.channel().version().is_empty() {
-        return Err(Error::empty_version());
-    }
 
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.

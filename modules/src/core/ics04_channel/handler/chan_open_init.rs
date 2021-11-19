@@ -40,11 +40,6 @@ pub(crate) fn process(
         return Err(Error::channel_feature_not_suported_by_connection());
     }
 
-    // TODO: Check that `version` is non empty but not necessary coherent
-    if msg.channel().version().is_empty() {
-        return Err(Error::empty_version());
-    }
-
     // Channel identifier construction.
     let id_counter = ctx.channel_counter()?;
     let chan_id = ChannelId::new(id_counter);
@@ -59,7 +54,7 @@ pub(crate) fn process(
         *msg.channel().ordering(),
         msg.channel().counterparty().clone(),
         msg.channel().connection_hops().clone(),
-        msg.channel().version(),
+        msg.channel().version().clone(),
     );
 
     output.log("success: no channel found");

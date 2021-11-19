@@ -658,7 +658,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     /// for the destination port's version.
     /// Note: This query is currently not available and it is hardcoded in the `module_version()`
     /// to be `ics20-1` for `transfer` port.
-    pub fn dst_version(&self) -> Result<String, ChannelError> {
+    pub fn dst_version(&self) -> Result<Version, ChannelError> {
         todo!()
         // Ok(self.version.clone().unwrap_or(
         //     self.dst_chain()
@@ -670,7 +670,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
     /// Returns the channel version if already set, otherwise it queries the source chain
     /// for the source port's version.
-    pub fn src_version(&self) -> Result<String, ChannelError> {
+    pub fn src_version(&self) -> Result<Version, ChannelError> {
         todo!()
         // Ok(self.version.clone().unwrap_or(
         //     self.src_chain()
@@ -688,15 +688,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
-        // TODO(Adi): FIX unwrap.
-        let _version = version::resolve(ResolveContext::ChanOpenInit, self).unwrap();
+        let version = version::resolve(ResolveContext::ChanOpenInit, self)?;
 
         let channel = ChannelEnd::new(
             State::Init,
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            self.dst_version()?,
+            version,
         );
 
         // Build the domain type message
@@ -857,7 +856,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             *src_channel.ordering(),
             counterparty,
             vec![self.dst_connection_id().clone()],
-            src_channel.version(),
+            src_channel.version().clone(),
         );
 
         // Get signer
@@ -876,7 +875,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let new_msg = MsgChannelOpenTry {
             port_id: self.dst_port_id().clone(),
             previous_channel_id,
-            counterparty_version: src_channel.version(),
+            counterparty_version: src_channel.version().clone(),
             channel,
             proofs,
             signer,
@@ -959,7 +958,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             port_id: self.dst_port_id().clone(),
             channel_id: dst_channel_id.clone(),
             counterparty_channel_id: src_channel_id.clone(),
-            counterparty_version: src_channel.version(),
+            counterparty_version: src_channel.version().clone(),
             proofs,
             signer,
         };
