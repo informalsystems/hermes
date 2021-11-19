@@ -1,28 +1,40 @@
-use ibc::applications::ics20_fungible_token_transfer;
-use ibc::applications::ics27_interchain_accounts;
-use ibc::core::ics04_channel::Version;
-use ibc::core::ics24_host::identifier::PortId;
+//! Helper module for the relayer channel logic.
+//!
+//! Provides support for resolving the appropriate
+//! channel version to be used in a channel open
+//! handshake.
 
-use crate::channel::ChannelError;
+use tracing::warn;
 
-/// Distinguishes between different steps of
-/// the channel open handshake protocol, for use
-/// in resolving channel versions.
+use ibc::{
+    applications::{ics20_fungible_token_transfer, ics27_interchain_accounts},
+    core::ics04_channel::Version,
+};
+
+use crate::{chain::handle::ChainHandle, channel::{ChannelError, Channel}};
+
+/// Defines the context in which to resolve a channel version.
 ///
-/// We only need to distinguish between the OpenInit
-/// step and all others.
-pub enum HandshakeContext {
+/// This context distinguishes between different steps of
+/// the channel open handshake protocol. Currently, we only
+/// need to distinguish between the OpenInit step and any other.
+pub enum ResolveContext {
     ChanOpenInit,
     Other,
 }
 
 /// Resolves the [`ics04_channel::Version`] that should
 /// be used during a channel open handshake, depending on
-/// the channel handshake step.
-pub fn resolve(step: HandshakeContext, port_id: &PortId) -> Result<Version, ChannelError> {
+/// the channel handshake step and the port identifier.
+pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
+    step: ResolveContext,
+    channel: &Channel<ChainA, ChainB>,
+) -> Result<Version, ChannelError> {
+    let port_id = channel.dst_port_id();
+
     match step {
-        // Resolve by using the predefined application version.
-        HandshakeContext::ChanOpenInit => {
+        ResolveContext::ChanOpenInit => {
+            // Resolve by using the predefined application version.
             if port_id.as_str() == ics20_fungible_token_transfer::PORT_ID {
                 // https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#forwards-compatibility
                 Ok(Version::from(ics20_fungible_token_transfer::VERSION))
@@ -37,9 +49,13 @@ pub fn resolve(step: HandshakeContext, port_id: &PortId) -> Result<Version, Chan
             }
         }
 
-        // Resolve the version by calling the destination chain
-        HandshakeContext::Other => {
-            todo!()
+        ResolveContext::Other => {
+            // Resolve the version by querying the application version on destination chain
+            warn!("resolving channel version by calling destination chain");
+            let request = channel.assemble_app_version_request();
+            channel.dst_chain()
+                .app_version(request)
+                .map_err(|e| ChannelError::query(channel.dst_chain().id(), e))
         }
     }
 }

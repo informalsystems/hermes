@@ -36,6 +36,7 @@ use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusS
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
+use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 
 use crate::{
     chain::StatusResponse, config::ChainConfig, connection::ConnectionMsgType, error::Error,
@@ -128,9 +129,9 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Key { reply_to })
     }
 
-    fn app_version(&self, port_id: &PortId) -> Result<ics04_channel::Version, Error> {
-        self.send(|reply_to| ChainRequest::ModuleVersion {
-            port_id: port_id.clone(),
+    fn app_version(&self, request: QueryAppVersionRequest) -> Result<ics04_channel::Version, Error> {
+        self.send(|reply_to| ChainRequest::AppVersion {
+            request,
             reply_to,
         })
     }

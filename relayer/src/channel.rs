@@ -1,5 +1,3 @@
-#![allow(clippy::borrowed_box)]
-
 use core::time::Duration;
 
 use prost_types::Any;
@@ -19,13 +17,14 @@ use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
-use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
+use ibc::tx_msg::Msg;
+use ibc_proto::ibc::core::channel::v1::{QueryConnectionChannelsRequest, Counterparty as ProtoCounterparty};
+use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
-use crate::channel::version::HandshakeContext;
+use crate::channel::version::ResolveContext;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
 use crate::object::Channel as WorkerChannelObject;
@@ -140,13 +139,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         b_port: PortId,
         version: Option<String>,
     ) -> Result<Self, ChannelError> {
-        let b_side_chain = connection.dst_chain();
-        let version = version.unwrap_or(
-            b_side_chain
-                .app_version(&b_port)
-                .map_err(|e| ChannelError::query(b_side_chain.id(), e))?
-                .into(),
-        );
+        // let b_side_chain = connection.dst_chain();
+        let version = version.unwrap();
+        // TODO(ADI) Fix unwrap.
+        // _or(
+        //     b_side_chain
+        //         .app_version(&b_port)
+        //         .map_err(|e| ChannelError::query(b_side_chain.id(), e))?
+        //         .into(),
+        // );
 
         let src_connection_id = connection
             .src_connection_id()
@@ -194,9 +195,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id.clone();
 
-        let version = counterparty_chain
-            .app_version(&channel_event_attributes.counterparty_port_id)
-            .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
+        // TODO(Adi) FIX
+        let version = "";
+            // counterparty_chain
+            // .app_version(&channel_event_attributes.counterparty_port_id)
+            // .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
 
         let connection_id = channel_event_attributes.connection_id.clone();
         let connection = chain
@@ -672,23 +675,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     /// Note: This query is currently not available and it is hardcoded in the `module_version()`
     /// to be `ics20-1` for `transfer` port.
     pub fn dst_version(&self) -> Result<String, ChannelError> {
-        Ok(self.version.clone().unwrap_or(
-            self.dst_chain()
-                .app_version(self.dst_port_id())
-                .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?
-                .into(),
-        ))
+        todo!()
+        // Ok(self.version.clone().unwrap_or(
+        //     self.dst_chain()
+        //         .app_version(self.dst_port_id())
+        //         .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?
+        //         .into(),
+        // ))
     }
 
     /// Returns the channel version if already set, otherwise it queries the source chain
     /// for the source port's version.
     pub fn src_version(&self) -> Result<String, ChannelError> {
-        Ok(self.version.clone().unwrap_or(
-            self.src_chain()
-                .app_version(self.src_port_id())
-                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?
-                .into(),
-        ))
+        todo!()
+        // Ok(self.version.clone().unwrap_or(
+        //     self.src_chain()
+        //         .app_version(self.src_port_id())
+        //         .map_err(|e| ChannelError::query(self.src_chain().id(), e))?
+        //         .into(),
+        // ))
     }
 
     pub fn build_chan_open_init(&self) -> Result<Vec<Any>, ChannelError> {
@@ -701,7 +706,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // TODO(Adi): FIX unwrap.
         let _version =
-            version::resolve(HandshakeContext::ChanOpenInit, self.dst_port_id()).unwrap();
+            version::resolve(ResolveContext::ChanOpenInit, self).unwrap();
 
         let channel = ChannelEnd::new(
             State::Init,
@@ -719,6 +724,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         };
 
         Ok(vec![new_msg.to_any()])
+    }
+
+    fn assemble_app_version_request(&self) -> QueryAppVersionRequest {
+        let counterparty = self.src_channel_id().map(|cid|
+            ProtoCounterparty {
+                port_id: self.src_port_id().to_string(),
+                channel_id: cid.to_string(),
+            }
+        );
+
+        // {
+        //     None => None,
+        //     Some(_) => {}
+        // };
+
+        QueryAppVersionRequest {
+            port_id: self.dst_port_id().to_string(),
+            connection_id: self.dst_connection_id().to_string(),
+            ordering: self.ordering as i32, // TODO(Adi): Safe?
+            counterparty,
+            proposed_version: Version::default().into()
+        }
     }
 
     pub fn build_chan_open_init_and_send(&self) -> Result<IbcEvent, ChannelError> {

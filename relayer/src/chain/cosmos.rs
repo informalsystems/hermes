@@ -77,6 +77,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
@@ -1944,8 +1945,7 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((target, supporting))
     }
 
-    fn query_app_version(&self, _port_id: &PortId) -> ics04_channel::Version {
-        // use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
+    fn query_app_version(&self, _request: QueryAppVersionRequest) -> ics04_channel::Version {
         // use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
 
         // let mut client = self.block_on(QueryClient::connect(self.grpc_addr.clone()))

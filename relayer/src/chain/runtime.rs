@@ -42,6 +42,7 @@ use ibc_proto::ibc::core::{
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
     connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
+    port::v1::QueryAppVersionRequest,
 };
 
 use crate::{
@@ -228,8 +229,8 @@ where
                             self.get_key(reply_to)?
                         }
 
-                        Ok(ChainRequest::ModuleVersion { port_id, reply_to }) => {
-                            self.app_version(port_id, reply_to)?
+                        Ok(ChainRequest::AppVersion { request, reply_to }) => {
+                            self.app_version(request, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
@@ -423,10 +424,10 @@ where
 
     fn app_version(
         &self,
-        port_id: PortId,
+        request: QueryAppVersionRequest,
         reply_to: ReplyTo<ics04_channel::Version>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_app_version(&port_id);
+        let result = self.chain.query_app_version(request);
         reply_to.send(Ok(result)).map_err(Error::send)
     }
 

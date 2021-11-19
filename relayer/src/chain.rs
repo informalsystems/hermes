@@ -36,6 +36,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::connection::ConnectionMsgType;
@@ -233,7 +234,7 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error>;
 
-    fn query_app_version(&self, port_id: &PortId) -> ics04_channel::Version;
+    fn query_app_version(&self, request: QueryAppVersionRequest) -> ics04_channel::Version;
 
     fn query_channel_client_state(
         &self,

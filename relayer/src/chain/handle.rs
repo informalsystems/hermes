@@ -41,6 +41,7 @@ use ibc_proto::ibc::core::{
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
     connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
+    port::v1::QueryAppVersionRequest,
 };
 pub use prod::ProdChainHandle;
 
@@ -130,8 +131,8 @@ pub enum ChainRequest {
         reply_to: ReplyTo<KeyEntry>,
     },
 
-    ModuleVersion {
-        port_id: PortId,
+    AppVersion {
+        request: QueryAppVersionRequest,
         reply_to: ReplyTo<ics04_channel::Version>,
     },
 
@@ -360,7 +361,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
-    fn app_version(&self, port_id: &PortId) -> Result<ics04_channel::Version, Error>;
+    fn app_version(&self, request: QueryAppVersionRequest) -> Result<ics04_channel::Version, Error>;
 
     fn query_status(&self) -> Result<StatusResponse, Error>;
 
