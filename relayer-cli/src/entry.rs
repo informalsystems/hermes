@@ -42,6 +42,11 @@ impl Runnable for EntryPoint {
 impl Configurable<Config> for EntryPoint {
     /// Path to the command's configuration file
     fn config_path(&self) -> Option<PathBuf> {
+        // Skip config processing for the legacy `version` subcommand
+        if matches!(&self.command, Some(CliCmd::Version(_))) {
+            return None;
+        }
+
         match &self.config {
             // Use explicit `-c`/`--config` argument if passed
             Some(cfg) => Some(cfg.clone()),

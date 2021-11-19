@@ -8,6 +8,7 @@
 use std::path::PathBuf;
 
 use abscissa_core::{config::Override, Clap, Command, Configurable, FrameworkError, Runnable};
+use clap::AppSettings::Hidden;
 use tracing::{error, info};
 
 use crate::DEFAULT_CONFIG_PATH;
@@ -16,7 +17,7 @@ use ibc_relayer::config::Config;
 use self::{
     config::ConfigCmd, create::CreateCmds, health::HealthCheckCmd, keys::KeysCmd,
     listen::ListenCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
-    update::UpdateCmds, upgrade::UpgradeCmds,
+    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
 };
 
 mod config;
@@ -30,6 +31,7 @@ mod start;
 mod tx;
 mod update;
 mod upgrade;
+mod version;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
@@ -82,6 +84,10 @@ pub enum CliCmd {
     /// The `misbehaviour` subcommand
     #[clap(about = "Listen to client update IBC events and handles misbehaviour")]
     Misbehaviour(MisbehaviourCmd),
+
+    /// The `version` subcommand, retained for backward compatibility.
+    #[clap(setting(Hidden))]
+    Version(VersionCmd),
 
     /// The `health` subcommand
     #[clap(about = "Performs a health check of all chains in the the config")]
