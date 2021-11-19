@@ -2,8 +2,10 @@
 //! version field of a channel end.
 //!
 
+use core::fmt;
 use serde_derive::{Deserialize, Serialize};
 
+use crate::applications::{ics20_fungible_token_transfer, ics27_interchain_accounts};
 use crate::prelude::*;
 
 /// The version field for a `ChannelEnd`.
@@ -13,6 +15,16 @@ use crate::prelude::*;
 /// spec (v1) currently allows empty strings.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Version(String);
+
+impl Version {
+    pub fn ics20() -> Self {
+        Self(ics20_fungible_token_transfer::VERSION.to_string())
+    }
+
+    pub fn ics27() -> Self {
+        Self(ics27_interchain_accounts::VERSION.to_string())
+    }
+}
 
 impl From<Version> for String {
     fn from(domain_version: Version) -> Self {
@@ -38,5 +50,11 @@ impl From<&str> for Version {
 impl Default for Version {
     fn default() -> Self {
         Version("".to_string())
+    }
+}
+
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }

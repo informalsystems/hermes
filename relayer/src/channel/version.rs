@@ -56,11 +56,7 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
         ResolveContext::Other => {
             // Resolve the version by querying the application version on destination chain
             warn!("resolving channel version by calling destination chain");
-            let request = channel.assemble_app_version_request();
-            channel
-                .dst_chain()
-                .app_version(request)
-                .map_err(|e| ChannelError::query(channel.dst_chain().id(), e))
+            channel.dst_app_version()
         }
     }
 }

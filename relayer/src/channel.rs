@@ -19,10 +19,10 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, Connection
 use ibc::events::IbcEvent;
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::{
-    Counterparty as ProtoCounterparty, QueryConnectionChannelsRequest,
+use ibc_proto::ibc::core::{
+    channel::v1::{Counterparty as ProtoCounterparty, QueryConnectionChannelsRequest},
+    port::v1::QueryAppVersionRequest,
 };
-use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
@@ -148,6 +148,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .dst_connection_id()
             .ok_or_else(|| ChannelError::missing_local_connection(connection.dst_chain().id()))?;
 
+        // Convert the raw version into our domain type.
         let domain_version = version.map(Into::into);
 
         let mut channel = Self {
@@ -654,30 +655,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         })
     }
 
-    /// Returns the channel version if already set, otherwise it queries the destination chain
-    /// for the destination port's version.
-    /// Note: This query is currently not available and it is hardcoded in the `module_version()`
-    /// to be `ics20-1` for `transfer` port.
+    /// Returns the channel version which the destination side
+    /// is using, if already set. If not set, queries the
+    /// destination chain to fetch the version.
     pub fn dst_version(&self) -> Result<Version, ChannelError> {
-        todo!()
-        // Ok(self.version.clone().unwrap_or(
-        //     self.dst_chain()
-        //         .app_version(self.dst_port_id())
-        //         .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?
-        //         .into(),
-        // ))
+        Ok(self
+            .a_side
+            .version
+            .clone()
+            .unwrap_or(self.dst_app_version()?))
     }
 
-    /// Returns the channel version if already set, otherwise it queries the source chain
-    /// for the source port's version.
+    /// Returns the channel version which the source side
+    /// is using, if already set. If not set, queries the
+    /// source chain to fetch the version.
     pub fn src_version(&self) -> Result<Version, ChannelError> {
-        todo!()
-        // Ok(self.version.clone().unwrap_or(
-        //     self.src_chain()
-        //         .app_version(self.src_port_id())
-        //         .map_err(|e| ChannelError::query(self.src_chain().id(), e))?
-        //         .into(),
-        // ))
+        self.flipped().dst_version()
     }
 
     pub fn build_chan_open_init(&self) -> Result<Vec<Any>, ChannelError> {
@@ -708,24 +701,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(vec![new_msg.to_any()])
     }
 
-    fn assemble_app_version_request(&self) -> QueryAppVersionRequest {
+    /// Fetches the application version of the destination chain for
+    /// the current channel.
+    fn dst_app_version(&self) -> Result<Version, ChannelError> {
         let counterparty = self.src_channel_id().map(|cid| ProtoCounterparty {
             port_id: self.src_port_id().to_string(),
             channel_id: cid.to_string(),
         });
 
-        // {
-        //     None => None,
-        //     Some(_) => {}
-        // };
-
-        QueryAppVersionRequest {
+        let request = QueryAppVersionRequest {
             port_id: self.dst_port_id().to_string(),
             connection_id: self.dst_connection_id().to_string(),
-            ordering: self.ordering as i32, // TODO(Adi): Safe?
+            ordering: self.ordering as i32,
             counterparty,
             proposed_version: Version::default().into(),
-        }
+        };
+
+        self.dst_chain()
+            .app_version(request)
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))
     }
 
     pub fn build_chan_open_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
@@ -754,10 +748,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
-    /// Retrieves the channel from destination and compares against the expected channel
-    /// built from the message type (`msg_type`) and options (`opts`).
-    /// If the expected and the destination channels are compatible, it returns the expected channel
-    /// Source and destination channel IDs must be specified.
+    /// Retrieves the channel from destination and compares it
+    /// against the expected channel. built from the message type [`ChannelMsgType`].
+    ///
+    /// If the expected and the destination channels are compatible,
+    /// returns the expected channel
+    ///
+    /// # Precondition:
+    /// Source and destination channel IDs must be `Some`.
     fn validated_expected_channel(
         &self,
         msg_type: ChannelMsgType,
