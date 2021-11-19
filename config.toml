@@ -17,7 +17,7 @@ enabled = true
 
 # Whether or not to enable periodic refresh of clients. [Default: true]
 # Note: Even if this is disabled, clients will be refreshed automatically if
-#      traffic there is activity on a connection or channel they are involved with.
+#      there is activity on a connection or channel they are involved with.
 refresh = true
 
 # Whether or not to enable misbehaviour detection for clients. [Default: false]
