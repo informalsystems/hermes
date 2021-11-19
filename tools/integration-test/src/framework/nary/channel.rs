@@ -82,7 +82,7 @@ where
         chains: ConnectedChains<Handle, SIZE>,
     ) -> Result<(), Error> {
         let port_ids = self.test.get_overrides().channel_ports();
-        let channels = bootstrap_channels(chains.foreign_clients.clone(), port_ids)?;
+        let channels = bootstrap_channels(&chains, port_ids)?;
 
         self.test.run(config, relayer, chains, channels)?;
 

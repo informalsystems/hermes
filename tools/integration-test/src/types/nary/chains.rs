@@ -7,7 +7,7 @@ use crate::error::Error;
 use crate::types::binary::chains::ConnectedChains as BinaryConnectedChains;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
-use crate::util::array::{try_into_array, try_into_nested_array};
+use crate::util::array::{into_nested_vec, try_into_array, try_into_nested_array};
 
 #[derive(Clone)]
 pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
@@ -99,6 +99,18 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
                 .map_chain(MonoTagged::new, MonoTagged::new);
 
             Ok(client)
+        }
+    }
+}
+
+impl<Handle: ChainHandle, const SIZE: usize> From<ConnectedChains<Handle, SIZE>>
+    for DynamicConnectedChains<Handle>
+{
+    fn from(chains: ConnectedChains<Handle, SIZE>) -> Self {
+        Self {
+            chain_handles: chains.chain_handles.into(),
+            full_nodes: chains.full_nodes.into(),
+            foreign_clients: into_nested_vec(chains.foreign_clients),
         }
     }
 }

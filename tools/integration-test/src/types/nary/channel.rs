@@ -1,6 +1,6 @@
 use core::convert::TryFrom;
 use eyre::eyre;
-use ibc::core::ics24_host::identifier::{ChannelId, PortChannelId, PortId};
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;
 
@@ -31,9 +31,6 @@ pub type TaggedChannelId<Handle, const FIRST: usize, const SECOND: usize> =
 
 pub type TaggedPortId<Handle, const FIRST: usize, const SECOND: usize> =
     DualTagged<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>, PortId>;
-
-pub type TaggedPortChannelId<Handle, const FIRST: usize, const SECOND: usize> =
-    DualTagged<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>, PortChannelId>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
     pub fn channel_at<const FIRST: usize, const SECOND: usize>(
