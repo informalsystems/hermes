@@ -9,6 +9,9 @@ use core::{fmt, time::Duration};
 use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
+use serde::{
+    de, Deserialize as DeserializeTrait, Deserializer, Serialize as SerializeTrait, Serializer,
+};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
@@ -110,10 +113,6 @@ pub mod default {
 
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
-    }
-
-    pub fn proof_specs() -> ProofSpecs {
-        ProofSpecs::cosmos()
     }
 }
 
@@ -399,8 +398,8 @@ pub struct ChainConfig {
     pub trusting_period: Option<Duration>,
     #[serde(default)]
     pub memo_prefix: Memo,
-    #[serde(default = "default::proof_specs")]
-    pub proof_specs: ProofSpecs,
+    #[serde(default)]
+    pub proof_specs: ProofSpecsJson,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
@@ -410,6 +409,64 @@ pub struct ChainConfig {
     pub packet_filter: PacketFilter,
     #[serde(default)]
     pub address_type: AddressType,
+}
+
+#[derive(Clone, Debug)]
+pub struct ProofSpecsJson(ProofSpecs);
+
+impl Default for ProofSpecsJson {
+    fn default() -> Self {
+        Self(ProofSpecs::cosmos())
+    }
+}
+
+impl From<ProofSpecsJson> for ProofSpecs {
+    fn from(value: ProofSpecsJson) -> Self {
+        value.0
+    }
+}
+
+impl SerializeTrait for ProofSpecsJson {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let json_str = serde_json::to_string(self).unwrap();
+        serializer.serialize_str(&json_str)
+    }
+}
+
+struct ProofSpecsJsonVisitor;
+
+impl<'de> de::Visitor<'de> for ProofSpecsJsonVisitor {
+    type Value = ProofSpecsJson;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("ICS23 proof-specs serialized as a JSON array")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(serde_json::from_str(v).unwrap())
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        self.visit_str(&v)
+    }
+}
+
+impl<'de> DeserializeTrait<'de> for ProofSpecsJson {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_string(ProofSpecsJsonVisitor)
+    }
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
