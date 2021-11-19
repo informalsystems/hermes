@@ -38,7 +38,7 @@ SUMMARY
     ([#1479](https://github.com/informalsystems/ibc-rs/issues/1479))
 - [Relayer CLI](relayer-cli)
   - Output errors on a single line if ANSI output is disabled
-    ([#1515](https://github.com/informalsystems/ibc-rs/issues/1515))
+    ([#1529](https://github.com/informalsystems/ibc-rs/issues/1529))
   - Compute fee amount using big integers to prevent overflow
     when using denominations with high decimal places
     ([#1555](https://github.com/informalsystems/ibc-rs/issues/1555))
