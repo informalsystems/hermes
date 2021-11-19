@@ -15,6 +15,7 @@ pub use crate::error::Error;
 pub use crate::framework::overrides::TestOverrides;
 pub use crate::types::binary::chains::ConnectedChains;
 pub use crate::types::binary::channel::ConnectedChannel;
+pub use crate::types::binary::connection::ConnectedConnection;
 pub use crate::types::config::TestConfig;
 pub use crate::types::single::node::{FullNode, TaggedFullNodeExt};
 pub use crate::types::wallet::{
@@ -24,6 +25,10 @@ pub use crate::util::suspend::suspend;
 
 pub use crate::framework::binary::channel::{
     run_binary_channel_test, run_two_way_binary_channel_test, BinaryChannelTest,
+};
+
+pub use crate::framework::binary::connection::{
+    run_binary_connection_test, run_two_way_binary_connection_test, BinaryConnectionTest,
 };
 
 pub use crate::framework::binary::chain::{

@@ -88,17 +88,6 @@ where
         let _node_process_a = node_a.process.clone();
         let _node_process_b = node_a.process.clone();
 
-        self.test.run(config, node_a, node_b)?;
-
-        Ok(())
-    }
-}
-
-impl<'a, Test> BinaryNodeTest for RunBinaryNodeTest<'a, Test>
-where
-    Test: BinaryNodeTest,
-{
-    fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
         self.test
             .run(config, node_a, node_b)
             .map_err(config.hang_on_error())?;

@@ -8,17 +8,18 @@ use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use super::chain::{
-    run_binary_chain_test, BinaryChainTest, RelayerConfigOverride, SupervisorOverride,
-};
+use super::chain::{RelayerConfigOverride, SupervisorOverride};
+use super::connection::{run_binary_connection_test, BinaryConnectionTest};
 use super::node::NodeConfigOverride;
-use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
+use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
+use crate::types::binary::connection::ConnectedConnection;
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
+use crate::types::tagged::*;
 
 /**
    Runs a test case that implements [`BinaryChannelTest`], with
@@ -43,7 +44,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
 {
-    run_binary_chain_test(&RunBinaryChannelTest::new(test))
+    run_binary_connection_test(&RunBinaryChannelTest::new(test))
 }
 
 /**
@@ -127,7 +128,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> BinaryChainTest for RunBinaryChannelTest<'a, Test>
+impl<'a, Test, Overrides> BinaryConnectionTest for RunBinaryChannelTest<'a, Test>
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -137,11 +138,18 @@ where
         &self,
         config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
+        connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let port_a = self.test.get_overrides().channel_port_a();
         let port_b = self.test.get_overrides().channel_port_b();
 
-        let channels = bootstrap_channel_with_chains(&chains, &port_a, &port_b)?;
+        let channels = bootstrap_channel_with_connection(
+            &chains.handle_a,
+            &chains.handle_b,
+            connection,
+            &DualTagged::new(port_a).as_ref(),
+            &DualTagged::new(port_b).as_ref(),
+        )?;
 
         let env_path = config.chain_store_dir.join("binary-channels.env");
 
@@ -149,10 +157,9 @@ where
 
         info!("written channel environment to {}", env_path.display());
 
-        self.test.run(config, chains, channels)?;
-
-        // No use suspending the test on owned failures, as the chains and channels
-        // are dropped in the inner test already.
+        self.test
+            .run(config, chains, channels)
+            .map_err(config.hang_on_error())?;
 
         Ok(())
     }

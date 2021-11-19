@@ -207,7 +207,9 @@ where
         let _drop_handle_a = DropChainHandle(chains.handle_a.clone());
         let _drop_handle_b = DropChainHandle(chains.handle_b.clone());
 
-        self.test.run(config, chains)?;
+        self.test
+            .run(config, chains)
+            .map_err(config.hang_on_error())?;
 
         Ok(())
     }
@@ -225,9 +227,7 @@ impl<'a, Test: BinaryChainTest> BinaryChainTest for RunTwoWayBinaryChainTest<'a,
             chains.chain_id_b(),
         );
 
-        self.test
-            .run(config, chains.clone())
-            .map_err(config.hang_on_error())?;
+        self.test.run(config, chains.clone())?;
 
         info!(
             "running two-way chain test in the opposite direction, from {} to {}",
@@ -237,9 +237,7 @@ impl<'a, Test: BinaryChainTest> BinaryChainTest for RunTwoWayBinaryChainTest<'a,
 
         let chains = chains.flip();
 
-        self.test
-            .run(config, chains)
-            .map_err(config.hang_on_error())?;
+        self.test.run(config, chains)?;
 
         Ok(())
     }
@@ -269,7 +267,9 @@ where
 
         let _drop_handle = DropChainHandle(chains.handle_a.clone());
 
-        self.test.run(config, chains)?;
+        self.test
+            .run(config, chains)
+            .map_err(config.hang_on_error())?;
 
         Ok(())
     }
