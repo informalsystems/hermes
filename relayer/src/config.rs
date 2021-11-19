@@ -9,9 +9,6 @@ use core::{fmt, time::Duration};
 use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
-use serde::{
-    de, Deserialize as DeserializeTrait, Deserializer, Serialize as SerializeTrait, Serializer,
-};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
@@ -398,8 +395,8 @@ pub struct ChainConfig {
     pub trusting_period: Option<Duration>,
     #[serde(default)]
     pub memo_prefix: Memo,
-    #[serde(default)]
-    pub proof_specs: ProofSpecsJson,
+    #[serde(default, with = "proof_specs_serde")]
+    pub proof_specs: ProofSpecs,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
@@ -411,55 +408,39 @@ pub struct ChainConfig {
     pub address_type: AddressType,
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct ProofSpecsJson(ProofSpecs);
+mod proof_specs_serde {
+    use core::fmt;
+    use ibc::core::ics23_commitment::specs::ProofSpecs;
+    use serde::{de, Deserializer, Serializer};
 
-impl From<ProofSpecsJson> for ProofSpecs {
-    fn from(value: ProofSpecsJson) -> Self {
-        value.0
-    }
-}
-
-impl SerializeTrait for ProofSpecsJson {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let json_str = serde_json::to_string(self).unwrap();
+    pub fn serialize<S: Serializer>(
+        proof_specs: &ProofSpecs,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        let json_str = serde_json::to_string(proof_specs).unwrap();
         serializer.serialize_str(&json_str)
     }
-}
 
-struct ProofSpecsJsonVisitor;
+    struct ProofSpecsVisitor;
 
-impl<'de> de::Visitor<'de> for ProofSpecsJsonVisitor {
-    type Value = ProofSpecsJson;
+    impl<'de> de::Visitor<'de> for ProofSpecsVisitor {
+        type Value = ProofSpecs;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("ICS23 proof-specs serialized as a JSON array")
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            formatter.write_str("ICS23 proof-specs serialized as a JSON array")
+        }
+
+        fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+            Ok(serde_json::from_str(v).unwrap())
+        }
+
+        fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
+            self.visit_str(&v)
+        }
     }
 
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(serde_json::from_str(v).unwrap())
-    }
-
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        self.visit_str(&v)
-    }
-}
-
-impl<'de> DeserializeTrait<'de> for ProofSpecsJson {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_string(ProofSpecsJsonVisitor)
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<ProofSpecs, D::Error> {
+        deserializer.deserialize_string(ProofSpecsVisitor)
     }
 }
 
