@@ -28,7 +28,6 @@ fn test_self_connected_ibc_transfer() -> Result<(), Error> {
    this behind the "experimental" feature flag so that normal developers
    are not obligated to understand how this test works yet.
 */
-#[cfg(feature = "experimental")]
 #[test]
 fn test_nary_ibc_transfer() -> Result<(), Error> {
     use crate::framework::nary::channel::{run_nary_channel_test, RunBinaryAsNaryChannelTest};

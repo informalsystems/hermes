@@ -13,7 +13,5 @@
 
 pub mod binary;
 pub mod init;
-pub mod single;
-
-#[cfg(feature = "experimental")]
 pub mod nary;
+pub mod single;
