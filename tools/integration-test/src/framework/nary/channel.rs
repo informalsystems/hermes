@@ -8,6 +8,7 @@ use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride}
 use crate::framework::binary::channel::BinaryChannelTest;
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::framework::overrides::TestOverrides;
+use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::ConnectedChains;
 use crate::types::nary::channel::ConnectedChannels;
@@ -29,6 +30,7 @@ pub trait NaryChannelTest<const SIZE: usize> {
     fn run<Handle: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<Handle, SIZE>,
         channels: ConnectedChannels<Handle, SIZE>,
     ) -> Result<(), Error>;
@@ -76,12 +78,13 @@ where
     fn run<Handle: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<Handle, SIZE>,
     ) -> Result<(), Error> {
         let port_ids = self.test.get_overrides().channel_ports();
         let channels = bootstrap_channels(chains.foreign_clients.clone(), port_ids)?;
 
-        self.test.run(config, chains, channels)?;
+        self.test.run(config, relayer, chains, channels)?;
 
         Ok(())
     }
@@ -94,10 +97,12 @@ where
     fn run<Handle: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<Handle, 2>,
         channels: ConnectedChannels<Handle, 2>,
     ) -> Result<(), Error> {
-        self.test.run(config, chains.into(), channels.into())
+        self.test
+            .run(config, relayer, chains.into(), channels.into())
     }
 }
 

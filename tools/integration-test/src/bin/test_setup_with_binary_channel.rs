@@ -45,6 +45,7 @@ impl BinaryChannelTest for Test {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        _relayer: RelayerDriver,
         _chains: ConnectedChains<ChainA, ChainB>,
         _channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {

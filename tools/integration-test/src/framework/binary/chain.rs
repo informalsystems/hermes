@@ -5,8 +5,6 @@
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
-use ibc_relayer::config::SharedConfig;
-use ibc_relayer::registry::SharedRegistry;
 use tracing::info;
 
 use super::node::{run_binary_node_test, BinaryNodeTest, NodeConfigOverride};
@@ -17,6 +15,7 @@ use crate::chain::builder::ChainBuilder;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::{run_basic_test, BasicTest};
+use crate::relayer::driver::RelayerDriver;
 use crate::relayer::supervisor::SupervisorHandle;
 use crate::types::binary::chains::{ConnectedChains, DropChainHandle};
 use crate::types::config::TestConfig;
@@ -78,6 +77,7 @@ pub trait BinaryChainTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error>;
 }
@@ -112,11 +112,7 @@ pub trait RelayerConfigOverride {
 */
 pub trait SupervisorOverride {
     /// Optionally spawn the supervisor
-    fn spawn_supervisor(
-        &self,
-        config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
-    ) -> Option<SupervisorHandle>;
+    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Option<SupervisorHandle>;
 }
 
 /**
@@ -189,26 +185,23 @@ where
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
     fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
-        let chains = boostrap_chain_pair_with_nodes(config, node_a, node_b, |config| {
+        let (relayer, chains) = boostrap_chain_pair_with_nodes(config, node_a, node_b, |config| {
             self.test.get_overrides().modify_relayer_config(config);
         })?;
 
         let env_path = config.chain_store_dir.join("binary-chains.env");
 
-        write_env(&env_path, &chains)?;
+        write_env(&env_path, &(&relayer, &chains))?;
 
         info!("written chains environment to {}", env_path.display());
 
-        let _supervisor = self
-            .test
-            .get_overrides()
-            .spawn_supervisor(&chains.config, &chains.registry);
+        let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer);
 
         let _drop_handle_a = DropChainHandle(chains.handle_a.clone());
         let _drop_handle_b = DropChainHandle(chains.handle_b.clone());
 
         self.test
-            .run(config, chains)
+            .run(config, relayer, chains)
             .map_err(config.hang_on_error())?;
 
         Ok(())
@@ -219,6 +212,7 @@ impl<'a, Test: BinaryChainTest> BinaryChainTest for RunTwoWayBinaryChainTest<'a,
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         info!(
@@ -227,7 +221,7 @@ impl<'a, Test: BinaryChainTest> BinaryChainTest for RunTwoWayBinaryChainTest<'a,
             chains.chain_id_b(),
         );
 
-        self.test.run(config, chains.clone())?;
+        self.test.run(config, relayer.clone(), chains.clone())?;
 
         info!(
             "running two-way chain test in the opposite direction, from {} to {}",
@@ -237,7 +231,7 @@ impl<'a, Test: BinaryChainTest> BinaryChainTest for RunTwoWayBinaryChainTest<'a,
 
         let chains = chains.flip();
 
-        self.test.run(config, chains)?;
+        self.test.run(config, relayer, chains)?;
 
         Ok(())
     }
@@ -256,19 +250,22 @@ where
 
         let _node_process = node.process.clone();
 
-        let chains = boostrap_self_connected_chain(config, node, |config| {
+        let (relayer, chains) = boostrap_self_connected_chain(config, node, |config| {
             self.test.get_overrides().modify_relayer_config(config);
         })?;
 
-        let _supervisor = self
-            .test
-            .get_overrides()
-            .spawn_supervisor(&chains.config, &chains.registry);
+        let env_path = config.chain_store_dir.join("self-binary-chains.env");
+
+        write_env(&env_path, &(&relayer, &chains))?;
+
+        info!("written chains environment to {}", env_path.display());
+
+        let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer);
 
         let _drop_handle = DropChainHandle(chains.handle_a.clone());
 
         self.test
-            .run(config, chains)
+            .run(config, relayer, chains)
             .map_err(config.hang_on_error())?;
 
         Ok(())

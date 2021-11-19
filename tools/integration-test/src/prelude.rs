@@ -13,6 +13,8 @@ pub use tracing::{debug, error, info, warn};
 pub use crate::chain::driver::{tagged::TaggedChainDriverExt, ChainDriver};
 pub use crate::error::Error;
 pub use crate::framework::overrides::TestOverrides;
+pub use crate::relayer::driver::RelayerDriver;
+pub use crate::relayer::supervisor::SupervisorHandle;
 pub use crate::types::binary::chains::ConnectedChains;
 pub use crate::types::binary::channel::ConnectedChannel;
 pub use crate::types::binary::connection::ConnectedConnection;

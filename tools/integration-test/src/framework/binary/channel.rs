@@ -14,6 +14,7 @@ use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
+use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::binary::connection::ConnectedConnection;
@@ -62,6 +63,7 @@ pub trait BinaryChannelTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error>;
@@ -137,6 +139,7 @@ where
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -158,7 +161,7 @@ where
         info!("written channel environment to {}", env_path.display());
 
         self.test
-            .run(config, chains, channels)
+            .run(config, relayer, chains, channels)
             .map_err(config.hang_on_error())?;
 
         Ok(())
@@ -169,6 +172,7 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -181,7 +185,7 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
         );
 
         self.test
-            .run(config, chains.clone(), channels.clone())
+            .run(config, relayer.clone(), chains.clone(), channels.clone())
             .map_err(config.hang_on_error())?;
 
         info!(
@@ -196,7 +200,7 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
         let channels = channels.flip();
 
         self.test
-            .run(config, chains, channels)
+            .run(config, relayer, chains, channels)
             .map_err(config.hang_on_error())?;
 
         Ok(())

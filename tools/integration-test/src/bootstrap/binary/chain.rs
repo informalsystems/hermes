@@ -14,6 +14,7 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use tracing::{debug, info};
 
+use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
@@ -35,7 +36,13 @@ pub fn boostrap_chain_pair_with_nodes(
     node_a: FullNode,
     node_b: FullNode,
     config_modifier: impl FnOnce(&mut Config),
-) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error> {
+) -> Result<
+    (
+        RelayerDriver,
+        ConnectedChains<impl ChainHandle, impl ChainHandle>,
+    ),
+    Error,
+> {
     let mut config = Config::default();
 
     add_chain_config(&mut config, &node_a)?;
@@ -60,10 +67,13 @@ pub fn boostrap_chain_pair_with_nodes(
     let client_a_to_b = bootstrap_foreign_client(&handle_a, &handle_b)?;
     let client_b_to_a = bootstrap_foreign_client(&handle_b, &handle_a)?;
 
-    let chains = ConnectedChains::new(
+    let relayer = RelayerDriver {
         config_path,
         config,
         registry,
+    };
+
+    let chains = ConnectedChains::new(
         handle_a,
         handle_b,
         MonoTagged::new(node_a),
@@ -72,7 +82,7 @@ pub fn boostrap_chain_pair_with_nodes(
         client_b_to_a,
     );
 
-    Ok(chains)
+    Ok((relayer, chains))
 }
 
 /**
@@ -91,7 +101,13 @@ pub fn boostrap_self_connected_chain(
     test_config: &TestConfig,
     node: FullNode,
     config_modifier: impl FnOnce(&mut Config),
-) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error> {
+) -> Result<
+    (
+        RelayerDriver,
+        ConnectedChains<impl ChainHandle, impl ChainHandle>,
+    ),
+    Error,
+> {
     let mut config = Config::default();
 
     add_chain_config(&mut config, &node)?;
@@ -110,17 +126,22 @@ pub fn boostrap_self_connected_chain(
 
     let foreign_client = bootstrap_foreign_client(&handle, &handle)?;
 
-    Ok(ConnectedChains::new(
+    let relayer = RelayerDriver {
         config_path,
         config,
         registry,
+    };
+
+    let chains = ConnectedChains::new(
         handle.clone(),
         handle,
         MonoTagged::new(node.clone()),
         MonoTagged::new(node),
         foreign_client.clone(),
         foreign_client,
-    ))
+    );
+
+    Ok((relayer, chains))
 }
 
 /**

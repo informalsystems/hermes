@@ -3,17 +3,15 @@
 */
 
 use ibc::core::ics24_host::identifier::PortId;
-use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
-use ibc_relayer::config::SharedConfig;
-use ibc_relayer::registry::SharedRegistry;
 
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::PortsOverride;
 use crate::framework::binary::node::NodeConfigOverride;
-use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
+use crate::relayer::driver::RelayerDriver;
+use crate::relayer::supervisor::SupervisorHandle;
 
 /**
    This trait should be implemented for all test cases to allow overriding
@@ -66,12 +64,8 @@ pub trait TestOverrides {
 
        Implemented for [`SupervisorOverride`].
     */
-    fn spawn_supervisor(
-        &self,
-        config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
-    ) -> Option<SupervisorHandle> {
-        let handle = spawn_supervisor(config.clone(), registry.clone());
+    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Option<SupervisorHandle> {
+        let handle = relayer.spawn_supervisor();
         Some(handle)
     }
 
@@ -117,12 +111,8 @@ impl<Test: TestOverrides> RelayerConfigOverride for Test {
 }
 
 impl<Test: TestOverrides> SupervisorOverride for Test {
-    fn spawn_supervisor(
-        &self,
-        config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
-    ) -> Option<SupervisorHandle> {
-        TestOverrides::spawn_supervisor(self, config, registry)
+    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Option<SupervisorHandle> {
+        TestOverrides::spawn_supervisor(self, relayer)
     }
 }
 

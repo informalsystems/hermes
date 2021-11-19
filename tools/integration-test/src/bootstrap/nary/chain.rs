@@ -11,6 +11,7 @@ use crate::bootstrap::binary::chain::{
     save_relayer_config,
 };
 use crate::error::Error;
+use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::{ConnectedChains, DynamicConnectedChains};
 use crate::types::single::node::FullNode;
@@ -19,19 +20,18 @@ pub fn boostrap_chains_with_nodes<const SIZE: usize>(
     test_config: &TestConfig,
     full_nodes: [FullNode; SIZE],
     config_modifier: impl FnOnce(&mut Config),
-) -> Result<ConnectedChains<impl ChainHandle, SIZE>, Error> {
-    let connected_chains =
-        boostrap_chains_with_any_nodes(test_config, full_nodes.into(), config_modifier)?
-            .try_into()?;
+) -> Result<(RelayerDriver, ConnectedChains<impl ChainHandle, SIZE>), Error> {
+    let (relayer, chains) =
+        boostrap_chains_with_any_nodes(test_config, full_nodes.into(), config_modifier)?;
 
-    Ok(connected_chains)
+    Ok((relayer, chains.try_into()?))
 }
 
 pub fn boostrap_chains_with_any_nodes(
     test_config: &TestConfig,
     full_nodes: Vec<FullNode>,
     config_modifier: impl FnOnce(&mut Config),
-) -> Result<DynamicConnectedChains<impl ChainHandle>, Error> {
+) -> Result<(RelayerDriver, DynamicConnectedChains<impl ChainHandle>), Error> {
     let mut config = Config::default();
 
     for node in full_nodes.iter() {
@@ -68,16 +68,19 @@ pub fn boostrap_chains_with_any_nodes(
         foreign_clients.push(foreign_clients_b);
     }
 
-    let connected_chains = DynamicConnectedChains {
+    let relayer = RelayerDriver {
         config_path,
         config,
         registry,
+    };
+
+    let connected_chains = DynamicConnectedChains {
         chain_handles,
         full_nodes,
         foreign_clients,
     };
 
-    Ok(connected_chains)
+    Ok((relayer, connected_chains))
 }
 
 pub fn spawn_chain_handle<Handle: ChainHandle>(

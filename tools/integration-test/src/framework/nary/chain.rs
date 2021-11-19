@@ -7,6 +7,7 @@ use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::node::NodeConfigOverride;
+use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::DropChainHandle;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::ConnectedChains;
@@ -26,6 +27,7 @@ pub trait NaryChainTest<const SIZE: usize> {
     fn run<Handle: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<Handle, SIZE>,
     ) -> Result<(), Error>;
 }
@@ -42,14 +44,11 @@ where
     Overrides: RelayerConfigOverride + SupervisorOverride,
 {
     fn run(&self, config: &TestConfig, nodes: [FullNode; SIZE]) -> Result<(), Error> {
-        let chains = boostrap_chains_with_nodes(config, nodes, |config| {
+        let (relayer, chains) = boostrap_chains_with_nodes(config, nodes, |config| {
             self.test.get_overrides().modify_relayer_config(config);
         })?;
 
-        let _supervisor = self
-            .test
-            .get_overrides()
-            .spawn_supervisor(&chains.config, &chains.registry);
+        let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer);
 
         let _drop_handles = chains
             .chain_handles
@@ -57,7 +56,7 @@ where
             .map(|handle| DropChainHandle(handle.clone()))
             .collect::<Vec<_>>();
 
-        self.test.run(config, chains)?;
+        self.test.run(config, relayer, chains)?;
 
         Ok(())
     }

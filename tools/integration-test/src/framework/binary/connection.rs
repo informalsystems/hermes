@@ -14,6 +14,7 @@ use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
+use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::connection::ConnectedConnection;
 use crate::types::config::TestConfig;
@@ -60,6 +61,7 @@ pub trait BinaryConnectionTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error>;
@@ -110,6 +112,7 @@ where
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let connection = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b)?;
@@ -120,7 +123,7 @@ where
 
         info!("written connection environment to {}", env_path.display());
 
-        self.test.run(config, chains, connection)?;
+        self.test.run(config, relayer, chains, connection)?;
 
         Ok(())
     }
@@ -132,6 +135,7 @@ impl<'a, Test: BinaryConnectionTest> BinaryConnectionTest
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -143,7 +147,8 @@ impl<'a, Test: BinaryConnectionTest> BinaryConnectionTest
             connection.connection_id_b,
         );
 
-        self.test.run(config, chains.clone(), connection.clone())?;
+        self.test
+            .run(config, relayer.clone(), chains.clone(), connection.clone())?;
 
         info!(
             "running two-way connection test in the opposite direction, from {}/{} to {}/{}",
@@ -156,7 +161,7 @@ impl<'a, Test: BinaryConnectionTest> BinaryConnectionTest
         let chains = chains.flip();
         let connection = connection.flip();
 
-        self.test.run(config, chains, connection)?;
+        self.test.run(config, relayer, chains, connection)?;
 
         Ok(())
     }

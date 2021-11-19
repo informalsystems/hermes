@@ -54,6 +54,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedConnection<ChainA, Chain
             connection_id_b: self.connection_id_a,
         }
     }
+
+    pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
+        self,
+        map_a: impl Fn(ChainA) -> ChainC,
+        map_b: impl Fn(ChainB) -> ChainD,
+    ) -> ConnectedConnection<ChainC, ChainD> {
+        ConnectedConnection {
+            client: ConnectedClients {
+                client_id_a: self.client.client_id_a.retag(),
+                client_id_b: self.client.client_id_b.retag(),
+            },
+            connection: self.connection.map_chain(map_a, map_b),
+            connection_id_a: self.connection_id_a.retag(),
+            connection_id_b: self.connection_id_b.retag(),
+        }
+    }
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedConnection<ChainA, ChainB> {

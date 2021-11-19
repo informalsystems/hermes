@@ -2,11 +2,8 @@
    Type definition for two connected chains.
 */
 
-use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
-use ibc_relayer::config::SharedConfig;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer::registry::SharedRegistry;
-use std::path::PathBuf;
 use tracing::info;
 
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
@@ -20,33 +17,6 @@ use crate::types::tagged::*;
 */
 #[derive(Clone)]
 pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
-    /**
-       The path to the relayer config saved on the filesystem.
-
-       This allows users to test the relayer manually with the config file
-       while the test is suspended.
-    */
-    pub config_path: PathBuf,
-
-    /**
-       The relayer [`Config`](ibc_relayer::config::Config) that is shared
-       with the [`Registry`](ibc_relayer::registry::Registry).
-
-       Use this shared config when spawning new supervisor using
-       [`spawn_supervisor`](crate::relayer::supervisor::spawn_supervisor).
-    */
-    pub config: SharedConfig,
-
-    /**
-       The relayer chain [`Registry`](ibc_relayer::registry::Registry)
-       that is shared with any running
-       [`Supervisor`](ibc_relayer::supervisor::Supervisor).
-
-       Use this shared registry when spawning new supervisor using
-       [`spawn_supervisor`](crate::relayer::supervisor::spawn_supervisor).
-    */
-    pub registry: SharedRegistry<ProdChainHandle>,
-
     /**
         The [`ChainHandle`] for chain A.
 
@@ -95,9 +65,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
        Create a new [`ConnectedChains`]
     */
     pub fn new(
-        config_path: PathBuf,
-        config: SharedConfig,
-        registry: SharedRegistry<ProdChainHandle>,
         handle_a: ChainA,
         handle_b: ChainB,
         node_a: MonoTagged<ChainA, FullNode>,
@@ -106,9 +73,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
         client_b_to_a: ForeignClient<ChainA, ChainB>,
     ) -> Self {
         Self {
-            config_path,
-            config,
-            registry,
             handle_a,
             handle_b,
             node_a,
@@ -154,9 +118,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
     */
     pub fn flip(self) -> ConnectedChains<ChainB, ChainA> {
         ConnectedChains {
-            config: self.config,
-            config_path: self.config_path,
-            registry: self.registry,
             handle_a: self.handle_b,
             handle_b: self.handle_a,
             node_a: self.node_b,
@@ -165,12 +126,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
             client_b_to_a: self.client_a_to_b,
         }
     }
+
+    pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
+        self,
+        map_a: impl Fn(ChainA) -> ChainC,
+        map_b: impl Fn(ChainB) -> ChainD,
+    ) -> ConnectedChains<ChainC, ChainD> {
+        ConnectedChains {
+            handle_a: map_a(self.handle_a),
+            handle_b: map_b(self.handle_b),
+            node_a: self.node_a.retag(),
+            node_b: self.node_b.retag(),
+            client_a_to_b: self.client_a_to_b.map_chain(&map_b, &map_a),
+            client_b_to_a: self.client_b_to_a.map_chain(&map_a, &map_b),
+        }
+    }
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChains<ChainA, ChainB> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        writer.write_env("RELAYER_CONFIG", &format!("{}", self.config_path.display()));
-
         writer.write_env("CHAIN_ID_A", &format!("{}", self.node_a.chain_id()));
         writer.write_env("CHAIN_ID_B", &format!("{}", self.node_b.chain_id()));
 
