@@ -4,23 +4,26 @@
 //! channel version to be used in a channel open
 //! handshake.
 
-use tracing::warn;
+use tracing::info;
 
 use ibc::{
     applications::{ics20_fungible_token_transfer, ics27_interchain_accounts},
     core::ics04_channel::Version,
 };
+use ibc::core::ics24_host::identifier::PortId;
 
 use crate::{
     chain::handle::ChainHandle,
     channel::{Channel, ChannelError},
 };
+use crate::channel::error::ChannelErrorDetail;
 
 /// Defines the context in which to resolve a channel version.
 ///
 /// This context distinguishes between different steps of
 /// the channel open handshake protocol. Currently, we only
 /// need to distinguish between the OpenInit step and any other.
+#[derive(Debug)]
 pub enum ResolveContext {
     ChanOpenInit,
     Other,
@@ -38,25 +41,51 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     match ctx {
         ResolveContext::ChanOpenInit => {
-            // Resolve by using the predefined application version.
-            if port_id.as_str() == ics20_fungible_token_transfer::PORT_ID {
-                // https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#forwards-compatibility
-                Ok(Version::from(ics20_fungible_token_transfer::VERSION))
-            } else if port_id
-                .as_str()
-                .starts_with(ics27_interchain_accounts::PORT_ID_PREFIX)
-            {
-                // https://github.com/cosmos/ibc/tree/master/spec/app/ics-027-interchain-accounts#channel-lifecycle-management
-                Ok(Version::from(ics27_interchain_accounts::VERSION))
-            } else {
-                Err(ChannelError::invalid_port_id(port_id.clone()))
-            }
+            // When the channel is uninitialized, the relayer will use the
+            // default channel version, depending on the port id.
+            default_by_port(port_id)
         }
-
         ResolveContext::Other => {
             // Resolve the version by querying the application version on destination chain
-            warn!("resolving channel version by calling destination chain");
-            channel.dst_app_version()
+            info!("resolving channel version for port id {}, context={:?} by retrieving destination chain app version", port_id, ctx);
+            let result = channel.dst_app_version();
+
+            // TODO(Adi): decide if to resort to default channel version here
+            //  It's only safe to do so if we can match on the error sub detail:
+            //      > gRPC call failed with status: status: Unimplemented, message: "unknown service ibc.core.port.v1.Query"
+            //  then also change `validated_expected_channel` to call into `version::resolve` instead
+            //  of calling `Channel::dst_version`.
+            match result {
+                Ok(v) => Ok(v),
+                Err(e) if matches!(e.detail(), ChannelErrorDetail::Query(s)) => {
+                    // if let ChannelErrorDetail::Query(s) = e.detail() {
+                    //     if let v = s.source;
+                        info!("error detail caught = {:?}", s);
+                        Err(e)
+                },
+                Err(e) =>{
+                        // Propagate the error, it's not a query problem.
+                        Err(e)
+                    }
+                }
         }
+    }
+}
+
+/// Returns the default channel version by port identifier.
+fn default_by_port(port_id: &PortId) -> Result<Version, ChannelError> {
+    if port_id.as_str() == ics20_fungible_token_transfer::PORT_ID {
+        info!("resolving channel version for port id {} locally to {}", port_id, Version::ics20());
+        // https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#forwards-compatibility
+        Ok(Version::ics20())
+    } else if port_id
+        .as_str()
+        .starts_with(ics27_interchain_accounts::PORT_ID_PREFIX)
+    {
+        info!("resolving channel version for port id {} locally to {}", port_id, Version::ics27());
+        // https://github.com/cosmos/ibc/tree/master/spec/app/ics-027-interchain-accounts#channel-lifecycle-management
+        Ok(Version::ics27())
+    } else {
+        Err(ChannelError::invalid_port_id(port_id.clone()))
     }
 }

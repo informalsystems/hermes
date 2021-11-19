@@ -1963,29 +1963,19 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((target, supporting))
     }
 
-    fn query_app_version(&self, _request: QueryAppVersionRequest) -> ics04_channel::Version {
-        // use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
+    fn query_app_version(&self, request: QueryAppVersionRequest) -> Result<ics04_channel::Version, Error> {
+        use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
 
-        // let mut client = self.block_on(QueryClient::connect(self.grpc_addr.clone()))
-        //     .map_err(Error::grpc_transport);
-        // // .map_err(Error::grpc_transport)?;
-        //
-        // let request = tonic::Request::new(QueryAppVersionRequest {
-        //     port_id: todo!(),
-        //     connection_id: todo!(),
-        //     ordering: todo!(),
-        //     counterparty: todo!(),
-        //     proposed_version: todo!(),
-        // });
+        let mut client =
+            self.block_on(QueryClient::connect(self.grpc_addr.clone())).map_err(Error::grpc_transport)?;
 
-        // let response = client.account(request).await;
-        // let resp_account = response
-        //     .map_err(Error::grpc_status)?
-        //     .into_inner()
-        //     .account
-        //     .unwrap();
+        let response = self.block_on(client.app_version(request));
+        let resp_version = response
+            .map_err(Error::grpc_status)?
+            .into_inner()
+            .version.into();
 
-        Default::default()
+        Ok(resp_version)
     }
 }
 

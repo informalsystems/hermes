@@ -863,12 +863,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
+        let version = version::resolve(ResolveContext::Other, &self)?;
+
         let channel = ChannelEnd::new(
             State::TryOpen,
             *src_channel.ordering(),
             counterparty,
             vec![self.dst_connection_id().clone()],
-            src_channel.version().clone(),
+            version,
         );
 
         // Get signer

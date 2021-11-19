@@ -433,7 +433,7 @@ where
         reply_to: ReplyTo<ics04_channel::Version>,
     ) -> Result<(), Error> {
         let result = self.chain.query_app_version(request);
-        reply_to.send(Ok(result)).map_err(Error::send)
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn add_key(
