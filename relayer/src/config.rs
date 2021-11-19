@@ -411,14 +411,8 @@ pub struct ChainConfig {
     pub address_type: AddressType,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ProofSpecsJson(ProofSpecs);
-
-impl Default for ProofSpecsJson {
-    fn default() -> Self {
-        Self(ProofSpecs::cosmos())
-    }
-}
 
 impl From<ProofSpecsJson> for ProofSpecs {
     fn from(value: ProofSpecsJson) -> Self {

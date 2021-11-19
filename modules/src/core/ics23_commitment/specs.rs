@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// Additionally, this type also aids in the conversion from `ProofSpec` types from crate `ics23`
 /// into proof specifications as represented in the `ibc_proto` type; see the
 /// `From` trait(s) below.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ProofSpecs(Vec<ProtoProofSpec>);
 
 impl ProofSpecs {
@@ -21,6 +21,12 @@ impl ProofSpecs {
             ics23::tendermint_spec(), // Format of proofs-tendermint (crypto/ merkle SimpleProof)
         ]
         .into()
+    }
+}
+
+impl Default for ProofSpecs {
+    fn default() -> Self {
+        Self::cosmos()
     }
 }
 
