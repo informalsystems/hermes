@@ -1,19 +1,19 @@
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 
-use crate::bootstrap::nary::channel::bootstrap_channels;
+use crate::bootstrap::nary::channel::bootstrap_channels_with_connections;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::BinaryChannelTest;
 use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::nary::connection::{run_nary_connection_test, NaryConnectionTest};
 use crate::framework::overrides::TestOverrides;
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::ConnectedChains;
 use crate::types::nary::channel::ConnectedChannels;
-
-use super::chain::{run_nary_chain_test, NaryChainTest};
+use crate::types::nary::connection::ConnectedConnections;
 
 pub fn run_nary_channel_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Result<(), Error>
 where
@@ -22,7 +22,7 @@ where
     Overrides:
         NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride<SIZE>,
 {
-    run_nary_chain_test(&RunNaryChannelTest::new(test))
+    run_nary_connection_test(&RunNaryChannelTest::new(test))
 }
 
 pub trait NaryChannelTest<const SIZE: usize> {
@@ -68,7 +68,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> NaryChainTest<SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE>
     for RunNaryChannelTest<'a, Test, SIZE>
 where
     Test: NaryChannelTest<SIZE>,
@@ -80,9 +80,11 @@ where
         config: &TestConfig,
         relayer: RelayerDriver,
         chains: ConnectedChains<Handle, SIZE>,
+        connections: ConnectedConnections<Handle, SIZE>,
     ) -> Result<(), Error> {
         let port_ids = self.test.get_overrides().channel_ports();
-        let channels = bootstrap_channels(&chains, port_ids)?;
+        let channels =
+            bootstrap_channels_with_connections(connections, &chains.chain_handles, port_ids)?;
 
         self.test.run(config, relayer, chains, channels)?;
 
