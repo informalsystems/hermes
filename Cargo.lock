@@ -3009,9 +3009,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff16a7b42bdbcf31c8cd10a4cffc7631f2a301360ba3a3f71dde48eabfa5bced"
+checksum = "d1b8319fcf0860833eabe3278cf2d94ca20ef04bee6a77d892f986026fb1c252"
 dependencies = [
  "bytes",
  "chrono",
