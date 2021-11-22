@@ -12,6 +12,7 @@ rust-version = "1.56"
 description  = """
   Hermes is an IBC Relayer written in Rust
 """
+default-run = "hermes"
 
 [[bin]]
 name = "hermes"
