@@ -359,6 +359,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         self.b_side.channel_id()
     }
 
+    pub fn src_version(&self) -> Option<&Version> {
+        self.a_side.version.as_ref()
+    }
+
+    pub fn dst_version(&self) -> Option<&Version> {
+        self.b_side.version.as_ref()
+    }
+
     pub fn flipped(&self) -> Channel<ChainB, ChainA> {
         Channel {
             ordering: self.ordering,

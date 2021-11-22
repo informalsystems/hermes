@@ -4,7 +4,7 @@
 //! channel version to be used in a channel open
 //! handshake.
 
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use ibc::{
     applications::{ics20_fungible_token_transfer, ics27_interchain_accounts},
@@ -65,6 +65,7 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
                         if s.is_unimplemented_port_query() {
                             // Ensure compatibility & recover from the error,
                             // by using the default version.
+                            debug!("resorting to default version");
                             return default_by_port(port_id);
                         }
                     }
@@ -117,12 +118,22 @@ fn dst_app_version<ChainA: ChainHandle, ChainB: ChainHandle>(
         channel_id: cid.to_string(),
     });
 
+    let proposed_version = channel
+        .src_version()
+        .cloned()
+        .unwrap_or(
+            default_by_port(channel.dst_port_id())
+                .map_err(|e| Error::app_version(e.to_string()))?,
+        )
+        .into();
+    debug!("source proposed version: {}", proposed_version);
+
     let request = QueryAppVersionRequest {
         port_id: channel.dst_port_id().to_string(),
         connection_id: channel.dst_connection_id().to_string(),
         ordering: channel.ordering as i32,
         counterparty,
-        proposed_version: Version::default().into(),
+        proposed_version,
     };
 
     channel.dst_chain().app_version(request)

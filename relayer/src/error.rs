@@ -197,6 +197,10 @@ define_error! {
             { reason: String }
             |e| { format!("Failed to build conn open try: {0}", e.reason) },
 
+        AppVersion
+            { reason: String }
+            |e| { format!("failed to fetch application version: {0}", e.reason) },
+
         ChanOpenAck
             { channel_id: ChannelId, reason: String }
             |e| {
@@ -299,7 +303,7 @@ define_error! {
 
         ChannelReceive
             [ TraceError<crossbeam_channel::RecvError> ]
-            |_| { "failed to receive through channel" },
+            |_| { "internal communication failure: error receiving inter-thread request/response" },
 
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },
