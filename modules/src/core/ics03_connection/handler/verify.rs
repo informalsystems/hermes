@@ -42,12 +42,7 @@ pub fn verify_proofs(
 
     // If a consensus proof is attached to the message, then verify it.
     if let Some(proof) = proofs.consensus_proof() {
-        Ok(verify_consensus_proof(
-            ctx,
-            connection_end,
-            proofs.height(),
-            &proof,
-        )?)
+        Ok(verify_consensus_proof(ctx, connection_end, &proof)?)
     } else {
         Ok(())
     }
@@ -72,20 +67,25 @@ pub fn verify_connection_proof(
     }
 
     // The client must have the consensus state for the height where this proof was created.
-    ctx.client_consensus_state(connection_end.client_id(), proof_height)?;
+    let consensus_state = ctx.client_consensus_state(connection_end.client_id(), proof_height)?;
+
+    // A counterparty connection id of None causes `unwrap()` below and indicates an internal
+    // error as this is the connection id on the counterparty chain that must always be present.
+    let connection_id = connection_end
+        .counterparty()
+        .connection_id()
+        .ok_or_else(Error::invalid_counterparty)?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
     // Verify the proof for the connection state against the expected connection end.
-    // A counterparty connection id of None causes `unwrap()` below and indicates an internal
-    // error as this is the connection id on the counterparty chain that must always be present.
     client_def
         .verify_connection_state(
             &client_state,
-            proof_height,
             connection_end.counterparty().prefix(),
             proof,
-            connection_end.counterparty().connection_id(),
+            consensus_state.root(),
+            connection_id,
             expected_conn,
         )
         .map_err(Error::verify_connection_state)
@@ -119,11 +119,10 @@ pub fn verify_client_proof(
     client_def
         .verify_client_full_state(
             &client_state,
-            proof_height,
-            consensus_state.root(),
             connection_end.counterparty().prefix(),
-            connection_end.counterparty().client_id(),
             proof,
+            consensus_state.root(),
+            connection_end.counterparty().client_id(),
             &expected_client_state,
         )
         .map_err(|e| {
@@ -134,7 +133,6 @@ pub fn verify_client_proof(
 pub fn verify_consensus_proof(
     ctx: &dyn ConnectionReader,
     connection_end: &ConnectionEnd,
-    proof_height: Height,
     proof: &ConsensusProof,
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
@@ -152,9 +150,9 @@ pub fn verify_consensus_proof(
     client
         .verify_client_consensus_state(
             &client_state,
-            proof_height,
             connection_end.counterparty().prefix(),
             proof.proof(),
+            expected_consensus.root(),
             connection_end.counterparty().client_id(),
             proof.height(),
             &expected_consensus,

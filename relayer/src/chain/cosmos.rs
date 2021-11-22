@@ -49,6 +49,7 @@ use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
+use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::core::ics24_host::Path::ClientState as ClientStatePath;
@@ -1927,6 +1928,7 @@ impl ChainEndpoint for CosmosSdkChain {
             max_clock_drift,
             height,
             ICSHeight::zero(),
+            ProofSpecs::cosmos().into(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             AllowUpdate {
                 after_expiry: true,

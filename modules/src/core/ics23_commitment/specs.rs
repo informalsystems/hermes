@@ -9,8 +9,9 @@ use ics23::ProofSpec;
 /// Additionally, this type also aids in the conversion from `ProofSpec` types from crate `ics23`
 /// into proof specifications as represented in the `ibc_proto` type; see the
 /// `From` trait(s) below.
+#[derive(Clone, Debug, PartialEq)]
 pub struct ProofSpecs {
-    specs: Vec<ProofSpec>,
+    pub specs: Vec<ProofSpec>,
 }
 
 impl ProofSpecs {
@@ -42,5 +43,20 @@ impl From<ProofSpecs> for Vec<ProtoProofSpec> {
             raw_specs.push(decoded);
         }
         raw_specs
+    }
+}
+
+impl From<Vec<ProtoProofSpec>> for ProofSpecs {
+    fn from(proto_specs: Vec<ProtoProofSpec>) -> Self {
+        let specs: Vec<ProofSpec> = proto_specs
+            .iter()
+            .map(|p| {
+                let mut encoded = Vec::new();
+                // encode/decode conversion here should be infallible.
+                prost::Message::encode(p, &mut encoded).unwrap();
+                prost::Message::decode(&*encoded).unwrap()
+            })
+            .collect();
+        Self { specs }
     }
 }

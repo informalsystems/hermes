@@ -8,6 +8,7 @@ use tendermint_light_client::light_client::Options;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
+use ibc_proto::ics23::ProofSpec;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
@@ -15,7 +16,6 @@ use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
-use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::ZERO_DURATION;
 use crate::Height;
@@ -29,7 +29,7 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub frozen_height: Height,
     pub latest_height: Height,
-    // pub proof_specs: ::core::vec::Vec<super::super::super::super::ics23::ProofSpec>,
+    pub proof_specs: Vec<ProofSpec>,
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
 }
@@ -52,6 +52,7 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
+        proof_specs: Vec<ProofSpec>,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
     ) -> Result<ClientState, Error> {
@@ -99,6 +100,7 @@ impl ClientState {
             max_clock_drift,
             frozen_height,
             latest_height,
+            proof_specs,
             upgrade_path,
             allow_update,
         })
@@ -223,6 +225,7 @@ impl TryFrom<RawClientState> for ClientState {
                 .frozen_height
                 .ok_or_else(Error::missing_frozen_height)?
                 .into(),
+            proof_specs: raw.proof_specs,
             upgrade_path: raw.upgrade_path,
             allow_update: AllowUpdate {
                 after_expiry: raw.allow_update_after_expiry,
@@ -242,7 +245,7 @@ impl From<ClientState> for RawClientState {
             max_clock_drift: Some(value.max_clock_drift.into()),
             frozen_height: Some(value.frozen_height.into()),
             latest_height: Some(value.latest_height.into()),
-            proof_specs: ProofSpecs::cosmos().into(),
+            proof_specs: value.proof_specs,
             allow_update_after_expiry: value.allow_update.after_expiry,
             allow_update_after_misbehaviour: value.allow_update.after_misbehaviour,
             upgrade_path: value.upgrade_path,
@@ -257,6 +260,7 @@ mod tests {
     use std::println;
     use test_env_log::test;
 
+    use ibc_proto::ics23::ProofSpec;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
@@ -293,6 +297,7 @@ mod tests {
             max_clock_drift: Duration,
             latest_height: Height,
             frozen_height: Height,
+            proof_specs: Vec<ProofSpec>,
             upgrade_path: Vec<String>,
             allow_update: AllowUpdate,
         }
@@ -306,6 +311,7 @@ mod tests {
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height::new(0, 10),
             frozen_height: Height::default(),
+            proof_specs: vec![],
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
                 after_expiry: false,
@@ -373,6 +379,7 @@ mod tests {
                 p.max_clock_drift,
                 p.latest_height,
                 p.frozen_height,
+                p.proof_specs,
                 p.upgrade_path,
                 p.allow_update,
             );
@@ -414,6 +421,7 @@ pub mod test_util {
                     u64::from(tm_header.height),
                 ),
                 Height::zero(),
+                vec![],
                 vec!["".to_string()],
                 AllowUpdate {
                     after_expiry: false,

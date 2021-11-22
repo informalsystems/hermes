@@ -46,27 +46,22 @@ impl ClientDef for MockClient {
     fn verify_client_consensus_state(
         &self,
         _client_state: &Self::ClientState,
-        height: Height,
         prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
         client_id: &ClientId,
-        _consensus_height: Height,
+        consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
         let client_prefixed_path = Path::ClientConsensusState {
             client_id: client_id.clone(),
-            epoch: height.revision_number,
-            height: height.revision_height,
+            epoch: consensus_height.revision_number,
+            height: consensus_height.revision_height,
         }
         .to_string();
 
         let _path =
             apply_prefix(prefix, vec![client_prefixed_path]).map_err(Error::empty_prefix)?;
-
-        // TODO - add ctx to all client verification functions
-        // let cs = ctx.fetch_self_consensus_state(height);
-        // TODO - implement this
-        // proof.verify_membership(cs.root(), path, expected_consensus_state)
 
         Ok(())
     }
@@ -74,10 +69,10 @@ impl ClientDef for MockClient {
     fn verify_connection_state(
         &self,
         _client_state: &Self::ClientState,
-        _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
-        _connection_id: Option<&ConnectionId>,
+        _root: &CommitmentRoot,
+        _connection_id: &ConnectionId,
         _expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
         Ok(())
@@ -86,9 +81,9 @@ impl ClientDef for MockClient {
     fn verify_channel_state(
         &self,
         _client_state: &Self::ClientState,
-        _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _expected_channel_end: &ChannelEnd,
@@ -99,11 +94,10 @@ impl ClientDef for MockClient {
     fn verify_client_full_state(
         &self,
         _client_state: &Self::ClientState,
-        _height: Height,
-        _root: &CommitmentRoot,
         _prefix: &CommitmentPrefix,
-        _client_id: &ClientId,
         _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _client_id: &ClientId,
         _expected_client_state: &AnyClientState,
     ) -> Result<(), Error> {
         Ok(())
@@ -112,12 +106,13 @@ impl ClientDef for MockClient {
     fn verify_packet_data(
         &self,
         _client_state: &Self::ClientState,
-        _height: Height,
+        _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _seq: &Sequence,
-        _data: String,
+        _seq: Sequence,
+        _commitment: String,
     ) -> Result<(), Error> {
         Ok(())
     }
@@ -125,12 +120,13 @@ impl ClientDef for MockClient {
     fn verify_packet_acknowledgement(
         &self,
         _client_state: &Self::ClientState,
-        _height: Height,
+        _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _seq: &Sequence,
-        _data: Vec<u8>,
+        _seq: Sequence,
+        _ack: Vec<u8>,
     ) -> Result<(), Error> {
         Ok(())
     }
@@ -138,11 +134,12 @@ impl ClientDef for MockClient {
     fn verify_next_sequence_recv(
         &self,
         _client_state: &Self::ClientState,
-        _height: Height,
+        _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _seq: &Sequence,
+        _seq: Sequence,
     ) -> Result<(), Error> {
         Ok(())
     }
@@ -150,14 +147,16 @@ impl ClientDef for MockClient {
     fn verify_packet_receipt_absence(
         &self,
         _client_state: &Self::ClientState,
-        _height: Height,
+        _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _seq: &Sequence,
+        _sequence: Sequence,
     ) -> Result<(), Error> {
         Ok(())
     }
+
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
