@@ -236,7 +236,10 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error>;
 
-    fn query_app_version(&self, request: QueryAppVersionRequest) -> Result<ics04_channel::Version, Error>;
+    fn query_app_version(
+        &self,
+        request: QueryAppVersionRequest,
+    ) -> Result<ics04_channel::Version, Error>;
 
     fn query_channel_client_state(
         &self,

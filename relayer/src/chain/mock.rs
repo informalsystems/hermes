@@ -434,7 +434,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_app_version(&self, _request: QueryAppVersionRequest) -> Result<ics04_channel::Version, Error> {
+    fn query_app_version(&self, _request: QueryAppVersionRequest) -> Result<Version, Error> {
         todo!()
     }
 }

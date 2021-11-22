@@ -19,10 +19,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, Connection
 use ibc::events::IbcEvent;
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::{
-    channel::v1::{Counterparty as ProtoCounterparty, QueryConnectionChannelsRequest},
-    port::v1::QueryAppVersionRequest,
-};
+use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
@@ -669,24 +666,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         })
     }
 
-    /// Returns the channel version which the destination side
-    /// is using, if already set. If not set, queries the
-    /// destination chain to fetch the version.
-    pub fn dst_version(&self) -> Result<Version, ChannelError> {
-        Ok(self
-            .a_side
-            .version
-            .clone()
-            .unwrap_or(self.dst_app_version()?))
-    }
-
-    /// Returns the channel version which the source side
-    /// is using, if already set. If not set, queries the
-    /// source chain to fetch the version.
-    pub fn src_version(&self) -> Result<Version, ChannelError> {
-        self.flipped().dst_version()
-    }
-
     pub fn build_chan_open_init(&self) -> Result<Vec<Any>, ChannelError> {
         let signer = self
             .dst_chain()
@@ -713,27 +692,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         };
 
         Ok(vec![new_msg.to_any()])
-    }
-
-    /// Fetches the application version of the destination chain for
-    /// the current channel.
-    fn dst_app_version(&self) -> Result<Version, ChannelError> {
-        let counterparty = self.src_channel_id().map(|cid| ProtoCounterparty {
-            port_id: self.src_port_id().to_string(),
-            channel_id: cid.to_string(),
-        });
-
-        let request = QueryAppVersionRequest {
-            port_id: self.dst_port_id().to_string(),
-            connection_id: self.dst_connection_id().to_string(),
-            ordering: self.ordering as i32,
-            counterparty,
-            proposed_version: Version::default().into(),
-        };
-
-        self.dst_chain()
-            .app_version(request)
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))
     }
 
     pub fn build_chan_open_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
@@ -779,7 +737,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .dst_channel_id()
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
-        // If there is a channel present on the destination chain, it should look like this:
+        // If there is a channel present on the destination chain,
+        // the counterparty should look like this:
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
@@ -796,7 +755,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            self.dst_version()?,
+            version::default_by_port(self.dst_port_id())?,
         );
 
         // Retrieve existing channel
@@ -863,7 +822,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        let version = version::resolve(ResolveContext::Other, &self)?;
+        let version = version::resolve(ResolveContext::Other, self)?;
 
         let channel = ChannelEnd::new(
             State::TryOpen,
@@ -934,7 +893,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .dst_channel_id()
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
-        // Check that the destination chain will accept the message
+        // Check that the destination chain will accept the Ack message
         self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
         // Channel must exist on source

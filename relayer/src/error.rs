@@ -528,6 +528,23 @@ impl GrpcStatusSubdetail {
     }
 
     /// Check whether this gRPC error matches
+    /// - status: Unimplemented
+    /// - message: 'unknown service ibc.core.port.v1.Query'
+    ///
+    /// # Note:
+    /// Used for detecting if the ibc module is able to
+    /// resolve queries for the application version.
+    pub fn is_unimplemented_port_query(&self) -> bool {
+        if self.status.code() != tonic::Code::Unimplemented {
+            return false;
+        }
+
+        self.status
+            .message()
+            .contains("unknown service ibc.core.port.v1.Query")
+    }
+
+    /// Check whether this gRPC error matches
     /// - status: InvalidArgument
     /// - message: account sequence mismatch ...
     pub fn is_account_sequence_mismatch(&self) -> bool {
