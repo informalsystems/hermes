@@ -4,7 +4,7 @@
 //! channel version to be used in a channel open
 //! handshake.
 
-use tracing::info;
+use tracing::{info, warn};
 
 use ibc::{
     applications::{ics20_fungible_token_transfer, ics27_interchain_accounts},
@@ -50,7 +50,7 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
         ResolveContext::Other => {
             // Resolve the version by querying the application version on destination chain
-            info!("resolving channel version for port id {}, context={:?} by retrieving destination chain app version", port_id, ctx);
+            info!("resolving channel version for port id '{}', context={:?} by retrieving destination chain app version", port_id, ctx);
 
             // Note the compatibility logic below:
             // The destination chain may or may not implement `QueryAppVersionRequest`,
@@ -81,7 +81,7 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
 pub fn default_by_port(port_id: &PortId) -> Result<Version, ChannelError> {
     if port_id.as_str() == ics20_fungible_token_transfer::PORT_ID {
         info!(
-            "resolving channel version for port id {} locally to {}",
+            "resolving channel version for port id '{}' locally to {}",
             port_id,
             Version::ics20()
         );
@@ -92,13 +92,17 @@ pub fn default_by_port(port_id: &PortId) -> Result<Version, ChannelError> {
         .starts_with(ics27_interchain_accounts::PORT_ID_PREFIX)
     {
         info!(
-            "resolving channel version for port id {} locally to {}",
+            "resolving channel version for port id '{}' locally to {}",
             port_id,
             Version::ics27()
         );
         // https://github.com/cosmos/ibc/tree/master/spec/app/ics-027-interchain-accounts#channel-lifecycle-management
         Ok(Version::ics27())
     } else {
+        warn!(
+            "cannot resolve channel version for unknown port id '{}'",
+            port_id,
+        );
         Err(ChannelError::invalid_port_id(port_id.clone()))
     }
 }

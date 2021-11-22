@@ -750,12 +750,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             _ => State::Uninitialized,
         };
 
+        let version = version::resolve(ResolveContext::Other, self)?;
+
         let dst_expected_channel = ChannelEnd::new(
             highest_state,
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            version::default_by_port(self.dst_port_id())?,
+            version,
         );
 
         // Retrieve existing channel
