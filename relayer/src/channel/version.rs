@@ -50,7 +50,8 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
         ResolveContext::Other => {
             // Resolve the version by querying the application version on destination chain
-            info!("resolving channel version for port id '{}', context={:?} by retrieving destination chain app version", port_id, ctx);
+            let dst_chain_id = channel.dst_chain().id();
+            info!("resolving channel version for port id='{}', context='{:?}' by retrieving dst chain '{}' app version", port_id, ctx, dst_chain_id);
 
             // Note the compatibility logic below:
             // The destination chain may or may not implement `QueryAppVersionRequest`,
@@ -65,7 +66,7 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
                         if s.is_unimplemented_port_query() {
                             // Ensure compatibility & recover from the error,
                             // by using the default version.
-                            debug!("resorting to default version");
+                            debug!("resorting to default version because dst chain '{}' does not expose app version gRPC endpoint", dst_chain_id);
                             return default_by_port(port_id);
                         }
                     }
@@ -81,22 +82,12 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
 /// the given [`PortId`].
 pub fn default_by_port(port_id: &PortId) -> Result<Version, ChannelError> {
     if port_id.as_str() == ics20_fungible_token_transfer::PORT_ID {
-        info!(
-            "resolving channel version for port id '{}' locally to {}",
-            port_id,
-            Version::ics20()
-        );
         // https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#forwards-compatibility
         Ok(Version::ics20())
     } else if port_id
         .as_str()
         .starts_with(ics27_interchain_accounts::PORT_ID_PREFIX)
     {
-        info!(
-            "resolving channel version for port id '{}' locally to {}",
-            port_id,
-            Version::ics27()
-        );
         // https://github.com/cosmos/ibc/tree/master/spec/app/ics-027-interchain-accounts#channel-lifecycle-management
         Ok(Version::ics27())
     } else {
@@ -126,7 +117,6 @@ fn dst_app_version<ChainA: ChainHandle, ChainB: ChainHandle>(
                 .map_err(|e| Error::app_version(e.to_string()))?,
         )
         .into();
-    debug!("source proposed version: {}", proposed_version);
 
     let request = QueryAppVersionRequest {
         port_id: channel.dst_port_id().to_string(),
