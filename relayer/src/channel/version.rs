@@ -113,10 +113,13 @@ fn dst_app_version<ChainA: ChainHandle, ChainB: ChainHandle>(
         .src_version()
         .cloned()
         .unwrap_or(
-            default_by_port(channel.dst_port_id())
+            default_by_port(channel.src_port_id())
                 .map_err(|e| Error::app_version(e.to_string()))?,
         )
         .into();
+    debug!("source channel end proposed version='{}'; original={:?}",
+        proposed_version,
+        channel.src_version());
 
     let request = QueryAppVersionRequest {
         port_id: channel.dst_port_id().to_string(),

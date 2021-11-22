@@ -153,54 +153,6 @@ pub struct TxRawChanOpenTryCmd {
 
 impl Runnable for TxRawChanOpenTryCmd {
     fn run(&self) {
-        let config = app_config();
-
-        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
-            Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
-        };
-
-        // Retrieve the connection
-        let dst_connection = match chains
-            .dst
-            .query_connection(&self.dst_conn_id, Height::default())
-        {
-            Ok(connection) => connection,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
-        };
-
-        let channel = Channel {
-            connection_delay: Default::default(),
-            ordering: Order::default(),
-            a_side: ChannelSide::new(
-                chains.src,
-                ClientId::default(),
-                ConnectionId::default(),
-                self.src_port_id.clone(),
-                Some(self.src_chan_id.clone()),
-                None,
-            ),
-            b_side: ChannelSide::new(
-                chains.dst,
-                dst_connection.client_id().clone(),
-                self.dst_conn_id.clone(),
-                self.dst_port_id.clone(),
-                self.dst_chan_id.clone(),
-                None,
-            ),
-        };
-
-        info!("Message ChanOpenTry: {:?}", channel);
-
-        let res: Result<IbcEvent, Error> = channel
-            .build_chan_open_try_and_send()
-            .map_err(Error::channel);
-
-        match res {
-            Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        }
-
         tx_chan_cmd!(
             "ChanOpenTry",
             build_chan_open_try_and_send,
