@@ -52,7 +52,7 @@ version = "=0.23.0"
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "=0.23.0"
+version = "=0.23.1"
 optional = true
 
 [dev-dependencies]
@@ -61,7 +61,7 @@ tracing-subscriber = { version = "0.3.1", features = ["fmt", "env-filter", "json
 test-env-log = { version = "0.2.7", features = ["trace"] }
 modelator = "0.2.1"
 tendermint-rpc = { version = "=0.23.0", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.23.0" } # Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "=0.23.1" } # Needed for generating (synthetic) light blocks.
 
 # pin clap to avoid miscompilations with modelator
 clap = "=3.0.0-beta.4"
