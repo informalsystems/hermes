@@ -48,7 +48,7 @@ version = "=0.23.0"
 version = "=0.23.0"
 
 [dependencies.tendermint-light-client]
-version = "=0.23.0"
+version = "=0.23.1"
 default-features = false
 
 [dependencies.tendermint-testgen]
