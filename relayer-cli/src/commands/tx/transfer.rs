@@ -40,10 +40,20 @@ pub struct TxIcs20MsgTransferCmd {
     )]
     amount: Amount,
 
-    #[clap(short = 'o', long, about = "timeout in number of blocks since current")]
+    #[clap(
+        short = 'o',
+        long,
+        default_value = "0",
+        about = "timeout in number of blocks since current"
+    )]
     timeout_height_offset: u64,
 
-    #[clap(short = 't', long, about = "timeout in seconds since current")]
+    #[clap(
+        short = 't',
+        long,
+        default_value = "0",
+        about = "timeout in seconds since current"
+    )]
     timeout_seconds: u64,
 
     #[clap(
@@ -117,7 +127,9 @@ impl TxIcs20MsgTransferCmd {
 
         if self.timeout_height_offset == 0 && self.timeout_seconds == 0 {
             return Err(
-                "packet timeout height and packet timeout timestamp cannot both be 0".into(),
+                "packet timeout height and packet timeout timestamp cannot both be 0, \
+                please specify either --timeout-height-offset or --timeout-seconds"
+                    .into(),
             );
         }
 
