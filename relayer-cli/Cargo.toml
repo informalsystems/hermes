@@ -1,16 +1,16 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "0.7.3"
-edition    = "2018"
+version    = "0.8.0"
+edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
 repository = "https://github.com/informalsystems/ibc-rs"
 authors    = ["Informal Systems <hello@informal.systems>"]
-
-description = """
-  Hermes is an IBC Relayer written in Rust.
+rust-version = "1.56"
+description  = """
+  Hermes is an IBC Relayer written in Rust
 """
 
 [[bin]]
@@ -25,47 +25,48 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.7.3", path = "../modules" }
-ibc-relayer      = { version = "0.7.3", path = "../relayer" }
-ibc-proto        = { version = "0.11.0", path = "../proto" }
-ibc-telemetry    = { version = "0.7.3", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.7.3", path = "../relayer-rest", optional = true }
+ibc              = { version = "0.8.0", path = "../modules" }
+ibc-relayer      = { version = "0.8.0", path = "../relayer" }
+ibc-proto        = { version = "0.12.0", path = "../proto" }
+ibc-telemetry    = { version = "0.8.0", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.8.0", path = "../relayer-rest", optional = true }
 
 gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
 tokio = { version = "1.0", features = ["full"] }
-tracing = "0.1.28"
-tracing-subscriber = "0.2.24"
+tracing = "0.1.29"
+tracing-subscriber = { version = "0.3.2", features = ["fmt", "env-filter", "json"]}
 eyre = "0.6.5"
 color-eyre = "0.5"
+oneline-eyre = "0.1"
 futures = "0.3.17"
 toml = "0.5.8"
 serde_derive = "1.0.116"
 serde_json = "1"
-prost = { package = "informalsystems-prost", version = "0.8.1", default-features = false }
-prost-types = { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
+prost = { version = "0.9", default-features = false }
+prost-types = { version ="0.9", default-features = false }
 hex = "0.4"
 crossbeam-channel = "0.5.1"
 subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.1"
 atty = "0.2.14"
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
 signal-hook = "0.3.10"
 
 [dependencies.tendermint-proto]
-version = "=0.22.0"
+version = "=0.23.0"
 
 [dependencies.tendermint]
-version = "=0.22.0"
+version = "=0.23.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.22.0"
+version = "=0.23.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.22.0"
+version = "=0.23.0"
 features = ["unstable"]
 
 [dependencies.abscissa_core]

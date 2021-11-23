@@ -1,6 +1,6 @@
 use flex_error::define_error;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::channel::ChannelError;
 use ibc_relayer::connection::ConnectionError;
 use ibc_relayer::error::Error as RelayerError;
@@ -9,6 +9,7 @@ use ibc_relayer::link::error::LinkError;
 use ibc_relayer::supervisor::Error as SupervisorError;
 use ibc_relayer::transfer::PacketError;
 use ibc_relayer::upgrade_chain::UpgradeChainError;
+use tendermint::Error as TendermintError;
 
 define_error! {
     /// An error raised within the relayer CLI
@@ -30,7 +31,7 @@ define_error! {
 
         InvalidHash
             { hash: String }
-            [ tendermint::Error ]
+            [ TendermintError ]
             | e | {
                 format_args!("CLI argument error: could not parse '{}' into a valid hash",
                     e.hash)

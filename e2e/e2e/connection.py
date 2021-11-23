@@ -263,14 +263,17 @@ def verify_state(c: Config,
     ibc1: ChainId, ibc0: ChainId,
     ibc1_conn_id: ConnectionId):
 
-    strategy = toml.load(c.config_file)['global']['strategy']
-    l.debug(f'Using strategy: {strategy}')
+    mode = toml.load(c.config_file)['mode']
+    clients_enabled = mode['clients']['enabled']
+    conn_enabled = mode['connections']['enabled']
+    chan_enabled = mode['channels']['enabled']
+    packets_enabled = mode['packets']['enabled']
 
-    # verify connection state on both chains, should be 'Open' for 'all' strategy, 'Init' otherwise
-    if strategy == 'all':
+    # verify connection state on both chains, should be 'Open' or 'Init' depending on config 'mode'
+    if clients_enabled and conn_enabled and chan_enabled and packets_enabled:
         sleep(10.0)
         for i in range(20):
-            sleep(2.0)
+            sleep(5.0)
             ibc1_conn_end = query_connection_end(c, ibc1, ibc1_conn_id)
             ibc0_conn_id = ibc1_conn_end.counterparty.connection_id
             ibc0_conn_end = query_connection_end(c, ibc0, ibc0_conn_id)
@@ -280,7 +283,7 @@ def verify_state(c: Config,
             assert (ibc0_conn_end.state == 'Open'), (ibc0_conn_end, "state is not Open")
             assert (ibc1_conn_end.state == 'Open'), (ibc1_conn_end, "state is not Open")
 
-    elif strategy == 'packets':
+    else:
         sleep(5.0)
         ibc1_conn_end = query_connection_end(c, ibc1, ibc1_conn_id)
         assert (ibc1_conn_end.state == 'Init'), (ibc1_conn_end, "state is not Init")

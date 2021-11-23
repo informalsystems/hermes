@@ -1,5 +1,5 @@
 // ICS03 - Connection Data Structures as defined in
-// https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#data-structures
+// <https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#data-structures>
 
 /// ConnectionEnd defines a stateful object on a chain connected to another
 /// separate one.
@@ -117,6 +117,113 @@ pub enum State {
     /// A connection end has completed the handshake.
     Open = 3,
 }
+/// MsgConnectionOpenInit defines the msg sent by an account on Chain A to
+/// initialize a connection with Chain B.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenInit {
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub counterparty: ::core::option::Option<Counterparty>,
+    #[prost(message, optional, tag = "3")]
+    pub version: ::core::option::Option<Version>,
+    #[prost(uint64, tag = "4")]
+    pub delay_period: u64,
+    #[prost(string, tag = "5")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgConnectionOpenInitResponse defines the Msg/ConnectionOpenInit response
+/// type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenInitResponse {}
+/// MsgConnectionOpenTry defines a msg sent by a Relayer to try to open a
+/// connection on Chain B.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenTry {
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// in the case of crossing hello's, when both chains call OpenInit, we need
+    /// the connection identifier of the previous connection in state INIT
+    #[prost(string, tag = "2")]
+    pub previous_connection_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub client_state: ::core::option::Option<::prost_types::Any>,
+    #[prost(message, optional, tag = "4")]
+    pub counterparty: ::core::option::Option<Counterparty>,
+    #[prost(uint64, tag = "5")]
+    pub delay_period: u64,
+    #[prost(message, repeated, tag = "6")]
+    pub counterparty_versions: ::prost::alloc::vec::Vec<Version>,
+    #[prost(message, optional, tag = "7")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    /// proof of the initialization the connection on Chain A: `UNITIALIZED ->
+    /// INIT`
+    #[prost(bytes = "vec", tag = "8")]
+    pub proof_init: ::prost::alloc::vec::Vec<u8>,
+    /// proof of client state included in message
+    #[prost(bytes = "vec", tag = "9")]
+    pub proof_client: ::prost::alloc::vec::Vec<u8>,
+    /// proof of client consensus state
+    #[prost(bytes = "vec", tag = "10")]
+    pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "11")]
+    pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "12")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgConnectionOpenTryResponse defines the Msg/ConnectionOpenTry response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenTryResponse {}
+/// MsgConnectionOpenAck defines a msg sent by a Relayer to Chain A to
+/// acknowledge the change of connection state to TRYOPEN on Chain B.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenAck {
+    #[prost(string, tag = "1")]
+    pub connection_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub counterparty_connection_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub version: ::core::option::Option<Version>,
+    #[prost(message, optional, tag = "4")]
+    pub client_state: ::core::option::Option<::prost_types::Any>,
+    #[prost(message, optional, tag = "5")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    /// proof of the initialization the connection on Chain B: `UNITIALIZED ->
+    /// TRYOPEN`
+    #[prost(bytes = "vec", tag = "6")]
+    pub proof_try: ::prost::alloc::vec::Vec<u8>,
+    /// proof of client state included in message
+    #[prost(bytes = "vec", tag = "7")]
+    pub proof_client: ::prost::alloc::vec::Vec<u8>,
+    /// proof of client consensus state
+    #[prost(bytes = "vec", tag = "8")]
+    pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "9")]
+    pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "10")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgConnectionOpenAckResponse defines the Msg/ConnectionOpenAck response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenAckResponse {}
+/// MsgConnectionOpenConfirm defines a msg sent by a Relayer to Chain B to
+/// acknowledge the change of connection state to OPEN on Chain A.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenConfirm {
+    #[prost(string, tag = "1")]
+    pub connection_id: ::prost::alloc::string::String,
+    /// proof for the change of the connection state on Chain A: `INIT -> OPEN`
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof_ack: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "4")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgConnectionOpenConfirmResponse defines the Msg/ConnectionOpenConfirm
+/// response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenConfirmResponse {}
 /// GenesisState defines the ibc connection submodule's genesis state.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
@@ -252,110 +359,3 @@ pub struct QueryConnectionConsensusStateResponse {
     #[prost(message, optional, tag = "4")]
     pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
 }
-/// MsgConnectionOpenInit defines the msg sent by an account on Chain A to
-/// initialize a connection with Chain B.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenInit {
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub counterparty: ::core::option::Option<Counterparty>,
-    #[prost(message, optional, tag = "3")]
-    pub version: ::core::option::Option<Version>,
-    #[prost(uint64, tag = "4")]
-    pub delay_period: u64,
-    #[prost(string, tag = "5")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgConnectionOpenInitResponse defines the Msg/ConnectionOpenInit response
-/// type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenInitResponse {}
-/// MsgConnectionOpenTry defines a msg sent by a Relayer to try to open a
-/// connection on Chain B.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenTry {
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// in the case of crossing hello's, when both chains call OpenInit, we need
-    /// the connection identifier of the previous connection in state INIT
-    #[prost(string, tag = "2")]
-    pub previous_connection_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "3")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
-    #[prost(message, optional, tag = "4")]
-    pub counterparty: ::core::option::Option<Counterparty>,
-    #[prost(uint64, tag = "5")]
-    pub delay_period: u64,
-    #[prost(message, repeated, tag = "6")]
-    pub counterparty_versions: ::prost::alloc::vec::Vec<Version>,
-    #[prost(message, optional, tag = "7")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    /// proof of the initialization the connection on Chain A: `UNITIALIZED ->
-    /// INIT`
-    #[prost(bytes = "vec", tag = "8")]
-    pub proof_init: ::prost::alloc::vec::Vec<u8>,
-    /// proof of client state included in message
-    #[prost(bytes = "vec", tag = "9")]
-    pub proof_client: ::prost::alloc::vec::Vec<u8>,
-    /// proof of client consensus state
-    #[prost(bytes = "vec", tag = "10")]
-    pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "11")]
-    pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "12")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgConnectionOpenTryResponse defines the Msg/ConnectionOpenTry response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenTryResponse {}
-/// MsgConnectionOpenAck defines a msg sent by a Relayer to Chain A to
-/// acknowledge the change of connection state to TRYOPEN on Chain B.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenAck {
-    #[prost(string, tag = "1")]
-    pub connection_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub counterparty_connection_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "3")]
-    pub version: ::core::option::Option<Version>,
-    #[prost(message, optional, tag = "4")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
-    #[prost(message, optional, tag = "5")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    /// proof of the initialization the connection on Chain B: `UNITIALIZED ->
-    /// TRYOPEN`
-    #[prost(bytes = "vec", tag = "6")]
-    pub proof_try: ::prost::alloc::vec::Vec<u8>,
-    /// proof of client state included in message
-    #[prost(bytes = "vec", tag = "7")]
-    pub proof_client: ::prost::alloc::vec::Vec<u8>,
-    /// proof of client consensus state
-    #[prost(bytes = "vec", tag = "8")]
-    pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "9")]
-    pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "10")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgConnectionOpenAckResponse defines the Msg/ConnectionOpenAck response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenAckResponse {}
-/// MsgConnectionOpenConfirm defines a msg sent by a Relayer to Chain B to
-/// acknowledge the change of connection state to OPEN on Chain A.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenConfirm {
-    #[prost(string, tag = "1")]
-    pub connection_id: ::prost::alloc::string::String,
-    /// proof for the change of the connection state on Chain A: `INIT -> OPEN`
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof_ack: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "4")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgConnectionOpenConfirmResponse defines the Msg/ConnectionOpenConfirm
-/// response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenConfirmResponse {}

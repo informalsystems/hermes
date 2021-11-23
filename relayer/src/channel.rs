@@ -5,15 +5,17 @@ use prost_types::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
+use ibc::core::ics04_channel::channel::{
+    ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State,
+};
+use ibc::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
+use ibc::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
+use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
+use ibc::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
+use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
-use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State};
-use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use ibc::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use ibc::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use ibc::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
@@ -110,6 +112,19 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
 
     pub fn channel_id(&self) -> Option<&ChannelId> {
         self.channel_id.as_ref()
+    }
+
+    pub fn map_chain<ChainB: ChainHandle>(
+        self,
+        mapper: impl Fn(Chain) -> ChainB,
+    ) -> ChannelSide<ChainB> {
+        ChannelSide {
+            chain: mapper(self.chain),
+            client_id: self.client_id,
+            connection_id: self.connection_id,
+            port_id: self.port_id,
+            channel_id: self.channel_id,
+        }
     }
 }
 
@@ -1201,6 +1216,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             IbcEvent::CloseConfirmChannel(_) => Ok(result),
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
             _ => Err(ChannelError::invalid_event(result)),
+        }
+    }
+
+    pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
+        self,
+        mapper_a: impl Fn(ChainA) -> ChainC,
+        mapper_b: impl Fn(ChainB) -> ChainD,
+    ) -> Channel<ChainC, ChainD> {
+        Channel {
+            ordering: self.ordering,
+            a_side: self.a_side.map_chain(mapper_a),
+            b_side: self.b_side.map_chain(mapper_b),
+            connection_delay: self.connection_delay,
+            version: self.version,
         }
     }
 }

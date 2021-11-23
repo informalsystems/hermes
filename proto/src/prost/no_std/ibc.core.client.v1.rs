@@ -96,6 +96,126 @@ pub struct Params {
     #[prost(string, repeated, tag = "1")]
     pub allowed_clients: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+/// GenesisState defines the ibc client submodule's genesis state.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// client states with their corresponding identifiers
+    #[prost(message, repeated, tag = "1")]
+    pub clients: ::prost::alloc::vec::Vec<IdentifiedClientState>,
+    /// consensus states from each client
+    #[prost(message, repeated, tag = "2")]
+    pub clients_consensus: ::prost::alloc::vec::Vec<ClientConsensusStates>,
+    /// metadata from each client
+    #[prost(message, repeated, tag = "3")]
+    pub clients_metadata: ::prost::alloc::vec::Vec<IdentifiedGenesisMetadata>,
+    #[prost(message, optional, tag = "4")]
+    pub params: ::core::option::Option<Params>,
+    /// create localhost on initialization
+    #[prost(bool, tag = "5")]
+    pub create_localhost: bool,
+    /// the sequence for the next generated client identifier
+    #[prost(uint64, tag = "6")]
+    pub next_client_sequence: u64,
+}
+/// GenesisMetadata defines the genesis type for metadata that clients may return
+/// with ExportMetadata
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisMetadata {
+    /// store key of metadata without clientID-prefix
+    #[prost(bytes = "vec", tag = "1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    /// metadata value
+    #[prost(bytes = "vec", tag = "2")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+}
+/// IdentifiedGenesisMetadata has the client metadata with the corresponding
+/// client id.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IdentifiedGenesisMetadata {
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub client_metadata: ::prost::alloc::vec::Vec<GenesisMetadata>,
+}
+/// MsgCreateClient defines a message to create an IBC client
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCreateClient {
+    /// light client state
+    #[prost(message, optional, tag = "1")]
+    pub client_state: ::core::option::Option<::prost_types::Any>,
+    /// consensus state associated with the client that corresponds to a given
+    /// height.
+    #[prost(message, optional, tag = "2")]
+    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgCreateClientResponse defines the Msg/CreateClient response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCreateClientResponse {}
+/// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
+/// the given header.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateClient {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// header to update the light client
+    #[prost(message, optional, tag = "2")]
+    pub header: ::core::option::Option<::prost_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateClientResponse {}
+/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
+/// state
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpgradeClient {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// upgraded client state
+    #[prost(message, optional, tag = "2")]
+    pub client_state: ::core::option::Option<::prost_types::Any>,
+    /// upgraded consensus state, only contains enough information to serve as a
+    /// basis of trust in update logic
+    #[prost(message, optional, tag = "3")]
+    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    /// proof that old chain committed to new client
+    #[prost(bytes = "vec", tag = "4")]
+    pub proof_upgrade_client: ::prost::alloc::vec::Vec<u8>,
+    /// proof that old chain committed to new consensus state
+    #[prost(bytes = "vec", tag = "5")]
+    pub proof_upgrade_consensus_state: ::prost::alloc::vec::Vec<u8>,
+    /// signer address
+    #[prost(string, tag = "6")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpgradeClientResponse {}
+/// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
+/// light client misbehaviour.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitMisbehaviour {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// misbehaviour used for freezing the light client
+    #[prost(message, optional, tag = "2")]
+    pub misbehaviour: ::core::option::Option<::prost_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
+/// type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitMisbehaviourResponse {}
 /// QueryClientStateRequest is the request type for the Query/ClientState RPC
 /// method
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -251,124 +371,4 @@ pub struct QueryUpgradedConsensusStateResponse {
     /// Consensus state associated with the request identifier
     #[prost(message, optional, tag = "1")]
     pub upgraded_consensus_state: ::core::option::Option<::prost_types::Any>,
-}
-/// MsgCreateClient defines a message to create an IBC client
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateClient {
-    /// light client state
-    #[prost(message, optional, tag = "1")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
-    /// consensus state associated with the client that corresponds to a given
-    /// height.
-    #[prost(message, optional, tag = "2")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgCreateClientResponse defines the Msg/CreateClient response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateClientResponse {}
-/// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
-/// the given header.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateClient {
-    /// client unique identifier
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// header to update the light client
-    #[prost(message, optional, tag = "2")]
-    pub header: ::core::option::Option<::prost_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateClientResponse {}
-/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
-/// state
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpgradeClient {
-    /// client unique identifier
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// upgraded client state
-    #[prost(message, optional, tag = "2")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
-    /// upgraded consensus state, only contains enough information to serve as a
-    /// basis of trust in update logic
-    #[prost(message, optional, tag = "3")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
-    /// proof that old chain committed to new client
-    #[prost(bytes = "vec", tag = "4")]
-    pub proof_upgrade_client: ::prost::alloc::vec::Vec<u8>,
-    /// proof that old chain committed to new consensus state
-    #[prost(bytes = "vec", tag = "5")]
-    pub proof_upgrade_consensus_state: ::prost::alloc::vec::Vec<u8>,
-    /// signer address
-    #[prost(string, tag = "6")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpgradeClientResponse {}
-/// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
-/// light client misbehaviour.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitMisbehaviour {
-    /// client unique identifier
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// misbehaviour used for freezing the light client
-    #[prost(message, optional, tag = "2")]
-    pub misbehaviour: ::core::option::Option<::prost_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
-/// type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitMisbehaviourResponse {}
-/// GenesisState defines the ibc client submodule's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// client states with their corresponding identifiers
-    #[prost(message, repeated, tag = "1")]
-    pub clients: ::prost::alloc::vec::Vec<IdentifiedClientState>,
-    /// consensus states from each client
-    #[prost(message, repeated, tag = "2")]
-    pub clients_consensus: ::prost::alloc::vec::Vec<ClientConsensusStates>,
-    /// metadata from each client
-    #[prost(message, repeated, tag = "3")]
-    pub clients_metadata: ::prost::alloc::vec::Vec<IdentifiedGenesisMetadata>,
-    #[prost(message, optional, tag = "4")]
-    pub params: ::core::option::Option<Params>,
-    /// create localhost on initialization
-    #[prost(bool, tag = "5")]
-    pub create_localhost: bool,
-    /// the sequence for the next generated client identifier
-    #[prost(uint64, tag = "6")]
-    pub next_client_sequence: u64,
-}
-/// GenesisMetadata defines the genesis type for metadata that clients may return
-/// with ExportMetadata
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisMetadata {
-    /// store key of metadata without clientID-prefix
-    #[prost(bytes = "vec", tag = "1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    /// metadata value
-    #[prost(bytes = "vec", tag = "2")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
-}
-/// IdentifiedGenesisMetadata has the client metadata with the corresponding
-/// client id.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IdentifiedGenesisMetadata {
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "2")]
-    pub client_metadata: ::prost::alloc::vec::Vec<GenesisMetadata>,
 }

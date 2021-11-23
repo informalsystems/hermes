@@ -69,7 +69,7 @@ pub struct TxBody {
     pub messages: ::prost::alloc::vec::Vec<::prost_types::Any>,
     /// memo is any arbitrary note/comment to be added to the transaction.
     /// WARNING: in clients, any publicly exposed text should not be called memo,
-    /// but should be called `note` instead (see https://github.com/cosmos/cosmos-sdk/issues/9122).
+    /// but should be called `note` instead (see <https://github.com/cosmos/cosmos-sdk/issues/9122>).
     #[prost(string, tag = "2")]
     pub memo: ::prost::alloc::string::String,
     /// timeout is the block height after which this transaction will not

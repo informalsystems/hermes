@@ -4,10 +4,11 @@ use std::{thread, time::Instant};
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, trace, warn};
 
-use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
+use ibc::{core::ics02_client::events::UpdateClient, events::IbcEvent};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
+    config::Clients as ClientsConfig,
     foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
     object::Client,
     telemetry,
@@ -20,6 +21,7 @@ pub struct ClientWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     client: Client,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
+    clients_cfg: ClientsConfig,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
@@ -27,11 +29,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         client: Client,
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
+        clients_cfg: ClientsConfig,
     ) -> Self {
         Self {
             client,
             chains,
             cmd_rx,
+            clients_cfg,
         }
     }
 
@@ -44,12 +48,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         );
 
         info!(
-            "[{}] running client worker & initial misbehaviour detection",
-            client
+            "[{}] running client worker with misbehaviour={} and refresh={}",
+            client, self.clients_cfg.misbehaviour, self.clients_cfg.refresh
         );
 
         // initial check for evidence of misbehaviour for all updates
-        let skip_misbehaviour = self.detect_misbehaviour(&client, None);
+        let skip_misbehaviour =
+            !self.clients_cfg.misbehaviour || self.detect_misbehaviour(&client, None);
 
         // remember the time of the last refresh so we backoff
         let mut last_refresh = Instant::now() - Duration::from_secs(61);
@@ -60,7 +65,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
             // Clients typically need refresh every 2/3 of their
             // trusting period (which can e.g., two weeks).
             // Backoff refresh checking to attempt it every minute.
-            if last_refresh.elapsed() > Duration::from_secs(60) {
+            if self.clients_cfg.refresh && last_refresh.elapsed() > Duration::from_secs(60) {
                 // Run client refresh, exit only if expired or frozen
                 match client.refresh() {
                     Ok(Some(_)) => {

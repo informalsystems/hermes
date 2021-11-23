@@ -7,22 +7,25 @@ use prost_types::Any;
 use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
+use ibc::clients::ics07_tendermint::client_state::{
+    AllowUpdate, ClientState as TendermintClientState,
+};
+use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
+use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc::core::ics04_channel::context::ChannelReader;
+use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::downcast;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
-use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics18_relayer::context::Ics18Context;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
-use ibc::query::QueryTxRequest;
+use ibc::query::{QueryBlockRequest, QueryTxRequest};
+use ibc::relayer::ics18_relayer::context::Ics18Context;
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
@@ -38,7 +41,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::ChainEndpoint;
+use crate::chain::{ChainEndpoint, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -144,7 +147,15 @@ impl ChainEndpoint for MockChain {
         Ok(get_dummy_account_id())
     }
 
+    fn config(&self) -> ChainConfig {
+        self.config.clone()
+    }
+
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        unimplemented!()
+    }
+
+    fn add_key(&mut self, _key_name: &str, _key: KeyEntry) -> Result<(), Error> {
         unimplemented!()
     }
 
@@ -152,8 +163,11 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_latest_height(&self) -> Result<Height, Error> {
-        Ok(self.context.query_latest_height())
+    fn query_status(&self) -> Result<StatusResponse, Error> {
+        Ok(StatusResponse {
+            height: self.context.host_height(),
+            timestamp: self.context.host_timestamp(),
+        })
     }
 
     fn query_clients(
@@ -276,6 +290,13 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
+    fn query_blocks(
+        &self,
+        _request: QueryBlockRequest,
+    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+        unimplemented!()
+    }
+
     fn proven_client_state(
         &self,
         _client_id: &ClientId,
@@ -321,13 +342,18 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
+    fn build_client_state(
+        &self,
+        height: Height,
+        dst_config: ChainConfig,
+    ) -> Result<Self::ClientState, Error> {
         let client_state = TendermintClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
             self.trusting_period(),
             self.trusting_period().add(Duration::from_secs(1000)),
-            Duration::from_millis(3000),
+            // See `calculate_client_state_drift`
+            self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
             Height::zero(),
             vec!["upgrade/upgradedClient".to_string()],
@@ -413,7 +439,7 @@ pub mod test_utils {
     use core::str::FromStr;
     use core::time::Duration;
 
-    use ibc::ics24_host::identifier::ChainId;
+    use ibc::core::ics24_host::identifier::ChainId;
 
     use crate::config::{AddressType, ChainConfig, GasPrice, PacketFilter};
 
@@ -428,16 +454,20 @@ pub mod test_utils {
             account_prefix: "".to_string(),
             key_name: "".to_string(),
             store_prefix: "".to_string(),
+            default_gas: None,
+            key_store_type: Default::default(),
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
+            max_block_time: Duration::from_secs(10),
             trusting_period: Some(Duration::from_secs(14 * 24 * 60 * 60)), // 14 days
             trust_threshold: Default::default(),
             packet_filter: PacketFilter::default(),
             address_type: AddressType::default(),
+            memo_prefix: Default::default(),
         }
     }
 }

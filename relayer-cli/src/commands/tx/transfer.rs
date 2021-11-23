@@ -1,10 +1,12 @@
 use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
 
 use ibc::{
+    core::{
+        ics02_client::client_state::ClientState,
+        ics02_client::height::Height,
+        ics24_host::identifier::{ChainId, ChannelId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::client_state::ClientState,
-    ics02_client::height::Height,
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
 };
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::transfer::Amount;
@@ -90,14 +92,14 @@ impl TxIcs20MsgTransferCmd {
         &self,
         config: &Config,
     ) -> Result<TransferOptions, Box<dyn std::error::Error>> {
-        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
+        config.find_chain(&self.src_chain_id).ok_or_else(|| {
             format!(
                 "missing configuration for source chain '{}'",
                 self.src_chain_id
             )
         })?;
 
-        let dest_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
+        config.find_chain(&self.dst_chain_id).ok_or_else(|| {
             format!(
                 "missing configuration for destination chain '{}'",
                 self.dst_chain_id
@@ -118,8 +120,6 @@ impl TxIcs20MsgTransferCmd {
         }
 
         let opts = TransferOptions {
-            packet_src_chain_config: src_chain_config.clone(),
-            packet_dst_chain_config: dest_chain_config.clone(),
             packet_src_port_id: self.src_port_id.clone(),
             packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount,
@@ -210,7 +210,8 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         // Checks pass, build and send the tx
         let res: Result<Vec<IbcEvent>, Error> =
-            build_and_send_transfer_messages(chains.src, chains.dst, opts).map_err(Error::packet);
+            build_and_send_transfer_messages(&chains.src, &chains.dst, &opts)
+                .map_err(Error::packet);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),

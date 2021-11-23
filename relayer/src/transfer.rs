@@ -4,16 +4,15 @@ use core::time::Duration;
 
 use chrono::Utc;
 use flex_error::{define_error, DetailOnly};
-use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
-use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::util::bigint::U256;
 
@@ -56,7 +55,7 @@ define_error! {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct Amount(U256);
+pub struct Amount(pub U256);
 
 impl Display for Amount {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -74,8 +73,6 @@ impl FromStr for Amount {
 
 #[derive(Clone, Debug)]
 pub struct TransferOptions {
-    pub packet_src_chain_config: ChainConfig,
-    pub packet_dst_chain_config: ChainConfig,
     pub packet_src_port_id: PortId,
     pub packet_src_channel_id: ChannelId,
     pub amount: Amount,
@@ -86,16 +83,15 @@ pub struct TransferOptions {
     pub number_msgs: usize,
 }
 
-pub fn build_and_send_transfer_messages<Chain: ChainHandle>(
-    packet_src_chain: Chain, // the chain whose account is debited
-    packet_dst_chain: Chain, // the chain whose account eventually gets credited
-    opts: TransferOptions,
+pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
+    packet_src_chain: &SrcChain, // the chain whose account is debited
+    packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
+    opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, PacketError> {
     let receiver = match &opts.receiver {
-        None => packet_dst_chain.get_signer(),
-        Some(r) => Ok(r.clone().into()),
-    }
-    .map_err(PacketError::key)?;
+        None => packet_dst_chain.get_signer().map_err(PacketError::key)?,
+        Some(r) => r.clone().into(),
+    };
 
     let sender = packet_src_chain.get_signer().map_err(PacketError::key)?;
 

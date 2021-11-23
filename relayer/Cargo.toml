@@ -1,31 +1,29 @@
 [package]
-name       = "ibc-relayer"
-version    = "0.7.3"
-edition    = "2018"
-license    = "Apache-2.0"
-readme     = "README.md"
-keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-repository = "https://github.com/informalsystems/ibc-rs"
-authors    = ["Informal Systems <hello@informal.systems>"]
-
-description = """
-    Implementation of an IBC Relayer in Rust, as a library.
+name         = "ibc-relayer"
+version      = "0.8.0"
+edition      = "2021"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.56"
+description  = """
+    Implementation of an IBC Relayer in Rust, as a library
 """
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
-default = ["std", "eyre_tracer"]
-std = [
-    "ibc/std",
-    "flex-error/std",
-]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default   = ["flex-error/std", "flex-error/eyre_tracer"]
 profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.7.2", path = "../modules", default-features = false }
-ibc-proto     = { version = "0.11.0", path = "../proto", default-features = false, features = ["std"] }
-ibc-telemetry = { version = "0.7.2", path = "../telemetry", default-features = false, optional = true }
+ibc           = { version = "0.8.0", path = "../modules", default-features = false }
+ibc-proto     = { version = "0.12.0", path = "../proto", default-features = false, features = ["std"] }
+ibc-telemetry = { version = "0.8.0", path = "../telemetry", default-features = false, optional = true }
 
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 subtle-encoding = { version = "0.5", default-features = false }
@@ -34,14 +32,14 @@ humantime-serde = { version = "1.0.0", default-features = false }
 serde = { version = "1.0.130", default-features = false }
 serde_cbor = { version = "0.11.2", default-features = false }
 serde_derive = { version = "1.0", default-features = false }
-thiserror = { version = "1.0.29", default-features = false }
+thiserror = { version = "1.0.30", default-features = false }
 toml = { version = "0.5", default-features = false }
-tracing = { version = "0.1.28", default-features = false }
+tracing = { version = "0.1.29", default-features = false }
 tokio = { version = "1.0", default-features = false, features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1", default-features = false }
 bytes = { version = "1.1.0", default-features = false }
-prost = { package = "informalsystems-prost", version = "0.8.1", default-features = false }
-prost-types = { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
+prost = { version = "0.9", default-features = false }
+prost-types = { version = "0.9", default-features = false }
 futures = { version = "0.3.17", default-features = false }
 crossbeam-channel = { version = "0.5.1", default-features = false, features = ["std"] }
 k256 = { version = "0.9.6", default-features = false, features = ["ecdsa-core", "ecdsa", "sha256"]}
@@ -54,43 +52,53 @@ tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = fal
 ripemd160 = { version = "0.9.1", default-features = false }
 bech32 = { version = "0.8.1", default-features = false }
 itertools = { version = "0.10.1", default-features = false }
-tonic = { package = "informalsystems-tonic", version = "0.5.2" }
+tonic = { version = "0.6", default-features = false, features = ["tls", "tls-roots"] }
 dirs-next = { version = "2.0.0", default-features = false }
 retry = { version = "1.3.0", default-features = false }
 async-stream = { version = "0.3.2", default-features = false }
 http = { version = "0.2.4", default-features = false }
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
 signature = { version = "1.3.0", default-features = false }
-anyhow = { version = "1.0.44", default-features = false }
-fraction = {version = "0.9.0", default-features = false }
+anyhow = { version = "1.0.48", default-features = false }
 semver = { version = "1.0", default-features = false }
 uint = { version = "0.9", default-features = false }
+humantime = { version = "2.1.0", default-features = false }
+
+[dependencies.num-bigint]
+version = "0.4"
+default-features = false
+features = ["serde"]
+
+[dependencies.num-rational]
+version = "0.4.0"
+default-features = false
+features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "=0.22.0"
+version = "=0.23.0"
 default-features = false
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.22.0"
+version = "=0.23.0"
 default-features = false
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.22.0"
+version = "=0.23.0"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-proto]
-version = "=0.22.0"
+version = "=0.23.0"
 default-features = false
 
 [dev-dependencies]
-ibc = { version = "0.7.3", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.8.0", path = "../modules", features = ["mocks"] }
 serial_test = "0.5.0"
 env_logger = "0.9.0"
-tracing-subscriber = "0.2.24"
+tracing-subscriber = { version = "0.3.2", features = ["fmt", "env-filter", "json"]}
 test-env-log = { version = "0.2.7", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.22.0" }
+tendermint-testgen = { version = "=0.23.0" }

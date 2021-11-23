@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eou pipefail
+set -eoux pipefail
 
 # syn-protobuf.sh is a bash script to sync the protobuf
 # files using the proto-compiler project. It will check
@@ -47,12 +47,12 @@ fi
 
 if [[ ! -e "$COSMOS_SDK_GIT" ]]
 then
-	git clone --bare https://github.com/cosmos/cosmos-sdk.git "$COSMOS_SDK_GIT"
+	git clone --mirror https://github.com/cosmos/cosmos-sdk.git "$COSMOS_SDK_GIT"
 fi
 
 if [[ ! -e "$IBC_GO_GIT" ]]
 then
-	git clone --bare https://github.com/cosmos/ibc-go.git "$IBC_GO_GIT"
+	git clone --mirror https://github.com/cosmos/ibc-go.git "$IBC_GO_GIT"
 fi
 
 # Update the repositories using git fetch. This is so that

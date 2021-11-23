@@ -328,6 +328,53 @@ pub struct LastValidatorPower {
     #[prost(int64, tag = "2")]
     pub power: i64,
 }
+/// StakeAuthorization defines authorization for delegate/undelegate/redelegate.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StakeAuthorization {
+    /// max_tokens specifies the maximum amount of tokens can be delegate to a validator. If it is
+    /// empty, there is no spend limit and any amount of coins can be delegated.
+    #[prost(message, optional, tag = "1")]
+    pub max_tokens: ::core::option::Option<super::super::base::v1beta1::Coin>,
+    /// authorization_type defines one of AuthorizationType.
+    #[prost(enumeration = "AuthorizationType", tag = "4")]
+    pub authorization_type: i32,
+    /// validators is the oneof that represents either allow_list or deny_list
+    #[prost(oneof = "stake_authorization::Validators", tags = "2, 3")]
+    pub validators: ::core::option::Option<stake_authorization::Validators>,
+}
+/// Nested message and enum types in `StakeAuthorization`.
+pub mod stake_authorization {
+    /// Validators defines list of validator addresses.
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ValidatorsVec {
+        #[prost(string, repeated, tag = "1")]
+        pub address: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    }
+    /// validators is the oneof that represents either allow_list or deny_list
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Validators {
+        /// allow_list specifies list of validator addresses to whom grantee can delegate tokens on behalf of granter's
+        /// account.
+        #[prost(message, tag = "2")]
+        AllowList(ValidatorsVec),
+        /// deny_list specifies list of validator addresses to whom grantee can not delegate tokens.
+        #[prost(message, tag = "3")]
+        DenyList(ValidatorsVec),
+    }
+}
+/// AuthorizationType defines the type of staking module authorization type
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum AuthorizationType {
+    /// AUTHORIZATION_TYPE_UNSPECIFIED specifies an unknown authorization type
+    Unspecified = 0,
+    /// AUTHORIZATION_TYPE_DELEGATE defines an authorization type for Msg/Delegate
+    Delegate = 1,
+    /// AUTHORIZATION_TYPE_UNDELEGATE defines an authorization type for Msg/Undelegate
+    Undelegate = 2,
+    /// AUTHORIZATION_TYPE_REDELEGATE defines an authorization type for Msg/BeginRedelegate
+    Redelegate = 3,
+}
 /// MsgCreateValidator defines a SDK message for creating a new validator.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateValidator {
@@ -441,7 +488,7 @@ pub mod msg_client {
     impl<T> MsgClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
@@ -559,53 +606,6 @@ pub mod msg_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
-}
-/// StakeAuthorization defines authorization for delegate/undelegate/redelegate.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StakeAuthorization {
-    /// max_tokens specifies the maximum amount of tokens can be delegate to a validator. If it is
-    /// empty, there is no spend limit and any amount of coins can be delegated.
-    #[prost(message, optional, tag = "1")]
-    pub max_tokens: ::core::option::Option<super::super::base::v1beta1::Coin>,
-    /// authorization_type defines one of AuthorizationType.
-    #[prost(enumeration = "AuthorizationType", tag = "4")]
-    pub authorization_type: i32,
-    /// validators is the oneof that represents either allow_list or deny_list
-    #[prost(oneof = "stake_authorization::Validators", tags = "2, 3")]
-    pub validators: ::core::option::Option<stake_authorization::Validators>,
-}
-/// Nested message and enum types in `StakeAuthorization`.
-pub mod stake_authorization {
-    /// Validators defines list of validator addresses.
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct ValidatorAddresses {
-        #[prost(string, repeated, tag = "1")]
-        pub address: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    }
-    /// validators is the oneof that represents either allow_list or deny_list
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Validators {
-        /// allow_list specifies list of validator addresses to whom grantee can delegate tokens on behalf of granter's
-        /// account.
-        #[prost(message, tag = "2")]
-        AllowList(ValidatorAddresses),
-        /// deny_list specifies list of validator addresses to whom grantee can not delegate tokens.
-        #[prost(message, tag = "3")]
-        DenyList(ValidatorAddresses),
-    }
-}
-/// AuthorizationType defines the type of staking module authorization type
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum AuthorizationType {
-    /// AUTHORIZATION_TYPE_UNSPECIFIED specifies an unknown authorization type
-    Unspecified = 0,
-    /// AUTHORIZATION_TYPE_DELEGATE defines an authorization type for Msg/Delegate
-    Delegate = 1,
-    /// AUTHORIZATION_TYPE_UNDELEGATE defines an authorization type for Msg/Undelegate
-    Undelegate = 2,
-    /// AUTHORIZATION_TYPE_REDELEGATE defines an authorization type for Msg/BeginRedelegate
-    Redelegate = 3,
 }
 /// QueryValidatorsRequest is request type for Query/Validators RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -889,7 +889,7 @@ pub mod query_client {
     impl<T> QueryClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {

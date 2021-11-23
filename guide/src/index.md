@@ -1,7 +1,11 @@
-# Hermes Guide (v0.7.3)
+# Hermes Guide (v0.8.0)
+
+
+Hermes is a an open-source Rust implementation of a relayer for the
+[Inter-Blockchain Communication protocol](https://ibcprotocol.org) (IBC).
 
 This guide can help you setup, configure, and operate Hermes to transfer
-packets between two IBC enabled chains.
+packets between two or more IBC-enabled chains.
 
 ## Sections
 

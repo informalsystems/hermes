@@ -1,8 +1,8 @@
 use abscissa_core::{config, Command, Options, Runnable};
+use ibc::core::ics02_client::events::UpdateClient;
+use ibc::core::ics02_client::height::Height;
+use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::height::Height;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 use std::ops::Deref;
@@ -11,7 +11,7 @@ use crate::application::CliApp;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic};
 use crate::conclude::Output;
 use crate::prelude::*;
-use ibc::ics02_client::client_state::ClientState;
+use ibc::core::ics02_client::client_state::ClientState;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct MisbehaviourCmd {

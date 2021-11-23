@@ -5,7 +5,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain, HealthCheck::*};
 
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -31,13 +31,15 @@ impl Runnable for HealthCheckCmd {
 
             info!("[{}] performing health check...", ch.id);
 
-            let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
+            let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+                .unwrap_or_else(exit_with_unrecoverable_error);
+
             match chain.health_check() {
                 Ok(Healthy) => info!("[{}] chain is healthy", ch.id),
                 Ok(Unhealthy(_)) => {
                     // No need to print the error here as it's already printed in `Chain::health_check`
                     // TODO(romac): Move the printing code here and in the supervisor/registry
-                    error!("[{}] chain is unhealthy", ch.id)
+                    warn!("[{}] chain is unhealthy", ch.id)
                 }
                 Err(e) => error!(
                     "[{}] failed to perform health check, reason: {}",

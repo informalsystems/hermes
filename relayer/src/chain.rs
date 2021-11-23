@@ -5,21 +5,24 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
 
-use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::{
+use ibc::core::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
 };
-use ibc::ics02_client::client_state::{AnyClientState, ClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::header::Header;
-use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
-use ibc::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics02_client::client_state::{
+    AnyClientState, ClientState, IdentifiedAnyClientState,
+};
+use ibc::core::ics02_client::header::Header;
+use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
+use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
+use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::events::IbcEvent;
 use ibc::proofs::{ConsensusProof, Proofs};
-use ibc::query::QueryTxRequest;
+use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::signer::Signer;
+use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -41,7 +44,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
-pub(crate) mod cosmos;
+pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
 pub mod runtime;
@@ -54,6 +57,13 @@ pub mod mock;
 pub enum HealthCheck {
     Healthy,
     Unhealthy(Box<Error>),
+}
+
+/// The result of a chain status query.
+#[derive(Clone, Debug)]
+pub struct StatusResponse {
+    pub height: ICSHeight,
+    pub timestamp: Timestamp,
 }
 
 /// Generic query response type
@@ -133,7 +143,11 @@ pub trait ChainEndpoint: Sized {
 
     fn get_signer(&mut self) -> Result<Signer, Error>;
 
+    fn config(&self) -> ChainConfig;
+
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
+
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
 
     // Queries
 
@@ -144,8 +158,8 @@ pub trait ChainEndpoint: Sized {
         Ok(get_compatible_versions())
     }
 
-    /// Query the latest height the chain is at
-    fn query_latest_height(&self) -> Result<ICSHeight, Error>;
+    /// Query the latest height and timestamp the chain is at
+    fn query_status(&self) -> Result<StatusResponse, Error>;
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(
@@ -264,6 +278,11 @@ pub trait ChainEndpoint: Sized {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 
+    fn query_blocks(
+        &self,
+        request: QueryBlockRequest,
+    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+
     // Provable queries
     fn proven_client_state(
         &self,
@@ -300,7 +319,11 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error>;
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;
+    fn build_client_state(
+        &self,
+        height: ICSHeight,
+        dst_config: ChainConfig,
+    ) -> Result<Self::ClientState, Error>;
 
     fn build_consensus_state(
         &self,

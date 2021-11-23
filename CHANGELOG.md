@@ -1,6 +1,100 @@
 # CHANGELOG
 
+## v0.8.0
+*October 29th, 2021*
+
+This is the final release of version 0.8.0, which now depends on the official releases of the `prost` and `tonic` crates.
+In addition to everything that's included in v0.8.0-pre.1, this release updates the minimum supported Rust version to 1.56, 
+and contains various bug fixes and performance improvements which make the relayer more reliable.
+
+#### Notice for operators
+A new setting was added to the Hermes configuration: `max_block_time`.
+This setting specifies the maximum time per block for this chain.
+The block time together with the clock drift are added to the source drift to estimate
+the maximum clock drift when creating a client on this chain.
+For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
+
+### BREAKING CHANGES
+
+- Update MSRV to Rust 1.56 and use the 2021 edition
+  ([#1519](https://github.com/informalsystems/ibc-rs/issues/1519))
+
+### BUG FIXES
+
+- Fix for "new header has a time from the future" chain error which would arise due to clock drift ([#1445](https://github.com/informalsystems/ibc-rs/issues/1445)):
+  * Added new config param `max_block_time` to prevent the problem for appearing in newly-created clients.
+  * Added a synchronous waiting in client update logic to allow destination chain to reach a new height
+    before submitting a client update message.
+- Ensure Hermes does not send timeouts for packets that have not expired yet
+    ([#1504](https://github.com/informalsystems/ibc-rs/issues/1504))
+
+### IMPROVEMENTS
+
+- General
+  - Update to official releases of `prost` 0.9 and `tonic` 0.6
+    ([#1502](https://github.com/informalsystems/ibc-rs/issues/1502))
+- [IBC Modules](modules)
+  - Support for converting `ibc::events::IbcEvent` into `tendermint::abci::Event` 
+    ([#838](https://github.com/informalsystems/ibc-rs/issues/838))
+  - Restructure the layout of the `ibc` crate to match `ibc-go`'s [layout](https://github.com/cosmos/ibc-go#contents)
+    ([#1436](https://github.com/informalsystems/ibc-rs/issues/1436))
+  - Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers
+    ([#1460](https://github.com/informalsystems/ibc-rs/issues/1460))
+- [Relayer Library](relayer)
+  - Improve performance of misbehaviour checks triggered by an `UpdateClient` event
+    ([#1417](https://github.com/informalsystems/ibc-rs/issues/1417))
+
+## v0.8.0-pre.1
+*October 22nd, 2021*
+
+This is a pre-release which depends on in-house forks of various Rust libraries.
+As such, it is advised to avoid depending on the `ibc` and `ibc-relayer` crates
+at version 0.8.0-pre.1.
+
+Hermes v0.8.0-pre.1 is considered stable and it is recommended for all
+users to update to this version.
+
+This release notably includes a new [`memo_prefix`][memo] configuration option
+for specifying a prefix to be included in the memo of each transaction submitted
+by Hermes.
+
+Moreover, Hermes is now able to handle `SendPacket` events originating from Tendermint
+ABCI's `BeginBlock` and `EndBlock` methods ([#1231](https://github.com/informalsystems/ibc-rs/issues/1231)).
+
+[memo]: https://github.com/informalsystems/ibc-rs/blob/v0.8.0-pre.1/config.toml#L161-L165
+
+### BREAKING CHANGES
+
+- [IBC Modules](modules)
+  - The `check_header_and_update_state` method of the `ClientDef`
+    trait (ICS02) has been expanded to facilitate ICS07
+    ([#1214](https://github.com/informalsystems/ibc-rs/issues/1214))
+
+### FEATURES
+
+- General
+  - Add support for the `tx.memo` field
+    ([#1433](https://github.com/informalsystems/ibc-rs/issues/1433))
+- [IBC Modules](modules)
+  - Add ICS07 verification functionality by using `tendermint-light-client`
+    ([#1214](https://github.com/informalsystems/ibc-rs/issues/1214))
+- [Relayer Library](relayer)
+  - Add a `default_gas` setting to be used for submitting a tx when tx simulation
+    fails ([#1457](https://github.com/informalsystems/ibc-rs/issues/1457))
+  - Update compatibility check for IBC-Go dependency
+    ([#1464](https://github.com/informalsystems/ibc-rs/issues/1464))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Handle SendPacket events originating from Tendermint ABCI's BeginBlock
+    and EndBlock methods ([#1231](https://github.com/informalsystems/ibc-rs/issues/1231))
+  - Improve error message when `create client` fails and add a health
+    check for the trusting period being smaller than the unbonding period
+    ([#1440](https://github.com/informalsystems/ibc-rs/issues/1440))
+
 ## v0.7.3
+*October 4th, 2021*
 
 This minor release most notably includes a fix for a bug introduced in v0.7.0
 where Hermes would always use the max gas when submitting transactions to
@@ -25,6 +119,7 @@ It also improves the handling of account sequence numbers
     ([#1392](https://github.com/informalsystems/ibc-rs/issues/1392))
 
 ## v0.7.2
+*September 24th, 2021*
 
 This minor release brings substantial performance improvements as well as
 support for chains using Secp256k1 signatures in consensus votes.
@@ -52,6 +147,7 @@ It also bumps the compatibility to Cosmos SDK 0.44.
 - Improve reliability of health check ([#1382](https://github.com/informalsystems/ibc-rs/issues/1376))
 
 ## v0.7.1
+*September 14th, 2021*
 
 This minor release of Hermes notably features support for Ethermint chains and transfer amounts expressed as a 256-bit unsigned integer.
 This release also fixes a bug where the chain runtime within the relayer would crash when failing to decode a invalid header included in a `ClientUpdate` IBC event.
@@ -91,6 +187,7 @@ This release also fixes a bug where the chain runtime within the relayer would c
 [#1333]: https://github.com/informalsystems/ibc-rs/issues/1333
 
 ## v0.7.0
+*August 24th, 2021*
 
 This release of Hermes is the first to be compatible with the development version of Cosmos SDK 0.43.
 Hermes 0.7.0 also improves the performance and reliability of the relayer, notably by waiting asynchronously for transactions to be confirmed.
@@ -151,6 +248,7 @@ Additionnally, Hermes now includes a REST server which exposes the relayer's int
 [#1297]: https://github.com/informalsystems/ibc-rs/issues/1297
 
 ## v0.6.2
+*August 2nd, 2021*
 
 This minor release of Hermes re-enables the `upgrade client`, `upgrade clients`,
 `tx raw upgrade-clients`, and `tx raw upgrade-chain`, and otherwise
@@ -1191,21 +1289,21 @@ Other highlights:
 [#195]: https://github.com/informalsystems/ibc-rs/pull/195
 [ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
 [#198]: https://github.com/informalsystems/ibc-rs/issues/198
-[ibc/ics02]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
+[ibc/ics02]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics02_client
 [#185]: https://github.com/informalsystems/ibc-rs/issues/185
-[ibc/ics03]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics03_connection
+[ibc/ics03]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics03_connection
 [#193]: https://github.com/informalsystems/ibc-rs/issues/193
-[ibc/ics04]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics04_channel
+[ibc/ics04]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics04_channel
 [#192]: https://github.com/informalsystems/ibc-rs/issues/192
 [ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
-[architecture/FSM-1]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/fsm-async-connection.md
+[architecture/FSM-1]: https://github.com/informalsystems/ibc-rs/blob/v0.1.0/docs/architecture/fsm-async-connection.md
 [#122]: https://github.com/informalsystems/ibc-rs/issues/122
 [architecture/ADR-003]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md
 [#119]: https://github.com/informalsystems/ibc-rs/issues/119
 [#194]: https://github.com/informalsystems/ibc-rs/issues/194
-[ibc/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics24_host
+[ibc/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics24_host
 [#168]: https://github.com/informalsystems/ibc-rs/issues/168
-[ibc/ics07]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics07_tendermint
+[ibc/ics07]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/clients/ics07_tendermint
 
 ## v0.0.2
 

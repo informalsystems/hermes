@@ -1,16 +1,19 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-use crate::ics02_client::client_consensus::AnyConsensusState;
-use crate::ics02_client::client_def::ClientDef;
-use crate::ics02_client::client_state::AnyClientState;
-use crate::ics02_client::error::Error;
-use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics04_channel::channel::ChannelEnd;
-use crate::ics04_channel::packet::Sequence;
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
-use crate::ics23_commitment::merkle::apply_prefix;
-use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::ics24_host::Path;
+use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::client_def::ClientDef;
+use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::context::ClientReader;
+use crate::core::ics02_client::error::Error;
+use crate::core::ics03_connection::connection::ConnectionEnd;
+use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::packet::Sequence;
+use crate::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
+};
+use crate::core::ics23_commitment::merkle::apply_prefix;
+use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics24_host::Path;
 use crate::mock::client_state::{MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
@@ -26,6 +29,8 @@ impl ClientDef for MockClient {
 
     fn check_header_and_update_state(
         &self,
+        _ctx: &dyn ClientReader,
+        _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {

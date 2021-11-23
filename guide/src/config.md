@@ -20,145 +20,28 @@ hermes [-c CONFIG_FILE] COMMAND
 
 <!-- toc -->
 
-## Configuration format
+## Configuration
 
 The configuration file must have one `global` section, and one `chains` section for each chain.
 
 > **Note:** As of 0.6.0, the Hermes configuration file is self-documented.
-> This section of the guide which discusses each parameter in turn is no
-> longer maintained, and we may remove it soon. Please read the configuration
-> file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.7.3/config.toml) itself for the most up-to-date documentation of parameters.
+> Please read the configuration file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.8.0-pre.1/config.toml)
+> itself for the most up-to-date documentation of parameters.
 
-### `[global]`
+By default, Hermes will relay on all channels available between all the configured chains.
+In this way, every configured chain will act as a source (in the sense that Hermes listens for events)
+and as a destination (to relay packets that others chains have sent).
 
-The `global` section has parameters that apply globally to the relayer operation.
+For example, if there are only two chains configured, then Hermes will only relay packets between those two,
+i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
+Hermes will ignore all events that pertain to chains which are unknown (ie. not present in config.toml).
 
-#### Parameters
-
-* __strategy__: *(string)* Specify the strategy to be used by the relayer. Default: `packets`
-  Two options are currently supported:
-    - `all`: Relay packets and perform channel and connection handshakes.
-    - `packets`: Relay packets only.
-
-* __log_level__: *(string)* Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default: `info`.
-  For more information on parametrizing the log output, see the section [help/log-level][log-level].
-
-Here is an example for the `global` section:
-
-```toml
-[global]
-strategy = 'packets'
-log_level = 'info'
-```
-
-### `[telemetry]`
-
-The `telemetry` section defines parameters for Hermes' built-in [telemetry](telemetry.md) capabilities.
-
-#### Parameters
-
-* __enabled__: *(boolean)* Whether or not to enable the telemetry service. Default: `false`.
-
-* __host__: *(string)* Specify the IPv4/6 host over which the built-in HTTP server will serve the metrics gathered by the telemetry service. Default: `127.0.0.1`
-
-* __port__: *(u16)* Specify the port over which the built-in HTTP server will serve the metrics gathered by the telemetry service. Default: `3001`
-
-Here is an example for the `telemetry` section:
-
-```toml
-[telemetry]
-enabled = true
-host    = '127.0.0.1'
-port    = 3001
-```
-
-### `[rest]`
-
-The `rest` section defines parameters for Hermes' built-in [REST API](rest-api.md)..
-
-#### Parameters
-
-* __enabled__: *(boolean)* Whether or not to enable the built-in REST server. Default: `false`.
-
-* __host__: *(string)* Specify the IPv4/6 host over which the built-in HTTP server will be listening. Default: `127.0.0.1`
-
-* __port__: *(u16)* Specify the port over which the built-in HTTP server will be listening. Default: `3000`
-
-Here is an example for the `rest` section:
-
-```toml
-[rest]
-enabled = true
-host    = '127.0.0.1'
-port    = 3000
-```
-
-### `[[chains]]`
-
-A `chains` section includes parameters related to a chain and the full node to which the relayer can send transactions and queries.
-
-#### Parameters
-
-* __id__: *(string)* Specify the chain ID. For example `ibc-0`
-
-* __rpc_addr__: *(string)* Specify the RPC address and port where the chain RPC server listens on. For example `http://localhost:26657`
-
-* __grpc_addr__: *(string)* Specify the GRPC address and port where the chain GRPC server listens on. For example `http://localhost:9090`
-
-* __websocket_addr__: *(string)* Specify the WebSocket address and port where the chain WebSocket server listens on. For example `ws://localhost:26657/websocket`
-
-* __rpc_timeout__: *(string)* Specify the maximum amount of time (duration) that the RPC requests should take before timing out. Default: `10s` (10 seconds).
-
-* __account_prefix__: *(string)* Specify the prefix used by the chain. For example `cosmos`
-
-* __key_name__: *(string)* Specify the name of the private key to use for signing transactions. See the [Adding Keys](commands/keys/index.md#adding-keys) chapter for for more information about managing signing keys.
-
-* __store_prefix__: *(string)* Specify the store prefix used by the on-chain IBC modules. For example `ibc`.
-
-* __max_gas__: *(u64)* Specify the maximum amount of gas to be used as the gas limit for a transaction. Default: `300000`
-
-* __gas_price__: *(table)*
-  * __price__: *(f64)* Specify the price per gas used of the fee to submit a transaction.
-  * __denom__: *(string)* Specify the denomination of the fee.
-
-* __gas_adjustment__: *(f64)* Specify by what percentage to increase the gas estimate used to compute the fee, to account for potential estimation error. Default: `0.1`, ie. 10%.
-
-* __max_msg_num__: *(u64)* Specify how many IBC messages at most to include in a single transaction. Default: `30`
-
-* __max_tx_size__: *(u64)* Specify the maximum size, in bytes, of each transaction that Hermes will submit. Default: `2097152` (2 MiB)
-
-* __clock_drift__: *(string)*  Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default: `5s`
-
-* __trusting_period__: *(string)* Specify the amount of time to be used as the light client trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default: `14days` (336 hours)
-
-* __trust_threshold__ <sup>(advanced)</sup>: *(table)* Specify the trust threshold for the light client, ie. the maximum fraction of validators which have changed between two blocks. Default: `{ numerator = '1', denominator = '3' }`, ie. 1/3.
-  * __numerator__: *(string)* The numerator of the fraction (must parse to a `u64`).
-  * __denominator__: *(string)* The denominator of the fraction (must parse to a `u64`).
-
-  __Warning__ - _This is an advanced feature! Modify with caution._
-
-For example if you want to add a configuration for a chain named `ibc-0`:
-
-```toml
-[[chains]]
-id = 'ibc-0'
-rpc_addr = 'http://127.0.0.1:26657'
-grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://localhost:26657/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 2000000
-gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
-clock_drift = '5s'
-trusting_period = '14days'
-```
+To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v0.8.0-pre.1/config.toml#L156-L173).
 
 ## Adding private keys
 
-For each chain configured you need to add a private key for that chain in order to submit [transactions](./commands/raw/index.md), please refer to the [Keys](./commands/keys/index.md) sections in order to learn how to add the private keys that are used by the relayer.
+For each chain configured you need to add a private key for that chain in order to submit [transactions](./commands/raw/index.md),
+please refer to the [Keys](./commands/keys/index.md) sections in order to learn how to add the private keys that are used by the relayer.
 
 ## Example configuration file
 
@@ -166,8 +49,37 @@ Here is a full example of a configuration file with two chains configured:
 
 ```toml
 [global]
-strategy = 'packets'
 log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+filter = false
+tx_confirmation = true
+
+[rest]
+enabled = true
+host = '127.0.0.1'
+port = 3000
+
+[telemetry]
+enabled = true
+host = '127.0.0.1'
+port = 3001
 
 [[chains]]
 id = 'ibc-0'

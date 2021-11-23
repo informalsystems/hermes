@@ -1,15 +1,16 @@
 [package]
-name    = "ibc-proto-compiler"
-version = "0.2.0"
-authors = ["Greg Szabo <greg@philosobear.com>"]
-edition = "2018"
-publish = false
+name         = "ibc-proto-compiler"
+version      = "0.2.0"
+authors      = ["Informal Systems <hello@informal.systems>"]
+edition      = "2021"
+publish      = false
+rust-version = "1.56"
 
 [dependencies]
-git2 = "0.13"
-prost-build = { package = "informalsystems-prost-build", version = "0.8.1", default-features = false }
-tempdir = "0.3.7"
-walkdir = "2.3"
-argh = "0.1.3"
-tonic = { package = "informalsystems-tonic", version = "0.5.2" }
-tonic-build = { package = "informalsystems-tonic-build", version = "0.5.2" }
+git2        = "0.13"
+prost-build = "0.9"
+tempdir     = "0.3.7"
+walkdir     = "2.3"
+argh        = "0.1.3"
+tonic       = "0.6"
+tonic-build = "0.6"

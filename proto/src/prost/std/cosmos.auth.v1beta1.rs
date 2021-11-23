@@ -36,6 +36,16 @@ pub struct Params {
     #[prost(uint64, tag = "5")]
     pub sig_verify_cost_secp256k1: u64,
 }
+/// GenesisState defines the auth module's genesis state.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// params defines all the paramaters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+    /// accounts are the accounts present at genesis.
+    #[prost(message, repeated, tag = "2")]
+    pub accounts: ::prost::alloc::vec::Vec<::prost_types::Any>,
+}
 /// QueryAccountsRequest is the request type for the Query/Accounts RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAccountsRequest {
@@ -100,7 +110,7 @@ pub mod query_client {
     impl<T> QueryClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
@@ -184,14 +194,4 @@ pub mod query_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
-}
-/// GenesisState defines the auth module's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// params defines all the paramaters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-    /// accounts are the accounts present at genesis.
-    #[prost(message, repeated, tag = "2")]
-    pub accounts: ::prost::alloc::vec::Vec<::prost_types::Any>,
 }
