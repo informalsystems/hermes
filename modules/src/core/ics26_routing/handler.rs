@@ -129,7 +129,7 @@ where
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
