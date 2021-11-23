@@ -1,7 +1,7 @@
 # CHANGELOG
 
 ## v0.9.0, the “Zamfir” release
-*November 18th, 2021*
+*November 23rd, 2021*
 
 > This release honors Anca Zamfir, who has lead ibc-rs from its inception and through its first two years of life.
 > The whole team is grateful for her dedication and the nurturing environment she created.
