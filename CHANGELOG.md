@@ -78,6 +78,8 @@ then on top of the changes above, `mode.connections.enabled` and `mode.chhanels.
 - General
   - Upgrade IBC-rs TLA+ MBT models to modern Apalache type annotations
     ([#1544](https://github.com/informalsystems/ibc-rs/issues/1544))
+  - Add `architecture.md` doc that gives a high-level overview of the structure of the codebase
+  - Add some module-level documentation ([#1556](https://github.com/informalsystems/ibc-rs/pulls/1556))
 - [IBC Modules](modules)
   - Derive `PartialEq` and `Eq` on `IbcEvent` and inner types
     ([#1546](https://github.com/informalsystems/ibc-rs/issues/1546))
