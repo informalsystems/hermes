@@ -255,7 +255,7 @@ mod tests {
     use crate::prelude::*;
     use core::time::Duration;
     use std::println;
-    use test_env_log::test;
+    use test_log::test;
 
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 

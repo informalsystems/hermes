@@ -134,7 +134,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;

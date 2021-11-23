@@ -78,7 +78,7 @@ impl From<MsgUpdateAnyClient> for RawMsgUpdateClient {
 #[cfg(test)]
 mod tests {
 
-    use test_env_log::test;
+    use test_log::test;
 
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient;
 

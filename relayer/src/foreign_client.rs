@@ -1329,7 +1329,7 @@ mod test {
     use alloc::sync::Arc;
     use core::str::FromStr;
 
-    use test_env_log::test;
+    use test_log::test;
     use tokio::runtime::Runtime as TokioRuntime;
 
     use ibc::core::ics24_host::identifier::ClientId;

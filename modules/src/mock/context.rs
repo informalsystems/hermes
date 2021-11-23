@@ -1033,7 +1033,7 @@ mod tests {
     use crate::mock::host::HostType;
     use crate::prelude::*;
     use crate::Height;
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn test_history_manipulation() {

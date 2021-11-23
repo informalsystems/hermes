@@ -49,7 +49,7 @@ extern crate alloc;
 
 // Only allow the use of std in tests. Otherwise the main
 // ibc crate works with no_std.
-#[cfg(test)]
+#[cfg(any(test, feature = "mocks"))]
 extern crate std;
 
 mod prelude;

@@ -137,7 +137,7 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn ack_packet_processing() {
