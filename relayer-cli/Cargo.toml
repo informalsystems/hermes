@@ -35,7 +35,7 @@ gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.29"
-tracing-subscriber = { version = "0.3.1", features = ["fmt", "env-filter", "json"]}
+tracing-subscriber = { version = "0.3.2", features = ["fmt", "env-filter", "json"]}
 eyre = "0.6.5"
 color-eyre = "0.5"
 oneline-eyre = "0.1"
