@@ -2,11 +2,12 @@
 
 use std::path::PathBuf;
 
-use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
     component::Component,
     config::{self, CfgCell},
+    terminal::component::Terminal,
+    terminal::ColorChoice,
     Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
 };
 use ibc_relayer::config::Config;
@@ -179,5 +180,11 @@ impl Application for CliApp {
             let tracing = PrettyTracing::new(config.global)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
+    }
+
+    // Disable color support due to
+    // https://github.com/iqlusioninc/abscissa/issues/589
+    fn term_colors(&self, _command: &Self::Cmd) -> ColorChoice {
+        ColorChoice::Never
     }
 }
