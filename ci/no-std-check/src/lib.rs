@@ -6,7 +6,7 @@ extern crate alloc;
 
 // Import the crates that we want to check if they are fully no-std compliance
 
-use ibc;
+// use ibc;
 use ibc_proto;
 use tendermint;
 use tendermint_proto;
