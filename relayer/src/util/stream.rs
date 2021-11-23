@@ -95,7 +95,7 @@ mod tests {
     use super::*;
 
     use futures::{executor::block_on, stream, StreamExt};
-    use test_env_log::test;
+    use test_log::test;
 
     fn ok<A>(a: A) -> Result<A, ()> {
         Ok(a)

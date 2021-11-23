@@ -120,7 +120,7 @@ pub(crate) fn process(
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics03_connection::connection::State;
     use crate::core::ics03_connection::handler::{dispatch, ConnectionResult};

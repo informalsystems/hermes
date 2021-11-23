@@ -284,7 +284,7 @@ mod tests {
 
     use core::time::Duration;
     use std::thread::sleep;
-    use test_env_log::test;
+    use test_log::test;
 
     use super::{Expiry, Timestamp, ZERO_DURATION};
 
