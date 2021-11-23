@@ -53,7 +53,7 @@ pub struct CreateChannelCommand {
         short,
         long,
         about = "the channel ordering, valid options 'unordered' (default) and 'ordered'",
-        default_value = "Order::default"
+        default_value_t
     )]
     order: Order,
 

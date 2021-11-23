@@ -65,7 +65,7 @@ pub struct TxRawChanOpenInitCmd {
     #[clap(
         short,
         long,
-        default_value = "Order::default",
+        default_value_t,
         about = "the channel ordering, valid options 'unordered' (default) and 'ordered'"
     )]
     order: Order,
