@@ -117,9 +117,11 @@ fn dst_app_version<ChainA: ChainHandle, ChainB: ChainHandle>(
                 .map_err(|e| Error::app_version(e.to_string()))?,
         )
         .into();
-    debug!("source channel end proposed version='{}'; original={:?}",
+    debug!(
+        "source channel end proposed version='{}'; original={:?}",
         proposed_version,
-        channel.src_version());
+        channel.src_version()
+    );
 
     let request = QueryAppVersionRequest {
         port_id: channel.dst_port_id().to_string(),
