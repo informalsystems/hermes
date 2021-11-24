@@ -417,7 +417,7 @@ mod proof_specs_serde {
         proof_specs: &ProofSpecs,
         serializer: S,
     ) -> Result<S::Ok, S::Error> {
-        let json_str = serde_json::to_string(proof_specs).map_err(ser::Error::custom)?;
+        let json_str = serde_json::to_string_pretty(proof_specs).map_err(ser::Error::custom)?;
         serializer.serialize_str(&json_str)
     }
 
