@@ -70,7 +70,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
                 match client.refresh() {
                     Ok(Some(_)) => {
                         telemetry!(
-                            ibc_client_update,
+                            ibc_client_updates,
                             &self.client.dst_chain_id,
                             &self.client.dst_client_id,
                             1
