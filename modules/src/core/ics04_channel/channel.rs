@@ -474,7 +474,7 @@ mod tests {
     use crate::prelude::*;
 
     use core::str::FromStr;
-    use test_env_log::test;
+    use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 

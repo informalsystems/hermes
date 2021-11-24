@@ -205,8 +205,20 @@ impl<Chain: ChainHandle> ConnectionSide<Chain> {
             connection_id,
         }
     }
+
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.connection_id.as_ref()
+    }
+
+    pub fn map_chain<ChainB: ChainHandle>(
+        self,
+        mapper: impl FnOnce(Chain) -> ChainB,
+    ) -> ConnectionSide<ChainB> {
+        ConnectionSide {
+            chain: mapper(self.chain),
+            client_id: self.client_id,
+            connection_id: self.connection_id,
+        }
     }
 }
 
@@ -241,11 +253,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     /// Create a new connection, ensuring that the handshake has succeeded and the two connection
     /// ends exist on each side.
     pub fn new(
-        a_client: ForeignClient<ChainA, ChainB>,
-        b_client: ForeignClient<ChainB, ChainA>,
+        b_to_a_client: ForeignClient<ChainA, ChainB>,
+        a_to_b_client: ForeignClient<ChainB, ChainA>,
         delay_period: Duration,
     ) -> Result<Self, ConnectionError> {
-        Self::validate_clients(&a_client, &b_client)?;
+        Self::validate_clients(&b_to_a_client, &a_to_b_client)?;
 
         // Validate the delay period against the upper bound
         if delay_period > MAX_PACKET_DELAY {
@@ -255,13 +267,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         let mut c = Self {
             delay_period,
             a_side: ConnectionSide::new(
-                a_client.dst_chain(),
-                a_client.id().clone(),
+                b_to_a_client.dst_chain(),
+                b_to_a_client.id().clone(),
                 Default::default(),
             ),
             b_side: ConnectionSide::new(
-                b_client.dst_chain(),
-                b_client.id().clone(),
+                a_to_b_client.dst_chain(),
+                a_to_b_client.id().clone(),
                 Default::default(),
             ),
         };
@@ -270,6 +282,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         Ok(c)
     }
+
     pub fn restore_from_event(
         chain: ChainA,
         counterparty_chain: ChainB,
@@ -1084,6 +1097,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             self.dst_chain(),
             self.src_chain(),
         )
+    }
+
+    pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
+        self,
+        mapper_a: impl Fn(ChainA) -> ChainC,
+        mapper_b: impl Fn(ChainB) -> ChainD,
+    ) -> Connection<ChainC, ChainD> {
+        Connection {
+            delay_period: self.delay_period,
+            a_side: self.a_side.map_chain(mapper_a),
+            b_side: self.b_side.map_chain(mapper_b),
+        }
     }
 }
 

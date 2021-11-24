@@ -54,7 +54,7 @@ impl core::str::FromStr for ClientType {
 #[cfg(test)]
 mod tests {
     use core::str::FromStr;
-    use test_env_log::test;
+    use test_log::test;
 
     use super::ClientType;
     use crate::core::ics02_client::error::{Error, ErrorDetail};

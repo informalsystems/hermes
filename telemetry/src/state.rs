@@ -65,7 +65,7 @@ impl TelemetryState {
     }
 
     /// Update the number of client updates per client
-    pub fn ibc_client_update(&self, chain: &ChainId, client: &ClientId, count: u64) {
+    pub fn ibc_client_updates(&self, chain: &ChainId, client: &ClientId, count: u64) {
         let labels = &[
             KeyValue::new("chain", chain.to_string()),
             KeyValue::new("client", client.to_string()),

@@ -1,4 +1,4 @@
-//! ICS 02: IBC Client implementation
+//! ICS 02: Client implementation for verifying remote IBC-enabled chains.
 
 pub mod client_consensus;
 pub mod client_def;

@@ -6,6 +6,7 @@ pub mod types;
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::BTreeSet as HashSet;
 use core::{fmt, time::Duration};
+use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
@@ -16,6 +17,7 @@ use ibc::timestamp::ZERO_DURATION;
 
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
+use crate::keyring::Store;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -116,12 +118,16 @@ pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
     #[serde(default)]
+    pub mode: ModeConfig,
+    #[serde(default)]
     pub rest: RestConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
 }
+
+pub type SharedConfig = Arc<RwLock<Config>>;
 
 impl Config {
     pub fn has_chain(&self, id: &ChainId) -> bool {
@@ -145,7 +151,7 @@ impl Config {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> bool {
-        if !self.global.filter {
+        if !self.mode.packets.filter {
             return true;
         }
 
@@ -155,27 +161,95 @@ impl Config {
         }
     }
 
-    pub fn handshake_enabled(&self) -> bool {
-        self.global.strategy == Strategy::HandshakeAndPackets
-    }
-
     pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
         self.chains.iter().map(|c| (&c.id, c)).collect()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub enum Strategy {
-    #[serde(rename = "packets")]
-    Packets,
-
-    #[serde(rename = "all")]
-    HandshakeAndPackets,
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModeConfig {
+    pub clients: Clients,
+    pub connections: Connections,
+    pub channels: Channels,
+    pub packets: Packets,
 }
 
-impl Default for Strategy {
+impl ModeConfig {
+    pub fn all_disabled(&self) -> bool {
+        !self.clients.enabled
+            && !self.connections.enabled
+            && !self.channels.enabled
+            && !self.packets.enabled
+    }
+}
+
+impl Default for ModeConfig {
     fn default() -> Self {
-        Self::Packets
+        Self {
+            clients: Clients {
+                enabled: true,
+                refresh: true,
+                misbehaviour: true,
+            },
+            connections: Connections { enabled: false },
+            channels: Channels { enabled: false },
+            packets: Packets {
+                enabled: true,
+                clear_interval: default::clear_packets_interval(),
+                clear_on_start: true,
+                filter: false,
+                tx_confirmation: true,
+            },
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Clients {
+    pub enabled: bool,
+    #[serde(default)]
+    pub refresh: bool,
+    #[serde(default)]
+    pub misbehaviour: bool,
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Connections {
+    pub enabled: bool,
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Channels {
+    pub enabled: bool,
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Packets {
+    pub enabled: bool,
+    #[serde(default = "default::clear_packets_interval")]
+    pub clear_interval: u64,
+    #[serde(default)]
+    pub clear_on_start: bool,
+    #[serde(default = "default::filter")]
+    pub filter: bool,
+    #[serde(default = "default::tx_confirmation")]
+    pub tx_confirmation: bool,
+}
+
+impl Default for Packets {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            clear_interval: default::clear_packets_interval(),
+            clear_on_start: false,
+            filter: default::filter(),
+            tx_confirmation: default::tx_confirmation(),
+        }
     }
 }
 
@@ -213,24 +287,13 @@ impl fmt::Display for LogLevel {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
-    pub strategy: Strategy,
     pub log_level: LogLevel,
-    #[serde(default = "default::filter")]
-    pub filter: bool,
-    #[serde(default = "default::clear_packets_interval")]
-    pub clear_packets_interval: u64,
-    #[serde(default = "default::tx_confirmation")]
-    pub tx_confirmation: bool,
 }
 
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
-            strategy: Strategy::default(),
             log_level: LogLevel::default(),
-            filter: default::filter(),
-            clear_packets_interval: default::clear_packets_interval(),
-            tx_confirmation: default::tx_confirmation(),
         }
     }
 }
@@ -274,7 +337,7 @@ impl Default for RestConfig {
 /// It defines the address generation method
 /// TODO: Ethermint `pk_type` to be restricted
 /// after the Cosmos SDK release with ethsecp256k1
-/// https://github.com/cosmos/cosmos-sdk/pull/9981
+/// <https://github.com/cosmos/cosmos-sdk/pull/9981>
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(
     rename_all = "lowercase",
@@ -313,6 +376,8 @@ pub struct ChainConfig {
     pub rpc_timeout: Duration,
     pub account_prefix: String,
     pub key_name: String,
+    #[serde(default)]
+    pub key_store_type: Store,
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
@@ -373,7 +438,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::{load, store_writer};
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn parse_valid_config() {

@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "0.8.0"
+version    = "0.9.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -12,6 +12,7 @@ rust-version = "1.56"
 description  = """
   Hermes is an IBC Relayer written in Rust
 """
+default-run = "hermes"
 
 [[bin]]
 name = "hermes"
@@ -25,19 +26,20 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.8.0", path = "../modules" }
-ibc-relayer      = { version = "0.8.0", path = "../relayer" }
-ibc-proto        = { version = "0.12.0", path = "../proto" }
-ibc-telemetry    = { version = "0.8.0", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.8.0", path = "../relayer-rest", optional = true }
+ibc              = { version = "0.9.0", path = "../modules" }
+ibc-relayer      = { version = "0.9.0", path = "../relayer" }
+ibc-proto        = { version = "0.13.0", path = "../proto" }
+ibc-telemetry    = { version = "0.9.0", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.9.0", path = "../relayer-rest", optional = true }
 
 gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.29"
-tracing-subscriber = { version = "0.3.1", features = ["fmt", "env-filter", "json"]}
+tracing-subscriber = { version = "0.3.2", features = ["fmt", "env-filter", "json"]}
 eyre = "0.6.5"
 color-eyre = "0.5"
+oneline-eyre = "0.1"
 futures = "0.3.17"
 toml = "0.5.8"
 serde_derive = "1.0.116"
@@ -54,18 +56,18 @@ flex-error = { version = "0.4.4", default-features = false, features = ["std", "
 signal-hook = "0.3.10"
 
 [dependencies.tendermint-proto]
-version = "=0.23.0"
+version = "=0.23.1"
 
 [dependencies.tendermint]
-version = "=0.23.0"
+version = "=0.23.1"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.0"
+version = "=0.23.1"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.0"
+version = "=0.23.1"
 features = ["unstable"]
 
 [dependencies.abscissa_core]
