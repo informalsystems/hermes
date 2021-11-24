@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eoux pipefail
+set -eou pipefail
 
 # syn-protobuf.sh is a bash script to sync the protobuf
 # files using the proto-compiler project. It will check
@@ -21,11 +21,13 @@ set -eoux pipefail
 # repositories over and over again every time
 # the script is called.
 
-COSMOS_SDK_GIT=${COSMOS_SDK_GIT:-/tmp/cosmos-sdk.git}
-IBC_GO_GIT=${IBC_GO_GIT:-/tmp/ibc-go.git}
+CACHE_PATH="${XDG_CACHE_HOME:-$HOME/.cache}"
+COSMOS_SDK_GIT="${COSMOS_SDK_GIT:-$CACHE_PATH/cosmos/cosmos-sdk.git}"
+IBC_GO_GIT="${IBC_GO_GIT:-$CACHE_PATH/ibc-go.git}"
 
-COSMOS_SDK_COMMIT=$(cat proto/src/prost/COSMOS_SDK_COMMIT)
-COSMOS_IBC_COMMIT=$(cat proto/src/prost/COSMOS_IBC_COMMIT)
+
+COSMOS_SDK_COMMIT="$(cat proto/src/prost/COSMOS_SDK_COMMIT)"
+COSMOS_IBC_COMMIT="$(cat proto/src/prost/COSMOS_IBC_COMMIT)"
 
 echo "COSMOS_SDK_COMMIT: $COSMOS_SDK_COMMIT"
 echo "COSMOS_IBC_COMMIT: $COSMOS_IBC_COMMIT"
@@ -47,12 +49,18 @@ fi
 
 if [[ ! -e "$COSMOS_SDK_GIT" ]]
 then
+	echo "Cloning cosmos-sdk source code to as bare git repository to $COSMOS_SDK_GIT"
 	git clone --mirror https://github.com/cosmos/cosmos-sdk.git "$COSMOS_SDK_GIT"
+else
+	echo "Using existing cosmos-sdk bare git repository at $COSMOS_SDK_GIT"
 fi
 
 if [[ ! -e "$IBC_GO_GIT" ]]
 then
+	echo "Cloning ibc-go source code to as bare git repository to $IBC_GO_GIT"
 	git clone --mirror https://github.com/cosmos/ibc-go.git "$IBC_GO_GIT"
+else
+	echo "Using existing ibc-go bare git repository at $IBC_GO_GIT"
 fi
 
 # Update the repositories using git fetch. This is so that
