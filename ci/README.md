@@ -216,7 +216,8 @@ And in the relayer service:
 
 In the file `.github\workflows\e2e-gaia-future-release.yaml` update the name with the future version of gaia used 
 
-`name: End to End testing (Gaia - v6.0.0-rc3)`
+`name: End to End testing (Gaia - 
+v6.0.0)`
 
 And in `.github\workflows\e2e-gaia-current-release.yaml` do the same thing
 
