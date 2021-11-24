@@ -2016,7 +2016,7 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#553dd0eb98af6a9cd5b0bd3732bb9ac10fa6f79d"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/no-std-2021-10#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2044,7 +2044,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#553dd0eb98af6a9cd5b0bd3732bb9ac10fa6f79d"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/no-std-2021-10#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
 dependencies = [
  "bytes",
  "chrono",

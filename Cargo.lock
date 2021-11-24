@@ -2883,7 +2883,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/no-std-2021-10#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2913,7 +2913,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/no-std-2021-10#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
 dependencies = [
  "flex-error",
  "serde",
@@ -2926,7 +2926,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/no-std-2021-10#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
 dependencies = [
  "chrono",
  "contracts",
@@ -2946,7 +2946,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/no-std-2021-10#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
 dependencies = [
  "bytes",
  "chrono",
@@ -2963,7 +2963,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/no-std-2021-10#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -2996,7 +2996,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/no-std-2021-10#4f6ef3d67c80fda6df2b9108c4b4a527e110783a"
 dependencies = [
  "chrono",
  "ed25519-dalek",
