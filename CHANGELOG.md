@@ -1,5 +1,99 @@
 # CHANGELOG
 
+## v0.9.0, the “Zamfir” release
+*November 23rd, 2021*
+
+> This release honors Anca Zamfir, who has lead ibc-rs from its inception and through its first two years of life.
+> The whole team is grateful for her dedication and the nurturing environment she created.
+> To many more achievements, Anca!! 🥂
+
+#### Notice for operators
+
+This release requires operators to update their Hermes configuration.
+The `mode` configuration section now replaces the `strategy` option.
+
+##### `strategy = 'packets'`
+
+If Hermes was configured with `strategy = 'packets'`, then the configuration needs to be changed in the following way:
+
+```diff
+ [global]
+-strategy = 'packets'
+ log_level = 'trace'
+-clear_packets_interval = 100
+-tx_confirmation = true
++
++[mode]
++
++[mode.clients]
++enabled = true
++refresh = true
++misbehaviour = true
++
++[mode.connections]
++enabled = false
++
++[mode.channels]
++enabled = false
++
++[mode.packets]
++enabled = true
++clear_interval = 100
++clear_on_start = true
++filter = false
++tx_confirmation = true
+```
+
+##### `strategy = 'all'`
+
+If Hermes was configured to complete connection and channel handshakes as well, ie. with `strategy = 'all'`,
+then on top of the changes above, `mode.connections.enabled` and `mode.chhanels.enabled` must be set to `true`.
+
+[See the relevant section][config-mode-toml] of the documented `config.toml` file in the repository for more details.
+
+[config-mode-toml]: https://github.com/informalsystems/ibc-rs/blob/v0.9.0/config.toml#L9-L59
+
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Set the connection counterparty in the ICS 003 [`connOpenAck` handler][conn-open-ack-handler]
+    ([#1532](https://github.com/informalsystems/ibc-rs/issues/1532))
+
+[conn-open-ack-handler]: https://github.com/informalsystems/ibc-rs/blob/master/modules/src/core/ics03_connection/handler/conn_open_ack.rs
+
+### FEATURES
+
+- General
+  - Support for compatibility with gaia Vega upgrade (protos matching ibc-go v1.2.2 and SDK v0.44.3)
+    ([#1408](https://github.com/informalsystems/ibc-rs/issues/1408))
+  - Optimize the WS client to subscribe to IBC events only (instead of all Tx
+    events) ([#1534](https://github.com/informalsystems/ibc-rs/issues/1534))
+- [Relayer Library](relayer)
+  - Allow for more granular control of relaying modes. The `mode` configuration section replaces the `strategy` option.
+    ([#1518](https://github.com/informalsystems/ibc-rs/issues/1518))
+
+### IMPROVEMENTS
+
+- General
+  - Upgrade IBC-rs TLA+ MBT models to modern Apalache type annotations
+    ([#1544](https://github.com/informalsystems/ibc-rs/issues/1544))
+  - Add `architecture.md` doc that gives a high-level overview of the structure of the codebase
+  - Add some module-level documentation ([#1556](https://github.com/informalsystems/ibc-rs/pulls/1556))
+- [IBC Modules](modules)
+  - Derive `PartialEq` and `Eq` on `IbcEvent` and inner types
+    ([#1546](https://github.com/informalsystems/ibc-rs/issues/1546))
+- [Relayer Library](relayer)
+  - The relayer will now avoid submitting a tx after the simulation failed
+    (in all but one special case) to avoid wasting fees unnecessarily
+    ([#1479](https://github.com/informalsystems/ibc-rs/issues/1479))
+- [Relayer CLI](relayer-cli)
+  - Output errors on a single line if ANSI output is disabled
+    ([#1529](https://github.com/informalsystems/ibc-rs/issues/1529))
+  - Compute fee amount using big integers to prevent overflow
+    when using denominations with high decimal places
+    ([#1555](https://github.com/informalsystems/ibc-rs/issues/1555))
+
 ## v0.8.0
 *October 29th, 2021*
 

@@ -1,6 +1,6 @@
 [package]
 name         = "ibc"
-version      = "0.8.0"
+version      = "0.9.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -25,12 +25,12 @@ mocks = ["tendermint-testgen"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.12.0", path = "../proto" }
+ibc-proto = { version = "0.13.0", path = "../proto" }
 ics23 = { version = "0.6.7", default-features = false }
 chrono = { version = "0.4.19", default-features = false }
 thiserror = { version = "1.0.30", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
-serde = { version = "1.0.130", default-features = false }
+serde = { version = "1.0", default-features = false }
 serde_json = { version = "1", default-features = false }
 tracing = { version = "0.1.29", default-features = false }
 prost = { version = "0.9", default-features = false }
@@ -42,26 +42,27 @@ sha2 = { version = "0.9.8", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 
 [dependencies.tendermint]
-version = "=0.23.0"
+version = "=0.23.1"
 
 [dependencies.tendermint-proto]
-version = "=0.23.0"
+version = "=0.23.1"
 
 [dependencies.tendermint-light-client]
-version = "=0.23.0"
+version = "=0.23.1"
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "=0.23.0"
+version = "=0.23.1"
 optional = true
 
 [dev-dependencies]
 env_logger = "0.9.0"
 tracing-subscriber = { version = "0.3.2", features = ["fmt", "env-filter", "json"]}
-test-env-log = { version = "0.2.7", features = ["trace"] }
+test-log = { version = "0.2.8", features = ["trace"] }
 modelator = "0.2.1"
-tendermint-rpc = { version = "=0.23.0", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.23.0" } # Needed for generating (synthetic) light blocks.
+sha2 = { version = "0.9.8" }
+tendermint-rpc = { version = "=0.23.1", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "=0.23.1" } # Needed for generating (synthetic) light blocks.
 
 # pin clap to avoid miscompilations with modelator
 clap = "=3.0.0-beta.4"

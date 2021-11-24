@@ -227,7 +227,7 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
 mod tests {
 
     use prost_types::Any;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;

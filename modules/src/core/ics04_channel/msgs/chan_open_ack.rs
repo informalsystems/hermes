@@ -153,7 +153,7 @@ pub mod test_util {
 mod tests {
     use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
     use crate::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;

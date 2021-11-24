@@ -153,7 +153,7 @@ mod tests {
 
     use crate::mock::context::MockContext;
 
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn timeout_packet_processing() {
