@@ -105,7 +105,7 @@ pub(crate) fn process(
 mod tests {
     use core::str::FromStr;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;

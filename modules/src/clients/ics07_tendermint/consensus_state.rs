@@ -116,7 +116,7 @@ impl From<Header> for ConsensusState {
 mod tests {
     use std::println;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::test::test_serialization_roundtrip;
 

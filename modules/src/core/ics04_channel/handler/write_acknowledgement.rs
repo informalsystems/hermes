@@ -76,7 +76,9 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-    use test_env_log::test;
+    use crate::prelude::*;
+
+    use test_log::test;
 
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;

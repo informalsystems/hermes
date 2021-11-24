@@ -135,7 +135,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
 
 #[cfg(test)]
 mod tests {
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -153,7 +153,7 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
-
+  
     #[test]
     fn timeout_packet_processing() {
         struct Test {

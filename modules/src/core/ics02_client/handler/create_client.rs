@@ -60,7 +60,7 @@ mod tests {
     use crate::prelude::*;
 
     use core::time::Duration;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;

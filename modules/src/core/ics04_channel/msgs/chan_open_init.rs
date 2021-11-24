@@ -106,7 +106,7 @@ mod tests {
     use crate::prelude::*;
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn channel_open_init_from_raw() {

@@ -59,7 +59,7 @@ mod tests {
     use crate::relayer::ics18_relayer::context::Ics18Context;
     use crate::relayer::ics18_relayer::utils::build_client_update_datagram;
     use crate::Height;
-    use test_env_log::test;
+    use test_log::test;
     use tracing::debug;
 
     #[test]
