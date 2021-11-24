@@ -92,6 +92,13 @@ impl ClientState {
             ));
         }
 
+        // Disallow empty proof-specs
+        if proof_specs.is_empty() {
+            return Err(Error::validation(
+                "ClientState proof-specs cannot be empty".to_string(),
+            ));
+        }
+
         Ok(Self {
             chain_id,
             trust_level,
