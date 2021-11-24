@@ -477,7 +477,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::{load, store_writer};
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn parse_valid_config() {

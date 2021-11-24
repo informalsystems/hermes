@@ -100,7 +100,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use core::str::FromStr;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};

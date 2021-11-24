@@ -211,3 +211,13 @@ And in the relayer service:
       args:
         RELEASE: v4.0.0
    ```
+
+6. Update the CI workflows 
+
+In the file `.github\workflows\e2e-gaia-future-release.yaml` update the name with the future version of gaia used 
+
+`name: End to End testing (Gaia - v6.0.0-rc3)`
+
+And in `.github\workflows\e2e-gaia-current-release.yaml` do the same thing
+
+`name: End to End testing (Gaia - v5.0.8)`
