@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.8.0"
+version      = "0.9.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -21,9 +21,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.8.0", path = "../modules", default-features = false }
-ibc-proto     = { version = "0.12.0", path = "../proto", default-features = false, features = ["std"] }
-ibc-telemetry = { version = "0.8.0", path = "../telemetry", default-features = false, optional = true }
+ibc           = { version = "0.9.0", path = "../modules", default-features = false }
+ibc-proto     = { version = "0.13.0", path = "../proto", default-features = false, features = ["std"] }
+ibc-telemetry = { version = "0.9.0", path = "../telemetry", default-features = false, optional = true }
 
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 subtle-encoding = { version = "0.5", default-features = false }
@@ -75,30 +75,30 @@ default-features = false
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "=0.23.0"
+version = "=0.23.1"
 default-features = false
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.0"
+version = "=0.23.1"
 default-features = false
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.0"
+version = "=0.23.1"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-proto]
-version = "=0.23.0"
+version = "=0.23.1"
 default-features = false
 
 [dev-dependencies]
-ibc = { version = "0.8.0", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.9.0", path = "../modules", features = ["mocks"] }
 serial_test = "0.5.0"
 env_logger = "0.9.0"
-tracing-subscriber = { version = "0.3.2", features = ["fmt", "env-filter", "json"]}
+tracing-subscriber = { version = "0.3.2", features = ["fmt", "env-filter", "json"] }
 test-log = { version = "0.2.8", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.0" }
+tendermint-testgen = { version = "=0.23.1" }

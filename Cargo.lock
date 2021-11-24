@@ -1257,7 +1257,7 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "bytes",
  "chrono",
@@ -1317,7 +1317,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "bytes",
  "prost",
@@ -1328,7 +1328,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1386,7 +1386,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "abscissa_core",
  "atty",
@@ -1426,7 +1426,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "crossbeam-channel 0.5.1",
  "ibc",
@@ -1441,7 +1441,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "crossbeam-channel 0.5.1",
  "ibc",
@@ -2888,8 +2888,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#89ceb7d1ca6a49ce67377038e793431b11649086"
+version = "0.23.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#27a3ed30c5f9993e2478bce4211a997941c57d91"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2918,8 +2918,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#89ceb7d1ca6a49ce67377038e793431b11649086"
+version = "0.23.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#27a3ed30c5f9993e2478bce4211a997941c57d91"
 dependencies = [
  "flex-error",
  "serde",
@@ -2931,8 +2931,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#89ceb7d1ca6a49ce67377038e793431b11649086"
+version = "0.23.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#27a3ed30c5f9993e2478bce4211a997941c57d91"
 dependencies = [
  "chrono",
  "contracts",
@@ -2951,8 +2951,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#89ceb7d1ca6a49ce67377038e793431b11649086"
+version = "0.23.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#27a3ed30c5f9993e2478bce4211a997941c57d91"
 dependencies = [
  "bytes",
  "chrono",
@@ -2968,8 +2968,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#89ceb7d1ca6a49ce67377038e793431b11649086"
+version = "0.23.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#27a3ed30c5f9993e2478bce4211a997941c57d91"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3001,8 +3001,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-testgen"
-version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#89ceb7d1ca6a49ce67377038e793431b11649086"
+version = "0.23.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#27a3ed30c5f9993e2478bce4211a997941c57d91"
 dependencies = [
  "chrono",
  "ed25519-dalek",

@@ -685,7 +685,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "bytes",
  "prost",
@@ -1889,8 +1889,8 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "tendermint"
-version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#64474cd38340b5adf0c7be9f5e359fae484d7cc3"
+version = "0.23.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#27a3ed30c5f9993e2478bce4211a997941c57d91"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1917,8 +1917,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#64474cd38340b5adf0c7be9f5e359fae484d7cc3"
+version = "0.23.1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#27a3ed30c5f9993e2478bce4211a997941c57d91"
 dependencies = [
  "bytes",
  "chrono",

@@ -287,16 +287,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
-        for _ in 0..MAX_RETRIES {
+        for i in 1..=MAX_RETRIES {
             let cleared = self
                 .build_recv_packet_and_timeout_msgs(height)
-                .and_then(|()| self.build_packet_ack_msgs(height))
-                .is_ok();
+                .and_then(|()| self.build_packet_ack_msgs(height));
 
-            if cleared {
-                return Ok(());
+            match cleared {
+                Ok(()) => return Ok(()),
+                Err(e) => error!(
+                    "[{}] failed to clear packets, retry {}/{}: {}",
+                    self, i, MAX_RETRIES, e
+                ),
             }
         }
+
         Err(LinkError::old_packet_clearing_failed())
     }
 
