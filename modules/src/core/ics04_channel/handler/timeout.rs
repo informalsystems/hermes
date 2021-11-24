@@ -153,7 +153,7 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
-  
+
     #[test]
     fn timeout_packet_processing() {
         struct Test {
