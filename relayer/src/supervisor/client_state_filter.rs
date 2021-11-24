@@ -61,7 +61,7 @@ define_error! {
 pub struct FilterPolicy {
     /// A cache associating a generic identifying key, such as
     /// client id, channel id, or connection id, with an
-    /// [`Allowed`] status.
+    /// [`Allow`](Permission::Allow) status.
     permission_cache: HashMap<CacheKey, Permission>,
 }
 

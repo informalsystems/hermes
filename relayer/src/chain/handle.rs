@@ -125,8 +125,14 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Signer>,
     },
 
-    Key {
+    GetKey {
         reply_to: ReplyTo<KeyEntry>,
+    },
+
+    AddKey {
+        key_name: String,
+        key: KeyEntry,
+        reply_to: ReplyTo<()>,
     },
 
     ModuleVersion {
@@ -358,6 +364,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     fn config(&self) -> Result<ChainConfig, Error>;
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
+
+    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
 
     fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
 

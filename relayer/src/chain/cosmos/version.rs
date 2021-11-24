@@ -29,6 +29,7 @@ const IBC_GO_MODULE_NAME: &str = "cosmos/ibc-go";
 /// Assumes that the chain runs on Cosmos SDK.
 /// Stores both the SDK version as well as
 /// the IBC-go module version (if existing).
+#[derive(Debug)]
 pub struct Specs {
     pub sdk_version: semver::Version,
     pub ibc_go_version: Option<semver::Version>,

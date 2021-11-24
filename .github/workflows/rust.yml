@@ -102,7 +102,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features --no-fail-fast -- --nocapture
+          args: --all-features --no-fail-fast --workspace --exclude ibc-integration-test -- --nocapture
 
   # test-coverage:
   #   runs-on: ubuntu-latest

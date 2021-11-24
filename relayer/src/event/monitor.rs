@@ -70,11 +70,8 @@ pub enum MonitorCmd {
 /// event handler.
 ///
 /// The default events that are queried are:
-/// - [`EventType::NewBlock`]
-/// - [`EventType::Tx`]
-///
-/// Those can be extending or overriden using
-/// [`EventMonitor::add_query`] and [`EventMonitor::set_queries`].
+/// - [`EventType::NewBlock`](tendermint_rpc::query::EventType::NewBlock)
+/// - [`EventType::Tx`](tendermint_rpc::query::EventType::Tx)
 pub struct EventMonitor {
     chain_id: ChainId,
     /// WebSocket to collect events from
@@ -321,10 +318,8 @@ impl EventMonitor {
         let rt = self.rt.clone();
 
         loop {
-            if let Ok(cmd) = self.rx_cmd.try_recv() {
-                match cmd {
-                    MonitorCmd::Shutdown => return Next::Abort,
-                }
+            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
+                return Next::Abort;
             }
 
             let result = rt.block_on(async {
@@ -333,6 +328,12 @@ impl EventMonitor {
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
                 }
             });
+
+            // Repeat check of shutdown command here, as previous recv()
+            // may block for a long time.
+            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
+                return Next::Abort;
+            }
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {

@@ -23,7 +23,7 @@ use crate::{
     },
     config::Config,
     object::{Channel, Client, Connection, Object, Packet},
-    registry::Registry,
+    registry::SharedRegistry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
     supervisor::error::Error as SupervisorError,
     worker::WorkerMap,
@@ -40,8 +40,8 @@ pub enum SpawnMode {
 
 /// A context for spawning workers within the [`crate::supervisor::Supervisor`].
 pub struct SpawnContext<'a, Chain: ChainHandle> {
-    config: &'a RwArc<Config>,
-    registry: &'a mut Registry<Chain>,
+    config: RwArc<Config>,
+    registry: SharedRegistry<Chain>,
     workers: &'a mut WorkerMap,
     client_state_filter: &'a mut FilterPolicy,
     mode: SpawnMode,
@@ -49,8 +49,8 @@ pub struct SpawnContext<'a, Chain: ChainHandle> {
 
 impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
     pub fn new(
-        config: &'a RwArc<Config>,
-        registry: &'a mut Registry<Chain>,
+        config: RwArc<Config>,
+        registry: SharedRegistry<Chain>,
         client_state_filter: &'a mut FilterPolicy,
         workers: &'a mut WorkerMap,
         mode: SpawnMode,
@@ -274,7 +274,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         // Apply the client state filter
         if self.client_filter_enabled() {
             match self.client_state_filter.control_connection_end_and_client(
-                &mut self.registry,
+                &mut self.registry.write(),
                 &chain_id,
                 &client.client_state,
                 &connection_end,
@@ -459,7 +459,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         Ok(())
     }
 
-    /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+    /// Spawns all the [`Worker`](crate::worker::Worker)s that will
+    /// handle a given channel for a given source chain.
     pub fn spawn_workers_for_channel(
         &mut self,
         chain: Chain,
@@ -467,8 +468,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         connection: &IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), Error> {
-        let config = self.config.read().expect("poisoned lock");
-        let mode = &config.mode;
+        let mode = &self.config.read().expect("poisoned lock").mode;
 
         let counterparty_chain = self
             .registry
@@ -578,7 +578,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
     }
 
     fn relay_packets_on_channel(
-        &mut self,
+        &self,
         chain: &impl ChainHandle,
         channel: &IdentifiedChannelEnd,
     ) -> bool {

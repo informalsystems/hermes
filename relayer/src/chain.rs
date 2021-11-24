@@ -44,7 +44,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
-pub(crate) mod cosmos;
+pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
 pub mod runtime;
@@ -146,6 +146,8 @@ pub trait ChainEndpoint: Sized {
     fn config(&self) -> ChainConfig;
 
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
+
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
 
     // Queries
 

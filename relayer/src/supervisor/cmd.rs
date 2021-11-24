@@ -16,6 +16,7 @@ pub enum ConfigUpdate {
 pub enum SupervisorCmd {
     UpdateConfig(ConfigUpdate),
     DumpState(Sender<SupervisorState>),
+    Stop(Sender<()>),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

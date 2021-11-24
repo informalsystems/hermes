@@ -6,6 +6,8 @@ use core::{
     str::FromStr,
     time::Duration,
 };
+use num_bigint::BigInt;
+use num_rational::BigRational;
 use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
@@ -22,12 +24,13 @@ use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::{EventType, Query};
+use tendermint_rpc::Url;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
@@ -78,7 +81,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::event::monitor::{EventMonitor, EventReceiver};
-use crate::keyring::{KeyEntry, KeyRing, Store};
+use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
@@ -117,7 +120,6 @@ mod retry_strategy {
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
-    version_specs: version::Specs,
     rpc_client: HttpClient,
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
@@ -189,9 +191,10 @@ impl CosmosSdkChain {
             })?;
 
         let max_bound = result.consensus_params.block.max_bytes;
-        let max_allowed = mul_ceil(max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
+        let max_allowed = mul_ceil(max_bound, GENESIS_MAX_BYTES_MAX_FRACTION);
+        let max_tx_size = BigInt::from(self.max_tx_size());
 
-        if self.max_tx_size() > max_allowed {
+        if max_tx_size > max_allowed {
             return Err(Error::config_validation_tx_size_out_of_bounds(
                 self.id().clone(),
                 self.max_tx_size(),
@@ -342,7 +345,11 @@ impl CosmosSdkChain {
         prost::Message::encode(&tx_raw, &mut tx_bytes)
             .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
-        let response = self.block_on(broadcast_tx_sync(self, tx_bytes))?;
+        let response = self.block_on(broadcast_tx_sync(
+            self.rpc_client(),
+            &self.config.rpc_addr,
+            tx_bytes,
+        ))?;
 
         match response.code {
             tendermint::abci::Code::Ok => {
@@ -449,10 +456,15 @@ impl CosmosSdkChain {
     /// The actual gas cost, when a transaction is executed, may be slightly higher than the
     /// one returned by the simulation.
     fn apply_adjustment_to_gas(&self, gas_amount: u64) -> u64 {
-        min(
-            gas_amount + mul_ceil(gas_amount, self.gas_adjustment()),
-            self.max_gas(),
-        )
+        assert!(self.gas_adjustment() <= 1.0);
+
+        let (_, digits) = mul_ceil(gas_amount, self.gas_adjustment()).to_u64_digits();
+        assert!(digits.len() == 1);
+
+        let adjustment = digits[0];
+        let gas = gas_amount.checked_add(adjustment).unwrap_or(u64::MAX);
+
+        min(gas, self.max_gas())
     }
 
     /// The maximum fee the relayer pays for a transaction
@@ -692,7 +704,7 @@ impl CosmosSdkChain {
             .map(|res| res.response.hash.to_string())
             .join(", ");
 
-        debug!(
+        info!(
             "[{}] waiting for commit of tx hashes(s) {}",
             self.id(),
             hashes
@@ -814,18 +826,16 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
         // Initialize key store and load key
-        let keybase = KeyRing::new(Store::Test, &config.account_prefix, &config.id)
+        let keybase = KeyRing::new(config.key_store_type, &config.account_prefix, &config.id)
             .map_err(Error::key_base)?;
 
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
 
         // Retrieve the version specification of this chain
-        let version_specs = rt.block_on(fetch_version_specs(&config.id, &grpc_addr))?;
 
         let chain = Self {
             config,
-            version_specs,
             rpc_client,
             grpc_addr,
             rt,
@@ -1032,7 +1042,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let key = self
             .keybase()
             .get_key(&self.config.key_name)
-            .map_err(Error::key_base)?;
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
 
         let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
         Ok(Signer::new(bech32))
@@ -1051,9 +1061,17 @@ impl ChainEndpoint for CosmosSdkChain {
         let key = self
             .keybase()
             .get_key(&self.config.key_name)
-            .map_err(Error::key_base)?;
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
 
         Ok(key)
+    }
+
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error> {
+        self.keybase_mut()
+            .add_key(key_name, key)
+            .map_err(Error::key_base)?;
+
+        Ok(())
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -1734,9 +1752,11 @@ impl ChainEndpoint for CosmosSdkChain {
                     if let Some(block) = response.blocks.first().map(|first| &first.block) {
                         let response_height =
                             ICSHeight::new(self.id().version(), u64::from(block.header.height));
+
                         if request.height != ICSHeight::zero() && response_height > request.height {
                             continue;
                         }
+
                         let response = self
                             .block_on(self.rpc_client.block_results(block.header.height))
                             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
@@ -2007,8 +2027,7 @@ fn packet_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .filter_map(|ev| filter_matching_event(ev, request, seq))
-        .next()
+        .find_map(|ev| filter_matching_event(ev, request, seq))
 }
 
 // Extracts from the Tx the update client event for the requested client and height.
@@ -2150,12 +2169,15 @@ async fn abci_query(
 }
 
 /// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
-async fn broadcast_tx_sync(chain: &CosmosSdkChain, data: Vec<u8>) -> Result<Response, Error> {
-    let response = chain
-        .rpc_client()
+pub async fn broadcast_tx_sync(
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    data: Vec<u8>,
+) -> Result<Response, Error> {
+    let response = rpc_client
         .broadcast_tx_sync(data.into())
         .await
-        .map_err(|e| Error::rpc(chain.config.rpc_addr.clone(), e))?;
+        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
     Ok(response)
 }
@@ -2222,7 +2244,10 @@ pub struct TxSyncResult {
     events: Vec<IbcEvent>,
 }
 
-fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, Vec<u8>), Error> {
+pub fn auth_info_and_bytes(
+    signer_info: SignerInfo,
+    fee: Fee,
+) -> Result<(AuthInfo, Vec<u8>), Error> {
     let auth_info = AuthInfo {
         signer_infos: vec![signer_info],
         fee: Some(fee),
@@ -2235,7 +2260,7 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     Ok((auth_info, auth_buf))
 }
 
-fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
+pub fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
     // Create TxBody
     let body = TxBody {
         messages: proto_msgs.to_vec(),
@@ -2287,8 +2312,10 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             )
         })?;
 
+    let version_specs = fetch_version_specs(&chain.config.id, &chain.grpc_addr).await?;
+
     // Checkup on the underlying SDK & IBC-go versions
-    if let Err(diagnostic) = compatibility::run_diagnostic(&chain.version_specs) {
+    if let Err(diagnostic) = compatibility::run_diagnostic(&version_specs) {
         return Err(Error::sdk_module_version(
             chain_id.clone(),
             grpc_address.clone(),
@@ -2379,14 +2406,13 @@ fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
     }
 }
 
-/// Multiply `a` with `f` and round to result up to the nearest integer.
-fn mul_ceil(a: u64, f: f64) -> u64 {
-    use fraction::Fraction as F;
+/// Multiply `a` with `f` and round the result up to the nearest integer.
+fn mul_ceil(a: u64, f: f64) -> BigInt {
+    assert!(f.is_finite());
 
-    // Safe to unwrap below as are multiplying two finite fractions
-    // together, and rounding them to the nearest integer.
-    let n = (F::from(a) * F::from(f)).ceil();
-    n.numer().unwrap() / n.denom().unwrap()
+    let a = BigInt::from(a);
+    let f = BigRational::from_float(f).expect("f is finite");
+    (f * a).ceil().to_integer()
 }
 
 /// Compute the `max_clock_drift` for a (new) client state
@@ -2416,17 +2442,45 @@ mod tests {
         Height,
     };
 
-    use crate::chain::cosmos::client_id_suffix;
+    use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
+
+    use super::calculate_fee;
 
     #[test]
     fn mul_ceil() {
-        assert_eq!(super::mul_ceil(300_000, 0.001), 300);
-        assert_eq!(super::mul_ceil(300_004, 0.001), 301);
-        assert_eq!(super::mul_ceil(300_040, 0.001), 301);
-        assert_eq!(super::mul_ceil(300_400, 0.001), 301);
-        assert_eq!(super::mul_ceil(304_000, 0.001), 304);
-        assert_eq!(super::mul_ceil(340_000, 0.001), 340);
-        assert_eq!(super::mul_ceil(340_001, 0.001), 341);
+        // Because 0.001 cannot be expressed precisely
+        // as a 64-bit floating point number (it is
+        // stored as 0.001000000047497451305389404296875),
+        // `num_rational::BigRational` will represent it as
+        // 1152921504606847/1152921504606846976 instead
+        // which will sometimes round up to the next
+        // integer in the computations below.
+        // This is not a problem for the way we compute the fee
+        // and gas adjustment as those are already based on simulated
+        // gas which is not 100% precise.
+        assert_eq!(super::mul_ceil(300_000, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(300_004, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(300_040, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(300_400, 0.001), 301.into());
+        assert_eq!(super::mul_ceil(304_000, 0.001), 305.into());
+        assert_eq!(super::mul_ceil(340_000, 0.001), 341.into());
+        assert_eq!(super::mul_ceil(340_001, 0.001), 341.into());
+    }
+
+    /// Before https://github.com/informalsystems/ibc-rs/pull/1568,
+    /// this test would have panic'ed with:
+    ///
+    /// thread 'chain::cosmos::tests::fee_overflow' panicked at 'attempt to multiply with overflow'
+    #[test]
+    fn fee_overflow() {
+        let gas_amount = 90000000000000_u64;
+        let gas_price = GasPrice {
+            price: 1000000000000.0,
+            denom: "uatom".to_string(),
+        };
+
+        let fee = calculate_fee(gas_amount, &gas_price);
+        assert_eq!(&fee.amount, "90000000000000000000000000");
     }
 
     #[test]

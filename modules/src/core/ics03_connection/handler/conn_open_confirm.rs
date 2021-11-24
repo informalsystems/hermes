@@ -67,7 +67,7 @@ mod tests {
     use crate::prelude::*;
 
     use core::str::FromStr;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::core::ics03_connection::context::ConnectionReader;

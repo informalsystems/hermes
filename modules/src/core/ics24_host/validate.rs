@@ -81,7 +81,7 @@ mod tests {
         validate_channel_identifier, validate_client_identifier, validate_connection_identifier,
         validate_identifier, validate_port_identifier,
     };
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn parse_invalid_port_id_min() {
