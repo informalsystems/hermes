@@ -30,7 +30,7 @@ ics23 = { version = "0.6.7", default-features = false }
 chrono = { version = "0.4.19", default-features = false }
 thiserror = { version = "1.0.30", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
-serde = { version = "1.0.130", default-features = false }
+serde = { version = "1", default-features = false }
 serde_json = { version = "1", default-features = false }
 tracing = { version = "0.1.29", default-features = false }
 prost = { version = "0.9", default-features = false }
