@@ -160,14 +160,14 @@ pub fn listen(
     config: &ChainConfig,
     filters: &[EventFilter],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    info!(
-        "listening for events `{}` on '{}'...",
-        filters.iter().format(", "),
-        config.id
-    );
-
     let rt = Arc::new(TokioRuntime::new()?);
     let (event_monitor, rx) = subscribe(config, rt)?;
+
+    info!(
+        "[{}] listening for queries {}",
+        config.id,
+        event_monitor.queries().iter().format(", "),
+    );
 
     thread::spawn(|| event_monitor.run());
 
