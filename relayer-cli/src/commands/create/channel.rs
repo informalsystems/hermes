@@ -57,8 +57,12 @@ pub struct CreateChannelCommand {
     )]
     order: Order,
 
-    // FIXME: rename to avoid confusion with the common --version flag?
-    #[clap(short, long, about = "the version for the new channel")]
+    #[clap(
+        short,
+        long = "channel-version",
+        alias = "version",
+        about = "the version for the new channel"
+    )]
     version: Option<String>,
 }
 
