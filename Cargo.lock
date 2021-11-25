@@ -1336,6 +1336,7 @@ dependencies = [
  "getrandom 0.2.3",
  "prost",
  "prost-types",
+ "serde",
  "tendermint-proto",
  "tonic",
 ]
