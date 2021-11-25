@@ -77,7 +77,10 @@ FLAGS:
     -v, --channel-version VERSION     the version for the new channel
 ```
 
-The `help` command is a replacement of the familiar `-h`/ `--help` flag typical for CLI applications.
+Additionally, the `-h`/`--help` flags typical for CLI applications work on
+most commands (with the exception of some commands currently using `-h` for
+other purposes; these should be changed to follow the convention in a
+future version).
 
 ## Parametrizing the log output level
 
