@@ -1929,6 +1929,7 @@ impl ChainEndpoint for CosmosSdkChain {
             max_clock_drift,
             height,
             ICSHeight::zero(),
+            self.config.proof_specs.clone(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             AllowUpdate {
                 after_expiry: true,

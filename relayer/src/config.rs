@@ -1,5 +1,6 @@
 //! Relayer configuration
 
+mod proof_specs;
 pub mod reload;
 pub mod types;
 
@@ -12,6 +13,7 @@ use std::{fs, fs::File, io::Write, path::Path};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
+use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
@@ -394,6 +396,8 @@ pub struct ChainConfig {
     pub trusting_period: Option<Duration>,
     #[serde(default)]
     pub memo_prefix: Memo,
+    #[serde(default, with = "self::proof_specs")]
+    pub proof_specs: ProofSpecs,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]

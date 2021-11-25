@@ -147,6 +147,7 @@ impl FullNode {
             packet_filter: Default::default(),
             address_type: Default::default(),
             memo_prefix: Default::default(),
+            proof_specs: Default::default(),
         })
     }
 
