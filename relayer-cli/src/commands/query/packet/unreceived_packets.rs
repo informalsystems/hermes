@@ -1,7 +1,7 @@
 use abscissa_core::{Command, Options, Runnable};
 use serde::Serialize;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::counterparty::unreceived_packets;
 use ibc_relayer::chain::handle::ProdChainHandle;
@@ -54,7 +54,7 @@ impl QueryUnreceivedPacketsCmd {
             self.chain_id, channel
         );
 
-        unreceived_packets(&chains.src, &chains.dst, channel).map_err(Error::supervisor)
+        unreceived_packets(&chains.src, &chains.dst, &channel).map_err(Error::supervisor)
     }
 }
 

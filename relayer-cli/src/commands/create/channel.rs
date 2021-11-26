@@ -1,9 +1,9 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::ics04_channel::channel::Order;
-use ibc::ics24_host::identifier::{ChainId, ConnectionId, PortId};
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;

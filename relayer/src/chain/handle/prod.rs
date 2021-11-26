@@ -3,25 +3,25 @@ use core::fmt::Debug;
 use crossbeam_channel as channel;
 use serde::{Serialize, Serializer};
 
-use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::{
+    core::{
+        ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
+        ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
+        ics02_client::events::UpdateClient,
+        ics02_client::header::AnyHeader,
+        ics02_client::misbehaviour::MisbehaviourEvidence,
+        ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
+        ics03_connection::version::Version,
+        ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
+        ics04_channel::packet::{PacketMsgType, Sequence},
+        ics23_commitment::commitment::CommitmentPrefix,
+        ics24_host::identifier::ChainId,
+        ics24_host::identifier::ChannelId,
+        ics24_host::identifier::{ClientId, ConnectionId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::header::AnyHeader,
-    ics03_connection::connection::ConnectionEnd,
-    ics03_connection::version::Version,
-    ics04_channel::channel::ChannelEnd,
-    ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::ChainId,
-    ics24_host::identifier::ChannelId,
-    ics24_host::identifier::{ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
@@ -37,7 +37,10 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::chain::tx::TrackedMsgs;
-use crate::{connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
+use crate::{
+    chain::StatusResponse, config::ChainConfig, connection::ConnectionMsgType, error::Error,
+    keyring::KeyEntry,
+};
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
@@ -117,8 +120,20 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Signer { reply_to })
     }
 
+    fn config(&self) -> Result<ChainConfig, Error> {
+        self.send(|reply_to| ChainRequest::Config { reply_to })
+    }
+
     fn get_key(&self) -> Result<KeyEntry, Error> {
-        self.send(|reply_to| ChainRequest::Key { reply_to })
+        self.send(|reply_to| ChainRequest::GetKey { reply_to })
+    }
+
+    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
+        self.send(|reply_to| ChainRequest::AddKey {
+            key_name,
+            key,
+            reply_to,
+        })
     }
 
     fn module_version(&self, port_id: &PortId) -> Result<String, Error> {
@@ -128,8 +143,8 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn query_latest_height(&self) -> Result<Height, Error> {
-        self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
+    fn query_status(&self) -> Result<StatusResponse, Error> {
+        self.send(|reply_to| ChainRequest::QueryStatus { reply_to })
     }
 
     fn query_clients(
@@ -314,8 +329,16 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error> {
-        self.send(|reply_to| ChainRequest::BuildClientState { height, reply_to })
+    fn build_client_state(
+        &self,
+        height: Height,
+        dst_config: ChainConfig,
+    ) -> Result<AnyClientState, Error> {
+        self.send(|reply_to| ChainRequest::BuildClientState {
+            height,
+            dst_config,
+            reply_to,
+        })
     }
 
     fn build_consensus_state(

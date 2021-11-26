@@ -7,7 +7,7 @@ use opentelemetry::{
 };
 use opentelemetry_prometheus::PrometheusExporter;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
 use prometheus::proto::MetricFamily;
 
 #[derive(Copy, Clone, Debug)]
@@ -65,7 +65,7 @@ impl TelemetryState {
     }
 
     /// Update the number of client updates per client
-    pub fn ibc_client_update(&self, chain: &ChainId, client: &ClientId, count: u64) {
+    pub fn ibc_client_updates(&self, chain: &ChainId, client: &ClientId, count: u64) {
         let labels = &[
             KeyValue::new("chain", chain.to_string()),
             KeyValue::new("client", client.to_string()),

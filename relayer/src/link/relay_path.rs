@@ -5,24 +5,25 @@ use core::fmt;
 use std::thread;
 use std::time::Instant;
 
-use chrono::Utc;
-use ibc::timestamp::Timestamp;
 use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use ibc::{
-    events::{IbcEvent, PrettyEvents, WithBlockDataType},
-    ics04_channel::{
-        channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
-        events::{SendPacket, WriteAcknowledgement},
-        msgs::{
-            acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
-            recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
+    core::{
+        ics04_channel::{
+            channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
+            events::{SendPacket, WriteAcknowledgement},
+            msgs::{
+                acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
+                recv_packet::MsgRecvPacket, timeout::MsgTimeout,
+                timeout_on_close::MsgTimeoutOnClose,
+            },
+            packet::{Packet, PacketMsgType, Sequence},
         },
-        packet::{Packet, PacketMsgType, Sequence},
+        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
-    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+    events::{IbcEvent, PrettyEvents, WithBlockDataType},
     query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     timestamp::ZERO_DURATION,
@@ -38,6 +39,7 @@ use crate::chain::counterparty::{
 };
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
+use crate::chain::StatusResponse;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
@@ -290,16 +292,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
-        for _ in 0..MAX_RETRIES {
+        for i in 1..=MAX_RETRIES {
             let cleared = self
                 .build_recv_packet_and_timeout_msgs(height)
-                .and_then(|()| self.build_packet_ack_msgs(height))
-                .is_ok();
+                .and_then(|()| self.build_packet_ack_msgs(height));
 
-            if cleared {
-                return Ok(());
+            match cleared {
+                Ok(()) => return Ok(()),
+                Err(e) => error!(
+                    "[{}] failed to clear packets, retry {}/{}: {}",
+                    self, i, MAX_RETRIES, e
+                ),
             }
         }
+
         Err(LinkError::old_packet_clearing_failed())
     }
 
@@ -380,7 +386,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Some(ev) => ev.height(),
         };
 
-        let dst_height = self.dst_latest_height()?;
+        let dst_latest_info = self
+            .dst_chain()
+            .query_status()
+            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
+        let dst_latest_height = dst_latest_info.height;
         // Operational data targeting the source chain (e.g., Timeout packets)
         let mut src_od = OperationalData::new(
             dst_height,
@@ -423,7 +433,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     } else {
                         self.build_recv_or_timeout_from_send_packet_event(
                             send_packet_ev,
-                            dst_height,
+                            &dst_latest_info,
                         )?
                     }
                 }
@@ -841,12 +851,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let dst_channel_id = self.dst_channel_id();
 
         let (commit_sequences, sequences, src_response_height) = unreceived_packets_sequences(
-            self.src_chain(),
-            src_channel_id,
-            self.src_port_id(),
             self.dst_chain(),
-            dst_channel_id,
             self.dst_port_id(),
+            dst_channel_id,
+            self.src_chain(),
+            self.src_port_id(),
+            src_channel_id,
         )
         .map_err(LinkError::supervisor)?;
 
@@ -957,20 +967,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_channel_id = self.src_channel_id();
         let dst_channel_id = self.dst_channel_id();
 
-        let (acked_sequences, sequences, src_response_height) =
+        let (acks_on_src, unreceived_acks_by_dst, src_response_height) =
             unreceived_acknowledgements_sequences(
-                self.src_chain(),
-                src_channel_id,
-                self.src_port_id(),
                 self.dst_chain(),
-                dst_channel_id,
                 self.dst_port_id(),
+                dst_channel_id,
+                self.src_chain(),
+                self.src_port_id(),
+                src_channel_id,
             )
             .map_err(LinkError::supervisor)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
-        let sequences: Vec<Sequence> = sequences.into_iter().map(From::from).collect();
+        let sequences: Vec<Sequence> = unreceived_acks_by_dst.into_iter().map(From::from).collect();
         if sequences.is_empty() {
             return Ok((events_result.into(), query_height));
         }
@@ -979,9 +989,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             "[{}] packets that have acknowledgments on {}: [{:?}..{:?}] (total={})",
             self,
             self.src_chain().id(),
-            acked_sequences.first(),
-            acked_sequences.last(),
-            acked_sequences.len()
+            acks_on_src.first(),
+            acks_on_src.last(),
+            acks_on_src.len()
         );
 
         debug!(
@@ -1218,16 +1228,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn build_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
-        dst_chain_height: Height,
+        dst_info: &StatusResponse,
     ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
         if self
-            .dst_channel(dst_chain_height)?
+            .dst_channel(dst_info.height)?
             .state_matches(&ChannelState::Closed)
         {
-            Ok(self.build_timeout_on_close_packet(&event.packet, dst_chain_height)?)
-        } else if packet.timed_out(&Timestamp::from_datetime(Utc::now()), dst_chain_height) {
-            Ok(self.build_timeout_packet(&event.packet, dst_chain_height)?)
+            Ok(self.build_timeout_on_close_packet(&event.packet, dst_info.height)?)
+        } else if packet.timed_out(&dst_info.timestamp, dst_info.height) {
+            Ok(self.build_timeout_packet(&event.packet, dst_info.height)?)
         } else {
             Ok(None)
         }
@@ -1236,9 +1246,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn build_recv_or_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
-        dst_chain_height: Height,
+        dst_info: &StatusResponse,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
-        let timeout = self.build_timeout_from_send_packet_event(event, dst_chain_height)?;
+        let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
         if timeout.is_some() {
             Ok((None, timeout))
         } else {
@@ -1329,6 +1339,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let _enter = span.enter();
 
         let dst_current_height = self.dst_latest_height()?;
+        let dst_status = self
+            .dst_chain()
+            .query_status()
+            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
+
+        let dst_current_height = dst_status.height;
 
         // Intermediary data struct to help better manage the transfer from dst. operational data
         // to source operational data.
@@ -1350,7 +1366,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         if self.send_packet_event_handled(e)? {
                             debug!("[{}] already handled send packet {}", self, e);
                         } else if let Some(new_msg) =
-                            self.build_timeout_from_send_packet_event(e, dst_current_height)?
+                            self.build_timeout_from_send_packet_event(e, &dst_status)?
                         {
                             debug!("[{}] found a timed-out msg in the op data {}", self, odata);
                             timed_out

@@ -12,7 +12,7 @@ use bitcoin::{
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
 };
 use hdpath::StandardHDPath;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use ripemd160::Ripemd160;
 use serde::{Deserialize, Serialize};
@@ -62,7 +62,7 @@ pub struct KeyFile {
 }
 
 impl KeyEntry {
-    fn from_key_file(key_file: KeyFile, hd_path: &HDPath) -> Result<Self, Error> {
+    pub fn from_key_file(key_file: KeyFile, hd_path: &HDPath) -> Result<Self, Error> {
         // Decode the Bech32-encoded address from the key file
         let keyfile_address_bytes = decode_bech32(&key_file.address)?;
 
@@ -241,10 +241,16 @@ impl KeyStore for Test {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Store {
     Memory,
     Test,
+}
+
+impl Default for Store {
+    fn default() -> Self {
+        Store::Test
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

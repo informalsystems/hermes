@@ -8,7 +8,12 @@ set -eou pipefail
 ## After updating the gaia version below, double-check the following (see readme.md also):
 ##   - the new version made it to docker hub, and is available for download, e.g. `docker pull informaldev/ibc-1:v4.0.0`
 ##   - the image versions and the relayer release in `docker-compose.yml` are consistent with the new version
-GAIA_BRANCH="v5.0.5" # Requires a version with the `--keyring-backend` option. v2.1 and above.
+
+# For building current gaia use this
+# GAIA_BRANCH="v5.0.8" # Requires a version with the `--keyring-backend` option. v2.1 and above.
+
+# For future gaia use this
+GAIA_BRANCH="v6.0.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
 # Check if gaiad is installed and if the versions match
 if ! [ -x "$(command -v gaiad)" ]; then
@@ -16,7 +21,7 @@ if ! [ -x "$(command -v gaiad)" ]; then
   exit 1
 fi
 
-CURRENT_GAIA="$(gaiad version)"
+CURRENT_GAIA="$(gaiad version 2>&1)"
 echo "Current Gaia Version: $CURRENT_GAIA"
 
 if [ "$GAIA_BRANCH" != "$CURRENT_GAIA" ]; then

@@ -1,5 +1,143 @@
 # CHANGELOG
 
+## v0.9.0, the “Zamfir” release
+*November 23rd, 2021*
+
+> This release honors Anca Zamfir, who has lead ibc-rs from its inception and through its first two years of life.
+> The whole team is grateful for her dedication and the nurturing environment she created.
+> To many more achievements, Anca!! 🥂
+
+#### Notice for operators
+
+This release requires operators to update their Hermes configuration.
+The `mode` configuration section now replaces the `strategy` option.
+
+##### `strategy = 'packets'`
+
+If Hermes was configured with `strategy = 'packets'`, then the configuration needs to be changed in the following way:
+
+```diff
+ [global]
+-strategy = 'packets'
+ log_level = 'trace'
+-clear_packets_interval = 100
+-tx_confirmation = true
++
++[mode]
++
++[mode.clients]
++enabled = true
++refresh = true
++misbehaviour = true
++
++[mode.connections]
++enabled = false
++
++[mode.channels]
++enabled = false
++
++[mode.packets]
++enabled = true
++clear_interval = 100
++clear_on_start = true
++filter = false
++tx_confirmation = true
+```
+
+##### `strategy = 'all'`
+
+If Hermes was configured to complete connection and channel handshakes as well, ie. with `strategy = 'all'`,
+then on top of the changes above, `mode.connections.enabled` and `mode.chhanels.enabled` must be set to `true`.
+
+[See the relevant section][config-mode-toml] of the documented `config.toml` file in the repository for more details.
+
+[config-mode-toml]: https://github.com/informalsystems/ibc-rs/blob/v0.9.0/config.toml#L9-L59
+
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Set the connection counterparty in the ICS 003 [`connOpenAck` handler][conn-open-ack-handler]
+    ([#1532](https://github.com/informalsystems/ibc-rs/issues/1532))
+
+[conn-open-ack-handler]: https://github.com/informalsystems/ibc-rs/blob/master/modules/src/core/ics03_connection/handler/conn_open_ack.rs
+
+### FEATURES
+
+- General
+  - Support for compatibility with gaia Vega upgrade (protos matching ibc-go v1.2.2 and SDK v0.44.3)
+    ([#1408](https://github.com/informalsystems/ibc-rs/issues/1408))
+  - Optimize the WS client to subscribe to IBC events only (instead of all Tx
+    events) ([#1534](https://github.com/informalsystems/ibc-rs/issues/1534))
+- [Relayer Library](relayer)
+  - Allow for more granular control of relaying modes. The `mode` configuration section replaces the `strategy` option.
+    ([#1518](https://github.com/informalsystems/ibc-rs/issues/1518))
+
+### IMPROVEMENTS
+
+- General
+  - Upgrade IBC-rs TLA+ MBT models to modern Apalache type annotations
+    ([#1544](https://github.com/informalsystems/ibc-rs/issues/1544))
+  - Add `architecture.md` doc that gives a high-level overview of the structure of the codebase
+  - Add some module-level documentation ([#1556](https://github.com/informalsystems/ibc-rs/pulls/1556))
+- [IBC Modules](modules)
+  - Derive `PartialEq` and `Eq` on `IbcEvent` and inner types
+    ([#1546](https://github.com/informalsystems/ibc-rs/issues/1546))
+- [Relayer Library](relayer)
+  - The relayer will now avoid submitting a tx after the simulation failed
+    (in all but one special case) to avoid wasting fees unnecessarily
+    ([#1479](https://github.com/informalsystems/ibc-rs/issues/1479))
+- [Relayer CLI](relayer-cli)
+  - Output errors on a single line if ANSI output is disabled
+    ([#1529](https://github.com/informalsystems/ibc-rs/issues/1529))
+  - Compute fee amount using big integers to prevent overflow
+    when using denominations with high decimal places
+    ([#1555](https://github.com/informalsystems/ibc-rs/issues/1555))
+
+## v0.8.0
+*October 29th, 2021*
+
+This is the final release of version 0.8.0, which now depends on the official releases of the `prost` and `tonic` crates.
+In addition to everything that's included in v0.8.0-pre.1, this release updates the minimum supported Rust version to 1.56, 
+and contains various bug fixes and performance improvements which make the relayer more reliable.
+
+#### Notice for operators
+A new setting was added to the Hermes configuration: `max_block_time`.
+This setting specifies the maximum time per block for this chain.
+The block time together with the clock drift are added to the source drift to estimate
+the maximum clock drift when creating a client on this chain.
+For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
+
+### BREAKING CHANGES
+
+- Update MSRV to Rust 1.56 and use the 2021 edition
+  ([#1519](https://github.com/informalsystems/ibc-rs/issues/1519))
+
+### BUG FIXES
+
+- Fix for "new header has a time from the future" chain error which would arise due to clock drift ([#1445](https://github.com/informalsystems/ibc-rs/issues/1445)):
+  * Added new config param `max_block_time` to prevent the problem for appearing in newly-created clients.
+  * Added a synchronous waiting in client update logic to allow destination chain to reach a new height
+    before submitting a client update message.
+- Ensure Hermes does not send timeouts for packets that have not expired yet
+    ([#1504](https://github.com/informalsystems/ibc-rs/issues/1504))
+
+### IMPROVEMENTS
+
+- General
+  - Update to official releases of `prost` 0.9 and `tonic` 0.6
+    ([#1502](https://github.com/informalsystems/ibc-rs/issues/1502))
+- [IBC Modules](modules)
+  - Support for converting `ibc::events::IbcEvent` into `tendermint::abci::Event` 
+    ([#838](https://github.com/informalsystems/ibc-rs/issues/838))
+  - Restructure the layout of the `ibc` crate to match `ibc-go`'s [layout](https://github.com/cosmos/ibc-go#contents)
+    ([#1436](https://github.com/informalsystems/ibc-rs/issues/1436))
+  - Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers
+    ([#1460](https://github.com/informalsystems/ibc-rs/issues/1460))
+- [Relayer Library](relayer)
+  - Improve performance of misbehaviour checks triggered by an `UpdateClient` event
+    ([#1417](https://github.com/informalsystems/ibc-rs/issues/1417))
+
 ## v0.8.0-pre.1
 *October 22nd, 2021*
 
@@ -1245,21 +1383,21 @@ Other highlights:
 [#195]: https://github.com/informalsystems/ibc-rs/pull/195
 [ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
 [#198]: https://github.com/informalsystems/ibc-rs/issues/198
-[ibc/ics02]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
+[ibc/ics02]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics02_client
 [#185]: https://github.com/informalsystems/ibc-rs/issues/185
-[ibc/ics03]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics03_connection
+[ibc/ics03]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics03_connection
 [#193]: https://github.com/informalsystems/ibc-rs/issues/193
-[ibc/ics04]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics04_channel
+[ibc/ics04]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics04_channel
 [#192]: https://github.com/informalsystems/ibc-rs/issues/192
 [ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
-[architecture/FSM-1]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/fsm-async-connection.md
+[architecture/FSM-1]: https://github.com/informalsystems/ibc-rs/blob/v0.1.0/docs/architecture/fsm-async-connection.md
 [#122]: https://github.com/informalsystems/ibc-rs/issues/122
 [architecture/ADR-003]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md
 [#119]: https://github.com/informalsystems/ibc-rs/issues/119
 [#194]: https://github.com/informalsystems/ibc-rs/issues/194
-[ibc/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics24_host
+[ibc/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics24_host
 [#168]: https://github.com/informalsystems/ibc-rs/issues/168
-[ibc/ics07]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics07_tendermint
+[ibc/ics07]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/clients/ics07_tendermint
 
 ## v0.0.2
 

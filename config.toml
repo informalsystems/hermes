@@ -1,13 +1,56 @@
 # The global section has parameters that apply globally to the relayer operation.
 [global]
 
-# Specify the strategy to be used by the relayer. Default: 'packets'
-# Two options are currently supported:
-#   - 'all': Relay packets and perform channel and connection handshakes.
-#   - 'packets': Relay packets only.
-strategy = 'packets'
+# Specify the verbosity for the relayer logging output. Default: 'info'
+# Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
+log_level = 'info'
 
-# Enable or disable the filtering mechanism. Default: 'false'
+
+# Specify the mode to be used by the relayer. [Required]
+[mode]
+
+# Specify the client mode.
+[mode.clients]
+
+# Whether or not to enable the client workers. [Required]
+enabled = true
+
+# Whether or not to enable periodic refresh of clients. [Default: true]
+# Note: Even if this is disabled, clients will be refreshed automatically if
+#      there is activity on a connection or channel they are involved with.
+refresh = true
+
+# Whether or not to enable misbehaviour detection for clients. [Default: false]
+misbehaviour = true
+
+# Specify the connections mode.
+[mode.connections]
+
+# Whether or not to enable the connection workers for handshake completion. [Required]
+enabled = false
+
+# Specify the channels mode.
+[mode.channels]
+
+# Whether or not to enable the channel workers for handshake completion. [Required]
+enabled = false
+
+# Specify the packets mode.
+[mode.packets]
+
+# Whether or not to enable the packet workers. [Required]
+enabled = true
+
+# Parametrize the periodic packet clearing feature.
+# Interval (in number of blocks) at which pending packets
+# should be eagerly cleared. A value of '0' will disable
+# periodic packet clearing. [Default: 100]
+clear_interval = 100
+
+# Whether or not to clear packets on start. [Default: false]
+clear_on_start = true
+
+# Enable or disable the filtering mechanism.
 # Valid options are 'true', 'false'.
 # Currently Hermes supports two filters:
 # 1. Packet filtering on a per-chain basis; see the chain-specific
@@ -16,26 +59,16 @@ strategy = 'packets'
 #   is parametrized with (numerator = 1, denominator = 3), so that clients with
 #   thresholds different than this will be ignored.
 # If set to 'true', both of the above filters will be enabled.
+# [Default: false]
 filter = false
-
-# Specify the verbosity for the relayer logging output. Default: 'info'
-# Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
-log_level = 'info'
-
-# Parametrize the periodic packet clearing feature.
-# Interval (in number of blocks) at which pending packets
-# should be eagerly cleared. A value of '0' will disable
-# periodic packet clearing. Default: 100
-clear_packets_interval = 100
 
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
 # (to any chain in this config file) have delivered successfully.
 # Experimental feature. Affects telemetry if set to false.
-# Default: true.
+# [Default: true]
 tx_confirmation = true
-
 
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
@@ -131,9 +164,10 @@ max_gas = 300000
 # the denomination of the fee. Required
 gas_price = { price = 0.001, denom = 'stake' }
 
-# Specify by ratio to increase the gas estimate used to compute the fee,
+# Specify the ratio by which to increase the gas estimate used to compute the fee,
 # to account for potential estimation error. Default: 0.1, ie. 10%.
-gas_adjustment = 0.1
+# Valid range: 0.0 to 1.0 (inclusive)
+gas_adjustment = 1.0
 
 # Specify how many IBC messages at most to include in a single transaction.
 # Default: 30
@@ -147,6 +181,12 @@ max_tx_size = 2097152
 # The clock drift parameter defines how much new (untrusted) header's time
 # can drift into the future. Default: 5s
 clock_drift = '5s'
+
+# Specify the maximum time per block for this chain.
+# The block time together with the clock drift are added to the source drift to estimate
+# the maximum clock drift when creating a client on this chain. Default: 10s
+# For cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
+max_block_time = '10s'
 
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period
@@ -185,6 +225,60 @@ memo_prefix = ''
 #   ['transfer', 'channel-0'],
 # ]
 
+# Specify custom ICS23 proof-specs for the chain (serialized as JSON).
+# Default: [`ProofSpecs::cosmos()`](modules/src/core/ics23_commitment/specs.rs)
+proof-specs = '''
+[
+  {
+    "leaf_spec": {
+      "hash": 1,
+      "prehash_key": 0,
+      "prehash_value": 1,
+      "length": 1,
+      "prefix": [
+        0
+      ]
+    },
+    "inner_spec": {
+      "child_order": [
+        0,
+        1
+      ],
+      "child_size": 33,
+      "min_prefix_length": 4,
+      "max_prefix_length": 12,
+      "empty_child": [],
+      "hash": 1
+    },
+    "max_depth": 0,
+    "min_depth": 0
+  },
+  {
+    "leaf_spec": {
+      "hash": 1,
+      "prehash_key": 0,
+      "prehash_value": 1,
+      "length": 1,
+      "prefix": [
+        0
+      ]
+    },
+    "inner_spec": {
+      "child_order": [
+        0,
+        1
+      ],
+      "child_size": 32,
+      "min_prefix_length": 1,
+      "max_prefix_length": 1,
+      "empty_child": [],
+      "hash": 1
+    },
+    "max_depth": 0,
+    "min_depth": 0
+  }
+]
+'''
 
 [[chains]]
 id = 'ibc-1'
@@ -202,6 +296,7 @@ gas_adjustment = 0.1
 max_msg_num = 30
 max_tx_size = 2097152
 clock_drift = '5s'
+max_block_time = '10s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }

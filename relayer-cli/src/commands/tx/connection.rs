@@ -1,7 +1,7 @@
 use abscissa_core::{Command, Options, Runnable};
 
+use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::connection::{Connection, ConnectionSide};
 

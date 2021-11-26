@@ -123,12 +123,21 @@ impl Application for CliApp {
     /// time in app lifecycle when configuration would be loaded if
     /// possible.
     fn after_config(&mut self, config: Self::Cfg) -> Result<(), FrameworkError> {
+        use crate::config::Diagnostic;
+
         // Configure components
         self.state.components.after_config(&config)?;
 
-        validate_config(&config).map_err(|validation_err| {
-            FrameworkErrorKind::ConfigError.context(format!("{}", validation_err))
-        })?;
+        if let Err(diagnostic) = validate_config(&config) {
+            match diagnostic {
+                Diagnostic::Warning(e) => {
+                    tracing::warn!("relayer may be misconfigured: {}", e);
+                }
+                Diagnostic::Error(e) => {
+                    return Err(FrameworkErrorKind::ConfigError.context(e).into());
+                }
+            }
+        };
 
         self.config = Some(config);
 

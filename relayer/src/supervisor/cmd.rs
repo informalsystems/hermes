@@ -1,5 +1,5 @@
 use crossbeam_channel::Sender;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 
 use crate::config::ChainConfig;
 
@@ -16,6 +16,7 @@ pub enum ConfigUpdate {
 pub enum SupervisorCmd {
     UpdateConfig(ConfigUpdate),
     DumpState(Sender<SupervisorState>),
+    Stop(Sender<()>),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

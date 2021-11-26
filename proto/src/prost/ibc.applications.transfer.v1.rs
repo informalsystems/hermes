@@ -1,6 +1,6 @@
 /// MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
 /// ICS20 enabled chains. See ICS Spec here:
-/// https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#data-structures
+/// <https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#data-structures>
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgTransfer {
     /// the port on which the packet will be sent
@@ -53,7 +53,7 @@ pub mod msg_client {
     impl<T> MsgClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
@@ -108,7 +108,7 @@ pub mod msg_client {
 }
 /// FungibleTokenPacketData defines a struct for the packet payload
 /// See FungibleTokenPacketData spec:
-/// https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#data-structures
+/// <https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#data-structures>
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FungibleTokenPacketData {
     /// the token denomination to be transferred
@@ -223,7 +223,7 @@ pub mod query_client {
     impl<T> QueryClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
+        T::ResponseBody: Body + Send + 'static,
         T::Error: Into<StdError>,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {

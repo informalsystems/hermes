@@ -9,8 +9,8 @@ use itertools::Itertools;
 use tracing::{debug, error, info, trace, warn};
 
 use ibc::{
+    core::ics24_host::identifier::{ChainId, ChannelId, PortId},
     events::IbcEvent,
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
 
@@ -20,7 +20,7 @@ use crate::{
     event,
     event::monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,
-    registry::Registry,
+    registry::SharedRegistry,
     rest,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
@@ -53,7 +53,7 @@ pub type RwArc<T> = Arc<RwLock<T>>;
 /// worker, based on the [`Object`] associated with each event.
 pub struct Supervisor<Chain: ChainHandle> {
     config: RwArc<Config>,
-    registry: Registry<Chain>,
+    registry: SharedRegistry<Chain>,
     workers: WorkerMap,
 
     cmd_rx: Receiver<SupervisorCmd>,
@@ -62,13 +62,27 @@ pub struct Supervisor<Chain: ChainHandle> {
     client_state_filter: FilterPolicy,
 }
 
+#[derive(Eq, PartialEq)]
+enum StepResult {
+    Break,
+    Continue,
+}
+
 impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Create a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn new(
         config: RwArc<Config>,
         rest_rx: Option<rest::Receiver>,
     ) -> (Self, Sender<SupervisorCmd>) {
-        let registry = Registry::new(config.clone());
+        let registry = SharedRegistry::new(config.clone());
+        Self::new_with_registry(config, registry, rest_rx)
+    }
+
+    pub fn new_with_registry(
+        config: RwArc<Config>,
+        registry: SharedRegistry<Chain>,
+        rest_rx: Option<rest::Receiver>,
+    ) -> (Self, Sender<SupervisorCmd>) {
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx);
         let client_state_filter = FilterPolicy::default();
@@ -93,14 +107,24 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Returns `false` otherwise.
     fn client_filter_enabled(&self) -> bool {
         // Currently just a wrapper over the global filter.
-        self.config.read().expect("poisoned lock").global.filter
+        self.config
+            .read()
+            .expect("poisoned lock")
+            .mode
+            .packets
+            .filter
     }
 
     /// Returns `true` if the relayer should filter based on
     /// channel identifiers.
     /// Returns `false` otherwise.
     fn channel_filter_enabled(&self) -> bool {
-        self.config.read().expect("poisoned lock").global.filter
+        self.config
+            .read()
+            .expect("poisoned lock")
+            .mode
+            .packets
+            .filter
     }
 
     fn relay_packets_on_channel(
@@ -133,20 +157,22 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             }
         }
 
+        let mut registry = self.registry.write();
+
         // Second, apply the client filter
         let client_filter_outcome = match object {
             Object::Client(client) => self
                 .client_state_filter
-                .control_client_object(&mut self.registry, client),
+                .control_client_object(&mut registry, client),
             Object::Connection(conn) => self
                 .client_state_filter
-                .control_conn_object(&mut self.registry, conn),
+                .control_conn_object(&mut registry, conn),
             Object::Channel(chan) => self
                 .client_state_filter
-                .control_chan_object(&mut self.registry, chan),
+                .control_chan_object(&mut registry, chan),
             Object::Packet(u) => self
                 .client_state_filter
-                .control_packet_object(&mut self.registry, u),
+                .control_packet_object(&mut registry, u),
         };
 
         match client_filter_outcome {
@@ -171,6 +197,28 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         }
     }
 
+    /// If `enabled`, build an `Object` using the provided `object_ctor`
+    /// and add the given `event` to the `collected` events for this `object`.
+    fn collect_event<F>(
+        &self,
+        collected: &mut CollectedEvents,
+        event: &IbcEvent,
+        enabled: bool,
+        object_ctor: F,
+    ) where
+        F: FnOnce() -> Option<Object>,
+    {
+        if enabled {
+            if let Some(object) = object_ctor() {
+                collected
+                    .per_object
+                    .entry(object)
+                    .or_default()
+                    .push(event.clone());
+            }
+        }
+    }
+
     /// Collect the events we are interested in from an [`EventBatch`],
     /// and maps each [`IbcEvent`] to their corresponding [`Object`].
     pub fn collect_events(
@@ -180,11 +228,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     ) -> CollectedEvents {
         let mut collected = CollectedEvents::new(batch.height, batch.chain_id.clone());
 
-        let handshake_enabled = self
-            .config
-            .read()
-            .expect("poisoned lock")
-            .handshake_enabled();
+        let mode = self.config.read().expect("poisoned lock").mode;
 
         for event in &batch.events {
             match event {
@@ -192,144 +236,81 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                     collected.new_block = Some(event.clone());
                 }
                 IbcEvent::UpdateClient(ref update) => {
-                    if let Ok(object) = Object::for_update_client(update, src_chain) {
+                    self.collect_event(&mut collected, event, mode.clients.enabled, || {
                         // Collect update client events only if the worker exists
-                        if self.workers.contains(&object) {
-                            collected
-                                .per_object
-                                .entry(object)
-                                .or_default()
-                                .push(event.clone());
+                        if let Ok(object) = Object::for_update_client(update, src_chain) {
+                            self.workers.contains(&object).then(|| object)
+                        } else {
+                            None
                         }
-                    }
+                    });
                 }
                 IbcEvent::OpenInitConnection(..)
                 | IbcEvent::OpenTryConnection(..)
                 | IbcEvent::OpenAckConnection(..) => {
-                    if !handshake_enabled {
-                        continue;
-                    }
-
-                    let object = event
-                        .connection_attributes()
-                        .map(|attr| Object::connection_from_conn_open_events(attr, src_chain));
-
-                    if let Some(Ok(object)) = object {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.connections.enabled, || {
+                        event
+                            .connection_attributes()
+                            .map(|attr| {
+                                Object::connection_from_conn_open_events(attr, src_chain).ok()
+                            })
+                            .flatten()
+                    });
                 }
                 IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
-                    if !handshake_enabled {
-                        continue;
-                    }
-
-                    let object = event
-                        .channel_attributes()
-                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
-
-                    if let Some(Ok(object)) = object {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.channels.enabled, || {
+                        event
+                            .channel_attributes()
+                            .map(|attr| Object::channel_from_chan_open_events(attr, src_chain).ok())
+                            .flatten()
+                    });
                 }
                 IbcEvent::OpenAckChannel(ref open_ack) => {
                     // Create client and packet workers here as channel end must be opened
-                    if let Ok(client_object) =
-                        Object::client_from_chan_open_events(open_ack.attributes(), src_chain)
-                    {
-                        collected
-                            .per_object
-                            .entry(client_object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.clients.enabled, || {
+                        Object::client_from_chan_open_events(open_ack.attributes(), src_chain).ok()
+                    });
 
-                    if let Ok(packet_object) =
-                        Object::packet_from_chan_open_events(open_ack.attributes(), src_chain)
-                    {
-                        collected
-                            .per_object
-                            .entry(packet_object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::packet_from_chan_open_events(open_ack.attributes(), src_chain).ok()
+                    });
 
                     // If handshake message relaying is enabled create worker to send the MsgChannelOpenConfirm message
-                    if handshake_enabled {
-                        if let Ok(channel_object) =
-                            Object::channel_from_chan_open_events(open_ack.attributes(), src_chain)
-                        {
-                            collected
-                                .per_object
-                                .entry(channel_object)
-                                .or_default()
-                                .push(event.clone());
-                        }
-                    }
+                    self.collect_event(&mut collected, event, mode.channels.enabled, || {
+                        Object::channel_from_chan_open_events(open_ack.attributes(), src_chain).ok()
+                    });
                 }
                 IbcEvent::OpenConfirmChannel(ref open_confirm) => {
                     // Create client worker here as channel end must be opened
-                    if let Ok(client_object) =
+                    self.collect_event(&mut collected, event, mode.clients.enabled, || {
                         Object::client_from_chan_open_events(open_confirm.attributes(), src_chain)
-                    {
-                        collected
-                            .per_object
-                            .entry(client_object)
-                            .or_default()
-                            .push(event.clone());
-                    }
-                    if let Ok(packet_object) =
+                            .ok()
+                    });
+
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
                         Object::packet_from_chan_open_events(open_confirm.attributes(), src_chain)
-                    {
-                        collected
-                            .per_object
-                            .entry(packet_object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                            .ok()
+                    });
                 }
                 IbcEvent::SendPacket(ref packet) => {
-                    if let Ok(object) = Object::for_send_packet(packet, src_chain) {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::for_send_packet(packet, src_chain).ok()
+                    });
                 }
                 IbcEvent::TimeoutPacket(ref packet) => {
-                    if let Ok(object) = Object::for_timeout_packet(packet, src_chain) {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::for_timeout_packet(packet, src_chain).ok()
+                    });
                 }
                 IbcEvent::WriteAcknowledgement(ref packet) => {
-                    if let Ok(object) = Object::for_write_ack(packet, src_chain) {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::for_write_ack(packet, src_chain).ok()
+                    });
                 }
                 IbcEvent::CloseInitChannel(ref packet) => {
-                    if let Ok(object) = Object::for_close_init_channel(packet, src_chain) {
-                        collected
-                            .per_object
-                            .entry(object)
-                            .or_default()
-                            .push(event.clone());
-                    }
+                    self.collect_event(&mut collected, event, mode.packets.enabled, || {
+                        Object::for_close_init_channel(packet, src_chain).ok()
+                    });
                 }
                 _ => (),
             }
@@ -341,8 +322,8 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Create a new `SpawnContext` for spawning workers.
     fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_, Chain> {
         SpawnContext::new(
-            &self.config,
-            &mut self.registry,
+            self.config.clone(),
+            self.registry.clone(),
             &mut self.client_state_filter,
             &mut self.workers,
             mode,
@@ -381,39 +362,68 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         }
     }
 
+    fn run_step(
+        &mut self,
+        subscriptions: &mut Vec<(Chain, Subscription)>,
+    ) -> Result<StepResult, Error> {
+        if let Some((chain, batch)) = try_recv_multiple(subscriptions) {
+            self.handle_batch(chain.clone(), batch);
+        }
+
+        if let Ok(msg) = self.worker_msg_rx.try_recv() {
+            self.handle_worker_msg(msg);
+        }
+
+        if let Ok(cmd) = self.cmd_rx.try_recv() {
+            match cmd {
+                SupervisorCmd::UpdateConfig(update) => {
+                    let effect = self.update_config(update);
+
+                    if let CmdEffect::ConfigChanged = effect {
+                        match self.init_subscriptions() {
+                            Ok(subs) => {
+                                *subscriptions = subs;
+                            }
+                            Err(Error(ErrorDetail::NoChainsAvailable(_), _)) => (),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                }
+                SupervisorCmd::DumpState(reply_to) => {
+                    self.dump_state(reply_to);
+                }
+                SupervisorCmd::Stop(reply_to) => {
+                    let _ = reply_to.send(());
+                    return Ok(StepResult::Break);
+                }
+            }
+        }
+
+        // Process incoming requests from the REST server
+        self.handle_rest_requests();
+
+        Ok(StepResult::Continue)
+    }
+
     /// Run the supervisor event loop.
-    pub fn run(mut self) -> Result<(), Error> {
+    pub fn run(&mut self) -> Result<(), Error> {
         self.health_check();
 
+        self.run_without_health_check()
+    }
+
+    pub fn run_without_health_check(&mut self) -> Result<(), Error> {
         self.spawn_workers(SpawnMode::Startup);
 
         let mut subscriptions = self.init_subscriptions()?;
 
         loop {
-            if let Some((chain, batch)) = try_recv_multiple(&subscriptions) {
-                self.handle_batch(chain.clone(), batch);
+            let step_res = self.run_step(&mut subscriptions)?;
+
+            if step_res == StepResult::Break {
+                info!("stopping supervisor");
+                return Ok(());
             }
-
-            if let Ok(msg) = self.worker_msg_rx.try_recv() {
-                self.handle_worker_msg(msg);
-            }
-
-            if let Ok(cmd) = self.cmd_rx.try_recv() {
-                let after = self.handle_cmd(cmd);
-
-                if let CmdEffect::ConfigChanged = after {
-                    match self.init_subscriptions() {
-                        Ok(subs) => {
-                            subscriptions = subs;
-                        }
-                        Err(Error(ErrorDetail::NoChainsAvailable(_), _)) => (),
-                        Err(e) => return Err(e),
-                    }
-                }
-            }
-
-            // Process incoming requests from the REST server
-            self.handle_rest_requests();
 
             std::thread::sleep(Duration::from_millis(50));
         }
@@ -449,37 +459,24 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
         // At least one chain runtime should be available, otherwise the supervisor
         // cannot do anything and will hang indefinitely.
-        if self.registry.size() == 0 {
+        if self.registry.read().size() == 0 {
             return Err(Error::no_chains_available());
         }
 
         Ok(subscriptions)
     }
 
-    /// Handle the given [`SupervisorCmd`].
-    ///
-    /// Returns an [`CmdEffect`] which instructs the caller as to
-    /// whether or not the event subscriptions needs to be reset or not.
-    fn handle_cmd(&mut self, cmd: SupervisorCmd) -> CmdEffect {
-        match cmd {
-            SupervisorCmd::UpdateConfig(update) => self.update_config(update),
-            SupervisorCmd::DumpState(reply_to) => self.dump_state(reply_to),
-        }
-    }
-
     /// Dump the state of the supervisor into a [`SupervisorState`] value,
     /// and send it back through the given channel.
-    fn dump_state(&self, reply_to: Sender<SupervisorState>) -> CmdEffect {
+    fn dump_state(&self, reply_to: Sender<SupervisorState>) {
         let state = self.state();
         let _ = reply_to.try_send(state);
-
-        CmdEffect::Nothing
     }
 
     /// Returns a representation of the supervisor's internal state
     /// as a [`SupervisorState`].
     fn state(&self) -> SupervisorState {
-        let chains = self.registry.chains().map(|c| c.id()).collect_vec();
+        let chains = self.registry.read().chains().map(|c| c.id()).collect_vec();
         SupervisorState::new(chains, self.workers.objects())
     }
 
@@ -706,14 +703,15 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     }
 }
 
-/// Describes the result of [`collect_events`].
+/// Describes the result of [`collect_events`](Supervisor::collect_events).
 #[derive(Clone, Debug)]
 pub struct CollectedEvents {
     /// The height at which these events were emitted from the chain.
     pub height: Height,
     /// The chain from which the events were emitted.
     pub chain_id: ChainId,
-    /// [`NewBlock`] event collected from the [`EventBatch`].
+    /// [`NewBlock`](ibc::events::IbcEventType::NewBlock) event
+    /// collected from the [`EventBatch`].
     pub new_block: Option<IbcEvent>,
     /// Mapping between [`Object`]s and their associated [`IbcEvent`]s.
     pub per_object: HashMap<Object, Vec<IbcEvent>>,
@@ -729,7 +727,8 @@ impl CollectedEvents {
         }
     }
 
-    /// Whether the collected events include a [`NewBlock`] event.
+    /// Whether the collected events include a
+    /// [`NewBlock`](ibc::events::IbcEventType::NewBlock) event.
     pub fn has_new_block(&self) -> bool {
         self.new_block.is_some()
     }

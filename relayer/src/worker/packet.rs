@@ -1,10 +1,12 @@
 use core::time::Duration;
 
 use crossbeam_channel::Receiver;
+use ibc::Height;
 use tracing::{error, info, trace, warn};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
+    config::Packets as PacketsConfig,
     link::{Link, LinkParameters, RelaySummary},
     object::Packet,
     telemetry,
@@ -25,8 +27,8 @@ pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     path: Packet,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
-    clear_packets_interval: u64,
-    with_tx_confirmation: bool,
+    packets_cfg: PacketsConfig,
+    first_run: bool,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
@@ -34,20 +36,33 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         path: Packet,
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
-        clear_packets_interval: u64,
-        with_tx_confirmation: bool,
+        packets_cfg: PacketsConfig,
     ) -> Self {
         Self {
             path,
             chains,
             cmd_rx,
-            clear_packets_interval,
-            with_tx_confirmation,
+            packets_cfg,
+            first_run: true,
+        }
+    }
+
+    /// Whether or not to clear pending packets at this `step` for the given height.
+    /// Packets are cleared on the first iteration if `clear_on_start` is true.
+    /// Subsequently, packets are cleared only if `clear_interval` is not `0` and
+    /// if we have reached the interval.
+    fn clear_packets(&mut self, height: Height) -> bool {
+        if self.first_run {
+            self.first_run = false;
+            self.packets_cfg.clear_on_start
+        } else {
+            self.packets_cfg.clear_interval != 0
+                && height.revision_height % self.packets_cfg.clear_interval == 0
         }
     }
 
     /// Run the event loop for events associated with a [`Packet`].
-    pub fn run(self) -> Result<(), RunError> {
+    pub fn run(mut self) -> Result<(), RunError> {
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),
             self.chains.b.clone(),
@@ -55,7 +70,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                 src_port_id: self.path.src_port_id.clone(),
                 src_channel_id: self.path.src_channel_id.clone(),
             },
-            self.with_tx_confirmation,
+            self.packets_cfg.tx_confirmation,
         )
         .map_err(RunError::link)?;
 
@@ -110,7 +125,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
     /// also refreshes and executes any scheduled operational
     /// data that is ready.
     fn step(
-        &self,
+        &mut self,
         cmd: Option<WorkerCmd>,
         link: &mut Link<ChainA, ChainB>,
         index: u64,
@@ -125,13 +140,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                     height,
                     new_block: _,
                 } => {
-                    // Schedule the clearing of pending packets. This should happen
-                    // once at start, and _forced_ at predefined block intervals.
-                    let force_packet_clearing = self.clear_packets_interval != 0
-                        && height.revision_height % self.clear_packets_interval == 0;
-
+                    // Schedule the clearing of pending packets. This may happen once at start,
+                    // and may be _forced_ at predefined block intervals.
                     link.a_to_b
-                        .schedule_packet_clearing(Some(height), force_packet_clearing)
+                        .schedule_packet_clearing(Some(height), self.clear_packets(height))
                 }
 
                 WorkerCmd::ClearPendingPackets => link.a_to_b.schedule_packet_clearing(None, true),

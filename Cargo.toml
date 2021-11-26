@@ -1,5 +1,7 @@
 [workspace]
 
+resolver = "2"
+
 members = [
     "modules",
     "relayer",
@@ -7,6 +9,7 @@ members = [
     "relayer-rest",
     "telemetry",
     "proto",
+    "tools/integration-test",
 ]
 
 exclude = [

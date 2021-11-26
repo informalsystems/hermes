@@ -1,0 +1,1 @@
+- Support for converting `ibc::events::IbcEvent` into `tendermint::abci::Event` ([#838](https://github.com/informalsystems/ibc-rs/issues/838))

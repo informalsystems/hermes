@@ -46,7 +46,6 @@ set_config_defaults() {
     GLOBAL_HDPATH=""
     GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
     GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
-    GLOBAL_HERMES_STRATEGY="packets"
     GLOBAL_HERMES_LOG_LEVEL="info"
     GLOBAL_HERMES_TELEMETRY_ENABLED="true"
     GLOBAL_HERMES_TELEMETRY_HOST="127.0.0.1"
@@ -82,8 +81,6 @@ parse_config_file() {
   export GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.binary || echo "$GLOBAL_HERMES_BINARY")")"
   # shellcheck disable=SC2155
   export GLOBAL_HERMES_CONFIG="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.config || echo "$GLOBAL_HERMES_CONFIG")")"
-  # shellcheck disable=SC2155
-  export GLOBAL_HERMES_STRATEGY="$(stoml -sq "$CONFIG_FILE" global.hermes.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
   # shellcheck disable=SC2155
   export GLOBAL_HERMES_LOG_LEVEL="$(stoml -sq "$CONFIG_FILE" global.hermes.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
   # shellcheck disable=SC2155
@@ -830,8 +827,27 @@ hermes_config() {
   fi
   cat <<EOF > "$GLOBAL_HERMES_CONFIG"
 [global]
-strategy = '${GLOBAL_HERMES_STRATEGY}'
 log_level = '${GLOBAL_HERMES_LOG_LEVEL}'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = true
+
+[mode.channels]
+enabled = true
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+filter = false
+tx_confirmation = true
 
 [telemetry]
 enabled = ${GLOBAL_HERMES_TELEMETRY_ENABLED}

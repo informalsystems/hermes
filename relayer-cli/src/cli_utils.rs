@@ -1,9 +1,9 @@
 use alloc::sync::Arc;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::counterparty::channel_connection_client;
 use ibc_relayer::{
     chain::{

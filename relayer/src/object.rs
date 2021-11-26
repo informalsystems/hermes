@@ -2,12 +2,14 @@ use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
 use ibc::{
-    ics02_client::{client_state::ClientState, events::UpdateClient},
-    ics03_connection::events::Attributes as ConnectionAttributes,
-    ics04_channel::events::{
-        Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
+    core::{
+        ics02_client::{client_state::ClientState, events::UpdateClient},
+        ics03_connection::events::Attributes as ConnectionAttributes,
+        ics04_channel::events::{
+            Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
+        },
+        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     Height,
 };
 
@@ -130,10 +132,10 @@ impl Packet {
 }
 
 /// An object determines the amount of parallelism that can
-/// be exercised when processing [`IbcEvent`] between
-/// two chains. For each [`Object`], a corresponding
-/// [`Worker`] is spawned and all [`IbcEvent`]s mapped
-/// to an [`Object`] are sent to the associated [`Worker`]
+/// be exercised when processing [`IbcEvent`](ibc::events::IbcEvent)
+/// between two chains. For each [`Object`], a corresponding
+/// [`Worker`](crate::worker::Worker) is spawned and all [`IbcEvent`](ibc::events::IbcEvent)s mapped
+/// to an [`Object`] are sent to the associated [`Worker`](crate::worker::Worker)
 /// for processing.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -185,9 +187,9 @@ define_error! {
 }
 
 impl Object {
-    /// Returns `true` if this [`Object`] is for a [`Worker`] which is interested
-    /// in new block events originating from the chain with the given [`ChainId`].
-    /// Returns `false` otherwise.
+    /// Returns `true` if this [`Object`] is for a [`Worker`](crate::worker::Worker)
+    /// which is interested in new block events originating from the chain with
+    /// the given [`ChainId`]. Returns `false` otherwise.
     pub fn notify_new_block(&self, src_chain_id: &ChainId) -> bool {
         match self {
             Object::Client(_) => false,
@@ -333,7 +335,9 @@ impl Object {
         .into())
     }
 
-    /// Build the Connection object associated with the given [`Open`] connection event.
+    /// Build the Connection object associated with the given
+    /// [`Open`](ibc::core::ics03_connection::connection::State::Open)
+    /// connection event.
     pub fn connection_from_conn_open_events(
         e: &ConnectionAttributes,
         src_chain: &impl ChainHandle,
@@ -354,7 +358,8 @@ impl Object {
         .into())
     }
 
-    /// Build the Channel object associated with the given [`Open`] channel event.
+    /// Build the Channel object associated with the given
+    /// [`Open`](ibc::core::ics04_channel::channel::State::Open) channel event.
     pub fn channel_from_chan_open_events(
         attributes: &Attributes,
         src_chain: &impl ChainHandle,
@@ -376,7 +381,8 @@ impl Object {
         .into())
     }
 
-    /// Build the Packet object associated with the given [`Open`] channel event.
+    /// Build the Packet object associated with the given
+    /// [`Open`](ibc::core::ics04_channel::channel::State::Open) channel event.
     pub fn packet_from_chan_open_events(
         attributes: &Attributes,
         src_chain: &impl ChainHandle,

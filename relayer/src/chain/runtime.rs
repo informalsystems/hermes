@@ -6,24 +6,26 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::error;
 
 use ibc::{
+    core::{
+        ics02_client::{
+            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
+            client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
+            events::UpdateClient,
+            header::{AnyHeader, Header},
+            misbehaviour::MisbehaviourEvidence,
+        },
+        ics03_connection::{
+            connection::{ConnectionEnd, IdentifiedConnectionEnd},
+            version::Version,
+        },
+        ics04_channel::{
+            channel::{ChannelEnd, IdentifiedChannelEnd},
+            packet::{PacketMsgType, Sequence},
+        },
+        ics23_commitment::commitment::CommitmentPrefix,
+        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::{
-        client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
-        client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
-        events::UpdateClient,
-        header::{AnyHeader, Header},
-        misbehaviour::MisbehaviourEvidence,
-    },
-    ics03_connection::{
-        connection::{ConnectionEnd, IdentifiedConnectionEnd},
-        version::Version,
-    },
-    ics04_channel::{
-        channel::{ChannelEnd, IdentifiedChannelEnd},
-        packet::{PacketMsgType, Sequence},
-    },
-    ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
     query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
@@ -42,6 +44,7 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
+    chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -64,6 +67,64 @@ pub struct Threads {
     pub event_monitor: Option<thread::JoinHandle<()>>,
 }
 
+#[derive(Debug)]
+pub enum EventMonitorCtrl {
+    None {
+        /// Empty channel for when the None case
+        never: EventReceiver,
+    },
+    Live {
+        /// Receiver channel from the event bus
+        event_receiver: EventReceiver,
+
+        /// Sender channel to terminate the event monitor
+        tx_monitor_cmd: TxMonitorCmd,
+    },
+}
+
+impl EventMonitorCtrl {
+    pub fn none() -> Self {
+        Self::None {
+            never: channel::never(),
+        }
+    }
+
+    pub fn live(event_receiver: EventReceiver, tx_monitor_cmd: TxMonitorCmd) -> Self {
+        Self::Live {
+            event_receiver,
+            tx_monitor_cmd,
+        }
+    }
+
+    pub fn enable(&mut self, event_receiver: EventReceiver, tx_monitor_cmd: TxMonitorCmd) {
+        *self = Self::live(event_receiver, tx_monitor_cmd);
+    }
+
+    pub fn recv(&self) -> &EventReceiver {
+        match self {
+            Self::None { ref never } => never,
+            Self::Live {
+                ref event_receiver, ..
+            } => event_receiver,
+        }
+    }
+
+    pub fn shutdown(&self) -> Result<(), Error> {
+        match self {
+            Self::None { .. } => Ok(()),
+            Self::Live {
+                ref tx_monitor_cmd, ..
+            } => tx_monitor_cmd
+                .send(MonitorCmd::Shutdown)
+                .map_err(Error::send),
+        }
+    }
+
+    pub fn is_live(&self) -> bool {
+        matches!(self, Self::Live { .. })
+    }
+}
+
 pub struct ChainRuntime<Endpoint: ChainEndpoint> {
     /// The specific chain this runtime runs against
     chain: Endpoint,
@@ -79,11 +140,8 @@ pub struct ChainRuntime<Endpoint: ChainEndpoint> {
     /// An event bus, for broadcasting events that this runtime receives (via `event_receiver`) to subscribers
     event_bus: EventBus<Arc<MonitorResult<EventBatch>>>,
 
-    /// Receiver channel from the event bus
-    event_receiver: EventReceiver,
-
-    /// Sender channel to terminate the event monitor
-    tx_monitor_cmd: TxMonitorCmd,
+    /// Interface to the event monitor
+    event_monitor_ctrl: EventMonitorCtrl,
 
     /// A handle to the light client
     light_client: Endpoint::LightClient,
@@ -107,11 +165,8 @@ where
         // Start the light client
         let light_client = chain.init_light_client()?;
 
-        // Start the event monitor
-        let (event_batch_rx, tx_monitor_cmd) = chain.init_event_monitor(rt.clone())?;
-
         // Instantiate & spawn the runtime
-        let (handle, _) = Self::init(chain, light_client, event_batch_rx, tx_monitor_cmd, rt);
+        let (handle, _) = Self::init(chain, light_client, rt);
 
         Ok(handle)
     }
@@ -120,11 +175,9 @@ where
     fn init<Handle: ChainHandle>(
         chain: Endpoint,
         light_client: Endpoint::LightClient,
-        event_receiver: EventReceiver,
-        tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
     ) -> (Handle, thread::JoinHandle<()>) {
-        let chain_runtime = Self::new(chain, light_client, event_receiver, tx_monitor_cmd, rt);
+        let chain_runtime = Self::new(chain, light_client, rt);
 
         // Get a handle to the runtime
         let handle: Handle = chain_runtime.handle();
@@ -141,13 +194,7 @@ where
     }
 
     /// Basic constructor
-    fn new(
-        chain: Endpoint,
-        light_client: Endpoint::LightClient,
-        event_receiver: EventReceiver,
-        tx_monitor_cmd: TxMonitorCmd,
-        rt: Arc<TokioRuntime>,
-    ) -> Self {
+    fn new(chain: Endpoint, light_client: Endpoint::LightClient, rt: Arc<TokioRuntime>) -> Self {
         let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
 
         Self {
@@ -156,8 +203,7 @@ where
             request_sender,
             request_receiver,
             event_bus: EventBus::new(),
-            event_receiver,
-            tx_monitor_cmd,
+            event_monitor_ctrl: EventMonitorCtrl::none(),
             light_client,
         }
     }
@@ -172,7 +218,7 @@ where
     fn run(mut self) -> Result<(), Error> {
         loop {
             channel::select! {
-                recv(self.event_receiver) -> event_batch => {
+                recv(self.event_monitor_ctrl.recv()) -> event_batch => {
                     match event_batch {
                         Ok(event_batch) => {
                             self.event_bus
@@ -187,8 +233,7 @@ where
                 recv(self.request_receiver) -> event => {
                     match event {
                         Ok(ChainRequest::Shutdown { reply_to }) => {
-                            self.tx_monitor_cmd.send(MonitorCmd::Shutdown)
-                                .map_err(Error::send)?;
+                            self.event_monitor_ctrl.shutdown()?;
 
                             let res = self.chain.shutdown();
                             reply_to.send(res)
@@ -217,8 +262,16 @@ where
                             self.get_signer(reply_to)?
                         }
 
-                        Ok(ChainRequest::Key { reply_to }) => {
+                        Ok(ChainRequest::Config { reply_to }) => {
+                            self.get_config(reply_to)?
+                        }
+
+                        Ok(ChainRequest::GetKey { reply_to }) => {
                             self.get_key(reply_to)?
+                        }
+
+                        Ok(ChainRequest::AddKey { key_name, key, reply_to }) => {
+                            self.add_key(key_name, key, reply_to)?
                         }
 
                         Ok(ChainRequest::ModuleVersion { port_id, reply_to }) => {
@@ -229,8 +282,8 @@ where
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildClientState { height, reply_to }) => {
-                            self.build_client_state(height, reply_to)?
+                        Ok(ChainRequest::BuildClientState { height, dst_config, reply_to }) => {
+                            self.build_client_state(height, dst_config, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
@@ -249,8 +302,8 @@ where
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryLatestHeight { reply_to }) => {
-                            self.query_latest_height(reply_to)?
+                        Ok(ChainRequest::QueryStatus { reply_to }) => {
+                            self.query_status(reply_to)?
                         }
 
                         Ok(ChainRequest::QueryClients { request, reply_to }) => {
@@ -372,8 +425,21 @@ where
     }
 
     fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
+        if !self.event_monitor_ctrl.is_live() {
+            self.enable_event_monitor()?;
+        }
+
         let subscription = self.event_bus.subscribe();
         reply_to.send(Ok(subscription)).map_err(Error::send)
+    }
+
+    fn enable_event_monitor(&mut self) -> Result<(), Error> {
+        let (event_receiver, tx_monitor_cmd) = self.chain.init_event_monitor(self.rt.clone())?;
+
+        self.event_monitor_ctrl
+            .enable(event_receiver, tx_monitor_cmd);
+
+        Ok(())
     }
 
     fn send_messages_and_wait_commit(
@@ -394,9 +460,9 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_latest_height(&self, reply_to: ReplyTo<Height>) -> Result<(), Error> {
-        let latest_height = self.chain.query_latest_height();
-        reply_to.send(latest_height).map_err(Error::send)
+    fn query_status(&self, reply_to: ReplyTo<StatusResponse>) -> Result<(), Error> {
+        let latest_timestamp = self.chain.query_status();
+        reply_to.send(latest_timestamp).map_err(Error::send)
     }
 
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
@@ -404,8 +470,23 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
+    fn get_config(&self, reply_to: ReplyTo<ChainConfig>) -> Result<(), Error> {
+        let result = Ok(self.chain.config());
+        reply_to.send(result).map_err(Error::send)
+    }
+
     fn get_key(&mut self, reply_to: ReplyTo<KeyEntry>) -> Result<(), Error> {
         let result = self.chain.get_key();
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn add_key(
+        &mut self,
+        key_name: String,
+        key: KeyEntry,
+        reply_to: ReplyTo<()>,
+    ) -> Result<(), Error> {
+        let result = self.chain.add_key(&key_name, key);
         reply_to.send(result).map_err(Error::send)
     }
 
@@ -442,11 +523,12 @@ where
     fn build_client_state(
         &self,
         height: Height,
+        dst_config: ChainConfig,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
         let client_state = self
             .chain
-            .build_client_state(height)
+            .build_client_state(height, dst_config)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(client_state).map_err(Error::send)

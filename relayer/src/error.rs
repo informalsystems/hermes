@@ -5,7 +5,7 @@ use core::time::Duration;
 use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
-use prost::DecodeError;
+use prost::{DecodeError, EncodeError};
 use tendermint::Error as TendermintError;
 use tendermint_light_client::{
     components::io::IoError as LightClientIoError, errors::Error as LightClientError,
@@ -20,15 +20,18 @@ use tonic::{
 };
 
 use ibc::{
-    ics02_client::{client_type::ClientType, error as client_error},
-    ics03_connection::error as connection_error,
-    ics07_tendermint::error as tendermint_error,
-    ics18_relayer::error as relayer_error,
-    ics23_commitment::error as commitment_error,
-    ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
+    clients::ics07_tendermint::error as tendermint_error,
+    core::{
+        ics02_client::{client_type::ClientType, error as client_error},
+        ics03_connection::error as connection_error,
+        ics23_commitment::error as commitment_error,
+        ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
+    },
     proofs::ProofError,
+    relayer::ics18_relayer::error as relayer_error,
 };
 
+use crate::chain::cosmos::version;
 use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
 use crate::event::monitor;
 use crate::keyring::errors::Error as KeyringError;
@@ -84,15 +87,15 @@ define_error! {
             |_| { "event monitor error" },
 
         Grpc
-            |_| { "GRPC error" },
+            |_| { "gRPC error" },
 
         GrpcStatus
             { status: GrpcStatus }
-            |e| { format!("GRPC call return error status {0}", e.status) },
+            |e| { format!("gRPC call failed with status: {0}", e.status) },
 
         GrpcTransport
             [ TraceError<TransportError> ]
-            |_| { "error in underlying transport when making GRPC call" },
+            |_| { "error in underlying transport when making gRPC call" },
 
         GrpcResponseParam
             { param: String }
@@ -252,6 +255,11 @@ define_error! {
             [ KeyringError ]
             |_| { "Keybase error" },
 
+        KeyNotFound
+            { key_name: String }
+            [ KeyringError ]
+            |e| { format!("signature key not found: {}", e.key_name) },
+
         Ics02
             [ client_error::Error ]
             |e| { format!("ICS 02 error: {}", e.source) },
@@ -287,7 +295,7 @@ define_error! {
             |_| { "requested proof for data in the privateStore" },
 
         ChannelSend
-            |_| { "failed to send through channel" },
+            |_| { "internal communication failure: error sending inter-thread request/response" },
 
         ChannelReceive
             [ TraceError<crossbeam_channel::RecvError> ]
@@ -327,6 +335,11 @@ define_error! {
             [ TraceError<DecodeError> ]
             |e| { format!("Error decoding protocol buffer for {}", e.payload_type) },
 
+        ProtobufEncode
+            { payload_type: String }
+            [ TraceError<EncodeError> ]
+            |e| { format!("Error encoding protocol buffer for {}", e.payload_type) },
+
         Cbor
             [ TraceError<serde_cbor::Error> ]
             | _ | { "error decoding CBOR payload" },
@@ -354,7 +367,18 @@ define_error! {
                     e.endpoint, e.chain_id, e.address)
             },
 
-        HealthCheckGrpcTransport
+        FetchVersionParsing
+            {
+                chain_id: ChainId,
+                address: String,
+            }
+            [ version::Error ]
+            |e| {
+                format!("failed while parsing version info for chain {0}:{1}; caused by: {2}",
+                    e.chain_id, e.address, e.source)
+            },
+
+        FetchVersionGrpcTransport
             {
                 chain_id: ChainId,
                 address: String,
@@ -362,11 +386,11 @@ define_error! {
             }
             [ DisplayOnly<tonic::transport::Error> ]
             |e| {
-                format!("health check failed for endpoint {0} on the gRPC interface of chain {1}:{2}",
+                format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
             },
 
-        HealthCheckGrpcStatus
+        FetchVersionGrpcStatus
             {
                 chain_id: ChainId,
                 address: String,
@@ -374,18 +398,18 @@ define_error! {
                 status: tonic::Status
             }
             |e| {
-                format!("health check failed for endpoint {0} on the gRPC interface of chain {1}:{2}; caused by: {3}",
+                format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}; caused by: {3}",
                     e.endpoint, e.chain_id, e.address, e.status)
             },
 
-        HealthCheckInvalidVersion
+        FetchVersionInvalidVersionResponse
             {
                 chain_id: ChainId,
                 address: String,
                 endpoint: String,
             }
             |e| {
-                format!("health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}; the gRPC response contains no application version information",
+                format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}; the gRPC response contains no application version information",
                     e.endpoint, e.chain_id, e.address)
             },
 
@@ -408,8 +432,19 @@ define_error! {
                 genesis_bound: u64,
             }
             |e| {
-                format!("semantic config validation failed for option `max_tx_size` chain '{}', reason: `max_tx_size` = {} is greater than {}% of the genesis block param `max_size` = {}",
+                format!("semantic config validation failed for option `max_tx_size` for chain '{}', reason: `max_tx_size` = {} is greater than {}% of the consensus parameter `max_size` = {}",
                     e.chain_id, e.configured_bound, GENESIS_MAX_BYTES_MAX_FRACTION * 100.0, e.genesis_bound)
+            },
+
+        ConfigValidationMaxGasTooHigh
+            {
+                chain_id: ChainId,
+                configured_max_gas: u64,
+                consensus_max_gas: i64,
+            }
+            |e| {
+                format!("semantic config validation failed for option `max_gas` for chain '{}', reason: `max_gas` = {} is greater than the consensus parameter `max_gas` = {}",
+                    e.chain_id, e.configured_max_gas, e.consensus_max_gas)
             },
 
         ConfigValidationTrustingPeriodSmallerThanZero
@@ -467,11 +502,42 @@ define_error! {
         EmptyBaseAccount
             |_| { "Empty BaseAccount within EthAccount" },
 
+        EmptyQueryAccount
+            { address: String }
+            |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) }
     }
 }
 
 impl Error {
     pub fn send<T>(_: crossbeam_channel::SendError<T>) -> Error {
         Error::channel_send()
+    }
+}
+
+impl GrpcStatusSubdetail {
+    /// Check whether this gRPC error matches
+    /// - status: InvalidArgument
+    /// - message: verification failed: ... failed packet acknowledgement verification for client: client state height < proof height ...
+    pub fn is_client_state_height_too_low(&self) -> bool {
+        if self.status.code() != tonic::Code::InvalidArgument {
+            return false;
+        }
+
+        let msg = self.status.message();
+        msg.contains("verification failed") && msg.contains("client state height < proof height")
+    }
+
+    /// Check whether this gRPC error matches
+    /// - status: InvalidArgument
+    /// - message: account sequence mismatch ...
+    pub fn is_account_sequence_mismatch(&self) -> bool {
+        if self.status.code() != tonic::Code::InvalidArgument {
+            return false;
+        }
+
+        self.status
+            .message()
+            .trim_start()
+            .starts_with("account sequence mismatch")
     }
 }

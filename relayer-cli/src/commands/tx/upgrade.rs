@@ -4,8 +4,8 @@ use core::time::Duration;
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 use ibc_relayer::{
     chain::{ChainEndpoint, CosmosSdkChain},
