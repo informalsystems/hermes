@@ -393,7 +393,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let dst_latest_height = dst_latest_info.height;
         // Operational data targeting the source chain (e.g., Timeout packets)
         let mut src_od = OperationalData::new(
-            dst_height,
+            dst_latest_height,
             OperationalDataTarget::Source,
             events.tracking_id(),
         );
@@ -1338,7 +1338,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let span = span!(Level::INFO, "refresh");
         let _enter = span.enter();
 
-        let dst_current_height = self.dst_latest_height()?;
         let dst_status = self
             .dst_chain()
             .query_status()
