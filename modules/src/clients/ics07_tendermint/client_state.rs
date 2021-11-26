@@ -29,7 +29,7 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub frozen_height: Height,
     pub latest_height: Height,
-    // pub proof_specs: ::core::vec::Vec<super::super::super::super::ics23::ProofSpec>,
+    pub proof_specs: ProofSpecs,
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
 }
@@ -52,6 +52,7 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
+        proof_specs: ProofSpecs,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
     ) -> Result<ClientState, Error> {
@@ -91,6 +92,13 @@ impl ClientState {
             ));
         }
 
+        // Disallow empty proof-specs
+        if proof_specs.is_empty() {
+            return Err(Error::validation(
+                "ClientState proof-specs cannot be empty".to_string(),
+            ));
+        }
+
         Ok(Self {
             chain_id,
             trust_level,
@@ -99,6 +107,7 @@ impl ClientState {
             max_clock_drift,
             frozen_height,
             latest_height,
+            proof_specs,
             upgrade_path,
             allow_update,
         })
@@ -228,6 +237,7 @@ impl TryFrom<RawClientState> for ClientState {
                 after_expiry: raw.allow_update_after_expiry,
                 after_misbehaviour: raw.allow_update_after_misbehaviour,
             },
+            proof_specs: raw.proof_specs.into(),
         })
     }
 }
@@ -242,7 +252,7 @@ impl From<ClientState> for RawClientState {
             max_clock_drift: Some(value.max_clock_drift.into()),
             frozen_height: Some(value.frozen_height.into()),
             latest_height: Some(value.latest_height.into()),
-            proof_specs: ProofSpecs::cosmos().into(),
+            proof_specs: value.proof_specs.into(),
             allow_update_after_expiry: value.allow_update.after_expiry,
             allow_update_after_misbehaviour: value.allow_update.after_misbehaviour,
             upgrade_path: value.upgrade_path,
@@ -261,6 +271,7 @@ mod tests {
 
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::core::ics02_client::trust_threshold::TrustThreshold;
+    use crate::core::ics23_commitment::specs::ProofSpecs;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::test::test_serialization_roundtrip;
     use crate::timestamp::ZERO_DURATION;
@@ -293,6 +304,7 @@ mod tests {
             max_clock_drift: Duration,
             latest_height: Height,
             frozen_height: Height,
+            proof_specs: ProofSpecs,
             upgrade_path: Vec<String>,
             allow_update: AllowUpdate,
         }
@@ -306,6 +318,7 @@ mod tests {
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height::new(0, 10),
             frozen_height: Height::default(),
+            proof_specs: ProofSpecs::default(),
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
                 after_expiry: false,
@@ -373,6 +386,7 @@ mod tests {
                 p.max_clock_drift,
                 p.latest_height,
                 p.frozen_height,
+                p.proof_specs,
                 p.upgrade_path,
                 p.allow_update,
             );
@@ -414,6 +428,7 @@ pub mod test_util {
                     u64::from(tm_header.height),
                 ),
                 Height::zero(),
+                Default::default(),
                 vec!["".to_string()],
                 AllowUpdate {
                     after_expiry: false,

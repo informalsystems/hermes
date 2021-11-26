@@ -212,12 +212,12 @@ And in the relayer service:
         RELEASE: v4.0.0
    ```
 
-6. Update the CI workflows 
+6. Update the CI workflow
 
-In the file `.github\workflows\e2e-gaia-future-release.yaml` update the name with the future version of gaia used 
+There are currently two CI workflows, for running the E2E tests against two versions of gaiad: 
+   - current release: `.github\workflows\e2e-gaia-current-release.yaml`, and
+   - future release: `.github\workflows\e2e-gaia-future-release.yaml`.
 
-`name: End to End testing (Gaia - v6.0.0-rc3)`
+Depending on which of the two setups you have upgraded at the prior steps, change the `name` key in the corresponding workflow file to match with the version of the upgraded gaia used, e.g.:
 
-And in `.github\workflows\e2e-gaia-current-release.yaml` do the same thing
-
-`name: End to End testing (Gaia - v5.0.8)`
+`name: End to End testing (Gaia - v6.0.0)`
