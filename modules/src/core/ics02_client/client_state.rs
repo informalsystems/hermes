@@ -180,15 +180,6 @@ impl ClientState for AnyClientState {
         self.latest_height()
     }
 
-    fn is_frozen(&self) -> bool {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.is_frozen(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
-        }
-    }
-
     fn frozen_height(&self) -> Option<Height> {
         self.frozen_height()
     }
