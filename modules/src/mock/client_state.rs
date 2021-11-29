@@ -109,7 +109,7 @@ impl ClientState for MockClientState {
     }
 
     fn frozen_height(&self) -> Option<Height> {
-        self.frozen_height.clone()
+        self.frozen_height
     }
 
     fn wrap_any(self) -> AnyClientState {

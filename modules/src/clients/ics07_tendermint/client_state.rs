@@ -79,7 +79,7 @@ impl ClientState {
         }
 
         // Basic validation for the frozen_height parameter.
-        if let Some(_) = frozen_height {
+        if frozen_height.is_some() {
             return Err(Error::validation(
                 "ClientState cannot be frozen at creation time".to_string(),
             ));
@@ -190,7 +190,7 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
     }
 
     fn frozen_height(&self) -> Option<Height> {
-        self.frozen_height.clone()
+        self.frozen_height
     }
 
     fn wrap_any(self) -> AnyClientState {
