@@ -1928,7 +1928,6 @@ impl ChainEndpoint for CosmosSdkChain {
             unbonding_period,
             max_clock_drift,
             height,
-            None,
             self.config.proof_specs.clone(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             AllowUpdate {

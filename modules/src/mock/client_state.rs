@@ -104,10 +104,6 @@ impl ClientState for MockClientState {
         self.header.height()
     }
 
-    fn is_frozen(&self) -> bool {
-        self.frozen_height().is_some()
-    }
-
     fn frozen_height(&self) -> Option<Height> {
         self.frozen_height
     }

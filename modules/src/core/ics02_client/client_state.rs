@@ -33,7 +33,9 @@ pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
     fn latest_height(&self) -> Height;
 
     /// Freeze status of the client
-    fn is_frozen(&self) -> bool;
+    fn is_frozen(&self) -> bool {
+        self.frozen_height().is_some()
+    }
 
     /// Frozen height of the client
     fn frozen_height(&self) -> Option<Height>;
