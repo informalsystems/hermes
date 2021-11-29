@@ -88,7 +88,7 @@ mod tests {
         let height = Height::new(0, 42);
 
         let msg = MsgCreateAnyClient::new(
-            MockClientState(MockHeader::new(height)).into(),
+            MockClientState::new(MockHeader::new(height)).into(),
             MockConsensusState::new(MockHeader::new(height)).into(),
             signer,
         )
@@ -134,7 +134,7 @@ mod tests {
 
         let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader::new(Height {
+                MockClientState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -148,7 +148,7 @@ mod tests {
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader::new(Height {
+                MockClientState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -162,7 +162,7 @@ mod tests {
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader::new(Height {
+                MockClientState::new(MockHeader::new(Height {
                     revision_height: 50,
                     ..height
                 }))
@@ -230,7 +230,7 @@ mod tests {
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
             latest_height: Height::new(0, u64::from(tm_header.height)),
-            frozen_height: Height::zero(),
+            frozen_height: None,
             proof_specs: ProofSpecs::default(),
             allow_update: AllowUpdate {
                 after_expiry: false,

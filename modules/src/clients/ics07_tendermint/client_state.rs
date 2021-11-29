@@ -27,7 +27,7 @@ pub struct ClientState {
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
-    pub frozen_height: Height,
+    pub frozen_height: Option<Height>,
     pub latest_height: Height,
     pub proof_specs: ProofSpecs,
     pub upgrade_path: Vec<String>,
@@ -51,7 +51,7 @@ impl ClientState {
         unbonding_period: Duration,
         max_clock_drift: Duration,
         latest_height: Height,
-        frozen_height: Height,
+        frozen_height: Option<Height>,
         proof_specs: ProofSpecs,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
@@ -79,7 +79,7 @@ impl ClientState {
         }
 
         // Basic validation for the frozen_height parameter.
-        if !frozen_height.is_zero() {
+        if let Some(_) = frozen_height {
             return Err(Error::validation(
                 "ClientState cannot be frozen at creation time".to_string(),
             ));
@@ -129,7 +129,7 @@ impl ClientState {
 
     pub fn with_set_frozen(self, h: Height) -> Self {
         Self {
-            frozen_height: h,
+            frozen_height: Some(h),
             ..self
         }
     }
@@ -141,7 +141,7 @@ impl ClientState {
         client_state.trust_level = TrustThreshold::ZERO;
         client_state.allow_update.after_expiry = false;
         client_state.allow_update.after_misbehaviour = false;
-        client_state.frozen_height = Height::zero();
+        client_state.frozen_height = None;
         client_state.max_clock_drift = ZERO_DURATION;
         client_state
     }
@@ -186,8 +186,11 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
     }
 
     fn is_frozen(&self) -> bool {
-        // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
-        !self.frozen_height.is_zero()
+        self.frozen_height.is_some()
+    }
+
+    fn frozen_height(&self) -> Option<Height> {
+        self.frozen_height.clone()
     }
 
     fn wrap_any(self) -> AnyClientState {
@@ -228,10 +231,7 @@ impl TryFrom<RawClientState> for ClientState {
                 .latest_height
                 .ok_or_else(Error::missing_latest_height)?
                 .into(),
-            frozen_height: raw
-                .frozen_height
-                .ok_or_else(Error::missing_frozen_height)?
-                .into(),
+            frozen_height: raw.frozen_height.map(|h| h.into()),
             upgrade_path: raw.upgrade_path,
             allow_update: AllowUpdate {
                 after_expiry: raw.allow_update_after_expiry,
@@ -250,7 +250,7 @@ impl From<ClientState> for RawClientState {
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
-            frozen_height: Some(value.frozen_height.into()),
+            frozen_height: value.frozen_height.map(|h| h.into()),
             latest_height: Some(value.latest_height.into()),
             proof_specs: value.proof_specs.into(),
             allow_update_after_expiry: value.allow_update.after_expiry,
@@ -303,7 +303,7 @@ mod tests {
             unbonding_period: Duration,
             max_clock_drift: Duration,
             latest_height: Height,
-            frozen_height: Height,
+            frozen_height: Option<Height>,
             proof_specs: ProofSpecs,
             upgrade_path: Vec<String>,
             allow_update: AllowUpdate,
@@ -317,7 +317,7 @@ mod tests {
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height::new(0, 10),
-            frozen_height: Height::default(),
+            frozen_height: None,
             proof_specs: ProofSpecs::default(),
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
@@ -341,7 +341,7 @@ mod tests {
             Test {
                 name: "Invalid frozen height parameter (should be 0)".to_string(),
                 params: ClientStateParams {
-                    frozen_height: Height::new(0, 1),
+                    frozen_height: Some(Height::new(0, 1)),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -427,7 +427,7 @@ pub mod test_util {
                     ChainId::chain_version(tm_header.chain_id.as_str()),
                     u64::from(tm_header.height),
                 ),
-                Height::zero(),
+                None,
                 Default::default(),
                 vec!["".to_string()],
                 AllowUpdate {
