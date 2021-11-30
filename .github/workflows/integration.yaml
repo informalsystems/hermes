@@ -4,6 +4,7 @@ on:
     paths:
       - .github/workflows/rust.yml
       - Cargo.toml
+      - Cargo.lock
       - ci/**
       - e2e/**
       - proto/**
@@ -17,6 +18,7 @@ on:
     paths:
       - .github/workflows/rust.yml
       - Cargo.toml
+      - Cargo.lock
       - ci/**
       - e2e/**
       - proto/**
