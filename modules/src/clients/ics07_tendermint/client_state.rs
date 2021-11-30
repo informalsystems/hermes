@@ -134,18 +134,6 @@ impl ClientState {
         }
     }
 
-    /// Helper function to verify the upgrade client procedure.
-    /// Resets all fields except the blockchain-specific ones.
-    pub fn zero_custom_fields(mut client_state: Self) -> Self {
-        client_state.trusting_period = ZERO_DURATION;
-        client_state.trust_level = TrustThreshold::ZERO;
-        client_state.allow_update.after_expiry = false;
-        client_state.allow_update.after_misbehaviour = false;
-        client_state.frozen_height = Height::zero();
-        client_state.max_clock_drift = ZERO_DURATION;
-        client_state
-    }
-
     /// Get the refresh time to ensure the state does not expire
     pub fn refresh_time(&self) -> Option<Duration> {
         Some(2 * self.trusting_period / 3)
@@ -188,6 +176,32 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
     fn is_frozen(&self) -> bool {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
         !self.frozen_height.is_zero()
+    }
+
+    fn unbonding_period(&self) -> Duration {
+        self.unbonding_period
+    }
+
+    fn upgrade(
+        mut self,
+        upgrade_height: Height,
+        unbonding_period: Duration,
+        chain_id: ChainId,
+    ) -> Self {
+        // Reset custom fields to zero values
+        self.trusting_period = ZERO_DURATION;
+        self.trust_level = TrustThreshold::ZERO;
+        self.allow_update.after_expiry = false;
+        self.allow_update.after_misbehaviour = false;
+        self.frozen_height = Height::zero();
+        self.max_clock_drift = ZERO_DURATION;
+
+        // Upgrade the client state
+        self.latest_height = upgrade_height;
+        self.unbonding_period = unbonding_period;
+        self.chain_id = chain_id;
+
+        self
     }
 
     fn wrap_any(self) -> AnyClientState {

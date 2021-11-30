@@ -51,6 +51,7 @@ impl MockClientState {
     pub fn refresh_time(&self) -> Option<Duration> {
         None
     }
+
     pub fn expired(&self, _elapsed: Duration) -> bool {
         false
     }
@@ -97,6 +98,19 @@ impl ClientState for MockClientState {
     fn is_frozen(&self) -> bool {
         // TODO
         false
+    }
+
+    fn unbonding_period(&self) -> Duration {
+        todo!()
+    }
+
+    fn upgrade(
+        self,
+        _upgrade_height: Height,
+        _unbonding_period: Duration,
+        _chain_id: ChainId,
+    ) -> Self {
+        todo!()
     }
 
     fn wrap_any(self) -> AnyClientState {

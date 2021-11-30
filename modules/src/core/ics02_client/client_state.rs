@@ -35,6 +35,15 @@ pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
 
+    /// The client's unbonding period
+    fn unbonding_period(&self) -> Duration;
+
+    /// Helper function to verify the upgrade client procedure.
+    /// Resets all fields except the blockchain-specific ones,
+    /// and updates the given fields.
+    fn upgrade(self, upgrade_height: Height, unbonding_period: Duration, chain_id: ChainId)
+        -> Self;
+
     /// Wrap into an `AnyClientState`
     fn wrap_any(self) -> AnyClientState;
 }
@@ -172,6 +181,33 @@ impl ClientState for AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
+        }
+    }
+
+    fn unbonding_period(&self) -> Duration {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.unbonding_period(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state.unbonding_period(),
+        }
+    }
+
+    fn upgrade(
+        self,
+        upgrade_height: Height,
+        unbonding_period: Duration,
+        chain_id: ChainId,
+    ) -> Self {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state
+                .upgrade(upgrade_height, unbonding_period, chain_id)
+                .wrap_any(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state
+                .upgrade(upgrade_height, unbonding_period, chain_id)
+                .wrap_any(),
         }
     }
 
