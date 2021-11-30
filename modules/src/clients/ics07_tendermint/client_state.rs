@@ -119,7 +119,7 @@ impl ClientState {
         }
     }
 
-    pub fn with_set_frozen(self, h: Height) -> Result<Self, Error> {
+    pub fn with_frozen_height(self, h: Height) -> Result<Self, Error> {
         if h == Height::zero() {
             return Err(Error::validation(
                 "ClientState frozen height must be greater than zero".to_string(),
