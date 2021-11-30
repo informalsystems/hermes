@@ -295,11 +295,11 @@ define_error! {
             |_| { "requested proof for data in the privateStore" },
 
         ChannelSend
-            |_| { "internal communication failure: error sending inter-thread request/response" },
+            |_| { "internal message-passing failure while sending inter-thread request/response" },
 
         ChannelReceive
             [ TraceError<crossbeam_channel::RecvError> ]
-            |_| { "failed to receive through channel" },
+            |_| { "internal message-passing failure while receiving inter-thread request/response" },
 
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },

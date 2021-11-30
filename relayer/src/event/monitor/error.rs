@@ -36,7 +36,7 @@ define_error! {
             |e| { format!("failed to extract IBC events: {0}", e.reason) },
 
         ChannelSendFailed
-            |_| { "failed to send event batch through channel" },
+            |_| { "internal message-passing failure: monitor could not reach chain handler" },
 
         SubscriptionCancelled
             [ TraceError<RpcError> ]
