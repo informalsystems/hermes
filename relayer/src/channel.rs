@@ -224,7 +224,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 channel_id,
                 // The event does not include the version.
                 // The message handlers `build_chan_open..` determine the version from channel query.
-                // TODO(Adi): Investigate proto correctness wrt version.
                 None,
             ),
             b_side: ChannelSide::new(
@@ -282,7 +281,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_connection_id.clone(),
                 channel.src_port_id.clone(),
                 Some(channel.src_channel_id.clone()),
-                // TODO(Adi): Investigate proto correctness.
                 None,
             ),
             b_side: ChannelSide::new(

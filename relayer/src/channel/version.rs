@@ -4,7 +4,7 @@
 //! channel version to be used in a channel open
 //! handshake.
 
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 
 use ibc::{
     applications::{ics20_fungible_token_transfer, ics27_interchain_accounts},
@@ -51,7 +51,7 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
         ResolveContext::Other => {
             // Resolve the version by querying the application version on destination chain
             let dst_chain_id = channel.dst_chain().id();
-            info!("resolving channel version for port id='{}', context='{:?}' by retrieving dst chain '{}' app version", port_id, ctx, dst_chain_id);
+            debug!(chain_id = %dst_chain_id, port_id = %port_id, ctx = ?ctx, "resolving channel version by retrieving destination chain app version");
 
             // Note the compatibility logic below:
             // The destination chain may or may not implement `QueryAppVersionRequest`,
@@ -66,7 +66,7 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
                         if s.is_unimplemented_port_query() {
                             // Ensure compatibility & recover from the error,
                             // by using the default version.
-                            debug!("resorting to default version because dst chain '{}' does not expose app version gRPC endpoint", dst_chain_id);
+                            debug!(chain_id = %dst_chain_id, "resorting to default version because destination chain does not expose app version gRPC endpoint");
                             return default_by_port(port_id);
                         }
                     }
@@ -117,6 +117,7 @@ fn dst_app_version<ChainA: ChainHandle, ChainB: ChainHandle>(
                 .map_err(|e| Error::app_version(e.to_string()))?,
         )
         .into();
+
     debug!(
         "source channel end proposed version='{}'; original={:?}",
         proposed_version,
