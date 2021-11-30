@@ -318,7 +318,7 @@ impl ChainEndpoint for MockChain {
         _client_id: &ClientId,
         _consensus_height: Height,
         _height: Height,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
 
@@ -416,7 +416,6 @@ impl ChainEndpoint for MockChain {
             .consensus_states(&request.client_id.parse().unwrap()))
     }
 
-    /// Performs a query to retrieve the identifiers of all connections.
     fn query_consensus_state(
         &self,
         _client_id: ClientId,

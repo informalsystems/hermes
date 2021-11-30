@@ -301,7 +301,7 @@ pub trait ChainEndpoint: Sized {
         client_id: &ClientId,
         consensus_height: ICSHeight,
         height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
+    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     fn proven_channel(
         &self,
