@@ -171,7 +171,7 @@ pub trait ChainEndpoint: Sized {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<Self::ClientState, Error>;
+    ) -> Result<AnyClientState, Error>;
 
     fn query_consensus_states(
         &self,
@@ -288,7 +288,7 @@ pub trait ChainEndpoint: Sized {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error>;
+    ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn proven_connection(
         &self,
@@ -351,7 +351,7 @@ pub trait ChainEndpoint: Sized {
         connection_id: &ConnectionId,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<(Option<Self::ClientState>, Proofs), Error> {
+    ) -> Result<(Option<AnyClientState>, Proofs), Error> {
         let (connection_end, connection_proof) = self.proven_connection(connection_id, height)?;
 
         // Check that the connection state is compatible with the message

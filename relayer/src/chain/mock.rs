@@ -20,7 +20,6 @@ use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::downcast;
 use ibc::events::IbcEvent;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
@@ -181,14 +180,13 @@ impl ChainEndpoint for MockChain {
         &self,
         client_id: &ClientId,
         _height: Height,
-    ) -> Result<Self::ClientState, Error> {
+    ) -> Result<AnyClientState, Error> {
         // TODO: unclear what are the scenarios where we need to take height into account.
-        let any_state = self
+        let client_state = self
             .context
             .query_client_full_state(client_id)
             .ok_or_else(Error::empty_response_value)?;
-        let client_state = downcast!(any_state.clone() => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_state_type(format!("{:?}", any_state)))?;
+
         Ok(client_state)
     }
 
@@ -301,7 +299,7 @@ impl ChainEndpoint for MockChain {
         &self,
         _client_id: &ClientId,
         _height: Height,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
         unimplemented!()
     }
 
