@@ -1,6 +1,8 @@
 /// Channel defines pipeline for exactly-once packet delivery between specific
 /// modules on separate blockchains, which has at least one end capable of
 /// sending packets and one end capable of receiving packets.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "std", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Channel {
     /// current state of the channel end
@@ -48,6 +50,8 @@ pub struct IdentifiedChannel {
     pub channel_id: ::prost::alloc::string::String,
 }
 /// Counterparty defines a channel end counterparty
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "std", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Counterparty {
     /// port on the counterparty chain which owns the other end of the channel.
@@ -373,6 +377,7 @@ pub struct MsgAcknowledgement {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgAcknowledgementResponse {}
 #[doc = r" Generated client implementations."]
+#[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -958,6 +963,7 @@ pub struct QueryNextSequenceReceiveResponse {
     pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
 }
 #[doc = r" Generated client implementations."]
+#[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

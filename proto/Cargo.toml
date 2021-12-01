@@ -25,9 +25,14 @@ all-features = true
 prost = "0.9"
 prost-types = "0.9"
 bytes = "1.1"
-tonic = "0.6"
-getrandom = { version = "0.2", features = ["js"] }
+tonic = {version = "0.6", optional = true}
 serde = "1.0"
+schemars = "0.8"
 
 [dependencies.tendermint-proto]
 version = "=0.23.5"
+
+[features]
+default = ["client"]
+client = ["tonic"]
+std = []

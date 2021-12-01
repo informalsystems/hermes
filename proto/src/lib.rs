@@ -3,7 +3,7 @@
 // Todo: automate the creation of this module setup based on the dots in the filenames.
 //  This module setup is necessary because the generated code contains "super::" calls for dependencies.
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![allow(rustdoc::bare_urls)]
@@ -11,6 +11,8 @@
 #![doc(html_root_url = "https://docs.rs/ibc-proto/0.14.0")]
 
 extern crate alloc;
+
+#[cfg(not(feature = "std"))]
 extern crate core as std;
 
 // re-export format! macro from alloc::format to allow its use
