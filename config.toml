@@ -225,7 +225,7 @@ memo_prefix = ''
 
 # Specify custom ICS23 proof-specs for the chain (serialized as JSON).
 # Default: [`ProofSpecs::cosmos()`](modules/src/core/ics23_commitment/specs.rs)
-proof-specs = '''
+proof_specs = '''
 [
   {
     "leaf_spec": {
