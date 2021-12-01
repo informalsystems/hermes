@@ -74,13 +74,10 @@ FLAGS:
     --port-a PORT-A           identifier of the side `a` port for the new channel
     --port-b PORT-B           identifier of the side `b` port for the new channel
     -o, --order ORDER         the channel ordering, valid options 'unordered' (default) and 'ordered'
-    -v, --channel-version VERSION     the version for the new channel
+    -v, --version VERSION     the version for the new channel
 ```
 
-Additionally, the `-h`/`--help` flags typical for CLI applications work on
-most commands (with the exception of some commands currently using `-h` for
-other purposes; these should be changed to follow the convention in a
-future version).
+The `help` command is a replacement of the familiar `-h`/ `--help` flag typical for CLI applications.
 
 ## Parametrizing the log output level
 
