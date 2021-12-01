@@ -45,9 +45,8 @@ use serde;
 use serde_bytes;
 use serde_derive;
 use serde_json;
-use serde_repr;
-use serde_cbor;
 use serde_json_core;
+use serde_repr;
 use sha2;
 use signature;
 use static_assertions;
@@ -88,7 +87,6 @@ use toml;
 
 #[cfg(feature = "url")]
 use url;
-
 
 use core::panic::PanicInfo;
 
