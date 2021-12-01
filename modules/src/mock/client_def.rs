@@ -40,7 +40,10 @@ impl ClientDef for MockClient {
                 client_state.latest_height(),
             ));
         }
-        Ok((MockClientState(header), MockConsensusState::new(header)))
+        Ok((
+            MockClientState::new(header),
+            MockConsensusState::new(header),
+        ))
     }
 
     fn verify_client_consensus_state(

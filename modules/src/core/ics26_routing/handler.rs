@@ -200,7 +200,7 @@ mod tests {
         let mut ctx = MockContext::default();
 
         let create_client_msg = MsgCreateAnyClient::new(
-            AnyClientState::from(MockClientState(MockHeader::new(start_client_height))),
+            AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
             AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
                 start_client_height,
             ))),
@@ -435,7 +435,9 @@ mod tests {
                 name: "Client upgrade successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
                     client_id.clone(),
-                    AnyClientState::Mock(MockClientState(MockHeader::new(upgrade_client_height))),
+                    AnyClientState::Mock(MockClientState::new(MockHeader::new(
+                        upgrade_client_height,
+                    ))),
                     AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
                         upgrade_client_height,
                     ))),
@@ -449,7 +451,7 @@ mod tests {
                 name: "Client upgrade un-successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
                     client_id,
-                    AnyClientState::Mock(MockClientState(MockHeader::new(
+                    AnyClientState::Mock(MockClientState::new(MockHeader::new(
                         upgrade_client_height_second,
                     ))),
                     AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
