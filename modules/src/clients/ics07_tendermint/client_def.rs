@@ -139,7 +139,7 @@ impl ClientDef for TendermintClient {
         // client and return the installed consensus state.
         if let Some(cs) = existing_consensus_state {
             if cs != header_consensus_state {
-                return Ok((client_state.with_set_frozen(header.height()), cs));
+                return Ok((client_state.with_frozen_height(header.height())?, cs));
             }
         }
 

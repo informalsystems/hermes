@@ -299,11 +299,11 @@ define_error! {
             |_| { "requested proof for data in the privateStore" },
 
         ChannelSend
-            |_| { "internal communication failure: error sending inter-thread request/response" },
+            |_| { "internal message-passing failure while sending inter-thread request/response" },
 
         ChannelReceive
             [ TraceError<crossbeam_channel::RecvError> ]
-            |_| { "internal communication failure: error receiving inter-thread request/response" },
+            |_| { "internal message-passing failure while receiving inter-thread request/response" },
 
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },
@@ -343,10 +343,6 @@ define_error! {
             { payload_type: String }
             [ TraceError<EncodeError> ]
             |e| { format!("Error encoding protocol buffer for {}", e.payload_type) },
-
-        Cbor
-            [ TraceError<serde_cbor::Error> ]
-            | _ | { "error decoding CBOR payload" },
 
         TxSimulateGasEstimateExceeded
             {

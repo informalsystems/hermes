@@ -3,7 +3,7 @@ use std::error::Error;
 use std::io;
 use std::sync::RwLock;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use crossbeam_channel::Sender;
 
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
@@ -16,7 +16,7 @@ use crate::conclude::json;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct StartCmd {}
 
 impl Runnable for StartCmd {

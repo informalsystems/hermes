@@ -1,4 +1,4 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
@@ -13,19 +13,18 @@ use crate::prelude::*;
 /// 1. queries the chain to get its counterparty, channel and port identifiers (needed in 2)
 /// 2. queries the chain for all packet commitments/ sequences for a given port and channel
 /// 3. queries the counterparty chain for the unacknowledged sequences out of the list obtained in 2.
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct QueryUnreceivedAcknowledgementCmd {
-    #[options(
-        free,
-        required,
-        help = "identifier of the chain to query the unreceived acknowledgments"
+    #[clap(
+        required = true,
+        about = "identifier of the chain to query the unreceived acknowledgments"
     )]
     chain_id: ChainId,
 
-    #[options(free, required, help = "port identifier")]
+    #[clap(required = true, about = "port identifier")]
     port_id: PortId,
 
-    #[options(free, required, help = "channel identifier")]
+    #[clap(required = true, about = "channel identifier")]
     channel_id: ChannelId,
 }
 

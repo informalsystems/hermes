@@ -4,6 +4,7 @@ on:
     paths:
       - .github/workflows/e2e.yaml
       - Cargo.toml
+      - Cargo.lock
       - ci/**
       - e2e/**
       - proto/**
@@ -17,6 +18,7 @@ on:
     paths:
       - .github/workflows/e2e.yaml
       - Cargo.toml
+      - Cargo.lock
       - ci/**
       - e2e/**
       - proto/**

@@ -37,20 +37,30 @@ pub struct MockClientRecord {
 
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
-// TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MockClientState(pub MockHeader);
+pub struct MockClientState {
+    pub header: MockHeader,
+    pub frozen_height: Option<Height>,
+}
 
 impl Protobuf<RawMockClientState> for MockClientState {}
 
 impl MockClientState {
+    pub fn new(header: MockHeader) -> Self {
+        Self {
+            header,
+            frozen_height: None,
+        }
+    }
+
     pub fn latest_height(&self) -> Height {
-        (self.0).height
+        self.header.height()
     }
 
     pub fn refresh_time(&self) -> Option<Duration> {
         None
     }
+
     pub fn expired(&self, _elapsed: Duration) -> bool {
         false
     }
@@ -66,7 +76,7 @@ impl TryFrom<RawMockClientState> for MockClientState {
     type Error = Error;
 
     fn try_from(raw: RawMockClientState) -> Result<Self, Self::Error> {
-        Ok(MockClientState(raw.header.unwrap().try_into()?))
+        Ok(Self::new(raw.header.unwrap().try_into()?))
     }
 }
 
@@ -74,8 +84,8 @@ impl From<MockClientState> for RawMockClientState {
     fn from(value: MockClientState) -> Self {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
-                height: Some(value.0.height().into()),
-                timestamp: (value.0).timestamp.as_nanoseconds(),
+                height: Some(value.header.height().into()),
+                timestamp: value.header.timestamp.as_nanoseconds(),
             }),
         }
     }
@@ -91,12 +101,11 @@ impl ClientState for MockClientState {
     }
 
     fn latest_height(&self) -> Height {
-        self.0.height()
+        self.header.height()
     }
 
-    fn is_frozen(&self) -> bool {
-        // TODO
-        false
+    fn frozen_height(&self) -> Option<Height> {
+        self.frozen_height
     }
 
     fn wrap_any(self) -> AnyClientState {
@@ -106,7 +115,7 @@ impl ClientState for MockClientState {
 
 impl From<MockConsensusState> for MockClientState {
     fn from(cs: MockConsensusState) -> Self {
-        Self(cs.header)
+        Self::new(cs.header)
     }
 }
 

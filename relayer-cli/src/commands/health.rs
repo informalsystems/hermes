@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain, HealthCheck::*};
@@ -8,7 +8,7 @@ use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain, HealthCheck::*};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct HealthCheckCmd {}
 
 impl Runnable for HealthCheckCmd {

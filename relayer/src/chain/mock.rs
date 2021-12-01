@@ -357,7 +357,6 @@ impl ChainEndpoint for MockChain {
             // See `calculate_client_state_drift`
             self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
-            Height::zero(),
             ProofSpecs::default(),
             vec!["upgrade/upgradedClient".to_string()],
             AllowUpdate {
