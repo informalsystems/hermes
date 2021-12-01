@@ -167,6 +167,11 @@ impl EventMonitor {
         Ok((monitor, rx_batch, tx_cmd))
     }
 
+    /// The list of [`Query`] that this event monitor is subscribing for.
+    pub fn queries(&self) -> &[Query] {
+        &self.event_queries
+    }
+
     /// Clear the current subscriptions, and subscribe again to all queries.
     pub fn subscribe(&mut self) -> Result<()> {
         let mut subscriptions = vec![];

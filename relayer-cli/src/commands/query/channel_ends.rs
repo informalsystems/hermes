@@ -1,4 +1,5 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
+use clap::AppSettings::DisableHelpFlag;
 use serde::{Deserialize, Serialize};
 
 use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
@@ -13,23 +14,26 @@ use ibc_relayer::registry::Registry;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
+#[clap(setting(DisableHelpFlag))]
 pub struct QueryChannelEndsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the port to query")]
+    #[clap(required = true, about = "identifier of the port to query")]
     port_id: PortId,
 
-    #[options(free, required, help = "identifier of the channel to query")]
+    #[clap(required = true, about = "identifier of the channel to query")]
     channel_id: ChannelId,
 
-    #[options(help = "height of the state to query", short = "h")]
+    // FIXME: rename the short option to avoid confusion with --help?
+    #[clap(short = 'h', long, about = "height of the state to query")]
     height: Option<u64>,
 
-    #[options(
-        help = "enable verbose output, displaying all details of channels, connections & clients",
-        short = "v"
+    #[clap(
+        short = 'v',
+        long,
+        about = "enable verbose output, displaying all details of channels, connections & clients"
     )]
     verbose: bool,
 }
