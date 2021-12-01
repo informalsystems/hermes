@@ -223,61 +223,6 @@ memo_prefix = ''
 #   ['transfer', 'channel-0'],
 # ]
 
-# Specify custom ICS23 proof-specs for the chain (serialized as JSON).
-# Default: [`ProofSpecs::cosmos()`](modules/src/core/ics23_commitment/specs.rs)
-proof_specs = '''
-[
-  {
-    "leaf_spec": {
-      "hash": 1,
-      "prehash_key": 0,
-      "prehash_value": 1,
-      "length": 1,
-      "prefix": [
-        0
-      ]
-    },
-    "inner_spec": {
-      "child_order": [
-        0,
-        1
-      ],
-      "child_size": 33,
-      "min_prefix_length": 4,
-      "max_prefix_length": 12,
-      "empty_child": [],
-      "hash": 1
-    },
-    "max_depth": 0,
-    "min_depth": 0
-  },
-  {
-    "leaf_spec": {
-      "hash": 1,
-      "prehash_key": 0,
-      "prehash_value": 1,
-      "length": 1,
-      "prefix": [
-        0
-      ]
-    },
-    "inner_spec": {
-      "child_order": [
-        0,
-        1
-      ],
-      "child_size": 32,
-      "min_prefix_length": 1,
-      "max_prefix_length": 1,
-      "empty_child": [],
-      "hash": 1
-    },
-    "max_depth": 0,
-    "min_depth": 0
-  }
-]
-'''
-
 [[chains]]
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
