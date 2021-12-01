@@ -340,10 +340,6 @@ define_error! {
             [ TraceError<EncodeError> ]
             |e| { format!("Error encoding protocol buffer for {}", e.payload_type) },
 
-        Cbor
-            [ TraceError<serde_cbor::Error> ]
-            | _ | { "error decoding CBOR payload" },
-
         TxSimulateGasEstimateExceeded
             {
                 chain_id: ChainId,

@@ -1375,7 +1375,6 @@ dependencies = [
  "ripemd160",
  "semver 1.0.4",
  "serde",
- "serde_cbor",
  "serde_derive",
  "serde_json",
  "serial_test",
