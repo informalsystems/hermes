@@ -394,6 +394,8 @@ pub struct ChainConfig {
     pub trusting_period: Option<Duration>,
     #[serde(default)]
     pub memo_prefix: Memo,
+    #[serde(default)]
+    pub fee_granter: String,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
