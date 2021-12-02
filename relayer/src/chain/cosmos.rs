@@ -98,7 +98,7 @@ mod compatibility;
 pub mod version;
 
 /// Default gas limit when submitting a transaction.
-const DEFAULT_MAX_GAS: u64 = 300_000;
+const DEFAULT_MAX_GAS: u64 = 400_000;
 
 /// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
