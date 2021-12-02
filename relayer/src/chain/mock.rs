@@ -18,7 +18,7 @@ use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectio
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::downcast;
 use ibc::events::IbcEvent;
@@ -355,7 +355,7 @@ impl ChainEndpoint for MockChain {
             // See `calculate_client_state_drift`
             self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
-            Height::zero(),
+            ProofSpecs::default(),
             vec!["upgrade/upgradedClient".to_string()],
             AllowUpdate {
                 after_expiry: false,
@@ -468,6 +468,7 @@ pub mod test_utils {
             packet_filter: PacketFilter::default(),
             address_type: AddressType::default(),
             memo_prefix: Default::default(),
+            proof_specs: Default::default(),
         }
     }
 }

@@ -353,7 +353,7 @@ impl FromStr for Order {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
+        match s.to_lowercase().trim_start_matches("order_") {
             "uninitialized" => Ok(Self::None),
             "unordered" => Ok(Self::Unordered),
             "ordered" => Ok(Self::Ordered),

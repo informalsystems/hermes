@@ -223,7 +223,6 @@ memo_prefix = ''
 #   ['transfer', 'channel-0'],
 # ]
 
-
 [[chains]]
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'

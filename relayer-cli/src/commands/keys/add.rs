@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -15,24 +15,26 @@ use ibc_relayer::{
 use crate::application::app_config;
 use crate::conclude::Output;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct KeysAddCmd {
-    #[options(free, required, help = "identifier of the chain")]
+    #[clap(required = true, about = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[options(short = "f", required, help = "path to the key file")]
+    #[clap(short = 'f', long, required = true, about = "path to the key file")]
     file: PathBuf,
 
-    #[options(
-        short = "n",
-        help = "name of the key (defaults to the `key_name` defined in the config)"
+    #[clap(
+        short = 'n',
+        long,
+        about = "name of the key (defaults to the `key_name` defined in the config)"
     )]
     name: Option<String>,
 
-    #[options(
-        short = "p",
-        help = "derivation path for this key",
-        default = "m/44'/118'/0'/0/0"
+    #[clap(
+        short = 'p',
+        long,
+        about = "derivation path for this key",
+        default_value = "m/44'/118'/0'/0/0"
     )]
     hd_path: String,
 }
