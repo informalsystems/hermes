@@ -80,7 +80,7 @@ impl ConfigReload {
         for update in updates {
             if self
                 .tx_cmd
-                .send(SupervisorCmd::UpdateConfig(update))
+                .send(SupervisorCmd::UpdateConfig(Box::new(update)))
                 .is_err()
             {
                 debug!("failed to send config update to supervisor, channel is closed");
