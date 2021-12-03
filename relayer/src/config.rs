@@ -286,18 +286,10 @@ impl fmt::Display for LogLevel {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
     pub log_level: LogLevel,
-}
-
-impl Default for GlobalConfig {
-    fn default() -> Self {
-        Self {
-            log_level: LogLevel::default(),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
