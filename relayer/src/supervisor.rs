@@ -36,12 +36,14 @@ pub mod dump_state;
 use dump_state::SupervisorState;
 
 pub mod spawn;
-use spawn::SpawnContext;
+use spawn::{SpawnContext, SpawnMode};
+
+pub mod scan;
 
 pub mod cmd;
 use cmd::{CmdEffect, ConfigUpdate, SupervisorCmd};
 
-use self::spawn::SpawnMode;
+use self::scan::ChainsScan;
 
 type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
@@ -332,8 +334,22 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
     /// Spawn all the workers necessary for the relayer to connect
     /// and relay between all the chains in the configurations.
-    fn spawn_workers(&mut self, mode: SpawnMode) {
-        self.spawn_context(mode).spawn_workers();
+    fn spawn_workers(&mut self, scan: ChainsScan, mode: SpawnMode) {
+        self.spawn_context(mode).spawn_workers(scan);
+    }
+
+    fn scan(&mut self) -> ChainsScan {
+        use self::scan::ChainScanner;
+
+        let mut scanner = ChainScanner::new(
+            self.config.read().unwrap().clone(),
+            self.registry.clone(),
+            &mut self.client_state_filter,
+        );
+
+        let scan = scanner.scan_chains();
+        println!("{}", scan);
+        scan
     }
 
     /// Perform a health check on all connected chains
@@ -413,7 +429,9 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     }
 
     pub fn run_without_health_check(&mut self) -> Result<(), Error> {
-        self.spawn_workers(SpawnMode::Startup);
+        let scan = self.scan();
+
+        self.spawn_workers(scan, SpawnMode::Startup);
 
         let mut subscriptions = self.init_subscriptions()?;
 

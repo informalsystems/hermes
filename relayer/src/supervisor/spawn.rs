@@ -29,7 +29,7 @@ use crate::{
     worker::WorkerMap,
 };
 
-use super::{Error, RwArc};
+use super::{scan::ChainsScan, Error, RwArc};
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -74,7 +74,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             .filter
     }
 
-    pub fn spawn_workers(&mut self) {
+    pub fn spawn_workers(&mut self, scan: ChainsScan) {
         let chain_ids = self
             .config
             .read()
@@ -158,6 +158,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                 return;
             }
         };
+
+        println!("W: Chain: {}", chain.id());
 
         for client in clients {
             self.spawn_workers_for_client(chain.clone(), client);
@@ -321,7 +323,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             return;
         }
 
-        match self.counterparty_connection_state(client.clone(), connection.clone()) {
+        match self.counterparty_connection_state(client, &connection) {
             Err(e) => {
                 debug!("error with counterparty: reason {}", e);
                 return;
@@ -381,8 +383,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
 
     fn counterparty_connection_state(
         &mut self,
-        client: IdentifiedAnyClientState,
-        connection: IdentifiedConnectionEnd,
+        client: &IdentifiedAnyClientState,
+        connection: &IdentifiedConnectionEnd,
     ) -> Result<ConnectionState, Error> {
         let counterparty_chain = self
             .registry
@@ -412,8 +414,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             .map_err(Error::spawn)?;
 
         let conn_state_src = connection.connection_end.state;
-        let conn_state_dst =
-            connection_state_on_destination(connection.clone(), &counterparty_chain)?;
+        let conn_state_dst = connection_state_on_destination(&connection, &counterparty_chain)?;
 
         debug!(
             "connection {} on chain {} is: {:?}, state on dest. chain ({}) is: {:?}",
@@ -423,6 +424,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             counterparty_chain.id(),
             conn_state_dst
         );
+
+        println!("W:     Connection: {}", connection.connection_id);
 
         if conn_state_src.is_open() && conn_state_dst.is_open() {
             debug!(
@@ -505,6 +508,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                     src_chain_id: client.client_state.chain_id(),
                 });
 
+                println!("W:   Client: {}", client.client_id);
+
                 self.workers
                     .spawn(
                         counterparty_chain.clone(),
@@ -533,14 +538,16 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                 };
 
                 // If there are any outstanding packets or acks to send, spawn the worker
-                if has_packets() || has_acks() {
+                if true || has_packets() || has_acks() {
                     // Create the Packet object and spawn worker
                     let path_object = Object::Packet(Packet {
                         dst_chain_id: counterparty_chain.id(),
                         src_chain_id: chain.id(),
-                        src_channel_id: channel.channel_id,
+                        src_channel_id: channel.channel_id.clone(),
                         src_port_id: channel.port_id,
                     });
+
+                    println!("W:       Channel: {}", channel.channel_id);
 
                     self.workers
                         .spawn(
