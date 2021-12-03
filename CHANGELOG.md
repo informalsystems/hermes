@@ -1,10 +1,5 @@
 # CHANGELOG
 
-## Unreleased
-
-### FEATURES
-- Enable fee granters through the config.toml [#1633](https://github.com/informalsystems/ibc-rs/issues/1633)
-
 ## v0.9.0, the “Zamfir” release
 *November 23rd, 2021*
 

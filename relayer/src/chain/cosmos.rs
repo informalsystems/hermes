@@ -649,7 +649,7 @@ impl CosmosSdkChain {
             amount: vec![self.max_fee_in_coins()],
             gas_limit: self.max_gas(),
             payer: "".to_string(),
-            granter: self.fee_granter().to_string()
+            granter: self.fee_granter().to_string(),
         }
     }
 
@@ -660,7 +660,7 @@ impl CosmosSdkChain {
             amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
             gas_limit: adjusted_gas_limit,
             payer: "".to_string(),
-            granter: self.fee_granter().to_string()
+            granter: self.fee_granter().to_string(),
         }
     }
 
