@@ -377,7 +377,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         if let Ok(cmd) = self.cmd_rx.try_recv() {
             match cmd {
                 SupervisorCmd::UpdateConfig(update) => {
-                    let effect = self.update_config(update);
+                    let effect = self.update_config(*update);
 
                     if let CmdEffect::ConfigChanged = effect {
                         match self.init_subscriptions() {
