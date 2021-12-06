@@ -88,7 +88,7 @@ To pull in updates from the origin repo, run
 
 Every non-trivial PR must update the [CHANGELOG](CHANGELOG.md). This is
 accomplished indirectly by adding entries to the `.changelog` folder in
-[unclog](https://github.com/informalsystems/unclog) format using the unclog cli tool.
+[`unclog`](https://github.com/informalsystems/unclog) format using the `unclog` CLI tool.
 `CHANGELOG.md` will be built by whomever is responsible for performing a release just 
 prior to release - this is to avoid changelog conflicts prior to releases. 
 
@@ -98,23 +98,23 @@ prior to release - this is to avoid changelog conflicts prior to releases.
 cargo install unclog
 ```
 
-unclog add --editor vim --id allow-fee-granters --section features --issue-no 1633 --message "Added support for fee granters through config file"
-unclog add -i update-unclog-instructions -s bug -n 1634 -m "update CONTRIBUTING.md for latest version of unclog" --editor vim
+    $ unclog add --editor vim --id allow-fee-granters --section features --issue-no 1633 --message "Added support for fee granters through config file"
+    $ unclog add -i update-unclog-instructions -s bug -n 1634 -m "Update CONTRIBUTING.md for latest version of unclog" --editor vim
 
 ### Examples
 
 Add a .changelog entry for the `ibc` crate (in the `modules` directory)
-under the `IMPROVEMENTS` section in CHANGELOG.md.
+under the `IMPROVEMENTS` section in `CHANGELOG.md`.
 
 ```bash
-unclog add -c ibc -s improvements -i some-issue -n 1234 -n "msg about change" --editor vim
+$ unclog add -c ibc -s improvements -i some-issue -n 1234 -n "msg about change" --editor vim
 ```
 
 Add a .changelog entry for the `ibc-relayer-cli` crate (in the `relayer-cli`
 directory) under the `FEATURES` section in CHANGELOG.md.
 
 ```bash
-unclog add -c ibc-relayer-cli -s features -i some-other-issue -n 1235 -n "msg about change" --editor vim
+$ unclog add -c ibc-relayer-cli -s features -i some-other-issue -n 1235 -n "msg about change" --editor vim
 ```
 
 ### Preview unreleased changes
