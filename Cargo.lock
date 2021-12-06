@@ -4,14 +4,15 @@ version = 3
 
 [[package]]
 name = "abscissa_core"
-version = "0.6.0-beta.1"
+version = "0.6.0-pre.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f5cf2609df76c3c3f00c710b0f60330aa5f48ae3fd4a9d3a0515c4e282045f1"
+checksum = "7586ed2c98e5727cecb6c36ab8af370ad48505719e004d0ae9bd85f1416b76fa"
 dependencies = [
  "abscissa_derive",
  "arc-swap",
  "backtrace",
  "canonical-path",
+ "chrono",
  "clap",
  "color-eyre",
  "fs-err",
@@ -30,9 +31,9 @@ dependencies = [
 
 [[package]]
 name = "abscissa_derive"
-version = "0.6.0-beta.1"
+version = "0.6.0-pre.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7ce86f8f9c77ef2fb491c86aff9f0b89f99dbdf3915e4317478744062e72613"
+checksum = "105766c2cc2671f5ad1542922ee315f26de7e1b4d1a7500438929575136d9c7e"
 dependencies = [
  "darling",
  "ident_case",
@@ -316,6 +317,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "serde",
+ "time 0.1.43",
  "winapi",
 ]
 
@@ -2351,7 +2353,7 @@ dependencies = [
  "serde_json",
  "sha1",
  "threadpool",
- "time",
+ "time 0.3.2",
  "tiny_http",
  "url",
 ]
@@ -3047,6 +3049,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
 dependencies = [
  "num_cpus",
+]
+
+[[package]]
+name = "time"
+version = "0.1.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca8a50ef2360fbd1eeb0ecd46795a87a19024eb4b53c5dc916ca1fd95fe62438"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
