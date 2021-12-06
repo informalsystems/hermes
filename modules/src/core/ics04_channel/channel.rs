@@ -244,19 +244,10 @@ impl ChannelEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
-}
-
-impl Default for Counterparty {
-    fn default() -> Self {
-        Counterparty {
-            port_id: Default::default(),
-            channel_id: None,
-        }
-    }
 }
 
 impl Counterparty {
