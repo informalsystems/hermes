@@ -21,5 +21,4 @@
 pub mod chain;
 pub mod connection;
 pub mod foreign_client;
-pub mod supervisor;
 pub mod transfer;
