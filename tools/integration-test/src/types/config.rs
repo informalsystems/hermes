@@ -57,6 +57,8 @@ pub struct TestConfig {
        no longer running.
     */
     pub hang_on_fail: bool,
+
+    pub bootstrap_with_random_ids: bool,
 }
 
 impl TestConfig {

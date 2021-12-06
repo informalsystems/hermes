@@ -14,7 +14,7 @@ use super::chain::{
 use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
 use crate::error::Error;
-use crate::framework::base::HasOverrides;
+use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::config::TestConfig;
@@ -29,7 +29,11 @@ pub fn run_two_way_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
+    Overrides: NodeConfigOverride
+        + RelayerConfigOverride
+        + SupervisorOverride
+        + PortsOverride
+        + TestConfigOverride,
 {
     run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
@@ -41,7 +45,11 @@ pub fn run_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
+    Overrides: NodeConfigOverride
+        + RelayerConfigOverride
+        + SupervisorOverride
+        + PortsOverride
+        + TestConfigOverride,
 {
     run_binary_chain_test(&RunBinaryChannelTest::new(test))
 }
