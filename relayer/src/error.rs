@@ -39,21 +39,9 @@ use crate::sdk_error::SdkError;
 
 define_error! {
     Error {
-        ConfigIo
-            [ TraceError<std::io::Error> ]
-            |_| { "config I/O error" },
-
         Io
             [ TraceError<std::io::Error> ]
             |_| { "I/O error" },
-
-        ConfigDecode
-            [ TraceError<toml::de::Error> ]
-            |_| { "invalid configuration" },
-
-        ConfigEncode
-            [ TraceError<toml::ser::Error> ]
-            |_| { "invalid configuration" },
 
         Rpc
             { url: tendermint_rpc::Url }

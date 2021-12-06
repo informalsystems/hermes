@@ -29,17 +29,9 @@ use crate::Height;
 
 use crate::downcast;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TendermintClient {
     verifier: ProdVerifier,
-}
-
-impl Default for TendermintClient {
-    fn default() -> Self {
-        Self {
-            verifier: ProdVerifier::default(),
-        }
-    }
 }
 
 impl ClientDef for TendermintClient {
