@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-proto"
-version      = "0.12.0"
+version      = "0.13.0"
 authors      = ["Informal Systems <hello@informal.systems>"]
 edition      = "2021"
 license      = "Apache-2.0"
@@ -27,7 +27,7 @@ prost-types = "0.9"
 bytes = "1.1"
 tonic = "0.6"
 getrandom = { version = "0.2", features = ["js"] }
-serde = "1.0.130"
+serde = "1.0"
 
 [dependencies.tendermint-proto]
-version = "=0.23.0"
+version = "=0.23.1"

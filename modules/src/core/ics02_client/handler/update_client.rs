@@ -100,7 +100,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use core::str::FromStr;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
@@ -159,7 +159,7 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState(
+                            AnyClientState::Mock(MockClientState::new(
                                 MockHeader::new(msg.header.height()).with_timestamp(timestamp)
                             ))
                         )

@@ -244,19 +244,10 @@ impl ChannelEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
-}
-
-impl Default for Counterparty {
-    fn default() -> Self {
-        Counterparty {
-            port_id: Default::default(),
-            channel_id: None,
-        }
-    }
 }
 
 impl Counterparty {
@@ -353,7 +344,7 @@ impl FromStr for Order {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
+        match s.to_lowercase().trim_start_matches("order_") {
             "uninitialized" => Ok(Self::None),
             "unordered" => Ok(Self::Unordered),
             "ordered" => Ok(Self::Ordered),
@@ -474,7 +465,7 @@ mod tests {
     use crate::prelude::*;
 
     use core::str::FromStr;
-    use test_env_log::test;
+    use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 

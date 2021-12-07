@@ -54,14 +54,10 @@ impl core::fmt::Display for PacketMsgType {
 }
 
 /// The sequence number of a packet enforces ordering among packets from the same source.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, PartialOrd, Ord)]
+#[derive(
+    Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Deserialize, Serialize,
+)]
 pub struct Sequence(u64);
-
-impl Default for Sequence {
-    fn default() -> Self {
-        Sequence(0)
-    }
-}
 
 impl FromStr for Sequence {
     type Err = Error;
@@ -277,7 +273,7 @@ pub mod test_utils {
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 

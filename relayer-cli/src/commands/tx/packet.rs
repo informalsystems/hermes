@@ -1,4 +1,4 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
@@ -9,18 +9,18 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxRawPacketRecvCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source port")]
+    #[clap(required = true, about = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, required, help = "identifier of the source channel")]
+    #[clap(required = true, about = "identifier of the source channel")]
     src_channel_id: ChannelId,
 }
 
@@ -53,18 +53,18 @@ impl Runnable for TxRawPacketRecvCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxRawPacketAckCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source port")]
+    #[clap(required = true, about = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, required, help = "identifier of the source channel")]
+    #[clap(required = true, about = "identifier of the source channel")]
     src_channel_id: ChannelId,
 }
 

@@ -14,7 +14,7 @@ pub enum ConfigUpdate {
 
 #[derive(Clone, Debug)]
 pub enum SupervisorCmd {
-    UpdateConfig(ConfigUpdate),
+    UpdateConfig(Box<ConfigUpdate>),
     DumpState(Sender<SupervisorState>),
     Stop(Sender<()>),
 }

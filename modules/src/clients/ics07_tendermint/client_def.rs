@@ -34,17 +34,9 @@ use crate::Height;
 
 use crate::downcast;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TendermintClient {
     verifier: ProdVerifier,
-}
-
-impl Default for TendermintClient {
-    fn default() -> Self {
-        Self {
-            verifier: ProdVerifier::default(),
-        }
-    }
 }
 
 impl ClientDef for TendermintClient {
@@ -144,7 +136,7 @@ impl ClientDef for TendermintClient {
         // client and return the installed consensus state.
         if let Some(cs) = existing_consensus_state {
             if cs != header_consensus_state {
-                return Ok((client_state.with_set_frozen(header.height()), cs));
+                return Ok((client_state.with_frozen_height(header.height())?, cs));
             }
         }
 
@@ -371,7 +363,7 @@ fn verify_membership(
 
     merkle_proof
         .verify_membership(
-            client_state.proof_specs.clone().into(),
+            &client_state.proof_specs,
             root.clone().into(),
             merkle_path,
             value,
@@ -394,7 +386,7 @@ fn verify_non_membership(
 
     merkle_proof
         .verify_non_membership(
-            client_state.proof_specs.clone().into(),
+            &client_state.proof_specs,
             root.clone().into(),
             merkle_path,
         )

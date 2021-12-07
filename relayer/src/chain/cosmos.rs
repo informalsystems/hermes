@@ -30,7 +30,7 @@ use tendermint_rpc::{
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
@@ -49,7 +49,6 @@ use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::core::ics24_host::Path::ClientState as ClientStatePath;
@@ -705,7 +704,7 @@ impl CosmosSdkChain {
             .map(|res| res.response.hash.to_string())
             .join(", ");
 
-        warn!(
+        info!(
             "[{}] waiting for commit of tx hashes(s) {}",
             self.id(),
             hashes
@@ -1753,9 +1752,11 @@ impl ChainEndpoint for CosmosSdkChain {
                     if let Some(block) = response.blocks.first().map(|first| &first.block) {
                         let response_height =
                             ICSHeight::new(self.id().version(), u64::from(block.header.height));
+
                         if request.height != ICSHeight::zero() && response_height > request.height {
                             continue;
                         }
+
                         let response = self
                             .block_on(self.rpc_client.block_results(block.header.height))
                             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
@@ -1927,8 +1928,7 @@ impl ChainEndpoint for CosmosSdkChain {
             unbonding_period,
             max_clock_drift,
             height,
-            ICSHeight::zero(),
-            ProofSpecs::cosmos().into(),
+            self.config.proof_specs.clone(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             AllowUpdate {
                 after_expiry: true,
@@ -2488,15 +2488,15 @@ mod tests {
         let mut clients: Vec<IdentifiedAnyClientState> = vec![
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 4).unwrap(),
-                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 1).unwrap(),
-                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 7).unwrap(),
-                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
             ),
         ];
         clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));

@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 use core::time::Duration;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
@@ -16,55 +16,57 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxIbcUpgradeChainCmd {
-    #[options(free, required, help = "identifier of the chain to upgrade")]
+    #[clap(required = true, about = "identifier of the chain to upgrade")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(
-        free,
-        required,
-        help = "identifier of the client on source chain from which the plan is created"
+    #[clap(
+        required = true,
+        about = "identifier of the client on source chain from which the plan is created"
     )]
     src_client_id: ClientId,
 
-    #[options(free, required, help = "amount of stake")]
+    #[clap(required = true, about = "amount of stake")]
     amount: u64,
 
-    #[options(
-        free,
-        required,
-        help = "upgrade height offset in number of blocks since current"
+    #[clap(
+        required = true,
+        about = "upgrade height offset in number of blocks since current"
     )]
     height_offset: u64,
 
-    #[options(
-        short = "c",
-        meta = "CHAIN-ID",
-        help = "new chain identifier to assign to the upgrading chain (optional)"
+    #[clap(
+        short = 'c',
+        long,
+        value_name = "CHAIN-ID",
+        about = "new chain identifier to assign to the upgrading chain (optional)"
     )]
     new_chain_id: Option<ChainId>,
 
-    #[options(
-        short = "u",
-        meta = "PERIOD",
-        help = "new unbonding period to assign to the upgrading chain, in seconds (optional)"
+    #[clap(
+        short = 'u',
+        long,
+        value_name = "PERIOD",
+        about = "new unbonding period to assign to the upgrading chain, in seconds (optional)"
     )]
     new_unbonding: Option<u64>,
 
-    #[options(
-        short = "n",
-        meta = "NAME",
-        help = "a string to name the upgrade proposal plan (default: 'plan')"
+    #[clap(
+        short = 'n',
+        long,
+        value_name = "NAME",
+        about = "a string to name the upgrade proposal plan (default: 'plan')"
     )]
     upgrade_name: Option<String>,
 
-    #[options(
-        help = "use legacy upgrade proposal constructs (for chains built with Cosmos SDK < v0.43.0)",
-        short = "l"
+    #[clap(
+        short = 'l',
+        long,
+        about = "use legacy upgrade proposal constructs (for chains built with Cosmos SDK < v0.43.0)"
     )]
     legacy: bool,
 }

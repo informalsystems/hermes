@@ -1,5 +1,7 @@
 //! Relayer configuration
 
+mod error;
+mod proof_specs;
 pub mod reload;
 pub mod types;
 
@@ -12,12 +14,14 @@ use std::{fs, fs::File, io::Write, path::Path};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
+use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use crate::error::Error;
 use crate::keyring::Store;
+
+pub use error::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -284,18 +288,10 @@ impl fmt::Display for LogLevel {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
     pub log_level: LogLevel,
-}
-
-impl Default for GlobalConfig {
-    fn default() -> Self {
-        Self {
-            log_level: LogLevel::default(),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -394,6 +390,8 @@ pub struct ChainConfig {
     pub trusting_period: Option<Duration>,
     #[serde(default)]
     pub memo_prefix: Memo,
+    #[serde(default, with = "self::proof_specs")]
+    pub proof_specs: ProofSpecs,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
@@ -407,9 +405,9 @@ pub struct ChainConfig {
 
 /// Attempt to load and parse the TOML config file as a `Config`.
 pub fn load(path: impl AsRef<Path>) -> Result<Config, Error> {
-    let config_toml = std::fs::read_to_string(&path).map_err(Error::config_io)?;
+    let config_toml = std::fs::read_to_string(&path).map_err(Error::io)?;
 
-    let config = toml::from_str::<Config>(&config_toml[..]).map_err(Error::config_decode)?;
+    let config = toml::from_str::<Config>(&config_toml[..]).map_err(Error::decode)?;
 
     Ok(config)
 }
@@ -421,16 +419,16 @@ pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), Error> {
     } else {
         File::create(path)
     }
-    .map_err(Error::config_io)?;
+    .map_err(Error::io)?;
 
     store_writer(config, &mut file)
 }
 
 /// Serialize the given `Config` as TOML to the given writer.
 pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<(), Error> {
-    let toml_config = toml::to_string_pretty(&config).map_err(Error::config_encode)?;
+    let toml_config = toml::to_string_pretty(&config).map_err(Error::encode)?;
 
-    writeln!(writer, "{}", toml_config).map_err(Error::config_io)?;
+    writeln!(writer, "{}", toml_config).map_err(Error::io)?;
 
     Ok(())
 }
@@ -438,7 +436,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::{load, store_writer};
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn parse_valid_config() {

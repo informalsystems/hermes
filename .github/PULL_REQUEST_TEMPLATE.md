@@ -15,10 +15,13 @@ are the most critical to review.
 
 ______
 
-For contributor use:
+### PR author checklist:
+- [ ] Added changelog entry, using [`unclog`](https://github.com/informalsystems/unclog).
+- [ ] Added tests: integration (for Hermes) or unit/mock tests (for modules). 
+- [ ] Linked to GitHub issue.
+- [ ] Updated code comments and documentation (e.g., `docs/`).
 
-- [ ] Added a changelog entry, using [`unclog`](https://github.com/informalsystems/unclog).
-- [ ] If applicable: Unit tests written, added test to CI.
-- [ ] Linked to Github issue with discussion and accepted design OR link to spec that describes this work.
-- [ ] Updated relevant documentation (`docs/`) and code comments.
-- [ ] Re-reviewed `Files changed` in the Github PR explorer.
+### Reviewer checklist:
+
+- [ ] Reviewed `Files changed` in the GitHub PR explorer.
+- [ ] Manually tested (in case integration/unit/mock tests are absent).

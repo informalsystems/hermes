@@ -110,7 +110,7 @@ mod tests {
 
         let msg = MsgUpgradeAnyClient {
             client_id: client_id.clone(),
-            client_state: MockClientState(MockHeader::new(Height::new(1, 26))).into(),
+            client_state: MockClientState::new(MockHeader::new(Height::new(1, 26))).into(),
             consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26))).into(),
             proof_upgrade_client: MerkleProof::try_from(c_bytes).unwrap(),
             proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes).unwrap(),
@@ -161,7 +161,7 @@ mod tests {
 
         let msg = MsgUpgradeAnyClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
-            client_state: MockClientState(MockHeader::new(Height::new(1, 26))).into(),
+            client_state: MockClientState::new(MockHeader::new(Height::new(1, 26))).into(),
             consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26))).into(),
             proof_upgrade_client: MerkleProof::try_from(c_bytes).unwrap(),
             proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes).unwrap(),
@@ -195,7 +195,7 @@ mod tests {
 
         let msg = MsgUpgradeAnyClient {
             client_id,
-            client_state: MockClientState(MockHeader::new(Height::new(0, 26))).into(),
+            client_state: MockClientState::new(MockHeader::new(Height::new(0, 26))).into(),
             consensus_state: MockConsensusState::new(MockHeader::new(Height::new(0, 26))).into(),
             proof_upgrade_client: MerkleProof::try_from(c_bytes).unwrap(),
             proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes).unwrap(),

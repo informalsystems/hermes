@@ -59,7 +59,7 @@ impl From<RawMerkleProof> for MerkleProof {
 impl MerkleProof {
     pub fn verify_membership(
         &self,
-        specs: ProofSpecs,
+        specs: &ProofSpecs,
         root: MerkleRoot,
         keys: MerklePath,
         value: Vec<u8>,
@@ -73,7 +73,8 @@ impl MerkleProof {
             return Err(Error::empty_merkle_root());
         }
         let num = self.proofs.len();
-        if specs.specs.len() != num {
+        let ics23_specs = Vec::<ics23::ProofSpec>::from(specs.clone());
+        if ics23_specs.len() != num {
             return Err(Error::number_of_specs_mismatch());
         }
         if keys.key_path.len() != num {
@@ -89,7 +90,7 @@ impl MerkleProof {
         for ((proof, spec), key) in self
             .proofs
             .iter()
-            .zip(specs.specs.iter())
+            .zip(ics23_specs.iter())
             .zip(keys.key_path.iter().rev())
             .skip(start_index)
         {
@@ -115,7 +116,7 @@ impl MerkleProof {
 
     pub fn verify_non_membership(
         &self,
-        specs: ProofSpecs,
+        specs: &ProofSpecs,
         root: MerkleRoot,
         keys: MerklePath,
     ) -> Result<(), Error> {
@@ -127,7 +128,8 @@ impl MerkleProof {
             return Err(Error::empty_merkle_root());
         }
         let num = self.proofs.len();
-        if specs.specs.len() != num {
+        let ics23_specs = Vec::<ics23::ProofSpec>::from(specs.clone());
+        if ics23_specs.len() != num {
             return Err(Error::number_of_specs_mismatch());
         }
         if keys.key_path.len() != num {
@@ -136,7 +138,7 @@ impl MerkleProof {
 
         // verify the absence of key in lowest subtree
         let proof = self.proofs.get(0).ok_or_else(Error::invalid_merkle_proof)?;
-        let spec = specs.specs.get(0).ok_or_else(Error::invalid_merkle_proof)?;
+        let spec = ics23_specs.get(0).ok_or_else(Error::invalid_merkle_proof)?;
         // keys are represented from root-to-leaf
         let key = keys
             .key_path

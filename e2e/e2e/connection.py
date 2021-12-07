@@ -316,7 +316,7 @@ def passive_connection_init_then_start(c: Config,
 
     # 2. start hermes
     proc = relayer.start(c)
-    sleep(2.0)
+    sleep(10.0)
 
     # 3. wait for connection handshake to finish and verify connection state on both chains
     verify_state(c, ibc1, ibc0, ibc1_conn_id_a)
@@ -337,7 +337,7 @@ def passive_connection_try_then_start(c: Config,
 
     # 2. start hermes
     proc = relayer.start(c)
-    sleep(2.0)
+    sleep(10.0)
 
     # 3. wait for connection handshake to finish and verify connection state on both chains
     verify_state(c, ibc1, ibc0, ibc1_conn_id_a)

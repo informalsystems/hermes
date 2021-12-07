@@ -95,7 +95,7 @@ pub fn pick_version(
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 

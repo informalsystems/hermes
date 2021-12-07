@@ -166,7 +166,7 @@ pub trait ChannelKeeper {
                     }
                     None => {
                         //Unordered Channel
-                        self.delete_packet_acknowledgement((
+                        self.delete_packet_commitment((
                             res.port_id.clone(),
                             res.channel_id.clone(),
                             res.seq,

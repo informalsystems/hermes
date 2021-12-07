@@ -1,25 +1,27 @@
 use core::fmt;
 
-use abscissa_core::{config, Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
+use clap::AppSettings::DisableHelpFlag;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::application::{app_config, CliApp};
+use crate::application::app_config;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxCreateClientCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 }
 
@@ -52,22 +54,23 @@ impl Runnable for TxCreateClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
+#[clap(setting(DisableHelpFlag))]
 pub struct TxUpdateClientCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(
-        free,
-        required,
-        help = "identifier of the client to be updated on destination chain"
+    #[clap(
+        required = true,
+        about = "identifier of the client to be updated on destination chain"
     )]
     dst_client_id: ClientId,
 
-    #[options(help = "the target height of the client update", short = "h")]
+    // FIXME: rename the short option to avoid confusion with --help?
+    #[clap(short = 'h', long, about = "the target height of the client update")]
     target_height: Option<u64>,
 
-    #[options(help = "the trusted height of the client update", short = "t")]
+    #[clap(short = 't', long, about = "the trusted height of the client update")]
     trusted_height: Option<u64>,
 }
 
@@ -121,12 +124,15 @@ impl Runnable for TxUpdateClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxUpgradeClientCmd {
-    #[options(free, required, help = "identifier of the chain that hosts the client")]
+    #[clap(
+        required = true,
+        about = "identifier of the chain that hosts the client"
+    )]
     chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the client to be upgraded")]
+    #[clap(required = true, about = "identifier of the client to be upgraded")]
     client_id: ClientId,
 }
 
@@ -168,12 +174,11 @@ impl Runnable for TxUpgradeClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxUpgradeClientsCmd {
-    #[options(
-        free,
-        required,
-        help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
+    #[clap(
+        required = true,
+        about = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
     src_chain_id: ChainId,
 }
@@ -206,7 +211,7 @@ impl Runnable for TxUpgradeClientsCmd {
 impl TxUpgradeClientsCmd {
     fn upgrade_clients_for_chain<Chain: ChainHandle>(
         &self,
-        config: &config::Reader<CliApp>,
+        config: &Config,
         src_chain: Chain,
         dst_chain_id: &ChainId,
     ) -> UpgradeClientsForChainResult {

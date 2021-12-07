@@ -1,4 +1,4 @@
-use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
+use abscissa_core::{config::Override, Clap, Command, FrameworkErrorKind, Runnable};
 
 use ibc::{
     core::{
@@ -20,52 +20,64 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxIcs20MsgTransferCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source port")]
+    #[clap(required = true, about = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, required, help = "identifier of the source channel")]
+    #[clap(required = true, about = "identifier of the source channel")]
     src_channel_id: ChannelId,
 
-    #[options(
-        free,
-        required,
-        help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
+    #[clap(
+        required = true,
+        about = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: Amount,
 
-    #[options(help = "timeout in number of blocks since current", short = "o")]
+    #[clap(
+        short = 'o',
+        long,
+        default_value = "0",
+        about = "timeout in number of blocks since current"
+    )]
     timeout_height_offset: u64,
 
-    #[options(help = "timeout in seconds since current", short = "t")]
+    #[clap(
+        short = 't',
+        long,
+        default_value = "0",
+        about = "timeout in seconds since current"
+    )]
     timeout_seconds: u64,
 
-    #[options(
-        help = "receiving account address on the destination chain",
-        short = "r"
+    #[clap(
+        short = 'r',
+        long,
+        about = "receiving account address on the destination chain"
     )]
     receiver: Option<String>,
 
-    #[options(
-        help = "denomination of the coins to send",
-        short = "d",
-        default = "samoleans"
+    #[clap(
+        short = 'd',
+        long,
+        about = "denomination of the coins to send",
+        default_value = "samoleans"
     )]
     denom: String,
 
-    #[options(help = "number of messages to send", short = "n")]
+    #[clap(short = 'n', long, about = "number of messages to send")]
     number_msgs: Option<usize>,
 
-    #[options(
-        help = "use the given signing key (default: `key_name` config)",
-        short = "k"
+    #[clap(
+        short = 'k',
+        long,
+        about = "use the given signing key (default: `key_name` config)"
     )]
     key: Option<String>,
 }
@@ -115,7 +127,9 @@ impl TxIcs20MsgTransferCmd {
 
         if self.timeout_height_offset == 0 && self.timeout_seconds == 0 {
             return Err(
-                "packet timeout height and packet timeout timestamp cannot both be 0".into(),
+                "packet timeout height and packet timeout timestamp cannot both be 0, \
+                please specify either --timeout-height-offset or --timeout-seconds"
+                    .into(),
             );
         }
 
