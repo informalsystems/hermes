@@ -9,16 +9,14 @@ use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics23_commitment::commitment::{
-    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
-};
+use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot};
 use crate::core::ics23_commitment::merkle::apply_prefix;
-use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics24_host::identifier::ClientId;
 use crate::core::ics24_host::Path;
 use crate::mock::client_state::{MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
-use crate::Height;
+use crate::proofs::Proofs;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MockClient;
@@ -51,21 +49,13 @@ impl ClientDef for MockClient {
         &self,
         _client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        _proof: &CommitmentProofBytes,
+        _proofs: &Proofs,
         _root: &CommitmentRoot,
-        client_id: &ClientId,
-        consensus_height: Height,
+        consensus_state_path: &Path,
         _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
-        let client_prefixed_path = Path::ClientConsensusState {
-            client_id: client_id.clone(),
-            epoch: consensus_height.revision_number,
-            height: consensus_height.revision_height,
-        }
-        .to_string();
-
-        let _path =
-            apply_prefix(prefix, vec![client_prefixed_path]).map_err(Error::empty_prefix)?;
+        let _path = apply_prefix(prefix, vec![consensus_state_path.to_string()])
+            .map_err(Error::empty_prefix)?;
 
         Ok(())
     }
@@ -74,9 +64,9 @@ impl ClientDef for MockClient {
         &self,
         _client_state: &Self::ClientState,
         _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProofBytes,
+        _proofs: &Proofs,
         _root: &CommitmentRoot,
-        _connection_id: &ConnectionId,
+        _connection_path: &Path,
         _expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
         Ok(())
@@ -86,10 +76,9 @@ impl ClientDef for MockClient {
         &self,
         _client_state: &Self::ClientState,
         _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProofBytes,
+        _proofs: &Proofs,
         _root: &CommitmentRoot,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
+        _channel_path: &Path,
         _expected_channel_end: &ChannelEnd,
     ) -> Result<(), Error> {
         Ok(())
@@ -99,9 +88,9 @@ impl ClientDef for MockClient {
         &self,
         _client_state: &Self::ClientState,
         _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProofBytes,
+        _proofs: &Proofs,
         _root: &CommitmentRoot,
-        _client_id: &ClientId,
+        _client_state_path: &Path,
         _expected_client_state: &AnyClientState,
     ) -> Result<(), Error> {
         Ok(())
@@ -112,7 +101,7 @@ impl ClientDef for MockClient {
         _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
         _connection_end: &ConnectionEnd,
-        _proof: &CommitmentProofBytes,
+        _proofs: &Proofs,
         _root: &CommitmentRoot,
         _commitment_path: &Path,
         _commitment: String,
@@ -125,7 +114,7 @@ impl ClientDef for MockClient {
         _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
         _connection_end: &ConnectionEnd,
-        _proof: &CommitmentProofBytes,
+        _proofs: &Proofs,
         _root: &CommitmentRoot,
         _ack_path: &Path,
         _ack: Vec<u8>,
@@ -138,7 +127,7 @@ impl ClientDef for MockClient {
         _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
         _connection_end: &ConnectionEnd,
-        _proof: &CommitmentProofBytes,
+        _proofs: &Proofs,
         _root: &CommitmentRoot,
         _seq_path: &Path,
         _seq: Sequence,
@@ -151,7 +140,7 @@ impl ClientDef for MockClient {
         _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
         _connection_end: &ConnectionEnd,
-        _proof: &CommitmentProofBytes,
+        _proofs: &Proofs,
         _root: &CommitmentRoot,
         _receipt_path: &Path,
     ) -> Result<(), Error> {

@@ -11,14 +11,12 @@ use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics23_commitment::commitment::{
-    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
-};
-use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot};
+use crate::core::ics24_host::identifier::ClientId;
 use crate::core::ics24_host::Path;
 use crate::downcast;
 use crate::prelude::*;
-use crate::Height;
+use crate::proofs::Proofs;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_def::MockClient;
@@ -57,10 +55,9 @@ pub trait ClientDef: Clone {
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
-        client_id: &ClientId,
-        consensus_height: Height,
+        consensus_state_path: &Path,
         expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error>;
 
@@ -69,9 +66,9 @@ pub trait ClientDef: Clone {
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
-        connection_id: &ConnectionId,
+        connection_path: &Path,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error>;
 
@@ -81,10 +78,9 @@ pub trait ClientDef: Clone {
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
+        channel_path: &Path,
         expected_channel_end: &ChannelEnd,
     ) -> Result<(), Error>;
 
@@ -94,9 +90,9 @@ pub trait ClientDef: Clone {
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
-        client_id: &ClientId,
+        client_state_path: &Path,
         expected_client_state: &AnyClientState,
     ) -> Result<(), Error>;
 
@@ -107,7 +103,7 @@ pub trait ClientDef: Clone {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
         commitment_path: &Path,
         commitment: String,
@@ -120,7 +116,7 @@ pub trait ClientDef: Clone {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
         ack_path: &Path,
         ack: Vec<u8>,
@@ -133,7 +129,7 @@ pub trait ClientDef: Clone {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
         seq_path: &Path,
         seq: Sequence,
@@ -145,7 +141,7 @@ pub trait ClientDef: Clone {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
         receipt_path: &Path,
     ) -> Result<(), Error>;
@@ -224,12 +220,13 @@ impl ClientDef for AnyClient {
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
-        client_id: &ClientId,
-        consensus_height: Height,
+        consensus_state_path: &Path,
         expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
+        client_state.verify_height(proofs.height())?;
+
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -240,10 +237,9 @@ impl ClientDef for AnyClient {
                 client.verify_client_consensus_state(
                     client_state,
                     prefix,
-                    proof,
+                    proofs,
                     root,
-                    client_id,
-                    consensus_height,
+                    consensus_state_path,
                     expected_consensus_state,
                 )
             }
@@ -258,10 +254,9 @@ impl ClientDef for AnyClient {
                 client.verify_client_consensus_state(
                     client_state,
                     prefix,
-                    proof,
+                    proofs,
                     root,
-                    client_id,
-                    consensus_height,
+                    consensus_state_path,
                     expected_consensus_state,
                 )
             }
@@ -272,11 +267,13 @@ impl ClientDef for AnyClient {
         &self,
         client_state: &AnyClientState,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
-        connection_id: &ConnectionId,
+        connection_path: &Path,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
+        client_state.verify_height(proofs.height())?;
+
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
@@ -285,9 +282,9 @@ impl ClientDef for AnyClient {
                 client.verify_connection_state(
                     client_state,
                     prefix,
-                    proof,
+                    proofs,
                     root,
-                    connection_id,
+                    connection_path,
                     expected_connection_end,
                 )
             }
@@ -300,9 +297,9 @@ impl ClientDef for AnyClient {
                 client.verify_connection_state(
                     client_state,
                     prefix,
-                    proof,
+                    proofs,
                     root,
-                    connection_id,
+                    connection_path,
                     expected_connection_end,
                 )
             }
@@ -313,12 +310,13 @@ impl ClientDef for AnyClient {
         &self,
         client_state: &AnyClientState,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
+        channel_path: &Path,
         expected_channel_end: &ChannelEnd,
     ) -> Result<(), Error> {
+        client_state.verify_height(proofs.height())?;
+
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
@@ -327,10 +325,9 @@ impl ClientDef for AnyClient {
                 client.verify_channel_state(
                     client_state,
                     prefix,
-                    proof,
+                    proofs,
                     root,
-                    port_id,
-                    channel_id,
+                    channel_path,
                     expected_channel_end,
                 )
             }
@@ -343,10 +340,9 @@ impl ClientDef for AnyClient {
                 client.verify_channel_state(
                     client_state,
                     prefix,
-                    proof,
+                    proofs,
                     root,
-                    port_id,
-                    channel_id,
+                    channel_path,
                     expected_channel_end,
                 )
             }
@@ -357,11 +353,13 @@ impl ClientDef for AnyClient {
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
-        client_id: &ClientId,
+        client_state_path: &Path,
         client_state_on_counterparty: &AnyClientState,
     ) -> Result<(), Error> {
+        client_state.verify_height(proofs.height())?;
+
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -372,9 +370,9 @@ impl ClientDef for AnyClient {
                 client.verify_client_full_state(
                     client_state,
                     prefix,
-                    proof,
+                    proofs,
                     root,
-                    client_id,
+                    client_state_path,
                     client_state_on_counterparty,
                 )
             }
@@ -389,9 +387,9 @@ impl ClientDef for AnyClient {
                 client.verify_client_full_state(
                     client_state,
                     prefix,
-                    proof,
+                    proofs,
                     root,
-                    client_id,
+                    client_state_path,
                     client_state_on_counterparty,
                 )
             }
@@ -402,11 +400,13 @@ impl ClientDef for AnyClient {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
         commitment_path: &Path,
         commitment: String,
     ) -> Result<(), Error> {
+        client_state.verify_height(proofs.height())?;
+
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -418,7 +418,7 @@ impl ClientDef for AnyClient {
                     ctx,
                     client_state,
                     connection_end,
-                    proof,
+                    proofs,
                     root,
                     commitment_path,
                     commitment,
@@ -436,7 +436,7 @@ impl ClientDef for AnyClient {
                     ctx,
                     client_state,
                     connection_end,
-                    proof,
+                    proofs,
                     root,
                     commitment_path,
                     commitment,
@@ -450,11 +450,13 @@ impl ClientDef for AnyClient {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
         ack_path: &Path,
         ack: Vec<u8>,
     ) -> Result<(), Error> {
+        client_state.verify_height(proofs.height())?;
+
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -466,7 +468,7 @@ impl ClientDef for AnyClient {
                     ctx,
                     client_state,
                     connection_end,
-                    proof,
+                    proofs,
                     root,
                     ack_path,
                     ack,
@@ -484,7 +486,7 @@ impl ClientDef for AnyClient {
                     ctx,
                     client_state,
                     connection_end,
-                    proof,
+                    proofs,
                     root,
                     ack_path,
                     ack,
@@ -498,11 +500,13 @@ impl ClientDef for AnyClient {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
         seq_path: &Path,
         seq: Sequence,
     ) -> Result<(), Error> {
+        client_state.verify_height(proofs.height())?;
+
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -514,7 +518,7 @@ impl ClientDef for AnyClient {
                     ctx,
                     client_state,
                     connection_end,
-                    proof,
+                    proofs,
                     root,
                     seq_path,
                     seq,
@@ -532,7 +536,7 @@ impl ClientDef for AnyClient {
                     ctx,
                     client_state,
                     connection_end,
-                    proof,
+                    proofs,
                     root,
                     seq_path,
                     seq,
@@ -545,10 +549,12 @@ impl ClientDef for AnyClient {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
+        proofs: &Proofs,
         root: &CommitmentRoot,
         receipt_path: &Path,
     ) -> Result<(), Error> {
+        client_state.verify_height(proofs.height())?;
+
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -560,7 +566,7 @@ impl ClientDef for AnyClient {
                     ctx,
                     client_state,
                     connection_end,
-                    proof,
+                    proofs,
                     root,
                     receipt_path,
                 )
@@ -577,7 +583,7 @@ impl ClientDef for AnyClient {
                     ctx,
                     client_state,
                     connection_end,
-                    proof,
+                    proofs,
                     root,
                     receipt_path,
                 )

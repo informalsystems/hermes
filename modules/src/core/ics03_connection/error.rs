@@ -113,9 +113,6 @@ define_error! {
         MissingCounterpartyPrefix
             | _ | { "missing counterparty prefix" },
 
-        NullClientProof
-            | _ | { "client proof must be present" },
-
         FrozenClient
             { client_id: ClientId }
             | e | {
