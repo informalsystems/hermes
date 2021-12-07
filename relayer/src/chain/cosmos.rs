@@ -444,7 +444,10 @@ impl CosmosSdkChain {
 
     /// Get the fee granter address
     fn fee_granter(&self) -> &str {
-        self.config.fee_granter.as_deref().unwrap_or(DEFAULT_FEE_GRANTER)
+        self.config
+            .fee_granter
+            .as_deref()
+            .unwrap_or(DEFAULT_FEE_GRANTER)
     }
 
     /// The gas price
