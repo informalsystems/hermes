@@ -378,6 +378,7 @@ pub struct ChainConfig {
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
     pub gas_adjustment: Option<f64>,
+    pub fee_granter: Option<String>,
     #[serde(default)]
     pub max_msg_num: MaxMsgNum,
     #[serde(default)]
