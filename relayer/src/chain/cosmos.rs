@@ -98,10 +98,12 @@ mod compatibility;
 pub mod version;
 
 /// Default gas limit when submitting a transaction.
-const DEFAULT_MAX_GAS: u64 = 300_000;
+const DEFAULT_MAX_GAS: u64 = 400_000;
 
 /// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
+
+const DEFAULT_FEE_GRANTER: &str = "";
 
 /// Upper limit on the size of transactions submitted by Hermes, expressed as a
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
@@ -440,6 +442,14 @@ impl CosmosSdkChain {
         self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
+    /// Get the fee granter address
+    fn fee_granter(&self) -> &str {
+        self.config
+            .fee_granter
+            .as_deref()
+            .unwrap_or(DEFAULT_FEE_GRANTER)
+    }
+
     /// The gas price
     fn gas_price(&self) -> &GasPrice {
         &self.config.gas_price
@@ -644,7 +654,7 @@ impl CosmosSdkChain {
             amount: vec![self.max_fee_in_coins()],
             gas_limit: self.max_gas(),
             payer: "".to_string(),
-            granter: "".to_string(),
+            granter: self.fee_granter().to_string(),
         }
     }
 
@@ -655,7 +665,7 @@ impl CosmosSdkChain {
             amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
             gas_limit: adjusted_gas_limit,
             payer: "".to_string(),
-            granter: "".to_string(),
+            granter: self.fee_granter().to_string(),
         }
     }
 

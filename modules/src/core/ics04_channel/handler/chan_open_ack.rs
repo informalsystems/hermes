@@ -68,6 +68,10 @@ pub(crate) fn process(
         expected_connection_hops,
         msg.counterparty_version().clone(),
     );
+
+    // set the counterparty channel id to verify against it
+    channel_end.set_counterparty_channel_id(msg.counterparty_channel_id.clone());
+
     //2. Verify proofs
     verify_channel_proofs(
         ctx,
@@ -82,7 +86,6 @@ pub(crate) fn process(
     // Transition the channel end to the new state & pick a version.
     channel_end.set_state(State::Open);
     channel_end.set_version(msg.counterparty_version().clone());
-    channel_end.set_counterparty_channel_id(msg.counterparty_channel_id.clone());
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
