@@ -33,7 +33,7 @@ fn should_clear_packets(
     }
 }
 
-pub fn spawn_packet_cmd_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
     link: Arc<Link<ChainA, ChainB>>,
     clear_on_start: bool,
@@ -65,7 +65,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandl
     )
 }
 
-pub fn spawn_link_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+pub fn spawn_link_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: Packet,
     link: Arc<Link<ChainA, ChainB>>,
 ) -> TaskHandle {
@@ -102,7 +102,7 @@ pub fn spawn_link_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 's
 /// Regardless of the incoming command, this method
 /// also refreshes and executes any scheduled operational
 /// data that is ready.
-fn handle_packet_cmd<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     is_first_run: &mut bool,
     link: &Link<ChainA, ChainB>,
     clear_on_start: bool,

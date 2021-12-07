@@ -206,7 +206,7 @@ pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
 */
 pub fn spawn_chain_handle<Seed>(
     _: Seed,
-    registry: &SharedRegistry<impl ChainHandle + 'static>,
+    registry: &SharedRegistry<impl ChainHandle>,
     node: &FullNode,
 ) -> Result<impl ChainHandle, Error> {
     let chain_id = &node.chain_driver.chain_id;

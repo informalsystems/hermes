@@ -549,7 +549,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         Ok(())
     }
 
-    pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+    pub fn validated_client_state(
+        &self,
+    ) -> Result<(AnyClientState, Option<Duration>), ForeignClientError> {
         let client_state = self
             .dst_chain
             .query_client_state(self.id(), Height::zero())
@@ -565,9 +567,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .consensus_state(client_state.latest_height())?
             .timestamp();
 
-        // The refresh_window is the maximum duration
-        // we can backoff between subsequent client updates.
-        let refresh_window = client_state.refresh_period();
         // Compute the duration since the last update of this client
         let elapsed = Timestamp::from_datetime(Utc::now()).duration_since(&last_update_time);
 
@@ -577,6 +576,16 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 self.dst_chain.id(),
             ));
         }
+
+        Ok((client_state, elapsed))
+    }
+
+    pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+        let (client_state, elapsed) = self.validated_client_state()?;
+
+        // The refresh_window is the maximum duration
+        // we can backoff between subsequent client updates.
+        let refresh_window = client_state.refresh_period();
 
         match (elapsed, refresh_window) {
             (None, _) | (_, None) => Ok(None),
@@ -785,16 +794,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
 
         // Get the latest client state on destination.
-        let client_state = self
-            .dst_chain()
-            .query_client_state(&self.id, Height::default())
-            .map_err(|e| {
-                ForeignClientError::client_update(
-                    self.dst_chain.id(),
-                    "failed querying client state on dst chain".to_string(),
-                    e,
-                )
-            })?;
+        let (client_state, _) = self.validated_client_state()?;
 
         let trusted_height = if trusted_height == Height::zero() {
             self.solve_trusted_height(target_height, &client_state)?

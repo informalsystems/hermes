@@ -14,7 +14,7 @@ use crate::{
 use super::error::RunError;
 use super::WorkerCmd;
 
-pub fn spawn_channel_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     channel: Channel,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,

@@ -16,7 +16,7 @@ use crate::{
 
 use super::WorkerCmd;
 
-pub fn spawn_refresh_client<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     mut client: ForeignClient<ChainA, ChainB>,
 ) -> TaskHandle {
     spawn_background_task(
@@ -40,7 +40,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle + 'static, ChainB: ChainHandle +
     )
 }
 
-pub fn detect_misbehavior_task<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
     receiver: Receiver<WorkerCmd>,
     client: ForeignClient<ChainB, ChainA>,
 ) -> Option<TaskHandle> {

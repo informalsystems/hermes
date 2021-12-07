@@ -31,7 +31,7 @@ pub struct ClientState {
     pub proof_specs: ProofSpecs,
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
-    frozen_height: Option<Height>,
+    pub frozen_height: Option<Height>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

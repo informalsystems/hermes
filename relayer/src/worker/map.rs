@@ -107,7 +107,7 @@ impl WorkerMap {
     /// with the given [`Object`].
     ///
     /// This function will spawn a new [`Worker`] if one does not exists already.
-    pub fn get_or_spawn<Chain: ChainHandle + 'static>(
+    pub fn get_or_spawn<Chain: ChainHandle>(
         &mut self,
         object: Object,
         src: Chain,
@@ -125,7 +125,7 @@ impl WorkerMap {
     /// Spawn a new [`Worker`], only if one does not exists already.
     ///
     /// Returns whether or not the worker was actually spawned.
-    pub fn spawn<Chain: ChainHandle + 'static>(
+    pub fn spawn<Chain: ChainHandle>(
         &mut self,
         src: Chain,
         dst: Chain,
@@ -142,7 +142,7 @@ impl WorkerMap {
     }
 
     /// Force spawn a worker for the given [`Object`].
-    fn spawn_worker<Chain: ChainHandle + 'static>(
+    fn spawn_worker<Chain: ChainHandle>(
         &mut self,
         src: Chain,
         dst: Chain,

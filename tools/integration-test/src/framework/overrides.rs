@@ -73,7 +73,7 @@ pub trait TestOverrides {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
+        registry: &SharedRegistry<impl ChainHandle>,
     ) -> Result<Option<SupervisorHandle>, Error> {
         let handle = spawn_supervisor(config.clone(), registry.clone(), None, false)?;
         Ok(Some(handle))
@@ -130,7 +130,7 @@ impl<Test: TestOverrides> SupervisorOverride for Test {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
+        registry: &SharedRegistry<impl ChainHandle>,
     ) -> Result<Option<SupervisorHandle>, Error> {
         TestOverrides::spawn_supervisor(self, config, registry)
     }

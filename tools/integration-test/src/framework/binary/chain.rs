@@ -115,7 +115,7 @@ pub trait SupervisorOverride {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
+        registry: &SharedRegistry<impl ChainHandle>,
     ) -> Result<Option<SupervisorHandle>, Error>;
 }
 

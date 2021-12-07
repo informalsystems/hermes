@@ -24,7 +24,7 @@ use ibc::tx_msg::Msg;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::Error as RelayerError;
-use crate::foreign_client::{ForeignClient, ForeignClientError};
+use crate::foreign_client::{ForeignClient, ForeignClientError, ForeignClientErrorDetail};
 use crate::object::Connection as WorkerConnectionObject;
 use crate::supervisor::Error as SupervisorError;
 
@@ -621,10 +621,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         let done = '🥳';
 
         match self.handshake_step(state) {
-            Err(e) => {
-                error!("failed {:?} with error {}", state, e);
-                RetryResult::Retry(index)
-            }
+            Err(e) => match e.detail() {
+                ConnectionErrorDetail::ClientOperation(ClientOperationSubdetail {
+                    source: ForeignClientErrorDetail::ExpiredOrFrozen(_),
+                    ..
+                }) => {
+                    error!(
+                        "failed to establish connection handshake on frozen client: {}",
+                        e
+                    );
+                    RetryResult::Err(index)
+                }
+                _ => {
+                    error!("failed {:?} with error {}", state, e);
+                    RetryResult::Retry(index)
+                }
+            },
             Ok(ev) => {
                 debug!("{} => {:#?}\n", done, ev);
                 RetryResult::Ok(())

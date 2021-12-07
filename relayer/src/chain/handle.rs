@@ -328,7 +328,7 @@ pub enum ChainRequest {
     },
 }
 
-pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
+pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self;
 
     /// Get the [`ChainId`] of this chain.

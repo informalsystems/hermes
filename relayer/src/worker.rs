@@ -52,7 +52,7 @@ impl fmt::Display for WorkerId {
     }
 }
 
-pub fn spawn_worker_tasks<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: ChainHandlePair<ChainA, ChainB>,
     id: WorkerId,
     object: Object,
