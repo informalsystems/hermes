@@ -405,7 +405,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
     fn do_chan_open_try_and_send(&mut self) -> Result<(), ChannelError> {
         let event = self.build_chan_open_try_and_send().map_err(|e| {
-            error!("Failed ChanTry {:?}: {:?}", self.b_side, e);
+            error!("failed ChanOpenTry {:?}: {:?}", self.b_side, e);
             e
         })?;
 
@@ -756,14 +756,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             _ => State::Uninitialized,
         };
 
-        let version = version::resolve(ResolveContext::Other, self)?;
-
         let dst_expected_channel = ChannelEnd::new(
             highest_state,
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            version,
+            Version::from(""),
         );
 
         // Retrieve existing channel
@@ -986,7 +984,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         do_build_chan_open_ack_and_send(self).map_err(|e| {
-            error!("failed ChanAck {:?}: {}", self.b_side, e);
+            error!("failed ChanOpenAck {:?}: {}", self.b_side, e);
             e
         })
     }
@@ -1079,7 +1077,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         do_build_chan_open_confirm_and_send(self).map_err(|e| {
-            error!("failed ChanConfirm {:?}: {}", self.b_side, e);
+            error!("failed ChanOpenConfirm {:?}: {}", self.b_side, e);
             e
         })
     }
