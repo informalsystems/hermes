@@ -630,6 +630,7 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 max_gas = 2000000
+fee_granter = ''
 gas_price = { price = 0.001, denom = 'stake' }
 gas_adjustment = 0.1
 clock_drift = '5s'
@@ -1214,6 +1215,11 @@ memo_prefix = ''
 #   ['transfer', 'channel-0'],
 # ]
 
+# Specify that the transaction fees should be payed from this fee granter's account.
+# Optional. If unspecified (the default behavior), then no fee granter is used, and
+# the account specified in `key_name` will pay the tx fees for all transactions
+# submitted to this chain.
+# fee_granter = ''
 
 [[chains]]
 id = 'ibc-1'
