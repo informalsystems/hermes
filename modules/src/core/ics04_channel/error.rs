@@ -324,6 +324,22 @@ define_error! {
                              e.port_channel_id.1)
             },
 
+        ProcessedTimeNotFound
+            { client_id: ClientId }
+            | e | {
+                format_args!(
+                    "Processed time for the client {0} not found",
+                    e.client_id)
+            },
+
+        ProcessedHeightNotFound
+            { client_id: ClientId }
+            | e | {
+                format_args!(
+                    "Processed height for the client {0} not found",
+                    e.client_id)
+            },
+
         ImplementationSpecific
             | _ | { "implementation specific error" },
     }

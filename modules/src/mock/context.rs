@@ -68,6 +68,12 @@ pub struct MockContext {
     /// The set of all clients, indexed by their id.
     clients: BTreeMap<ClientId, MockClientRecord>,
 
+    /// Tracks the processed time for the clients
+    client_processed_times: BTreeMap<ClientId, Timestamp>,
+
+    /// Tracks the processed height for the clients
+    client_processed_heights: BTreeMap<ClientId, Height>,
+
     /// Counter for the client identifiers, necessary for `increase_client_counter` and the
     /// `client_counter` methods.
     client_ids_counter: u64,
@@ -171,6 +177,8 @@ impl MockContext {
             connections: Default::default(),
             client_ids_counter: 0,
             clients: Default::default(),
+            client_processed_times: Default::default(),
+            client_processed_heights: Default::default(),
             client_connections: Default::default(),
             channels: Default::default(),
             connection_channels: Default::default(),
@@ -665,6 +673,20 @@ impl ChannelReader for MockContext {
         self.timestamp
     }
 
+    fn processed_time(&self, client_id: &ClientId) -> Result<Timestamp, Ics04Error> {
+        match self.client_processed_times.get(client_id) {
+            Some(time) => Ok(*time),
+            None => Err(Ics04Error::processed_time_not_found(client_id.clone())),
+        }
+    }
+
+    fn processed_height(&self, client_id: &ClientId) -> Result<Height, Ics04Error> {
+        match self.client_processed_heights.get(client_id) {
+            Some(height) => Ok(*height),
+            None => Err(Ics04Error::processed_height_not_found(client_id.clone())),
+        }
+    }
+
     fn channel_counter(&self) -> Result<u64, Ics04Error> {
         Ok(self.channel_ids_counter)
     }
@@ -937,6 +959,10 @@ impl ClientReader for MockContext {
             }
         }
         Ok(None)
+    }
+
+    fn host_height(&self) -> Height {
+        self.latest_height
     }
 
     fn client_counter(&self) -> Result<u64, Ics02Error> {

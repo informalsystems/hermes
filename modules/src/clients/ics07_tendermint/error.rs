@@ -4,6 +4,8 @@ use flex_error::{define_error, TraceError};
 
 use crate::core::ics23_commitment::error::Error as Ics23Error;
 use crate::core::ics24_host::error::ValidationError;
+use crate::core::ics24_host::identifier::ClientId;
+use crate::timestamp::TimestampOverflowError;
 use crate::Height;
 use tendermint::account::Id;
 use tendermint::hash::Hash;
@@ -147,6 +149,16 @@ define_error! {
                 format_args!("given other previous updates, header timestamp should be at least {0}, but was {1}", e.min, e.actual)
             },
 
+        TimestampOverflow
+            [ TimestampOverflowError ]
+            |_| { "timestamp overflowed" },
+
+        NotEnoughTimeElapsed
+            |_| { "not enough time elapsed" },
+
+        NotEnoughBlocksElapsed
+            |_| { "not enough blocks elapsed" },
+
         InvalidHeaderHeight
             { height: Height }
             | e | {
@@ -199,6 +211,22 @@ define_error! {
             { detail: tendermint_light_client::predicates::errors::VerificationErrorDetail }
             | e | {
                 format_args!("verification failed: {}", e.detail)
+            },
+
+        ProcessedTimeNotFound
+            { client_id: ClientId }
+            | e | {
+                format_args!(
+                    "Processed time for the client {0} not found",
+                    e.client_id)
+            },
+
+        ProcessedHeightNotFound
+            { client_id: ClientId }
+            | e | {
+                format_args!(
+                    "Processed height for the client {0} not found",
+                    e.client_id)
             },
 
         Ics23Error

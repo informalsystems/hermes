@@ -17,7 +17,7 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
 use crate::core::ics24_host::identifier::ChainId;
-use crate::timestamp::ZERO_DURATION;
+use crate::timestamp::{Timestamp, ZERO_DURATION};
 use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -162,6 +162,28 @@ impl ClientState {
             trusting_period: self.trusting_period,
             clock_drift: self.max_clock_drift,
         })
+    }
+
+    /// Verify the time and height delays
+    pub fn verify_delay_passed(
+        &self,
+        current_time: Timestamp,
+        current_height: Height,
+        processed_time: Timestamp,
+        processed_height: Height,
+        delay_period_time: Duration,
+        delay_period_blocks: u64,
+    ) -> Result<(), Error> {
+        let time = (processed_time + delay_period_time).map_err(Error::timestamp_overflow)?;
+        if !(current_time == time || current_time.after(&time)) {
+            return Err(Error::not_enough_time_elapsed());
+        }
+
+        if current_height < processed_height.add(delay_period_blocks) {
+            return Err(Error::not_enough_blocks_elapsed());
+        }
+
+        Ok(())
     }
 }
 

@@ -7,6 +7,7 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -105,13 +106,12 @@ impl ClientDef for MockClient {
 
     fn verify_packet_data(
         &self,
+        _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
-        _prefix: &CommitmentPrefix,
+        _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _seq: Sequence,
+        _commitment_path: &Path,
         _commitment: String,
     ) -> Result<(), Error> {
         Ok(())
@@ -119,13 +119,12 @@ impl ClientDef for MockClient {
 
     fn verify_packet_acknowledgement(
         &self,
+        _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
-        _prefix: &CommitmentPrefix,
+        _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _seq: Sequence,
+        _ack_path: &Path,
         _ack: Vec<u8>,
     ) -> Result<(), Error> {
         Ok(())
@@ -133,12 +132,12 @@ impl ClientDef for MockClient {
 
     fn verify_next_sequence_recv(
         &self,
+        _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
-        _prefix: &CommitmentPrefix,
+        _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
+        _seq_path: &Path,
         _seq: Sequence,
     ) -> Result<(), Error> {
         Ok(())
@@ -146,13 +145,12 @@ impl ClientDef for MockClient {
 
     fn verify_packet_receipt_absence(
         &self,
+        _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
-        _prefix: &CommitmentPrefix,
+        _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _sequence: Sequence,
+        _receipt_path: &Path,
     ) -> Result<(), Error> {
         Ok(())
     }

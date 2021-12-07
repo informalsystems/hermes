@@ -8,10 +8,12 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
+use crate::core::ics02_client::height::Height;
 use crate::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
+use crate::timestamp::Timestamp;
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -20,6 +22,8 @@ pub struct Result {
     pub client_type: ClientType,
     pub client_state: AnyClientState,
     pub consensus_state: AnyConsensusState,
+    pub processed_time: Timestamp,
+    pub processed_height: Height,
 }
 
 pub fn process(
@@ -44,6 +48,8 @@ pub fn process(
         client_type: msg.client_state().client_type(),
         client_state: msg.client_state(),
         consensus_state: msg.consensus_state(),
+        processed_time: Timestamp::now(),
+        processed_height: ctx.host_height(),
     });
 
     let event_attributes = Attributes {

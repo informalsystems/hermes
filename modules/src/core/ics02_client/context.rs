@@ -55,6 +55,9 @@ pub trait ClientReader {
         height: Height,
     ) -> Result<Option<AnyConsensusState>, Error>;
 
+    /// Returns the current height of the local chain.
+    fn host_height(&self) -> Height;
+
     /// Returns a natural number, counting how many clients have been created thus far.
     /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.
     fn client_counter(&self) -> Result<u64, Error>;

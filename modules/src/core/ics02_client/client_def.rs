@@ -9,11 +9,13 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::{AnyHeader, Header};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics24_host::Path;
 use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
@@ -102,13 +104,12 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_data(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        seq: Sequence,
+        commitment_path: &Path,
         commitment: String,
     ) -> Result<(), Error>;
 
@@ -116,13 +117,12 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_acknowledgement(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        seq: Sequence,
+        ack_path: &Path,
         ack: Vec<u8>,
     ) -> Result<(), Error>;
 
@@ -130,26 +130,24 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_next_sequence_recv(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
+        seq_path: &Path,
         seq: Sequence,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has not been received.
-    #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        seq: Sequence,
+        receipt_path: &Path,
     ) -> Result<(), Error>;
 }
 
@@ -401,13 +399,12 @@ impl ClientDef for AnyClient {
     }
     fn verify_packet_data(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        seq: Sequence,
+        commitment_path: &Path,
         commitment: String,
     ) -> Result<(), Error> {
         match self {
@@ -418,13 +415,12 @@ impl ClientDef for AnyClient {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_packet_data(
+                    ctx,
                     client_state,
-                    prefix,
+                    connection_end,
                     proof,
                     root,
-                    port_id,
-                    channel_id,
-                    seq,
+                    commitment_path,
                     commitment,
                 )
             }
@@ -437,13 +433,12 @@ impl ClientDef for AnyClient {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_packet_data(
+                    ctx,
                     client_state,
-                    prefix,
+                    connection_end,
                     proof,
                     root,
-                    port_id,
-                    channel_id,
-                    seq,
+                    commitment_path,
                     commitment,
                 )
             }
@@ -452,13 +447,12 @@ impl ClientDef for AnyClient {
 
     fn verify_packet_acknowledgement(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        seq: Sequence,
+        ack_path: &Path,
         ack: Vec<u8>,
     ) -> Result<(), Error> {
         match self {
@@ -469,13 +463,12 @@ impl ClientDef for AnyClient {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_packet_acknowledgement(
+                    ctx,
                     client_state,
-                    prefix,
+                    connection_end,
                     proof,
                     root,
-                    port_id,
-                    channel_id,
-                    seq,
+                    ack_path,
                     ack,
                 )
             }
@@ -488,13 +481,12 @@ impl ClientDef for AnyClient {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_packet_acknowledgement(
+                    ctx,
                     client_state,
-                    prefix,
+                    connection_end,
                     proof,
                     root,
-                    port_id,
-                    channel_id,
-                    seq,
+                    ack_path,
                     ack,
                 )
             }
@@ -503,12 +495,12 @@ impl ClientDef for AnyClient {
 
     fn verify_next_sequence_recv(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
+        seq_path: &Path,
         seq: Sequence,
     ) -> Result<(), Error> {
         match self {
@@ -519,12 +511,12 @@ impl ClientDef for AnyClient {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_next_sequence_recv(
+                    ctx,
                     client_state,
-                    prefix,
+                    connection_end,
                     proof,
                     root,
-                    port_id,
-                    channel_id,
+                    seq_path,
                     seq,
                 )
             }
@@ -537,12 +529,12 @@ impl ClientDef for AnyClient {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_next_sequence_recv(
+                    ctx,
                     client_state,
-                    prefix,
+                    connection_end,
                     proof,
                     root,
-                    port_id,
-                    channel_id,
+                    seq_path,
                     seq,
                 )
             }
@@ -550,13 +542,12 @@ impl ClientDef for AnyClient {
     }
     fn verify_packet_receipt_absence(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        seq: Sequence,
+        receipt_path: &Path,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
@@ -566,13 +557,12 @@ impl ClientDef for AnyClient {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_packet_receipt_absence(
+                    ctx,
                     client_state,
-                    prefix,
+                    connection_end,
                     proof,
                     root,
-                    port_id,
-                    channel_id,
-                    seq,
+                    receipt_path,
                 )
             }
 
@@ -584,13 +574,12 @@ impl ClientDef for AnyClient {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_packet_receipt_absence(
+                    ctx,
                     client_state,
-                    prefix,
+                    connection_end,
                     proof,
                     root,
-                    port_id,
-                    channel_id,
-                    seq,
+                    receipt_path,
                 )
             }
         }

@@ -19,6 +19,7 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
 
 use crate::core::ics23_commitment::commitment::{
@@ -260,77 +261,88 @@ impl ClientDef for TendermintClient {
 
     fn verify_packet_data(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: Sequence,
+        commitment_path: &Path,
         commitment: String,
     ) -> Result<(), Ics02Error> {
-        let path = Path::Commitments {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            sequence,
-        }
-        .to_string();
-        let value = commitment.encode_to_vec();
-        verify_membership(client_state, prefix, proof, root, path, value)
+        verify_delay_passed(ctx, client_state, connection_end)?;
+
+        verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            commitment_path.to_string(),
+            commitment.encode_to_vec(),
+        )
     }
 
     fn verify_packet_acknowledgement(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: Sequence,
+        ack_path: &Path,
         ack: Vec<u8>,
     ) -> Result<(), Ics02Error> {
-        let path = Path::Acks {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            sequence,
-        }
-        .to_string();
-        verify_membership(client_state, prefix, proof, root, path, ack)
+        verify_delay_passed(ctx, client_state, connection_end)?;
+
+        verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            ack_path.to_string(),
+            ack,
+        )
     }
 
     fn verify_next_sequence_recv(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
+        seq_path: &Path,
         seq: Sequence,
     ) -> Result<(), Ics02Error> {
-        let path = Path::SeqRecvs(port_id.clone(), channel_id.clone()).to_string();
-        let value = u64::from(seq).encode_to_vec();
-        verify_membership(client_state, prefix, proof, root, path, value)
+        verify_delay_passed(ctx, client_state, connection_end)?;
+
+        verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            seq_path.to_string(),
+            u64::from(seq).encode_to_vec(),
+        )
     }
 
     fn verify_packet_receipt_absence(
         &self,
+        ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
-        prefix: &CommitmentPrefix,
+        connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: Sequence,
+        receipt_path: &Path,
     ) -> Result<(), Ics02Error> {
-        let path = Path::Receipts {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            sequence,
-        }
-        .to_string();
-        verify_non_membership(client_state, prefix, proof, root, path)
+        verify_delay_passed(ctx, client_state, connection_end)?;
+
+        verify_non_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            receipt_path.to_string(),
+        )
     }
 
     fn verify_upgrade_and_update_state(
@@ -387,6 +399,39 @@ fn verify_non_membership(
             merkle_path,
         )
         .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
+}
+
+fn verify_delay_passed(
+    ctx: &dyn ChannelReader,
+    client_state: &ClientState,
+    connection_end: &ConnectionEnd,
+) -> Result<(), Ics02Error> {
+    let current_timestamp = ctx.host_timestamp();
+    let current_height = ctx.host_height();
+
+    let client_id = connection_end.client_id();
+    let processed_time = ctx
+        .processed_time(client_id)
+        .map_err(|_| Error::processed_time_not_found(client_id.clone()))?;
+    let processed_height = ctx
+        .processed_height(client_id)
+        .map_err(|_| Error::processed_height_not_found(client_id.clone()))?;
+
+    let delay_period_time = connection_end.delay_period();
+    // TODO get delay_period_height from delay_period_time
+    //let delay_period_height = get_block_delay(delay_period_time);
+    let delay_period_height = 0;
+
+    client_state
+        .verify_delay_passed(
+            current_timestamp,
+            current_height,
+            processed_time,
+            processed_height,
+            delay_period_time,
+            delay_period_height,
+        )
+        .map_err(|e| e.into())
 }
 
 fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState, Ics02Error> {

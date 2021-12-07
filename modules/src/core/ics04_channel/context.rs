@@ -71,6 +71,12 @@ pub trait ChannelReader {
     /// Returns the current timestamp of the local chain.
     fn host_timestamp(&self) -> Timestamp;
 
+    /// Returns the time when the client state of the given identifier is stored
+    fn processed_time(&self, client_id: &ClientId) -> Result<Timestamp, Error>;
+
+    /// Returns the height when the client state of the given identifier is stored
+    fn processed_height(&self, client_id: &ClientId) -> Result<Height, Error>;
+
     /// Returns a counter on the number of channel ids have been created thus far.
     /// The value of this counter should increase only via method
     /// `ChannelKeeper::increase_channel_counter`.
