@@ -92,29 +92,26 @@ accomplished indirectly by adding entries to the `.changelog` folder in
 `CHANGELOG.md` will be built by whomever is responsible for performing a release just 
 prior to release - this is to avoid changelog conflicts prior to releases. 
 
-### Install
+### Install `unclog`
 
 ```bash
 cargo install unclog
 ```
 
-    $ unclog add --editor vim --id allow-fee-granters --section features --issue-no 1633 --message "Added support for fee granters through config file"
-    $ unclog add -i update-unclog-instructions -s bug -n 1634 -m "Update CONTRIBUTING.md for latest version of unclog" --editor vim
-
 ### Examples
 
-Add a .changelog entry for the `ibc` crate (in the `modules` directory)
-under the `IMPROVEMENTS` section in `CHANGELOG.md`.
+Add a .changelog entry to signal that a bug was fixed, without mentioning any
+component.
 
 ```bash
-$ unclog add -c ibc -s improvements -i some-issue -n 1234 -n "msg about change" --editor vim
+$ unclog add -i update-unclog-instructions -s bug -n 1634 -m "Update CONTRIBUTING.md for latest version of unclog" --editor vim
 ```
 
-Add a .changelog entry for the `ibc-relayer-cli` crate (in the `relayer-cli`
+Add a .changelog entry for the `ibc-relayer-cli` crate (the component in the `relayer-cli`
 directory) under the `FEATURES` section in CHANGELOG.md.
 
 ```bash
-$ unclog add -c ibc-relayer-cli -s features -i some-other-issue -n 1235 -n "msg about change" --editor vim
+$ unclog add -c ibc-relayer-cli -s features --id a-new-feature --issue-no 1235 -m "msg about this new-feature" --editor vim
 ```
 
 ### Preview unreleased changes
