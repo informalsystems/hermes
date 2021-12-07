@@ -137,6 +137,7 @@ impl FullNode {
             default_gas: None,
             max_gas: Some(3000000),
             gas_adjustment: Some(0.1),
+            fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             max_block_time: Default::default(),

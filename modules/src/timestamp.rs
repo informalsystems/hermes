@@ -20,7 +20,7 @@ pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 /// a `u64` value and a raw timestamp. In protocol buffer, the timestamp is
 /// represented as a `u64` Unix timestamp in nanoseconds, with 0 representing the absence
 /// of timestamp.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Deserialize, Serialize, Hash)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Default, Deserialize, Serialize, Hash)]
 pub struct Timestamp {
     time: Option<DateTime<Utc>>,
 }
@@ -238,12 +238,6 @@ impl From<Time> for Timestamp {
         Timestamp {
             time: Some(tendermint_time.into()),
         }
-    }
-}
-
-impl Default for Timestamp {
-    fn default() -> Self {
-        Timestamp { time: None }
     }
 }
 
