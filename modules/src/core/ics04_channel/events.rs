@@ -180,7 +180,7 @@ fn extract_packet_and_write_ack_from_tx(
     Ok((packet, write_ack))
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
     pub height: Height,
     pub port_id: PortId,
@@ -196,19 +196,6 @@ impl Attributes {
     }
     pub fn channel_id(&self) -> Option<&ChannelId> {
         self.channel_id.as_ref()
-    }
-}
-
-impl Default for Attributes {
-    fn default() -> Self {
-        Attributes {
-            height: Default::default(),
-            port_id: Default::default(),
-            channel_id: Default::default(),
-            connection_id: Default::default(),
-            counterparty_port_id: Default::default(),
-            counterparty_channel_id: Default::default(),
-        }
     }
 }
 

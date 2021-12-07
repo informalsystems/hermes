@@ -200,6 +200,15 @@ impl TryFrom<RawClientState> for ClientState {
             .clone()
             .ok_or_else(Error::missing_trusting_period)?;
 
+        let frozen_height = raw.frozen_height.and_then(|raw_height| {
+            let height = raw_height.into();
+            if height == Height::zero() {
+                None
+            } else {
+                Some(height)
+            }
+        });
+
         Ok(Self {
             chain_id: ChainId::from_string(raw.chain_id.as_str()),
             trust_level: trust_level
@@ -224,7 +233,7 @@ impl TryFrom<RawClientState> for ClientState {
                 .latest_height
                 .ok_or_else(Error::missing_latest_height)?
                 .into(),
-            frozen_height: raw.frozen_height.map(|h| h.into()),
+            frozen_height,
             upgrade_path: raw.upgrade_path,
             allow_update: AllowUpdate {
                 after_expiry: raw.allow_update_after_expiry,
