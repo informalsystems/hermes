@@ -9,7 +9,8 @@ about: A checklist to perform to update to a new version of Rust.
 
 - [ ] Update the version in `rust-toolchain.toml`.
 - [ ] Run `cargo clippy --all-features --fix`, review and commit the automatic
-      fixes, and fix all reported lints.
+      fixes, and fix all reported lints. Try to resolve the root causes for
+      the lints rather than silencing them with `#[allow(...)]`.
 
 ## Update the MSRV (optional)
 
