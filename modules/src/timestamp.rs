@@ -122,6 +122,7 @@ impl Timestamp {
     }
 
     /// Convert a `Timestamp` to an optional [`chrono::DateTime<Utc>`]
+    #[cfg_attr(feature="prusti", requires(as_nanos_spec(&self.time)))]
     pub fn as_datetime(&self) -> Option<DateTime<Utc>> {
         self.time
     }
@@ -149,6 +150,15 @@ impl Timestamp {
             (Some(time1), Some(time2)) => time1 > time2,
             _ => false,
         }
+    }
+}
+
+#[cfg(feature="prusti")]
+#[pure]
+fn as_nanos_spec(time: &Option<DateTime<Utc>>) -> bool {
+    match time {
+        Some(t) => t.timestamp_nanos() >= 0,
+        None => true
     }
 }
 

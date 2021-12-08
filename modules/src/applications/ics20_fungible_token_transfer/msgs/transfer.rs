@@ -1,4 +1,6 @@
 //! This is the definition of a transfer messages that an application submits to a chain.
+#[cfg(feature="prusti")]
+use prusti_contracts::*;
 
 use crate::prelude::*;
 
@@ -17,6 +19,11 @@ pub const TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
 /// Message definition for the "packet receiving" datagram.
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(
+    feature="prusti",
+    invariant(
+        self.timeout_timestamp.time.is_some() ==>
+            self.timeout_timestamp.time.unwrap().timestamp_nanos() >= 0))]
 pub struct MsgTransfer {
     /// the port on which the packet will be sent
     pub source_port: PortId,

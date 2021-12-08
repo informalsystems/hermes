@@ -1,3 +1,6 @@
+#[cfg(feature="prusti")]
+use prusti_contracts::*;
+
 use crate::prelude::*;
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use core::convert::{TryFrom, TryInto};
@@ -344,6 +347,10 @@ impl IbcEvent {
         }
     }
 
+    #[cfg_attr(feature="prusti", requires(!matches!(*self, IbcEvent::ChainError(_))))]
+    #[cfg_attr(feature="prusti", requires(!matches!(*self, IbcEvent::UpgradeClient(_))))]
+    #[cfg_attr(feature="prusti", requires(!matches!(*self, IbcEvent::Empty(_))))]
+    #[cfg_attr(feature="prusti", requires(!matches!(*self, IbcEvent::TimeoutOnClosePacket(_))))]
     pub fn height(&self) -> Height {
         match self {
             IbcEvent::NewBlock(bl) => bl.height(),
@@ -369,6 +376,9 @@ impl IbcEvent {
         }
     }
 
+    #[cfg_attr(feature="prusti", requires(!matches!(*self, IbcEvent::ChainError(_))))]
+    #[cfg_attr(feature="prusti", requires(!matches!(*self, IbcEvent::Empty(_))))]
+    #[cfg_attr(feature="prusti", requires(!matches!(*self, IbcEvent::TimeoutOnClosePacket(_))))]
     pub fn set_height(&mut self, height: Height) {
         match self {
             IbcEvent::NewBlock(ev) => ev.set_height(height),

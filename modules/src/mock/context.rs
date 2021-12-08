@@ -1,4 +1,6 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
+#[cfg(feature="prusti")]
+use prusti_contracts::*;
 
 use crate::prelude::*;
 
@@ -382,6 +384,10 @@ impl MockContext {
         Self { timestamp, ..self }
     }
 
+    #[cfg_attr(feature="prusti", requires(self.max_history_size > 0))]
+    #[cfg_attr(feature="prusti", requires(target_height.revision_height <= u64::MAX))]
+    #[cfg_attr(feature="prusti", requires(target_height.revision_number == self.latest_height.revision_number))]
+    #[cfg_attr(feature="prusti", requires(target_height.revision_height >= self.latest_height.revision_height))]
     pub fn with_height(self, target_height: Height) -> Self {
         if target_height.revision_number > self.latest_height.revision_number {
             unimplemented!()
@@ -432,6 +438,9 @@ impl MockContext {
     }
 
     /// Triggers the advancing of the host chain, by extending the history of blocks (or headers).
+    #[cfg_attr(feature="prusti", requires(self.latest_height.revision_height < u64::MAX))]
+    #[cfg_attr(feature="prusti", requires(self.max_history_size > 0))]
+    #[cfg_attr(feature="prusti", ensures(self.max_history_size == old(self.max_history_size)))]
     pub fn advance_host_chain_height(&mut self) {
         let new_block = HostBlock::generate_block(
             self.host_chain_id.clone(),
@@ -454,6 +463,7 @@ impl MockContext {
     /// A datagram passes from the relayer to the IBC module (on host chain).
     /// Alternative method to `Ics18Context::send` that does not exercise any serialization.
     /// Used in testing the Ics18 algorithms, hence this may return a Ics18Error.
+    #[cfg_attr(feature="prusti", requires(self.latest_height.revision_height < u64::MAX))]
     pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), Ics18Error> {
         dispatch(self, msg).map_err(Ics18Error::transaction_failed)?;
         // Create a new block.
@@ -751,6 +761,7 @@ impl ChannelKeeper for MockContext {
         Ok(())
     }
 
+    #[cfg_attr(feature="prusti", requires(self.channel_ids_counter < u64::MAX))]
     fn increase_channel_counter(&mut self) {
         self.channel_ids_counter += 1;
     }
@@ -993,6 +1004,7 @@ impl ClientKeeper for MockContext {
         Ok(())
     }
 
+    #[cfg_attr(feature="prusti", requires(self.client_ids_counter < u64::MAX))]
     fn increase_client_counter(&mut self) {
         self.client_ids_counter += 1
     }

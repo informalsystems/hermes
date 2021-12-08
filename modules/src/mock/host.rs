@@ -1,4 +1,6 @@
 //! Host chain types and methods, used by context mock.
+#[cfg(feature="prusti")]
+use prusti_contracts::*;
 
 use tendermint::time::Time;
 use tendermint_testgen::light_block::TmLightBlock;
@@ -58,6 +60,7 @@ impl HostBlock {
         }
     }
 
+    #[cfg_attr(feature="prusti", requires(TestgenLightBlock::new_default(height).generate().is_ok()))]
     pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
         // Sleep is required otherwise the generator produces blocks with the
         // same timestamp as two block can be generated per second.

@@ -1,3 +1,6 @@
+#[cfg(feature="prusti")]
+use prusti_contracts::*;
+
 use crate::prelude::*;
 
 use super::error::ValidationError as Error;
@@ -10,6 +13,7 @@ const VALID_SPECIAL_CHARS: &str = "._+-#[]<>";
 ///
 /// A valid identifier only contain lowercase alphabetic characters, and be of a given min and max
 /// length.
+#[cfg_attr(feature="prusti", requires(max >= min))]
 pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Error> {
     assert!(max >= min);
 

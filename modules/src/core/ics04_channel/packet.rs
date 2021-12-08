@@ -1,3 +1,5 @@
+#[cfg(feature="prusti")]
+use prusti_contracts::*;
 use crate::prelude::*;
 
 use core::str::FromStr;
@@ -74,6 +76,7 @@ impl Sequence {
         self.0 == 0
     }
 
+    #[cfg_attr(feature="prusti", requires(self.0 < u64::MAX))]
     pub fn increment(&self) -> Sequence {
         Sequence(self.0 + 1)
     }
