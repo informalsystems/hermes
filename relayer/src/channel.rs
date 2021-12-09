@@ -761,7 +761,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            Version::from(""),
+            Version::empty(),
         );
 
         // Retrieve existing channel

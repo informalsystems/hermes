@@ -24,6 +24,10 @@ impl Version {
     pub fn ics27() -> Self {
         Self(ics27_interchain_accounts::VERSION.to_string())
     }
+
+    pub fn empty() -> Self {
+        Self("".to_string())
+    }
 }
 
 impl From<Version> for String {
@@ -47,9 +51,10 @@ impl From<&str> for Version {
     }
 }
 
+/// The default version is empty (unspecified).
 impl Default for Version {
     fn default() -> Self {
-        Version("".to_string())
+        Version::empty()
     }
 }
 
