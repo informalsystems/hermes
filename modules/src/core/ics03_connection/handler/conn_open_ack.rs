@@ -66,6 +66,7 @@ pub(crate) fn process(
     verify_proofs(
         ctx,
         msg.client_state(),
+        msg.proofs().height(),
         &conn_end,
         &expected_conn,
         msg.proofs(),

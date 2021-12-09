@@ -76,6 +76,7 @@ pub fn process(
     // Verify the acknowledgement proof
     verify_packet_acknowledgement_proofs(
         ctx,
+        msg.proofs.height(),
         packet,
         msg.acknowledgement().clone(),
         &connection_end,

@@ -191,6 +191,7 @@ impl ClientDef for TendermintClient {
     fn verify_client_consensus_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -198,6 +199,8 @@ impl ClientDef for TendermintClient {
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Ics02Error> {
+        client_state.verify_height(height)?;
+
         let path = Path::ClientConsensusState {
             client_id: client_id.clone(),
             epoch: consensus_height.revision_number,
@@ -211,12 +214,15 @@ impl ClientDef for TendermintClient {
     fn verify_connection_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Ics02Error> {
+        client_state.verify_height(height)?;
+
         let path = Path::Connections(connection_id.clone()).to_string();
         let value = expected_connection_end.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
@@ -225,6 +231,7 @@ impl ClientDef for TendermintClient {
     fn verify_channel_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -232,6 +239,8 @@ impl ClientDef for TendermintClient {
         channel_id: &ChannelId,
         expected_channel_end: &ChannelEnd,
     ) -> Result<(), Ics02Error> {
+        client_state.verify_height(height)?;
+
         let path = Path::ChannelEnds(port_id.clone(), channel_id.clone()).to_string();
         let value = expected_channel_end.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
@@ -240,12 +249,15 @@ impl ClientDef for TendermintClient {
     fn verify_client_full_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
         expected_client_state: &AnyClientState,
     ) -> Result<(), Ics02Error> {
+        client_state.verify_height(height)?;
+
         let path = Path::ClientState(client_id.clone()).to_string();
         let value = expected_client_state.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
@@ -255,12 +267,14 @@ impl ClientDef for TendermintClient {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         commitment_path: &Path,
         commitment: String,
     ) -> Result<(), Ics02Error> {
+        client_state.verify_height(height)?;
         verify_delay_passed(ctx, client_state, connection_end)?;
 
         verify_membership(
@@ -277,12 +291,14 @@ impl ClientDef for TendermintClient {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         ack_path: &Path,
         ack: Vec<u8>,
     ) -> Result<(), Ics02Error> {
+        client_state.verify_height(height)?;
         verify_delay_passed(ctx, client_state, connection_end)?;
 
         verify_membership(
@@ -299,12 +315,14 @@ impl ClientDef for TendermintClient {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         seq_path: &Path,
         seq: Sequence,
     ) -> Result<(), Ics02Error> {
+        client_state.verify_height(height)?;
         verify_delay_passed(ctx, client_state, connection_end)?;
 
         verify_membership(
@@ -321,11 +339,13 @@ impl ClientDef for TendermintClient {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         receipt_path: &Path,
     ) -> Result<(), Ics02Error> {
+        client_state.verify_height(height)?;
         verify_delay_passed(ctx, client_state, connection_end)?;
 
         verify_non_membership(
@@ -385,11 +405,7 @@ fn verify_non_membership(
         .into();
 
     merkle_proof
-        .verify_non_membership(
-            &client_state.proof_specs,
-            root.clone().into(),
-            merkle_path,
-        )
+        .verify_non_membership(&client_state.proof_specs, root.clone().into(), merkle_path)
         .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
 }
 

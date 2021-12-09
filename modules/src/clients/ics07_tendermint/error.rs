@@ -232,6 +232,24 @@ define_error! {
         Ics23Error
             [ Ics23Error ]
             | _ | { "ics23 commitment error" },
+
+        InsufficientHeight
+            {
+                latest_height: Height,
+                target_height: Height,
+            }
+            | e | {
+                format_args!("the height is insufficient: latest_height={0} target_height={1}", e.latest_height, e.target_height)
+            },
+
+        ClientFrozen
+            {
+                frozen_height: Height,
+                target_height: Height,
+            }
+            | e | {
+                format_args!("the client is frozen: frozen_height={0} target_height={1}", e.frozen_height, e.target_height)
+            },
     }
 }
 

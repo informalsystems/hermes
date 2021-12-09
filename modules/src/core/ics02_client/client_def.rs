@@ -56,6 +56,7 @@ pub trait ClientDef: Clone {
     fn verify_client_consensus_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -68,6 +69,7 @@ pub trait ClientDef: Clone {
     fn verify_connection_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -80,6 +82,7 @@ pub trait ClientDef: Clone {
     fn verify_channel_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -93,6 +96,7 @@ pub trait ClientDef: Clone {
     fn verify_client_full_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -106,6 +110,7 @@ pub trait ClientDef: Clone {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -119,6 +124,7 @@ pub trait ClientDef: Clone {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -132,6 +138,7 @@ pub trait ClientDef: Clone {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -144,6 +151,7 @@ pub trait ClientDef: Clone {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -223,6 +231,7 @@ impl ClientDef for AnyClient {
     fn verify_client_consensus_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -239,6 +248,7 @@ impl ClientDef for AnyClient {
 
                 client.verify_client_consensus_state(
                     client_state,
+                    height,
                     prefix,
                     proof,
                     root,
@@ -257,6 +267,7 @@ impl ClientDef for AnyClient {
 
                 client.verify_client_consensus_state(
                     client_state,
+                    height,
                     prefix,
                     proof,
                     root,
@@ -271,6 +282,7 @@ impl ClientDef for AnyClient {
     fn verify_connection_state(
         &self,
         client_state: &AnyClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -284,6 +296,7 @@ impl ClientDef for AnyClient {
 
                 client.verify_connection_state(
                     client_state,
+                    height,
                     prefix,
                     proof,
                     root,
@@ -299,6 +312,7 @@ impl ClientDef for AnyClient {
 
                 client.verify_connection_state(
                     client_state,
+                    height,
                     prefix,
                     proof,
                     root,
@@ -312,6 +326,7 @@ impl ClientDef for AnyClient {
     fn verify_channel_state(
         &self,
         client_state: &AnyClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -326,6 +341,7 @@ impl ClientDef for AnyClient {
 
                 client.verify_channel_state(
                     client_state,
+                    height,
                     prefix,
                     proof,
                     root,
@@ -342,6 +358,7 @@ impl ClientDef for AnyClient {
 
                 client.verify_channel_state(
                     client_state,
+                    height,
                     prefix,
                     proof,
                     root,
@@ -356,6 +373,7 @@ impl ClientDef for AnyClient {
     fn verify_client_full_state(
         &self,
         client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -371,6 +389,7 @@ impl ClientDef for AnyClient {
 
                 client.verify_client_full_state(
                     client_state,
+                    height,
                     prefix,
                     proof,
                     root,
@@ -388,6 +407,7 @@ impl ClientDef for AnyClient {
 
                 client.verify_client_full_state(
                     client_state,
+                    height,
                     prefix,
                     proof,
                     root,
@@ -401,6 +421,7 @@ impl ClientDef for AnyClient {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -417,6 +438,7 @@ impl ClientDef for AnyClient {
                 client.verify_packet_data(
                     ctx,
                     client_state,
+                    height,
                     connection_end,
                     proof,
                     root,
@@ -435,6 +457,7 @@ impl ClientDef for AnyClient {
                 client.verify_packet_data(
                     ctx,
                     client_state,
+                    height,
                     connection_end,
                     proof,
                     root,
@@ -449,6 +472,7 @@ impl ClientDef for AnyClient {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -465,6 +489,7 @@ impl ClientDef for AnyClient {
                 client.verify_packet_acknowledgement(
                     ctx,
                     client_state,
+                    height,
                     connection_end,
                     proof,
                     root,
@@ -483,6 +508,7 @@ impl ClientDef for AnyClient {
                 client.verify_packet_acknowledgement(
                     ctx,
                     client_state,
+                    height,
                     connection_end,
                     proof,
                     root,
@@ -497,6 +523,7 @@ impl ClientDef for AnyClient {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -513,6 +540,7 @@ impl ClientDef for AnyClient {
                 client.verify_next_sequence_recv(
                     ctx,
                     client_state,
+                    height,
                     connection_end,
                     proof,
                     root,
@@ -531,6 +559,7 @@ impl ClientDef for AnyClient {
                 client.verify_next_sequence_recv(
                     ctx,
                     client_state,
+                    height,
                     connection_end,
                     proof,
                     root,
@@ -544,6 +573,7 @@ impl ClientDef for AnyClient {
         &self,
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
+        height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -559,6 +589,7 @@ impl ClientDef for AnyClient {
                 client.verify_packet_receipt_absence(
                     ctx,
                     client_state,
+                    height,
                     connection_end,
                     proof,
                     root,
@@ -576,6 +607,7 @@ impl ClientDef for AnyClient {
                 client.verify_packet_receipt_absence(
                     ctx,
                     client_state,
+                    height,
                     connection_end,
                     proof,
                     root,

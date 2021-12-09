@@ -75,7 +75,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         return Err(Error::low_packet_timestamp());
     }
 
-    verify_packet_recv_proofs(ctx, packet, &connection_end, &msg.proofs)?;
+    verify_packet_recv_proofs(
+        ctx,
+        msg.proofs().height(),
+        packet,
+        &connection_end,
+        &msg.proofs,
+    )?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx

@@ -14,12 +14,14 @@ use crate::Height;
 pub fn verify_proofs(
     ctx: &dyn ConnectionReader,
     client_state: Option<AnyClientState>,
+    height: Height,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
     verify_connection_proof(
         ctx,
+        height,
         connection_end,
         expected_conn,
         proofs.height(),
@@ -30,6 +32,7 @@ pub fn verify_proofs(
     if let Some(expected_client_state) = client_state {
         verify_client_proof(
             ctx,
+            height,
             connection_end,
             expected_client_state,
             proofs.height(),
@@ -42,7 +45,7 @@ pub fn verify_proofs(
 
     // If a consensus proof is attached to the message, then verify it.
     if let Some(proof) = proofs.consensus_proof() {
-        Ok(verify_consensus_proof(ctx, connection_end, &proof)?)
+        Ok(verify_consensus_proof(ctx, height, connection_end, &proof)?)
     } else {
         Ok(())
     }
@@ -53,6 +56,7 @@ pub fn verify_proofs(
 /// which created this proof). This object must match the state of `expected_conn`.
 pub fn verify_connection_proof(
     ctx: &dyn ConnectionReader,
+    height: Height,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
     proof_height: Height,
@@ -82,6 +86,7 @@ pub fn verify_connection_proof(
     client_def
         .verify_connection_state(
             &client_state,
+            height,
             connection_end.counterparty().prefix(),
             proof,
             consensus_state.root(),
@@ -100,6 +105,7 @@ pub fn verify_connection_proof(
 /// `proof` is correct.
 pub fn verify_client_proof(
     ctx: &dyn ConnectionReader,
+    height: Height,
     connection_end: &ConnectionEnd,
     expected_client_state: AnyClientState,
     proof_height: Height,
@@ -119,6 +125,7 @@ pub fn verify_client_proof(
     client_def
         .verify_client_full_state(
             &client_state,
+            height,
             connection_end.counterparty().prefix(),
             proof,
             consensus_state.root(),
@@ -132,6 +139,7 @@ pub fn verify_client_proof(
 
 pub fn verify_consensus_proof(
     ctx: &dyn ConnectionReader,
+    height: Height,
     connection_end: &ConnectionEnd,
     proof: &ConsensusProof,
 ) -> Result<(), Error> {
@@ -150,6 +158,7 @@ pub fn verify_consensus_proof(
     client
         .verify_client_consensus_state(
             &client_state,
+            height,
             connection_end.counterparty().prefix(),
             proof.proof(),
             expected_consensus.root(),

@@ -9,10 +9,12 @@ use crate::core::ics04_channel::packet::{Packet, Sequence};
 use crate::core::ics24_host::Path;
 use crate::prelude::*;
 use crate::proofs::Proofs;
+use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
 pub fn verify_channel_proofs(
     ctx: &dyn ChannelReader,
+    height: Height,
     channel_end: &ChannelEnd,
     connection_end: &ConnectionEnd,
     expected_chan: &ChannelEnd,
@@ -37,6 +39,7 @@ pub fn verify_channel_proofs(
     client_def
         .verify_channel_state(
             &client_state,
+            height,
             connection_end.counterparty().prefix(),
             proofs.object_proof(),
             consensus_state.root(),
@@ -50,6 +53,7 @@ pub fn verify_channel_proofs(
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
 pub fn verify_packet_recv_proofs(
     ctx: &dyn ChannelReader,
+    height: Height,
     packet: &Packet,
     connection_end: &ConnectionEnd,
     proofs: &Proofs,
@@ -82,6 +86,7 @@ pub fn verify_packet_recv_proofs(
         .verify_packet_data(
             ctx,
             &client_state,
+            height,
             connection_end,
             proofs.object_proof(),
             consensus_state.root(),
@@ -96,6 +101,7 @@ pub fn verify_packet_recv_proofs(
 /// Entry point for verifying all proofs bundled in an ICS4 packet ack message.
 pub fn verify_packet_acknowledgement_proofs(
     ctx: &dyn ChannelReader,
+    height: Height,
     packet: &Packet,
     acknowledgement: Vec<u8>,
     connection_end: &ConnectionEnd,
@@ -124,6 +130,7 @@ pub fn verify_packet_acknowledgement_proofs(
         .verify_packet_acknowledgement(
             ctx,
             &client_state,
+            height,
             connection_end,
             proofs.object_proof(),
             consensus_state.root(),
@@ -138,6 +145,7 @@ pub fn verify_packet_acknowledgement_proofs(
 /// Entry point for verifying all timeout proofs.
 pub fn verify_next_sequence_recv(
     ctx: &dyn ChannelReader,
+    height: Height,
     connection_end: &ConnectionEnd,
     packet: Packet,
     seq: Sequence,
@@ -162,6 +170,7 @@ pub fn verify_next_sequence_recv(
         .verify_next_sequence_recv(
             ctx,
             &client_state,
+            height,
             connection_end,
             proofs.object_proof(),
             consensus_state.root(),
@@ -175,6 +184,7 @@ pub fn verify_next_sequence_recv(
 
 pub fn verify_packet_receipt_absence(
     ctx: &dyn ChannelReader,
+    height: Height,
     connection_end: &ConnectionEnd,
     packet: Packet,
     proofs: &Proofs,
@@ -202,6 +212,7 @@ pub fn verify_packet_receipt_absence(
         .verify_packet_receipt_absence(
             ctx,
             &client_state,
+            height,
             connection_end,
             proofs.object_proof(),
             consensus_state.root(),

@@ -189,6 +189,20 @@ impl ClientState {
 
         Ok(())
     }
+
+    /// Verify that the client is at a sufficient height and unfrozen at the given height
+    pub fn verify_height(&self, height: Height) -> Result<(), Error> {
+        if self.latest_height < height {
+            return Err(Error::insufficient_height(self.latest_height(), height));
+        }
+
+        match self.frozen_height {
+            Some(frozen_height) if frozen_height <= height => {
+                Err(Error::client_frozen(frozen_height, height))
+            }
+            _ => Ok(()),
+        }
+    }
 }
 
 impl crate::core::ics02_client::client_state::ClientState for ClientState {
