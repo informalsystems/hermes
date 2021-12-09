@@ -1,7 +1,6 @@
 use core::time::Duration;
-
 use crossbeam_channel::{Receiver, TryRecvError};
-use tracing::{debug, trace};
+use tracing::{debug, trace, warn};
 
 use ibc::events::IbcEvent;
 
@@ -18,26 +17,34 @@ use super::WorkerCmd;
 
 pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     mut client: ForeignClient<ChainA, ChainB>,
-) -> TaskHandle {
-    spawn_background_task(
-        "refresh_client".to_string(),
-        Some(Duration::from_secs(1)),
-        move || -> Result<(), TaskError<ForeignClientError>> {
-            let res = client.refresh().map_err(|e| {
-                if e.is_expired_or_frozen_error() {
-                    TaskError::Fatal(e)
-                } else {
-                    TaskError::Ignore(e)
+) -> Option<TaskHandle> {
+    if client.is_expired_or_frozen() {
+        warn!(
+            "skipping refresh client task on frozen client: {}",
+            client.id()
+        );
+        None
+    } else {
+        Some(spawn_background_task(
+            "refresh_client".to_string(),
+            Some(Duration::from_secs(1)),
+            move || -> Result<(), TaskError<ForeignClientError>> {
+                let res = client.refresh().map_err(|e| {
+                    if e.is_expired_or_frozen_error() {
+                        TaskError::Fatal(e)
+                    } else {
+                        TaskError::Ignore(e)
+                    }
+                })?;
+
+                if res.is_some() {
+                    telemetry!(ibc_client_updates, &client.dst_chain.id(), &client.id, 1);
                 }
-            })?;
 
-            if res.is_some() {
-                telemetry!(ibc_client_updates, &client.dst_chain.id(), &client.id, 1);
-            }
-
-            Ok(())
-        },
-    )
+                Ok(())
+            },
+        ))
+    }
 }
 
 pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(

@@ -66,7 +66,9 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             let client = ForeignClient::restore(client.dst_client_id.clone(), chains.b, chains.a);
 
             let refresh_task = client::spawn_refresh_client(client.clone());
-            task_handles.push(refresh_task);
+            if let Some(refresh_task) = refresh_task {
+                task_handles.push(refresh_task);
+            }
 
             let misbehavior_task = client::detect_misbehavior_task(cmd_rx, client);
             if let Some(task) = misbehavior_task {

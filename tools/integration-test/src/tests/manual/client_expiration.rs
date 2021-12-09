@@ -1,12 +1,10 @@
 use core::time::Duration;
-use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::config::{self, Config, ModeConfig};
-use ibc_relayer::connection::{Connection, ConnectionSide};
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 use ibc_relayer::worker::client::spawn_refresh_client;
 use std::thread::sleep;
 
-use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
+use crate::bootstrap::binary::chain::bootstrap_foreign_client;
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::prelude::*;
 use crate::relayer::channel::init_channel;
@@ -27,7 +25,8 @@ const CLIENT_EXPIRY: Duration = Duration::from_secs(15);
    the following command:
 
    ```bash
-   RUST_BACKTRACE=0 RUST_LOG=info cargo test -p ibc-integration-test -- --nocapture --test-threads=1 test_connection_expiration
+   RUST_BACKTRACE=0 RUST_LOG=info cargo test --features manual \
+     -p ibc-integration-test -- test_connection_expiration
    ```
 
    And you should see simple failure toward the end of the test that looks like:
@@ -53,14 +52,40 @@ fn test_connection_expiration() -> Result<(), Error> {
     run_binary_chain_test(&ConnectionExpirationTest)
 }
 
+/**
+   A manual test to verify that the channel worker is properly terminated
+   instead of looping indefinitely when it is not possible to perform
+   channel handshake due to the client being expired or frozen.
+
+   Since the test involves long-running background tasks, it has to
+   be verified manually by inspecting the logs. Run the test with
+   the following command:
+
+   ```bash
+   RUST_BACKTRACE=0 RUST_LOG=info cargo test --features manual \
+     -p ibc-integration-test -- test_channel_expiration
+   ```
+
+   And you should see simple failure toward the end of the test that looks like:
+
+   ```log
+    INFO ibc_integration_test::tests::manual::client_expiration: Trying to create channel after client is expired
+    INFO ibc_relayer::chain::cosmos: [ibc-beta-f6611435] waiting for commit of tx hashes(s) 1360595FB238142B7EEF672D2267A6874F6EF0E1C2FAC8CCC72B44EDC6AF8A49
+    WARN ibc_integration_test::util::suspend: suspending the test indefinitely. you can still interact with any spawned chains and relayers
+    ERROR ibc_relayer::channel: failed to establish channel handshake on frozen client:
+    0: failed during an operation on client (07-tendermint-0) hosted by chain (ibc-alpha-995f3fa8)
+    1: client 07-tendermint-0 on chain id ibc-alpha-995f3fa8 is expired or frozen
+    ERROR ibc_relayer::util::task: aborting task channel_worker after encountering fatal error:
+    0: Packet worker failed after 1 retries
+   ```
+
+   The error above should not repeat more than once. In the original code,
+   the connection worker would keep retrying and indefinitely flooding
+   the log with errors.
+*/
 #[test]
 fn test_channel_expiration() -> Result<(), Error> {
     run_binary_chain_test(&ChannelExpirationTest)
-}
-
-#[test]
-fn test_client_expiration() -> Result<(), Error> {
-    run_binary_chain_test(&ClientExpirationTest)
 }
 
 fn wait_for_client_expiry() {
@@ -149,14 +174,56 @@ impl BinaryChainTest for ConnectionExpirationTest {
         _config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let _supervisor =
+        // We spawn a supervisor first, but the refresh client is not
+        // triggered because it is currently tied to channels.
+        let supervisor =
             spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
 
         wait_for_client_expiry();
 
         info!("Trying to create connection after client is expired");
 
-        init_connection(&chains)?;
+        // We can submit an CONN_INIT packet and the connection worker will
+        // pick it up, and we want to observe that it abort due to frozen client
+        // rather than looping indefinitely.
+
+        init_connection(
+            &chains.handle_a,
+            &chains.handle_b,
+            &chains.client_b_to_a.tagged_client_id(),
+            &chains.client_a_to_b.tagged_client_id(),
+        )?;
+
+        // New work in progress
+
+        sleep(Duration::from_secs(10));
+
+        info!("Trying to new connection and worker after previous connection worker failed");
+
+        let client_b_to_a_2 = bootstrap_foreign_client(&chains.handle_b, &chains.handle_a)?;
+
+        let client_a_to_b_2 = bootstrap_foreign_client(&chains.handle_a, &chains.handle_b)?;
+
+        // Problem: if the connection worker for a chain abort due to frozen client,
+        // it won't handle subsequent init connection packets.
+
+        init_connection(
+            &chains.handle_a,
+            &chains.handle_b,
+            &client_b_to_a_2.tagged_client_id(),
+            &client_a_to_b_2.tagged_client_id(),
+        )?;
+
+        sleep(Duration::from_secs(10));
+
+        supervisor.shutdown();
+
+        // Even if we respawn the supervisor, it would still abort immediately
+        // due to the first frozen client error. We are effectively stuck at
+        // either having to keep retrying on frozen clients or not able to
+        // handle any other new connection due to frozen clients.
+
+        let _supervisor = spawn_supervisor(chains.config.clone(), chains.registry, None, false)?;
 
         crate::suspend();
     }
@@ -168,9 +235,11 @@ impl BinaryChainTest for ChannelExpirationTest {
         _config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone());
+        let refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        let refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone());
+        let refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
         let connection = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?;
 
@@ -188,47 +257,5 @@ impl BinaryChainTest for ChannelExpirationTest {
         init_channel(&chains, &connection, port.clone(), port)?;
 
         crate::suspend();
-    }
-}
-
-impl BinaryChainTest for ClientExpirationTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        chains: ConnectedChains<ChainA, ChainB>,
-    ) -> Result<(), Error> {
-        // let _refresh_task_a = spawn_refresh_client(
-        //     chains.client_b_to_a.clone(),
-        // );
-
-        // let _refresh_task_b = spawn_refresh_client(
-        //     chains.client_a_to_b.clone(),
-        // );
-
-        let _supervisor =
-            spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
-
-        let sleep_time = CLIENT_EXPIRY + Duration::from_secs(5);
-
-        info!(
-            "Sleeping for {} seconds to wait for IBC client to expire",
-            sleep_time.as_secs()
-        );
-
-        sleep(sleep_time);
-
-        info!("Trying to create connection after client is expired");
-
-        // let _supervisor =
-        //     spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
-
-        // Success logs are only in debug
-        init_connection(&chains)?;
-
-        // let port = PortId::unsafe_new("transfer");
-        // bootstrap_channel_with_chains(&chains, &port, &port)?;
-
-        crate::suspend();
-        Ok(())
     }
 }

@@ -8,8 +8,6 @@
 pub mod memo;
 pub mod transfer;
 
-pub mod client_expiration;
-
 #[cfg(any(doc, feature = "manual"))]
 pub mod manual;
 

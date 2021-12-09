@@ -7,8 +7,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::connection::{Connection, ConnectionSide};
 
 use crate::error::Error;
-use crate::types::binary::chains::ConnectedChains;
-use crate::types::id::TaggedConnectionIdRef;
+use crate::types::id::{TaggedClientIdRef, TaggedConnectionIdRef};
 use crate::types::tagged::*;
 
 /**
@@ -40,20 +39,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> TaggedConnectionExt<ChainA, Chain
 }
 
 pub fn init_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chains: &ConnectedChains<ChainA, ChainB>,
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    client_id_a: &TaggedClientIdRef<ChainA, ChainB>,
+    client_id_b: &TaggedClientIdRef<ChainB, ChainA>,
 ) -> Result<Connection<ChainA, ChainB>, Error> {
     let connection = Connection {
         delay_period: ZERO_DURATION,
-        a_side: ConnectionSide::new(
-            chains.handle_a.clone(),
-            chains.client_b_to_a.id.clone(),
-            None,
-        ),
-        b_side: ConnectionSide::new(
-            chains.handle_b.clone(),
-            chains.client_a_to_b.id.clone(),
-            None,
-        ),
+        a_side: ConnectionSide::new(handle_a.clone(), (*client_id_a.value()).clone(), None),
+        b_side: ConnectionSide::new(handle_b.clone(), (*client_id_b.value()).clone(), None),
     };
 
     connection.build_conn_init_and_send()?;
