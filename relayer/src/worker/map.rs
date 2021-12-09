@@ -1,7 +1,9 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use core::mem;
 
+use ibc::core::ics02_client::events::NewBlock;
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc::Height;
 use tracing::{debug, trace};
 
 use crate::{
@@ -95,12 +97,20 @@ impl WorkerMap {
         src_chain_id: &'a ChainId,
     ) -> impl Iterator<Item = &'a WorkerHandle> {
         self.workers.iter().filter_map(move |(o, w)| {
-            if o.notify_new_block(src_chain_id) {
+            if !w.is_stopped() && o.notify_new_block(src_chain_id) {
                 Some(w)
             } else {
                 None
             }
         })
+    }
+
+    pub fn notify_new_block(&self, src_chain_id: &ChainId, height: Height, new_block: NewBlock) {
+        for worker in self.to_notify(src_chain_id) {
+            // Ignore send error if the worker task handling
+            // NewBlock cmd has been terminated.
+            let _ = worker.send_new_block(height, new_block);
+        }
     }
 
     /// Get a handle to the worker in charge of handling events associated

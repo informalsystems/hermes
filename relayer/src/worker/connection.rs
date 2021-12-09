@@ -35,22 +35,18 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             "connection worker starts processing {:#?}", last_event
                         );
 
-                        match last_event {
-                            Some(event) => {
-                                let mut handshake_connection = RelayConnection::restore_from_event(
-                                    chains.a.clone(),
-                                    chains.b.clone(),
-                                    event.clone(),
-                                )
-                                .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
+                        if let Some(event) = last_event {
+                            let mut handshake_connection = RelayConnection::restore_from_event(
+                                chains.a.clone(),
+                                chains.b.clone(),
+                                event.clone(),
+                            )
+                            .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
 
-                                retry_with_index(
-                                    retry_strategy::worker_default_strategy(),
-                                    |index| handshake_connection.step_event(event.clone(), index),
-                                )
-                                .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
-                            }
-                            None => {}
+                            retry_with_index(retry_strategy::worker_default_strategy(), |index| {
+                                handshake_connection.step_event(event.clone(), index)
+                            })
+                            .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
                         }
                     }
 
