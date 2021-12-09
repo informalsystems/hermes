@@ -23,11 +23,11 @@ use crate::{
 ///
 /// This context distinguishes between different steps of
 /// the channel open handshake protocol. Currently, we only
-/// need to distinguish between the OpenInit step and any other.
+/// need to distinguish between the OpenInit & Open Try steps.
 #[derive(Debug)]
 pub enum ResolveContext {
     ChanOpenInit,
-    Other,
+    ChanOpenTry,
 }
 
 /// Resolves the [`Version`] to use during a channel
@@ -48,7 +48,7 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
             // default channel version, depending on the port id.
             default_by_port(port_id)
         }
-        ResolveContext::Other => {
+        ResolveContext::ChanOpenTry => {
             // Resolve the version by querying the application version on destination chain
             let dst_chain_id = channel.dst_chain().id();
             debug!(chain_id = %dst_chain_id, port_id = %port_id, ctx = ?ctx, "resolving channel version by retrieving destination chain app version");
