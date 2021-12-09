@@ -24,7 +24,7 @@ use ibc::tx_msg::Msg;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::Error as RelayerError;
-use crate::foreign_client::{ForeignClient, ForeignClientError, ForeignClientErrorDetail};
+use crate::foreign_client::{ForeignClient, ForeignClientError, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
 use crate::supervisor::Error as SupervisorError;
 
@@ -187,6 +187,21 @@ define_error! {
                 format!("connection {} already exist in an incompatible state", e.connection_id)
             },
 
+    }
+}
+
+impl HasExpiredOrFrozenError for ConnectionErrorDetail {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        match self {
+            Self::ClientOperation(e) => e.source.is_expired_or_frozen_error(),
+            _ => false,
+        }
+    }
+}
+
+impl HasExpiredOrFrozenError for ConnectionError {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        self.detail().is_expired_or_frozen_error()
     }
 }
 
@@ -621,22 +636,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         let done = '🥳';
 
         match self.handshake_step(state) {
-            Err(e) => match e.detail() {
-                ConnectionErrorDetail::ClientOperation(ClientOperationSubdetail {
-                    source: ForeignClientErrorDetail::ExpiredOrFrozen(_),
-                    ..
-                }) => {
+            Err(e) => {
+                if e.is_expired_or_frozen_error() {
                     error!(
                         "failed to establish connection handshake on frozen client: {}",
                         e
                     );
                     RetryResult::Err(index)
-                }
-                _ => {
+                } else {
                     error!("failed {:?} with error {}", state, e);
                     RetryResult::Retry(index)
                 }
-            },
+            }
             Ok(ev) => {
                 debug!("{} => {:#?}\n", done, ev);
                 RetryResult::Ok(())

@@ -9,7 +9,7 @@ use crate::util::task::{spawn_background_task, TaskError, TaskHandle};
 use crate::{
     chain::handle::ChainHandle,
     foreign_client::{
-        ForeignClient, ForeignClientError, ForeignClientErrorDetail, MisbehaviourResults,
+        ForeignClient, ForeignClientError, HasExpiredOrFrozenError, MisbehaviourResults,
     },
     telemetry,
 };
@@ -24,7 +24,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
         Some(Duration::from_secs(1)),
         move || -> Result<(), TaskError<ForeignClientError>> {
             let res = client.refresh().map_err(|e| {
-                if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
+                if e.is_expired_or_frozen_error() {
                     TaskError::Fatal(e)
                 } else {
                     TaskError::Ignore(e)

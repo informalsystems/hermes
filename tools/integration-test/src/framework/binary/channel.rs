@@ -149,7 +149,12 @@ where
         let port_a = self.test.get_overrides().channel_port_a();
         let port_b = self.test.get_overrides().channel_port_b();
 
-        let channels = bootstrap_channel_with_chains(&chains, &port_a, &port_b)?;
+        let channels = bootstrap_channel_with_chains(
+            &chains,
+            &port_a,
+            &port_b,
+            config.bootstrap_with_random_ids,
+        )?;
 
         let env_path = config.chain_store_dir.join("binary-channels.env");
 

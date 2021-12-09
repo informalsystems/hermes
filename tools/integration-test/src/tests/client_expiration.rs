@@ -7,7 +7,9 @@ use ibc_relayer::worker::client::spawn_refresh_client;
 use std::thread::sleep;
 
 use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
+use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::prelude::*;
+use crate::relayer::channel::init_channel;
 use crate::relayer::connection::init_connection;
 
 // The cosmos ChainHandle handles requests in serial, and a refresh client
@@ -52,6 +54,11 @@ fn test_connection_expiration() -> Result<(), Error> {
 }
 
 #[test]
+fn test_channel_expiration() -> Result<(), Error> {
+    run_binary_chain_test(&ChannelExpirationTest)
+}
+
+#[test]
 fn test_client_expiration() -> Result<(), Error> {
     run_binary_chain_test(&ClientExpirationTest)
 }
@@ -70,6 +77,8 @@ fn wait_for_client_expiry() {
 pub struct ExpirationTestOverrides;
 
 pub struct ConnectionExpirationTest;
+
+pub struct ChannelExpirationTest;
 
 pub struct ClientExpirationTest;
 
@@ -126,6 +135,14 @@ impl HasOverrides for ConnectionExpirationTest {
     }
 }
 
+impl HasOverrides for ChannelExpirationTest {
+    type Overrides = ExpirationTestOverrides;
+
+    fn get_overrides(&self) -> &ExpirationTestOverrides {
+        &ExpirationTestOverrides
+    }
+}
+
 impl BinaryChainTest for ConnectionExpirationTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -140,6 +157,35 @@ impl BinaryChainTest for ConnectionExpirationTest {
         info!("Trying to create connection after client is expired");
 
         init_connection(&chains)?;
+
+        crate::suspend();
+    }
+}
+
+impl BinaryChainTest for ChannelExpirationTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        chains: ConnectedChains<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone());
+
+        let refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone());
+
+        let connection = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?;
+
+        refresh_task_a.shutdown_and_wait();
+        refresh_task_b.shutdown_and_wait();
+
+        let _supervisor =
+            spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
+
+        wait_for_client_expiry();
+
+        info!("Trying to create channel after client is expired");
+
+        let port = PortId::unsafe_new("transfer");
+        init_channel(&chains, &connection, port.clone(), port)?;
 
         crate::suspend();
     }

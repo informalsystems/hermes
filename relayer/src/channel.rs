@@ -23,14 +23,14 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
-use crate::foreign_client::ForeignClient;
+use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::error::Error as SupervisorError;
 use crate::util::retry::retry_with_index;
 use crate::util::retry::RetryResult;
 
 pub mod error;
-pub use error::ChannelError;
+pub use error::{ChannelError, ChannelErrorDetail, ClientOperationSubdetail};
 
 mod retry_strategy {
     use core::time::Duration;
@@ -631,8 +631,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match self.handshake_step(state) {
             Err(e) => {
-                error!("Failed Chan{:?} with error: {}", state, e);
-                RetryResult::Retry(index)
+                if e.is_expired_or_frozen_error() {
+                    error!(
+                        "failed to establish channel handshake on frozen client: {}",
+                        e
+                    );
+                    RetryResult::Err(index)
+                } else {
+                    error!("Failed Chan{:?} with error: {}", state, e);
+                    RetryResult::Retry(index)
+                }
             }
             Ok(ev) => {
                 debug!("{} => {:#?}\n", done, ev);

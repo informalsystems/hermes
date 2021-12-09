@@ -6,7 +6,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortChanne
 use ibc::events::IbcEvent;
 
 use crate::error::Error;
-use crate::foreign_client::ForeignClientError;
+use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
 use crate::supervisor::Error as SupervisorError;
 
 define_error! {
@@ -191,5 +191,20 @@ define_error! {
                 format_args!("channel object cannot be built from event: {}",
                     e.event)
             },
+    }
+}
+
+impl HasExpiredOrFrozenError for ChannelErrorDetail {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        match self {
+            Self::ClientOperation(e) => e.source.is_expired_or_frozen_error(),
+            _ => false,
+        }
+    }
+}
+
+impl HasExpiredOrFrozenError for ChannelError {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        self.detail().is_expired_or_frozen_error()
     }
 }

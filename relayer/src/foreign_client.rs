@@ -241,6 +241,22 @@ define_error! {
     }
 }
 
+pub trait HasExpiredOrFrozenError {
+    fn is_expired_or_frozen_error(&self) -> bool;
+}
+
+impl HasExpiredOrFrozenError for ForeignClientErrorDetail {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        matches!(self, Self::ExpiredOrFrozen(_))
+    }
+}
+
+impl HasExpiredOrFrozenError for ForeignClientError {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        self.detail().is_expired_or_frozen_error()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
     /// The identifier of this client. The host chain determines this id upon client creation,
