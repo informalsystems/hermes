@@ -116,20 +116,6 @@ impl AnyClientState {
             AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
     }
-
-    /// Verify that the client is at a sufficient height and unfrozen at the given height
-    pub fn verify_height(&self, height: Height) -> Result<(), Error> {
-        if self.latest_height() < height {
-            return Err(Error::insufficient_height(self.latest_height(), height));
-        }
-
-        match self.frozen_height() {
-            Some(frozen_height) if frozen_height <= height => {
-                Err(Error::frozen_height(frozen_height, height))
-            }
-            _ => Ok(()),
-        }
-    }
 }
 
 impl Protobuf<Any> for AnyClientState {}

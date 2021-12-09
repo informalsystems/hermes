@@ -173,12 +173,6 @@ define_error! {
             [ Ics23Error ]
             | _ | { "invalid proof for the consensus state" },
 
-        NullClientProof
-            | _ | { "client state proof must be present" },
-
-        NullConsensusProof
-            | _ | { "consensus state proof must be present" },
-
         Tendermint
             [ Ics07Error ]
             | _ | { "tendermint error" },
@@ -246,24 +240,6 @@ define_error! {
             }
             | e | {
                 format_args!("header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
-            },
-
-        InsufficientHeight
-            {
-                latest_height: Height,
-                target_height: Height,
-            }
-            | e | {
-                format_args!("the height is insufficient: latest_height={0} target_height={1}", e.latest_height, e.target_height)
-            },
-
-        FrozenHeight
-            {
-                frozen_height: Height,
-                target_height: Height,
-            }
-            | e | {
-                format_args!("the client is frozen at the height: frozen_height={0} target_height={1}", e.frozen_height, e.target_height)
             },
 
         TendermintHandlerError

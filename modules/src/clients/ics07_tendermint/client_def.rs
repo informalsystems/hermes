@@ -26,10 +26,11 @@ use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
 use crate::core::ics23_commitment::merkle::{apply_prefix, MerkleProof};
-use crate::core::ics24_host::identifier::ClientId;
+use crate::core::ics24_host::identifier::ConnectionId;
+use crate::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use crate::core::ics24_host::Path;
 use crate::prelude::*;
-use crate::proofs::Proofs;
+use crate::Height;
 
 use crate::downcast;
 
@@ -191,88 +192,63 @@ impl ClientDef for TendermintClient {
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proofs: &Proofs,
+        proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        consensus_state_path: &Path,
+        client_id: &ClientId,
+        consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Ics02Error> {
-        let consensus_proof = proofs
-            .consensus_proof()
-            .ok_or_else(Ics02Error::null_consensus_proof)?;
+        let path = Path::ClientConsensusState {
+            client_id: client_id.clone(),
+            epoch: consensus_height.revision_number,
+            height: consensus_height.revision_height,
+        }
+        .to_string();
         let value = expected_consensus_state.encode_vec().unwrap();
-        verify_membership(
-            client_state,
-            prefix,
-            consensus_proof.proof(),
-            root,
-            consensus_state_path.to_string(),
-            value,
-        )
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_connection_state(
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proofs: &Proofs,
+        proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        connection_path: &Path,
+        connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Ics02Error> {
+        let path = Path::Connections(connection_id.clone()).to_string();
         let value = expected_connection_end.encode_vec().unwrap();
-        verify_membership(
-            client_state,
-            prefix,
-            proofs.object_proof(),
-            root,
-            connection_path.to_string(),
-            value,
-        )
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_channel_state(
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proofs: &Proofs,
+        proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        channel_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
         expected_channel_end: &ChannelEnd,
     ) -> Result<(), Ics02Error> {
+        let path = Path::ChannelEnds(port_id.clone(), channel_id.clone()).to_string();
         let value = expected_channel_end.encode_vec().unwrap();
-        verify_membership(
-            client_state,
-            prefix,
-            proofs.object_proof(),
-            root,
-            channel_path.to_string(),
-            value,
-        )
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_client_full_state(
         &self,
         client_state: &Self::ClientState,
         prefix: &CommitmentPrefix,
-        proofs: &Proofs,
+        proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        client_state_path: &Path,
+        client_id: &ClientId,
         expected_client_state: &AnyClientState,
     ) -> Result<(), Ics02Error> {
-        let proof = proofs
-            .client_proof()
-            .as_ref()
-            .ok_or_else(Ics02Error::null_client_proof)?;
-
+        let path = Path::ClientState(client_id.clone()).to_string();
         let value = expected_client_state.encode_vec().unwrap();
-        verify_membership(
-            client_state,
-            prefix,
-            proof,
-            root,
-            client_state_path.to_string(),
-            value,
-        )
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_packet_data(
@@ -280,7 +256,7 @@ impl ClientDef for TendermintClient {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proofs: &Proofs,
+        proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         commitment_path: &Path,
         commitment: String,
@@ -290,7 +266,7 @@ impl ClientDef for TendermintClient {
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
-            proofs.object_proof(),
+            proof,
             root,
             commitment_path.to_string(),
             commitment.encode_to_vec(),
@@ -302,7 +278,7 @@ impl ClientDef for TendermintClient {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proofs: &Proofs,
+        proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         ack_path: &Path,
         ack: Vec<u8>,
@@ -312,7 +288,7 @@ impl ClientDef for TendermintClient {
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
-            proofs.object_proof(),
+            proof,
             root,
             ack_path.to_string(),
             ack,
@@ -324,7 +300,7 @@ impl ClientDef for TendermintClient {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proofs: &Proofs,
+        proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         seq_path: &Path,
         seq: Sequence,
@@ -334,7 +310,7 @@ impl ClientDef for TendermintClient {
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
-            proofs.object_proof(),
+            proof,
             root,
             seq_path.to_string(),
             u64::from(seq).encode_to_vec(),
@@ -346,7 +322,7 @@ impl ClientDef for TendermintClient {
         ctx: &dyn ChannelReader,
         client_state: &Self::ClientState,
         connection_end: &ConnectionEnd,
-        proofs: &Proofs,
+        proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         receipt_path: &Path,
     ) -> Result<(), Ics02Error> {
@@ -355,7 +331,7 @@ impl ClientDef for TendermintClient {
         verify_non_membership(
             client_state,
             connection_end.counterparty().prefix(),
-            proofs.object_proof(),
+            proof,
             root,
             receipt_path.to_string(),
         )
@@ -409,7 +385,11 @@ fn verify_non_membership(
         .into();
 
     merkle_proof
-        .verify_non_membership(&client_state.proof_specs, root.clone().into(), merkle_path)
+        .verify_non_membership(
+            &client_state.proof_specs,
+            root.clone().into(),
+            merkle_path,
+        )
         .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
 }
 

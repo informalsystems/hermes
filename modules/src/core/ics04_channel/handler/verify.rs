@@ -18,15 +18,17 @@ pub fn verify_channel_proofs(
     expected_chan: &ChannelEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    let client_id = connection_end.client_id();
-    let path = Path::ChannelEnds(
-        channel_end.counterparty().port_id().clone(),
-        channel_end.counterparty().channel_id().unwrap().clone(),
-    );
+    // This is the client which will perform proof verification.
+    let client_id = connection_end.client_id().clone();
 
-    let client_state = ctx.client_state(client_id)?;
+    let client_state = ctx.client_state(&client_id)?;
 
-    let consensus_state = ctx.client_consensus_state(client_id, proofs.height())?;
+    // The client must not be frozen.
+    if client_state.is_frozen() {
+        return Err(Error::frozen_client(client_id));
+    }
+
+    let consensus_state = ctx.client_consensus_state(&client_id, proofs.height())?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
@@ -36,9 +38,10 @@ pub fn verify_channel_proofs(
         .verify_channel_state(
             &client_state,
             connection_end.counterparty().prefix(),
-            proofs,
+            proofs.object_proof(),
             consensus_state.root(),
-            &path,
+            channel_end.counterparty().port_id(),
+            channel_end.counterparty().channel_id().unwrap(),
             expected_chan,
         )
         .map_err(Error::verify_channel_failed)
@@ -80,7 +83,7 @@ pub fn verify_packet_recv_proofs(
             ctx,
             &client_state,
             connection_end,
-            proofs,
+            proofs.object_proof(),
             consensus_state.root(),
             &commitment_path,
             commitment,
@@ -122,7 +125,7 @@ pub fn verify_packet_acknowledgement_proofs(
             ctx,
             &client_state,
             connection_end,
-            proofs,
+            proofs.object_proof(),
             consensus_state.root(),
             &ack_path,
             acknowledgement,
@@ -160,7 +163,7 @@ pub fn verify_next_sequence_recv(
             ctx,
             &client_state,
             connection_end,
-            proofs,
+            proofs.object_proof(),
             consensus_state.root(),
             &seq_path,
             seq,
@@ -200,7 +203,7 @@ pub fn verify_packet_receipt_absence(
             ctx,
             &client_state,
             connection_end,
-            proofs,
+            proofs.object_proof(),
             consensus_state.root(),
             &receipt_path,
         )
