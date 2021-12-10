@@ -72,20 +72,20 @@ version = "0.4.0"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "=0.23.1"
+version = "=0.23.2"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.1"
+version = "=0.23.2"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.1"
+version = "=0.23.2"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-proto]
-version = "=0.23.1"
+version = "=0.23.2"
 
 [dev-dependencies]
 ibc = { version = "0.9.0", path = "../modules", features = ["mocks"] }
@@ -95,4 +95,4 @@ tracing-subscriber = { version = "0.3.3", features = ["fmt", "env-filter", "json
 test-log = { version = "0.2.8", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.1" }
+tendermint-testgen = { version = "=0.23.2" }
