@@ -66,6 +66,7 @@ pub trait ClientDef: Clone {
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
+    #[allow(clippy::too_many_arguments)]
     fn verify_connection_state(
         &self,
         client_state: &Self::ClientState,
@@ -147,6 +148,7 @@ pub trait ClientDef: Clone {
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has not been received.
+    #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
         ctx: &dyn ChannelReader,
