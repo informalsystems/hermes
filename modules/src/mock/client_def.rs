@@ -50,6 +50,7 @@ impl ClientDef for MockClient {
     fn verify_client_consensus_state(
         &self,
         _client_state: &Self::ClientState,
+        _height: Height,
         prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
@@ -73,6 +74,7 @@ impl ClientDef for MockClient {
     fn verify_connection_state(
         &self,
         _client_state: &Self::ClientState,
+        _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
@@ -85,6 +87,7 @@ impl ClientDef for MockClient {
     fn verify_channel_state(
         &self,
         _client_state: &Self::ClientState,
+        _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
@@ -98,6 +101,7 @@ impl ClientDef for MockClient {
     fn verify_client_full_state(
         &self,
         _client_state: &Self::ClientState,
+        _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
@@ -111,6 +115,7 @@ impl ClientDef for MockClient {
         &self,
         _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
+        _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
@@ -124,6 +129,7 @@ impl ClientDef for MockClient {
         &self,
         _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
+        _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
@@ -137,6 +143,7 @@ impl ClientDef for MockClient {
         &self,
         _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
+        _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
@@ -150,6 +157,7 @@ impl ClientDef for MockClient {
         &self,
         _ctx: &dyn ChannelReader,
         _client_state: &Self::ClientState,
+        _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
