@@ -109,14 +109,12 @@ fn dst_app_version<ChainA: ChainHandle, ChainB: ChainHandle>(
         channel_id: cid.to_string(),
     });
 
-    let proposed_version = channel
-        .src_version()
-        .cloned()
-        .unwrap_or(
-            default_by_port(channel.src_port_id())
-                .map_err(|e| Error::app_version(e.to_string()))?,
-        )
-        .into();
+    let proposed_version = match channel.src_version() {
+        Some(version) => Ok(version.clone()),
+        None => {
+            default_by_port(channel.src_port_id()).map_err(|e| Error::app_version(e.to_string()))
+        }
+    }?;
 
     debug!(
         "source channel end proposed version='{}'; original={:?}",
@@ -128,8 +126,8 @@ fn dst_app_version<ChainA: ChainHandle, ChainB: ChainHandle>(
         port_id: channel.dst_port_id().to_string(),
         connection_id: channel.dst_connection_id().to_string(),
         ordering: channel.ordering as i32,
+        proposed_version: proposed_version.to_string(),
         counterparty,
-        proposed_version,
     };
 
     channel.dst_chain().app_version(request)
