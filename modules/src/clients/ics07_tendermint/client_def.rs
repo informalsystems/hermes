@@ -271,12 +271,19 @@ impl ClientDef for TendermintClient {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        commitment_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
         commitment: String,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, client_state, connection_end)?;
 
+        let commitment_path = Path::Commitments {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+        };
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
@@ -295,12 +302,19 @@ impl ClientDef for TendermintClient {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        ack_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
         ack: Vec<u8>,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, client_state, connection_end)?;
 
+        let ack_path = Path::Acks {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+        };
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
@@ -319,19 +333,21 @@ impl ClientDef for TendermintClient {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        seq_path: &Path,
-        seq: Sequence,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, client_state, connection_end)?;
 
+        let seq_path = Path::SeqRecvs(port_id.clone(), channel_id.clone());
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
             proof,
             root,
             seq_path.to_string(),
-            u64::from(seq).encode_to_vec(),
+            u64::from(sequence).encode_to_vec(),
         )
     }
 
@@ -343,11 +359,18 @@ impl ClientDef for TendermintClient {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        receipt_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, client_state, connection_end)?;
 
+        let receipt_path = Path::Receipts {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+        };
         verify_non_membership(
             client_state,
             connection_end.counterparty().prefix(),

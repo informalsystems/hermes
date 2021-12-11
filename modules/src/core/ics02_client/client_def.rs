@@ -15,7 +15,6 @@ use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics24_host::Path;
 use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
@@ -115,7 +114,9 @@ pub trait ClientDef: Clone {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        commitment_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
         commitment: String,
     ) -> Result<(), Error>;
 
@@ -129,7 +130,9 @@ pub trait ClientDef: Clone {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        ack_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
         ack: Vec<u8>,
     ) -> Result<(), Error>;
 
@@ -143,8 +146,9 @@ pub trait ClientDef: Clone {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        seq_path: &Path,
-        seq: Sequence,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has not been received.
@@ -157,7 +161,9 @@ pub trait ClientDef: Clone {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        receipt_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Error>;
 }
 
@@ -427,7 +433,9 @@ impl ClientDef for AnyClient {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        commitment_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
         commitment: String,
     ) -> Result<(), Error> {
         match self {
@@ -444,7 +452,9 @@ impl ClientDef for AnyClient {
                     connection_end,
                     proof,
                     root,
-                    commitment_path,
+                    port_id,
+                    channel_id,
+                    sequence,
                     commitment,
                 )
             }
@@ -463,7 +473,9 @@ impl ClientDef for AnyClient {
                     connection_end,
                     proof,
                     root,
-                    commitment_path,
+                    port_id,
+                    channel_id,
+                    sequence,
                     commitment,
                 )
             }
@@ -478,7 +490,9 @@ impl ClientDef for AnyClient {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        ack_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
         ack: Vec<u8>,
     ) -> Result<(), Error> {
         match self {
@@ -495,7 +509,9 @@ impl ClientDef for AnyClient {
                     connection_end,
                     proof,
                     root,
-                    ack_path,
+                    port_id,
+                    channel_id,
+                    sequence,
                     ack,
                 )
             }
@@ -514,7 +530,9 @@ impl ClientDef for AnyClient {
                     connection_end,
                     proof,
                     root,
-                    ack_path,
+                    port_id,
+                    channel_id,
+                    sequence,
                     ack,
                 )
             }
@@ -529,8 +547,9 @@ impl ClientDef for AnyClient {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        seq_path: &Path,
-        seq: Sequence,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
@@ -546,8 +565,9 @@ impl ClientDef for AnyClient {
                     connection_end,
                     proof,
                     root,
-                    seq_path,
-                    seq,
+                    port_id,
+                    channel_id,
+                    sequence,
                 )
             }
 
@@ -565,8 +585,9 @@ impl ClientDef for AnyClient {
                     connection_end,
                     proof,
                     root,
-                    seq_path,
-                    seq,
+                    port_id,
+                    channel_id,
+                    sequence,
                 )
             }
         }
@@ -579,7 +600,9 @@ impl ClientDef for AnyClient {
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
-        receipt_path: &Path,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
@@ -595,7 +618,9 @@ impl ClientDef for AnyClient {
                     connection_end,
                     proof,
                     root,
-                    receipt_path,
+                    port_id,
+                    channel_id,
+                    sequence,
                 )
             }
 
@@ -613,7 +638,9 @@ impl ClientDef for AnyClient {
                     connection_end,
                     proof,
                     root,
-                    receipt_path,
+                    port_id,
+                    channel_id,
+                    sequence,
                 )
             }
         }

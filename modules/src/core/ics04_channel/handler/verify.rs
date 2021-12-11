@@ -6,7 +6,6 @@ use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::{Packet, Sequence};
-use crate::core::ics24_host::Path;
 use crate::prelude::*;
 use crate::proofs::Proofs;
 use crate::Height;
@@ -70,11 +69,6 @@ pub fn verify_packet_recv_proofs(
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
-    let commitment_path = Path::Commitments {
-        port_id: packet.source_port.clone(),
-        channel_id: packet.source_channel.clone(),
-        sequence: packet.sequence,
-    };
     let input = format!(
         "{:?},{:?},{:?}",
         packet.timeout_timestamp, packet.timeout_height, packet.data
@@ -90,7 +84,9 @@ pub fn verify_packet_recv_proofs(
             connection_end,
             proofs.object_proof(),
             consensus_state.root(),
-            &commitment_path,
+            &packet.source_port,
+            &packet.source_channel,
+            packet.sequence,
             commitment,
         )
         .map_err(|e| Error::packet_verification_failed(packet.sequence, e))?;
@@ -119,12 +115,6 @@ pub fn verify_packet_acknowledgement_proofs(
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
-    let ack_path = Path::Acks {
-        port_id: packet.source_port.clone(),
-        channel_id: packet.source_channel.clone(),
-        sequence: packet.sequence,
-    };
-
     // Verify the proof for the packet against the chain store.
     client_def
         .verify_packet_acknowledgement(
@@ -134,7 +124,9 @@ pub fn verify_packet_acknowledgement_proofs(
             connection_end,
             proofs.object_proof(),
             consensus_state.root(),
-            &ack_path,
+            &packet.destination_port,
+            &packet.destination_channel,
+            packet.sequence,
             acknowledgement,
         )
         .map_err(|e| Error::packet_verification_failed(packet.sequence, e))?;
@@ -163,8 +155,6 @@ pub fn verify_next_sequence_recv(
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
-    let seq_path = Path::SeqRecvs(packet.destination_port.clone(), packet.destination_channel);
-
     // Verify the proof for the packet against the chain store.
     client_def
         .verify_next_sequence_recv(
@@ -174,8 +164,9 @@ pub fn verify_next_sequence_recv(
             connection_end,
             proofs.object_proof(),
             consensus_state.root(),
-            &seq_path,
-            seq,
+            &packet.destination_port,
+            &packet.destination_channel,
+            packet.sequence,
         )
         .map_err(|e| Error::packet_verification_failed(seq, e))?;
 
@@ -201,12 +192,6 @@ pub fn verify_packet_receipt_absence(
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
-    let receipt_path = Path::Receipts {
-        port_id: packet.destination_port.clone(),
-        channel_id: packet.destination_channel.clone(),
-        sequence: packet.sequence,
-    };
-
     // Verify the proof for the packet against the chain store.
     client_def
         .verify_packet_receipt_absence(
@@ -216,7 +201,9 @@ pub fn verify_packet_receipt_absence(
             connection_end,
             proofs.object_proof(),
             consensus_state.root(),
-            &receipt_path,
+            &packet.destination_port,
+            &packet.destination_channel,
+            packet.sequence,
         )
         .map_err(|e| Error::packet_verification_failed(packet.sequence, e))?;
 

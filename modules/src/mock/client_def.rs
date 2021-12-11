@@ -119,7 +119,9 @@ impl ClientDef for MockClient {
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
-        _commitment_path: &Path,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
         _commitment: String,
     ) -> Result<(), Error> {
         Ok(())
@@ -133,7 +135,9 @@ impl ClientDef for MockClient {
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
-        _ack_path: &Path,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
         _ack: Vec<u8>,
     ) -> Result<(), Error> {
         Ok(())
@@ -147,8 +151,9 @@ impl ClientDef for MockClient {
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
-        _seq_path: &Path,
-        _seq: Sequence,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
     ) -> Result<(), Error> {
         Ok(())
     }
