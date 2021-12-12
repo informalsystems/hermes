@@ -1,6 +1,7 @@
 //! ICS4 (channel) context. The two traits `ChannelReader ` and `ChannelKeeper` define
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //!
+use core::time::Duration;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -81,6 +82,9 @@ pub trait ChannelReader {
     /// The value of this counter should increase only via method
     /// `ChannelKeeper::increase_channel_counter`.
     fn channel_counter(&self) -> Result<u64, Error>;
+
+    /// Returns the maximum expected time per block
+    fn max_expected_time_per_block(&self) -> Duration;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
