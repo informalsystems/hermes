@@ -42,6 +42,7 @@ use crate::relayer::ics18_relayer::error::Error as Ics18Error;
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::Height;
+use core::time::Duration;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
@@ -689,6 +690,10 @@ impl ChannelReader for MockContext {
 
     fn channel_counter(&self) -> Result<u64, Ics04Error> {
         Ok(self.channel_ids_counter)
+    }
+
+    fn max_expected_time_per_block(&self) -> Duration {
+        Duration::from_secs(10)
     }
 }
 
