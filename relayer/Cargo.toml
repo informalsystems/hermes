@@ -80,7 +80,7 @@ version = "=0.23.1"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.1"
+version = "=0.23.2"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
