@@ -5,6 +5,7 @@ use ibc_relayer::worker::client::spawn_refresh_client;
 use std::thread::sleep;
 
 use crate::bootstrap::binary::chain::bootstrap_foreign_client;
+use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::prelude::*;
 use crate::relayer::channel::init_channel;
@@ -88,6 +89,11 @@ fn test_channel_expiration() -> Result<(), Error> {
     run_binary_chain_test(&ChannelExpirationTest)
 }
 
+#[test]
+fn test_packet_expiration() -> Result<(), Error> {
+    run_binary_chain_test(&PacketExpirationTest)
+}
+
 fn wait_for_client_expiry() {
     let sleep_time = CLIENT_EXPIRY + Duration::from_secs(5);
 
@@ -104,6 +110,8 @@ pub struct ExpirationTestOverrides;
 pub struct ConnectionExpirationTest;
 
 pub struct ChannelExpirationTest;
+
+pub struct PacketExpirationTest;
 
 pub struct ClientExpirationTest;
 
@@ -123,7 +131,7 @@ impl TestOverrides for ExpirationTestOverrides {
             channels: config::Channels { enabled: true },
             packets: config::Packets {
                 enabled: true,
-                clear_interval: config::default::clear_packets_interval(),
+                clear_interval: 10,
                 clear_on_start: true,
                 filter: false,
                 tx_confirmation: true,
@@ -161,6 +169,14 @@ impl HasOverrides for ConnectionExpirationTest {
 }
 
 impl HasOverrides for ChannelExpirationTest {
+    type Overrides = ExpirationTestOverrides;
+
+    fn get_overrides(&self) -> &ExpirationTestOverrides {
+        &ExpirationTestOverrides
+    }
+}
+
+impl HasOverrides for PacketExpirationTest {
     type Overrides = ExpirationTestOverrides;
 
     fn get_overrides(&self) -> &ExpirationTestOverrides {
@@ -253,9 +269,65 @@ impl BinaryChainTest for ChannelExpirationTest {
 
         info!("Trying to create channel after client is expired");
 
-        let port = PortId::unsafe_new("transfer");
-        init_channel(&chains, &connection, port.clone(), port)?;
+        init_channel(&chains, &connection, PortId::transfer(), PortId::transfer())?;
 
         crate::suspend();
+    }
+}
+
+impl BinaryChainTest for PacketExpirationTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        chains: ConnectedChains<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+        let refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+        let channels = bootstrap_channel_with_chains(
+            &chains,
+            &PortId::transfer(),
+            &PortId::transfer(),
+            false,
+        )?;
+
+        refresh_task_a.shutdown_and_wait();
+        refresh_task_b.shutdown_and_wait();
+
+        wait_for_client_expiry();
+
+        let _supervisor =
+            spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
+
+        chains.node_a.chain_driver().transfer_token(
+            &channels.port_a.as_ref(),
+            &channels.channel_id_a.as_ref(),
+            &chains.node_a.wallets().user1().address(),
+            &chains.node_b.wallets().user1().address(),
+            100,
+            &chains.node_a.denom(),
+        )?;
+
+        // The second IBC transfer should be ignored, as the packet worker
+        // is terminated
+
+        sleep(Duration::from_secs(15));
+
+        info!("sending a second IBC transfer");
+
+        chains.node_a.chain_driver().transfer_token(
+            &channels.port_a.as_ref(),
+            &channels.channel_id_a.as_ref(),
+            &chains.node_a.wallets().user1().address(),
+            &chains.node_b.wallets().user1().address(),
+            100,
+            &chains.node_a.denom(),
+        )?;
+
+        suspend();
+        // Ok(())
     }
 }

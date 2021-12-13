@@ -5,7 +5,8 @@ use std::sync::Arc;
 use tracing::{error, trace};
 
 use crate::chain::handle::ChainHandle;
-use crate::link::{Link, RelaySummary};
+use crate::foreign_client::HasExpiredOrFrozenError;
+use crate::link::{error::LinkError, Link, RelaySummary};
 use crate::object::Packet;
 use crate::telemetry;
 use crate::util::retry::{retry_with_index, RetryResult};
@@ -65,6 +66,14 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     )
 }
 
+fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
+    if e.is_expired_or_frozen_error() {
+        TaskError::Fatal(RunError::link(e))
+    } else {
+        TaskError::Ignore(RunError::link(e))
+    }
+}
+
 pub fn spawn_link_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: Packet,
     link: Arc<Link<ChainA, ChainB>>,
@@ -75,11 +84,11 @@ pub fn spawn_link_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
         move || {
             link.a_to_b
                 .refresh_schedule()
-                .map_err(|e| TaskError::Ignore(RunError::link(e)))?;
+                .map_err(handle_link_error_in_task)?;
 
             link.a_to_b
                 .execute_schedule()
-                .map_err(|e| TaskError::Ignore(RunError::link(e)))?;
+                .map_err(handle_link_error_in_task)?;
 
             let summary = link.a_to_b.process_pending_txs();
 
