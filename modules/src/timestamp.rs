@@ -177,7 +177,6 @@ define_error! {
     }
 }
 
-// XXX: is it sane that 0 + duration = None?
 impl Add<Duration> for Timestamp {
     type Output = Result<Timestamp, TimestampOverflowError>;
 
