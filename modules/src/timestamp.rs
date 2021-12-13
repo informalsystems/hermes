@@ -30,6 +30,7 @@ pub struct Timestamp {
 
 // TODO: derive when tendermint::Time supports it:
 // https://github.com/informalsystems/tendermint-rs/pull/1054
+#[allow(clippy::derive_hash_xor_eq)]
 impl Hash for Timestamp {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let odt: Option<OffsetDateTime> = self.time.map(Into::into);
@@ -229,7 +230,7 @@ impl FromStr for Timestamp {
 impl From<Time> for Timestamp {
     fn from(tendermint_time: Time) -> Timestamp {
         Timestamp {
-            time: Some(tendermint_time.into()),
+            time: Some(tendermint_time),
         }
     }
 }
