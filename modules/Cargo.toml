@@ -45,7 +45,7 @@ flex-error = { version = "0.4.4", default-features = false }
 version = "=0.23.1"
 
 [dependencies.tendermint-proto]
-version = "=0.23.1"
+version = "=0.23.2"
 
 [dependencies.tendermint-light-client]
 version = "=0.23.1"
