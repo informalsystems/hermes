@@ -37,7 +37,7 @@ impl From<MockHeader> for RawMockHeader {
     fn from(value: MockHeader) -> Self {
         RawMockHeader {
             height: Some(value.height.into()),
-            timestamp: value.timestamp.as_nanoseconds(),
+            timestamp: value.timestamp.nanoseconds(),
         }
     }
 }

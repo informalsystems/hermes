@@ -315,7 +315,6 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
- "serde",
  "winapi",
 ]
 
@@ -1252,7 +1251,6 @@ name = "ibc"
 version = "0.9.0"
 dependencies = [
  "bytes",
- "chrono",
  "env_logger",
  "flex-error",
  "ibc-proto",
@@ -1273,6 +1271,7 @@ dependencies = [
  "tendermint-testgen",
  "test-log",
  "thiserror",
+ "time",
  "tracing",
  "tracing-subscriber 0.3.3",
 ]
@@ -2872,13 +2871,11 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02880339f0e89dc7de809cb300a7dbe5e066c71937a7a55472438ae02e4a841b"
+version = "0.23.2"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
 dependencies = [
  "async-trait",
  "bytes",
- "chrono",
  "ed25519",
  "ed25519-dalek",
  "flex-error",
@@ -2898,14 +2895,14 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
+ "time",
  "zeroize",
 ]
 
 [[package]]
 name = "tendermint-config"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2aff01e0eacdcfb75e8a1bbbc2d71286f7b6db3eda82c52ad7ca4f619ebb90cc"
+version = "0.23.2"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
 dependencies = [
  "flex-error",
  "serde",
@@ -2917,11 +2914,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e7c4fe20856c514b6c37550f2f391183a5d4831820fec2e0703a19fc1523259"
+version = "0.23.2"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
 dependencies = [
- "chrono",
  "contracts",
  "crossbeam-channel 0.4.4",
  "derive_more",
@@ -2933,17 +2928,16 @@ dependencies = [
  "static_assertions",
  "tendermint",
  "tendermint-rpc",
+ "time",
  "tokio",
 ]
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1b8319fcf0860833eabe3278cf2d94ca20ef04bee6a77d892f986026fb1c252"
+version = "0.23.2"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
 dependencies = [
  "bytes",
- "chrono",
  "flex-error",
  "num-derive",
  "num-traits",
@@ -2952,18 +2946,17 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
+ "time",
 ]
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9c88786eeb1b408530fa7a8151aa9639cc04a6210cd8b5fa27aaafbd1e2a091"
+version = "0.23.2"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
 dependencies = [
  "async-trait",
  "async-tungstenite",
  "bytes",
- "chrono",
  "flex-error",
  "futures",
  "getrandom 0.1.16",
@@ -2981,6 +2974,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
+ "time",
  "tokio",
  "tracing",
  "url",
@@ -2990,11 +2984,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-testgen"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6df4b2bc95b5c65ab661c8ab0e0054dd61b4e4c4edd53c2831c317e40042eac"
+version = "0.23.2"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
 dependencies = [
- "chrono",
  "ed25519-dalek",
  "gumdrop",
  "serde",
@@ -3002,6 +2994,7 @@ dependencies = [
  "simple-error",
  "tempfile",
  "tendermint",
+ "time",
 ]
 
 [[package]]
@@ -3078,7 +3071,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e0a10c9a9fb3a5dce8c2239ed670f1a2569fcf42da035f5face1b19860d52b0"
 dependencies = [
  "libc",
+ "time-macros",
 ]
+
+[[package]]
+name = "time-macros"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72c7ca5e81982d152f0788b131ebf96cc4bbd1b4575a7ed51f0f6fc866a05fdb"
 
 [[package]]
 name = "tiny-bip39"

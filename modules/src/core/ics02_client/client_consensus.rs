@@ -3,8 +3,6 @@ use crate::prelude::*;
 use core::convert::Infallible;
 use core::marker::{Send, Sync};
 
-use chrono::{DateTime, Utc};
-
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use prost_types::Any;
 use serde::Serialize;
@@ -55,10 +53,7 @@ pub enum AnyConsensusState {
 impl AnyConsensusState {
     pub fn timestamp(&self) -> Timestamp {
         match self {
-            Self::Tendermint(cs_state) => {
-                let date: DateTime<Utc> = cs_state.timestamp.into();
-                Timestamp::from_datetime(date)
-            }
+            Self::Tendermint(cs_state) => cs_state.timestamp.into(),
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.timestamp(),

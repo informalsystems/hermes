@@ -1,9 +1,9 @@
 use std::convert::TryInto;
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use tendermint::Time;
 use tendermint_light_client::components::verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_light_client::types::{TrustedBlockState, UntrustedBlockState};
+use time::OffsetDateTime;
 
 use crate::clients::ics07_tendermint::client_state::ClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -107,7 +107,7 @@ impl ClientDef for TendermintClient {
             untrusted_state,
             trusted_state,
             &options,
-            Time(chrono::Utc::now()),
+            OffsetDateTime::now_utc().try_into().unwrap(),
         );
 
         match verdict {
