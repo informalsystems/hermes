@@ -76,7 +76,7 @@ version = "=0.23.1"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.1"
+version = "=0.23.2"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
