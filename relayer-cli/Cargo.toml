@@ -8,7 +8,7 @@ keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
 repository = "https://github.com/informalsystems/ibc-rs"
 authors    = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.56"
+rust-version = "1.57"
 description  = """
   Hermes is an IBC Relayer written in Rust
 """
@@ -36,7 +36,7 @@ clap = { version = "=3.0.0-beta.5" }
 serde = { version = "1.0", features = ["serde_derive"] }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.29"
-tracing-subscriber = { version = "0.3.2", features = ["fmt", "env-filter", "json"]}
+tracing-subscriber = { version = "0.3.3", features = ["fmt", "env-filter", "json"]}
 eyre = "0.6.5"
 color-eyre = "0.5"
 oneline-eyre = "0.1"
