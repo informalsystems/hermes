@@ -5,7 +5,9 @@ use ibc_relayer::worker::client::spawn_refresh_client;
 use std::thread::sleep;
 
 use crate::bootstrap::binary::chain::bootstrap_foreign_client;
-use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
+use crate::bootstrap::binary::channel::{
+    bootstrap_channel_with_chains, bootstrap_channel_with_connection,
+};
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::prelude::*;
 use crate::relayer::channel::init_channel;
@@ -94,6 +96,11 @@ fn test_packet_expiration() -> Result<(), Error> {
     run_binary_chain_test(&PacketExpirationTest)
 }
 
+#[test]
+fn test_create_on_expired_client() -> Result<(), Error> {
+    run_binary_chain_test(&CreateOnExpiredClientTest)
+}
+
 fn wait_for_client_expiry() {
     let sleep_time = CLIENT_EXPIRY + Duration::from_secs(5);
 
@@ -113,7 +120,7 @@ pub struct ChannelExpirationTest;
 
 pub struct PacketExpirationTest;
 
-pub struct ClientExpirationTest;
+pub struct CreateOnExpiredClientTest;
 
 impl TestOverrides for ExpirationTestOverrides {
     fn modify_test_config(&self, config: &mut TestConfig) {
@@ -152,7 +159,7 @@ impl TestOverrides for ExpirationTestOverrides {
     }
 }
 
-impl HasOverrides for ClientExpirationTest {
+impl HasOverrides for CreateOnExpiredClientTest {
     type Overrides = ExpirationTestOverrides;
 
     fn get_overrides(&self) -> &ExpirationTestOverrides {
@@ -328,6 +335,63 @@ impl BinaryChainTest for PacketExpirationTest {
         )?;
 
         suspend();
-        // Ok(())
+    }
+}
+
+impl BinaryChainTest for CreateOnExpiredClientTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        chains: ConnectedChains<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+        let refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+        // Create a connection before the IBC client expires, so that we can try create
+        // new channel with the connection after the client expired.
+        let connection = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?;
+
+        refresh_task_a.shutdown_and_wait();
+        refresh_task_b.shutdown_and_wait();
+
+        wait_for_client_expiry();
+
+        info!("trying to bootstrap connection after IBC client is expired");
+
+        let res = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false);
+        match res {
+            Ok(_) => return Err(eyre!("expected bootstrap_connection to fail")),
+            Err(e) => {
+                info!("bootstrap_connection failed with expected error {}", e);
+            }
+        }
+
+        sleep(Duration::from_secs(5));
+
+        info!("trying to bootstrap channel after IBC client is expired");
+
+        let res = bootstrap_channel_with_connection(
+            &chains.handle_a,
+            &chains.handle_b,
+            connection,
+            &DualTagged::new(&PortId::transfer()),
+            &DualTagged::new(&PortId::transfer()),
+            false,
+        );
+
+        match res {
+            Ok(_) => return Err(eyre!("expected bootstrap_channel_with_connection to fail")),
+            Err(e) => {
+                info!(
+                    "bootstrap_channel_with_connection failed with expected error {}",
+                    e
+                );
+            }
+        }
+
+        Ok(())
     }
 }

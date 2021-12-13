@@ -27,7 +27,7 @@ use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::error::Error as SupervisorError;
 use crate::util::retry::retry_with_index;
-use crate::util::retry::RetryResult;
+use crate::util::retry::{retry_count, RetryResult};
 
 pub mod error;
 pub use error::{ChannelError, ChannelErrorDetail, ClientOperationSubdetail};
@@ -411,10 +411,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
     fn do_chan_open_try_and_send_with_retry(&mut self) -> Result<(), ChannelError> {
         retry_with_index(retry_strategy::default(), |_| {
-            self.do_chan_open_try_and_send()
+            if let Err(e) = self.do_chan_open_try_and_send() {
+                if e.is_expired_or_frozen_error() {
+                    RetryResult::Err(e)
+                } else {
+                    RetryResult::Retry(e)
+                }
+            } else {
+                RetryResult::Ok(())
+            }
         })
         .map_err(|err| {
-            error!("failed to open channel after {} retries", err);
+            error!("failed to open channel after {} retries", retry_count(&err));
 
             from_retry_error(
                 err,
@@ -577,15 +585,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     ///
     /// Post-condition: the channel state is `Open` on both ends if successful.
     fn do_chan_open_finalize_with_retry(&self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| self.do_chan_open_finalize()).map_err(
-            |err| {
-                error!("failed to open channel after {} retries", err);
-                from_retry_error(
-                    err,
-                    format!("Failed to finish channel handshake for {:?}", self),
-                )
-            },
-        )?;
+        retry_with_index(retry_strategy::default(), |_| {
+            if let Err(e) = self.do_chan_open_finalize() {
+                if e.is_expired_or_frozen_error() {
+                    RetryResult::Err(e)
+                } else {
+                    RetryResult::Retry(e)
+                }
+            } else {
+                RetryResult::Ok(())
+            }
+        })
+        .map_err(|err| {
+            error!("failed to open channel after {} retries", err);
+            from_retry_error(
+                err,
+                format!("Failed to finish channel handshake for {:?}", self),
+            )
+        })?;
 
         Ok(())
     }
