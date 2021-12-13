@@ -1045,7 +1045,7 @@ impl ClientKeeper for MockContext {
     ) -> Result<(), Ics02Error> {
         let _ = self
             .client_processed_times
-            .insert((client_id, height), Timestamp::now());
+            .insert((client_id, height), ChannelReader::host_timestamp(self));
         Ok(())
     }
 
