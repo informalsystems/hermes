@@ -12,7 +12,6 @@ use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
-use chrono::DateTime;
 use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
@@ -56,7 +55,6 @@ use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
-use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
@@ -1098,7 +1096,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_status");
         let status = self.status()?;
 
-        let time = DateTime::from(status.sync_info.latest_block_time);
+        let time = status.sync_info.latest_block_time;
         let height = ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
             revision_height: u64::from(status.sync_info.latest_block_height),
@@ -1106,7 +1104,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok(StatusResponse {
             height,
-            timestamp: Timestamp::from_datetime(time),
+            timestamp: time.into(),
         })
     }
 
