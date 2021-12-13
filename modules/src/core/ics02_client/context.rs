@@ -87,6 +87,8 @@ pub trait ClientKeeper {
                     res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
+                self.store_processed_time(res.client_id.clone(), res.client_state.latest_height())?;
+                self.store_processed_height(res.client_id, res.client_state.latest_height())?;
                 Ok(())
             }
             Upgrade(res) => {
@@ -127,4 +129,14 @@ pub trait ClientKeeper {
     /// Increases the counter which keeps track of how many clients have been created.
     /// Should never fail.
     fn increase_client_counter(&mut self);
+
+    /// Called upon successful client update.
+    /// Implementations are expected to use this to record the current (host) time as the time at
+    /// which this update (or header) was processed.
+    fn store_processed_time(&mut self, client_id: ClientId, height: Height) -> Result<(), Error>;
+
+    /// Called upon successful client update.
+    /// Implementations are expected to use this to record the current (host) height as the height
+    /// at which this update (or header) was processed.
+    fn store_processed_height(&mut self, client_id: ClientId, height: Height) -> Result<(), Error>;
 }

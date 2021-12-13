@@ -277,7 +277,7 @@ impl ClientDef for TendermintClient {
         commitment: String,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
-        verify_delay_passed(ctx, connection_end)?;
+        verify_delay_passed(ctx, height, connection_end)?;
 
         let commitment_path = Path::Commitments {
             port_id: port_id.clone(),
@@ -308,7 +308,7 @@ impl ClientDef for TendermintClient {
         ack: Vec<u8>,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
-        verify_delay_passed(ctx, connection_end)?;
+        verify_delay_passed(ctx, height, connection_end)?;
 
         let ack_path = Path::Acks {
             port_id: port_id.clone(),
@@ -338,7 +338,7 @@ impl ClientDef for TendermintClient {
         sequence: Sequence,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
-        verify_delay_passed(ctx, connection_end)?;
+        verify_delay_passed(ctx, height, connection_end)?;
 
         let seq_path = Path::SeqRecvs(port_id.clone(), channel_id.clone());
         verify_membership(
@@ -364,7 +364,7 @@ impl ClientDef for TendermintClient {
         sequence: Sequence,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
-        verify_delay_passed(ctx, connection_end)?;
+        verify_delay_passed(ctx, height, connection_end)?;
 
         let receipt_path = Path::Receipts {
             port_id: port_id.clone(),
@@ -434,6 +434,7 @@ fn verify_non_membership(
 
 fn verify_delay_passed(
     ctx: &dyn ChannelReader,
+    height: Height,
     connection_end: &ConnectionEnd,
 ) -> Result<(), Ics02Error> {
     let current_timestamp = ctx.host_timestamp();
@@ -441,10 +442,10 @@ fn verify_delay_passed(
 
     let client_id = connection_end.client_id();
     let processed_time = ctx
-        .processed_time(client_id)
+        .processed_time(client_id, height)
         .map_err(|_| Error::processed_time_not_found(client_id.clone()))?;
     let processed_height = ctx
-        .processed_height(client_id)
+        .processed_height(client_id, height)
         .map_err(|_| Error::processed_height_not_found(client_id.clone()))?;
 
     let delay_period_time = connection_end.delay_period();

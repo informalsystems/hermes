@@ -70,10 +70,10 @@ pub struct MockContext {
     clients: BTreeMap<ClientId, MockClientRecord>,
 
     /// Tracks the processed time for the clients
-    client_processed_times: BTreeMap<ClientId, Timestamp>,
+    client_processed_times: BTreeMap<(ClientId, Height), Timestamp>,
 
     /// Tracks the processed height for the clients
-    client_processed_heights: BTreeMap<ClientId, Height>,
+    client_processed_heights: BTreeMap<(ClientId, Height), Height>,
 
     /// Counter for the client identifiers, necessary for `increase_client_counter` and the
     /// `client_counter` methods.
@@ -674,15 +674,25 @@ impl ChannelReader for MockContext {
         self.timestamp
     }
 
-    fn processed_time(&self, client_id: &ClientId) -> Result<Timestamp, Ics04Error> {
-        match self.client_processed_times.get(client_id) {
+    fn processed_time(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Timestamp, Ics04Error> {
+        match self
+            .client_processed_times
+            .get(&(client_id.clone(), height))
+        {
             Some(time) => Ok(*time),
             None => Err(Ics04Error::processed_time_not_found(client_id.clone())),
         }
     }
 
-    fn processed_height(&self, client_id: &ClientId) -> Result<Height, Ics04Error> {
-        match self.client_processed_heights.get(client_id) {
+    fn processed_height(&self, client_id: &ClientId, height: Height) -> Result<Height, Ics04Error> {
+        match self
+            .client_processed_heights
+            .get(&(client_id.clone(), height))
+        {
             Some(height) => Ok(*height),
             None => Err(Ics04Error::processed_height_not_found(client_id.clone())),
         }
@@ -1026,6 +1036,28 @@ impl ClientKeeper for MockContext {
 
     fn increase_client_counter(&mut self) {
         self.client_ids_counter += 1
+    }
+
+    fn store_processed_time(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+    ) -> Result<(), Ics02Error> {
+        let _ = self
+            .client_processed_times
+            .insert((client_id, height), Timestamp::now());
+        Ok(())
+    }
+
+    fn store_processed_height(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+    ) -> Result<(), Ics02Error> {
+        let _ = self
+            .client_processed_heights
+            .insert((client_id, height), ClientReader::host_height(self));
+        Ok(())
     }
 }
 
