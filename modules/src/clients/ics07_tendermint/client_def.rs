@@ -1,4 +1,3 @@
-use core::time::Duration;
 use std::convert::TryInto;
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
@@ -449,7 +448,7 @@ fn verify_delay_passed(
         .map_err(|_| Error::processed_height_not_found(client_id.clone()))?;
 
     let delay_period_time = connection_end.delay_period();
-    let delay_period_height = get_block_delay(ctx, delay_period_time);
+    let delay_period_height = ctx.block_delay(delay_period_time);
 
     ClientState::verify_delay_passed(
         current_timestamp,
@@ -460,15 +459,6 @@ fn verify_delay_passed(
         delay_period_height,
     )
     .map_err(|e| e.into())
-}
-
-fn get_block_delay(ctx: &dyn ChannelReader, delay_period_time: Duration) -> u64 {
-    let expected_time_per_block = ctx.max_expected_time_per_block();
-    if expected_time_per_block.is_zero() {
-        return 0;
-    }
-
-    (delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64()).ceil() as u64
 }
 
 fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState, Ics02Error> {

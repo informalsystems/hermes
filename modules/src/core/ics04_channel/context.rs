@@ -85,6 +85,15 @@ pub trait ChannelReader {
 
     /// Returns the maximum expected time per block
     fn max_expected_time_per_block(&self) -> Duration;
+
+    fn block_delay(&self, delay_period_time: Duration) -> u64 {
+        let expected_time_per_block = self.max_expected_time_per_block();
+        if expected_time_per_block.is_zero() {
+            return 0;
+        }
+
+        (delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64()).ceil() as u64
+    }
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
