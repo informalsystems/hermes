@@ -170,7 +170,6 @@ impl ClientState {
 
     /// Verify the time and height delays
     pub fn verify_delay_passed(
-        &self,
         current_time: Timestamp,
         current_height: Height,
         processed_time: Timestamp,
