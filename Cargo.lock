@@ -2871,7 +2871,8 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.23.2"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9015fdeab074f9b8f97dcb89c2bb2ec8537c89423e95551e8d7ecdfbab58a329"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2901,7 +2902,8 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.23.2"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2b2e6d4442bab49319dbacdfd79c5929bc6e0b35d1e0d959ff5b79fddf3f018"
 dependencies = [
  "flex-error",
  "serde",
@@ -2914,7 +2916,8 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.23.2"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0edd884720ab9e3be8031ca38b929b56cb80082b8d58f40984dd1e194a2f8ec"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -2934,7 +2937,8 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.23.2"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da86f6e52ced9c2f24c4ae57662ce8a44dd90ee7bc47bae27a710b02d48e193c"
 dependencies = [
  "bytes",
  "flex-error",
@@ -2951,7 +2955,8 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.23.2"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50f5f4875c36798e5590894a5176cf8d75e4bc81ec34ced1b9a87609e7d56861"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -2984,7 +2989,8 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.23.2"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=release/v0.23.2#5c201f022abad7de62b4a9a1e28e02a8afeeee1c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "019142fb30c80449e8106e91c5c3c8d846859dd7d5fe713727a0642efc819ab0"
 dependencies = [
  "ed25519-dalek",
  "gumdrop",
