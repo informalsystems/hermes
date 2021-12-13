@@ -52,7 +52,7 @@ version = "=0.23.1"
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "=0.23.1"
+version = "=0.23.2"
 optional = true
 
 [dev-dependencies]
@@ -62,7 +62,7 @@ test-log = { version = "0.2.8", features = ["trace"] }
 modelator = "0.4.1"
 sha2 = { version = "0.9.8" }
 tendermint-rpc = { version = "=0.23.1", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.23.1" } # Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "=0.23.2" } # Needed for generating (synthetic) light blocks.
 
 [[test]]
 name = "mbt"
