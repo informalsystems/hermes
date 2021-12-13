@@ -129,8 +129,8 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::timestamp::Timestamp;
     use crate::timestamp::ZERO_DURATION;
-    use std::ops::Add;
-    use std::time::Duration;
+    use core::ops::Add;
+    use core::time::Duration;
 
     #[test]
     fn send_packet_processing() {

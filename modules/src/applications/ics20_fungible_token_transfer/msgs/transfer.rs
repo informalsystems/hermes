@@ -99,8 +99,8 @@ impl From<MsgTransfer> for RawMsgTransfer {
 
 #[cfg(test)]
 pub mod test_util {
-    use std::ops::Add;
-    use std::time::Duration;
+    use core::ops::Add;
+    use core::time::Duration;
 
     use crate::{
         core::ics24_host::identifier::{ChannelId, PortId},
