@@ -91,6 +91,7 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 max_gas = 2000000
+fee_granter = ''
 gas_price = { price = 0.001, denom = 'stake' }
 gas_adjustment = 0.1
 clock_drift = '5s'
