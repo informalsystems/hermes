@@ -36,14 +36,14 @@ pub mod dump_state;
 use dump_state::SupervisorState;
 
 pub mod spawn;
-use spawn::{SpawnContext, SpawnMode};
+use spawn::SpawnContext;
 
 pub mod scan;
 
 pub mod cmd;
 use cmd::{CmdEffect, ConfigUpdate, SupervisorCmd};
 
-use self::scan::ChainsScan;
+use self::scan::{ChainScanner, ChainsScan};
 
 type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
@@ -322,34 +322,31 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     }
 
     /// Create a new `SpawnContext` for spawning workers.
-    fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_, Chain> {
+    fn spawn_context(&mut self) -> SpawnContext<'_, Chain> {
         SpawnContext::new(
             self.config.clone(),
             self.registry.clone(),
-            &mut self.client_state_filter,
             &mut self.workers,
-            mode,
         )
     }
 
     /// Spawn all the workers necessary for the relayer to connect
     /// and relay between all the chains in the configurations.
-    fn spawn_workers(&mut self, scan: ChainsScan, mode: SpawnMode) {
-        self.spawn_context(mode).spawn_workers(scan);
+    fn spawn_workers(&mut self, scan: ChainsScan) {
+        self.spawn_context().spawn_workers(scan);
     }
 
+    /// Scan the chains for clients, connections and channels to relay on.
     fn scan(&mut self) -> ChainsScan {
-        use self::scan::ChainScanner;
+        let config = self.config.read().expect("poisoned lock");
 
-        let mut scanner = ChainScanner::new(
-            self.config.read().unwrap().clone(),
+        let scanner = ChainScanner::new(
+            &config,
             self.registry.clone(),
             &mut self.client_state_filter,
         );
 
-        let scan = scanner.scan_chains();
-        println!("{}", scan);
-        scan
+        scanner.scan_chains()
     }
 
     /// Perform a health check on all connected chains
@@ -430,8 +427,10 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
     pub fn run_without_health_check(&mut self) -> Result<(), Error> {
         let scan = self.scan();
+        info!("Scan: {}", scan);
+        trace!("Scan: {}", scan);
 
-        self.spawn_workers(scan, SpawnMode::Startup);
+        self.spawn_workers(scan);
 
         let mut subscriptions = self.init_subscriptions()?;
 
@@ -515,43 +514,62 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     ///
     /// If the addition had any effect, returns [`CmdEffect::ConfigChanged`] as
     /// subscriptions need to be reset to take into account the newly added chain.
-    fn add_chain(&mut self, config: ChainConfig) -> CmdEffect {
-        let id = config.id.clone();
+    fn add_chain(&mut self, chain_config: ChainConfig) -> CmdEffect {
+        let id = chain_config.id.clone();
 
-        if self.config.read().expect("poisoned lock").has_chain(&id) {
+        let mut config = self.config.write().expect("poisoned lock");
+
+        if config.has_chain(&id) {
             info!(chain.id=%id, "skipping addition of already existing chain");
             return CmdEffect::Nothing;
         }
 
         info!(chain.id=%id, "adding new chain");
-
-        self.config
-            .write()
-            .expect("poisoned lock")
-            .chains
-            .push(config);
+        config.chains.push(chain_config.clone());
 
         debug!(chain.id=%id, "spawning chain runtime");
 
         if let Err(e) = self.registry.spawn(&id) {
             error!(
-                "failed to add chain {} because of failure to spawn the chain runtime: {}",
-                id, e
+                chain.id=%id,
+                "failed to add chain because of failure to spawn the chain runtime: {}", e
             );
 
             // Remove the newly added config
-            self.config
-                .write()
-                .expect("poisoned lock")
-                .chains
-                .retain(|c| c.id != id);
+            config.chains.retain(|c| c.id != id);
 
             return CmdEffect::Nothing;
         }
 
+        debug!(chain.id=%id, "scanning chain");
+
+        let scan = {
+            let mut scanner = ChainScanner::new(
+                &config,
+                self.registry.clone(),
+                &mut self.client_state_filter,
+            );
+
+            match scanner.scan_chain(&chain_config) {
+                Ok(scan) => scan,
+                Err(e) => {
+                    error!(chain.id=%id, "failed to scan chain, not adding chain to config, reason: {}", e);
+
+                    // Remove the newly added config
+                    config.chains.retain(|c| c.id != id);
+
+                    return CmdEffect::Nothing;
+                }
+            }
+        };
+
+        // Release the write lock
+        drop(config);
+
         debug!(chain.id=%id, "spawning workers");
-        let mut ctx = self.spawn_context(SpawnMode::Reload);
-        ctx.spawn_workers_for_chain(&id);
+
+        let mut ctx = self.spawn_context();
+        ctx.spawn_workers_for_chain(scan);
 
         CmdEffect::ConfigChanged
     }
@@ -576,7 +594,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             .retain(|c| &c.id != id);
 
         debug!(chain.id=%id, "shutting down workers");
-        let mut ctx = self.spawn_context(SpawnMode::Reload);
+        let mut ctx = self.spawn_context();
         ctx.shutdown_workers_for_chain(id);
 
         debug!(chain.id=%id, "shutting down chain runtime");

@@ -4,14 +4,14 @@ use core::fmt;
 use std::collections::BTreeMap;
 
 use itertools::Itertools;
-use tracing::{debug, error, info_span, warn};
+use tracing::{debug, error, info, info_span, warn};
 
 use ibc::{
     core::{
         ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
         ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
         ics04_channel::channel::{IdentifiedChannelEnd, State as ChannelState},
-        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId},
+        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
     Height,
 };
@@ -26,7 +26,7 @@ use crate::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
     },
-    config::{ChainConfig, Config, ModeConfig, PacketFilter},
+    config::{ChainConfig, ChannelsSpec, Config, ModeConfig, PacketFilter},
     object::{Channel, Client, Connection, Object, Packet},
     registry::SharedRegistry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
@@ -48,6 +48,19 @@ flex_error::define_error! {
         Query
             [ RelayerError ]
             |_| { "query" },
+
+        MissingConnectionHop
+            {
+                port_id: PortId,
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            |e| {
+                format_args!(
+                    "could not retrieve the connection hop underlying port/channel {}/{} on chain '{}'",
+                    e.port_id, e.channel_id, e.chain_id
+                )
+            }
     }
 }
 
@@ -56,23 +69,26 @@ pub struct ChainsScan {
     pub chains: Vec<Result<ChainScan, Error>>,
 }
 
-impl ChainsScan {}
-
 impl fmt::Display for ChainsScan {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for scan in self.chains.iter().flatten() {
             writeln!(f, "# Chain:{}", scan.chain_id)?;
 
-            for client in &scan.clients {
+            for client in scan.clients.values() {
                 writeln!(f, "  - Client: {}", client.client.client_id)?;
 
-                for conn in &client.connections {
-                    let counterparty = conn.counterparty_state();
+                for conn in client.connections.values() {
+                    let counterparty = conn
+                        .counterparty_state
+                        .as_ref()
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| "<none>".to_string());
+
                     writeln!(f, "    * Connection: {}", conn.connection.connection_id)?;
                     writeln!(f, "      | State: {}", conn.state())?;
                     writeln!(f, "      | Counterparty state: {}", counterparty)?;
 
-                    for chan in &conn.channels {
+                    for chan in conn.channels.values() {
                         let counterparty = chan
                             .counterparty
                             .as_ref()
@@ -82,7 +98,7 @@ impl fmt::Display for ChainsScan {
                         writeln!(f, "      + Channel: {}", chan.channel.channel_id)?;
                         writeln!(f, "        | Port: {}", chan.channel.port_id)?;
                         writeln!(f, "        | State: {}", chan.channel.channel_end.state())?;
-                        writeln!(f, "        | Counterparty state: {}", counterparty)?;
+                        writeln!(f, "        | Counterparty: {}", counterparty)?;
                     }
                 }
             }
@@ -92,41 +108,94 @@ impl fmt::Display for ChainsScan {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ChainScan {
     pub chain_id: ChainId,
-    pub clients: Vec<ClientScan>,
+    pub clients: BTreeMap<ClientId, ClientScan>,
 }
 
-#[derive(Debug)]
+impl ChainScan {
+    fn new(chain_id: ChainId) -> ChainScan {
+        Self {
+            chain_id,
+            clients: BTreeMap::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct ClientScan {
     pub client: IdentifiedAnyClientState,
-    pub connections: Vec<ConnectionScan>,
+    pub connections: BTreeMap<ConnectionId, ConnectionScan>,
 }
 
-#[derive(Debug)]
+impl ClientScan {
+    fn new(client: IdentifiedAnyClientState) -> ClientScan {
+        Self {
+            client,
+            connections: BTreeMap::new(),
+        }
+    }
+
+    pub fn id(&self) -> &ClientId {
+        &self.client.client_id
+    }
+
+    pub fn counterparty_chain_id(&self) -> ChainId {
+        self.client.client_state.chain_id()
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct ConnectionScan {
     pub connection: IdentifiedConnectionEnd,
-    pub counterparty_state: ConnectionState,
-    pub channels: Vec<ChannelScan>,
+    pub counterparty_state: Option<ConnectionState>,
+    pub channels: BTreeMap<ChannelId, ChannelScan>,
 }
 
 impl ConnectionScan {
+    pub fn new(
+        connection: IdentifiedConnectionEnd,
+        counterparty_state: Option<ConnectionState>,
+    ) -> Self {
+        Self {
+            connection,
+            counterparty_state,
+            channels: BTreeMap::new(),
+        }
+    }
+
+    pub fn id(&self) -> &ConnectionId {
+        &self.connection.connection_id
+    }
+
     pub fn state(&self) -> ConnectionState {
         self.connection.connection_end.state
     }
-    pub fn counterparty_state(&self) -> ConnectionState {
-        self.counterparty_state
+
+    pub fn is_open(&self) -> bool {
+        self.connection.connection_end.is_open()
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ChannelScan {
     pub channel: IdentifiedChannelEnd,
     pub counterparty: Option<IdentifiedChannelEnd>,
 }
 
 impl ChannelScan {
+    pub fn new(channel: IdentifiedChannelEnd, counterparty: Option<IdentifiedChannelEnd>) -> Self {
+        Self {
+            channel,
+            counterparty,
+        }
+    }
+
+    pub fn id(&self) -> &ChannelId {
+        &self.channel.channel_id
+    }
+
     pub fn unreceived_packets_on_counterparty(
         &self,
         chain: &impl ChainHandle,
@@ -149,14 +218,14 @@ impl ChannelScan {
 }
 
 pub struct ChainScanner<'a, Chain: ChainHandle> {
-    config: Config,
+    config: &'a Config,
     registry: SharedRegistry<Chain>,
     client_state_filter: &'a mut FilterPolicy,
 }
 
 impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     pub fn new(
-        config: Config,
+        config: &'a Config,
         registry: SharedRegistry<Chain>,
         client_state_filter: &'a mut FilterPolicy,
     ) -> Self {
@@ -167,7 +236,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         }
     }
 
-    pub fn scan_chains(&mut self) -> ChainsScan {
+    pub fn scan_chains(mut self) -> ChainsScan {
         let mut scans = ChainsScan {
             chains: Vec::with_capacity(self.config.chains.len()),
         };
@@ -180,8 +249,10 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     }
 
     pub fn scan_chain(&mut self, chain_config: &ChainConfig) -> Result<ChainScan, Error> {
-        let span = info_span!("scan.chain", chain_id = %chain_config.id, );
+        let span = info_span!("scan.chain", chain = %chain_config.id, );
         let _guard = span.enter();
+
+        info!("scanning chain...");
 
         let chain = match self.registry.get_or_spawn(&chain_config.id) {
             Ok(chain_handle) => chain_handle,
@@ -195,22 +266,73 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
             }
         };
 
-        let mut scan = ChainScan {
-            chain_id: chain_config.id.clone(),
-            clients: Vec::new(),
-        };
+        let mut scan = ChainScan::new(chain_config.id.clone());
 
-        self.scan_all_clients(&chain, &mut scan)?;
+        if let Some(spec) = self.use_allow_list(chain_config) {
+            info!("chain uses an allow list, skipping scan for fast startup");
+            info!("allowed ports/channels: {}", spec);
+
+            self.query_allowed_channels(&chain, spec, &mut scan)?;
+        } else {
+            info!("scanning chain for all clients, connections and channels");
+
+            self.scan_all_clients(&chain, &mut scan)?;
+        }
 
         Ok(scan)
     }
 
+    pub fn query_allowed_channels(
+        &mut self,
+        chain: &Chain,
+        spec: &ChannelsSpec,
+        scan: &mut ChainScan,
+    ) -> Result<(), Error> {
+        info!("querying allowed channels...");
+
+        for (port_id, channel_id) in spec.iter() {
+            let result = scan_allowed_channel(&mut self.registry, chain, port_id, channel_id);
+
+            match result {
+                Ok(ScannedChannel {
+                    channel,
+                    counterparty_channel,
+                    connection,
+                    counterparty_connection_state,
+                    client,
+                }) => {
+                    let client_scan = scan
+                        .clients
+                        .entry(client.client_id.clone())
+                        .or_insert_with(|| ClientScan::new(client));
+
+                    let connection_scan = client_scan
+                        .connections
+                        .entry(connection.connection_id.clone())
+                        .or_insert_with(|| {
+                            ConnectionScan::new(connection, counterparty_connection_state)
+                        });
+
+                    connection_scan
+                        .channels
+                        .entry(channel.channel_id.clone())
+                        .or_insert_with(|| ChannelScan::new(channel, counterparty_channel));
+                }
+                Err(e) => error!("failed to scan channel {}, reason: {}", channel_id, e),
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn scan_all_clients(&mut self, chain: &Chain, scan: &mut ChainScan) -> Result<(), Error> {
+        info!("scanning all clients...");
+
         let clients = query_all_clients(chain)?;
 
         for client in clients {
             if let Some(client_scan) = self.scan_client(chain, client)? {
-                scan.clients.push(client_scan);
+                scan.clients.insert(client_scan.id().clone(), client_scan);
             }
         }
 
@@ -222,8 +344,10 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         chain: &Chain,
         client: IdentifiedAnyClientState,
     ) -> Result<Option<ClientScan>, Error> {
-        let span = info_span!("scan.client", client_id = %client.client_id);
+        let span = info_span!("scan.client", client = %client.client_id);
         let _guard = span.enter();
+
+        info!("scanning client...");
 
         if !self.client_allowed(chain, &client) {
             warn!(
@@ -249,16 +373,14 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         let client_connections_ids = query_client_connections(chain, &client.client_id)?;
 
-        let mut scan = ClientScan {
-            client,
-            connections: Vec::new(),
-        };
+        let mut scan = ClientScan::new(client);
 
-        for connection_id in client_connections_ids {
+        for connection_end in client_connections_ids {
             if let Some(connection_scan) =
-                self.scan_connection(chain, &scan.client, connection_id)?
+                self.scan_connection(chain, &scan.client, connection_end)?
             {
-                scan.connections.push(connection_scan);
+                scan.connections
+                    .insert(connection_scan.id().clone(), connection_scan);
             }
         }
 
@@ -269,37 +391,41 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         &mut self,
         chain: &Chain,
         client: &IdentifiedAnyClientState,
-        connection_end: IdentifiedConnectionEnd,
+        connection: IdentifiedConnectionEnd,
     ) -> Result<Option<ConnectionScan>, Error> {
-        let span = info_span!("scan.connection", connection = %connection_end.connection_id);
+        let span = info_span!("scan.connection", connection = %connection.connection_id);
         let _guard = span.enter();
 
-        if !self.connection_allowed(chain, client, &connection_end) {
+        info!("scanning connection...");
+
+        if !self.connection_allowed(chain, client, &connection) {
             warn!("skipping connection, reason: connection is not allowed",);
             return Ok(None);
         }
 
-        let connection = &connection_end.connection_end;
-        let connection_id = &connection_end.connection_id;
+        let mut scan = ConnectionScan::new(connection, None);
 
-        if !connection.is_open() {
-            debug!("connection is not open, skipping scan of channels over this connection");
-            return Ok(None);
+        if !scan.is_open() {
+            warn!("connection is not open, skipping scan of channels over this connection");
+            return Ok(Some(scan));
         }
 
-        let counterparty_state = match self.counterparty_connection_state(client, &connection_end) {
-            Err(e) => {
-                error!("error fetching counterparty connection state: {}", e);
-                return Ok(None);
-            }
+        let counterparty_state = match self.counterparty_connection_state(client, &scan.connection)
+        {
             Ok(state) if !state.eq(&ConnectionState::Open) => {
                 warn!("counterparty connection is not open, skipping scan of channels over this connection");
+                return Ok(Some(scan));
+            }
+            Err(e) => {
+                error!("error fetching counterparty connection state: {}", e);
                 return Ok(None);
             }
             Ok(state) => state,
         };
 
-        let channels = match query_connection_channels(chain, connection_id) {
+        scan.counterparty_state = Some(counterparty_state);
+
+        let channels = match query_connection_channels(chain, scan.connection.id()) {
             Ok(channels) => channels,
             Err(e) => {
                 error!("failed to fetch connection channels: {}", e);
@@ -317,21 +443,21 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
             .filter(|channel| self.channel_allowed(chain, channel))
             .map(|channel| {
                 let counterparty =
-                    channel_on_destination(&channel, &connection_end, &counterparty_chain)
+                    channel_on_destination(&channel, &scan.connection, &counterparty_chain)
                         .unwrap_or_default();
 
-                ChannelScan {
+                let scan = ChannelScan {
                     channel,
                     counterparty,
-                }
+                };
+
+                (scan.id().clone(), scan)
             })
             .collect();
 
-        Ok(Some(ConnectionScan {
-            connection: connection_end,
-            counterparty_state,
-            channels,
-        }))
+        scan.channels = channels;
+
+        Ok(Some(scan))
     }
 
     fn counterparty_connection_state(
@@ -348,12 +474,23 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         Ok(connection_state_on_destination(connection, &counterparty_chain).unwrap())
     }
 
-    fn client_filter_enabled(&self) -> bool {
+    fn filtering_enabled(&self) -> bool {
         self.config.mode.packets.filter
     }
 
+    fn use_allow_list<'b>(&self, chain_config: &'b ChainConfig) -> Option<&'b ChannelsSpec> {
+        if !self.filtering_enabled() {
+            return None;
+        }
+
+        match chain_config.packet_filter {
+            PacketFilter::Allow(ref spec) => Some(spec),
+            _ => None,
+        }
+    }
+
     fn client_allowed(&mut self, chain: &Chain, client: &IdentifiedAnyClientState) -> bool {
-        if !self.client_filter_enabled() {
+        if !self.filtering_enabled() {
             return true;
         };
 
@@ -372,7 +509,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         client: &IdentifiedAnyClientState,
         connection: &IdentifiedConnectionEnd,
     ) -> bool {
-        if !self.client_filter_enabled() {
+        if !self.filtering_enabled() {
             return true;
         }
 
@@ -387,8 +524,8 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         match permission {
             Ok(Permission::Deny) => {
                 warn!(
-                    "skipping workers for chain {}, client {} & conn {}. \
-                                 reason: client or counterparty client is not allowed",
+                    "skipping workers for chain {}, client {} & conn {}, \
+                     reason: client or counterparty client is not allowed",
                     chain.id(),
                     client.client_id,
                     connection.connection_id
@@ -398,7 +535,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
             }
             Err(e) => {
                 error!(
-                    "skipping workers for chain {}, client {} & conn {}. reason: {}",
+                    "skipping workers for chain {}, client {} & conn {}, reason: {}",
                     chain.id(),
                     client.client_id,
                     connection.connection_id,
@@ -417,33 +554,124 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     }
 }
 
-// fn query_clients_for_channels<C: ChainHandle>(
-//     _chain: &C,
-//     _channels: Vec<ChannelId>,
-// ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-//     todo!()
-// }
+struct ScannedChannel {
+    channel: IdentifiedChannelEnd,
+    counterparty_channel: Option<IdentifiedChannelEnd>,
+    connection: IdentifiedConnectionEnd,
+    counterparty_connection_state: Option<ConnectionState>,
+    client: IdentifiedAnyClientState,
+}
 
-// fn query_client_for_channel<C: ChainHandle>(
-//     _chain: &C,
-//     _channel: ChannelId,
-// ) -> Result<IdentifiedAnyClientState, Error> {
-//     todo!()
-// }
+fn scan_allowed_channel<C: ChainHandle>(
+    registry: &mut SharedRegistry<C>,
+    chain: &C,
+    port_id: &PortId,
+    channel_id: &ChannelId,
+) -> Result<ScannedChannel, Error> {
+    let span = info_span!("scan.channel", port_id = %port_id, channel_id = %channel_id);
+    let _guard = span.enter();
 
-// fn query_channel<C: ChainHandle>(
-//     _chain: &C,
-//     _channel_id: ChannelId,
-// ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-//     todo!()
-// }
+    info!("querying channel {}/{}...", port_id, channel_id);
+    let channel = query_channel(chain, port_id, channel_id)?;
+    let connection = query_connection_for_channel(chain, &channel)?;
+    let client_id = connection.connection_end.client_id();
 
-// fn query_connection_for_channel<C: ChainHandle>(
-//     _chain: &C,
-//     _channel: IdentifiedChannelEnd,
-// ) -> Result<IdentifiedConnectionEnd, Error> {
-//     todo!()
-// }
+    info!(
+        "found connection {} and client {}",
+        connection.connection_id, client_id
+    );
+
+    info!("querying client {}...", client_id);
+    let client = query_client(chain, client_id)?;
+
+    info!(
+        "client lives on counterparty chain {}",
+        client.client_state.chain_id()
+    );
+
+    let counterparty_chain = registry
+        .get_or_spawn(&client.client_state.chain_id())
+        .map_err(Error::spawn)?;
+
+    let counterparty_channel =
+        channel_on_destination(&channel, &connection, &counterparty_chain).unwrap_or_default();
+
+    info!(
+        "found counterparty channel {}",
+        counterparty_channel
+            .as_ref()
+            .map(|c| c.channel_id.to_string())
+            .unwrap_or_else(|| "<none>".to_string())
+    );
+
+    let counterparty_connection_state =
+        connection_state_on_destination(&connection, &counterparty_chain)
+            .map(Some)
+            .unwrap_or_default();
+
+    info!(
+        "found counterparty channel {}",
+        counterparty_channel
+            .as_ref()
+            .map(|c| c.channel_id.to_string())
+            .unwrap_or_else(|| "<none>".to_string())
+    );
+
+    Ok(ScannedChannel {
+        channel,
+        counterparty_channel,
+        connection,
+        counterparty_connection_state,
+        client,
+    })
+}
+
+fn query_client<C: ChainHandle>(
+    chain: &C,
+    client_id: &ClientId,
+) -> Result<IdentifiedAnyClientState, Error> {
+    let client = chain
+        .query_client_state(client_id, Height::zero())
+        .map_err(Error::query)?;
+
+    Ok(IdentifiedAnyClientState::new(client_id.clone(), client))
+}
+
+fn query_channel<C: ChainHandle>(
+    chain: &C,
+    port_id: &PortId,
+    channel_id: &ChannelId,
+) -> Result<IdentifiedChannelEnd, Error> {
+    let channel_end = chain
+        .query_channel(port_id, channel_id, Height::zero())
+        .map_err(Error::query)?;
+
+    Ok(IdentifiedChannelEnd::new(
+        port_id.clone(),
+        channel_id.clone(),
+        channel_end,
+    ))
+}
+
+fn query_connection_for_channel<C: ChainHandle>(
+    chain: &C,
+    channel: &IdentifiedChannelEnd,
+) -> Result<IdentifiedConnectionEnd, Error> {
+    let connection_id = channel
+        .channel_end
+        .connection_hops()
+        .first()
+        .cloned()
+        .ok_or_else(|| {
+            Error::missing_connection_hop(
+                channel.port_id.clone(),
+                channel.channel_id.clone(),
+                chain.id(),
+            )
+        })?;
+
+    query_connection(chain, &connection_id)
+}
 
 fn query_all_clients<C: ChainHandle>(chain: &C) -> Result<Vec<IdentifiedAnyClientState>, Error> {
     let clients_req = QueryClientStatesRequest {
@@ -467,7 +695,7 @@ fn query_client_connections<C: ChainHandle>(
 
     let connections = ids
         .into_iter()
-        .filter_map(|id| match query_connection(chain, id) {
+        .filter_map(|id| match query_connection(chain, &id) {
             Ok(connection) => Some(connection),
             Err(e) => {
                 error!("failed to query connection: {}", e);
@@ -481,14 +709,14 @@ fn query_client_connections<C: ChainHandle>(
 
 fn query_connection<C: ChainHandle>(
     chain: &C,
-    connection_id: ConnectionId,
+    connection_id: &ConnectionId,
 ) -> Result<IdentifiedConnectionEnd, Error> {
     let connection_end = chain
-        .query_connection(&connection_id, Height::zero())
+        .query_connection(connection_id, Height::zero())
         .map_err(Error::query)?;
 
     Ok(IdentifiedConnectionEnd {
-        connection_id,
+        connection_id: connection_id.clone(),
         connection_end,
     })
 }
