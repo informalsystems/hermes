@@ -27,7 +27,7 @@ ibc-telemetry = { version = "0.9.0", path = "../telemetry", optional = true }
 
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 subtle-encoding = "0.5"
-async-trait = "0.1.50"
+async-trait = "0.1.52"
 humantime-serde = "1.0.0"
 serde = "1.0"
 serde_derive = "1.0"
