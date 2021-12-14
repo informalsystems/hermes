@@ -26,7 +26,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
         None
     } else {
         Some(spawn_background_task(
-            "refresh_client".to_string(),
+            format!("RefreshClientWorker({})", client),
             Some(Duration::from_secs(1)),
             move || -> Result<(), TaskError<ForeignClientError>> {
                 let res = client.refresh().map_err(|e| {
@@ -63,7 +63,7 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
     }
 
     let handle = spawn_background_task(
-        "detect_misbehavior".to_string(),
+        format!("DetectMisbehaviorWorker({})", client),
         Some(Duration::from_millis(600)),
         move || -> Result<(), TaskError<TryRecvError>> {
             if let Ok(cmd) = receiver.try_recv() {

@@ -27,7 +27,7 @@ define_error! {
         Retry
             { retries: retry::Error<u64> }
             | e | {
-                format_args!("Packet worker failed after {} retries",
+                format_args!("Worker failed after {} retries",
                     e.retries)
             },
 

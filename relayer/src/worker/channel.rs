@@ -20,7 +20,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
 ) -> TaskHandle {
     spawn_background_task(
-        "channel_worker".to_string(),
+        format!("ChannelWorker({})", channel.short_name()),
         Some(Duration::from_millis(200)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {

@@ -43,7 +43,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> TaskHandle {
     let mut is_first_run: bool = true;
     spawn_background_task(
-        "packet_worker".to_string(),
+        format!("PacketCmdWorker({})", link.a_to_b),
         Some(Duration::from_millis(200)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
@@ -74,12 +74,12 @@ fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     }
 }
 
-pub fn spawn_link_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
+pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: Packet,
     link: Arc<Link<ChainA, ChainB>>,
 ) -> TaskHandle {
     spawn_background_task(
-        "link_worker".to_string(),
+        format!("PacketWorker({})", link.a_to_b),
         Some(Duration::from_millis(500)),
         move || {
             link.a_to_b
