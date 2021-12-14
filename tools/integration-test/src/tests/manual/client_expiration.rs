@@ -239,6 +239,8 @@ impl BinaryChainTest for ConnectionExpirationTest {
 
         sleep(Duration::from_secs(10));
 
+        info!("respawning supervisor");
+
         supervisor.shutdown();
 
         // Even if we respawn the supervisor, it would still abort immediately

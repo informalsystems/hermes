@@ -621,20 +621,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .map_err(ConnectionError::supervisor)
     }
 
-    pub fn handshake_step(&mut self, state: State) -> Result<Vec<IbcEvent>, ConnectionError> {
-        match (state, self.counterparty_state()?) {
-            (State::Init, State::Uninitialized) => Ok(vec![self.build_conn_try_and_send()?]),
-            (State::Init, State::Init) => Ok(vec![self.build_conn_try_and_send()?]),
-            (State::TryOpen, State::Init) => Ok(vec![self.build_conn_ack_and_send()?]),
-            (State::TryOpen, State::TryOpen) => Ok(vec![self.build_conn_ack_and_send()?]),
-            (State::Open, State::TryOpen) => Ok(vec![self.build_conn_confirm_and_send()?]),
-            _ => Ok(vec![]),
-        }
+    pub fn handshake_step(&mut self, state: State) -> Result<Option<IbcEvent>, ConnectionError> {
+        let event = match (state, self.counterparty_state()?) {
+            (State::Init, State::Uninitialized) => Some(self.build_conn_try_and_send()?),
+            (State::Init, State::Init) => Some(self.build_conn_try_and_send()?),
+            (State::TryOpen, State::Init) => Some(self.build_conn_ack_and_send()?),
+            (State::TryOpen, State::TryOpen) => Some(self.build_conn_ack_and_send()?),
+            (State::Open, State::TryOpen) => Some(self.build_conn_confirm_and_send()?),
+            _ => None,
+        };
+
+        Ok(event)
     }
 
-    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<(), u64> {
-        let done = '🥳';
-
+    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<bool, u64> {
         match self.handshake_step(state) {
             Err(e) => {
                 if e.is_expired_or_frozen_error() {
@@ -648,14 +648,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                     RetryResult::Retry(index)
                 }
             }
-            Ok(ev) => {
-                debug!("{} => {:#?}\n", done, ev);
-                RetryResult::Ok(())
+            Ok(Some(ev)) => {
+                debug!(
+                    "connection handshake step completed with events {:#?}\n",
+                    ev
+                );
+                RetryResult::Ok(false)
             }
+            Ok(None) => RetryResult::Ok(true),
         }
     }
 
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<(), u64> {
+    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<bool, u64> {
         let state = match event {
             IbcEvent::OpenInitConnection(_) => State::Init,
             IbcEvent::OpenTryConnection(_) => State::TryOpen,

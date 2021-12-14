@@ -632,20 +632,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))
     }
 
-    pub fn handshake_step(&mut self, state: State) -> Result<Vec<IbcEvent>, ChannelError> {
-        match (state, self.counterparty_state()?) {
-            (State::Init, State::Uninitialized) => Ok(vec![self.build_chan_open_try_and_send()?]),
-            (State::Init, State::Init) => Ok(vec![self.build_chan_open_try_and_send()?]),
-            (State::TryOpen, State::Init) => Ok(vec![self.build_chan_open_ack_and_send()?]),
-            (State::TryOpen, State::TryOpen) => Ok(vec![self.build_chan_open_ack_and_send()?]),
-            (State::Open, State::TryOpen) => Ok(vec![self.build_chan_open_confirm_and_send()?]),
-            _ => Ok(vec![]),
-        }
+    pub fn handshake_step(&mut self, state: State) -> Result<Option<IbcEvent>, ChannelError> {
+        let res = match (state, self.counterparty_state()?) {
+            (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),
+            (State::Init, State::Init) => Some(self.build_chan_open_try_and_send()?),
+            (State::TryOpen, State::Init) => Some(self.build_chan_open_ack_and_send()?),
+            (State::TryOpen, State::TryOpen) => Some(self.build_chan_open_ack_and_send()?),
+            (State::Open, State::TryOpen) => Some(self.build_chan_open_confirm_and_send()?),
+            _ => None,
+        };
+
+        Ok(res)
     }
 
-    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<(), u64> {
-        let done = '🥳';
-
+    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<bool, u64> {
         match self.handshake_step(state) {
             Err(e) => {
                 if e.is_expired_or_frozen_error() {
@@ -659,14 +659,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     RetryResult::Retry(index)
                 }
             }
-            Ok(ev) => {
-                debug!("{} => {:#?}\n", done, ev);
-                RetryResult::Ok(())
+            Ok(Some(ev)) => {
+                debug!("channel handshake step completed with events {:#?}\n", ev);
+                RetryResult::Ok(false)
             }
+            Ok(None) => RetryResult::Ok(true),
         }
     }
 
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<(), u64> {
+    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<bool, u64> {
         let state = match event {
             IbcEvent::OpenInitChannel(_) => State::Init,
             IbcEvent::OpenTryChannel(_) => State::TryOpen,

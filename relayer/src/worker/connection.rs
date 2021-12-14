@@ -43,10 +43,15 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             )
                             .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
 
-                            retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                                handshake_connection.step_event(event.clone(), index)
-                            })
+                            let handshake_completed = retry_with_index(
+                                retry_strategy::worker_default_strategy(),
+                                |index| handshake_connection.step_event(event.clone(), index),
+                            )
                             .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
+
+                            if handshake_completed {
+                                return Err(TaskError::Abort);
+                            }
                         }
                     }
 
@@ -73,10 +78,15 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             )
                             .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
 
-                        retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                            handshake_connection.step_state(state, index)
-                        })
-                        .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
+                        let handshake_completed =
+                            retry_with_index(retry_strategy::worker_default_strategy(), |index| {
+                                handshake_connection.step_state(state, index)
+                            })
+                            .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
+
+                        if handshake_completed {
+                            return Err(TaskError::Abort);
+                        }
                     }
 
                     WorkerCmd::ClearPendingPackets => {} // nothing to do
