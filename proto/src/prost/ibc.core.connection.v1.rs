@@ -1,5 +1,5 @@
 // ICS03 - Connection Data Structures as defined in
-// <https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#data-structures>
+// <https://github.com/cosmos/ibc/blob/master/spec/core/ics-003-connection-semantics#data-structures>
 
 /// ConnectionEnd defines a stateful object on a chain connected to another
 /// separate one.

@@ -98,6 +98,7 @@ impl Runnable for TxRawChanOpenInitCmd {
                 ConnectionId::default(),
                 self.src_port_id.clone(),
                 None,
+                None,
             ),
             b_side: ChannelSide::new(
                 chains.dst,
@@ -105,8 +106,8 @@ impl Runnable for TxRawChanOpenInitCmd {
                 self.dst_conn_id.clone(),
                 self.dst_port_id.clone(),
                 None,
+                None,
             ),
-            version: None,
         };
 
         info!("Message ChanOpenInit: {:?}", channel);
@@ -159,53 +160,6 @@ pub struct TxRawChanOpenTryCmd {
 
 impl Runnable for TxRawChanOpenTryCmd {
     fn run(&self) {
-        let config = app_config();
-
-        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
-            Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
-        };
-
-        // Retrieve the connection
-        let dst_connection = match chains
-            .dst
-            .query_connection(&self.dst_conn_id, Height::default())
-        {
-            Ok(connection) => connection,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
-        };
-
-        let channel = Channel {
-            connection_delay: Default::default(),
-            ordering: Order::default(),
-            a_side: ChannelSide::new(
-                chains.src,
-                ClientId::default(),
-                ConnectionId::default(),
-                self.src_port_id.clone(),
-                Some(self.src_chan_id.clone()),
-            ),
-            b_side: ChannelSide::new(
-                chains.dst,
-                dst_connection.client_id().clone(),
-                self.dst_conn_id.clone(),
-                self.dst_port_id.clone(),
-                self.dst_chan_id.clone(),
-            ),
-            version: None,
-        };
-
-        info!("Message ChanOpenTry: {:?}", channel);
-
-        let res: Result<IbcEvent, Error> = channel
-            .build_chan_open_try_and_send()
-            .map_err(Error::channel);
-
-        match res {
-            Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        }
-
         tx_chan_cmd!(
             "ChanOpenTry",
             build_chan_open_try_and_send,
@@ -220,6 +174,7 @@ impl Runnable for TxRawChanOpenTryCmd {
                         ConnectionId::default(),
                         self.src_port_id.clone(),
                         Some(self.src_chan_id.clone()),
+                        None,
                     ),
                     b_side: ChannelSide::new(
                         chains.dst,
@@ -227,8 +182,8 @@ impl Runnable for TxRawChanOpenTryCmd {
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_chan_id.clone(),
+                        None,
                     ),
-                    version: None,
                 }
             }
         );
@@ -287,6 +242,7 @@ impl Runnable for TxRawChanOpenAckCmd {
                         ConnectionId::default(),
                         self.src_port_id.clone(),
                         Some(self.src_chan_id.clone()),
+                        None,
                     ),
                     b_side: ChannelSide::new(
                         chains.dst,
@@ -294,8 +250,8 @@ impl Runnable for TxRawChanOpenAckCmd {
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         Some(self.dst_chan_id.clone()),
+                        None,
                     ),
-                    version: None,
                 }
             }
         );
@@ -354,6 +310,7 @@ impl Runnable for TxRawChanOpenConfirmCmd {
                         ConnectionId::default(),
                         self.src_port_id.clone(),
                         Some(self.src_chan_id.clone()),
+                        None,
                     ),
                     b_side: ChannelSide::new(
                         chains.dst,
@@ -361,8 +318,8 @@ impl Runnable for TxRawChanOpenConfirmCmd {
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         Some(self.dst_chan_id.clone()),
+                        None,
                     ),
-                    version: None,
                 }
             }
         );
@@ -421,6 +378,7 @@ impl Runnable for TxRawChanCloseInitCmd {
                         ConnectionId::default(),
                         self.src_port_id.clone(),
                         Some(self.src_chan_id.clone()),
+                        None,
                     ),
                     b_side: ChannelSide::new(
                         chains.dst,
@@ -428,8 +386,8 @@ impl Runnable for TxRawChanCloseInitCmd {
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         Some(self.dst_chan_id.clone()),
+                        None,
                     ),
-                    version: None,
                 }
             }
         );
@@ -488,6 +446,7 @@ impl Runnable for TxRawChanCloseConfirmCmd {
                         ConnectionId::default(),
                         self.src_port_id.clone(),
                         Some(self.src_chan_id.clone()),
+                        None,
                     ),
                     b_side: ChannelSide::new(
                         chains.dst,
@@ -495,8 +454,8 @@ impl Runnable for TxRawChanCloseConfirmCmd {
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         Some(self.dst_chan_id.clone()),
+                        None,
                     ),
-                    version: None,
                 }
             }
         );

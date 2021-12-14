@@ -9,4 +9,6 @@ pub mod events;
 pub mod handler;
 pub mod msgs;
 pub mod packet;
-pub mod version;
+
+mod version;
+pub use version::Version;
