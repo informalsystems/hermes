@@ -22,7 +22,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandl
     let mut resume_handshake = true;
 
     spawn_background_task(
-        "connection_worker".to_string(),
+        format!("ConnectionWorker({})", connection.short_name()),
         Some(Duration::from_millis(200)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {

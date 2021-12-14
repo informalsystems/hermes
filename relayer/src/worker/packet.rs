@@ -42,7 +42,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandl
 ) -> TaskHandle {
     let mut is_first_run: bool = true;
     spawn_background_task(
-        "packet_worker".to_string(),
+        format!("PacketCmdWorker({})", link.a_to_b),
         Some(Duration::from_millis(200)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
@@ -65,12 +65,12 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandl
     )
 }
 
-pub fn spawn_link_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+pub fn spawn_packet_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
     path: Packet,
     link: Arc<Link<ChainA, ChainB>>,
 ) -> TaskHandle {
     spawn_background_task(
-        "link_worker".to_string(),
+        format!("PacketWorker({})", link.a_to_b),
         Some(Duration::from_millis(500)),
         move || {
             link.a_to_b
