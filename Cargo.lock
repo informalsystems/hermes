@@ -1354,7 +1354,6 @@ version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-stream",
- "async-trait",
  "bech32",
  "bitcoin",
  "bytes",
