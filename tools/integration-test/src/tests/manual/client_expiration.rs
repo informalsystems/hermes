@@ -43,7 +43,7 @@ const CLIENT_EXPIRY: Duration = Duration::from_secs(15);
    0: failed during an operation on client (07-tendermint-0) hosted by chain (ibc-beta-25716970)
    1: client 07-tendermint-0 on chain id ibc-beta-25716970 is expired or frozen
    ERROR ibc_relayer::util::task: aborting task connection_worker after encountering fatal error:
-   0: Packet worker failed after 1 retries
+   0: Worker failed after 1 retries
    ```
 
    The error above should not repeat more than once. In the original code,
@@ -79,7 +79,7 @@ fn test_connection_expiration() -> Result<(), Error> {
     0: failed during an operation on client (07-tendermint-0) hosted by chain (ibc-alpha-995f3fa8)
     1: client 07-tendermint-0 on chain id ibc-alpha-995f3fa8 is expired or frozen
     ERROR ibc_relayer::util::task: aborting task channel_worker after encountering fatal error:
-    0: Packet worker failed after 1 retries
+    0: Worker failed after 1 retries
    ```
 
    The error above should not repeat more than once. In the original code,
@@ -159,38 +159,6 @@ impl TestOverrides for ExpirationTestOverrides {
     }
 }
 
-impl HasOverrides for CreateOnExpiredClientTest {
-    type Overrides = ExpirationTestOverrides;
-
-    fn get_overrides(&self) -> &ExpirationTestOverrides {
-        &ExpirationTestOverrides
-    }
-}
-
-impl HasOverrides for ConnectionExpirationTest {
-    type Overrides = ExpirationTestOverrides;
-
-    fn get_overrides(&self) -> &ExpirationTestOverrides {
-        &ExpirationTestOverrides
-    }
-}
-
-impl HasOverrides for ChannelExpirationTest {
-    type Overrides = ExpirationTestOverrides;
-
-    fn get_overrides(&self) -> &ExpirationTestOverrides {
-        &ExpirationTestOverrides
-    }
-}
-
-impl HasOverrides for PacketExpirationTest {
-    type Overrides = ExpirationTestOverrides;
-
-    fn get_overrides(&self) -> &ExpirationTestOverrides {
-        &ExpirationTestOverrides
-    }
-}
-
 impl BinaryChainTest for ConnectionExpirationTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -199,7 +167,7 @@ impl BinaryChainTest for ConnectionExpirationTest {
     ) -> Result<(), Error> {
         // We spawn a supervisor first, but the refresh client is not
         // triggered because it is currently tied to channels.
-        let supervisor =
+        let _supervisor =
             spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
 
         wait_for_client_expiry();
@@ -217,8 +185,6 @@ impl BinaryChainTest for ConnectionExpirationTest {
             &chains.client_a_to_b.tagged_client_id(),
         )?;
 
-        // New work in progress
-
         sleep(Duration::from_secs(10));
 
         info!("Trying to new connection and worker after previous connection worker failed");
@@ -227,8 +193,7 @@ impl BinaryChainTest for ConnectionExpirationTest {
 
         let client_a_to_b_2 = bootstrap_foreign_client(&chains.handle_a, &chains.handle_b)?;
 
-        // Problem: if the connection worker for a chain abort due to frozen client,
-        // it won't handle subsequent init connection packets.
+        // The second init connection on an unexpired client should succeed.
 
         init_connection(
             &chains.handle_a,
@@ -236,19 +201,6 @@ impl BinaryChainTest for ConnectionExpirationTest {
             &client_b_to_a_2.tagged_client_id(),
             &client_a_to_b_2.tagged_client_id(),
         )?;
-
-        sleep(Duration::from_secs(10));
-
-        info!("respawning supervisor");
-
-        supervisor.shutdown();
-
-        // Even if we respawn the supervisor, it would still abort immediately
-        // due to the first frozen client error. We are effectively stuck at
-        // either having to keep retrying on frozen clients or not able to
-        // handle any other new connection due to frozen clients.
-
-        let _supervisor = spawn_supervisor(chains.config.clone(), chains.registry, None, false)?;
 
         crate::suspend();
     }
@@ -395,5 +347,37 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
         }
 
         Ok(())
+    }
+}
+
+impl HasOverrides for CreateOnExpiredClientTest {
+    type Overrides = ExpirationTestOverrides;
+
+    fn get_overrides(&self) -> &ExpirationTestOverrides {
+        &ExpirationTestOverrides
+    }
+}
+
+impl HasOverrides for ConnectionExpirationTest {
+    type Overrides = ExpirationTestOverrides;
+
+    fn get_overrides(&self) -> &ExpirationTestOverrides {
+        &ExpirationTestOverrides
+    }
+}
+
+impl HasOverrides for ChannelExpirationTest {
+    type Overrides = ExpirationTestOverrides;
+
+    fn get_overrides(&self) -> &ExpirationTestOverrides {
+        &ExpirationTestOverrides
+    }
+}
+
+impl HasOverrides for PacketExpirationTest {
+    type Overrides = ExpirationTestOverrides;
+
+    fn get_overrides(&self) -> &ExpirationTestOverrides {
+        &ExpirationTestOverrides
     }
 }
