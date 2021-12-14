@@ -28,6 +28,7 @@ bytes = "1.1"
 tonic = {version = "0.6", optional = true}
 serde = "1.0"
 schemars = "0.8"
+base64 = "0.13"
 
 [dependencies.tendermint-proto]
 version = "=0.23.5"

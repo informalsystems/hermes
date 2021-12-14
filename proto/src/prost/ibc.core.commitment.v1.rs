@@ -5,6 +5,11 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerkleRoot {
     #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(
+        feature = "std",
+        serde(with = "crate::base64"),
+        schemars(with = "String")
+    )]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
 /// MerklePrefix is merkle path prefixed to the key.
@@ -15,6 +20,11 @@ pub struct MerkleRoot {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerklePrefix {
     #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(
+        feature = "std",
+        serde(with = "crate::base64"),
+        schemars(with = "String")
+    )]
     pub key_prefix: ::prost::alloc::vec::Vec<u8>,
 }
 /// MerklePath is the path used to verify commitment proofs, which can be an

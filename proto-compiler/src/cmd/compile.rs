@@ -105,6 +105,7 @@ impl CompileCmd {
         let attrs_serde_ord = "#[derive(::serde::Serialize, ::serde::Deserialize, Eq, PartialOrd, Ord)]";
         let attrs_serde_eq = "#[derive(::serde::Serialize, ::serde::Deserialize, Eq)]";
         let attrs_serde_default = "#[serde(default)]";
+        let attrs_base64 = r#"#[cfg_attr(feature = "std", serde(with = "crate::base64"), schemars(with = "String"))]"#;
 
         let compilation = tonic_build::configure()
             .build_client(true)
@@ -119,8 +120,11 @@ impl CompileCmd {
 
             .type_attribute(".ibc.core.commitment.v1.MerkleRoot", attrs_serde)
             .type_attribute(".ibc.core.commitment.v1.MerkleRoot", attrs_jsonschema)
+            .field_attribute(".ibc.core.commitment.v1.MerkleRoot.hash", attrs_base64)
+
             .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_serde)
             .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_jsonschema)
+            .field_attribute(".ibc.core.commitment.v1.MerklePrefix.key_prefix", attrs_base64)
 
             .type_attribute(".ibc.core.channel.v1.Channel", attrs_serde)
             .type_attribute(".ibc.core.channel.v1.Channel", attrs_jsonschema)
@@ -137,9 +141,12 @@ impl CompileCmd {
             .type_attribute(".ics23.LeafOp", attrs_serde_eq)
             .type_attribute(".ics23.LeafOp", attrs_jsonschema)
             .field_attribute(".ics23.LeafOp.prehash_key", attrs_serde_default)
+            .field_attribute(".ics23.LeafOp.prefix", attrs_base64)
 
             .type_attribute(".ics23.InnerOp", attrs_serde_eq)
             .type_attribute(".ics23.InnerOp", attrs_jsonschema)
+            .field_attribute(".ics23.InnerOp.prefix", attrs_base64)
+            .field_attribute(".ics23.InnerOp.suffix", attrs_base64)
 
             .type_attribute(".ics23.ProofSpec", attrs_serde_eq)
             .type_attribute(".ics23.ProofSpec", attrs_jsonschema)
@@ -149,6 +156,7 @@ impl CompileCmd {
             .type_attribute(".ics23.InnerSpec", attrs_serde_eq)
             .type_attribute(".ics23.InnerSpec", attrs_jsonschema)
             .field_attribute(".ics23.InnerSpec.empty_child", attrs_serde_default)
+            .field_attribute(".ics23.InnerSpec.empty_child", attrs_base64)
 
             .compile(&protos, &includes);
 
