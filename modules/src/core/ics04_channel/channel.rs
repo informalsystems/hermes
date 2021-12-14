@@ -300,8 +300,8 @@ impl From<Counterparty> for RawCounterparty {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Order {
     None = 0,
-    Unordered,
-    Ordered,
+    Unordered = 1,
+    Ordered = 2,
 }
 
 impl Default for Order {
