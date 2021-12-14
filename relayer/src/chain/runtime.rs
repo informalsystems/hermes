@@ -42,10 +42,10 @@ use ibc_proto::ibc::core::{
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
     connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
-    port::v1::QueryAppVersionRequest,
 };
 
 use crate::{
+    chain::handle::requests::AppVersion,
     chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -484,7 +484,7 @@ where
 
     fn app_version(
         &self,
-        request: QueryAppVersionRequest,
+        request: AppVersion,
         reply_to: ReplyTo<ics04_channel::Version>,
     ) -> Result<(), Error> {
         let result = self.chain.query_app_version(request);

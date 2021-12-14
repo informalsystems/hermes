@@ -36,9 +36,9 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
-use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
+use crate::chain::handle::requests::AppVersion;
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
 use crate::event::monitor::TxMonitorCmd;
@@ -75,14 +75,6 @@ pub struct QueryResponse {
     pub value: Vec<u8>,
     pub proof: Option<MerkleProof>,
     pub height: Height,
-}
-
-/// Packet query options
-#[derive(Debug)]
-pub struct QueryPacketOptions {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    pub height: u64,
 }
 
 /// Defines a blockchain as understood by the relayer
@@ -236,10 +228,7 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error>;
 
-    fn query_app_version(
-        &self,
-        request: QueryAppVersionRequest,
-    ) -> Result<ics04_channel::Version, Error>;
+    fn query_app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
 
     fn query_channel_client_state(
         &self,

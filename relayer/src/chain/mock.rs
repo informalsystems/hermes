@@ -41,9 +41,8 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
-use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 
-use crate::chain::{ChainEndpoint, StatusResponse};
+use crate::chain::{handle::requests::AppVersion, ChainEndpoint, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -434,7 +433,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_app_version(&self, _request: QueryAppVersionRequest) -> Result<Version, Error> {
+    fn query_app_version(&self, _request: AppVersion) -> Result<Version, Error> {
         todo!()
     }
 }

@@ -41,11 +41,11 @@ use ibc_proto::ibc::core::{
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
     connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
-    port::v1::QueryAppVersionRequest,
 };
 pub use prod::ProdChainHandle;
 
 use crate::{
+    chain::handle::requests::AppVersion,
     chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -57,6 +57,7 @@ use crate::{
 use super::HealthCheck;
 
 mod prod;
+pub mod requests;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
@@ -132,7 +133,7 @@ pub enum ChainRequest {
     },
 
     AppVersion {
-        request: QueryAppVersionRequest,
+        request: AppVersion,
         reply_to: ReplyTo<ics04_channel::Version>,
     },
 
@@ -367,8 +368,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
-    fn app_version(&self, request: QueryAppVersionRequest)
-        -> Result<ics04_channel::Version, Error>;
+    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
 
     fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
 

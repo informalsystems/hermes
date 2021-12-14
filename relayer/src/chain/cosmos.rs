@@ -87,7 +87,10 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
-use crate::{chain::QueryResponse, chain::StatusResponse, event::monitor::TxMonitorCmd};
+use crate::{
+    chain::handle::requests::AppVersion, chain::QueryResponse, chain::StatusResponse,
+    event::monitor::TxMonitorCmd,
+};
 use crate::{config::types::Memo, error::Error};
 use crate::{
     config::{AddressType, ChainConfig, GasPrice},
@@ -1965,17 +1968,15 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((target, supporting))
     }
 
-    fn query_app_version(
-        &self,
-        request: QueryAppVersionRequest,
-    ) -> Result<ics04_channel::Version, Error> {
+    fn query_app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error> {
         use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
 
         let mut client = self
             .block_on(QueryClient::connect(self.grpc_addr.clone()))
             .map_err(Error::grpc_transport)?;
 
-        let response = self.block_on(client.app_version(request));
+        let tonic_req: QueryAppVersionRequest = request.into();
+        let response = self.block_on(client.app_version(tonic_req));
         let resp_version = response
             .map_err(Error::grpc_status)?
             .into_inner()

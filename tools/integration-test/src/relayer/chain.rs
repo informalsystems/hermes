@@ -55,7 +55,7 @@ use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusS
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
+use ibc_relayer::chain::handle::requests::AppVersion;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::{HealthCheck, StatusResponse};
 use ibc_relayer::config::ChainConfig;
@@ -119,10 +119,7 @@ where
         self.value().add_key(key_name, key)
     }
 
-    fn app_version(
-        &self,
-        request: QueryAppVersionRequest,
-    ) -> Result<ics04_channel::Version, Error> {
+    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error> {
         self.value().app_version(request)
     }
 

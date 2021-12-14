@@ -6,14 +6,15 @@
 
 use tracing::{debug, warn};
 
+use ibc::core::ics04_channel::channel::Counterparty;
 use ibc::{
     applications::{ics20_fungible_token_transfer, ics27_interchain_accounts},
     core::{ics04_channel::Version, ics24_host::identifier::PortId},
 };
-use ibc_proto::ibc::core::{channel::v1::Counterparty, port::v1::QueryAppVersionRequest};
 
 use crate::error::ErrorDetail;
 use crate::{
+    chain::handle::requests,
     chain::handle::ChainHandle,
     channel::{Channel, ChannelError},
     error::Error,
@@ -105,8 +106,8 @@ fn dst_app_version<ChainA: ChainHandle, ChainB: ChainHandle>(
     channel: &Channel<ChainA, ChainB>,
 ) -> Result<Version, Error> {
     let counterparty = channel.src_channel_id().map(|cid| Counterparty {
-        port_id: channel.src_port_id().to_string(),
-        channel_id: cid.to_string(),
+        port_id: channel.src_port_id().clone(),
+        channel_id: Some(cid.clone()),
     });
 
     let proposed_version = match channel.src_version() {
@@ -122,12 +123,12 @@ fn dst_app_version<ChainA: ChainHandle, ChainB: ChainHandle>(
         channel.src_version()
     );
 
-    let request = QueryAppVersionRequest {
-        port_id: channel.dst_port_id().to_string(),
-        connection_id: channel.dst_connection_id().to_string(),
-        ordering: channel.ordering as i32,
-        proposed_version: proposed_version.to_string(),
+    let request = requests::AppVersion {
+        port_id: channel.dst_port_id().clone(),
+        connection_id: channel.dst_connection_id().clone(),
+        ordering: channel.ordering,
         counterparty,
+        proposed_version,
     };
 
     channel.dst_chain().app_version(request)
