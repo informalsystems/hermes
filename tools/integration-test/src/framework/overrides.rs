@@ -82,7 +82,7 @@ pub trait TestOverrides {
        Implemented for [`PortsOverride`].
     */
     fn channel_port_a(&self) -> PortId {
-        PortId::unsafe_new("transfer")
+        PortId::transfer()
     }
 
     /**
@@ -92,7 +92,7 @@ pub trait TestOverrides {
        Implemented for [`PortsOverride`].
     */
     fn channel_port_b(&self) -> PortId {
-        PortId::unsafe_new("transfer")
+        PortId::transfer()
     }
 }
 

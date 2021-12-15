@@ -19,6 +19,7 @@
 */
 
 pub mod chain;
+pub mod channel;
 pub mod connection;
 pub mod foreign_client;
 pub mod transfer;
