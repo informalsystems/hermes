@@ -325,6 +325,7 @@ impl CosmosSdkChain {
             signatures: vec![signed_doc],
         };
 
+        // This may result in an account sequence mismatch error
         let estimated_gas = self.estimate_gas(simulate_tx)?;
 
         if estimated_gas > self.max_gas() {
@@ -368,60 +369,86 @@ impl CosmosSdkChain {
         ))
     }
 
-    // Try to send_tx with retry on account sequence error.
-    // An account sequence error can occur if the cached account sequence of
-    // the relayer somehow get outdated, or when the relayer wallet is used
-    // concurrently elsewhere.
-    // When there is an account sequence mismatch, we refetch the account sequence
-    // from the chain and retry sending the transaction again with the new sequence.
+    /// Try to send_tx with retry on account sequence error.
+    /// An account sequence error can occur if the cached account sequence of
+    /// the relayer somehow get outdated, or when the relayer wallet is used
+    /// concurrently elsewhere.
+    /// When there is an account sequence mismatch, we refetch the account sequence
+    /// from the chain and retry sending the transaction again with the new sequence.
+    ///
+    /// Account sequence mismatch can occur at two separate steps:
+    ///   1. as Err variant, propagated from the `estimate_gas` step.
+    ///   2. as an Ok variant, with an Code::Err response, propagated from
+    ///     the `broadcast_tx_sync` step.
+    /// We cover and treat both of these cases.
     fn send_tx_with_account_sequence_retry(
         &mut self,
         proto_msgs: Vec<Any>,
-        retries: u32,
+        retry_counter: u32,
     ) -> Result<Response, Error> {
+        // If this is a retry, then re-fetch the account s.n.
+        if retry_counter > 1 {
+            self.refresh_account()?;
+        }
+
         let account_sequence = self.account_sequence()?;
 
-        let response = self.send_tx_with_account_sequence(proto_msgs.clone(), account_sequence)?;
-
-        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
-
-        match response.code {
-            Code::Ok => {
-                self.incr_account_sequence();
-                Ok(response)
+        match self.send_tx_with_account_sequence(proto_msgs.clone(), account_sequence) {
+            // Gas estimation failed with retry-able error.
+            Err(e) if can_retry_simulation(&e) => {
+                if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
+                    warn!("send_tx failed at estimate_gas step due to incorrect account sequence. retrying..");
+                    self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
+                } else {
+                    error!("send_tx failed due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
+                    Err(e)
+                }
             }
-            Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
-                if retries < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
-                    warn!("send_tx failed with incorrect account sequence. re-fetching account sequence from chain & retrying.");
-                    // Refetch account information from the chain.
-                    // We do not wait between retries as waiting will
-                    // only increase the chance of the account sequence getting
-                    // out of synced again from other sources.
-                    self.refresh_account()?;
 
-                    self.send_tx_with_account_sequence_retry(proto_msgs, retries + 1)
+            // Gas estimation succeeded. Broadcasting failed with retry-able error.
+            Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
+                if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
+                    warn!("send_tx failed at broadcast step with incorrect account sequence. retrying..");
+                    self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
                 } else {
                     // If after the max retry we still get an account sequence mismatch error,
                     // we ignore the error and return the original response to downstream.
                     // We do not return an error here, because the current convention
                     // let the caller handle error responses separately.
-
                     error!("failed to send_tx due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
-
                     Ok(response)
                 }
             }
-            Code::Err(code) => {
-                // Avoid increasing the account s.n. if CheckTx failed
-                // Log the error
-                error!(
-                    "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
-                    self.id(),
-                    response,
-                    sdk_error_from_tx_sync_error_code(code)
-                );
-                Ok(response)
+
+            // Catch-all arm for the Ok variant.
+            // This is the case when gas estimation succeeded.
+            Ok(response) => {
+                // Complete success.
+                match response.code {
+                    tendermint::abci::Code::Ok => {
+                        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
+
+                        self.incr_account_sequence();
+                        Ok(response)
+                    }
+                    // Gas estimation succeeded, but broadcasting failed with unrecoverable error.
+                    tendermint::abci::Code::Err(code) => {
+                        // Avoid increasing the account s.n. if CheckTx failed
+                        // Log the error
+                        error!(
+                            "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
+                            self.id(),
+                            response,
+                            sdk_error_from_tx_sync_error_code(code)
+                        );
+                        Ok(response)
+                    }
+                }
             }
+
+            // Catch-all case for the Err variant.
+            // Gas estimation failure or other unrecoverable error, propagate.
+            Err(e) => Err(e),
         }
     }
 
@@ -475,25 +502,13 @@ impl CosmosSdkChain {
                 Ok(self.default_gas())
             }
 
-            Err(e) if can_retry_simulation(&e) => {
-                warn!(
-                    "[{}] estimate_gas: failed to simulate tx, refreshing account and retrying: {}",
-                    self.id(),
-                    e.detail()
-                );
-                // TODO: Figure our retrying abstraction here.
-                self.refresh_account()?;
-
-                Ok(self.default_gas())
-            }
-
             Err(e) => {
                 error!(
                     "[{}] estimate_gas: failed to simulate tx with non-recoverable error: {}",
                     self.id(),
                     e.detail()
                 );
-
+                // Propagate the error, the retrying mechanism at caller may catch & retry.
                 Err(e)
             }
         }
