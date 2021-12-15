@@ -370,7 +370,7 @@ impl CosmosSdkChain {
 
     // Try to send_tx with retry on account sequence error.
     // An account sequence error can occur if the cached account sequence of
-    // the relayer somehow get outdated, or when the relayer's wallet is used
+    // the relayer somehow get outdated, or when the relayer wallet is used
     // concurrently elsewhere.
     // When there is an account sequence mismatch, we refetch the account sequence
     // from the chain and retry sending the transaction again with the new sequence.
@@ -438,7 +438,7 @@ impl CosmosSdkChain {
     ///
     /// If the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check.
     /// In this case we use the `default_gas` param.
-    fn estimate_gas(&self, tx: Tx) -> Result<u64, Error> {
+    fn estimate_gas(&mut self, tx: Tx) -> Result<u64, Error> {
         let simulated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
 
         match simulated_gas {
@@ -471,6 +471,18 @@ impl CosmosSdkChain {
                     self.id(),
                     e.detail()
                 );
+
+                Ok(self.default_gas())
+            }
+
+            Err(e) if can_retry_simulation(&e) => {
+                warn!(
+                    "[{}] estimate_gas: failed to simulate tx, refreshing account and retrying: {}",
+                    self.id(),
+                    e.detail()
+                );
+                // TODO: Figure our retrying abstraction here.
+                self.refresh_account()?;
 
                 Ok(self.default_gas())
             }
@@ -2469,6 +2481,15 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
 
     match e.detail() {
         GrpcStatus(detail) => detail.is_client_state_height_too_low(),
+        _ => false,
+    }
+}
+
+fn can_retry_simulation(e: &Error) -> bool {
+    use crate::error::ErrorDetail::*;
+
+    match e.detail() {
+        GrpcStatus(detail) => detail.is_account_sequence_mismatch(),
         _ => false,
     }
 }
