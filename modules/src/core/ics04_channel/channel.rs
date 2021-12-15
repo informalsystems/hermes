@@ -12,7 +12,7 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 
 use crate::core::ics02_client::height::Height;
-use crate::core::ics04_channel::{error::Error, packet::Sequence};
+use crate::core::ics04_channel::{error::Error, packet::Sequence, Version};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::WithBlockDataType;
 
@@ -67,7 +67,7 @@ impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
                 .iter()
                 .map(|v| v.as_str().to_string())
                 .collect(),
-            version: value.channel_end.version,
+            version: value.channel_end.version.into(),
             port_id: value.port_id.to_string(),
             channel_id: value.channel_id.to_string(),
         }
@@ -80,7 +80,7 @@ pub struct ChannelEnd {
     pub ordering: Order,
     pub remote: Counterparty,
     pub connection_hops: Vec<ConnectionId>,
-    pub version: String,
+    pub version: Version,
 }
 
 impl Default for ChannelEnd {
@@ -90,7 +90,7 @@ impl Default for ChannelEnd {
             ordering: Default::default(),
             remote: Counterparty::default(),
             connection_hops: Vec::new(),
-            version: "".to_string(),
+            version: Version::default(),
         }
     }
 }
@@ -123,7 +123,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             .collect::<Result<Vec<_>, _>>()
             .map_err(Error::identifier)?;
 
-        let version = validate_version(value.version)?;
+        let version = value.version.into();
 
         Ok(ChannelEnd::new(
             chan_state,
@@ -146,7 +146,7 @@ impl From<ChannelEnd> for RawChannel {
                 .iter()
                 .map(|v| v.as_str().to_string())
                 .collect(),
-            version: value.version,
+            version: value.version.into(),
         }
     }
 }
@@ -158,7 +158,7 @@ impl ChannelEnd {
         ordering: Order,
         remote: Counterparty,
         connection_hops: Vec<ConnectionId>,
-        version: String,
+        version: Version,
     ) -> Self {
         Self {
             state,
@@ -174,7 +174,7 @@ impl ChannelEnd {
         self.state = s;
     }
 
-    pub fn set_version(&mut self, v: String) {
+    pub fn set_version(&mut self, v: Version) {
         self.version = v;
     }
 
@@ -203,8 +203,8 @@ impl ChannelEnd {
         &self.connection_hops
     }
 
-    pub fn version(&self) -> String {
-        self.version.parse().unwrap()
+    pub fn version(&self) -> &Version {
+        &self.version
     }
 
     pub fn validate_basic(&self) -> Result<(), Error> {
@@ -213,9 +213,6 @@ impl ChannelEnd {
                 1,
                 self.connection_hops.len(),
             ));
-        }
-        if self.version().trim() == "" {
-            return Err(Error::empty_version());
         }
         self.counterparty().validate_basic()
     }
@@ -239,7 +236,7 @@ impl ChannelEnd {
         self.counterparty().eq(other)
     }
 
-    pub fn version_matches(&self, other: &str) -> bool {
+    pub fn version_matches(&self, other: &Version) -> bool {
         self.version().eq(other)
     }
 }
@@ -303,8 +300,8 @@ impl From<Counterparty> for RawCounterparty {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Order {
     None = 0,
-    Unordered,
-    Ordered,
+    Unordered = 1,
+    Ordered = 2,
 }
 
 impl Default for Order {
@@ -423,13 +420,6 @@ pub struct QueryPacketEventDataRequest {
     pub destination_port_id: PortId,
     pub sequences: Vec<Sequence>,
     pub height: Height,
-}
-
-/// Version validation, specific for channel (ICS4) opening handshake protocol.
-/// This field is supposed to be opaque to the core IBC protocol. No explicit validation necessary,
-/// and empty version is currently allowed by the specification (cf. ICS 004, v1).
-pub fn validate_version(version: String) -> Result<String, Error> {
-    Ok(version)
 }
 
 #[cfg(test)]

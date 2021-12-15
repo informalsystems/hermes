@@ -185,6 +185,10 @@ define_error! {
             { reason: String }
             |e| { format!("Failed to build conn open try: {0}", e.reason) },
 
+        AppVersion
+            { reason: String }
+            |e| { format!("failed to fetch application version: {0}", e.reason) },
+
         ChanOpenAck
             { channel_id: ChannelId, reason: String }
             |e| {
@@ -509,6 +513,23 @@ impl GrpcStatusSubdetail {
 
         let msg = self.status.message();
         msg.contains("verification failed") && msg.contains("client state height < proof height")
+    }
+
+    /// Check whether this gRPC error matches
+    /// - status: Unimplemented
+    /// - message: 'unknown service ibc.core.port.v1.Query'
+    ///
+    /// # Note:
+    /// Used for detecting if the ibc module is able to
+    /// resolve queries for the application version.
+    pub fn is_unimplemented_port_query(&self) -> bool {
+        if self.status.code() != tonic::Code::Unimplemented {
+            return false;
+        }
+
+        self.status
+            .message()
+            .contains("unknown service ibc.core.port.v1.Query")
     }
 
     /// Check whether this gRPC error matches

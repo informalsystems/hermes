@@ -144,6 +144,7 @@ mod tests {
     use crate::core::ics04_channel::handler::recv_packet::process;
     use crate::core::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
     use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+    use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::relayer::ics18_relayer::context::Ics18Context;
@@ -195,7 +196,7 @@ mod tests {
                 Some(packet.source_channel.clone()),
             ),
             vec![ConnectionId::default()],
-            "ics20".to_string(),
+            Version::ics20(),
         );
 
         let connection_end = ConnectionEnd::new(

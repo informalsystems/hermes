@@ -51,9 +51,6 @@ define_error! {
             [ TraceError<TendermintError> ]
             | _ | { "invalid version" },
 
-        EmptyVersion
-            | _ | { "empty version string" },
-
         InvalidSigner
             | _ | { "invalid signer address" },
 
