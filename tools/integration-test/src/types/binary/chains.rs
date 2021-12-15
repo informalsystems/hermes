@@ -9,8 +9,9 @@ use ibc_relayer::registry::SharedRegistry;
 use std::path::PathBuf;
 use tracing::info;
 
+use crate::relayer::foreign_client::TaggedForeignClientExt;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
-use crate::types::id::TaggedChainIdRef;
+use crate::types::id::{TaggedChainIdRef, TaggedClientIdRef};
 use crate::types::single::node::{FullNode, TaggedFullNodeExt};
 use crate::types::tagged::*;
 
@@ -137,6 +138,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
     */
     pub fn chain_id_a(&self) -> TaggedChainIdRef<ChainA> {
         self.node_a.chain_id()
+    }
+
+    pub fn client_id_a(&self) -> TaggedClientIdRef<ChainA, ChainB> {
+        self.client_b_to_a.tagged_client_id()
+    }
+
+    pub fn client_id_b(&self) -> TaggedClientIdRef<ChainB, ChainA> {
+        self.client_a_to_b.tagged_client_id()
     }
 
     /**

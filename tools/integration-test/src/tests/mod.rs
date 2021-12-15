@@ -6,6 +6,7 @@
 */
 
 pub mod memo;
+pub mod supervisor;
 pub mod transfer;
 
 #[cfg(any(doc, feature = "manual"))]

@@ -106,9 +106,8 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
-
     use core::str::FromStr;
+
     use test_log::test;
 
     use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -129,6 +128,7 @@ mod tests {
     use crate::core::ics24_host::identifier::ConnectionId;
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
+    use crate::prelude::*;
     use crate::Height;
 
     // TODO: The tests here are very fragile and complex.
@@ -197,7 +197,7 @@ mod tests {
                 Some(msg_chan_ack.channel_id().clone()),
             ),
             connection_vec0.clone(),
-            msg_chan_try.channel.version(),
+            msg_chan_try.channel.version().clone(),
         );
 
         let failed_chan_end = ChannelEnd::new(
@@ -208,7 +208,7 @@ mod tests {
                 Some(msg_chan_ack.channel_id().clone()),
             ),
             connection_vec0,
-            msg_chan_try.channel.version(),
+            msg_chan_try.channel.version().clone(),
         );
 
         let tests: Vec<Test> = vec![

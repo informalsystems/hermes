@@ -65,7 +65,7 @@ pub(crate) fn process(
         *channel_end.ordering(),
         expected_counterparty,
         expected_connection_hops,
-        channel_end.version(),
+        channel_end.version().clone(),
     );
     //2. Verify proofs
     verify_channel_proofs(
@@ -117,6 +117,7 @@ mod tests {
     use crate::core::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
     use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
     use crate::core::ics04_channel::msgs::ChannelMsg;
+    use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
@@ -159,7 +160,7 @@ mod tests {
                 Some(msg_chan_confirm.channel_id().clone()),
             ),
             vec![conn_id.clone()],
-            "".to_string(),
+            Version::default(),
         );
 
         let tests: Vec<Test> = vec![Test {

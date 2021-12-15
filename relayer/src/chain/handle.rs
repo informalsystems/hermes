@@ -18,6 +18,7 @@ use ibc::{
             version::Version,
         },
         ics04_channel::{
+            self,
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
@@ -44,6 +45,7 @@ use ibc_proto::ibc::core::{
 pub use prod::ProdChainHandle;
 
 use crate::{
+    chain::handle::requests::AppVersion,
     chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -55,6 +57,7 @@ use crate::{
 use super::HealthCheck;
 
 mod prod;
+pub mod requests;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
@@ -129,15 +132,15 @@ pub enum ChainRequest {
         reply_to: ReplyTo<KeyEntry>,
     },
 
+    AppVersion {
+        request: AppVersion,
+        reply_to: ReplyTo<ics04_channel::Version>,
+    },
+
     AddKey {
         key_name: String,
         key: KeyEntry,
         reply_to: ReplyTo<()>,
-    },
-
-    ModuleVersion {
-        port_id: PortId,
-        reply_to: ReplyTo<String>,
     },
 
     QueryStatus {
@@ -365,9 +368,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
-    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
+    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
 
-    fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
+    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
 
     fn query_status(&self) -> Result<StatusResponse, Error>;
 

@@ -158,6 +158,7 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
                 connection.connection_id_b.value().clone(),
                 port_id.cloned().into_value(),
                 None,
+                None,
             ),
             b_side: ChannelSide::new(
                 chain_a.clone(),
@@ -165,9 +166,9 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
                 connection.connection_id_a.value().clone(),
                 port_id.cloned().into_value(),
                 None,
+                None,
             ),
             connection_delay: connection.connection.delay_period,
-            version: None,
         };
 
         channel.build_chan_open_init_and_send()?;

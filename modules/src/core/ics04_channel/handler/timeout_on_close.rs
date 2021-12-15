@@ -76,7 +76,7 @@ pub fn process(
         *source_channel_end.ordering(),
         expected_counterparty,
         expected_connection_hops,
-        source_channel_end.version(),
+        source_channel_end.version().clone(),
     );
 
     verify_channel_proofs(
@@ -131,6 +131,7 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
+    use test_log::test;
 
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -142,14 +143,12 @@ mod tests {
     use crate::core::ics04_channel::handler::timeout_on_close::process;
     use crate::core::ics04_channel::msgs::timeout_on_close::test_util::get_dummy_raw_msg_timeout_on_close;
     use crate::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
+    use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::events::IbcEvent;
+    use crate::mock::context::MockContext;
     use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
-
-    use crate::mock::context::MockContext;
-
-    use test_log::test;
 
     #[test]
     fn timeout_on_close_packet_processing() {
@@ -190,7 +189,7 @@ mod tests {
                 Some(packet.destination_channel.clone()),
             ),
             vec![ConnectionId::default()],
-            "ics20".to_string(),
+            Version::ics20(),
         );
 
         let connection_end = ConnectionEnd::new(

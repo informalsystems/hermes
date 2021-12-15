@@ -230,7 +230,16 @@ impl BinaryChainTest for ChannelExpirationTest {
 
         info!("Trying to create channel after client is expired");
 
-        init_channel(&chains, &connection, PortId::transfer(), PortId::transfer())?;
+        init_channel(
+            &chains.handle_a,
+            &chains.handle_b,
+            &chains.client_id_a(),
+            &chains.client_id_b(),
+            &connection.connection_id_a.as_ref(),
+            &connection.connection_id_b.as_ref(),
+            &tagged_transfer_port().as_ref(),
+            &tagged_transfer_port().as_ref(),
+        )?;
 
         crate::suspend();
     }

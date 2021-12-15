@@ -22,13 +22,17 @@ pub use crate::framework::binary::channel::{
 };
 pub use crate::framework::binary::node::{run_binary_node_test, BinaryNodeTest};
 pub use crate::framework::overrides::TestOverrides;
+pub use crate::relayer::channel::TaggedChannelEndExt;
+pub use crate::relayer::connection::{TaggedConnectionEndExt, TaggedConnectionExt};
 pub use crate::relayer::foreign_client::TaggedForeignClientExt;
 pub use crate::types::binary::chains::ConnectedChains;
 pub use crate::types::binary::channel::ConnectedChannel;
 pub use crate::types::config::TestConfig;
+pub use crate::types::id::*;
 pub use crate::types::single::node::{FullNode, TaggedFullNodeExt};
 pub use crate::types::tagged::{DualTagged, MonoTagged};
 pub use crate::types::wallet::{
     TaggedTestWalletsExt, TaggedWallet, TestWallets, Wallet, WalletAddress, WalletId,
 };
+pub use crate::util::retry::assert_eventually_succeed;
 pub use crate::util::suspend::suspend;
