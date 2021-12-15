@@ -387,7 +387,7 @@ impl CosmosSdkChain {
         retry_counter: u32,
     ) -> Result<Response, Error> {
         // If this is a retry, then re-fetch the account s.n.
-        if retry_counter > 1 {
+        if retry_counter > 0 {
             self.refresh_account()?;
         }
 
@@ -395,7 +395,7 @@ impl CosmosSdkChain {
 
         match self.send_tx_with_account_sequence(proto_msgs.clone(), account_sequence) {
             // Gas estimation failed with retry-able error.
-            Err(e) if can_retry_simulation(&e) => {
+            Err(e) if can_retry_tx_simulation(&e) => {
                 if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
                     warn!("send_tx failed at estimate_gas step due to incorrect account sequence. retrying..");
                     self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
@@ -2500,7 +2500,7 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
     }
 }
 
-fn can_retry_simulation(e: &Error) -> bool {
+fn can_retry_tx_simulation(e: &Error) -> bool {
     use crate::error::ErrorDetail::*;
 
     match e.detail() {
