@@ -1,6 +1,4 @@
-//! `query packet` subcommands
-
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 
 mod ack;
 mod acks;
@@ -9,29 +7,29 @@ mod commitments;
 mod unreceived_acks;
 mod unreceived_packets;
 
-#[derive(Command, Debug, Options, Runnable)]
+#[derive(Command, Debug, Clap, Runnable)]
 pub enum QueryPacketCmds {
     /// The `query packet commitments` subcommand
-    #[options(help = "Query packet commitments")]
+    #[clap(about = "Query packet commitments")]
     Commitments(commitments::QueryPacketCommitmentsCmd),
 
     /// The `query packet commitment` subcommand
-    #[options(help = "Query packet commitment")]
+    #[clap(about = "Query packet commitment")]
     Commitment(commitment::QueryPacketCommitmentCmd),
 
     /// The `query packet acks` subcommand
-    #[options(help = "Query packet acknowledgments")]
+    #[clap(about = "Query packet acknowledgments")]
     Acks(acks::QueryPacketAcknowledgementsCmd),
 
     /// The `query packet ack` subcommand
-    #[options(help = "Query packet acknowledgment")]
+    #[clap(about = "Query packet acknowledgment")]
     Ack(ack::QueryPacketAcknowledgmentCmd),
 
     /// The `query packet unreceived-packets` subcommand
-    #[options(help = "Query unreceived packets")]
+    #[clap(about = "Query unreceived packets")]
     UnreceivedPackets(unreceived_packets::QueryUnreceivedPacketsCmd),
 
     /// The `query packet unreceived-acks` subcommand
-    #[options(help = "Query unreceived acknowledgments")]
+    #[clap(about = "Query unreceived acknowledgments")]
     UnreceivedAcks(unreceived_acks::QueryUnreceivedAcknowledgementCmd),
 }

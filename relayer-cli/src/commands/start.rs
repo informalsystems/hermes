@@ -1,8 +1,9 @@
+use alloc::sync::Arc;
 use std::error::Error;
 use std::io;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use crossbeam_channel::Sender;
 
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
@@ -10,13 +11,12 @@ use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
 use ibc_relayer::rest;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
-use ibc_relayer::telemetry::Telemetry;
 
 use crate::conclude::json;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct StartCmd {}
 
 impl Runnable for StartCmd {
@@ -24,7 +24,7 @@ impl Runnable for StartCmd {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let (supervisor, tx_cmd) = make_supervisor::<ProdChainHandle>(config.clone())
+        let (mut supervisor, tx_cmd) = make_supervisor::<ProdChainHandle>(config.clone())
             .unwrap_or_else(|e| {
                 Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
                 unreachable!()
@@ -137,8 +137,8 @@ fn spawn_rest_server(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
 #[cfg(feature = "telemetry")]
 fn spawn_telemetry_server(
     config: &Arc<RwLock<Config>>,
-) -> Result<Telemetry, Box<dyn Error + Send + Sync>> {
-    let state = ibc_telemetry::new_state();
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let state = ibc_telemetry::global();
 
     let telemetry = config.read().expect("poisoned lock").telemetry.clone();
     if telemetry.enabled {
@@ -156,13 +156,13 @@ fn spawn_telemetry_server(
         }
     }
 
-    Ok(state)
+    Ok(())
 }
 
 #[cfg(not(feature = "telemetry"))]
 fn spawn_telemetry_server(
     config: &Arc<RwLock<Config>>,
-) -> Result<Telemetry, Box<dyn Error + Send + Sync>> {
+) -> Result<(), Box<dyn Error + Send + Sync>> {
     if config.read().expect("poisoned lock").telemetry.enabled {
         warn!(
             "telemetry enabled in the config but Hermes was built without telemetry support, \
@@ -170,14 +170,15 @@ fn spawn_telemetry_server(
         );
     }
 
-    Ok(ibc_relayer::telemetry::TelemetryDisabled)
+    Ok(())
 }
 
 fn make_supervisor<Chain: ChainHandle + 'static>(
     config: Arc<RwLock<Config>>,
 ) -> Result<(Supervisor<Chain>, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
-    let telemetry = spawn_telemetry_server(&config)?;
+    spawn_telemetry_server(&config)?;
+
     let rest = spawn_rest_server(&config);
 
-    Ok(Supervisor::new(config, rest, telemetry))
+    Ok(Supervisor::new(config, rest))
 }

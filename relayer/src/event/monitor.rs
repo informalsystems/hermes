@@ -1,7 +1,7 @@
-use std::{cmp::Ordering, sync::Arc};
+use alloc::sync::Arc;
+use core::cmp::Ordering;
 
 use crossbeam_channel as channel;
-use flex_error::{define_error, TraceError};
 use futures::{
     pin_mut,
     stream::{self, select_all, StreamExt},
@@ -12,24 +12,28 @@ use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, trace};
 
 use tendermint_rpc::{
-    error::Code,
-    event::Event as RpcEvent,
-    query::{EventType, Query},
-    Error as RpcError, Result as RpcResult, SubscriptionClient, Url, WebSocketClient,
-    WebSocketClientDriver,
+    event::Event as RpcEvent, query::Query, Error as RpcError, SubscriptionClient, Url,
+    WebSocketClient, WebSocketClientDriver,
 };
 
-use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
+use ibc::{
+    core::ics02_client::height::Height, core::ics24_host::identifier::ChainId, events::IbcEvent,
+};
 
 use crate::util::{
     retry::{retry_count, retry_with_index, RetryResult},
     stream::try_group_while,
 };
 
+mod error;
+pub use error::*;
+
+pub type Result<T> = core::result::Result<T, Error>;
+
 mod retry_strategy {
     use crate::util::retry::clamp_total;
+    use core::time::Duration;
     use retry::delay::Fibonacci;
-    use std::time::Duration;
 
     // Default parameters for the retrying mechanism
     const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
@@ -41,63 +45,6 @@ mod retry_strategy {
     }
 }
 
-define_error! {
-    #[derive(Debug, Clone)]
-    Error {
-        WebSocketDriver
-            [ TraceError<RpcError> ]
-            |_| { "WebSocket driver failed" },
-
-        ClientCreationFailed
-            { chain_id: ChainId, address: Url }
-            |e| { format!("failed to create WebSocket driver for chain {0} with address {1}", e.chain_id, e.address) },
-
-        ClientTerminationFailed
-            [ TraceError<tokio::task::JoinError> ]
-            |_| { "failed to terminate previous WebSocket driver" },
-
-        ClientCompletionFailed
-            [ TraceError<RpcError> ]
-            |_| { "failed to run previous WebSocket driver to completion" },
-
-        ClientSubscriptionFailed
-            [ TraceError<RpcError> ]
-            |_| { "failed to run previous WebSocket driver to completion" },
-
-        NextEventBatchFailed
-            [ TraceError<RpcError> ]
-            |_| { "failed to collect events over WebSocket subscription" },
-
-        CollectEventsFailed
-            { reason: String }
-            |e| { format!("failed to extract IBC events: {0}", e.reason) },
-
-        ChannelSendFailed
-            |_| { "failed to send event batch through channel" },
-
-        SubscriptionCancelled
-            [ TraceError<RpcError> ]
-            |_| { "subscription cancelled" },
-
-        Rpc
-            [ TraceError<RpcError> ]
-            |_| { "RPC error" },
-    }
-}
-
-impl Error {
-    fn canceled_or_generic(e: RpcError) -> Self {
-        match (e.code(), e.data()) {
-            (Code::ServerError, Some(msg)) if msg.contains("subscription was cancelled") => {
-                Self::subscription_cancelled(e)
-            }
-            _ => Self::rpc(e),
-        }
-    }
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
-
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
 pub struct EventBatch {
@@ -106,7 +53,7 @@ pub struct EventBatch {
     pub events: Vec<IbcEvent>,
 }
 
-type SubscriptionResult = RpcResult<RpcEvent>;
+type SubscriptionResult = core::result::Result<RpcEvent, RpcError>;
 type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 
 pub type EventSender = channel::Sender<Result<EventBatch>>;
@@ -123,11 +70,8 @@ pub enum MonitorCmd {
 /// event handler.
 ///
 /// The default events that are queried are:
-/// - [`EventType::NewBlock`]
-/// - [`EventType::Tx`]
-///
-/// Those can be extending or overriden using
-/// [`EventMonitor::add_query`] and [`EventMonitor::set_queries`].
+/// - [`EventType::NewBlock`](tendermint_rpc::query::EventType::NewBlock)
+/// - [`EventType::Tx`](tendermint_rpc::query::EventType::Tx)
 pub struct EventMonitor {
     chain_id: ChainId,
     /// WebSocket to collect events from
@@ -152,6 +96,39 @@ pub struct EventMonitor {
     rt: Arc<TokioRuntime>,
 }
 
+// TODO: These are SDK specific, should be eventually moved.
+pub mod queries {
+    use tendermint_rpc::query::{EventType, Query};
+
+    pub fn all() -> Vec<Query> {
+        // Note: Tendermint-go supports max 5 query specifiers!
+        vec![
+            new_block(),
+            ibc_client(),
+            ibc_connection(),
+            ibc_channel(),
+            // This will be needed when we send misbehavior evidence to full node
+            // Query::eq("message.module", "evidence"),
+        ]
+    }
+
+    pub fn new_block() -> Query {
+        Query::from(EventType::NewBlock)
+    }
+
+    pub fn ibc_client() -> Query {
+        Query::eq("message.module", "ibc_client")
+    }
+
+    pub fn ibc_connection() -> Query {
+        Query::eq("message.module", "ibc_connection")
+    }
+
+    pub fn ibc_channel() -> Query {
+        Query::eq("message.module", "ibc_channel")
+    }
+}
+
 impl EventMonitor {
     /// Create an event monitor, and connect to a node
     pub fn new(
@@ -171,7 +148,7 @@ impl EventMonitor {
         let websocket_driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
 
         // TODO: move them to config file(?)
-        let event_queries = vec![Query::from(EventType::Tx), Query::from(EventType::NewBlock)];
+        let event_queries = queries::all();
 
         let monitor = Self {
             rt,
@@ -190,20 +167,9 @@ impl EventMonitor {
         Ok((monitor, rx_batch, tx_cmd))
     }
 
-    /// Set the queries to subscribe to.
-    ///
-    /// ## Note
-    /// For this change to take effect, one has to [`subscribe`] again.
-    pub fn set_queries(&mut self, queries: Vec<Query>) {
-        self.event_queries = queries;
-    }
-
-    /// Add a new query to subscribe to.
-    ///
-    /// ## Note
-    /// For this change to take effect, one has to [`subscribe`] again.
-    pub fn add_query(&mut self, query: Query) {
-        self.event_queries.push(query);
+    /// The list of [`Query`] that this event monitor is subscribing for.
+    pub fn queries(&self) -> &[Query] {
+        &self.event_queries
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
@@ -247,8 +213,8 @@ impl EventMonitor {
 
         // Swap the new client with the previous one which failed,
         // so that we can shut the latter down gracefully.
-        std::mem::swap(&mut self.client, &mut client);
-        std::mem::swap(&mut self.driver_handle, &mut driver_handle);
+        core::mem::swap(&mut self.client, &mut client);
+        core::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
         trace!(
             "[{}] reconnected to WebSocket endpoint {}",
@@ -345,7 +311,7 @@ impl EventMonitor {
     fn run_loop(&mut self) -> Next {
         // Take ownership of the subscriptions
         let subscriptions =
-            std::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
+            core::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
 
         // Convert the stream of RPC events into a stream of event batches.
         let batches = stream_batches(subscriptions, self.chain_id.clone());
@@ -357,10 +323,8 @@ impl EventMonitor {
         let rt = self.rt.clone();
 
         loop {
-            if let Ok(cmd) = self.rx_cmd.try_recv() {
-                match cmd {
-                    MonitorCmd::Shutdown => return Next::Abort,
-                }
+            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
+                return Next::Abort;
             }
 
             let result = rt.block_on(async {
@@ -369,6 +333,12 @@ impl EventMonitor {
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
                 }
             });
+
+            // Repeat check of shutdown command here, as previous recv()
+            // may block for a long time.
+            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
+                return Next::Abort;
+            }
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
@@ -418,7 +388,7 @@ impl EventMonitor {
     /// The main use case for propagating RPC errors is for the [`Supervisor`]
     /// to notice that the WebSocket connection or subscription has been closed,
     /// and to trigger a clearing of packets, as this typically means that we have
-    /// missed a bunch of events which were emitted after the subscrption was closed.
+    /// missed a bunch of events which were emitted after the subscription was closed.
     /// In that case, this error will be handled in [`Supervisor::handle_batch`].
     fn propagate_error(&self, error: Error) -> Result<()> {
         self.tx_batch

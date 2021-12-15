@@ -1,8 +1,10 @@
 use ibc::{
+    core::{
+        ics03_connection::connection::State as ConnectionState,
+        ics04_channel::channel::State as ChannelState,
+        ics24_host::identifier::{ChannelId, PortChannelId, PortId},
+    },
     events::IbcEvent,
-    ics03_connection::connection::State as ConnectionState,
-    ics04_channel::channel::State as ChannelState,
-    ics24_host::identifier::{ChannelId, PortChannelId, PortId},
     Height,
 };
 
@@ -35,9 +37,12 @@ pub struct Link<ChainA: ChainHandle, ChainB: ChainHandle> {
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
-    pub fn new(channel: Channel<ChainA, ChainB>) -> Result<Self, LinkError> {
+    pub fn new(
+        channel: Channel<ChainA, ChainB>,
+        with_tx_confirmation: bool,
+    ) -> Result<Self, LinkError> {
         Ok(Self {
-            a_to_b: RelayPath::new(channel)?,
+            a_to_b: RelayPath::new(channel, with_tx_confirmation)?,
         })
     }
 
@@ -75,6 +80,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         a_chain: ChainA,
         b_chain: ChainB,
         opts: LinkParameters,
+        with_tx_confirmation: bool,
     ) -> Result<Link<ChainA, ChainB>, LinkError> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
@@ -139,6 +145,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection_id,
                 opts.src_port_id.clone(),
                 Some(opts.src_channel_id.clone()),
+                None,
             ),
             b_side: ChannelSide::new(
                 b_chain,
@@ -146,12 +153,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection.counterparty().connection_id().unwrap().clone(),
                 a_channel.counterparty().port_id.clone(),
                 Some(b_channel_id),
+                None,
             ),
             connection_delay: a_connection.delay_period(),
-            version: None,
         };
 
-        Link::new(channel)
+        Link::new(channel, with_tx_confirmation)
     }
 
     /// Implements the `packet-recv` CLI

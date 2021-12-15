@@ -1,13 +1,13 @@
-use std::{
-    fmt,
-    thread::{self, JoinHandle},
-};
+use core::fmt;
+use std::thread::{self, JoinHandle};
 
 use crossbeam_channel::Sender;
 use tracing::trace;
 
 use ibc::{
-    events::IbcEvent, ics02_client::events::NewBlock, ics24_host::identifier::ChainId, Height,
+    core::{ics02_client::events::NewBlock, ics24_host::identifier::ChainId},
+    events::IbcEvent,
+    Height,
 };
 
 use crate::{event::monitor::EventBatch, object::Object};
@@ -15,7 +15,8 @@ use crate::{event::monitor::EventBatch, object::Object};
 use super::error::WorkerError;
 use super::{WorkerCmd, WorkerId};
 
-/// Handle to a [`Worker`], for sending [`WorkerCmd`]s to it.
+/// Handle to a [`Worker`](crate::worker::Worker),
+/// for sending [`WorkerCmd`]s to it.
 pub struct WorkerHandle {
     id: WorkerId,
     object: Object,

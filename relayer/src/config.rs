@@ -1,19 +1,27 @@
 //! Relayer configuration
 
+mod error;
+mod proof_specs;
 pub mod reload;
 pub mod types;
 
-use std::collections::{HashMap, HashSet};
-use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
+use alloc::collections::BTreeMap as HashMap;
+use alloc::collections::BTreeSet as HashSet;
+use core::{fmt, time::Duration};
+use std::sync::{Arc, RwLock};
+use std::{fs, fs::File, io::Write, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::core::ics23_commitment::specs::ProofSpecs;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
-use crate::config::types::{MaxMsgNum, MaxTxSize};
-use crate::error::Error;
+use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::keyring::Store;
+
+pub use error::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -79,6 +87,10 @@ impl ChannelsSpec {
 pub mod default {
     use super::*;
 
+    pub fn tx_confirmation() -> bool {
+        true
+    }
+
     pub fn filter() -> bool {
         false
     }
@@ -91,12 +103,12 @@ pub mod default {
         Duration::from_secs(10)
     }
 
-    pub fn trusting_period() -> Duration {
-        Duration::from_secs(336 * 60 * 60) // 336 hours ~ 14 days
-    }
-
     pub fn clock_drift() -> Duration {
         Duration::from_secs(5)
+    }
+
+    pub fn max_block_time() -> Duration {
+        Duration::from_secs(10)
     }
 
     pub fn connection_delay() -> Duration {
@@ -110,12 +122,16 @@ pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
     #[serde(default)]
+    pub mode: ModeConfig,
+    #[serde(default)]
     pub rest: RestConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
 }
+
+pub type SharedConfig = Arc<RwLock<Config>>;
 
 impl Config {
     pub fn has_chain(&self, id: &ChainId) -> bool {
@@ -139,7 +155,7 @@ impl Config {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> bool {
-        if !self.global.filter {
+        if !self.mode.packets.filter {
             return true;
         }
 
@@ -149,27 +165,95 @@ impl Config {
         }
     }
 
-    pub fn handshake_enabled(&self) -> bool {
-        self.global.strategy == Strategy::HandshakeAndPackets
-    }
-
     pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
         self.chains.iter().map(|c| (&c.id, c)).collect()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub enum Strategy {
-    #[serde(rename = "packets")]
-    Packets,
-
-    #[serde(rename = "all")]
-    HandshakeAndPackets,
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModeConfig {
+    pub clients: Clients,
+    pub connections: Connections,
+    pub channels: Channels,
+    pub packets: Packets,
 }
 
-impl Default for Strategy {
+impl ModeConfig {
+    pub fn all_disabled(&self) -> bool {
+        !self.clients.enabled
+            && !self.connections.enabled
+            && !self.channels.enabled
+            && !self.packets.enabled
+    }
+}
+
+impl Default for ModeConfig {
     fn default() -> Self {
-        Self::Packets
+        Self {
+            clients: Clients {
+                enabled: true,
+                refresh: true,
+                misbehaviour: true,
+            },
+            connections: Connections { enabled: false },
+            channels: Channels { enabled: false },
+            packets: Packets {
+                enabled: true,
+                clear_interval: default::clear_packets_interval(),
+                clear_on_start: true,
+                filter: false,
+                tx_confirmation: true,
+            },
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Clients {
+    pub enabled: bool,
+    #[serde(default)]
+    pub refresh: bool,
+    #[serde(default)]
+    pub misbehaviour: bool,
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Connections {
+    pub enabled: bool,
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Channels {
+    pub enabled: bool,
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Packets {
+    pub enabled: bool,
+    #[serde(default = "default::clear_packets_interval")]
+    pub clear_interval: u64,
+    #[serde(default)]
+    pub clear_on_start: bool,
+    #[serde(default = "default::filter")]
+    pub filter: bool,
+    #[serde(default = "default::tx_confirmation")]
+    pub tx_confirmation: bool,
+}
+
+impl Default for Packets {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            clear_interval: default::clear_packets_interval(),
+            clear_on_start: false,
+            filter: default::filter(),
+            tx_confirmation: default::tx_confirmation(),
+        }
     }
 }
 
@@ -204,26 +288,10 @@ impl fmt::Display for LogLevel {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
-    pub strategy: Strategy,
     pub log_level: LogLevel,
-    #[serde(default = "default::filter")]
-    pub filter: bool,
-    #[serde(default = "default::clear_packets_interval")]
-    pub clear_packets_interval: u64,
-}
-
-impl Default for GlobalConfig {
-    fn default() -> Self {
-        Self {
-            strategy: Strategy::default(),
-            log_level: LogLevel::default(),
-            filter: default::filter(),
-            clear_packets_interval: default::clear_packets_interval(),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -265,7 +333,7 @@ impl Default for RestConfig {
 /// It defines the address generation method
 /// TODO: Ethermint `pk_type` to be restricted
 /// after the Cosmos SDK release with ethsecp256k1
-/// https://github.com/cosmos/cosmos-sdk/pull/9981
+/// <https://github.com/cosmos/cosmos-sdk/pull/9981>
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(
     rename_all = "lowercase",
@@ -304,17 +372,27 @@ pub struct ChainConfig {
     pub rpc_timeout: Duration,
     pub account_prefix: String,
     pub key_name: String,
+    #[serde(default)]
+    pub key_store_type: Store,
     pub store_prefix: String,
+    pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
     pub gas_adjustment: Option<f64>,
+    pub fee_granter: Option<String>,
     #[serde(default)]
     pub max_msg_num: MaxMsgNum,
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
-    #[serde(default = "default::trusting_period", with = "humantime_serde")]
-    pub trusting_period: Duration,
+    #[serde(default = "default::max_block_time", with = "humantime_serde")]
+    pub max_block_time: Duration,
+    #[serde(default, with = "humantime_serde")]
+    pub trusting_period: Option<Duration>,
+    #[serde(default)]
+    pub memo_prefix: Memo,
+    #[serde(default, with = "self::proof_specs")]
+    pub proof_specs: ProofSpecs,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
@@ -328,9 +406,9 @@ pub struct ChainConfig {
 
 /// Attempt to load and parse the TOML config file as a `Config`.
 pub fn load(path: impl AsRef<Path>) -> Result<Config, Error> {
-    let config_toml = std::fs::read_to_string(&path).map_err(Error::config_io)?;
+    let config_toml = std::fs::read_to_string(&path).map_err(Error::io)?;
 
-    let config = toml::from_str::<Config>(&config_toml[..]).map_err(Error::config_decode)?;
+    let config = toml::from_str::<Config>(&config_toml[..]).map_err(Error::decode)?;
 
     Ok(config)
 }
@@ -342,16 +420,16 @@ pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), Error> {
     } else {
         File::create(path)
     }
-    .map_err(Error::config_io)?;
+    .map_err(Error::io)?;
 
     store_writer(config, &mut file)
 }
 
 /// Serialize the given `Config` as TOML to the given writer.
 pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<(), Error> {
-    let toml_config = toml::to_string_pretty(&config).map_err(Error::config_encode)?;
+    let toml_config = toml::to_string_pretty(&config).map_err(Error::encode)?;
 
-    writeln!(writer, "{}", toml_config).map_err(Error::config_io)?;
+    writeln!(writer, "{}", toml_config).map_err(Error::io)?;
 
     Ok(())
 }
@@ -359,7 +437,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::{load, store_writer};
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn parse_valid_config() {

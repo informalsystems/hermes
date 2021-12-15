@@ -1,13 +1,15 @@
-use std::convert::TryInto;
-use std::fmt::Display;
-use std::num::{ParseIntError, TryFromIntError};
-use std::ops::{Add, Sub};
-use std::str::FromStr;
-use std::time::Duration;
+use crate::prelude::*;
+
+use core::fmt::Display;
+use core::num::ParseIntError;
+use core::ops::{Add, Sub};
+use core::str::FromStr;
+use core::time::Duration;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
+use tendermint::Time;
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 
@@ -18,7 +20,7 @@ pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 /// a `u64` value and a raw timestamp. In protocol buffer, the timestamp is
 /// represented as a `u64` Unix timestamp in nanoseconds, with 0 representing the absence
 /// of timestamp.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Deserialize, Serialize, Hash)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Default, Deserialize, Serialize, Hash)]
 pub struct Timestamp {
     time: Option<DateTime<Utc>>,
 }
@@ -38,23 +40,33 @@ pub enum Expiry {
 }
 
 impl Timestamp {
-    /// When used in IBC, all raw timestamps are represented as u64 Unix timestamp in nanoseconds.
+    /// The IBC protocol represents timestamps as u64 Unix
+    /// timestamps in nanoseconds.
     ///
-    /// A value of 0 indicates that the timestamp is not set, and result in the underlying
-    /// type being None.
+    /// A protocol value of 0 indicates that the timestamp
+    /// is not set. In this case, our domain type takes the
+    /// value of None.
     ///
-    /// The underlying library [`chrono::DateTime`] allows conversion from nanoseconds only
-    /// from an `i64` value. In practice, `i64` still have sufficient precision for our purpose.
-    /// However we have to handle the case of `u64` overflowing in `i64`, to prevent
-    /// malicious packets from crashing the relayer.
-    pub fn from_nanoseconds(nanoseconds: u64) -> Result<Timestamp, TryFromIntError> {
+    pub fn from_nanoseconds(nanoseconds: u64) -> Result<Timestamp, ParseTimestampError> {
         if nanoseconds == 0 {
             Ok(Timestamp { time: None })
         } else {
-            let nanoseconds = nanoseconds.try_into()?;
-            Ok(Timestamp {
-                time: Some(Utc.timestamp_nanos(nanoseconds)),
-            })
+            // The underlying library [`chrono::DateTime`] does not support
+            // conversion from `u64` nanoseconds value, only from `i64`
+            // (which can overflow when converting from the unsigned type).
+            // We go around this limitation by decomposing the `u64` nanos
+            // into seconds + nanos and constructing the timestamp from that.
+            let (s, ns) = util::break_in_secs_and_nanos(nanoseconds);
+
+            match Utc.timestamp_opt(s, ns) {
+                chrono::LocalResult::None => {
+                    Err(ParseTimestampError::invalid_timestamp_conversion(s, ns))
+                }
+                chrono::LocalResult::Single(ts) => Ok(Timestamp { time: Some(ts) }),
+                chrono::LocalResult::Ambiguous(_, _) => {
+                    Err(ParseTimestampError::ambiguous_timestamp_conversion(s, ns))
+                }
+            }
         }
     }
 
@@ -71,7 +83,7 @@ impl Timestamp {
     }
 
     /// Computes the duration difference of another `Timestamp` from the current one.
-    /// Returns the difference in time as an [`std::time::Duration`].
+    /// Returns the difference in time as an [`core::time::Duration`].
     /// Returns `None` if the other `Timestamp` is more advanced
     /// than the current or if either of the `Timestamp`s is not set.
     pub fn duration_since(&self, other: &Timestamp) -> Option<Duration> {
@@ -88,9 +100,25 @@ impl Timestamp {
 
     /// Convert a `Timestamp` to `u64` value in nanoseconds. If no timestamp
     /// is set, the result is 0.
+    /// ```
+    /// use ibc::timestamp::Timestamp;
+    /// let max = u64::MAX;
+    /// let tx = Timestamp::from_nanoseconds(max).unwrap();
+    /// let utx = tx.as_nanoseconds();
+    /// assert_eq!(utx, max);
+    /// let min = u64::MIN;
+    /// let ti = Timestamp::from_nanoseconds(min).unwrap();
+    /// let uti = ti.as_nanoseconds();
+    /// assert_eq!(uti, min);
+    /// ```
     pub fn as_nanoseconds(&self) -> u64 {
-        self.time
-            .map_or(0, |time| time.timestamp_nanos().try_into().unwrap())
+        self.time.map_or(0, |time| {
+            let s = time.timestamp();
+            assert!(s >= 0, "time {:?} has negative `.timestamp()`", time);
+            let s: u64 = s.try_into().unwrap();
+
+            util::assemble_in_nanos(s, time.timestamp_subsec_nanos())
+        })
     }
 
     /// Convert a `Timestamp` to an optional [`chrono::DateTime<Utc>`]
@@ -112,10 +140,20 @@ impl Timestamp {
             _ => Expiry::InvalidTimestamp,
         }
     }
+
+    /// Checks whether the current timestamp is strictly more advanced
+    /// than the `other` timestamp. Return true if so, and false
+    /// otherwise.
+    pub fn after(&self, other: &Timestamp) -> bool {
+        match (self.time, other.time) {
+            (Some(time1), Some(time2)) => time1 > time2,
+            _ => false,
+        }
+    }
 }
 
 impl Display for Timestamp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "Timestamp({})",
@@ -163,14 +201,25 @@ impl Sub<Duration> for Timestamp {
 }
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     ParseTimestampError {
         ParseInt
             [ TraceError<ParseIntError> ]
-            | _ | { "error parsing integer from string"},
+            | _ | { "error parsing u64 integer from string"},
 
-        TryFromInt
-            [ TraceError<TryFromIntError> ]
-            | _ | { "error converting from u64 to i64" },
+        InvalidTimestampConversion
+            {
+                secs: i64,
+                nanos: u32,
+            }
+            | _ | { "error converting into Timestamp from seconds + nanoseconds" },
+
+        AmbiguousTimestampConversion
+            {
+                secs: i64,
+                nanos: u32,
+            }
+            | _ | { "ambigous conversion into Timestamp from seconds + nanoseconds" },
     }
 }
 
@@ -178,24 +227,58 @@ impl FromStr for Timestamp {
     type Err = ParseTimestampError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let seconds = u64::from_str(s).map_err(ParseTimestampError::parse_int)?;
+        let nanoseconds = u64::from_str(s).map_err(ParseTimestampError::parse_int)?;
 
-        Timestamp::from_nanoseconds(seconds).map_err(ParseTimestampError::try_from_int)
+        Timestamp::from_nanoseconds(nanoseconds)
     }
 }
 
-impl Default for Timestamp {
-    fn default() -> Self {
-        Timestamp { time: None }
+impl From<Time> for Timestamp {
+    fn from(tendermint_time: Time) -> Timestamp {
+        Timestamp {
+            time: Some(tendermint_time.into()),
+        }
+    }
+}
+
+pub mod util {
+
+    const NANOS_PER_SEC: u64 = 1_000_000_000;
+
+    /// Helper for the [`Timestamp::from_nanoseconds`] constructor.
+    ///
+    /// Converts `u64` nanoseconds into its constituent
+    /// seconds (represented as `i64`) plus the remaining
+    /// nanoseconds (represented as `u32`).
+    ///
+    /// Similar to [`chrono::timestamp_nanos`].
+    pub(super) fn break_in_secs_and_nanos(nanoseconds: u64) -> (i64, u32) {
+        let seconds = nanoseconds / NANOS_PER_SEC;
+
+        // Safe because u64::MAX divided by NANOS_PER_SEC fits into i64
+        let out_secs: i64 = seconds.try_into().unwrap();
+        let out_nanos = (nanoseconds % NANOS_PER_SEC) as u32;
+
+        (out_secs, out_nanos)
+    }
+
+    /// Helper method for achieving the reverse of
+    /// [`break_in_secs_and_nanos`].
+    ///
+    pub(super) fn assemble_in_nanos(s: u64, subsec_ns: u32) -> u64 {
+        let ns = s * NANOS_PER_SEC;
+
+        ns + subsec_ns as u64
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
+    use chrono::Utc;
+
+    use core::time::Duration;
     use std::thread::sleep;
-    use std::time::Duration;
-    use test_env_log::test;
+    use test_log::test;
 
     use super::{Expiry, Timestamp, ZERO_DURATION};
 
@@ -216,7 +299,7 @@ mod tests {
         assert_eq!(timestamp2.time.unwrap().timestamp_millis(), 1_000);
         assert_eq!(timestamp2.as_nanoseconds(), 1_000_000_000);
 
-        assert!(Timestamp::from_nanoseconds(u64::MAX).is_err());
+        assert!(Timestamp::from_nanoseconds(u64::MAX).is_ok());
         assert!(Timestamp::from_nanoseconds(i64::MAX.try_into().unwrap()).is_ok());
 
         assert_eq!(timestamp1.check_expiry(&timestamp2), Expiry::NotExpired);
@@ -256,9 +339,9 @@ mod tests {
     fn subtract_compare() {
         let sleep_duration = Duration::from_micros(100);
 
-        let start = Timestamp::now();
+        let start = Timestamp::from_datetime(Utc::now());
         sleep(sleep_duration);
-        let end = Timestamp::now();
+        let end = Timestamp::from_datetime(Utc::now());
 
         let res = end.duration_since(&start);
         assert!(res.is_some());

@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 
 use crossbeam_channel::Sender;
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,6 @@ use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
     config::Config,
     object::Object,
-    telemetry::Telemetry,
 };
 
 pub mod retry_strategy;
@@ -85,7 +84,6 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
         id: WorkerId,
         object: Object,
         msg_tx: Sender<WorkerMsg>,
-        telemetry: Telemetry,
         config: &Config,
     ) -> WorkerHandle {
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
@@ -95,25 +93,18 @@ impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA
         let worker = match &object {
             Object::Client(client) => Self::Client(
                 id,
-                ClientWorker::new(client.clone(), chains, cmd_rx, telemetry),
+                ClientWorker::new(client.clone(), chains, cmd_rx, config.mode.clients),
             ),
             Object::Connection(connection) => Self::Connection(
                 id,
-                ConnectionWorker::new(connection.clone(), chains, cmd_rx, telemetry),
+                ConnectionWorker::new(connection.clone(), chains, cmd_rx),
             ),
-            Object::Channel(channel) => Self::Channel(
-                id,
-                ChannelWorker::new(channel.clone(), chains, cmd_rx, telemetry),
-            ),
+            Object::Channel(channel) => {
+                Self::Channel(id, ChannelWorker::new(channel.clone(), chains, cmd_rx))
+            }
             Object::Packet(path) => Self::Packet(
                 id,
-                PacketWorker::new(
-                    path.clone(),
-                    chains,
-                    cmd_rx,
-                    telemetry,
-                    config.global.clear_packets_interval,
-                ),
+                PacketWorker::new(path.clone(), chains, cmd_rx, config.mode.packets),
             ),
         };
 

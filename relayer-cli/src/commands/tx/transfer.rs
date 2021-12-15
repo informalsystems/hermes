@@ -1,10 +1,12 @@
-use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
+use abscissa_core::{config::Override, Clap, Command, FrameworkErrorKind, Runnable};
 
 use ibc::{
+    core::{
+        ics02_client::client_state::ClientState,
+        ics02_client::height::Height,
+        ics24_host::identifier::{ChainId, ChannelId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::client_state::ClientState,
-    ics02_client::height::Height,
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
 };
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::transfer::Amount;
@@ -18,52 +20,64 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxIcs20MsgTransferCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source port")]
+    #[clap(required = true, about = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, required, help = "identifier of the source channel")]
+    #[clap(required = true, about = "identifier of the source channel")]
     src_channel_id: ChannelId,
 
-    #[options(
-        free,
-        required,
-        help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
+    #[clap(
+        required = true,
+        about = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: Amount,
 
-    #[options(help = "timeout in number of blocks since current", short = "o")]
+    #[clap(
+        short = 'o',
+        long,
+        default_value = "0",
+        about = "timeout in number of blocks since current"
+    )]
     timeout_height_offset: u64,
 
-    #[options(help = "timeout in seconds since current", short = "t")]
+    #[clap(
+        short = 't',
+        long,
+        default_value = "0",
+        about = "timeout in seconds since current"
+    )]
     timeout_seconds: u64,
 
-    #[options(
-        help = "receiving account address on the destination chain",
-        short = "r"
+    #[clap(
+        short = 'r',
+        long,
+        about = "receiving account address on the destination chain"
     )]
     receiver: Option<String>,
 
-    #[options(
-        help = "denomination of the coins to send",
-        short = "d",
-        default = "samoleans"
+    #[clap(
+        short = 'd',
+        long,
+        about = "denomination of the coins to send",
+        default_value = "samoleans"
     )]
     denom: String,
 
-    #[options(help = "number of messages to send", short = "n")]
+    #[clap(short = 'n', long, about = "number of messages to send")]
     number_msgs: Option<usize>,
 
-    #[options(
-        help = "use the given signing key (default: `key_name` config)",
-        short = "k"
+    #[clap(
+        short = 'k',
+        long,
+        about = "use the given signing key (default: `key_name` config)"
     )]
     key: Option<String>,
 }
@@ -71,7 +85,10 @@ pub struct TxIcs20MsgTransferCmd {
 impl Override<Config> for TxIcs20MsgTransferCmd {
     fn override_config(&self, mut config: Config) -> Result<Config, abscissa_core::FrameworkError> {
         let src_chain_config = config.find_chain_mut(&self.src_chain_id).ok_or_else(|| {
-            FrameworkErrorKind::ComponentError.context("missing src chain configuration")
+            FrameworkErrorKind::ComponentError.context(format!(
+                "missing configuration for source chain '{}'",
+                self.src_chain_id
+            ))
         })?;
 
         if let Some(ref key_name) = self.key {
@@ -87,13 +104,19 @@ impl TxIcs20MsgTransferCmd {
         &self,
         config: &Config,
     ) -> Result<TransferOptions, Box<dyn std::error::Error>> {
-        let src_chain_config = config
-            .find_chain(&self.src_chain_id)
-            .ok_or("missing src chain configuration")?;
+        config.find_chain(&self.src_chain_id).ok_or_else(|| {
+            format!(
+                "missing configuration for source chain '{}'",
+                self.src_chain_id
+            )
+        })?;
 
-        let dest_chain_config = config
-            .find_chain(&self.dst_chain_id)
-            .ok_or("missing destination chain configuration")?;
+        config.find_chain(&self.dst_chain_id).ok_or_else(|| {
+            format!(
+                "missing configuration for destination chain '{}'",
+                self.dst_chain_id
+            )
+        })?;
 
         let denom = self.denom.clone();
 
@@ -104,20 +127,20 @@ impl TxIcs20MsgTransferCmd {
 
         if self.timeout_height_offset == 0 && self.timeout_seconds == 0 {
             return Err(
-                "packet timeout height and packet timeout timestamp cannot both be 0".into(),
+                "packet timeout height and packet timeout timestamp cannot both be 0, \
+                please specify either --timeout-height-offset or --timeout-seconds"
+                    .into(),
             );
         }
 
         let opts = TransferOptions {
-            packet_src_chain_config: src_chain_config.clone(),
-            packet_dst_chain_config: dest_chain_config.clone(),
             packet_src_port_id: self.src_port_id.clone(),
             packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount,
             denom,
             receiver: self.receiver.clone(),
             timeout_height_offset: self.timeout_height_offset,
-            timeout_seconds: std::time::Duration::from_secs(self.timeout_seconds),
+            timeout_seconds: core::time::Duration::from_secs(self.timeout_seconds),
             number_msgs,
         };
 
@@ -201,7 +224,8 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         // Checks pass, build and send the tx
         let res: Result<Vec<IbcEvent>, Error> =
-            build_and_send_transfer_messages(chains.src, chains.dst, opts).map_err(Error::packet);
+            build_and_send_transfer_messages(&chains.src, &chains.dst, &opts)
+                .map_err(Error::packet);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),

@@ -1,30 +1,34 @@
-use std::{sync::Arc, thread};
+use alloc::sync::Arc;
+use std::thread;
 
 use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::error;
 
 use ibc::{
+    core::{
+        ics02_client::{
+            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
+            client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
+            events::UpdateClient,
+            header::{AnyHeader, Header},
+            misbehaviour::MisbehaviourEvidence,
+        },
+        ics03_connection::{
+            connection::{ConnectionEnd, IdentifiedConnectionEnd},
+            version::Version,
+        },
+        ics04_channel::{
+            self,
+            channel::{ChannelEnd, IdentifiedChannelEnd},
+            packet::{PacketMsgType, Sequence},
+        },
+        ics23_commitment::commitment::CommitmentPrefix,
+        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::{
-        client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
-        client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
-        events::UpdateClient,
-        header::{AnyHeader, Header},
-        misbehaviour::MisbehaviourEvidence,
-    },
-    ics03_connection::{
-        connection::{ConnectionEnd, IdentifiedConnectionEnd},
-        version::Version,
-    },
-    ics04_channel::{
-        channel::{ChannelEnd, IdentifiedChannelEnd},
-        packet::{PacketMsgType, Sequence},
-    },
-    ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
-    query::QueryTxRequest,
+    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
@@ -41,6 +45,8 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
+    chain::handle::requests::AppVersion,
+    chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -54,12 +60,70 @@ use crate::{
 
 use super::{
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
-    ChainEndpoint,
+    ChainEndpoint, HealthCheck,
 };
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
     pub event_monitor: Option<thread::JoinHandle<()>>,
+}
+
+#[derive(Debug)]
+pub enum EventMonitorCtrl {
+    None {
+        /// Empty channel for when the None case
+        never: EventReceiver,
+    },
+    Live {
+        /// Receiver channel from the event bus
+        event_receiver: EventReceiver,
+
+        /// Sender channel to terminate the event monitor
+        tx_monitor_cmd: TxMonitorCmd,
+    },
+}
+
+impl EventMonitorCtrl {
+    pub fn none() -> Self {
+        Self::None {
+            never: channel::never(),
+        }
+    }
+
+    pub fn live(event_receiver: EventReceiver, tx_monitor_cmd: TxMonitorCmd) -> Self {
+        Self::Live {
+            event_receiver,
+            tx_monitor_cmd,
+        }
+    }
+
+    pub fn enable(&mut self, event_receiver: EventReceiver, tx_monitor_cmd: TxMonitorCmd) {
+        *self = Self::live(event_receiver, tx_monitor_cmd);
+    }
+
+    pub fn recv(&self) -> &EventReceiver {
+        match self {
+            Self::None { ref never } => never,
+            Self::Live {
+                ref event_receiver, ..
+            } => event_receiver,
+        }
+    }
+
+    pub fn shutdown(&self) -> Result<(), Error> {
+        match self {
+            Self::None { .. } => Ok(()),
+            Self::Live {
+                ref tx_monitor_cmd, ..
+            } => tx_monitor_cmd
+                .send(MonitorCmd::Shutdown)
+                .map_err(Error::send),
+        }
+    }
+
+    pub fn is_live(&self) -> bool {
+        matches!(self, Self::Live { .. })
+    }
 }
 
 pub struct ChainRuntime<Endpoint: ChainEndpoint> {
@@ -77,11 +141,8 @@ pub struct ChainRuntime<Endpoint: ChainEndpoint> {
     /// An event bus, for broadcasting events that this runtime receives (via `event_receiver`) to subscribers
     event_bus: EventBus<Arc<MonitorResult<EventBatch>>>,
 
-    /// Receiver channel from the event bus
-    event_receiver: EventReceiver,
-
-    /// Sender channel to terminate the event monitor
-    tx_monitor_cmd: TxMonitorCmd,
+    /// Interface to the event monitor
+    event_monitor_ctrl: EventMonitorCtrl,
 
     /// A handle to the light client
     light_client: Endpoint::LightClient,
@@ -105,11 +166,8 @@ where
         // Start the light client
         let light_client = chain.init_light_client()?;
 
-        // Start the event monitor
-        let (event_batch_rx, tx_monitor_cmd) = chain.init_event_monitor(rt.clone())?;
-
         // Instantiate & spawn the runtime
-        let (handle, _) = Self::init(chain, light_client, event_batch_rx, tx_monitor_cmd, rt);
+        let (handle, _) = Self::init(chain, light_client, rt);
 
         Ok(handle)
     }
@@ -118,11 +176,9 @@ where
     fn init<Handle: ChainHandle>(
         chain: Endpoint,
         light_client: Endpoint::LightClient,
-        event_receiver: EventReceiver,
-        tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
     ) -> (Handle, thread::JoinHandle<()>) {
-        let chain_runtime = Self::new(chain, light_client, event_receiver, tx_monitor_cmd, rt);
+        let chain_runtime = Self::new(chain, light_client, rt);
 
         // Get a handle to the runtime
         let handle: Handle = chain_runtime.handle();
@@ -139,13 +195,7 @@ where
     }
 
     /// Basic constructor
-    fn new(
-        chain: Endpoint,
-        light_client: Endpoint::LightClient,
-        event_receiver: EventReceiver,
-        tx_monitor_cmd: TxMonitorCmd,
-        rt: Arc<TokioRuntime>,
-    ) -> Self {
+    fn new(chain: Endpoint, light_client: Endpoint::LightClient, rt: Arc<TokioRuntime>) -> Self {
         let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
 
         Self {
@@ -154,8 +204,7 @@ where
             request_sender,
             request_receiver,
             event_bus: EventBus::new(),
-            event_receiver,
-            tx_monitor_cmd,
+            event_monitor_ctrl: EventMonitorCtrl::none(),
             light_client,
         }
     }
@@ -170,7 +219,7 @@ where
     fn run(mut self) -> Result<(), Error> {
         loop {
             channel::select! {
-                recv(self.event_receiver) -> event_batch => {
+                recv(self.event_monitor_ctrl.recv()) -> event_batch => {
                     match event_batch {
                         Ok(event_batch) => {
                             self.event_bus
@@ -185,8 +234,7 @@ where
                 recv(self.request_receiver) -> event => {
                     match event {
                         Ok(ChainRequest::Shutdown { reply_to }) => {
-                            self.tx_monitor_cmd.send(MonitorCmd::Shutdown)
-                                .map_err(Error::send)?;
+                            self.event_monitor_ctrl.shutdown()?;
 
                             let res = self.chain.shutdown();
                             reply_to.send(res)
@@ -194,6 +242,10 @@ where
 
                             break;
                         }
+
+                        Ok(ChainRequest::HealthCheck { reply_to }) => {
+                            self.health_check(reply_to)?
+                        },
 
                         Ok(ChainRequest::Subscribe { reply_to }) => {
                             self.subscribe(reply_to)?
@@ -211,20 +263,29 @@ where
                             self.get_signer(reply_to)?
                         }
 
-                        Ok(ChainRequest::Key { reply_to }) => {
+                        Ok(ChainRequest::Config { reply_to }) => {
+                            self.get_config(reply_to)?
+                        }
+
+                        Ok(ChainRequest::GetKey { reply_to }) => {
                             self.get_key(reply_to)?
                         }
 
-                        Ok(ChainRequest::ModuleVersion { port_id, reply_to }) => {
-                            self.module_version(port_id, reply_to)?
+                        Ok(ChainRequest::AppVersion { request, reply_to }) => {
+                            self.app_version(request, reply_to)?
                         }
+
+                        Ok(ChainRequest::AddKey { key_name, key, reply_to }) => {
+                            self.add_key(key_name, key, reply_to)?
+                        }
+
 
                         Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildClientState { height, reply_to }) => {
-                            self.build_client_state(height, reply_to)?
+                        Ok(ChainRequest::BuildClientState { height, dst_config, reply_to }) => {
+                            self.build_client_state(height, dst_config, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
@@ -243,8 +304,8 @@ where
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryLatestHeight { reply_to }) => {
-                            self.query_latest_height(reply_to)?
+                        Ok(ChainRequest::QueryStatus { reply_to }) => {
+                            self.query_status(reply_to)?
                         }
 
                         Ok(ChainRequest::QueryClients { request, reply_to }) => {
@@ -343,8 +404,12 @@ where
                             self.query_next_sequence_receive(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryPacketEventData { request, reply_to }) => {
+                        Ok(ChainRequest::QueryPacketEventDataFromTxs { request, reply_to }) => {
                             self.query_txs(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to }) => {
+                            self.query_blocks(request, reply_to)?
                         },
 
                         Err(e) => error!("received error via chain request channel: {}", e),
@@ -356,10 +421,25 @@ where
         Ok(())
     }
 
-    fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
-        let subscription = self.event_bus.subscribe();
+    fn health_check(&mut self, reply_to: ReplyTo<HealthCheck>) -> Result<(), Error> {
+        let result = self.chain.health_check();
+        reply_to.send(result).map_err(Error::send)
+    }
 
-        reply_to.send(Ok(subscription)).map_err(Error::send)?;
+    fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
+        if !self.event_monitor_ctrl.is_live() {
+            self.enable_event_monitor()?;
+        }
+
+        let subscription = self.event_bus.subscribe();
+        reply_to.send(Ok(subscription)).map_err(Error::send)
+    }
+
+    fn enable_event_monitor(&mut self) -> Result<(), Error> {
+        let (event_receiver, tx_monitor_cmd) = self.chain.init_event_monitor(self.rt.clone())?;
+
+        self.event_monitor_ctrl
+            .enable(event_receiver, tx_monitor_cmd);
 
         Ok(())
     }
@@ -370,10 +450,7 @@ where
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_messages_and_wait_commit(proto_msgs);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn send_messages_and_wait_check_tx(
@@ -382,42 +459,46 @@ where
         reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_messages_and_wait_check_tx(proto_msgs);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_latest_height(&self, reply_to: ReplyTo<Height>) -> Result<(), Error> {
-        let latest_height = self.chain.query_latest_height();
-
-        reply_to.send(latest_height).map_err(Error::send)?;
-
-        Ok(())
+    fn query_status(&self, reply_to: ReplyTo<StatusResponse>) -> Result<(), Error> {
+        let latest_timestamp = self.chain.query_status();
+        reply_to.send(latest_timestamp).map_err(Error::send)
     }
 
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
+        reply_to.send(result).map_err(Error::send)
+    }
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+    fn get_config(&self, reply_to: ReplyTo<ChainConfig>) -> Result<(), Error> {
+        let result = Ok(self.chain.config());
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn get_key(&mut self, reply_to: ReplyTo<KeyEntry>) -> Result<(), Error> {
         let result = self.chain.get_key();
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
-    fn module_version(&self, port_id: PortId, reply_to: ReplyTo<String>) -> Result<(), Error> {
-        let result = self.chain.query_module_version(&port_id);
+    fn app_version(
+        &self,
+        request: AppVersion,
+        reply_to: ReplyTo<ics04_channel::Version>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_app_version(request);
+        reply_to.send(result).map_err(Error::send)
+    }
 
-        reply_to.send(Ok(result)).map_err(Error::send)?;
-
-        Ok(())
+    fn add_key(
+        &mut self,
+        key_name: String,
+        key: KeyEntry,
+        reply_to: ReplyTo<()>,
+    ) -> Result<(), Error> {
+        let result = self.chain.add_key(&key_name, key);
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn build_header(
@@ -441,25 +522,22 @@ where
                 (header, support)
             });
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     /// Constructs a client state for the given height
     fn build_client_state(
         &self,
         height: Height,
+        dst_config: ChainConfig,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
         let client_state = self
             .chain
-            .build_client_state(height)
+            .build_client_state(height, dst_config)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(client_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(client_state).map_err(Error::send)
     }
 
     /// Constructs a consensus state for the given height
@@ -477,9 +555,7 @@ where
             .build_consensus_state(verified.target)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(consensus_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(consensus_state).map_err(Error::send)
     }
 
     /// Constructs AnyMisbehaviour for the update event
@@ -493,9 +569,7 @@ where
             .light_client
             .check_misbehaviour(update_event, &client_state);
 
-        reply_to.send(misbehaviour).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(misbehaviour).map_err(Error::send)
     }
 
     fn build_connection_proofs_and_client_state(
@@ -516,9 +590,7 @@ where
         let result = result
             .map(|(opt_client_state, proofs)| (opt_client_state.map(|cs| cs.wrap_any()), proofs));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_clients(
@@ -527,10 +599,7 @@ where
         reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_clients(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_client_connections(
@@ -539,10 +608,7 @@ where
         reply_to: ReplyTo<Vec<ConnectionId>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_client_connections(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_client_state(
@@ -556,9 +622,7 @@ where
             .query_client_state(&client_id, height)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(client_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(client_state).map_err(Error::send)
     }
 
     fn query_upgraded_client_state(
@@ -571,9 +635,7 @@ where
             .query_upgraded_client_state(height)
             .map(|(cl, proof)| (cl.wrap_any(), proof));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_consensus_states(
@@ -582,10 +644,7 @@ where
         reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
     ) -> Result<(), Error> {
         let consensus_states = self.chain.query_consensus_states(request);
-
-        reply_to.send(consensus_states).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(consensus_states).map_err(Error::send)
     }
 
     fn query_consensus_state(
@@ -599,9 +658,7 @@ where
             self.chain
                 .query_consensus_state(client_id, consensus_height, query_height);
 
-        reply_to.send(consensus_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(consensus_state).map_err(Error::send)
     }
 
     fn query_upgraded_consensus_state(
@@ -614,25 +671,17 @@ where
             .query_upgraded_consensus_state(height)
             .map(|(cs, proof)| (cs.wrap_any(), proof));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_commitment_prefix(&self, reply_to: ReplyTo<CommitmentPrefix>) -> Result<(), Error> {
         let prefix = self.chain.query_commitment_prefix();
-
-        reply_to.send(prefix).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(prefix).map_err(Error::send)
     }
 
     fn query_compatible_versions(&self, reply_to: ReplyTo<Vec<Version>>) -> Result<(), Error> {
         let versions = self.chain.query_compatible_versions();
-
-        reply_to.send(versions).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(versions).map_err(Error::send)
     }
 
     fn query_connection(
@@ -642,10 +691,7 @@ where
         reply_to: ReplyTo<ConnectionEnd>,
     ) -> Result<(), Error> {
         let connection_end = self.chain.query_connection(&connection_id, height);
-
-        reply_to.send(connection_end).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(connection_end).map_err(Error::send)
     }
 
     fn query_connections(
@@ -654,10 +700,7 @@ where
         reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_connections(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_connection_channels(
@@ -666,10 +709,7 @@ where
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_connection_channels(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_channels(
@@ -678,10 +718,7 @@ where
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channels(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_channel(
@@ -692,10 +729,7 @@ where
         reply_to: ReplyTo<ChannelEnd>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel(&port_id, &channel_id, height);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_channel_client_state(
@@ -704,10 +738,7 @@ where
         reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel_client_state(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn proven_client_state(
@@ -721,9 +752,7 @@ where
             .proven_client_state(&client_id, height)
             .map(|(cs, mp)| (cs.wrap_any(), mp));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn proven_connection(
@@ -733,10 +762,7 @@ where
         reply_to: ReplyTo<(ConnectionEnd, MerkleProof)>,
     ) -> Result<(), Error> {
         let result = self.chain.proven_connection(&connection_id, height);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn proven_client_consensus(
@@ -751,9 +777,7 @@ where
             .proven_client_consensus(&client_id, consensus_height, height)
             .map(|(cs, mp)| (cs.wrap_any(), mp));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn build_channel_proofs(
@@ -767,9 +791,7 @@ where
             .chain
             .build_channel_proofs(&port_id, &channel_id, height);
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn build_packet_proofs(
@@ -785,9 +807,7 @@ where
             self.chain
                 .build_packet_proofs(packet_type, port_id, channel_id, sequence, height);
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_packet_commitments(
@@ -796,10 +816,7 @@ where
         reply_to: ReplyTo<(Vec<PacketState>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_commitments(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_unreceived_packets(
@@ -808,10 +825,7 @@ where
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_packet_acknowledgements(
@@ -820,10 +834,7 @@ where
         reply_to: ReplyTo<(Vec<PacketState>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_acknowledgements(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_unreceived_acknowledgement(
@@ -832,10 +843,7 @@ where
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_acknowledgements(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_next_sequence_receive(
@@ -844,10 +852,7 @@ where
         reply_to: ReplyTo<Sequence>,
     ) -> Result<(), Error> {
         let result = self.chain.query_next_sequence_receive(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_txs(
@@ -856,6 +861,15 @@ where
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn query_blocks(
+        &self,
+        request: QueryBlockRequest,
+        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_blocks(request);
 
         reply_to.send(result).map_err(Error::send)?;
 

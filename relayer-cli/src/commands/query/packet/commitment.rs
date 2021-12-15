@@ -1,9 +1,10 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
+use clap::AppSettings::DisableHelpFlag;
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 
@@ -18,21 +19,23 @@ struct PacketSeqs {
     seqs: Vec<u64>,
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
+#[clap(setting(DisableHelpFlag))]
 pub struct QueryPacketCommitmentCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the port to query")]
+    #[clap(required = true, about = "identifier of the port to query")]
     port_id: PortId,
 
-    #[options(free, required, help = "identifier of the channel to query")]
+    #[clap(required = true, about = "identifier of the channel to query")]
     channel_id: ChannelId,
 
-    #[options(free, required, help = "sequence of packet to query")]
+    #[clap(required = true, about = "sequence of packet to query")]
     sequence: Sequence,
 
-    #[options(help = "height of the state to query", short = "h")]
+    // FIXME: rename the short option to avoid confusion with --help?
+    #[clap(short = 'h', long, about = "height of the state to query")]
     height: Option<u64>,
 }
 

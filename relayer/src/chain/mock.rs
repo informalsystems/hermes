@@ -1,28 +1,32 @@
-use std::ops::Add;
-use std::sync::Arc;
-use std::time::Duration;
+use alloc::sync::Arc;
+use core::ops::Add;
+use core::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
 use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
+use ibc::clients::ics07_tendermint::client_state::{
+    AllowUpdate, ClientState as TendermintClientState,
+};
+use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
+use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc::core::ics04_channel::context::ChannelReader;
+use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics04_channel::Version;
+use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::downcast;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
-use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics18_relayer::context::Ics18Context;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
-use ibc::query::QueryTxRequest;
+use ibc::query::{QueryBlockRequest, QueryTxRequest};
+use ibc::relayer::ics18_relayer::context::Ics18Context;
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
@@ -38,13 +42,15 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::ChainEndpoint;
+use crate::chain::{handle::requests::AppVersion, ChainEndpoint, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+
+use super::HealthCheck;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -57,6 +63,14 @@ pub struct MockChain {
     // keep a reference to event sender to prevent it from being dropped
     _event_sender: EventSender,
     event_receiver: EventReceiver,
+}
+
+impl MockChain {
+    fn trusting_period(&self) -> Duration {
+        self.config
+            .trusting_period
+            .unwrap_or_else(|| Duration::from_secs(14 * 24 * 60 * 60)) // 14 days
+    }
 }
 
 impl ChainEndpoint for MockChain {
@@ -97,6 +111,10 @@ impl ChainEndpoint for MockChain {
         &self.config.id
     }
 
+    fn health_check(&self) -> Result<HealthCheck, Error> {
+        Ok(HealthCheck::Healthy)
+    }
+
     fn shutdown(self) -> Result<(), Error> {
         Ok(())
     }
@@ -130,7 +148,15 @@ impl ChainEndpoint for MockChain {
         Ok(get_dummy_account_id())
     }
 
+    fn config(&self) -> ChainConfig {
+        self.config.clone()
+    }
+
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        unimplemented!()
+    }
+
+    fn add_key(&mut self, _key_name: &str, _key: KeyEntry) -> Result<(), Error> {
         unimplemented!()
     }
 
@@ -138,8 +164,11 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_latest_height(&self) -> Result<Height, Error> {
-        Ok(self.context.query_latest_height())
+    fn query_status(&self) -> Result<StatusResponse, Error> {
+        Ok(StatusResponse {
+            height: self.context.host_height(),
+            timestamp: self.context.host_timestamp(),
+        })
     }
 
     fn query_clients(
@@ -262,6 +291,13 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
+    fn query_blocks(
+        &self,
+        _request: QueryBlockRequest,
+    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+        unimplemented!()
+    }
+
     fn proven_client_state(
         &self,
         _client_id: &ClientId,
@@ -307,15 +343,20 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
+    fn build_client_state(
+        &self,
+        height: Height,
+        dst_config: ChainConfig,
+    ) -> Result<Self::ClientState, Error> {
         let client_state = TendermintClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
-            self.config.trusting_period,
-            self.config.trusting_period.add(Duration::from_secs(1000)),
-            Duration::from_millis(3000),
+            self.trusting_period(),
+            self.trusting_period().add(Duration::from_secs(1000)),
+            // See `calculate_client_state_drift`
+            self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
-            Height::zero(),
+            ProofSpecs::default(),
             vec!["upgrade/upgradedClient".to_string()],
             AllowUpdate {
                 after_expiry: false,
@@ -391,15 +432,19 @@ impl ChainEndpoint for MockChain {
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
+
+    fn query_app_version(&self, _request: AppVersion) -> Result<Version, Error> {
+        todo!()
+    }
 }
 
 // For integration tests with the modules
 #[cfg(test)]
 pub mod test_utils {
-    use std::str::FromStr;
-    use std::time::Duration;
+    use core::str::FromStr;
+    use core::time::Duration;
 
-    use ibc::ics24_host::identifier::ChainId;
+    use ibc::core::ics24_host::identifier::ChainId;
 
     use crate::config::{AddressType, ChainConfig, GasPrice, PacketFilter};
 
@@ -414,16 +459,22 @@ pub mod test_utils {
             account_prefix: "".to_string(),
             key_name: "".to_string(),
             store_prefix: "".to_string(),
+            default_gas: None,
+            key_store_type: Default::default(),
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
+            fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
-            trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
+            max_block_time: Duration::from_secs(10),
+            trusting_period: Some(Duration::from_secs(14 * 24 * 60 * 60)), // 14 days
             trust_threshold: Default::default(),
             packet_filter: PacketFilter::default(),
             address_type: AddressType::default(),
+            memo_prefix: Default::default(),
+            proof_specs: Default::default(),
         }
     }
 }

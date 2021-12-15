@@ -1,16 +1,17 @@
-use std::{thread, time::Duration};
+use core::time::Duration;
+use std::{thread, time::Instant};
 
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, trace, warn};
 
-use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
+use ibc::{core::ics02_client::events::UpdateClient, events::IbcEvent};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
+    config::Clients as ClientsConfig,
     foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
     object::Client,
     telemetry,
-    telemetry::Telemetry,
 };
 
 use super::error::RunError;
@@ -20,9 +21,7 @@ pub struct ClientWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     client: Client,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
-
-    #[allow(dead_code)]
-    telemetry: Telemetry,
+    clients_cfg: ClientsConfig,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
@@ -30,13 +29,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         client: Client,
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: Telemetry,
+        clients_cfg: ClientsConfig,
     ) -> Self {
         Self {
             client,
             chains,
             cmd_rx,
-            telemetry,
+            clients_cfg,
         }
     }
 
@@ -49,38 +48,48 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         );
 
         info!(
-            "[{}] running client worker & initial misbehaviour detection",
-            client
+            "[{}] running client worker with misbehaviour={} and refresh={}",
+            client, self.clients_cfg.misbehaviour, self.clients_cfg.refresh
         );
 
         // initial check for evidence of misbehaviour for all updates
-        let skip_misbehaviour = self.detect_misbehaviour(&client, None);
+        let skip_misbehaviour =
+            !self.clients_cfg.misbehaviour || self.detect_misbehaviour(&client, None);
+
+        // remember the time of the last refresh so we backoff
+        let mut last_refresh = Instant::now() - Duration::from_secs(61);
 
         loop {
             thread::sleep(Duration::from_millis(600));
 
-            // Run client refresh, exit only if expired or frozen
-            match client.refresh() {
-                Ok(Some(_)) => {
-                    telemetry! {
-                        self.telemetry.ibc_client_update(
+            // Clients typically need refresh every 2/3 of their
+            // trusting period (which can e.g., two weeks).
+            // Backoff refresh checking to attempt it every minute.
+            if self.clients_cfg.refresh && last_refresh.elapsed() > Duration::from_secs(60) {
+                // Run client refresh, exit only if expired or frozen
+                match client.refresh() {
+                    Ok(Some(_)) => {
+                        telemetry!(
+                            ibc_client_updates,
                             &self.client.dst_chain_id,
                             &self.client.dst_client_id,
                             1
-                        )
-                    };
-                }
-                Err(e) => {
-                    if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
-                        warn!("failed to refresh client '{}': {}", client, e);
-
-                        // This worker has completed its job as the client cannot be refreshed any
-                        // further, and can therefore exit without an error.
-                        return Ok(());
+                        );
                     }
-                }
-                _ => (),
-            };
+                    Err(e) => {
+                        if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
+                            warn!("failed to refresh client '{}': {}", client, e);
+
+                            // This worker has completed its job as the client cannot be refreshed any
+                            // further, and can therefore exit without an error.
+                            return Ok(());
+                        }
+                    }
+                    _ => (),
+                };
+
+                last_refresh = Instant::now();
+            }
 
             if skip_misbehaviour {
                 continue;
@@ -109,13 +118,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
                         if self.detect_misbehaviour(client, Some(update)) {
-                            telemetry! {
-                                self.telemetry.ibc_client_misbehaviour(
-                                    &self.client.dst_chain_id,
-                                    &self.client.dst_client_id,
-                                    1
-                                )
-                            };
+                            telemetry!(
+                                ibc_client_misbehaviour,
+                                &self.client.dst_chain_id,
+                                &self.client.dst_client_id,
+                                1
+                            );
                         }
                     }
                 }

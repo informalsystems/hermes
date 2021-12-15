@@ -1,5 +1,20 @@
 # Gaiad Manager Change Log
 
+## UNRELEASED
+
+- Increased default Hermes config constants `rpc_timeout` and `max_gas`
+- Fixed undefaulted `$OUPUT` in `lib-gm`
+
+## v0.0.9
+
+### FEATURES
+- Binaries in the config can be defined as URLs now.
+- Add the option to set gm-lib path via the $GM_LIB environment variable ([#1365])
+
+### BUGFIXES
+- Fixed debug messages not printing to stdout properly.
+- Minor cosmetic fixes.
+
 ## v0.0.8
 
 ### BUGFIXES
@@ -7,6 +22,7 @@
 - Bumped default rpc_timeout in Hermes config to 5s ([#1312])
 
 [#1312]: https://github.com/informalsystems/ibc-rs/issues/1312
+[#1365]: https://github.com/informalsystems/ibc-rs/issues/1365
 
 ## v0.0.7
 

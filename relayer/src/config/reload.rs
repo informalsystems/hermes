@@ -1,15 +1,13 @@
 //! Facility for reloading the relayer configuration.
 
-use std::{
-    path::PathBuf,
-    sync::{Arc, RwLock},
-};
+use alloc::sync::Arc;
+use std::{path::PathBuf, sync::RwLock};
 
 use crossbeam_channel::Sender;
 use itertools::Itertools;
 use thiserror::Error;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 use tracing::debug;
 
 use crate::{
@@ -22,7 +20,7 @@ use super::{ChainConfig, Config};
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("failed to load configuration from disk")]
-    LoadFailed(#[source] crate::error::Error),
+    LoadFailed(#[source] super::error::Error),
 
     #[error("configuration is inconsistent, did not find config for added/updated chain {0}")]
     InconsistentConfig(ChainId),
@@ -82,7 +80,7 @@ impl ConfigReload {
         for update in updates {
             if self
                 .tx_cmd
-                .send(SupervisorCmd::UpdateConfig(update))
+                .send(SupervisorCmd::UpdateConfig(Box::new(update)))
                 .is_err()
             {
                 debug!("failed to send config update to supervisor, channel is closed");

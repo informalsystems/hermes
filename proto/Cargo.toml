@@ -1,18 +1,18 @@
 [package]
-name       = "ibc-proto"
-version    = "0.10.0"
-authors    = ["Informal Systems <hello@informal.systems>"]
-edition    = "2018"
-license    = "Apache-2.0"
-repository = "https://github.com/informalsystems/ibc-proto/tree/master/ibc_proto"
-readme     = "README.md"
-categories = ["cryptography", "cryptography::cryptocurrencies", "database"]
-keywords   = ["blockchain", "cosmos", "tendermint", "ibc", "proto"]
-exclude    = ["definitions"]
-
-description = """
-    ibc-proto is a Rust implementation of the Cosmos SDK & IBC proto structs.
-    """
+name         = "ibc-proto"
+version      = "0.13.0"
+authors      = ["Informal Systems <hello@informal.systems>"]
+edition      = "2021"
+license      = "Apache-2.0"
+repository   = "https://github.com/informalsystems/ibc-rs/tree/master/proto"
+readme       = "README.md"
+categories   = ["cryptography", "cryptography::cryptocurrencies", "database"]
+keywords     = ["blockchain", "cosmos", "tendermint", "ibc", "proto"]
+exclude      = ["definitions"]
+rust-version = "1.57"
+description  = """
+    ibc-proto is a Rust implementation of the Cosmos SDK & IBC proto structs
+"""
 
 [lib]
 name = "ibc_proto"
@@ -22,11 +22,12 @@ path = "src/lib.rs"
 all-features = true
 
 [dependencies]
-prost = "0.7"
-prost-types = "0.7"
+prost = "0.9"
+prost-types = "0.9"
 bytes = "1.1"
-tonic = "0.4"
+tonic = "0.6"
 getrandom = { version = "0.2", features = ["js"] }
+serde = "1.0"
 
 [dependencies.tendermint-proto]
-version = "=0.21.0"
+version = "=0.23.1"

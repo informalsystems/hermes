@@ -39,10 +39,6 @@ hermes help create
 will provide details about all the valid invocations of the `create` CLI command.
 
 ```
-hermes 0.7.0
-Informal Systems <hello@informal.systems>
-Hermes is an IBC Relayer written in Rust.
-
 USAGE:
     hermes create <SUBCOMMAND>
 
@@ -63,10 +59,6 @@ hermes help create channel
 ```
 
 ```
-hermes 0.7.0
-Informal Systems <hello@informal.systems>
-Hermes is an IBC Relayer written in Rust.
-
 USAGE:
     hermes create channel <OPTIONS>
 
@@ -97,7 +89,6 @@ Relevant snippet:
 
 ```toml
 [global]
-strategy = 'packets'
 log_level = 'error'
 ```
 

@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use alloc::collections::VecDeque;
 
 use crossbeam_channel as channel;
 
@@ -49,9 +49,9 @@ impl<T> EventBus<T> {
 mod tests {
     use super::EventBus;
 
+    use core::sync::atomic::{AtomicUsize, Ordering};
     use serial_test::serial;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use test_env_log::test;
+    use test_log::test;
 
     static COUNTER: AtomicUsize = AtomicUsize::new(0);
 

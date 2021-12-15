@@ -1,35 +1,36 @@
-use std::{
-    fmt::{self, Debug},
-    sync::Arc,
-};
+use alloc::sync::Arc;
+use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
 use ibc::{
+    core::{
+        ics02_client::{
+            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
+            client_state::{AnyClientState, IdentifiedAnyClientState},
+            events::UpdateClient,
+            header::AnyHeader,
+            misbehaviour::MisbehaviourEvidence,
+        },
+        ics03_connection::{
+            connection::{ConnectionEnd, IdentifiedConnectionEnd},
+            version::Version,
+        },
+        ics04_channel::{
+            self,
+            channel::{ChannelEnd, IdentifiedChannelEnd},
+            packet::{PacketMsgType, Sequence},
+        },
+        ics23_commitment::commitment::CommitmentPrefix,
+        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    },
     events::IbcEvent,
-    ics02_client::{
-        client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
-        client_state::{AnyClientState, IdentifiedAnyClientState},
-        events::UpdateClient,
-        header::AnyHeader,
-        misbehaviour::MisbehaviourEvidence,
-    },
-    ics03_connection::{connection::ConnectionEnd, version::Version},
-    ics04_channel::{
-        channel::{ChannelEnd, IdentifiedChannelEnd},
-        packet::{PacketMsgType, Sequence},
-    },
-    ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
-    query::QueryTxRequest,
+    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
-
 use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -39,19 +40,24 @@ use ibc_proto::ibc::core::{
     },
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
-    connection::v1::QueryClientConnectionsRequest,
+    connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
-
 pub use prod::ProdChainHandle;
 
 use crate::{
+    chain::handle::requests::AppVersion,
+    chain::StatusResponse,
+    config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
     event::monitor::{EventBatch, Result as MonitorResult},
     keyring::KeyEntry,
 };
 
+use super::HealthCheck;
+
 mod prod;
+pub mod requests;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
@@ -96,6 +102,10 @@ pub enum ChainRequest {
         reply_to: ReplyTo<()>,
     },
 
+    HealthCheck {
+        reply_to: ReplyTo<HealthCheck>,
+    },
+
     Subscribe {
         reply_to: ReplyTo<Subscription>,
     },
@@ -110,21 +120,31 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
     },
 
+    Config {
+        reply_to: ReplyTo<ChainConfig>,
+    },
+
     Signer {
         reply_to: ReplyTo<Signer>,
     },
 
-    Key {
+    GetKey {
         reply_to: ReplyTo<KeyEntry>,
     },
 
-    ModuleVersion {
-        port_id: PortId,
-        reply_to: ReplyTo<String>,
+    AppVersion {
+        request: AppVersion,
+        reply_to: ReplyTo<ics04_channel::Version>,
     },
 
-    QueryLatestHeight {
-        reply_to: ReplyTo<Height>,
+    AddKey {
+        key_name: String,
+        key: KeyEntry,
+        reply_to: ReplyTo<()>,
+    },
+
+    QueryStatus {
+        reply_to: ReplyTo<StatusResponse>,
     },
 
     QueryClients {
@@ -141,6 +161,7 @@ pub enum ChainRequest {
 
     BuildClientState {
         height: Height,
+        dst_config: ChainConfig,
         reply_to: ReplyTo<AnyClientState>,
     },
 
@@ -299,9 +320,14 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<u64>>,
     },
 
-    QueryPacketEventData {
+    QueryPacketEventDataFromTxs {
         request: QueryTxRequest,
         reply_to: ReplyTo<Vec<IbcEvent>>,
+    },
+
+    QueryPacketEventDataFromBlocks {
+        request: QueryBlockRequest,
+        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     },
 }
 
@@ -313,6 +339,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     /// Shutdown the chain runtime.
     fn shutdown(&self) -> Result<(), Error>;
+
+    /// Perform a health check
+    fn health_check(&self) -> Result<HealthCheck, Error>;
 
     /// Subscribe to the events emitted by the chain.
     fn subscribe(&self) -> Result<Subscription, Error>;
@@ -335,11 +364,19 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn get_signer(&self) -> Result<Signer, Error>;
 
+    fn config(&self) -> Result<ChainConfig, Error>;
+
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
-    fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
+    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
 
-    fn query_latest_height(&self) -> Result<Height, Error>;
+    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
+
+    fn query_status(&self) -> Result<StatusResponse, Error>;
+
+    fn query_latest_height(&self) -> Result<Height, Error> {
+        Ok(self.query_status()?.height)
+    }
 
     fn query_clients(
         &self,
@@ -448,7 +485,11 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error>;
 
     /// Constructs a client state at the given height
-    fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error>;
+    fn build_client_state(
+        &self,
+        height: Height,
+        dst_config: ChainConfig,
+    ) -> Result<AnyClientState, Error>;
 
     /// Constructs a consensus state at the given height
     fn build_consensus_state(
@@ -509,4 +550,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     ) -> Result<Vec<u64>, Error>;
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
+
+    fn query_blocks(
+        &self,
+        request: QueryBlockRequest,
+    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 }

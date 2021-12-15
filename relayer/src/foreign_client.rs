@@ -1,29 +1,32 @@
+use core::{fmt, time::Duration};
+use std::thread;
 use std::time::Instant;
-use std::{fmt, thread, time::Duration};
 
+use chrono::Utc;
 use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
 
 use crate::error::Error as RelayerError;
 use flex_error::define_error;
-use ibc::downcast;
-use ibc::events::{IbcEvent, IbcEventType};
-use ibc::ics02_client::client_consensus::{
+use ibc::core::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
 };
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics02_client::error::Error as ClientError;
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::header::Header;
-use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
-use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
-use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-use ibc::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::core::ics02_client::client_state::AnyClientState;
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics02_client::error::Error as ClientError;
+use ibc::core::ics02_client::events::UpdateClient;
+use ibc::core::ics02_client::header::{AnyHeader, Header};
+use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
+use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
+use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc::downcast;
+use ibc::events::{IbcEvent, WithBlockDataType};
 use ibc::query::QueryTxRequest;
-use ibc::timestamp::Timestamp;
+use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
@@ -51,12 +54,38 @@ define_error! {
             [ ClientError ]
             |_| { "ICS02 client error" },
 
+        HeaderInTheFuture
+            {
+                src_chain_id: ChainId,
+                src_header_height: Height,
+                src_header_time: Timestamp,
+                dst_chain_id: ChainId,
+                dst_latest_header_height: Height,
+                dst_latest_header_time: Timestamp,
+                max_drift: Duration
+            }
+            |e| {
+                format_args!("update header from {} with height {} and time {} is in the future compared with latest header on {} with height {} and time {}, adjusted with drift {:?}",
+                 e.src_chain_id, e.src_header_height, e.src_header_time, e.dst_chain_id, e.dst_latest_header_height, e.dst_latest_header_time, e.max_drift)
+            },
+
         ClientUpdate
             {
                 chain_id: ChainId,
                 description: String
             }
             [ RelayerError ]
+            |e| {
+                format_args!("error raised while updating client on chain {0}: {1}", e.chain_id, e.description)
+            },
+
+        ClientUpdateTiming
+            {
+                chain_id: ChainId,
+                clock_drift: Duration,
+                description: String
+            }
+            [ TimestampOverflowError ]
             |e| {
                 format_args!("error raised while updating client on chain {0}: {1}", e.chain_id, e.description)
             },
@@ -423,8 +452,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Get signer
         let signer = self.dst_chain.get_signer().map_err(|e| {
             ForeignClientError::client_create(
-                self.dst_chain.id(),
-                "failed while fetching the destination chain signer".to_string(),
+                self.src_chain.id(),
+                format!(
+                    "failed while fetching the dst chain ({}) signer",
+                    self.dst_chain.id()
+                ),
                 e,
             )
         })?;
@@ -432,19 +464,31 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Build client create message with the data from source chain at latest height.
         let latest_height = self.src_chain.query_latest_height().map_err(|e| {
             ForeignClientError::client_create(
-                self.dst_chain.id(),
-                "failed while querying src chain ({}) for latest height: {}".to_string(),
+                self.src_chain.id(),
+                "failed while querying src chain for latest height".to_string(),
                 e,
             )
         })?;
 
         let client_state = self
             .src_chain
-            .build_client_state(latest_height)
+            .build_client_state(
+                latest_height,
+                self.dst_chain.config().map_err(|e| {
+                    ForeignClientError::client_create(
+                        self.src_chain.id(),
+                        format!(
+                            "failed while querying dst chain ({}) for its configuration",
+                            self.dst_chain.id()
+                        ),
+                        e,
+                    )
+                })?,
+            )
             .map_err(|e| {
                 ForeignClientError::client_create(
                     self.src_chain.id(),
-                    "failed while querying src chain for latest height".to_string(),
+                    "failed when building client state".to_string(),
                     e,
                 )
             })?
@@ -521,8 +565,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .consensus_state(client_state.latest_height())?
             .timestamp();
 
+        // The refresh_window is the maximum duration
+        // we can backoff between subsequent client updates.
         let refresh_window = client_state.refresh_period();
-        let elapsed = Timestamp::now().duration_since(&last_update_time);
+        // Compute the duration since the last update of this client
+        let elapsed = Timestamp::from_datetime(Utc::now()).duration_since(&last_update_time);
 
         if client_state.is_frozen() || client_state.expired(elapsed.unwrap_or_default()) {
             return Err(ForeignClientError::expired_or_frozen(
@@ -553,42 +600,41 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         self.build_update_client_with_trusted(target_height, Height::zero())
     }
 
-    /// Returns a vector with a message for updating the client to height `target_height`.
-    /// If the client already stores consensus states for this height, returns an empty vector.
-    pub fn build_update_client_with_trusted(
+    // Returns a trusted height that is lower than the target height, so
+    // that the relayer can update the client to the target height based
+    // on the returned trusted height.
+    fn solve_trusted_height(
         &self,
         target_height: Height,
-        trusted_height: Height,
-    ) -> Result<Vec<Any>, ForeignClientError> {
-        // Wait for source chain to reach `target_height`
-        while self.src_chain().query_latest_height().map_err(|e| {
-            ForeignClientError::client_create(
-                self.src_chain.id(),
-                "failed fetching src chain latest height with error".to_string(),
-                e,
-            )
-        })? < target_height
-        {
-            thread::sleep(Duration::from_millis(100))
-        }
+        client_state: &AnyClientState,
+    ) -> Result<Height, ForeignClientError> {
+        let client_latest_height = client_state.latest_height();
 
-        // Get the latest client state on destination.
-        let client_state = self
-            .dst_chain()
-            .query_client_state(&self.id, Height::default())
-            .map_err(|e| {
-                ForeignClientError::client_create(
-                    self.dst_chain.id(),
-                    "failed querying client state on dst chain".to_string(),
-                    e,
-                )
-            })?;
+        if client_latest_height < target_height {
+            // If the latest height of the client is already lower than the
+            // target height, we can simply use it.
+            Ok(client_latest_height)
+        } else {
+            // The only time when the above is false is when for some reason,
+            // the command line user wants to submit a client update at an
+            // older height even when the relayer already have an up-to-date
+            // client at a newer height.
 
-        // If not specified, set trusted state to the highest height smaller than target height.
-        // Otherwise ensure that a consensus state at trusted height exists on-chain.
-        let cs_heights = self.consensus_state_heights()?;
-        let trusted_height = if trusted_height == Height::zero() {
-            // Get highest height smaller than target height
+            // In production, this should rarely happen unless there is another
+            // relayer racing to update the client state, and that we so happen
+            // to get the the latest client state that was updated between
+            // the time the target height was determined, and the time
+            // the client state was fetched.
+
+            warn!("[{}] resolving trusted height from the full list of consensus state heights for target height {}; this may take a while",
+                self, target_height);
+
+            // Potential optimization: cache the list of consensus heights
+            // so that subsequent fetches can be fast.
+            let cs_heights = self.consensus_state_heights()?;
+
+            // Iterate through the available consesnsus heights and find one
+            // that is lower than the target height.
             cs_heights
                 .into_iter()
                 .find(|h| h < &target_height)
@@ -597,15 +643,164 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                         self.dst_chain().id(),
                         target_height,
                     )
-                    // ))
-                })?
+                })
+        }
+    }
+
+    // Validate a non-zero trusted height to make sure that there is a corresponding
+    // consensus state at the given trusted height on the destination chain's client.
+    fn validate_trusted_height(
+        &self,
+        target_height: Height,
+        trusted_height: Height,
+        client_state: &AnyClientState,
+    ) -> Result<(), ForeignClientError> {
+        if client_state.latest_height() == trusted_height {
+            Ok(())
         } else {
+            // There should be no need to validate a trusted height in production,
+            // Since it is always fetched from some client state. The only use is
+            // from the command line when the trusted height is manually specified.
+            // We should consider skipping the validation entirely and only validate
+            // it from the command line itself.
+
+            warn!("[{}] validating that trusted height {} for target height {} is present in the full list of consensus state heights; this may take a while",
+                self, trusted_height, target_height);
+
+            let cs_heights = self.consensus_state_heights()?;
+
             cs_heights
                 .into_iter()
                 .find(|h| h == &trusted_height)
                 .ok_or_else(|| {
                     ForeignClientError::missing_trusted_height(self.dst_chain().id(), target_height)
-                })?
+                })?;
+
+            Ok(())
+        }
+    }
+
+    /// Given a client state and header it adds, if required, a delay such that the header will
+    /// not be considered in the future when submitted in an update client:
+    /// - determine the `dst_timestamp` as the time of the latest block on destination chain
+    /// - return if `header.timestamp <= dst_timestamp + client_state.max_clock_drift`
+    /// - wait for the destination chain to reach `dst_timestamp + 1`
+    ///    Note: This is mostly to help with existing clients where the `max_clock_drift` did
+    ///    not take into account the block time.
+    /// - return error if header.timestamp < dst_timestamp + client_state.max_clock_drift
+    ///
+    /// Ref: https://github.com/informalsystems/ibc-rs/issues/1445.
+    fn wait_for_header_validation_delay(
+        &self,
+        client_state: &AnyClientState,
+        header: &AnyHeader,
+    ) -> Result<(), ForeignClientError> {
+        // Get latest height and time on destination chain
+        let mut status = self.dst_chain().query_status().map_err(|e| {
+            ForeignClientError::client_update(
+                self.dst_chain.id(),
+                "failed querying latest status of the destination chain".to_string(),
+                e,
+            )
+        })?;
+
+        let ts_adjusted = (status.timestamp + client_state.max_clock_drift()).map_err(|e| {
+            ForeignClientError::client_update_timing(
+                self.dst_chain.id(),
+                client_state.max_clock_drift(),
+                "failed to adjust timestamp of destination chain with clock drift".to_string(),
+                e,
+            )
+        })?;
+
+        if header.timestamp().after(&ts_adjusted) {
+            // Header would be considered in the future, wait for destination chain to
+            // advance to the next height.
+            warn!("[{}] src header {} is after dst latest header {} + client state drift {:?}, wait for next height on {}",
+                   self, header.timestamp(), status.timestamp, client_state.max_clock_drift(), self.dst_chain().id());
+
+            let target_dst_height = status.height.increment();
+            loop {
+                thread::sleep(Duration::from_millis(300));
+                status = self.dst_chain().query_status().map_err(|e| {
+                    ForeignClientError::client_update(
+                        self.dst_chain.id(),
+                        "failed querying latest status of the destination chain".to_string(),
+                        e,
+                    )
+                })?;
+
+                if status.height >= target_dst_height {
+                    break;
+                }
+            }
+        }
+
+        let next_ts_adjusted =
+            (status.timestamp + client_state.max_clock_drift()).map_err(|e| {
+                ForeignClientError::client_update_timing(
+                    self.dst_chain.id(),
+                    client_state.max_clock_drift(),
+                    "failed to adjust timestamp of destination chain with clock drift".to_string(),
+                    e,
+                )
+            })?;
+
+        if header.timestamp().after(&next_ts_adjusted) {
+            // The header is still in the future
+            Err(ForeignClientError::header_in_the_future(
+                self.src_chain.id(),
+                header.height(),
+                header.timestamp(),
+                self.dst_chain.id(),
+                status.height,
+                status.timestamp,
+                client_state.max_clock_drift(),
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Returns a vector with a message for updating the client to height `target_height`.
+    /// If the client already stores a consensus state for this height, returns an empty vector.
+    pub fn build_update_client_with_trusted(
+        &self,
+        target_height: Height,
+        trusted_height: Height,
+    ) -> Result<Vec<Any>, ForeignClientError> {
+        let latest_height = || {
+            self.src_chain().query_latest_height().map_err(|e| {
+                ForeignClientError::client_create(
+                    self.src_chain.id(),
+                    "failed fetching src chain latest height with error".to_string(),
+                    e,
+                )
+            })
+        };
+
+        // Wait for source chain to reach `target_height`
+        while latest_height()? < target_height {
+            thread::sleep(Duration::from_millis(100))
+        }
+
+        // Get the latest client state on destination.
+        let client_state = self
+            .dst_chain()
+            .query_client_state(&self.id, Height::default())
+            .map_err(|e| {
+                ForeignClientError::client_update(
+                    self.dst_chain.id(),
+                    "failed querying client state on dst chain".to_string(),
+                    e,
+                )
+            })?;
+
+        let trusted_height = if trusted_height == Height::zero() {
+            self.solve_trusted_height(target_height, &client_state)?
+        } else {
+            self.validate_trusted_height(target_height, trusted_height, &client_state)?;
+            trusted_height
         };
 
         if trusted_height >= target_height {
@@ -618,7 +813,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         let (header, support) = self
             .src_chain()
-            .build_header(trusted_height, target_height, client_state)
+            .build_header(trusted_height, target_height, client_state.clone())
             .map_err(|e| {
                 ForeignClientError::client_update(
                     self.src_chain.id(),
@@ -634,6 +829,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 e,
             )
         })?;
+
+        self.wait_for_header_validation_delay(&client_state, &header)?;
 
         let mut msgs = vec![];
 
@@ -736,7 +933,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     ) -> Result<Option<UpdateClient>, ForeignClientError> {
         let request = QueryClientEventRequest {
             height: Height::zero(),
-            event_id: IbcEventType::UpdateClient,
+            event_id: WithBlockDataType::UpdateClient,
             client_id: self.id.clone(),
             consensus_height,
         };
@@ -768,6 +965,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 }
                 Ok(result) => {
                     events = result;
+                    // Should break to prevent retrying uselessly.
+                    break;
                 }
             }
         }
@@ -804,7 +1003,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .map_err(|e| {
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
             })?;
-        consensus_states.sort_by_key(|a| std::cmp::Reverse(a.height));
+        consensus_states.sort_by_key(|a| core::cmp::Reverse(a.height));
         Ok(consensus_states)
     }
 
@@ -883,31 +1082,24 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        // Get the list of consensus state heights in descending order.
-        // Note: If chain does not prune consensus states then the last consensus state is
-        // the one installed by the `CreateClient` which does not include a header.
-        // For chains that do support pruning, it is possible that the last consensus state
-        // was installed by an `UpdateClient` and an event and header will be found.
-        let consensus_state_heights = self.consensus_state_heights()?;
-        let ch = match update {
-            Some(ref u) => u.consensus_height(),
-            None => Height::zero(),
+        let consensus_state_heights = if let Some(ref event) = update {
+            vec![event.height()]
+        } else {
+            // Get the list of consensus state heights in descending order.
+            // Note: If chain does not prune consensus states then the last consensus state is
+            // the one installed by the `CreateClient` which does not include a header.
+            // For chains that do support pruning, it is possible that the last consensus state
+            // was installed by an `UpdateClient` and an event and header will be found.
+            self.consensus_state_heights()?
         };
 
-        debug!(
-            "[{}] checking misbehaviour at {}, number of consensus states: {}",
+        trace!(
+            "[{}] checking misbehaviour for consensus state heights (first 50 shown here): {}, total: {}",
             self,
-            ch,
+            consensus_state_heights.iter().take(50).join(", "),
             consensus_state_heights.len()
         );
 
-        trace!(
-            "[{}] checking misbehaviour for consensus state heights (first 50 shown here): {}",
-            self,
-            consensus_state_heights.iter().take(50).join(", ")
-        );
-
-        let check_once = update.is_some();
         let start_time = Instant::now();
         for target_height in consensus_state_heights {
             // Start with specified update event or the one for latest consensus height
@@ -943,9 +1135,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // No header in events, cannot run misbehavior.
             // May happen on chains running older SDKs (e.g., Akash)
             if update_event.header.is_none() {
-                return Err(ForeignClientError::misbehaviour_exit(
-                    "no header in update client events".to_string(),
-                ));
+                return Err(ForeignClientError::misbehaviour_exit(format!(
+                    "could not extract header from update client event {:?} emitted by chain {:?}",
+                    update_event,
+                    self.dst_chain.id()
+                )));
             }
 
             // Check for misbehaviour according to the specific source chain type.
@@ -969,9 +1163,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 return Ok(misbehavior);
             }
 
-            // Exit the loop if the check was for a single update or if more than
-            // MAX_MISBEHAVIOUR_CHECK_TIME was spent here.
-            if check_once || start_time.elapsed() > MAX_MISBEHAVIOUR_CHECK_DURATION {
+            // Exit the loop if more than MAX_MISBEHAVIOUR_CHECK_TIME was spent here.
+            if start_time.elapsed() > MAX_MISBEHAVIOUR_CHECK_DURATION {
                 trace!(
                     "[{}] finished misbehaviour verification after {:?}",
                     self,
@@ -983,9 +1176,16 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
             // Clear the update
             update = None;
+
+            // slight backoff
+            thread::sleep(Duration::from_millis(100));
         }
 
-        debug!("[{}] finished misbehaviour checking", self);
+        trace!(
+            "[{}] finished misbehaviour verification after {:?}",
+            self,
+            start_time.elapsed()
+        );
 
         Ok(None)
     }
@@ -1126,14 +1326,14 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
 /// instances of chains built using `MockChain`.
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-    use std::sync::Arc;
+    use alloc::sync::Arc;
+    use core::str::FromStr;
 
-    use test_env_log::test;
+    use test_log::test;
     use tokio::runtime::Runtime as TokioRuntime;
 
+    use ibc::core::ics24_host::identifier::ClientId;
     use ibc::events::IbcEvent;
-    use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
 
     use crate::chain::handle::{ChainHandle, ProdChainHandle};

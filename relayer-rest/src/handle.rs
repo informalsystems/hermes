@@ -4,7 +4,7 @@ use tracing::error;
 
 use crossbeam_channel as channel;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::supervisor::dump_state::SupervisorState;
 use ibc_relayer::{
     config::ChainConfig,
@@ -13,7 +13,6 @@ use ibc_relayer::{
         RestApiError,
     },
 };
-use std::str::FromStr;
 
 pub const NAME: &str = env!(
     "CARGO_PKG_NAME",
@@ -53,10 +52,10 @@ pub fn chain_config(
     sender: &channel::Sender<Request>,
     chain_id: &str,
 ) -> Result<ChainConfig, RestApiError> {
-    match ChainId::from_str(chain_id) {
-        Ok(chain_id) => submit_request(sender, |reply_to| Request::GetChain { chain_id, reply_to }),
-        Err(e) => Err(RestApiError::InvalidChainId(chain_id.to_string(), e.0)),
-    }
+    submit_request(sender, |reply_to| Request::GetChain {
+        chain_id: ChainId::from_string(chain_id),
+        reply_to,
+    })
 }
 
 pub fn supervisor_state(

@@ -1,11 +1,12 @@
 use core::fmt;
-use std::iter::Iterator;
-use std::time::{Duration, Instant};
+use core::iter::Iterator;
+use core::time::Duration;
+use std::time::Instant;
 
 use tracing::{debug, error, trace};
 
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use crate::error::Error as RelayerError;

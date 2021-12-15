@@ -1,34 +1,33 @@
-use std::sync::Arc;
+use alloc::sync::Arc;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use serde::Serialize;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
 /// Query clients command
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct QueryAllClientsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(
-        help = "filter for clients which target a specific chain id (implies '-o')",
-        meta = "ID"
+    #[clap(
+        short,
+        long,
+        about = "filter for clients which target a specific chain id (implies '-o')",
+        value_name = "ID"
     )]
     src_chain_id: Option<ChainId>,
 
-    #[options(
-        help = "omit printing the source chain for each client",
-        default = "false"
-    )]
+    #[clap(short, long, about = "omit printing the source chain for each client")]
     omit_chain_ids: bool,
 }
 
@@ -58,7 +57,8 @@ impl Runnable for QueryAllClientsCmd {
         debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         let req = QueryClientStatesRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),

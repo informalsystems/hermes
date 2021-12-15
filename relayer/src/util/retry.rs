@@ -1,4 +1,4 @@
-use std::time::Duration;
+use core::time::Duration;
 
 pub use retry::{
     delay::{Fibonacci, Fixed},
@@ -87,7 +87,7 @@ pub fn clamp_total(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_env_log::test;
+    use test_log::test;
 
     const CONST_STRATEGY: ConstantGrowth =
         ConstantGrowth::new(Duration::from_secs(1), Duration::from_millis(500));

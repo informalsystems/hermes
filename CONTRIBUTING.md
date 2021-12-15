@@ -5,7 +5,7 @@ of ibc-rs is to provide a high quality, formally verified implementation of
 the IBC protocol and relayer.
 
 All work on the code base should be motivated by a Github
-Issue. Search is a good place to start when looking for places to contribute. 
+Issue. Search is a good place to start when looking for places to contribute.
 If you would like to work on an issue which already exists, please indicate so
 by leaving a comment. If you'd like to work on something else, open an Issue to
 start the discussion.
@@ -17,6 +17,7 @@ repository:
 - [Forking](#forking) - fork the repo to make pull requests
 - [Changelog](#changelog) - changes must be recorded in the changelog
 - [Pull Requests](#pull-requests) - what makes a good pull request
+- [Releases](#releases) - how to release new version of the crates
 
 ## Decision Making
 
@@ -40,7 +41,7 @@ the form of an [Architectural Decision Record
 overall strategy to ensure the code base maintains coherence
 in the larger context. If you are not comfortable with writing an ADR,
 you can open a less-formal issue and the maintainers will help you
-turn it into an ADR. 
+turn it into an ADR.
 
 When the problem as well as proposed solution are well understood,
 changes should start with a [draft
@@ -63,7 +64,7 @@ Each stage of the process is aimed at creating feedback cycles which align contr
 
 ## Forking
 
-If you do not have write access to the repository, your contribution should be 
+If you do not have write access to the repository, your contribution should be
 made through a fork on Github. Fork the repository, contribute to your fork,
 and make a pull request back upstream.
 
@@ -87,31 +88,43 @@ To pull in updates from the origin repo, run
 
 Every non-trivial PR must update the [CHANGELOG](CHANGELOG.md). This is
 accomplished indirectly by adding entries to the `.changelog` folder in
-[unclog](https://github.com/informalsystems/unclog) format. `CHANGELOG.md` will
-be built by whomever is responsible for performing a release just prior to
-release - this is to avoid changelog conflicts prior to releases. For example:
+[`unclog`](https://github.com/informalsystems/unclog) format using the `unclog` CLI tool.
+`CHANGELOG.md` will be built by whomever is responsible for performing a release just 
+prior to release - this is to avoid changelog conflicts prior to releases. 
+
+### Install `unclog`
 
 ```bash
-# Add a .changelog entry for the `ibc` crate (in the `modules` directory)
-# under the `IMPROVEMENTS` section in CHANGELOG.md.
-unclog add -c ibc improvements 1234-some-issue
+cargo install unclog
+```
 
-# Add a .changelog entry for the `ibc-relayer-cli` crate (in the `relayer-cli`
-# directory) under the `FEATURES` section in CHANGELOG.md.
-unclog add -c ibc-relayer-cli features 1235-some-other-issue
+### Examples
 
-# Preview unreleased changes
+Add a .changelog entry to signal that a bug was fixed, without mentioning any
+component.
+
+```bash
+$ unclog add -i update-unclog-instructions -s bug -n 1634 -m "Update CONTRIBUTING.md for latest version of unclog" --editor vim
+```
+
+Add a .changelog entry for the `ibc-relayer-cli` crate (the component in the `relayer-cli`
+directory) under the `FEATURES` section in CHANGELOG.md.
+
+```bash
+$ unclog add -c ibc-relayer-cli -s features --id a-new-feature --issue-no 1235 -m "msg about this new-feature" --editor vim
+```
+
+### Preview unreleased changes
+
+```bash
 unclog build -u
-
-# Build the new CHANGELOG.md from entries in ./.changelog/
-unclog build > CHANGELOG.md
 ```
 
 The Changelog is *not* a record of what Pull Requests were merged;
 the commit history already shows that. The Changelog is a notice to users
-about how their expectations of the software should be modified. 
+about how their expectations of the software should be modified.
 It is part of the UX of a release and is a *critical* user facing integration point.
-The Changelog must be clean, inviting, and readable, with concise, meaningful entries. 
+The Changelog must be clean, inviting, and readable, with concise, meaningful entries.
 Entries must be semantically meaningful to users. If a change takes multiple
 Pull Requests to complete, it should likely have only a single entry in the
 Changelog describing the net effect to the user. Instead of linking PRs directly, we
@@ -119,13 +132,11 @@ instead prefer to log issues, which tend to be higher-level, hence more relevant
 
 When writing Changelog entries, ensure they are targeting users of the software,
 not fellow developers. Developers have much more context and care about more
-things than users do. Changelogs are for users. 
+things than users do. Changelogs are for users.
 
-Changelog structure is modeled after 
-[Tendermint
-Core](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md)
-and 
-[Hashicorp Consul](http://github.com/hashicorp/consul/tree/master/CHANGELOG.md).
+Changelog structure is modeled after
+[Tendermint Core](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md)
+and [Hashicorp Consul](http://github.com/hashicorp/consul/tree/master/CHANGELOG.md).
 See those changelogs for examples.
 
 We currently split changes for a given release between these four sections: Breaking
@@ -140,7 +151,7 @@ specific release number in Changelog.
 Changelog entries should be formatted as follows:
 
 ```
-- [pkg] Some description about the change ([#xxx]) (optional @contributor)
+- [pkg] Some description about the change ([#xxx](https://github.com/informalsystems/ibc-rs/issues/xxx)) (optional @contributor)
 ```
 
 Here, `pkg` is the part of the code that changed (typically a
@@ -166,8 +177,8 @@ exposed.
 
 ## Pull Requests
 
-The master development branch is `master`. 
-Branch names should be prefixed with the author, eg. `name/feature-x`. 
+The master development branch is `master`.
+Branch names should be prefixed with the author, eg. `name/feature-x`.
 
 Pull requests are made against `master`
 and are squash merged into master.
@@ -176,9 +187,59 @@ PRs must:
 
 - make reference to an issue outlining the context.
 - update any relevant documentation and include tests.
-- update [CHANGELOG.md](CHANGELOG.md) with a description of the change in the __Unreleased__ section.
+- add a corresponding entry in the `.changelog` directory using `unclog`,
+  see the section above for more details.
 
 Pull requests should aim to be small and self contained to facilitate quick
 review and merging. Larger change sets should be broken up across multiple PRs.
 Commits should be concise but informative, and moderately clean. Commits will be squashed into a
 single commit for the PR with all the commit messages.
+
+## Releases
+
+Our release process is as follows:
+
+1. Update the [changelog](#changelog) to reflect and summarize all changes in
+   the release. This involves:
+   1. Running `unclog build -u` and copy pasting the output at the top
+      of the `CHANGELOG.md` file, making sure to update the header with
+      the new version.
+   1. Running `unclog release vX.Y.Z` to create a summary of all of the changes
+      in this release.
+   3. Committing the updated `CHANGELOG.md` file and `.changelog` directory to the repo.
+2. Push this to a branch `release/vX.Y.Z` according to the version number of
+   the anticipated release (e.g. `release/v0.17.0`) and open a **draft PR**.
+3. Bump all relevant versions in the codebase to the new version and push these
+   changes to the release PR. This includes:
+   1. All `Cargo.toml` files (making sure dependencies' versions are updated
+      too).
+   2. All crates' `lib.rs` files documentation references' `html_root_url`
+      parameters must point to the new version.
+   3. Every reference to Hermes version in the [guide](./guide).
+
+   **Important:** The `ibc-proto` crate version must only be bumped if it has
+   changed since the last release. All other crates are bumped together.
+
+4. Run `cargo doc --all-features --open` locally to double-check that all the
+   documentation compiles and seems up-to-date and coherent. Fix any potential
+   issues here and push them to the release PR.
+5. Mark the PR as **Ready for Review** and incorporate feedback on the release.
+6. Once approved, merge the PR.
+7. Pull `master` and run the [`release.sh`](./scripts/release.sh) script.
+   If any problem arises, submit a new PR, get it merged to `master` and try again.
+   The reason for not releasing straight from the release branch, and therefore losing the
+   ability to fix publishing problems as they arise, is that we would like the embedded
+   metadata of the published crates, namely the Git commit at which the release was done,
+   to match the Git commit on the `master` branch which will be tagged.
+   [See this article][crates.io-security] for a more in-depth explanation.  
+   **Note:** This step requires the appropriate privileges to push crates to [crates.io].
+8. Once all crates have been successfully released, create a signed tag and push it to
+   GitHub: `git tag -s -a vX.Y.Z`. In the tag message, write the version and the link
+   to the corresponding section of the changelog.
+9. Once the tag is pushed, wait for the CI bot to create a GitHub release, and update
+   the release description to `[📖 CHANGELOG](https://github.com/informalsystems/ibc-rs/blob/master/CHANGELOG.md#vXYZ)`.
+10. Wait an hour or so, and check that the CI job has uploaded the Hermes binaries to the release.
+11. All done! 🎉
+
+[crates.io]: https://crates.io
+[crates.io-security]: https://codeandbitters.com/published-crate-analysis/

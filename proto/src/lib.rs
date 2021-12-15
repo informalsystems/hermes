@@ -8,7 +8,7 @@
 #![allow(clippy::large_enum_variant)]
 #![allow(rustdoc::bare_urls)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.7.0")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.13.0")]
 
 extern crate alloc;
 extern crate core as std;
@@ -155,6 +155,11 @@ pub mod ibc {
         pub mod types {
             pub mod v1 {
                 include!("prost/ibc.core.types.v1.rs");
+            }
+        }
+        pub mod port {
+            pub mod v1 {
+                include!("prost/ibc.core.port.v1.rs");
             }
         }
     }

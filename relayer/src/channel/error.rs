@@ -1,9 +1,9 @@
+use core::time::Duration;
 use flex_error::define_error;
+use ibc::core::ics02_client::error::Error as ClientError;
+use ibc::core::ics04_channel::channel::State;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortChannelId, PortId};
 use ibc::events::IbcEvent;
-use ibc::ics02_client::error::Error as ClientError;
-use ibc::ics04_channel::channel::State;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortChannelId, PortId};
-use std::time::Duration;
 
 use crate::error::Error;
 use crate::foreign_client::ForeignClientError;
@@ -73,6 +73,11 @@ define_error! {
             { chain_id: ChainId }
             [ Error ]
             |e| { format_args!("failed during a query to chain id {0}", e.chain_id) },
+
+        QueryAppVersion
+            { chain_id: ChainId }
+            [ Error ]
+            |e| { format_args!("failed during a query for the app version to chain id {0}", e.chain_id) },
 
         QueryChannel
             { channel_id: ChannelId }
@@ -191,5 +196,13 @@ define_error! {
                 format_args!("channel object cannot be built from event: {}",
                     e.event)
             },
+
+        InvalidPortId
+            { port_id: PortId }
+            | e | {
+                format_args!("could not resolve channel version because the port is invalid: {0}",
+                    e.port_id)
+            },
+
     }
 }

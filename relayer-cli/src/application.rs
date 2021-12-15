@@ -2,16 +2,17 @@
 
 use std::path::PathBuf;
 
-use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
     component::Component,
-    config, Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
+    config::{self, CfgCell},
+    terminal::component::Terminal,
+    terminal::ColorChoice,
+    Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
 };
 use ibc_relayer::config::Config;
 
 use crate::{
-    commands::CliCmd,
     components::{JsonTracing, PrettyTracing},
     config::validate_config,
     entry::EntryPoint,
@@ -23,27 +24,22 @@ pub static APPLICATION: AppCell<CliApp> = AppCell::new();
 /// Obtain a read-only (multi-reader) lock on the application state.
 ///
 /// Panics if the application state has not been initialized.
-pub fn app_reader() -> application::lock::Reader<CliApp> {
-    APPLICATION.read()
-}
-
-/// Obtain an exclusive mutable lock on the application state.
-pub fn app_writer() -> application::lock::Writer<CliApp> {
-    APPLICATION.write()
+pub fn app_reader() -> &'static CliApp {
+    &APPLICATION
 }
 
 /// Obtain a read-only (multi-reader) lock on the application configuration.
 ///
 /// Panics if the application configuration has not been loaded.
-pub fn app_config() -> config::Reader<CliApp> {
-    config::Reader::new(&APPLICATION)
+pub fn app_config() -> config::Reader<Config> {
+    APPLICATION.config.read()
 }
 
 /// Cli Application
 #[derive(Debug)]
 pub struct CliApp {
     /// Application configuration.
-    config: Option<Config>,
+    config: CfgCell<Config>,
 
     /// Application state.
     state: application::State<Self>,
@@ -62,7 +58,7 @@ pub struct CliApp {
 impl Default for CliApp {
     fn default() -> Self {
         Self {
-            config: None,
+            config: CfgCell::default(),
             state: application::State::default(),
             json_output: false,
             config_path: None,
@@ -84,7 +80,7 @@ impl CliApp {
 
 impl Application for CliApp {
     /// Entrypoint command for this application.
-    type Cmd = EntryPoint<CliCmd>;
+    type Cmd = EntryPoint;
 
     /// Application configuration.
     type Cfg = Config;
@@ -93,18 +89,13 @@ impl Application for CliApp {
     type Paths = StandardPaths;
 
     /// Accessor for application configuration.
-    fn config(&self) -> &Config {
-        self.config.as_ref().expect("config not loaded")
+    fn config(&self) -> config::Reader<Config> {
+        self.config.read()
     }
 
     /// Borrow the application state immutably.
     fn state(&self) -> &application::State<Self> {
         &self.state
-    }
-
-    /// Borrow the application state mutably.
-    fn state_mut(&mut self) -> &mut application::State<Self> {
-        &mut self.state
     }
 
     /// Register all components used by this application.
@@ -113,8 +104,9 @@ impl Application for CliApp {
     /// beyond the default ones provided by the framework, this is the place
     /// to do so.
     fn register_components(&mut self, command: &Self::Cmd) -> Result<(), FrameworkError> {
-        let components = self.framework_components(command)?;
-        self.state.components.register(components)
+        let framework_components = self.framework_components(command)?;
+        let mut app_components = self.state.components_mut();
+        app_components.register(framework_components)
     }
 
     /// Post-configuration lifecycle callback.
@@ -123,14 +115,24 @@ impl Application for CliApp {
     /// time in app lifecycle when configuration would be loaded if
     /// possible.
     fn after_config(&mut self, config: Self::Cfg) -> Result<(), FrameworkError> {
+        use crate::config::Diagnostic;
+
         // Configure components
-        self.state.components.after_config(&config)?;
+        let mut components = self.state.components_mut();
+        components.after_config(&config)?;
 
-        validate_config(&config).map_err(|validation_err| {
-            FrameworkErrorKind::ConfigError.context(format!("{}", validation_err))
-        })?;
+        if let Err(diagnostic) = validate_config(&config) {
+            match diagnostic {
+                Diagnostic::Warning(e) => {
+                    tracing::warn!("relayer may be misconfigured: {}", e);
+                }
+                Diagnostic::Error(e) => {
+                    return Err(FrameworkErrorKind::ConfigError.context(e).into());
+                }
+            }
+        };
 
-        self.config = Some(config);
+        self.config.set_once(config);
 
         Ok(())
     }
@@ -178,5 +180,11 @@ impl Application for CliApp {
             let tracing = PrettyTracing::new(config.global)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
+    }
+
+    // Disable color support due to
+    // https://github.com/iqlusioninc/abscissa/issues/589
+    fn term_colors(&self, _command: &Self::Cmd) -> ColorChoice {
+        ColorChoice::Never
     }
 }

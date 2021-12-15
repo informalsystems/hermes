@@ -1,11 +1,11 @@
-use std::fmt::{Debug, Error, Formatter};
+use core::fmt::{Debug, Error, Formatter};
 
-use abscissa_core::{Options, Runnable};
+use abscissa_core::{Clap, Runnable};
 use serde::Serialize;
 
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics04_channel::channel::{ChannelEnd, State};
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics04_channel::channel::{ChannelEnd, State};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
@@ -15,17 +15,22 @@ use crate::commands::query::channel_ends::ChannelEnds;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct QueryChannelsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(help = "identifier of the channel's destination chain", short = "d")]
+    #[clap(
+        short = 'd',
+        long,
+        about = "identifier of the channel's destination chain"
+    )]
     destination_chain: Option<ChainId>,
 
-    #[options(
-        help = "enable verbose output, displaying all client and connection ids",
-        short = "v"
+    #[clap(
+        short = 'v',
+        long,
+        about = "enable verbose output, displaying all client and connection ids"
     )]
     verbose: bool,
 }

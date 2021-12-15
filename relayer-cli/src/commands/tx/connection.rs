@@ -1,7 +1,7 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 
+use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::connection::{Connection, ConnectionSide};
 
@@ -33,18 +33,18 @@ macro_rules! conn_open_cmd {
     };
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxRawConnInitCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the destination client")]
+    #[clap(required = true, about = "identifier of the destination client")]
     dst_client_id: ClientId,
 
-    #[options(free, required, help = "identifier of the source client")]
+    #[clap(required = true, about = "identifier of the source client")]
     src_client_id: ClientId,
 }
 
@@ -65,32 +65,34 @@ impl Runnable for TxRawConnInitCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxRawConnTryCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the destination client")]
+    #[clap(required = true, about = "identifier of the destination client")]
     dst_client_id: ClientId,
 
-    #[options(free, required, help = "identifier of the source client")]
+    #[clap(required = true, about = "identifier of the source client")]
     src_client_id: ClientId,
 
-    #[options(
-        required,
-        help = "identifier of the source connection (required)",
-        short = "s",
-        meta = "ID"
+    #[clap(
+        short = 's',
+        long,
+        required = true,
+        about = "identifier of the source connection (required)",
+        value_name = "ID"
     )]
     src_conn_id: ConnectionId,
 
-    #[options(
-        help = "identifier of the destination connection (optional)",
-        short = "d",
-        meta = "ID"
+    #[clap(
+        short = 'd',
+        long,
+        about = "identifier of the destination connection (optional)",
+        value_name = "ID"
     )]
     dst_conn_id: Option<ConnectionId>,
 }
@@ -120,33 +122,35 @@ impl Runnable for TxRawConnTryCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxRawConnAckCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the destination client")]
+    #[clap(required = true, about = "identifier of the destination client")]
     dst_client_id: ClientId,
 
-    #[options(free, required, help = "identifier of the source client")]
+    #[clap(required = true, about = "identifier of the source client")]
     src_client_id: ClientId,
 
-    #[options(
-        required,
-        help = "identifier of the destination connection (required)",
-        short = "d",
-        meta = "ID"
+    #[clap(
+        short = 'd',
+        long,
+        required = true,
+        about = "identifier of the destination connection (required)",
+        value_name = "ID"
     )]
     dst_conn_id: ConnectionId,
 
-    #[options(
-        required,
-        help = "identifier of the source connection (required)",
-        short = "s",
-        meta = "ID"
+    #[clap(
+        short = 's',
+        long,
+        required = true,
+        about = "identifier of the source connection (required)",
+        value_name = "ID"
     )]
     src_conn_id: ConnectionId,
 }
@@ -176,33 +180,35 @@ impl Runnable for TxRawConnAckCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct TxRawConnConfirmCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, about = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the destination client")]
+    #[clap(required = true, about = "identifier of the destination client")]
     dst_client_id: ClientId,
 
-    #[options(free, required, help = "identifier of the source client")]
+    #[clap(required = true, about = "identifier of the source client")]
     src_client_id: ClientId,
 
-    #[options(
-        required,
-        help = "identifier of the destination connection (required)",
-        short = "d",
-        meta = "ID"
+    #[clap(
+        short = 'd',
+        long,
+        required = true,
+        about = "identifier of the destination connection (required)",
+        value_name = "ID"
     )]
     dst_conn_id: ConnectionId,
 
-    #[options(
-        required,
-        help = "identifier of the source connection (required)",
-        short = "s",
-        meta = "ID"
+    #[clap(
+        short = 's',
+        long,
+        required = true,
+        about = "identifier of the source connection (required)",
+        value_name = "ID"
     )]
     src_conn_id: ConnectionId,
 }

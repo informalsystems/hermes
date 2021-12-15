@@ -1,9 +1,10 @@
-use std::sync::Arc;
+use alloc::sync::Arc;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
+use clap::AppSettings::DisableHelpFlag;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::{
+use ibc::core::{
     ics03_connection::connection::State,
     ics24_host::identifier::ConnectionId,
     ics24_host::identifier::{ChainId, PortChannelId},
@@ -11,19 +12,21 @@ use ibc::{
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
+#[clap(setting(DisableHelpFlag))]
 pub struct QueryConnectionEndCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the connection to query")]
+    #[clap(required = true, about = "identifier of the connection to query")]
     connection_id: ConnectionId,
 
-    #[options(help = "height of the state to query", short = "h")]
+    // FIXME: rename the short option to avoid confusion with --help?
+    #[clap(short = 'h', long, about = "height of the state to query")]
     height: Option<u64>,
 }
 
@@ -46,7 +49,8 @@ impl Runnable for QueryConnectionEndCmd {
         debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
         let res = chain.query_connection(&self.connection_id, height);
@@ -70,12 +74,12 @@ impl Runnable for QueryConnectionEndCmd {
 /// Command for querying the channel identifiers associated with a connection.
 /// Sample invocation:
 /// `cargo run --bin hermes -- query connection channels ibc-0 connection-0`
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct QueryConnectionChannelsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the connection to query")]
+    #[clap(required = true, about = "identifier of the connection to query")]
     connection_id: ConnectionId,
 }
 
@@ -97,7 +101,8 @@ impl Runnable for QueryConnectionChannelsCmd {
         debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         let req = QueryConnectionChannelsRequest {
             connection: self.connection_id.to_string(),

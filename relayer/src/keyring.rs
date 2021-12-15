@@ -1,3 +1,8 @@
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use std::ffi::OsStr;
+use std::fs::{self, File};
+use std::path::{Path, PathBuf};
+
 use crate::config::AddressType;
 use bech32::{ToBase32, Variant};
 use bip39::{Language, Mnemonic, Seed};
@@ -7,15 +12,11 @@ use bitcoin::{
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
 };
 use hdpath::StandardHDPath;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use ripemd160::Ripemd160;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
-use std::ffi::OsStr;
-use std::fs::{self, File};
-use std::path::{Path, PathBuf};
 use tiny_keccak::{Hasher, Keccak};
 
 use errors::Error;
@@ -61,7 +62,7 @@ pub struct KeyFile {
 }
 
 impl KeyEntry {
-    fn from_key_file(key_file: KeyFile, hd_path: &HDPath) -> Result<Self, Error> {
+    pub fn from_key_file(key_file: KeyFile, hd_path: &HDPath) -> Result<Self, Error> {
         // Decode the Bech32-encoded address from the key file
         let keyfile_address_bytes = decode_bech32(&key_file.address)?;
 
@@ -240,10 +241,16 @@ impl KeyStore for Test {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Store {
     Memory,
     Test,
+}
+
+impl Default for Store {
+    fn default() -> Self {
+        Store::Test
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

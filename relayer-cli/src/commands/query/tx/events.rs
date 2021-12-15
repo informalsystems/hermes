@@ -1,30 +1,30 @@
-use std::str::FromStr;
-use std::sync::Arc;
+use alloc::sync::Arc;
+use core::str::FromStr;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
 use tendermint::abci::transaction::Hash;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::chain::runtime::ChainRuntime;
 use ibc_relayer::chain::CosmosSdkChain;
 
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::app_config;
 
 /// Query the events emitted by transaction
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct QueryTxEventsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "transaction hash to query")]
+    #[clap(required = true, about = "transaction hash to query")]
     hash: String,
 }
 
@@ -46,7 +46,7 @@ impl Runnable for QueryTxEventsCmd {
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain =
             ChainRuntime::<CosmosSdkChain>::spawn::<ProdChainHandle>(chain_config.clone(), rt)
-                .unwrap();
+                .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = Hash::from_str(self.hash.as_str())
             .map_err(|e| Error::invalid_hash(self.hash.clone(), e))

@@ -9,7 +9,7 @@ The [End to end (e2e) testing workflow](https://github.com/informalsystems/ibc-r
 ### Testing Ethermint-based networks
 At this moment, the automated E2E workflow does not spin up a network with the (post-Stargate) Ethermint module. In the meantime, you can test it manually by following one of the resources below:
 
-- [the official documentation on ethermint.dev](https://ethermint.dev/quickstart/run_node.html)
+- [the official documentation on ethermint.dev](https://docs.ethermint.zone/quickstart/run_node.html)
 - [using the tweaked E2E scripts from the Injective's fork](https://github.com/InjectiveLabs/ibc-rs/commit/669535617a6e45be9916387e292d45a77e7d23d2)
 - [using the nix-based integration test scripts in the Cronos project](https://github.com/crypto-org-chain/cronos#quitck-start)
 
@@ -211,3 +211,13 @@ And in the relayer service:
       args:
         RELEASE: v4.0.0
    ```
+
+6. Update the CI workflow
+
+There are currently two CI workflows, for running the E2E tests against two versions of gaiad: 
+   - current release: `.github\workflows\e2e-gaia-current-release.yaml`, and
+   - future release: `.github\workflows\e2e-gaia-future-release.yaml`.
+
+Depending on which of the two setups you have upgraded at the prior steps, change the `name` key in the corresponding workflow file to match with the version of the upgraded gaia used, e.g.:
+
+`name: End to End testing (Gaia - v6.0.0)`
