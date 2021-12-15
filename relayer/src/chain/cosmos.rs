@@ -127,6 +127,10 @@ mod retry_strategy {
     // an account sequence mismatch.
     pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 5;
 
+    // Backoff multiplier to apply while retrying in the case
+    // of account sequence mismatch.
+    pub const BACKOFF_MULTIPLIER_SEQUENCE_RETRY: u64 = 100;
+
     pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
         let backoff_millis = 300; // The periodic backoff
         let count: usize = (max_total_wait.as_millis() / backoff_millis as u128) as usize;
@@ -386,8 +390,11 @@ impl CosmosSdkChain {
         proto_msgs: Vec<Any>,
         retry_counter: u32,
     ) -> Result<Response, Error> {
-        // If this is a retry, then re-fetch the account s.n.
+        // If this is a retry, then backoff & re-fetch the account s.n.
         if retry_counter > 0 {
+            let backoff =
+                (retry_counter as u64) * retry_strategy::BACKOFF_MULTIPLIER_SEQUENCE_RETRY;
+            thread::sleep(Duration::from_millis(backoff));
             self.refresh_account()?;
         }
 
@@ -504,7 +511,7 @@ impl CosmosSdkChain {
 
             Err(e) => {
                 error!(
-                    "[{}] estimate_gas: failed to simulate tx with non-recoverable error: {}",
+                    "[{}] estimate_gas: failed to simulate tx. propagating error to caller: {}",
                     self.id(),
                     e.detail()
                 );
