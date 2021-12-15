@@ -1,10 +1,10 @@
-#![allow(clippy::borrowed_box)]
-
 use core::time::Duration;
+
 use prost_types::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
+pub use error::ChannelError;
 use ibc::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State,
 };
@@ -14,6 +14,7 @@ use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use ibc::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
 use ibc::tx_msg::Msg;
@@ -22,6 +23,7 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
+use crate::channel::version::ResolveContext;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
 use crate::object::Channel as WorkerChannelObject;
@@ -30,7 +32,7 @@ use crate::util::retry::retry_with_index;
 use crate::util::retry::RetryResult;
 
 pub mod error;
-pub use error::ChannelError;
+mod version;
 
 mod retry_strategy {
     use core::time::Duration;
@@ -75,6 +77,7 @@ pub struct ChannelSide<Chain: ChainHandle> {
     connection_id: ConnectionId,
     port_id: PortId,
     channel_id: Option<ChannelId>,
+    version: Option<Version>,
 }
 
 impl<Chain: ChainHandle> ChannelSide<Chain> {
@@ -84,6 +87,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
         connection_id: ConnectionId,
         port_id: PortId,
         channel_id: Option<ChannelId>,
+        version: Option<Version>,
     ) -> ChannelSide<Chain> {
         Self {
             chain,
@@ -91,6 +95,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
             connection_id,
             port_id,
             channel_id,
+            version,
         }
     }
 
@@ -124,6 +129,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
             connection_id: self.connection_id,
             port_id: self.port_id,
             channel_id: self.channel_id,
+            version: self.version,
         }
     }
 }
@@ -134,7 +140,6 @@ pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub a_side: ChannelSide<ChainA>,
     pub b_side: ChannelSide<ChainB>,
     pub connection_delay: Duration,
-    pub version: Option<String>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
@@ -147,19 +152,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         b_port: PortId,
         version: Option<String>,
     ) -> Result<Self, ChannelError> {
-        let b_side_chain = connection.dst_chain();
-        let version = version.unwrap_or(
-            b_side_chain
-                .module_version(&b_port)
-                .map_err(|e| ChannelError::query(b_side_chain.id(), e))?,
-        );
-
         let src_connection_id = connection
             .src_connection_id()
             .ok_or_else(|| ChannelError::missing_local_connection(connection.src_chain().id()))?;
         let dst_connection_id = connection
             .dst_connection_id()
             .ok_or_else(|| ChannelError::missing_local_connection(connection.dst_chain().id()))?;
+
+        // Convert the raw version into our domain type.
+        let domain_version = version.map(Into::into);
 
         let mut channel = Self {
             ordering,
@@ -169,6 +170,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 src_connection_id.clone(),
                 a_port,
                 Default::default(),
+                domain_version.clone(),
             ),
             b_side: ChannelSide::new(
                 connection.dst_chain(),
@@ -176,9 +178,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 dst_connection_id.clone(),
                 b_port,
                 Default::default(),
+                domain_version,
             ),
             connection_delay: connection.delay_period,
-            version: Some(version),
         };
 
         channel.handshake()?;
@@ -197,10 +199,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id.clone();
-
-        let version = counterparty_chain
-            .module_version(&channel_event_attributes.counterparty_port_id)
-            .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
 
         let connection_id = channel_event_attributes.connection_id.clone();
         let connection = chain
@@ -224,6 +222,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 connection_id,
                 port_id,
                 channel_id,
+                // The event does not include the version.
+                // The message handlers `build_chan_open..` determine the version from channel query.
+                None,
             ),
             b_side: ChannelSide::new(
                 counterparty_chain,
@@ -231,11 +232,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 counterparty_connection_id.clone(),
                 channel_event_attributes.counterparty_port_id.clone(),
                 channel_event_attributes.counterparty_channel_id.clone(),
+                None,
             ),
             connection_delay: connection.delay_period(),
-            // The event does not include the version.
-            // The message handlers `build_chan_open..` determine the version from channel query.
-            version: Some(version),
         })
     }
 
@@ -282,6 +281,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_connection_id.clone(),
                 channel.src_port_id.clone(),
                 Some(channel.src_channel_id.clone()),
+                None,
             ),
             b_side: ChannelSide::new(
                 counterparty_chain.clone(),
@@ -289,9 +289,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 b_connection_id.clone(),
                 a_channel.remote.port_id.clone(),
                 a_channel.remote.channel_id.clone(),
+                None,
             ),
             connection_delay: a_connection.delay_period(),
-            version: Some(a_channel.version.clone()),
         };
 
         if a_channel.state_matches(&State::Init) && a_channel.remote.channel_id.is_none() {
@@ -357,13 +357,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         self.b_side.channel_id()
     }
 
+    pub fn src_version(&self) -> Option<&Version> {
+        self.a_side.version.as_ref()
+    }
+
+    pub fn dst_version(&self) -> Option<&Version> {
+        self.b_side.version.as_ref()
+    }
+
     pub fn flipped(&self) -> Channel<ChainB, ChainA> {
         Channel {
             ordering: self.ordering,
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
             connection_delay: self.connection_delay,
-            version: self.version.clone(),
         }
     }
 
@@ -398,7 +405,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
     fn do_chan_open_try_and_send(&mut self) -> Result<(), ChannelError> {
         let event = self.build_chan_open_try_and_send().map_err(|e| {
-            error!("Failed ChanTry {:?}: {:?}", self.b_side, e);
+            error!("failed ChanOpenTry {:?}: {:?}", self.b_side, e);
             e
         })?;
 
@@ -665,28 +672,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         })
     }
 
-    /// Returns the channel version if already set, otherwise it queries the destination chain
-    /// for the destination port's version.
-    /// Note: This query is currently not available and it is hardcoded in the `module_version()`
-    /// to be `ics20-1` for `transfer` port.
-    pub fn dst_version(&self) -> Result<String, ChannelError> {
-        Ok(self.version.clone().unwrap_or(
-            self.dst_chain()
-                .module_version(self.dst_port_id())
-                .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?,
-        ))
-    }
-
-    /// Returns the channel version if already set, otherwise it queries the source chain
-    /// for the source port's version.
-    pub fn src_version(&self) -> Result<String, ChannelError> {
-        Ok(self.version.clone().unwrap_or(
-            self.src_chain()
-                .module_version(self.src_port_id())
-                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?,
-        ))
-    }
-
     pub fn build_chan_open_init(&self) -> Result<Vec<Any>, ChannelError> {
         let signer = self
             .dst_chain()
@@ -695,12 +680,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
+        let version = version::resolve(ResolveContext::ChanOpenInit, self)?;
+
         let channel = ChannelEnd::new(
             State::Init,
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            self.dst_version()?,
+            version,
         );
 
         // Build the domain type message
@@ -739,10 +726,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
-    /// Retrieves the channel from destination and compares against the expected channel
-    /// built from the message type (`msg_type`) and options (`opts`).
-    /// If the expected and the destination channels are compatible, it returns the expected channel
-    /// Source and destination channel IDs must be specified.
+    /// Retrieves the channel from destination and compares it
+    /// against the expected channel. built from the message type [`ChannelMsgType`].
+    ///
+    /// If the expected and the destination channels are compatible,
+    /// returns the expected channel
+    ///
+    /// # Precondition:
+    /// Source and destination channel IDs must be `Some`.
     fn validated_expected_channel(
         &self,
         msg_type: ChannelMsgType,
@@ -752,7 +743,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .dst_channel_id()
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
-        // If there is a channel present on the destination chain, it should look like this:
+        // If there is a channel present on the destination chain,
+        // the counterparty should look like this:
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
@@ -769,7 +761,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            self.dst_version()?,
+            Version::empty(),
         );
 
         // Retrieve existing channel
@@ -836,12 +828,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
+        let version = version::resolve(ResolveContext::ChanOpenTry, self)?;
+
         let channel = ChannelEnd::new(
             State::TryOpen,
             *src_channel.ordering(),
             counterparty,
             vec![self.dst_connection_id().clone()],
-            src_channel.version(),
+            version,
         );
 
         // Get signer
@@ -860,7 +854,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let new_msg = MsgChannelOpenTry {
             port_id: self.dst_port_id().clone(),
             previous_channel_id,
-            counterparty_version: src_channel.version(),
+            counterparty_version: src_channel.version().clone(),
             channel,
             proofs,
             signer,
@@ -905,7 +899,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .dst_channel_id()
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
-        // Check that the destination chain will accept the message
+        // Check that the destination chain will accept the Ack message
         self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
         // Channel must exist on source
@@ -943,7 +937,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             port_id: self.dst_port_id().clone(),
             channel_id: dst_channel_id.clone(),
             counterparty_channel_id: src_channel_id.clone(),
-            counterparty_version: src_channel.version(),
+            counterparty_version: src_channel.version().clone(),
             proofs,
             signer,
         };
@@ -990,7 +984,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         do_build_chan_open_ack_and_send(self).map_err(|e| {
-            error!("failed ChanAck {:?}: {}", self.b_side, e);
+            error!("failed ChanOpenAck {:?}: {}", self.b_side, e);
             e
         })
     }
@@ -1083,7 +1077,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         do_build_chan_open_confirm_and_send(self).map_err(|e| {
-            error!("failed ChanConfirm {:?}: {}", self.b_side, e);
+            error!("failed ChanOpenConfirm {:?}: {}", self.b_side, e);
             e
         })
     }
@@ -1229,7 +1223,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             a_side: self.a_side.map_chain(mapper_a),
             b_side: self.b_side.map_chain(mapper_b),
             connection_delay: self.connection_delay,
-            version: self.version,
         }
     }
 }

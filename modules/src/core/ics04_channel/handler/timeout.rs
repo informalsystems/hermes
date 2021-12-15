@@ -135,6 +135,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
 
 #[cfg(test)]
 mod tests {
+    use test_log::test;
 
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -146,14 +147,12 @@ mod tests {
     use crate::core::ics04_channel::handler::timeout::process;
     use crate::core::ics04_channel::msgs::timeout::test_util::get_dummy_raw_msg_timeout;
     use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
+    use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::events::IbcEvent;
+    use crate::mock::context::MockContext;
     use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
-
-    use crate::mock::context::MockContext;
-
-    use test_log::test;
 
     #[test]
     fn timeout_packet_processing() {
@@ -194,7 +193,7 @@ mod tests {
                 Some(packet.destination_channel.clone()),
             ),
             vec![ConnectionId::default()],
-            "ics20".to_string(),
+            Version::ics20(),
         );
 
         let mut source_ordered_channel_end = source_channel_end.clone();
