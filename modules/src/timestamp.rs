@@ -14,8 +14,6 @@ use time::OffsetDateTime;
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 
-const NANOS_PER_SEC: u64 = 1_000_000_000;
-
 /// A newtype wrapper over `Option<Time>` to keep track of
 /// IBC packet timeout.
 ///
@@ -65,10 +63,12 @@ impl Timestamp {
             Ok(Timestamp { time: None })
         } else {
             // As the `u64` representation can only represent times up to
-            // about year 2554, there is no risk of overflowing `Time`.
-            let seconds = (nanoseconds / NANOS_PER_SEC) as i64;
-            let subsec_nanos = (nanoseconds % NANOS_PER_SEC) as u32;
-            let ts = Time::from_unix_timestamp(seconds, subsec_nanos).unwrap();
+            // about year 2554, there is no risk of overflowing `Time`
+            // or `OffsetDateTime`.
+            let ts = OffsetDateTime::from_unix_timestamp_nanos(nanoseconds as i128)
+                .unwrap()
+                .try_into()
+                .unwrap();
             Ok(Timestamp { time: Some(ts) })
         }
     }
