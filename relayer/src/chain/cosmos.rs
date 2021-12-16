@@ -125,7 +125,7 @@ mod retry_strategy {
 
     // Maximum number of retries for send_tx in the case of
     // an account sequence mismatch.
-    pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 5;
+    pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 10;
 
     // Backoff multiplier to apply while retrying in the case
     // of account sequence mismatch.
