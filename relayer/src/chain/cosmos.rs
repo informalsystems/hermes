@@ -404,7 +404,8 @@ impl CosmosSdkChain {
             // Gas estimation failed with retry-able error.
             Err(e) if can_retry_tx_simulation(&e) => {
                 if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
-                    warn!("send_tx failed at estimate_gas step due to incorrect account sequence. retrying..");
+                    warn!("send_tx failed at estimate_gas step due to incorrect account sequence. retrying ({}/{})",
+                        retry_counter + 1, retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY);
                     self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
                 } else {
                     error!("send_tx failed due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
@@ -415,7 +416,8 @@ impl CosmosSdkChain {
             // Gas estimation succeeded. Broadcasting failed with retry-able error.
             Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
                 if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
-                    warn!("send_tx failed at broadcast step with incorrect account sequence. retrying..");
+                    warn!("send_tx failed at broadcast step with incorrect account sequence. retrying ({}/{})",
+                        retry_counter + 1, retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY);
                     self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
                 } else {
                     // If after the max retry we still get an account sequence mismatch error,
