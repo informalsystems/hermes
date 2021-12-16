@@ -129,7 +129,7 @@ mod retry_strategy {
 
     // Backoff multiplier to apply while retrying in the case
     // of account sequence mismatch.
-    pub const BACKOFF_MULTIPLIER_SEQUENCE_RETRY: u64 = 100;
+    pub const BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY: u64 = 200;
 
     pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
         let backoff_millis = 300; // The periodic backoff
@@ -393,7 +393,7 @@ impl CosmosSdkChain {
         // If this is a retry, then backoff & re-fetch the account s.n.
         if retry_counter > 0 {
             let backoff =
-                (retry_counter as u64) * retry_strategy::BACKOFF_MULTIPLIER_SEQUENCE_RETRY;
+                (retry_counter as u64) * retry_strategy::BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
             thread::sleep(Duration::from_millis(backoff));
             self.refresh_account()?;
         }
