@@ -16,7 +16,6 @@ sp-std = { version = "3.0.0", default-features = false, optional = true }
 
 # Dependencies that support no_std
 bytes = { version = "1.0.1", default-features = false }
-chrono = { version = "0.4.19", default-features = false }
 contracts = { version = "0.4.0", default-features = false }
 crossbeam-channel = { version = "0.5.1", default-features = false }
 ed25519 = { version = "1.2.0", default-features = false, features = ["serde"] }

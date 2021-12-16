@@ -146,7 +146,7 @@ mod tests {
 
         let timestamp = Timestamp::now().add(Duration::from_secs(10));
         //CD:TODO remove unwrap
-        let mut packet: Packet = get_dummy_raw_packet(1, timestamp.unwrap().as_nanoseconds())
+        let mut packet: Packet = get_dummy_raw_packet(1, timestamp.unwrap().nanoseconds())
             .try_into()
             .unwrap();
         packet.sequence = 1.into();

@@ -294,7 +294,7 @@ impl TryFrom<Packet> for Vec<Tag> {
             key: PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY.parse().unwrap(),
             value: p
                 .timeout_timestamp
-                .as_nanoseconds()
+                .nanoseconds()
                 .to_string()
                 .parse()
                 .unwrap(),
@@ -960,7 +960,7 @@ mod tests {
             destination_channel: "b_test_channel".parse().unwrap(),
             data: "test_data".as_bytes().to_vec(),
             timeout_height: Height::new(1, 10),
-            timeout_timestamp: Timestamp::from_datetime(chrono::offset::Utc::now()),
+            timeout_timestamp: Timestamp::now(),
         };
         let mut abci_events = vec![];
         let send_packet = SendPacket {

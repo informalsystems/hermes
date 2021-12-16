@@ -85,7 +85,7 @@ impl From<MockClientState> for RawMockClientState {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.header.height().into()),
-                timestamp: value.header.timestamp.as_nanoseconds(),
+                timestamp: value.header.timestamp.nanoseconds(),
             }),
         }
     }
@@ -158,7 +158,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.header.height().into()),
-                timestamp: value.header.timestamp.as_nanoseconds(),
+                timestamp: value.header.timestamp.nanoseconds(),
             }),
         }
     }

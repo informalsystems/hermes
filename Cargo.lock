@@ -324,7 +324,6 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
- "serde",
  "winapi",
 ]
 
@@ -1281,7 +1280,6 @@ name = "ibc"
 version = "0.9.0"
 dependencies = [
  "bytes",
- "chrono",
  "env_logger",
  "flex-error",
  "ibc-proto",
@@ -1302,6 +1300,7 @@ dependencies = [
  "tendermint-testgen",
  "test-log",
  "thiserror",
+ "time",
  "tracing",
  "tracing-subscriber 0.3.3",
 ]
@@ -1357,7 +1356,6 @@ dependencies = [
  "bech32",
  "bitcoin",
  "bytes",
- "chrono",
  "crossbeam-channel 0.5.1",
  "dirs-next",
  "env_logger",
@@ -2917,13 +2915,12 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.23.1"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02880339f0e89dc7de809cb300a7dbe5e066c71937a7a55472438ae02e4a841b"
+checksum = "9015fdeab074f9b8f97dcb89c2bb2ec8537c89423e95551e8d7ecdfbab58a329"
 dependencies = [
  "async-trait",
  "bytes",
- "chrono",
  "ed25519",
  "ed25519-dalek",
  "flex-error",
@@ -2943,14 +2940,15 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
+ "time",
  "zeroize",
 ]
 
 [[package]]
 name = "tendermint-config"
-version = "0.23.1"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2aff01e0eacdcfb75e8a1bbbc2d71286f7b6db3eda82c52ad7ca4f619ebb90cc"
+checksum = "a2b2e6d4442bab49319dbacdfd79c5929bc6e0b35d1e0d959ff5b79fddf3f018"
 dependencies = [
  "flex-error",
  "serde",
@@ -2962,11 +2960,10 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.23.1"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e7c4fe20856c514b6c37550f2f391183a5d4831820fec2e0703a19fc1523259"
+checksum = "e0edd884720ab9e3be8031ca38b929b56cb80082b8d58f40984dd1e194a2f8ec"
 dependencies = [
- "chrono",
  "contracts",
  "crossbeam-channel 0.4.4",
  "derive_more",
@@ -2978,17 +2975,17 @@ dependencies = [
  "static_assertions",
  "tendermint",
  "tendermint-rpc",
+ "time",
  "tokio",
 ]
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.1"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1b8319fcf0860833eabe3278cf2d94ca20ef04bee6a77d892f986026fb1c252"
+checksum = "da86f6e52ced9c2f24c4ae57662ce8a44dd90ee7bc47bae27a710b02d48e193c"
 dependencies = [
  "bytes",
- "chrono",
  "flex-error",
  "num-derive",
  "num-traits",
@@ -2997,18 +2994,18 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
+ "time",
 ]
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.23.1"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9c88786eeb1b408530fa7a8151aa9639cc04a6210cd8b5fa27aaafbd1e2a091"
+checksum = "50f5f4875c36798e5590894a5176cf8d75e4bc81ec34ced1b9a87609e7d56861"
 dependencies = [
  "async-trait",
  "async-tungstenite",
  "bytes",
- "chrono",
  "flex-error",
  "futures",
  "getrandom 0.1.16",
@@ -3026,6 +3023,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
+ "time",
  "tokio",
  "tracing",
  "url",
@@ -3035,11 +3033,10 @@ dependencies = [
 
 [[package]]
 name = "tendermint-testgen"
-version = "0.23.1"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6df4b2bc95b5c65ab661c8ab0e0054dd61b4e4c4edd53c2831c317e40042eac"
+checksum = "019142fb30c80449e8106e91c5c3c8d846859dd7d5fe713727a0642efc819ab0"
 dependencies = [
- "chrono",
  "ed25519-dalek",
  "gumdrop",
  "serde",
@@ -3047,6 +3044,7 @@ dependencies = [
  "simple-error",
  "tempfile",
  "tendermint",
+ "time",
 ]
 
 [[package]]
@@ -3123,7 +3121,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e0a10c9a9fb3a5dce8c2239ed670f1a2569fcf42da035f5face1b19860d52b0"
 dependencies = [
  "libc",
+ "time-macros",
 ]
+
+[[package]]
+name = "time-macros"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72c7ca5e81982d152f0788b131ebf96cc4bbd1b4575a7ed51f0f6fc866a05fdb"
 
 [[package]]
 name = "tiny-bip39"
