@@ -31,7 +31,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     connection_id_b: &TaggedConnectionIdRef<ChainB, ChainA>,
     src_port_id: &TaggedPortIdRef<ChainA, ChainB>,
     dst_port_id: &TaggedPortIdRef<ChainB, ChainA>,
-) -> Result<TaggedChannelId<ChainB, ChainA>, Error> {
+) -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainA, ChainB>), Error> {
     let channel = Channel {
         connection_delay: Default::default(),
         ordering: Order::Unordered,
@@ -55,9 +55,11 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     let event = channel.build_chan_open_init_and_send()?;
 
-    let channel_id = extract_channel_id(&event)?;
+    let channel_id = extract_channel_id(&event)?.clone();
 
-    Ok(DualTagged::new(channel_id.clone()))
+    let channel2 = Channel::restore_from_event(handle_a.clone(), handle_b.clone(), event)?;
+
+    Ok((DualTagged::new(channel_id), channel2))
 }
 
 pub fn query_channel_end<ChainA: ChainHandle, ChainB>(

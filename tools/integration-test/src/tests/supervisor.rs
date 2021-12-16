@@ -41,7 +41,7 @@ impl BinaryChainTest for SupervisorTest {
         _config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let connection_id_b = init_connection(
+        let (connection_id_b, _) = init_connection(
             &chains.handle_a,
             &chains.handle_b,
             &chains.client_b_to_a.tagged_client_id(),
@@ -86,7 +86,7 @@ impl BinaryChainTest for SupervisorTest {
         let port_a = tagged_transfer_port();
         let port_b = tagged_transfer_port();
 
-        let channel_id_b = init_channel(
+        let (channel_id_b, _) = init_channel(
             &chains.handle_a,
             &chains.handle_b,
             &chains.client_id_a(),

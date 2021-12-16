@@ -58,7 +58,13 @@ pub fn init_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     handle_b: &ChainB,
     client_id_a: &TaggedClientIdRef<ChainA, ChainB>,
     client_id_b: &TaggedClientIdRef<ChainB, ChainA>,
-) -> Result<TaggedConnectionId<ChainB, ChainA>, Error> {
+) -> Result<
+    (
+        TaggedConnectionId<ChainB, ChainA>,
+        Connection<ChainA, ChainB>,
+    ),
+    Error,
+> {
     let connection = Connection {
         delay_period: ZERO_DURATION,
         a_side: ConnectionSide::new(handle_a.clone(), (*client_id_a.value()).clone(), None),
@@ -67,9 +73,11 @@ pub fn init_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     let event = connection.build_conn_init_and_send()?;
 
-    let connection_id = extract_connection_id(&event)?;
+    let connection_id = extract_connection_id(&event)?.clone();
 
-    Ok(DualTagged::new(connection_id.clone()))
+    let connection2 = Connection::restore_from_event(handle_a.clone(), handle_b.clone(), event)?;
+
+    Ok((DualTagged::new(connection_id), connection2))
 }
 
 pub fn query_connection_end<ChainA: ChainHandle, ChainB>(
