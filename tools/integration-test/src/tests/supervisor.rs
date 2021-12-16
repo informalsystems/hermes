@@ -50,6 +50,8 @@ impl BinaryChainTest for SupervisorTest {
 
         let connection_id_a = assert_eventually_succeed(
             "connection should eventually open",
+            20,
+            Duration::from_secs(1),
             || {
                 let connection_end_b =
                     query_connection_end(&chains.handle_b, &connection_id_b.as_ref())?;
@@ -58,7 +60,7 @@ impl BinaryChainTest for SupervisorTest {
                     .value()
                     .state_matches(&ConnectionState::Open)
                 {
-                    return Err(eyre!("expeted connection end A to be in open state"));
+                    return Err(eyre!("expected connection end A to be in open state"));
                 }
 
                 let connection_id_a = connection_end_b
@@ -74,13 +76,11 @@ impl BinaryChainTest for SupervisorTest {
                     .value()
                     .state_matches(&ConnectionState::Open)
                 {
-                    return Err(eyre!("expeted connection end B to be in open state"));
+                    return Err(eyre!("expected connection end B to be in open state"));
                 }
 
                 Ok(connection_id_a)
             },
-            20,
-            Duration::from_secs(1),
         )?;
 
         let port_a = tagged_transfer_port();
@@ -99,12 +99,14 @@ impl BinaryChainTest for SupervisorTest {
 
         assert_eventually_succeed(
             "channel should eventually open",
+            20,
+            Duration::from_secs(1),
             || {
                 let channel_end_b =
                     query_channel_end(&chains.handle_b, &channel_id_b.as_ref(), &port_b.as_ref())?;
 
                 if !channel_end_b.value().state_matches(&ChannelState::Open) {
-                    return Err(eyre!("expeted channel end A to be in open state"));
+                    return Err(eyre!("expected channel end A to be in open state"));
                 }
 
                 let channel_id_a =
@@ -118,13 +120,11 @@ impl BinaryChainTest for SupervisorTest {
                     query_channel_end(&chains.handle_a, &channel_id_a.as_ref(), &port_a.as_ref())?;
 
                 if !channel_end_a.value().state_matches(&ChannelState::Open) {
-                    return Err(eyre!("expeted channel end B to be in open state"));
+                    return Err(eyre!("expected channel end B to be in open state"));
                 }
 
                 Ok(channel_id_a)
             },
-            20,
-            Duration::from_secs(1),
         )?;
 
         Ok(())
