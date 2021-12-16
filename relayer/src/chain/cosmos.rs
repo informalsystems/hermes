@@ -718,11 +718,8 @@ impl CosmosSdkChain {
     }
 
     fn incr_account_sequence(&mut self) {
-        match &mut self.account {
-            Some(account) => {
-                account.sequence += 1;
-            }
-            None => {}
+        if let Some(account) = &mut self.account {
+            account.sequence += 1;
         }
     }
 
