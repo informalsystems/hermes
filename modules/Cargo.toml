@@ -27,7 +27,7 @@ mocks = ["tendermint-testgen"]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.13.0", path = "../proto" }
 ics23 = { version = "0.6.7", default-features = false }
-chrono = { version = "0.4.19", default-features = false }
+time = { version = "0.3", default-features = false }
 thiserror = { version = "1.0.30", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
 serde = { version = "1.0", default-features = false }
@@ -42,17 +42,17 @@ sha2 = { version = "0.10.0", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 
 [dependencies.tendermint]
-version = "=0.23.1"
+version = "=0.23.2"
 
 [dependencies.tendermint-proto]
-version = "=0.23.1"
+version = "=0.23.2"
 
 [dependencies.tendermint-light-client]
-version = "=0.23.1"
+version = "=0.23.2"
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "=0.23.1"
+version = "=0.23.2"
 optional = true
 
 [dev-dependencies]
@@ -61,8 +61,8 @@ tracing-subscriber = { version = "0.3.3", features = ["fmt", "env-filter", "json
 test-log = { version = "0.2.8", features = ["trace"] }
 modelator = "0.4.1"
 sha2 = { version = "0.10.0" }
-tendermint-rpc = { version = "=0.23.1", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.23.1" } # Needed for generating (synthetic) light blocks.
+tendermint-rpc = { version = "=0.23.2", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "=0.23.2" } # Needed for generating (synthetic) light blocks.
 
 [[test]]
 name = "mbt"

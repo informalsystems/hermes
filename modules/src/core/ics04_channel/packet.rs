@@ -238,7 +238,7 @@ impl From<Packet> for RawPacket {
             destination_channel: packet.destination_channel.to_string(),
             data: packet.data,
             timeout_height: Some(packet.timeout_height.into()),
-            timeout_timestamp: packet.timeout_timestamp.as_nanoseconds(),
+            timeout_timestamp: packet.timeout_timestamp.nanoseconds(),
         }
     }
 }
