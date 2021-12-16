@@ -435,6 +435,8 @@ impl ChainDriver {
     ) -> Result<(), Error> {
         assert_eventually_succeed(
             "wallet reach expected amount",
+            20,
+            Duration::from_secs(1),
             || {
                 let amount = self.query_balance(&user.address, denom)?;
 
@@ -448,8 +450,6 @@ impl ChainDriver {
                     ))
                 }
             },
-            20,
-            Duration::from_secs(1),
         )?;
 
         Ok(())

@@ -50,6 +50,8 @@ impl BinaryChainTest for SupervisorTest {
 
         let connection_id_a = assert_eventually_succeed(
             "connection should eventually open",
+            20,
+            Duration::from_secs(1),
             || {
                 let connection_end_b =
                     query_connection_end(&chains.handle_b, &connection_id_b.as_ref())?;
@@ -79,8 +81,6 @@ impl BinaryChainTest for SupervisorTest {
 
                 Ok(connection_id_a)
             },
-            20,
-            Duration::from_secs(1),
         )?;
 
         let port_a = tagged_transfer_port();
@@ -99,6 +99,8 @@ impl BinaryChainTest for SupervisorTest {
 
         assert_eventually_succeed(
             "channel should eventually open",
+            20,
+            Duration::from_secs(1),
             || {
                 let channel_end_b =
                     query_channel_end(&chains.handle_b, &channel_id_b.as_ref(), &port_b.as_ref())?;
@@ -123,8 +125,6 @@ impl BinaryChainTest for SupervisorTest {
 
                 Ok(channel_id_a)
             },
-            20,
-            Duration::from_secs(1),
         )?;
 
         Ok(())
