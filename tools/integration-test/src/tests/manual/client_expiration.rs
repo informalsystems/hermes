@@ -195,6 +195,12 @@ impl BinaryChainTest for ConnectionExpirationTest {
 
         // The second init connection on an unexpired client should succeed.
 
+        let _refresh_task_a = spawn_refresh_client(client_b_to_a_2.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+        let _refresh_task_b = spawn_refresh_client(client_a_to_b_2.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
         init_connection(
             &chains.handle_a,
             &chains.handle_b,

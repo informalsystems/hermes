@@ -10,7 +10,7 @@ use crate::link::{error::LinkError, Link, RelaySummary};
 use crate::object::Packet;
 use crate::telemetry;
 use crate::util::retry::{retry_with_index, RetryResult};
-use crate::util::task::{spawn_background_task, TaskError, TaskHandle};
+use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::worker::retry_strategy;
 
 use super::error::RunError;
@@ -61,7 +61,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                 .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
             }
 
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }
@@ -98,7 +98,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 
             telemetry!(packet_metrics(&path, &summary));
 
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }

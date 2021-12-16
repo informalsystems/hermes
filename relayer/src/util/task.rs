@@ -38,11 +38,6 @@ struct DropJoinHandle(Option<thread::JoinHandle<()>>);
 */
 pub enum TaskError<E> {
     /**
-       Inform the background task runner for a termination without error.
-    */
-    Abort,
-
-    /**
        Inform the background task runner that an ignorable error has occured,
        and the background task runner should log the error and then continue
        execution.
@@ -55,6 +50,11 @@ pub enum TaskError<E> {
        execution.
     */
     Fatal(E),
+}
+
+pub enum Next {
+    Continue,
+    Abort,
 }
 
 /**
@@ -88,7 +88,7 @@ pub enum TaskError<E> {
 pub fn spawn_background_task<E: Display>(
     task_name: String,
     interval_pause: Option<Duration>,
-    mut step_runner: impl FnMut() -> Result<(), TaskError<E>> + Send + Sync + 'static,
+    mut step_runner: impl FnMut() -> Result<Next, TaskError<E>> + Send + Sync + 'static,
 ) -> TaskHandle {
     let stopped = Arc::new(RwLock::new(false));
     let write_stopped = stopped.clone();
@@ -102,8 +102,8 @@ pub fn spawn_background_task<E: Display>(
                     break;
                 }
                 _ => match step_runner() {
-                    Ok(()) => {}
-                    Err(TaskError::Abort) => {
+                    Ok(Next::Continue) => {}
+                    Ok(Next::Abort) => {
                         info!("task is aborting: {}", task_name);
                         break;
                     }

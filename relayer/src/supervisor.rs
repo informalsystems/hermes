@@ -1,5 +1,6 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use alloc::sync::Arc;
+use core::convert::Infallible;
 use core::ops::Deref;
 use core::time::Duration;
 use std::sync::RwLock;
@@ -15,7 +16,7 @@ use ibc::{
 };
 
 use crate::util::lock::LockExt;
-use crate::util::task::{spawn_background_task, TaskError, TaskHandle};
+use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::{
     chain::{handle::ChainHandle, HealthCheck},
     config::{ChainConfig, Config},
@@ -167,7 +168,7 @@ fn spawn_batch_worker<Chain: ChainHandle>(
     spawn_background_task(
         "supervisor_batch".to_string(),
         Some(Duration::from_millis(500)),
-        move || -> Result<(), TaskError<Error>> {
+        move || -> Result<Next, TaskError<Infallible>> {
             if let Some((chain, batch)) = try_recv_multiple(&subscriptions.acquire_read()) {
                 handle_batch(
                     &config.acquire_read(),
@@ -179,7 +180,7 @@ fn spawn_batch_worker<Chain: ChainHandle>(
                 );
             }
 
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }
@@ -195,7 +196,7 @@ pub fn spawn_cmd_worker<Chain: ChainHandle>(
     spawn_background_task(
         "supervisor_cmd".to_string(),
         Some(Duration::from_millis(500)),
-        move || -> Result<(), TaskError<Error>> {
+        move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
                 match cmd {
                     SupervisorCmd::UpdateConfig(update) => {
@@ -224,7 +225,7 @@ pub fn spawn_cmd_worker<Chain: ChainHandle>(
                     }
                 }
             }
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }
@@ -238,7 +239,7 @@ pub fn spawn_rest_worker<Chain: ChainHandle>(
     spawn_background_task(
         "supervisor_rest".to_string(),
         Some(Duration::from_millis(500)),
-        move || -> Result<(), TaskError<Error>> {
+        move || -> Result<Next, TaskError<Infallible>> {
             handle_rest_requests(
                 &config.acquire_read(),
                 &registry.read(),
@@ -246,7 +247,7 @@ pub fn spawn_rest_worker<Chain: ChainHandle>(
                 &rest_rx,
             );
 
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }

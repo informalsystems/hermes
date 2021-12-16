@@ -3,7 +3,7 @@ use crossbeam_channel::Receiver;
 use tracing::debug;
 
 use crate::connection::Connection as RelayConnection;
-use crate::util::task::{spawn_background_task, TaskError, TaskHandle};
+use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
     object::Connection,
@@ -50,7 +50,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
 
                             if handshake_completed {
-                                return Err(TaskError::Abort);
+                                return Ok(Next::Abort);
                             }
                         }
                     }
@@ -85,7 +85,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
 
                         if handshake_completed {
-                            return Err(TaskError::Abort);
+                            return Ok(Next::Abort);
                         }
                     }
 
@@ -93,7 +93,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                 };
             }
 
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }
