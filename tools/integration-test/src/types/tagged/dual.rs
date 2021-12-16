@@ -330,6 +330,10 @@ impl<'a, TagA, TagB, Value: Clone> Tagged<TagA, TagB, &'a Value> {
     pub fn cloned(&self) -> Tagged<TagA, TagB, Value> {
         Tagged::new(self.0.clone())
     }
+
+    pub fn cloned_value(&self) -> Value {
+        self.0.clone()
+    }
 }
 
 impl<TagA, TagB, Value> Tagged<TagA, TagB, Option<Value>> {

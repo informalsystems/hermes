@@ -86,7 +86,7 @@ where
         })?;
 
         let _node_process_a = node_a.process.clone();
-        let _node_process_b = node_a.process.clone();
+        let _node_process_b = node_b.process.clone();
 
         self.test.run(config, node_a, node_b)?;
 

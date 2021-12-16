@@ -239,6 +239,10 @@ impl<'a, Tag, Value: Clone> Tagged<Tag, &'a Value> {
     pub fn cloned(&self) -> Tagged<Tag, Value> {
         Tagged::new(self.0.clone())
     }
+
+    pub fn cloned_value(&self) -> Value {
+        self.0.clone()
+    }
 }
 
 impl<Tag, Value> Tagged<Tag, Option<Value>> {

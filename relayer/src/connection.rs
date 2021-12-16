@@ -1112,7 +1112,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     }
 }
 
-fn extract_connection_id(event: &IbcEvent) -> Result<&ConnectionId, ConnectionError> {
+pub fn extract_connection_id(event: &IbcEvent) -> Result<&ConnectionId, ConnectionError> {
     match event {
         IbcEvent::OpenInitConnection(ev) => ev.connection_id().as_ref(),
         IbcEvent::OpenTryConnection(ev) => ev.connection_id().as_ref(),
