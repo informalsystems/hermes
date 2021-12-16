@@ -34,5 +34,6 @@ pub use crate::types::tagged::{DualTagged, MonoTagged};
 pub use crate::types::wallet::{
     TaggedTestWalletsExt, TaggedWallet, TestWallets, Wallet, WalletAddress, WalletId,
 };
+pub use crate::util::assert::*;
 pub use crate::util::retry::assert_eventually_succeed;
 pub use crate::util::suspend::suspend;

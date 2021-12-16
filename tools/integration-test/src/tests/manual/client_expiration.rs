@@ -1,4 +1,5 @@
 use core::time::Duration;
+use ibc::core::ics03_connection::connection::State as ConnectionState;
 use ibc_relayer::config::{self, Config, ModeConfig};
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 use ibc_relayer::worker::client::spawn_refresh_client;
@@ -11,7 +12,9 @@ use crate::bootstrap::binary::channel::{
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::prelude::*;
 use crate::relayer::channel::init_channel;
-use crate::relayer::connection::init_connection;
+use crate::relayer::connection::{
+    assert_eventually_connection_established, init_connection, query_connection_end,
+};
 
 // The cosmos ChainHandle handles requests in serial, and a refresh client
 // request may get blocked by other operations and cause the refresh to fail
@@ -178,14 +181,30 @@ impl BinaryChainTest for ConnectionExpirationTest {
         // pick it up, and we want to observe that it abort due to frozen client
         // rather than looping indefinitely.
 
-        init_connection(
+        let (connection_id_b, _) = init_connection(
             &chains.handle_a,
             &chains.handle_b,
             &chains.client_b_to_a.tagged_client_id(),
             &chains.client_a_to_b.tagged_client_id(),
         )?;
 
+        info!("Sleeping for 10 seconds to make sure that connection fails to establish");
+
         sleep(Duration::from_secs(10));
+
+        let connection_end_b = query_connection_end(&chains.handle_b, &connection_id_b.as_ref())?;
+
+        assert_eq(
+            "connection_end status should remain init",
+            connection_end_b.value().state(),
+            &ConnectionState::Init,
+        )?;
+
+        assert_eq(
+            "connection_end should not have counterparty",
+            &connection_end_b.value().counterparty().connection_id(),
+            &None,
+        )?;
 
         info!("Trying to new connection and worker after previous connection worker failed");
 
@@ -201,14 +220,20 @@ impl BinaryChainTest for ConnectionExpirationTest {
         let _refresh_task_b = spawn_refresh_client(client_a_to_b_2.clone())
             .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        init_connection(
+        let (connection_id_b, _) = init_connection(
             &chains.handle_a,
             &chains.handle_b,
             &client_b_to_a_2.tagged_client_id(),
             &client_a_to_b_2.tagged_client_id(),
         )?;
 
-        crate::suspend();
+        assert_eventually_connection_established(
+            &chains.handle_b,
+            &chains.handle_a,
+            &connection_id_b.as_ref(),
+        )?;
+
+        Ok(())
     }
 }
 

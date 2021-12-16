@@ -2,7 +2,10 @@
    Definition for extension trait methods for [`Connection`]
 */
 
+use core::time::Duration;
+use eyre::eyre;
 use ibc::core::ics03_connection::connection::ConnectionEnd;
+use ibc::core::ics03_connection::connection::State as ConnectionState;
 use ibc::timestamp::ZERO_DURATION;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -11,6 +14,7 @@ use ibc_relayer::connection::{extract_connection_id, Connection, ConnectionSide}
 use crate::error::Error;
 use crate::types::id::{TaggedClientIdRef, TaggedConnectionId, TaggedConnectionIdRef};
 use crate::types::tagged::DualTagged;
+use crate::util::retry::assert_eventually_succeed;
 
 /**
    An extension trait that provide helper methods to get tagged identifiers
@@ -87,4 +91,43 @@ pub fn query_connection_end<ChainA: ChainHandle, ChainB>(
     let connection_end = handle.query_connection(connection_id.value(), Height::zero())?;
 
     Ok(DualTagged::new(connection_end))
+}
+
+pub fn assert_eventually_connection_established<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    connection_id_a: &TaggedConnectionIdRef<ChainA, ChainB>,
+) -> Result<TaggedConnectionId<ChainB, ChainA>, Error> {
+    assert_eventually_succeed(
+        "connection should eventually established",
+        20,
+        Duration::from_secs(1),
+        || {
+            let connection_end_a = query_connection_end(handle_a, connection_id_a)?;
+
+            if !connection_end_a
+                .value()
+                .state_matches(&ConnectionState::Open)
+            {
+                return Err(eyre!("expected connection end A to be in open state"));
+            }
+
+            let connection_id_b = connection_end_a
+                .tagged_counterparty_connection_id()
+                .ok_or_else(|| {
+                    eyre!("expected counterparty connection id to present on open connection")
+                })?;
+
+            let connection_end_b = query_connection_end(handle_b, &connection_id_b.as_ref())?;
+
+            if !connection_end_b
+                .value()
+                .state_matches(&ConnectionState::Open)
+            {
+                return Err(eyre!("expected connection end B to be in open state"));
+            }
+
+            Ok(connection_id_b)
+        },
+    )
 }
