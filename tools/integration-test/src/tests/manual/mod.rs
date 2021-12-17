@@ -11,5 +11,4 @@
     as the CI is not going to run the test.
 */
 
-pub mod client_expiration;
 pub mod simulation;
