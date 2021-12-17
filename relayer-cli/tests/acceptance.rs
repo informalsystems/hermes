@@ -45,3 +45,15 @@ fn start_no_args() {
     ); // Todo: find out how to disable colored output and then remove the `[^ ]*` part from the regexp.
     cmd.wait().unwrap().expect_success();
 }
+
+#[cfg(not(tarpaulin))]
+#[test]
+fn example_configuration_is_valid() {
+    let mut runner = RUNNER.clone();
+    let mut cmd = runner
+        .capture_stdout()
+        .args(["--config", "../config.toml", "config", "validate"])
+        .run();
+    cmd.stdout().expect_regex("configuration is valid");
+    cmd.wait().unwrap().expect_success();
+}

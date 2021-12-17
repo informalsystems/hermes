@@ -1,26 +1,9 @@
-use std::io;
-
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
-use tracing_subscriber::{
-    filter::EnvFilter,
-    fmt::{
-        format::{DefaultFields, Format, Full, Json, JsonFields},
-        time::SystemTime,
-        Formatter as TracingFormatter,
-    },
-    reload::Handle,
-    util::SubscriberInitExt,
-    FmtSubscriber,
-};
+use tracing_subscriber::{filter::EnvFilter, util::SubscriberInitExt, FmtSubscriber};
 
 use ibc_relayer::config::GlobalConfig;
 
 use crate::config::Error;
-
-/// Custom types to simplify the `Tracing` definition below
-type JsonFormatter = TracingFormatter<JsonFields, Format<Json, SystemTime>, StdWriter>;
-type PrettyFormatter = TracingFormatter<DefaultFields, Format<Full, SystemTime>, StdWriter>;
-type StdWriter = fn() -> io::Stderr;
 
 /// A custom component for parametrizing `tracing` in the relayer.
 /// Primarily used for:
@@ -29,13 +12,10 @@ type StdWriter = fn() -> io::Stderr;
 ///   (`debug!`, `info!`, etc.) or abscissa macros (`status_err`, `status_info`, etc.).
 /// - Enabling JSON-formatted output without coloring
 #[derive(Component, Debug)]
-pub struct JsonTracing {
-    filter_handle: Handle<EnvFilter, JsonFormatter>,
-}
+pub struct JsonTracing;
 
 impl JsonTracing {
     /// Creates a new [`JsonTracing`] component
-    #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
         let filter = build_tracing_filter(cfg.log_level.to_string())?;
         // Note: JSON formatter is un-affected by ANSI 'color' option. Set to 'false'.
@@ -45,29 +25,23 @@ impl JsonTracing {
         let builder = FmtSubscriber::builder()
             .with_target(false)
             .with_env_filter(filter)
-            .with_writer(std::io::stderr as StdWriter)
+            .with_writer(std::io::stderr)
             .with_ansi(use_color)
             .with_thread_ids(true)
-            .json()
-            .with_filter_reloading();
-
-        let filter_handle = builder.reload_handle();
+            .json();
 
         let subscriber = builder.finish();
         subscriber.init();
 
-        Ok(Self { filter_handle })
+        Ok(Self)
     }
 }
 
 #[derive(Component, Debug)]
-pub struct PrettyTracing {
-    filter_handle: Handle<EnvFilter, PrettyFormatter>,
-}
+pub struct PrettyTracing;
 
 impl PrettyTracing {
     /// Creates a new [`PrettyTracing`] component
-    #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
         let filter = build_tracing_filter(cfg.log_level.to_string())?;
 
@@ -75,17 +49,14 @@ impl PrettyTracing {
         let builder = FmtSubscriber::builder()
             .with_target(false)
             .with_env_filter(filter)
-            .with_writer(std::io::stderr as StdWriter)
+            .with_writer(std::io::stderr)
             .with_ansi(enable_ansi())
-            .with_thread_ids(true)
-            .with_filter_reloading();
-
-        let filter_handle = builder.reload_handle();
+            .with_thread_ids(true);
 
         let subscriber = builder.finish();
         subscriber.init();
 
-        Ok(Self { filter_handle })
+        Ok(Self)
     }
 }
 

@@ -62,10 +62,12 @@ mod tests {
     use core::time::Duration;
     use test_log::test;
 
-    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
+    use crate::clients::ics07_tendermint::client_state::{
+        AllowUpdate, ClientState as TendermintClientState,
+    };
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
-    use crate::core::ics02_client::client_state::AnyClientState;
+    use crate::core::ics02_client::client_state::ClientState;
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::handler::{dispatch, ClientResult};
     use crate::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -88,7 +90,7 @@ mod tests {
         let height = Height::new(0, 42);
 
         let msg = MsgCreateAnyClient::new(
-            MockClientState(MockHeader::new(height)).into(),
+            MockClientState::new(MockHeader::new(height)).into(),
             MockConsensusState::new(MockHeader::new(height)).into(),
             signer,
         )
@@ -134,7 +136,7 @@ mod tests {
 
         let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader::new(Height {
+                MockClientState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -148,7 +150,7 @@ mod tests {
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader::new(Height {
+                MockClientState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -162,7 +164,7 @@ mod tests {
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader::new(Height {
+                MockClientState::new(MockHeader::new(Height {
                     revision_height: 50,
                     ..height
                 }))
@@ -223,21 +225,22 @@ mod tests {
 
         let tm_header = get_dummy_tendermint_header();
 
-        let tm_client_state = AnyClientState::Tendermint(ClientState {
-            chain_id: tm_header.chain_id.clone().into(),
-            trust_level: TrustThreshold::ONE_THIRD,
-            trusting_period: Duration::from_secs(64000),
-            unbonding_period: Duration::from_secs(128000),
-            max_clock_drift: Duration::from_millis(3000),
-            latest_height: Height::new(0, u64::from(tm_header.height)),
-            frozen_height: Height::zero(),
-            proof_specs: ProofSpecs::default(),
-            allow_update: AllowUpdate {
+        let tm_client_state = TendermintClientState::new(
+            tm_header.chain_id.clone().into(),
+            TrustThreshold::ONE_THIRD,
+            Duration::from_secs(64000),
+            Duration::from_secs(128000),
+            Duration::from_millis(3000),
+            Height::new(0, u64::from(tm_header.height)),
+            ProofSpecs::default(),
+            vec!["".to_string()],
+            AllowUpdate {
                 after_expiry: false,
                 after_misbehaviour: false,
             },
-            upgrade_path: vec!["".to_string()],
-        });
+        )
+        .unwrap()
+        .wrap_any();
 
         let msg = MsgCreateAnyClient::new(
             tm_client_state,

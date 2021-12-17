@@ -12,7 +12,6 @@ use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
-use chrono::DateTime;
 use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
@@ -42,6 +41,7 @@ use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientS
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest,
 };
@@ -56,7 +56,6 @@ use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
-use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
@@ -79,13 +78,17 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
-use crate::{chain::QueryResponse, chain::StatusResponse, event::monitor::TxMonitorCmd};
+use crate::{
+    chain::handle::requests::AppVersion, chain::QueryResponse, chain::StatusResponse,
+    event::monitor::TxMonitorCmd,
+};
 use crate::{config::types::Memo, error::Error};
 use crate::{
     config::{AddressType, ChainConfig, GasPrice},
@@ -98,10 +101,12 @@ mod compatibility;
 pub mod version;
 
 /// Default gas limit when submitting a transaction.
-const DEFAULT_MAX_GAS: u64 = 300_000;
+const DEFAULT_MAX_GAS: u64 = 400_000;
 
 /// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
+
+const DEFAULT_FEE_GRANTER: &str = "";
 
 /// Upper limit on the size of transactions submitted by Hermes, expressed as a
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
@@ -440,6 +445,14 @@ impl CosmosSdkChain {
         self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
+    /// Get the fee granter address
+    fn fee_granter(&self) -> &str {
+        self.config
+            .fee_granter
+            .as_deref()
+            .unwrap_or(DEFAULT_FEE_GRANTER)
+    }
+
     /// The gas price
     fn gas_price(&self) -> &GasPrice {
         &self.config.gas_price
@@ -644,7 +657,7 @@ impl CosmosSdkChain {
             amount: vec![self.max_fee_in_coins()],
             gas_limit: self.max_gas(),
             payer: "".to_string(),
-            granter: "".to_string(),
+            granter: self.fee_granter().to_string(),
         }
     }
 
@@ -655,7 +668,7 @@ impl CosmosSdkChain {
             amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
             gas_limit: adjusted_gas_limit,
             payer: "".to_string(),
-            granter: "".to_string(),
+            granter: self.fee_granter().to_string(),
         }
     }
 
@@ -1090,7 +1103,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_status");
         let status = self.status()?;
 
-        let time = DateTime::from(status.sync_info.latest_block_time);
+        let time = status.sync_info.latest_block_time;
         let height = ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
             revision_height: u64::from(status.sync_info.latest_block_height),
@@ -1098,7 +1111,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok(StatusResponse {
             height,
-            timestamp: Timestamp::from_datetime(time),
+            timestamp: time.into(),
         })
     }
 
@@ -1930,7 +1943,6 @@ impl ChainEndpoint for CosmosSdkChain {
             unbonding_period,
             max_clock_drift,
             height,
-            ICSHeight::zero(),
             self.config.proof_specs.clone(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             AllowUpdate {
@@ -1964,6 +1976,24 @@ impl ChainEndpoint for CosmosSdkChain {
             light_client.header_and_minimal_set(trusted_height, target_height, client_state)?;
 
         Ok((target, supporting))
+    }
+
+    fn query_app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error> {
+        use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
+
+        let mut client = self
+            .block_on(QueryClient::connect(self.grpc_addr.clone()))
+            .map_err(Error::grpc_transport)?;
+
+        let tonic_req: QueryAppVersionRequest = request.into();
+        let response = self.block_on(client.app_version(tonic_req));
+        let resp_version = response
+            .map_err(Error::grpc_status)?
+            .into_inner()
+            .version
+            .into();
+
+        Ok(resp_version)
     }
 }
 
@@ -2491,15 +2521,15 @@ mod tests {
         let mut clients: Vec<IdentifiedAnyClientState> = vec![
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 4).unwrap(),
-                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 1).unwrap(),
-                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 7).unwrap(),
-                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
             ),
         ];
         clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));

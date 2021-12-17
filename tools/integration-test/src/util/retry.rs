@@ -17,9 +17,9 @@ use crate::error::Error;
 */
 pub fn assert_eventually_succeed<R>(
     task_name: &str,
-    task: impl Fn() -> Result<R, Error>,
     attempts: u16,
     interval: Duration,
+    task: impl Fn() -> Result<R, Error>,
 ) -> Result<R, Error> {
     sleep(interval);
     for _ in 0..attempts {

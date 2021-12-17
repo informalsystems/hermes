@@ -23,13 +23,13 @@ use crate::{
     },
     config::Config,
     object::{Channel, Client, Connection, Object, Packet},
-    registry::SharedRegistry,
+    registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
     supervisor::error::Error as SupervisorError,
     worker::WorkerMap,
 };
 
-use super::{Error, RwArc};
+use super::Error;
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -40,8 +40,8 @@ pub enum SpawnMode {
 
 /// A context for spawning workers within the [`crate::supervisor::Supervisor`].
 pub struct SpawnContext<'a, Chain: ChainHandle> {
-    config: RwArc<Config>,
-    registry: SharedRegistry<Chain>,
+    config: &'a Config,
+    registry: &'a mut Registry<Chain>,
     workers: &'a mut WorkerMap,
     client_state_filter: &'a mut FilterPolicy,
     mode: SpawnMode,
@@ -49,8 +49,8 @@ pub struct SpawnContext<'a, Chain: ChainHandle> {
 
 impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
     pub fn new(
-        config: RwArc<Config>,
-        registry: SharedRegistry<Chain>,
+        config: &'a Config,
+        registry: &'a mut Registry<Chain>,
         client_state_filter: &'a mut FilterPolicy,
         workers: &'a mut WorkerMap,
         mode: SpawnMode,
@@ -66,19 +66,12 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
 
     fn client_filter_enabled(&self) -> bool {
         // Currently just a wrapper over the global filter.
-        self.config
-            .read()
-            .expect("poisoned lock")
-            .mode
-            .packets
-            .filter
+        self.config.mode.packets.filter
     }
 
     pub fn spawn_workers(&mut self) {
         let chain_ids = self
             .config
-            .read()
-            .expect("poisoned lock")
             .chains
             .iter()
             .map(|c| &c.id)
@@ -169,8 +162,6 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
 
         let chain_ids = self
             .config
-            .read()
-            .expect("poisoned lock")
             .chains
             .iter()
             .map(|c| &c.id)
@@ -209,11 +200,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         }
 
         let counterparty_chain_id = client.client_state.chain_id();
-        let has_counterparty = self
-            .config
-            .read()
-            .expect("poisoned lock")
-            .has_chain(&counterparty_chain_id);
+
+        let has_counterparty = self.config.has_chain(&counterparty_chain_id);
 
         if !has_counterparty {
             debug!(
@@ -274,7 +262,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         // Apply the client state filter
         if self.client_filter_enabled() {
             match self.client_state_filter.control_connection_end_and_client(
-                &mut self.registry.write(),
+                self.registry,
                 &chain_id,
                 &client.client_state,
                 &connection_end,
@@ -398,13 +386,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<(), Error> {
-        let config_conn_enabled = self
-            .config
-            .read()
-            .expect("poisoned lock")
-            .mode
-            .connections
-            .enabled;
+        let config_conn_enabled = self.config.mode.connections.enabled;
 
         let counterparty_chain = self
             .registry
@@ -442,12 +424,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             });
 
             self.workers
-                .spawn(
-                    chain,
-                    counterparty_chain,
-                    &connection_object,
-                    &self.config.read().expect("poisoned lock"),
-                )
+                .spawn(chain, counterparty_chain, &connection_object, self.config)
                 .then(|| {
                     debug!(
                         "spawning Connection worker: {}",
@@ -468,7 +445,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         connection: &IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), Error> {
-        let mode = &self.config.read().expect("poisoned lock").mode;
+        let mode = &self.config.mode;
 
         let counterparty_chain = self
             .registry
@@ -504,13 +481,12 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                     dst_chain_id: chain.id(),
                     src_chain_id: client.client_state.chain_id(),
                 });
-
                 self.workers
                     .spawn(
                         counterparty_chain.clone(),
                         chain.clone(),
                         &client_object,
-                        &self.config.read().expect("poisoned lock"),
+                        self.config,
                     )
                     .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
             }
@@ -547,7 +523,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                             chain.clone(),
                             counterparty_chain.clone(),
                             &path_object,
-                            &self.config.read().expect("poisoned lock"),
+                            self.config,
                         )
                         .then(|| debug!("spawned Packet worker: {}", path_object.short_name()));
                 }
@@ -565,12 +541,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             });
 
             self.workers
-                .spawn(
-                    chain,
-                    counterparty_chain,
-                    &channel_object,
-                    &self.config.read().expect("poisoned lock"),
-                )
+                .spawn(chain, counterparty_chain, &channel_object, self.config)
                 .then(|| debug!("spawned Channel worker: {}", channel_object.short_name()));
         }
 
@@ -582,8 +553,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         chain: &impl ChainHandle,
         channel: &IdentifiedChannelEnd,
     ) -> bool {
-        let config = self.config.read().expect("poisoned lock");
-        config.packets_on_channel_allowed(&chain.id(), &channel.port_id, &channel.channel_id)
+        self.config
+            .packets_on_channel_allowed(&chain.id(), &channel.port_id, &channel.channel_id)
     }
 
     pub fn shutdown_workers_for_chain(&mut self, chain_id: &ChainId) {

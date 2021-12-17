@@ -157,8 +157,8 @@ store_prefix = 'ibc'
 default_gas = 100000
 
 # Specify the maximum amount of gas to be used as the gas limit for a transaction.
-# Default: 300 000
-max_gas = 300000
+# Default: 400 000
+max_gas = 400000
 
 # Specify the price per gas used of the fee to submit a transaction and
 # the denomination of the fee. Required
@@ -225,60 +225,11 @@ memo_prefix = ''
 #   ['transfer', 'channel-0'],
 # ]
 
-# Specify custom ICS23 proof-specs for the chain (serialized as JSON).
-# Default: [`ProofSpecs::cosmos()`](modules/src/core/ics23_commitment/specs.rs)
-proof-specs = '''
-[
-  {
-    "leaf_spec": {
-      "hash": 1,
-      "prehash_key": 0,
-      "prehash_value": 1,
-      "length": 1,
-      "prefix": [
-        0
-      ]
-    },
-    "inner_spec": {
-      "child_order": [
-        0,
-        1
-      ],
-      "child_size": 33,
-      "min_prefix_length": 4,
-      "max_prefix_length": 12,
-      "empty_child": [],
-      "hash": 1
-    },
-    "max_depth": 0,
-    "min_depth": 0
-  },
-  {
-    "leaf_spec": {
-      "hash": 1,
-      "prehash_key": 0,
-      "prehash_value": 1,
-      "length": 1,
-      "prefix": [
-        0
-      ]
-    },
-    "inner_spec": {
-      "child_order": [
-        0,
-        1
-      ],
-      "child_size": 32,
-      "min_prefix_length": 1,
-      "max_prefix_length": 1,
-      "empty_child": [],
-      "hash": 1
-    },
-    "max_depth": 0,
-    "min_depth": 0
-  }
-]
-'''
+# Specify that the transaction fees should be payed from this fee granter's account.
+# Optional. If unspecified (the default behavior), then no fee granter is used, and
+# the account specified in `key_name` will pay the tx fees for all transactions
+# submitted to this chain.
+# fee_granter = ''
 
 [[chains]]
 id = 'ibc-1'
@@ -290,7 +241,7 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 default_gas = 100000
-max_gas = 3000000
+max_gas = 400000
 gas_price = { price = 0.001, denom = 'stake' }
 gas_adjustment = 0.1
 max_msg_num = 30

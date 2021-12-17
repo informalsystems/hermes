@@ -1,9 +1,9 @@
 use std::convert::TryInto;
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use tendermint::Time;
 use tendermint_light_client::components::verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_light_client::types::{TrustedBlockState, UntrustedBlockState};
+use time::OffsetDateTime;
 
 use crate::clients::ics07_tendermint::client_state::ClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -29,17 +29,9 @@ use crate::Height;
 
 use crate::downcast;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TendermintClient {
     verifier: ProdVerifier,
-}
-
-impl Default for TendermintClient {
-    fn default() -> Self {
-        Self {
-            verifier: ProdVerifier::default(),
-        }
-    }
 }
 
 impl ClientDef for TendermintClient {
@@ -115,7 +107,7 @@ impl ClientDef for TendermintClient {
             untrusted_state,
             trusted_state,
             &options,
-            Time(chrono::Utc::now()),
+            OffsetDateTime::now_utc().try_into().unwrap(),
         );
 
         match verdict {
@@ -139,7 +131,7 @@ impl ClientDef for TendermintClient {
         // client and return the installed consensus state.
         if let Some(cs) = existing_consensus_state {
             if cs != header_consensus_state {
-                return Ok((client_state.with_set_frozen(header.height()), cs));
+                return Ok((client_state.with_frozen_height(header.height())?, cs));
             }
         }
 

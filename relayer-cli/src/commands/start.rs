@@ -3,20 +3,21 @@ use std::error::Error;
 use std::io;
 use std::sync::RwLock;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use crossbeam_channel::Sender;
 
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
+use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::rest;
-use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
+use ibc_relayer::supervisor::{cmd::SupervisorCmd, spawn_supervisor, SupervisorHandle};
 
 use crate::conclude::json;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct StartCmd {}
 
 impl Runnable for StartCmd {
@@ -24,16 +25,17 @@ impl Runnable for StartCmd {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let (mut supervisor, tx_cmd) = make_supervisor::<ProdChainHandle>(config.clone())
-            .unwrap_or_else(|e| {
+        let supervisor_handle =
+            make_supervisor::<ProdChainHandle>(config.clone()).unwrap_or_else(|e| {
                 Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
                 unreachable!()
             });
 
         match crate::config::config_path() {
             Some(config_path) => {
-                let reload = ConfigReload::new(config_path, config, tx_cmd.clone());
-                register_signals(reload, tx_cmd).unwrap_or_else(|e| {
+                let reload =
+                    ConfigReload::new(config_path, config, supervisor_handle.sender.clone());
+                register_signals(reload, supervisor_handle.sender.clone()).unwrap_or_else(|e| {
                     warn!("failed to install signal handler: {}", e);
                 });
             }
@@ -43,10 +45,8 @@ impl Runnable for StartCmd {
         };
 
         info!("Hermes has started");
-        match supervisor.run() {
-            Ok(()) => Output::success_msg("done").exit(),
-            Err(e) => Output::error(format!("Hermes failed to start, last error: {}", e)).exit(),
-        }
+
+        supervisor_handle.wait();
     }
 }
 
@@ -175,10 +175,11 @@ fn spawn_telemetry_server(
 
 fn make_supervisor<Chain: ChainHandle + 'static>(
     config: Arc<RwLock<Config>>,
-) -> Result<(Supervisor<Chain>, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
+) -> Result<SupervisorHandle, Box<dyn Error + Send + Sync>> {
+    let registry = SharedRegistry::<Chain>::new(config.clone());
     spawn_telemetry_server(&config)?;
 
     let rest = spawn_rest_server(&config);
 
-    Ok(Supervisor::new(config, rest))
+    Ok(spawn_supervisor(config, registry, rest, true)?)
 }

@@ -145,6 +145,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection_id,
                 opts.src_port_id.clone(),
                 Some(opts.src_channel_id.clone()),
+                None,
             ),
             b_side: ChannelSide::new(
                 b_chain,
@@ -152,9 +153,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection.counterparty().connection_id().unwrap().clone(),
                 a_channel.counterparty().port_id.clone(),
                 Some(b_channel_id),
+                None,
             ),
             connection_delay: a_connection.delay_period(),
-            version: None,
         };
 
         Link::new(channel, with_tx_confirmation)

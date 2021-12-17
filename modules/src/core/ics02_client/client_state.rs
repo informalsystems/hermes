@@ -33,7 +33,12 @@ pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
     fn latest_height(&self) -> Height;
 
     /// Freeze status of the client
-    fn is_frozen(&self) -> bool;
+    fn is_frozen(&self) -> bool {
+        self.frozen_height().is_some()
+    }
+
+    /// Frozen height of the client
+    fn frozen_height(&self) -> Option<Height>;
 
     /// Wrap into an `AnyClientState`
     fn wrap_any(self) -> AnyClientState;
@@ -55,6 +60,15 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.latest_height(),
+        }
+    }
+
+    pub fn frozen_height(&self) -> Option<Height> {
+        match self {
+            Self::Tendermint(tm_state) => tm_state.frozen_height(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(mock_state) => mock_state.frozen_height(),
         }
     }
 
@@ -166,13 +180,8 @@ impl ClientState for AnyClientState {
         self.latest_height()
     }
 
-    fn is_frozen(&self) -> bool {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.is_frozen(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
-        }
+    fn frozen_height(&self) -> Option<Height> {
+        self.frozen_height()
     }
 
     fn wrap_any(self) -> AnyClientState {

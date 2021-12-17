@@ -27,8 +27,12 @@ home_dir="$HOME/.gm"
 # (Optional) The validator node's operator address will be created from this 24-word seed phrase instead of a random address.
 validator_mnemonic=""
 
-# (Optional) The wallet address will be created from this 24-word seed phrase instead of a random address.
+# (Optional) The first wallet address (named "wallet") will be created from this 24-word seed phrase instead of a random address.
 wallet_mnemonic=""
+
+# (Optional) The number of extra wallets with random addresses to create.
+# These wallets will be funded and ready for developer use.
+extra_wallets=0
 
 # (Optional) The HD derivation path for network addresses.
 # This is automatically set on a chain but Hermes needs to be informed of it, if it is not the default.

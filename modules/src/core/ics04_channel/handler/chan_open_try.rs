@@ -29,7 +29,7 @@ pub(crate) fn process(
                 && old_channel_end.order_matches(msg.channel.ordering())
                 && old_channel_end.connection_hops_matches(msg.channel.connection_hops())
                 && old_channel_end.counterparty_matches(msg.channel.counterparty())
-                && old_channel_end.version_matches(&msg.channel.version())
+                && old_channel_end.version_matches(msg.channel.version())
             {
                 // A ChannelEnd already exists and all validation passed.
                 Ok((old_channel_end, prev_id.clone()))
@@ -89,10 +89,6 @@ pub(crate) fn process(
 
     // Channel capabilities
     let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
-
-    if msg.channel().version().is_empty() {
-        return Err(Error::empty_version());
-    }
 
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.
@@ -164,11 +160,11 @@ mod tests {
     use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, State};
-    use crate::core::ics04_channel::error;
     use crate::core::ics04_channel::handler::{channel_dispatch, ChannelResult};
     use crate::core::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::core::ics04_channel::msgs::ChannelMsg;
+    use crate::core::ics04_channel::{error, Version};
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId};
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
@@ -224,12 +220,12 @@ mod tests {
             *msg.channel.ordering(),
             msg.channel.counterparty().clone(),
             msg.channel.connection_hops().clone(),
-            msg.channel.version(),
+            msg.channel.version().clone(),
         );
 
         // A preloaded channel end that resides in the context. This is constructed so as to be
         // __inconsistent__ with the incoming ChanOpenTry message `msg` due to its version field.
-        let version = format!("{}-", msg.channel.version());
+        let version = Version::from(format!("{}-", msg.channel.version()));
         let incorrect_chan_end_ver = ChannelEnd::new(
             State::Init,
             *msg.channel.ordering(),
@@ -246,7 +242,7 @@ mod tests {
             *msg.channel.ordering(),
             msg.channel.counterparty().clone(),
             hops,
-            msg.channel.version(),
+            msg.channel.version().clone(),
         );
 
         let tests: Vec<Test> = vec![

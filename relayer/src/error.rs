@@ -39,21 +39,9 @@ use crate::sdk_error::SdkError;
 
 define_error! {
     Error {
-        ConfigIo
-            [ TraceError<std::io::Error> ]
-            |_| { "config I/O error" },
-
         Io
             [ TraceError<std::io::Error> ]
             |_| { "I/O error" },
-
-        ConfigDecode
-            [ TraceError<toml::de::Error> ]
-            |_| { "invalid configuration" },
-
-        ConfigEncode
-            [ TraceError<toml::ser::Error> ]
-            |_| { "invalid configuration" },
 
         Rpc
             { url: tendermint_rpc::Url }
@@ -197,6 +185,10 @@ define_error! {
             { reason: String }
             |e| { format!("Failed to build conn open try: {0}", e.reason) },
 
+        AppVersion
+            { reason: String }
+            |e| { format!("failed to fetch application version: {0}", e.reason) },
+
         ChanOpenAck
             { channel_id: ChannelId, reason: String }
             |e| {
@@ -295,11 +287,11 @@ define_error! {
             |_| { "requested proof for data in the privateStore" },
 
         ChannelSend
-            |_| { "internal communication failure: error sending inter-thread request/response" },
+            |_| { "internal message-passing failure while sending inter-thread request/response" },
 
         ChannelReceive
             [ TraceError<crossbeam_channel::RecvError> ]
-            |_| { "failed to receive through channel" },
+            |_| { "internal message-passing failure while receiving inter-thread request/response" },
 
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },
@@ -339,10 +331,6 @@ define_error! {
             { payload_type: String }
             [ TraceError<EncodeError> ]
             |e| { format!("Error encoding protocol buffer for {}", e.payload_type) },
-
-        Cbor
-            [ TraceError<serde_cbor::Error> ]
-            | _ | { "error decoding CBOR payload" },
 
         TxSimulateGasEstimateExceeded
             {
@@ -525,6 +513,23 @@ impl GrpcStatusSubdetail {
 
         let msg = self.status.message();
         msg.contains("verification failed") && msg.contains("client state height < proof height")
+    }
+
+    /// Check whether this gRPC error matches
+    /// - status: Unimplemented
+    /// - message: 'unknown service ibc.core.port.v1.Query'
+    ///
+    /// # Note:
+    /// Used for detecting if the ibc module is able to
+    /// resolve queries for the application version.
+    pub fn is_unimplemented_port_query(&self) -> bool {
+        if self.status.code() != tonic::Code::Unimplemented {
+            return false;
+        }
+
+        self.status
+            .message()
+            .contains("unknown service ibc.core.port.v1.Query")
     }
 
     /// Check whether this gRPC error matches

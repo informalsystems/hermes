@@ -235,21 +235,11 @@ impl ConnectionEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
     pub connection_id: Option<ConnectionId>,
     prefix: CommitmentPrefix,
-}
-
-impl Default for Counterparty {
-    fn default() -> Self {
-        Counterparty {
-            client_id: Default::default(),
-            connection_id: None,
-            prefix: Default::default(),
-        }
-    }
 }
 
 impl Protobuf<RawCounterparty> for Counterparty {}
