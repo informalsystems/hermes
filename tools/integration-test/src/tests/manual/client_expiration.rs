@@ -1,5 +1,6 @@
 use core::time::Duration;
 use ibc::core::ics03_connection::connection::State as ConnectionState;
+use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer::config::{self, Config, ModeConfig};
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 use ibc_relayer::worker::client::spawn_refresh_client;
@@ -11,7 +12,9 @@ use crate::bootstrap::binary::channel::{
 };
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::prelude::*;
-use crate::relayer::channel::init_channel;
+use crate::relayer::channel::{
+    assert_eventually_channel_established, init_channel, query_channel_end,
+};
 use crate::relayer::connection::{
     assert_eventually_connection_established, init_connection, query_connection_end,
 };
@@ -195,30 +198,32 @@ impl BinaryChainTest for ConnectionExpirationTest {
         let connection_end_b = query_connection_end(&chains.handle_b, &connection_id_b.as_ref())?;
 
         assert_eq(
-            "connection_end status should remain init",
+            "connection end status should remain init",
             connection_end_b.value().state(),
             &ConnectionState::Init,
         )?;
 
         assert_eq(
-            "connection_end should not have counterparty",
-            &connection_end_b.value().counterparty().connection_id(),
+            "connection end should not have counterparty",
+            &connection_end_b.tagged_counterparty_connection_id(),
             &None,
         )?;
 
-        info!("Trying to new connection and worker after previous connection worker failed");
+        info!("Trying to create new connection and worker after previous connection worker failed");
 
         let client_b_to_a_2 = bootstrap_foreign_client(&chains.handle_b, &chains.handle_a)?;
 
         let client_a_to_b_2 = bootstrap_foreign_client(&chains.handle_a, &chains.handle_b)?;
 
-        // The second init connection on an unexpired client should succeed.
+        // Need to spawn refresh client for new clients to make sure they don't expire
 
         let _refresh_task_a = spawn_refresh_client(client_b_to_a_2.clone())
             .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
         let _refresh_task_b = spawn_refresh_client(client_a_to_b_2.clone())
             .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+        // The second init connection on an unexpired client should succeed.
 
         let (connection_id_b, _) = init_connection(
             &chains.handle_a,
@@ -243,36 +248,147 @@ impl BinaryChainTest for ChannelExpirationTest {
         _config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+        let connection = {
+            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        let refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        let connection = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?;
+            bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?
+        };
 
-        refresh_task_a.shutdown_and_wait();
-        refresh_task_b.shutdown_and_wait();
-
-        let _supervisor =
+        let supervisor =
             spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
 
         wait_for_client_expiry();
 
-        info!("Trying to create channel after client is expired");
+        let port_a = tagged_transfer_port();
+        let port_b = tagged_transfer_port();
 
-        init_channel(
-            &chains.handle_a,
-            &chains.handle_b,
-            &chains.client_id_a(),
-            &chains.client_id_b(),
-            &connection.connection_id_a.as_ref(),
-            &connection.connection_id_b.as_ref(),
-            &tagged_transfer_port().as_ref(),
-            &tagged_transfer_port().as_ref(),
-        )?;
+        {
+            info!("Trying to create connection and channel after client is expired");
 
-        crate::suspend();
+            let (connection_id_b, _) = init_connection(
+                &chains.handle_a,
+                &chains.handle_b,
+                &chains.client_b_to_a.tagged_client_id(),
+                &chains.client_a_to_b.tagged_client_id(),
+            )?;
+
+            let (channel_id_b, _) = init_channel(
+                &chains.handle_a,
+                &chains.handle_b,
+                &chains.client_id_a(),
+                &chains.client_id_b(),
+                &connection.connection_id_a.as_ref(),
+                &connection.connection_id_b.as_ref(),
+                &port_a.as_ref(),
+                &port_b.as_ref(),
+            )?;
+
+            info!("Sleeping for 10 seconds to make sure that connection and channel fails to establish");
+
+            sleep(Duration::from_secs(10));
+
+            {
+                let connection_end_b =
+                    query_connection_end(&chains.handle_b, &connection_id_b.as_ref())?;
+
+                assert_eq(
+                    "connection end status should remain init",
+                    connection_end_b.value().state(),
+                    &ConnectionState::Init,
+                )?;
+
+                assert_eq(
+                    "connection end should not have counterparty",
+                    &connection_end_b.tagged_counterparty_connection_id(),
+                    &None,
+                )?;
+            }
+
+            {
+                let channel_end_b =
+                    query_channel_end(&chains.handle_b, &channel_id_b.as_ref(), &port_b.as_ref())?;
+
+                assert_eq(
+                    "channel end status should remain init",
+                    channel_end_b.value().state(),
+                    &ChannelState::Init,
+                )?;
+
+                assert_eq(
+                    "channel end should not have counterparty",
+                    &channel_end_b.tagged_counterparty_channel_id(),
+                    &None,
+                )?;
+            }
+        }
+
+        supervisor.shutdown();
+
+        {
+            info!(
+                "Trying to create new channel and worker after previous connection worker failed"
+            );
+
+            let client_b_to_a_2 = bootstrap_foreign_client(&chains.handle_b, &chains.handle_a)?;
+
+            let client_a_to_b_2 = bootstrap_foreign_client(&chains.handle_a, &chains.handle_b)?;
+
+            // Need to spawn refresh client for new clients to make sure they don't expire
+
+            let _refresh_task_a = spawn_refresh_client(client_b_to_a_2.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+            let _refresh_task_b = spawn_refresh_client(client_a_to_b_2.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+            // let (connection_id_b, _) = init_connection(
+            //     &chains.handle_a,
+            //     &chains.handle_b,
+            //     &client_b_to_a_2.tagged_client_id(),
+            //     &client_a_to_b_2.tagged_client_id(),
+            // )?;
+
+            // let connection_id_a = assert_eventually_connection_established(
+            //     &chains.handle_b,
+            //     &chains.handle_a,
+            //     &connection_id_b.as_ref(),
+            // )?;
+
+            let connection2 = bootstrap_connection(&client_b_to_a_2, &client_a_to_b_2, false)?;
+            let connection_id_a = connection2.connection_id_a;
+            let connection_id_b = connection2.connection_id_b;
+
+            // sleep(Duration::from_secs(10));
+            info!("trying to init channel");
+
+            // let _supervisor =
+            //     spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
+
+            let (channel_id_b_2, _) = init_channel(
+                &chains.handle_a,
+                &chains.handle_b,
+                &client_b_to_a_2.tagged_client_id(),
+                &client_a_to_b_2.tagged_client_id(),
+                &connection_id_a.as_ref(),
+                &connection_id_b.as_ref(),
+                &port_a.as_ref(),
+                &port_b.as_ref(),
+            )?;
+
+            assert_eventually_channel_established(
+                &chains.handle_b,
+                &chains.handle_a,
+                &channel_id_b_2.as_ref(),
+                &port_b.as_ref(),
+            )?;
+        }
+
+        Ok(())
+        // suspend()
     }
 }
 
