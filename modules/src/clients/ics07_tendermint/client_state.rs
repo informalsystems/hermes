@@ -177,8 +177,8 @@ impl ClientState {
         delay_period_time: Duration,
         delay_period_blocks: u64,
     ) -> Result<(), Error> {
-        let time = (processed_time + delay_period_time).map_err(Error::timestamp_overflow)?;
-        if !(current_time == time || current_time.after(&time)) {
+        let earliest_time = (processed_time + delay_period_time).map_err(Error::timestamp_overflow)?;
+        if !(current_time == earliest_time || current_time.after(&earliest_time)) {
             return Err(Error::not_enough_time_elapsed());
         }
 

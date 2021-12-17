@@ -133,10 +133,10 @@ pub trait ClientKeeper {
     /// Called upon successful client update.
     /// Implementations are expected to use this to record the current (host) time as the time at
     /// which this update (or header) was processed.
-    fn store_processed_time(&mut self, client_id: ClientId, height: Height) -> Result<(), Error>;
+    fn store_update_time(&mut self, client_id: ClientId, height: Height) -> Result<(), Error>;
 
     /// Called upon successful client update.
     /// Implementations are expected to use this to record the current (host) height as the height
     /// at which this update (or header) was processed.
-    fn store_processed_height(&mut self, client_id: ClientId, height: Height) -> Result<(), Error>;
+    fn store_update_height(&mut self, client_id: ClientId, height: Height) -> Result<(), Error>;
 }
