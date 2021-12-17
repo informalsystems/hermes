@@ -401,7 +401,7 @@ fn verify_membership(
 ) -> Result<(), Ics02Error> {
     let merkle_path = apply_prefix(prefix, vec![path]).map_err(Error::ics23_error)?;
     let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
-        .map_err(Ics02Error::invalid_consensus_state_proof)?
+        .map_err(Ics02Error::invalid_commitment_proof)?
         .into();
 
     merkle_proof
@@ -424,7 +424,7 @@ fn verify_non_membership(
 ) -> Result<(), Ics02Error> {
     let merkle_path = apply_prefix(prefix, vec![path]).map_err(Error::ics23_error)?;
     let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
-        .map_err(Ics02Error::invalid_consensus_state_proof)?
+        .map_err(Ics02Error::invalid_commitment_proof)?
         .into();
 
     merkle_proof

@@ -173,6 +173,10 @@ define_error! {
             [ Ics23Error ]
             | _ | { "invalid proof for the consensus state" },
 
+        InvalidCommitmentProof
+            [ Ics23Error ]
+            | _ | { "invalid commitment proof bytes" },
+
         Tendermint
             [ Ics07Error ]
             | _ | { "tendermint error" },
