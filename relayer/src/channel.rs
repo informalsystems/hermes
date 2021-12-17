@@ -23,6 +23,7 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
+use crate::chain::tx::TrackedMsgs;
 use crate::channel::version::ResolveContext;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
