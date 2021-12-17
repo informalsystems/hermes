@@ -165,13 +165,13 @@ define_error! {
         InvalidAddress
             | _ | { "invalid address" },
 
-        InvalidClientProof
+        InvalidUpgradeClientProof
             [ Ics23Error ]
-            | _ | { "invalid proof for the client state" },
+            | _ | { "invalid proof for the upgraded client state" },
 
-        InvalidConsensusStateProof
+        InvalidUpgradeConsensusStateProof
             [ Ics23Error ]
-            | _ | { "invalid proof for the consensus state" },
+            | _ | { "invalid proof for the upgraded consensus state" },
 
         InvalidCommitmentProof
             [ Ics23Error ]
