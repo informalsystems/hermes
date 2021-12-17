@@ -69,7 +69,7 @@ pub struct MockContext {
     /// The set of all clients, indexed by their id.
     clients: BTreeMap<ClientId, MockClientRecord>,
 
-    /// Tracks the processed time for the clients
+    /// Tracks the processed time for clients header updates
     client_processed_times: BTreeMap<(ClientId, Height), Timestamp>,
 
     /// Tracks the processed height for the clients

@@ -19,7 +19,7 @@ define_error! {
             |_| { "empty merkle proof" },
 
         EmptyMerkleRoot
-            |_| { "empty merkle proof" },
+            |_| { "empty merkle root" },
 
         EmptyVerifiedValue
             |_| { "empty verified value" },

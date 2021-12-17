@@ -72,10 +72,10 @@ pub trait ChannelReader {
     /// Returns the current timestamp of the local chain.
     fn host_timestamp(&self) -> Timestamp;
 
-    /// Returns the time when the client state of the given identifier is stored
+    /// Returns the time when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
     fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, Error>;
 
-    /// Returns the height when the client state of the given identifier is stored
+    /// Returns the height when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
     fn client_update_height(&self, client_id: &ClientId, height: Height) -> Result<Height, Error>;
 
     /// Returns a counter on the number of channel ids have been created thus far.
