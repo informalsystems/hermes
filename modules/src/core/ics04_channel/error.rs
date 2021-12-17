@@ -325,19 +325,25 @@ define_error! {
             },
 
         ProcessedTimeNotFound
-            { client_id: ClientId }
+            {
+                client_id: ClientId,
+                height: Height,
+            }
             | e | {
                 format_args!(
-                    "Processed time for the client {0} not found",
-                    e.client_id)
+                    "Processed time for the client {0} at height {1} not found",
+                    e.client_id, e.height)
             },
 
         ProcessedHeightNotFound
-            { client_id: ClientId }
+            {
+                client_id: ClientId,
+                height: Height,
+            }
             | e | {
                 format_args!(
-                    "Processed height for the client {0} not found",
-                    e.client_id)
+                    "Processed height for the client {0} at height {1} not found",
+                    e.client_id, e.height)
             },
 
         ImplementationSpecific

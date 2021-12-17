@@ -684,7 +684,10 @@ impl ChannelReader for MockContext {
             .get(&(client_id.clone(), height))
         {
             Some(time) => Ok(*time),
-            None => Err(Ics04Error::processed_time_not_found(client_id.clone())),
+            None => Err(Ics04Error::processed_time_not_found(
+                client_id.clone(),
+                height,
+            )),
         }
     }
 
@@ -698,7 +701,10 @@ impl ChannelReader for MockContext {
             .get(&(client_id.clone(), height))
         {
             Some(height) => Ok(*height),
-            None => Err(Ics04Error::processed_height_not_found(client_id.clone())),
+            None => Err(Ics04Error::processed_height_not_found(
+                client_id.clone(),
+                height,
+            )),
         }
     }
 

@@ -443,10 +443,10 @@ fn verify_delay_passed(
     let client_id = connection_end.client_id();
     let processed_time = ctx
         .client_update_time(client_id, height)
-        .map_err(|_| Error::processed_time_not_found(client_id.clone()))?;
+        .map_err(|_| Error::processed_time_not_found(client_id.clone(), height))?;
     let processed_height = ctx
         .client_update_height(client_id, height)
-        .map_err(|_| Error::processed_height_not_found(client_id.clone()))?;
+        .map_err(|_| Error::processed_height_not_found(client_id.clone(), height))?;
 
     let delay_period_time = connection_end.delay_period();
     let delay_period_height = ctx.block_delay(delay_period_time);
