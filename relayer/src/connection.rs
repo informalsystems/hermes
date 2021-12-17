@@ -6,8 +6,7 @@ use flex_error::define_error;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use prost_types::Any;
 use serde::Serialize;
-use tracing::debug;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::{
@@ -653,8 +652,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 }
             }
             Ok((Some(ev), handshake_completed)) => {
-                debug!(
-                    "connection handshake step completed with events {:#?}\n",
+                info!(
+                    "connection handshake step completed with events: {:#?}\n",
                     ev
                 );
                 RetryResult::Ok(handshake_completed)

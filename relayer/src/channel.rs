@@ -671,7 +671,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 }
             }
             Ok((Some(ev), handshake_completed)) => {
-                debug!("channel handshake step completed with events {:#?}\n", ev);
+                info!("channel handshake step completed with events: {:#?}\n", ev);
                 RetryResult::Ok(handshake_completed)
             }
             Ok((None, handshake_completed)) => RetryResult::Ok(handshake_completed),
