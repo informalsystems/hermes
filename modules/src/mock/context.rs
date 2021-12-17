@@ -674,7 +674,7 @@ impl ChannelReader for MockContext {
         self.timestamp
     }
 
-    fn processed_time(
+    fn client_update_time(
         &self,
         client_id: &ClientId,
         height: Height,
@@ -688,7 +688,11 @@ impl ChannelReader for MockContext {
         }
     }
 
-    fn processed_height(&self, client_id: &ClientId, height: Height) -> Result<Height, Ics04Error> {
+    fn client_update_height(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Height, Ics04Error> {
         match self
             .client_processed_heights
             .get(&(client_id.clone(), height))

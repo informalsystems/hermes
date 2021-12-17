@@ -442,10 +442,10 @@ fn verify_delay_passed(
 
     let client_id = connection_end.client_id();
     let processed_time = ctx
-        .processed_time(client_id, height)
+        .client_update_time(client_id, height)
         .map_err(|_| Error::processed_time_not_found(client_id.clone()))?;
     let processed_height = ctx
-        .processed_height(client_id, height)
+        .client_update_height(client_id, height)
         .map_err(|_| Error::processed_height_not_found(client_id.clone()))?;
 
     let delay_period_time = connection_end.delay_period();
