@@ -258,7 +258,7 @@ impl BinaryChainTest for ChannelExpirationTest {
             bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?
         };
 
-        let supervisor =
+        let _supervisor =
             spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
 
         wait_for_client_expiry();
@@ -326,8 +326,6 @@ impl BinaryChainTest for ChannelExpirationTest {
             }
         }
 
-        supervisor.shutdown();
-
         {
             info!(
                 "Trying to create new channel and worker after previous connection worker failed"
@@ -345,28 +343,18 @@ impl BinaryChainTest for ChannelExpirationTest {
             let _refresh_task_b = spawn_refresh_client(client_a_to_b_2.clone())
                 .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            // let (connection_id_b, _) = init_connection(
-            //     &chains.handle_a,
-            //     &chains.handle_b,
-            //     &client_b_to_a_2.tagged_client_id(),
-            //     &client_a_to_b_2.tagged_client_id(),
-            // )?;
+            let (connection_id_b, _) = init_connection(
+                &chains.handle_a,
+                &chains.handle_b,
+                &client_b_to_a_2.tagged_client_id(),
+                &client_a_to_b_2.tagged_client_id(),
+            )?;
 
-            // let connection_id_a = assert_eventually_connection_established(
-            //     &chains.handle_b,
-            //     &chains.handle_a,
-            //     &connection_id_b.as_ref(),
-            // )?;
-
-            let connection2 = bootstrap_connection(&client_b_to_a_2, &client_a_to_b_2, false)?;
-            let connection_id_a = connection2.connection_id_a;
-            let connection_id_b = connection2.connection_id_b;
-
-            // sleep(Duration::from_secs(10));
-            info!("trying to init channel");
-
-            // let _supervisor =
-            //     spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
+            let connection_id_a = assert_eventually_connection_established(
+                &chains.handle_b,
+                &chains.handle_a,
+                &connection_id_b.as_ref(),
+            )?;
 
             let (channel_id_b_2, _) = init_channel(
                 &chains.handle_a,
@@ -388,7 +376,6 @@ impl BinaryChainTest for ChannelExpirationTest {
         }
 
         Ok(())
-        // suspend()
     }
 }
 
