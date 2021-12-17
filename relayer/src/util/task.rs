@@ -4,7 +4,7 @@ use core::time::Duration;
 use crossbeam_channel::{bounded, Sender};
 use std::sync::{Arc, RwLock};
 use std::thread;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use crate::util::lock::LockExt;
 
@@ -125,7 +125,7 @@ pub fn spawn_background_task<E: Display>(
         }
 
         *write_stopped.acquire_write() = true;
-        debug!("task {} has terminated", task_name);
+        info!("task {} has terminated", task_name);
     });
 
     TaskHandle {

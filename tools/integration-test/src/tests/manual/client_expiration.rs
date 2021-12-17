@@ -11,6 +11,7 @@ use crate::bootstrap::binary::channel::{
     bootstrap_channel_with_chains, bootstrap_channel_with_connection,
 };
 use crate::bootstrap::binary::connection::bootstrap_connection;
+use crate::ibc::denom::derive_ibc_denom;
 use crate::prelude::*;
 use crate::relayer::channel::{
     assert_eventually_channel_established, init_channel, query_channel_end,
@@ -385,53 +386,100 @@ impl BinaryChainTest for PacketExpirationTest {
         _config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+        let channels = {
+            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        let refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        let channels = bootstrap_channel_with_chains(
-            &chains,
-            &PortId::transfer(),
-            &PortId::transfer(),
-            false,
-        )?;
-
-        refresh_task_a.shutdown_and_wait();
-        refresh_task_b.shutdown_and_wait();
+            bootstrap_channel_with_chains(&chains, &PortId::transfer(), &PortId::transfer(), false)?
+        };
 
         wait_for_client_expiry();
 
         let _supervisor =
             spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
 
-        chains.node_a.chain_driver().transfer_token(
-            &channels.port_a.as_ref(),
-            &channels.channel_id_a.as_ref(),
-            &chains.node_a.wallets().user1().address(),
-            &chains.node_b.wallets().user1().address(),
-            100,
-            &chains.node_a.denom(),
+        let denom_a = chains.node_a.denom();
+        let balance_a = chains
+            .node_a
+            .chain_driver()
+            .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
+
+        let denom_b = derive_ibc_denom(
+            &channels.port_b.as_ref(),
+            &channels.channel_id_b.as_ref(),
+            &denom_a,
         )?;
 
-        // The second IBC transfer should be ignored, as the packet worker
-        // is terminated
+        {
+            info!("sending first IBC transfer after client is expired. this should cause packet worker to fail");
 
-        sleep(Duration::from_secs(15));
+            chains.node_a.chain_driver().transfer_token(
+                &channels.port_a.as_ref(),
+                &channels.channel_id_a.as_ref(),
+                &chains.node_a.wallets().user1().address(),
+                &chains.node_b.wallets().user1().address(),
+                100,
+                &chains.node_a.denom(),
+            )?;
 
-        info!("sending a second IBC transfer");
+            sleep(Duration::from_secs(10));
 
-        chains.node_a.chain_driver().transfer_token(
-            &channels.port_a.as_ref(),
-            &channels.channel_id_a.as_ref(),
-            &chains.node_a.wallets().user1().address(),
-            &chains.node_b.wallets().user1().address(),
-            100,
-            &chains.node_a.denom(),
-        )?;
+            let balance_a_2 = chains
+                .node_a
+                .chain_driver()
+                .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
 
-        suspend();
+            assert_eq(
+                "balance on wallet A should decrease",
+                &balance_a_2,
+                &(balance_a - 100),
+            )?;
+
+            let balance_b = chains.node_b.chain_driver().query_balance(
+                &chains.node_b.wallets().user1().address(),
+                &denom_b.as_ref(),
+            )?;
+
+            assert_eq("balance on wallet B should remain zero", &balance_b, &0)?;
+        }
+
+        {
+            info!("sending a second IBC transfer. there should be no log from packet worker from this point on");
+
+            chains.node_a.chain_driver().transfer_token(
+                &channels.port_a.as_ref(),
+                &channels.channel_id_a.as_ref(),
+                &chains.node_a.wallets().user1().address(),
+                &chains.node_b.wallets().user1().address(),
+                100,
+                &chains.node_a.denom(),
+            )?;
+
+            sleep(Duration::from_secs(10));
+
+            let balance_a_2 = chains
+                .node_a
+                .chain_driver()
+                .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
+
+            assert_eq(
+                "balance on wallet A should decrease",
+                &balance_a_2,
+                &(balance_a - 200),
+            )?;
+
+            let balance_b = chains.node_b.chain_driver().query_balance(
+                &chains.node_b.wallets().user1().address(),
+                &denom_b.as_ref(),
+            )?;
+
+            assert_eq("balance on wallet B should remain zero", &balance_b, &0)?;
+        }
+
+        Ok(())
     }
 }
 
