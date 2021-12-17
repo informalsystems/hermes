@@ -5,7 +5,7 @@ use flex_error::{define_error, TraceError};
 use crate::core::ics23_commitment::error::Error as Ics23Error;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;
-use crate::timestamp::TimestampOverflowError;
+use crate::timestamp::{Timestamp, TimestampOverflowError};
 use crate::Height;
 use tendermint::account::Id;
 use tendermint::hash::Hash;
@@ -154,10 +154,18 @@ define_error! {
             |_| { "timestamp overflowed" },
 
         NotEnoughTimeElapsed
-            |_| { "not enough time elapsed" },
+            {
+                current_time: Timestamp,
+                earliest_time: Timestamp,
+            }
+            |_| { "not enough time elapsed, current timestamp {0} is still less than earliest acceptable timestamp {1}" },
 
         NotEnoughBlocksElapsed
-            |_| { "not enough blocks elapsed" },
+            {
+                current_height: Height,
+                earliest_height: Height,
+            }
+            |_| { "not enough blocks elapsed, current height {0} is still less than earliest acceptable height {1}" },
 
         InvalidHeaderHeight
             { height: Height }

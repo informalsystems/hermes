@@ -177,13 +177,18 @@ impl ClientState {
         delay_period_time: Duration,
         delay_period_blocks: u64,
     ) -> Result<(), Error> {
-        let time = (processed_time + delay_period_time).map_err(Error::timestamp_overflow)?;
-        if !(current_time == time || current_time.after(&time)) {
-            return Err(Error::not_enough_time_elapsed());
+        let earliest_time =
+            (processed_time + delay_period_time).map_err(Error::timestamp_overflow)?;
+        if !(current_time == earliest_time || current_time.after(&earliest_time)) {
+            return Err(Error::not_enough_time_elapsed(current_time, earliest_time));
         }
 
-        if current_height < processed_height.add(delay_period_blocks) {
-            return Err(Error::not_enough_blocks_elapsed());
+        let earliest_height = processed_height.add(delay_period_blocks);
+        if current_height < earliest_height {
+            return Err(Error::not_enough_blocks_elapsed(
+                current_height,
+                earliest_height,
+            ));
         }
 
         Ok(())
