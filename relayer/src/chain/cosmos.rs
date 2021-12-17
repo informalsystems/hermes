@@ -390,34 +390,33 @@ impl CosmosSdkChain {
         proto_msgs: Vec<Any>,
         retry_counter: u32,
     ) -> Result<Response, Error> {
-        // If this is a retry, then backoff & re-fetch the account s.n.
-        if retry_counter > 0 {
-            let backoff =
-                (retry_counter as u64) * retry_strategy::BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
-            thread::sleep(Duration::from_millis(backoff));
-            self.refresh_account()?;
-        }
-
         let account_sequence = self.account_sequence()?;
 
         match self.send_tx_with_account_sequence(proto_msgs.clone(), account_sequence) {
-            // Gas estimation failed with retry-able error.
-            Err(e) if can_retry_tx_simulation(&e) => {
-                if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
-                    warn!("send_tx failed at estimate_gas step due to incorrect account sequence. retrying ({}/{})",
-                        retry_counter + 1, retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY);
-                    self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
-                } else {
-                    error!("send_tx failed due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
-                    Err(e)
-                }
+            // Gas estimation failed with acct. s.n. mismatch.
+            // This indicates that the full node did not yet push the previous tx out of its
+            // mempool. Possible explanations: fees too low, network congested, or full node
+            // congested. Whichever the case, it is more expedient in production to drop the tx
+            // and refresh the s.n., to allow proceeding to the other transactions.
+            Err(e) if mismatching_account_sequence_number(&e) => {
+                warn!("send_tx failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
+                self.refresh_account()?;
+                Err(e)
             }
 
-            // Gas estimation succeeded. Broadcasting failed with retry-able error.
+            // Gas estimation succeeded. Broadcasting failed with a retry-able error.
             Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
                 if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
+                    let retry_counter = retry_counter + 1;
                     warn!("send_tx failed at broadcast step with incorrect account sequence. retrying ({}/{})",
-                        retry_counter + 1, retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY);
+                        retry_counter, retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY);
+                    // Backoff & re-fetch the account s.n.
+                    let backoff = (retry_counter as u64)
+                        * retry_strategy::BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
+                    thread::sleep(Duration::from_millis(backoff));
+                    self.refresh_account()?;
+
+                    // Now trigger the retry.
                     self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
                 } else {
                     // If after the max retry we still get an account sequence mismatch error,
@@ -2506,7 +2505,10 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
     }
 }
 
-fn can_retry_tx_simulation(e: &Error) -> bool {
+/// Determine whether the given error yielded by `tx_simulate`
+/// indicates that the current sequence number cached in Hermes
+/// may be out-of-sync with the full node's version of the s.n.
+fn mismatching_account_sequence_number(e: &Error) -> bool {
     use crate::error::ErrorDetail::*;
 
     match e.detail() {
