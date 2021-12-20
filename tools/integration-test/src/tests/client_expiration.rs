@@ -143,10 +143,10 @@ impl BinaryChainTest for ChannelExpirationTest {
             bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?
         };
 
+        wait_for_client_expiry();
+
         let _supervisor =
             spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
-
-        wait_for_client_expiry();
 
         let port_a = tagged_transfer_port();
         let port_b = tagged_transfer_port();
@@ -251,6 +251,15 @@ impl BinaryChainTest for ChannelExpirationTest {
                 &port_a.as_ref(),
                 &port_b.as_ref(),
             )?;
+
+            // At this point the misbehavior task may raise error, because it
+            // try to check on a client update event that is already expired.
+            // This happens because the misbehavior task is only started when
+            // there is at least one channel in it, _not_ when the client
+            // is created.
+            //
+            // Source of error:
+            // https://github.com/informalsystems/tendermint-rs/blob/c45ea8c82773de1946f7ae2eece13150f07ca5fe/light-client/src/light_client.rs#L216-L222
 
             assert_eventually_channel_established(
                 &chains.handle_b,
@@ -373,18 +382,17 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
         _config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
-
-        let refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
-
         // Create a connection before the IBC client expires, so that we can try create
         // new channel with the connection after the client expired.
-        let connection = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?;
+        let connection = {
+            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        refresh_task_a.shutdown_and_wait();
-        refresh_task_b.shutdown_and_wait();
+            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+            bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?
+        };
 
         wait_for_client_expiry();
 

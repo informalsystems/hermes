@@ -50,6 +50,15 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
     receiver: Receiver<WorkerCmd>,
     client: ForeignClient<ChainB, ChainA>,
 ) -> Option<TaskHandle> {
+    if client.is_expired_or_frozen() {
+        warn!(
+            "skipping detect misbehavior task on frozen client: {}",
+            client.id()
+        );
+        return None;
+    }
+
+    debug!("[{}] doing first misbehavior check", client);
     match client.detect_misbehaviour_and_submit_evidence(None) {
         MisbehaviourResults::ValidClient => {}
         MisbehaviourResults::VerificationError => {}
