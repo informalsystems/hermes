@@ -60,6 +60,13 @@ pub fn get_all_events(
                         chan_event.set_height(height);
                         tracing::trace!("extracted ibc_channel event {:?}", chan_event);
                         vals.push((height, chan_event));
+                        if matches!(chan_event, IbcEvent::SendPacket(_)) {
+                            // TODO(Mikhail): Extract the tx hash & print it here.
+                            let pre_tx_hash =
+                                result.events
+                                    .map(|events| events.get("tx.hash"))
+                                    .flatten();
+                        }
                     }
                 }
             }
