@@ -542,8 +542,8 @@ impl GrpcStatusSubdetail {
     /// predicate to be used at the `broadcast_tx_sync` step
     /// is different & relies on parsing the Response error code.
     pub fn is_account_sequence_mismatch(&self) -> bool {
-        // SDK 0.44 changed the status from `InvalidArgument` to `Unknown`
-        // Workaround since this is unstable: We'll match only on the status message.
+        // The code changed in SDK 0.44 from `InvalidArgument` to `Unknown`.
+        // Workaround: Ignore code. We'll match only on the status message.
         // if self.status.code() != tonic::Code::InvalidArgument {
         //     return false;
         // }

@@ -125,7 +125,7 @@ mod retry_strategy {
 
     // Maximum number of retries for send_tx in the case of
     // an account sequence mismatch.
-    pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 10;
+    pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 5;
 
     // Backoff multiplier to apply while retrying in the case
     // of account sequence mismatch.
@@ -373,18 +373,22 @@ impl CosmosSdkChain {
         ))
     }
 
-    /// Try to send_tx with retry on account sequence error.
-    /// An account sequence error can occur if the cached account sequence of
-    /// the relayer somehow get outdated, or when the relayer wallet is used
-    /// concurrently elsewhere.
-    /// When there is an account sequence mismatch, we refetch the account sequence
-    /// from the chain and retry sending the transaction again with the new sequence.
+    /// Try to `send_tx` with retry on account sequence error.
+    /// An account sequence error can occur if the account sequence that
+    /// the relayer caches becomes outdated. This may happen if the relayer
+    /// wallet is used concurrently elsewhere, or when tx fees are mis-configured
+    /// leading to transactions hanging in the mempool.
     ///
-    /// Account sequence mismatch can occur at two separate steps:
+    /// Account sequence mismatch error can occur at two separate steps:
     ///   1. as Err variant, propagated from the `estimate_gas` step.
     ///   2. as an Ok variant, with an Code::Err response, propagated from
     ///     the `broadcast_tx_sync` step.
-    /// We cover and treat both of these cases.
+    ///
+    /// We treat both cases by re-fetching the account sequence number
+    /// from the full node.
+    /// Upon case #1, we do not retry submitting the same tx (retry happens
+    /// nonetheless at the worker `step` level). Upon case #2, we retry
+    /// submitting the same transaction.
     fn send_tx_with_account_sequence_retry(
         &mut self,
         proto_msgs: Vec<Any>,
@@ -401,6 +405,9 @@ impl CosmosSdkChain {
             Err(e) if mismatching_account_sequence_number(&e) => {
                 warn!("send_tx failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
                 self.refresh_account()?;
+                // Note: propagating error here can lead to bug:
+                // https://github.com/informalsystems/ibc-rs/issues/1153
+                // But periodic packet clearing will catch any dropped packets.
                 Err(e)
             }
 
@@ -416,7 +423,7 @@ impl CosmosSdkChain {
                     thread::sleep(Duration::from_millis(backoff));
                     self.refresh_account()?;
 
-                    // Now trigger the retry.
+                    // Now retry.
                     self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
                 } else {
                     // If after the max retry we still get an account sequence mismatch error,
