@@ -37,7 +37,7 @@ serde_json = { version = "1" }
 bytes = "1.1.0"
 prost = { version = "0.9" }
 prost-types = { version = "0.9" }
-futures = "0.3.17"
+futures = "0.3.19"
 crossbeam-channel = "0.5.1"
 k256 = { version = "0.9.6", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
