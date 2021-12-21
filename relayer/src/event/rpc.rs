@@ -58,15 +58,20 @@ pub fn get_all_events(
                 if *query == queries::ibc_channel().to_string() {
                     if let Some(mut chan_event) = ChannelEvents::try_from_tx(abci_event) {
                         chan_event.set_height(height);
-                        tracing::trace!("extracted ibc_channel event {:?}", chan_event);
-                        vals.push((height, chan_event));
+                        let _span = tracing::trace_span!("ibc_channel event");
+                        tracing::trace!("extracted {:?}", chan_event);
                         if matches!(chan_event, IbcEvent::SendPacket(_)) {
-                            // TODO(Mikhail): Extract the tx hash & print it here.
-                            let pre_tx_hash =
-                                result.events
-                                    .map(|events| events.get("tx.hash"))
-                                    .flatten();
+                            // Should be the same as the hash of tx_result.tx?
+                            if let Some(hashes) = result
+                                .events
+                                .as_ref()
+                                .map(|events| events.get("tx.hash").cloned())
+                                .flatten()
+                            {
+                                tracing::trace!(event = "SendPacket", "tx hashes: {:?}", hashes);
+                            }
                         }
+                        vals.push((height, chan_event));
                     }
                 }
             }
