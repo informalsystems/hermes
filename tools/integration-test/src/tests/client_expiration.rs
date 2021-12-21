@@ -26,35 +26,33 @@ use crate::relayer::connection::{
 const CLIENT_EXPIRY: Duration = Duration::from_secs(15);
 
 /**
-   A manual test to verify that the channel worker is properly terminated
-   instead of looping indefinitely when it is not possible to perform
-   channel handshake due to the client being expired or frozen.
+    A test to verify that the connection and channel workers are properly
+    terminated instead of looping indefinitely when it is not possible to
+    perform handshake due to the client being expired or frozen.
 
-   Since the test involves long-running background tasks, it has to
-   be verified manually by inspecting the logs. Run the test with
-   the following command:
+    Since the test involves long-running background tasks, it has to
+    be verified manually by inspecting the logs. Run the test with
+    the following command:
 
-   ```bash
-   RUST_BACKTRACE=0 RUST_LOG=info cargo test --features manual \
-     -p ibc-integration-test -- test_channel_expiration
-   ```
+    ```bash
+    RUST_BACKTRACE=0 RUST_LOG=info cargo test \
+        -p ibc-integration-test -- test_channel_expiration
+    ```
 
-   And you should see simple failure toward the end of the test that looks like:
+    And you should see error logs such as:
 
-   ```log
-    INFO ibc_integration_test::tests::manual::client_expiration: Trying to create channel after client is expired
-    INFO ibc_relayer::chain::cosmos: [ibc-beta-f6611435] waiting for commit of tx hashes(s) 1360595FB238142B7EEF672D2267A6874F6EF0E1C2FAC8CCC72B44EDC6AF8A49
-    WARN ibc_integration_test::util::suspend: suspending the test indefinitely. you can still interact with any spawned chains and relayers
-    ERROR ibc_relayer::channel: failed to establish channel handshake on frozen client:
-    0: failed during an operation on client (07-tendermint-0) hosted by chain (ibc-alpha-995f3fa8)
-    1: client 07-tendermint-0 on chain id ibc-alpha-995f3fa8 is expired or frozen
-    ERROR ibc_relayer::util::task: aborting task channel_worker after encountering fatal error:
+    ```log
+    ERROR ibc_relayer::connection: failed to establish connection handshake on frozen client:
+    0: failed during an operation on client (07-tendermint-0) hosted by chain (ibc-beta-6fe01a9b)
+    1: client 07-tendermint-0 on chain id ibc-beta-6fe01a9b is expired or frozen
+    ERROR ibc_relayer::util::task: aborting task ConnectionWorker(connection::connection-1:ibc-beta-6fe01a9b -> ibc-alpha-43544e24) after encountering fatal error:
     0: Worker failed after 1 retries
-   ```
+    INFO ibc_relayer::util::task: task ConnectionWorker(connection::connection-1:ibc-beta-6fe01a9b -> ibc-alpha-43544e24) has terminated
+    ```
 
-   The error above should not repeat more than once. In the original code,
-   the connection worker would keep retrying and indefinitely flooding
-   the log with errors.
+    The error messages should not repeat more than once. In the original code,
+    the connection worker would keep retrying and indefinitely flooding
+    the log with errors.
 */
 #[test]
 fn test_channel_expiration() -> Result<(), Error> {
