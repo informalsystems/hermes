@@ -92,7 +92,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
             timeout_height: Some(domain_msg.timeout_height.into()),
-            timeout_timestamp: domain_msg.timeout_timestamp.as_nanoseconds(),
+            timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
         }
     }
 }

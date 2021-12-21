@@ -1,256 +1,209 @@
 use core::time::Duration;
-
 use crossbeam_channel::Receiver;
 use ibc::Height;
-use tracing::{error, info, trace, warn};
+use std::sync::Arc;
+use tracing::{error, trace};
 
-use crate::{
-    chain::handle::{ChainHandle, ChainHandlePair},
-    config::Packets as PacketsConfig,
-    link::{Link, LinkParameters, RelaySummary},
-    object::Packet,
-    telemetry,
-    util::retry::{retry_with_index, RetryResult},
-    worker::retry_strategy,
-};
+use crate::chain::handle::ChainHandle;
+use crate::link::{Link, RelaySummary};
+use crate::object::Packet;
+use crate::telemetry;
+use crate::util::retry::{retry_with_index, RetryResult};
+use crate::util::task::{spawn_background_task, TaskError, TaskHandle};
+use crate::worker::retry_strategy;
 
 use super::error::RunError;
 use super::WorkerCmd;
 
-enum Step {
-    Success(RelaySummary),
-    Shutdown,
+/// Whether or not to clear pending packets at this `step` for the given height.
+/// Packets are cleared on the first iteration if `clear_on_start` is true.
+/// Subsequently, packets are cleared only if `clear_interval` is not `0` and
+/// if we have reached the interval.
+fn should_clear_packets(
+    is_first_run: &mut bool,
+    clear_on_start: bool,
+    clear_interval: u64,
+    height: Height,
+) -> bool {
+    if *is_first_run {
+        *is_first_run = false;
+        clear_on_start
+    } else {
+        clear_interval != 0 && height.revision_height % clear_interval == 0
+    }
 }
 
-#[derive(Debug)]
-pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
-    path: Packet,
-    chains: ChainHandlePair<ChainA, ChainB>,
+pub fn spawn_packet_cmd_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
     cmd_rx: Receiver<WorkerCmd>,
-    packets_cfg: PacketsConfig,
-    first_run: bool,
+    link: Arc<Link<ChainA, ChainB>>,
+    clear_on_start: bool,
+    clear_interval: u64,
+    path: Packet,
+) -> TaskHandle {
+    let mut is_first_run: bool = true;
+    spawn_background_task(
+        format!("PacketCmdWorker({})", link.a_to_b),
+        Some(Duration::from_millis(200)),
+        move || {
+            if let Ok(cmd) = cmd_rx.try_recv() {
+                retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
+                    handle_packet_cmd(
+                        &mut is_first_run,
+                        &link,
+                        clear_on_start,
+                        clear_interval,
+                        &path,
+                        cmd.clone(),
+                        index,
+                    )
+                })
+                .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
+            }
+
+            Ok(())
+        },
+    )
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
-    pub fn new(
-        path: Packet,
-        chains: ChainHandlePair<ChainA, ChainB>,
-        cmd_rx: Receiver<WorkerCmd>,
-        packets_cfg: PacketsConfig,
-    ) -> Self {
-        Self {
-            path,
-            chains,
-            cmd_rx,
-            packets_cfg,
-            first_run: true,
-        }
-    }
+pub fn spawn_packet_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+    path: Packet,
+    link: Arc<Link<ChainA, ChainB>>,
+) -> TaskHandle {
+    spawn_background_task(
+        format!("PacketWorker({})", link.a_to_b),
+        Some(Duration::from_millis(500)),
+        move || {
+            link.a_to_b
+                .refresh_schedule()
+                .map_err(|e| TaskError::Ignore(RunError::link(e)))?;
 
-    /// Whether or not to clear pending packets at this `step` for the given height.
-    /// Packets are cleared on the first iteration if `clear_on_start` is true.
-    /// Subsequently, packets are cleared only if `clear_interval` is not `0` and
-    /// if we have reached the interval.
-    fn clear_packets(&mut self, height: Height) -> bool {
-        if self.first_run {
-            self.first_run = false;
-            self.packets_cfg.clear_on_start
-        } else {
-            self.packets_cfg.clear_interval != 0
-                && height.revision_height % self.packets_cfg.clear_interval == 0
-        }
-    }
+            link.a_to_b
+                .execute_schedule()
+                .map_err(|e| TaskError::Ignore(RunError::link(e)))?;
 
-    /// Run the event loop for events associated with a [`Packet`].
-    pub fn run(mut self) -> Result<(), RunError> {
-        let mut link = Link::new_from_opts(
-            self.chains.a.clone(),
-            self.chains.b.clone(),
-            LinkParameters {
-                src_port_id: self.path.src_port_id.clone(),
-                src_channel_id: self.path.src_channel_id.clone(),
-            },
-            self.packets_cfg.tx_confirmation,
-        )
-        .map_err(RunError::link)?;
+            let summary = link.a_to_b.process_pending_txs();
 
-        let is_closed = link.is_closed().map_err(RunError::link)?;
-
-        // TODO: Do periodical checks that the link is closed (upon every retry in the loop).
-        if is_closed {
-            warn!("channel is closed, exiting");
-            return Ok(());
-        }
-
-        loop {
-            const BACKOFF: Duration = Duration::from_millis(200);
-
-            // Pop-out any unprocessed commands
-            // If there are no incoming commands, it's safe to backoff.
-            let maybe_cmd = crossbeam_channel::select! {
-                recv(self.cmd_rx) -> cmd => cmd.ok(),
-                recv(crossbeam_channel::after(BACKOFF)) -> _ => None,
-            };
-
-            let result = retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
-                self.step(maybe_cmd.clone(), &mut link, index)
-            });
-
-            match result {
-                Ok(Step::Success(summary)) => {
-                    if !summary.is_empty() {
-                        trace!("Packet worker produced relay summary: {:?}", summary);
-                    }
-                    telemetry!(self.packet_metrics(&summary));
-                }
-
-                Ok(Step::Shutdown) => {
-                    info!(path = %self.path.short_name(), "shutting down Packet worker");
-                    return Ok(());
-                }
-
-                Err(retries) => {
-                    return Err(RunError::retry(retries));
-                }
+            if !summary.is_empty() {
+                trace!("Packet worker produced relay summary: {:?}", summary);
             }
-        }
-    }
 
-    /// Receives worker commands, which may be:
-    ///     - IbcEvent => then it updates schedule
-    ///     - NewBlock => schedules packet clearing
-    ///     - Shutdown => exits
-    ///
-    /// Regardless of the incoming command, this method
-    /// also refreshes and executes any scheduled operational
-    /// data that is ready.
-    fn step(
-        &mut self,
-        cmd: Option<WorkerCmd>,
-        link: &mut Link<ChainA, ChainB>,
-        index: u64,
-    ) -> RetryResult<Step, u64> {
-        if let Some(cmd) = cmd {
-            let result = match cmd {
-                WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
+            telemetry!(packet_metrics(&path, &summary));
 
-                // Handle the arrival of an event signaling that the
-                // source chain has advanced to a new block.
-                WorkerCmd::NewBlock {
-                    height,
-                    new_block: _,
-                } => {
-                    // Schedule the clearing of pending packets. This may happen once at start,
-                    // and may be _forced_ at predefined block intervals.
-                    link.a_to_b
-                        .schedule_packet_clearing(Some(height), self.clear_packets(height))
-                }
+            Ok(())
+        },
+    )
+}
 
-                WorkerCmd::ClearPendingPackets => link.a_to_b.schedule_packet_clearing(None, true),
+/// Receives worker commands, which may be:
+///     - IbcEvent => then it updates schedule
+///     - NewBlock => schedules packet clearing
+///     - Shutdown => exits
+///
+/// Regardless of the incoming command, this method
+/// also refreshes and executes any scheduled operational
+/// data that is ready.
+fn handle_packet_cmd<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+    is_first_run: &mut bool,
+    link: &Link<ChainA, ChainB>,
+    clear_on_start: bool,
+    clear_interval: u64,
+    path: &Packet,
+    cmd: WorkerCmd,
+    index: u64,
+) -> RetryResult<(), u64> {
+    let result = match cmd {
+        WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
 
-                WorkerCmd::Shutdown => {
-                    return RetryResult::Ok(Step::Shutdown);
-                }
-            };
+        // Handle the arrival of an event signaling that the
+        // source chain has advanced to a new block.
+        WorkerCmd::NewBlock {
+            height,
+            new_block: _,
+        } => {
+            let do_clear_packet =
+                should_clear_packets(is_first_run, clear_on_start, clear_interval, height);
 
-            if let Err(e) = result {
-                error!(
-                    path = %self.path.short_name(),
-                    "[{}] worker: handling command encountered error: {}",
-                    link.a_to_b, e
-                );
-
-                return RetryResult::Retry(index);
-            }
+            // Schedule the clearing of pending packets. This may happen once at start,
+            // and may be _forced_ at predefined block intervals.
+            link.a_to_b
+                .schedule_packet_clearing(Some(height), do_clear_packet)
         }
 
-        if let Err(e) = link
-            .a_to_b
-            .refresh_schedule()
-            .and_then(|_| link.a_to_b.execute_schedule())
-        {
-            error!(
-                "[{}] worker: schedule execution encountered error: {}",
-                link.a_to_b, e
-            );
-            return RetryResult::Retry(index);
-        }
+        WorkerCmd::ClearPendingPackets => link.a_to_b.schedule_packet_clearing(None, true),
+    };
 
-        let confirmation_result = link.a_to_b.process_pending_txs();
-
-        RetryResult::Ok(Step::Success(confirmation_result))
-    }
-
-    /// Get a reference to the uni chan path worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
-        &self.chains
-    }
-
-    /// Get a reference to the client worker's object.
-    pub fn object(&self) -> &Packet {
-        &self.path
-    }
-
-    #[cfg(feature = "telemetry")]
-    fn packet_metrics(&self, summary: &RelaySummary) {
-        self.receive_packet_metrics(summary);
-        self.acknowledgment_metrics(summary);
-        self.timeout_metrics(summary);
-    }
-
-    #[cfg(feature = "telemetry")]
-    fn receive_packet_metrics(&self, summary: &RelaySummary) {
-        use ibc::events::IbcEvent::WriteAcknowledgement;
-
-        let count = summary
-            .events
-            .iter()
-            .filter(|e| matches!(e, WriteAcknowledgement(_)))
-            .count();
-
-        telemetry!(
-            ibc_receive_packets,
-            &self.path.src_chain_id,
-            &self.path.src_channel_id,
-            &self.path.src_port_id,
-            count as u64,
+    if let Err(e) = result {
+        error!(
+            path = %path.short_name(),
+            "[{}] worker: handling command encountered error: {}",
+            link.a_to_b, e
         );
+
+        return RetryResult::Retry(index);
     }
 
-    #[cfg(feature = "telemetry")]
-    fn acknowledgment_metrics(&self, summary: &RelaySummary) {
-        use ibc::events::IbcEvent::AcknowledgePacket;
+    RetryResult::Ok(())
+}
 
-        let count = summary
-            .events
-            .iter()
-            .filter(|e| matches!(e, AcknowledgePacket(_)))
-            .count();
+#[cfg(feature = "telemetry")]
+fn packet_metrics(path: &Packet, summary: &RelaySummary) {
+    receive_packet_metrics(path, summary);
+    acknowledgment_metrics(path, summary);
+    timeout_metrics(path, summary);
+}
 
-        telemetry!(
-            ibc_acknowledgment_packets,
-            &self.path.src_chain_id,
-            &self.path.src_channel_id,
-            &self.path.src_port_id,
-            count as u64,
-        );
-    }
+#[cfg(feature = "telemetry")]
+fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
+    use ibc::events::IbcEvent::WriteAcknowledgement;
 
-    #[cfg(feature = "telemetry")]
-    fn timeout_metrics(&self, summary: &RelaySummary) {
-        use ibc::events::IbcEvent::TimeoutPacket;
-        let count = summary
-            .events
-            .iter()
-            .filter(|e| matches!(e, TimeoutPacket(_)))
-            .count();
+    let count = summary
+        .events
+        .iter()
+        .filter(|e| matches!(e, WriteAcknowledgement(_)))
+        .count();
 
-        telemetry!(
-            ibc_timeout_packets,
-            &self.path.src_chain_id,
-            &self.path.src_channel_id,
-            &self.path.src_port_id,
-            count as u64,
-        );
-    }
+    telemetry!(
+        ibc_receive_packets,
+        &path.src_chain_id,
+        &path.src_channel_id,
+        &path.src_port_id,
+        count as u64,
+    );
+}
+
+#[cfg(feature = "telemetry")]
+fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
+    use ibc::events::IbcEvent::AcknowledgePacket;
+
+    let count = summary
+        .events
+        .iter()
+        .filter(|e| matches!(e, AcknowledgePacket(_)))
+        .count();
+
+    telemetry!(
+        ibc_acknowledgment_packets,
+        &path.src_chain_id,
+        &path.src_channel_id,
+        &path.src_port_id,
+        count as u64,
+    );
+}
+
+#[cfg(feature = "telemetry")]
+fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
+    use ibc::events::IbcEvent::TimeoutPacket;
+    let count = summary
+        .events
+        .iter()
+        .filter(|e| matches!(e, TimeoutPacket(_)))
+        .count();
+
+    telemetry!(
+        ibc_timeout_packets,
+        &path.src_chain_id,
+        &path.src_channel_id,
+        &path.src_port_id,
+        count as u64,
+    );
 }

@@ -13,7 +13,4 @@ pub enum WorkerCmd {
 
     /// Trigger a pending packets clear
     ClearPendingPackets,
-
-    /// Shutdown the worker
-    Shutdown,
 }

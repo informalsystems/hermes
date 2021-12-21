@@ -30,4 +30,4 @@ getrandom = { version = "0.2", features = ["js"] }
 serde = "1.0"
 
 [dependencies.tendermint-proto]
-version = "=0.23.1"
+version = "=0.23.2"

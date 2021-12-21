@@ -1048,18 +1048,14 @@ impl ClientKeeper for MockContext {
         self.client_ids_counter += 1
     }
 
-    fn store_processed_time(
-        &mut self,
-        client_id: ClientId,
-        height: Height,
-    ) -> Result<(), Ics02Error> {
+    fn store_update_time(&mut self, client_id: ClientId, height: Height) -> Result<(), Ics02Error> {
         let _ = self
             .client_processed_times
             .insert((client_id, height), ChannelReader::host_timestamp(self));
         Ok(())
     }
 
-    fn store_processed_height(
+    fn store_update_height(
         &mut self,
         client_id: ClientId,
         height: Height,

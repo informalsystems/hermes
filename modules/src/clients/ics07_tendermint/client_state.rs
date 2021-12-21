@@ -84,6 +84,14 @@ impl ClientState {
             ));
         }
 
+        // `TrustThreshold` is guaranteed to be in the range `[0, 1)`, but a `TrustThreshold::ZERO`
+        // value is invalid in this context
+        if trust_level == TrustThreshold::ZERO {
+            return Err(Error::validation(
+                "ClientState trust-level cannot be zero".to_string(),
+            ));
+        }
+
         // Disallow empty proof-specs
         if proof_specs.is_empty() {
             return Err(Error::validation(

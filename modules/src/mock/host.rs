@@ -3,6 +3,7 @@
 use tendermint::time::Time;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
+use time::OffsetDateTime;
 
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use crate::clients::ics07_tendermint::header::Header as TMHeader;
@@ -63,10 +64,8 @@ impl HostBlock {
         // same timestamp as two block can be generated per second.
         let ten_millis = core::time::Duration::from_millis(1000);
         std::thread::sleep(ten_millis);
-        let time = Time(chrono::Utc::now())
-            .duration_since(Time::unix_epoch())
-            .unwrap()
-            .as_secs();
+        let time: Time = OffsetDateTime::now_utc().try_into().unwrap();
+        let time = time.duration_since(Time::unix_epoch()).unwrap().as_secs();
 
         TestgenLightBlock::new_default_with_time_and_chain_id(chain_id.to_string(), time, height)
             .generate()

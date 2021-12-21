@@ -7,6 +7,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
+use ibc_relayer::supervisor::SupervisorHandle;
 use tracing::info;
 
 use super::node::{run_binary_node_test, BinaryNodeTest, NodeConfigOverride};
@@ -17,7 +18,6 @@ use crate::chain::builder::ChainBuilder;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::{run_basic_test, BasicTest};
-use crate::relayer::supervisor::SupervisorHandle;
 use crate::types::binary::chains::{ConnectedChains, DropChainHandle};
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
@@ -116,7 +116,7 @@ pub trait SupervisorOverride {
         &self,
         config: &SharedConfig,
         registry: &SharedRegistry<impl ChainHandle + 'static>,
-    ) -> Option<SupervisorHandle>;
+    ) -> Result<Option<SupervisorHandle>, Error>;
 }
 
 /**
@@ -199,15 +199,17 @@ where
 
         info!("written chains environment to {}", env_path.display());
 
-        let _supervisor = self
-            .test
-            .get_overrides()
-            .spawn_supervisor(&chains.config, &chains.registry);
-
         let _drop_handle_a = DropChainHandle(chains.handle_a.clone());
         let _drop_handle_b = DropChainHandle(chains.handle_b.clone());
 
-        self.test.run(config, chains)?;
+        {
+            let _supervisor = self
+                .test
+                .get_overrides()
+                .spawn_supervisor(&chains.config, &chains.registry);
+
+            self.test.run(config, chains)?;
+        }
 
         Ok(())
     }
