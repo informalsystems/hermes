@@ -43,15 +43,12 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             )
                             .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
 
-                            let handshake_completed = retry_with_index(
-                                retry_strategy::worker_default_strategy(),
-                                |index| handshake_connection.step_event(event.clone(), index),
-                            )
-                            .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
-
-                            if handshake_completed {
-                                return Ok(Next::Abort);
-                            }
+                            retry_with_index(retry_strategy::worker_default_strategy(), |index| {
+                                handshake_connection.step_event(event.clone(), index)
+                            })
+                            .map_err(|e| TaskError::Fatal(RunError::retry(e)))
+                        } else {
+                            Ok(Next::Continue)
                         }
                     }
 
@@ -78,22 +75,18 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             )
                             .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
 
-                        let handshake_completed =
-                            retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                                handshake_connection.step_state(state, index)
-                            })
-                            .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
-
-                        if handshake_completed {
-                            return Ok(Next::Abort);
-                        }
+                        retry_with_index(retry_strategy::worker_default_strategy(), |index| {
+                            handshake_connection.step_state(state, index)
+                        })
+                        .map_err(|e| TaskError::Fatal(RunError::retry(e)))
                     }
 
-                    WorkerCmd::ClearPendingPackets => {} // nothing to do
-                };
+                    // nothing to do
+                    WorkerCmd::ClearPendingPackets => Ok(Next::Continue),
+                }
+            } else {
+                Ok(Next::Continue)
             }
-
-            Ok(Next::Continue)
         },
     )
 }

@@ -30,6 +30,7 @@ use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::error::Error as SupervisorError;
 use crate::util::retry::retry_with_index;
 use crate::util::retry::{retry_count, RetryResult};
+use crate::util::task::Next;
 
 pub mod error;
 mod version;
@@ -642,21 +643,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn handshake_step(
         &mut self,
         state: State,
-    ) -> Result<(Option<IbcEvent>, bool), ChannelError> {
+    ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
         let res = match (state, self.counterparty_state()?) {
             (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),
             (State::Init, State::Init) => Some(self.build_chan_open_try_and_send()?),
             (State::TryOpen, State::Init) => Some(self.build_chan_open_ack_and_send()?),
             (State::TryOpen, State::TryOpen) => Some(self.build_chan_open_ack_and_send()?),
             (State::Open, State::TryOpen) => Some(self.build_chan_open_confirm_and_send()?),
-            (State::Open, State::Open) => return Ok((None, true)),
+            (State::Open, State::Open) => return Ok((None, Next::Abort)),
             _ => None,
         };
 
-        Ok((res, false))
+        Ok((res, Next::Continue))
     }
 
-    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<bool, u64> {
+    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<Next, u64> {
         match self.handshake_step(state) {
             Err(e) => {
                 if e.is_expired_or_frozen_error() {
@@ -678,7 +679,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<bool, u64> {
+    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<Next, u64> {
         let state = match event {
             IbcEvent::OpenInitChannel(_) => State::Init,
             IbcEvent::OpenTryChannel(_) => State::TryOpen,
