@@ -111,8 +111,8 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Add;
-    use std::time::Duration;
+    use core::ops::Add;
+    use core::time::Duration;
 
     use test_log::test;
 
@@ -132,8 +132,6 @@ mod tests {
     use crate::prelude::*;
     use crate::timestamp::Timestamp;
     use crate::timestamp::ZERO_DURATION;
-    use core::ops::Add;
-    use core::time::Duration;
 
     #[test]
     fn send_packet_processing() {
