@@ -8,7 +8,7 @@ use std::thread::sleep;
 
 use crate::bootstrap::binary::chain::bootstrap_foreign_client;
 use crate::bootstrap::binary::channel::{
-    bootstrap_channel_with_chains, bootstrap_channel_with_connection,
+    bootstrap_channel, bootstrap_channel_with_chains, bootstrap_channel_with_connection,
 };
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::ibc::denom::derive_ibc_denom;
@@ -69,6 +69,12 @@ fn test_create_on_expired_client() -> Result<(), Error> {
     run_binary_chain_test(&CreateOnExpiredClientTest)
 }
 
+#[cfg(feature = "manual")]
+#[test]
+fn test_misbehavior_expiration() -> Result<(), Error> {
+    run_binary_chain_test(&MisbehaviorExpirationTest)
+}
+
 fn wait_for_client_expiry() {
     let sleep_time = CLIENT_EXPIRY + Duration::from_secs(5);
 
@@ -87,6 +93,8 @@ pub struct ChannelExpirationTest;
 pub struct PacketExpirationTest;
 
 pub struct CreateOnExpiredClientTest;
+
+pub struct MisbehaviorExpirationTest;
 
 impl TestOverrides for ExpirationTestOverrides {
     fn modify_test_config(&self, config: &mut TestConfig) {
@@ -431,6 +439,68 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
     }
 }
 
+impl BinaryChainTest for MisbehaviorExpirationTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        chains: ConnectedChains<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        /*
+           This test reproduce the error log when a misbehavior task is
+           first started. The error arise when `detect_misbehaviour_and_submit_evidence`
+           is called with `None`, and the initial headers are already expired.
+
+           Run this test with the `manual` feature and log level `trace`:
+
+           ```text
+           $ RUST_BACKTRACE=0 RUST_LOG=trace cargo test --features manual -p ibc-integration-test -- test_misbehavior_expiration
+           ```
+
+           and logs such as follow will be shown:
+
+           ```log
+           TRACE ibc_relayer::foreign_client: [ibc-beta-96682bb3 -> ibc-alpha-4095d39d:07-tendermint-0] checking misbehaviour for consensus state heights (first 50 shown here): 0-14, 0-9, 0-5, 0-3, total: 4
+           TRACE ibc_relayer::light_client::tendermint: light client verification trusted=0-9 target=0-14
+           TRACE ibc_relayer::light_client::tendermint: light client verification trusted=0-5 target=0-9
+           TRACE ibc_relayer::light_client::tendermint: light client verification trusted=0-3 target=0-5
+           WARN ibc_relayer::foreign_client: [ibc-beta-96682bb3 -> ibc-alpha-4095d39d:07-tendermint-0] misbehaviour checking result:
+           0: error raised while checking for misbehaviour evidence: failed to check misbehaviour for 07-tendermint-0 at consensus height 0-5
+           1: Light client error for RPC address ibc-beta-96682bb3
+           2:
+           2:    0: trusted state outside of trusting period
+           2021-12-21T21:00:23.796731Z  INFO ibc_integration_test::tests::client_expiration: misbehavior result: ValidClient
+           ```
+        */
+
+        {
+            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+            bootstrap_channel(
+                &chains.client_b_to_a,
+                &chains.client_a_to_b,
+                &tagged_transfer_port().as_ref(),
+                &tagged_transfer_port().as_ref(),
+                false,
+            )?;
+
+            info!("waiting for the initial client header to expire, while keeping the IBC client refreshed");
+
+            wait_for_client_expiry();
+        }
+
+        let misbehavior_result = chains
+            .client_b_to_a
+            .detect_misbehaviour_and_submit_evidence(None);
+        info!("misbehavior result: {:?}", misbehavior_result);
+
+        suspend()
+    }
+}
+
 impl HasOverrides for CreateOnExpiredClientTest {
     type Overrides = ExpirationTestOverrides;
 
@@ -448,6 +518,14 @@ impl HasOverrides for ChannelExpirationTest {
 }
 
 impl HasOverrides for PacketExpirationTest {
+    type Overrides = ExpirationTestOverrides;
+
+    fn get_overrides(&self) -> &ExpirationTestOverrides {
+        &ExpirationTestOverrides
+    }
+}
+
+impl HasOverrides for MisbehaviorExpirationTest {
     type Overrides = ExpirationTestOverrides;
 
     fn get_overrides(&self) -> &ExpirationTestOverrides {

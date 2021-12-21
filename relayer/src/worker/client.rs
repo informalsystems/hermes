@@ -58,16 +58,13 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
         return None;
     }
 
-    debug!("[{}] doing first misbehavior check", client);
-    match client.detect_misbehaviour_and_submit_evidence(None) {
-        MisbehaviourResults::ValidClient => {}
-        MisbehaviourResults::VerificationError => {}
-        MisbehaviourResults::EvidenceSubmitted(_) => {
-            return None;
-        }
-        MisbehaviourResults::CannotExecute => {
-            return None;
-        }
+    {
+        debug!("[{}] doing first misbehavior check", client);
+        let misbehavior_result = client.detect_misbehaviour_and_submit_evidence(None);
+        debug!(
+            "[{}] detect misbehavior result: {:?}",
+            client, misbehavior_result
+        );
     }
 
     let handle = spawn_background_task(
@@ -81,9 +78,16 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                         for event in batch.events {
                             if let IbcEvent::UpdateClient(update) = event {
-                                debug!("[{}] client was updated", client);
+                                debug!("[{}] checking misbehavior for updated client", client);
+                                let misbehavior_result =
+                                    client.detect_misbehaviour_and_submit_evidence(Some(update));
+                                trace!(
+                                    "[{}] detect misbehavior result: {:?}",
+                                    client,
+                                    misbehavior_result
+                                );
 
-                                match client.detect_misbehaviour_and_submit_evidence(Some(update)) {
+                                match misbehavior_result {
                                     MisbehaviourResults::ValidClient => {}
                                     MisbehaviourResults::VerificationError => {
                                         // can retry in next call
