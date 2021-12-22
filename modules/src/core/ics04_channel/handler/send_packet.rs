@@ -111,8 +111,8 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Add;
-    use std::time::Duration;
+    use core::ops::Add;
+    use core::time::Duration;
 
     use test_log::test;
 

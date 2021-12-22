@@ -1,6 +1,7 @@
 //! ICS4 (channel) context. The two traits `ChannelReader ` and `ChannelKeeper` define
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //!
+use core::time::Duration;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -71,10 +72,28 @@ pub trait ChannelReader {
     /// Returns the current timestamp of the local chain.
     fn host_timestamp(&self) -> Timestamp;
 
+    /// Returns the time when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
+    fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, Error>;
+
+    /// Returns the height when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
+    fn client_update_height(&self, client_id: &ClientId, height: Height) -> Result<Height, Error>;
+
     /// Returns a counter on the number of channel ids have been created thus far.
     /// The value of this counter should increase only via method
     /// `ChannelKeeper::increase_channel_counter`.
     fn channel_counter(&self) -> Result<u64, Error>;
+
+    /// Returns the maximum expected time per block
+    fn max_expected_time_per_block(&self) -> Duration;
+
+    fn block_delay(&self, delay_period_time: Duration) -> u64 {
+        let expected_time_per_block = self.max_expected_time_per_block();
+        if expected_time_per_block.is_zero() {
+            return 0;
+        }
+
+        (delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64()).ceil() as u64
+    }
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)

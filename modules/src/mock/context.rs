@@ -42,6 +42,7 @@ use crate::relayer::ics18_relayer::error::Error as Ics18Error;
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::Height;
+use core::time::Duration;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
@@ -67,6 +68,12 @@ pub struct MockContext {
 
     /// The set of all clients, indexed by their id.
     clients: BTreeMap<ClientId, MockClientRecord>,
+
+    /// Tracks the processed time for clients header updates
+    client_processed_times: BTreeMap<(ClientId, Height), Timestamp>,
+
+    /// Tracks the processed height for the clients
+    client_processed_heights: BTreeMap<(ClientId, Height), Height>,
 
     /// Counter for the client identifiers, necessary for `increase_client_counter` and the
     /// `client_counter` methods.
@@ -171,6 +178,8 @@ impl MockContext {
             connections: Default::default(),
             client_ids_counter: 0,
             clients: Default::default(),
+            client_processed_times: Default::default(),
+            client_processed_heights: Default::default(),
             client_connections: Default::default(),
             channels: Default::default(),
             connection_channels: Default::default(),
@@ -665,8 +674,46 @@ impl ChannelReader for MockContext {
         self.timestamp
     }
 
+    fn client_update_time(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Timestamp, Ics04Error> {
+        match self
+            .client_processed_times
+            .get(&(client_id.clone(), height))
+        {
+            Some(time) => Ok(*time),
+            None => Err(Ics04Error::processed_time_not_found(
+                client_id.clone(),
+                height,
+            )),
+        }
+    }
+
+    fn client_update_height(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Height, Ics04Error> {
+        match self
+            .client_processed_heights
+            .get(&(client_id.clone(), height))
+        {
+            Some(height) => Ok(*height),
+            None => Err(Ics04Error::processed_height_not_found(
+                client_id.clone(),
+                height,
+            )),
+        }
+    }
+
     fn channel_counter(&self) -> Result<u64, Ics04Error> {
         Ok(self.channel_ids_counter)
+    }
+
+    fn max_expected_time_per_block(&self) -> Duration {
+        Duration::from_secs(10)
     }
 }
 
@@ -939,6 +986,10 @@ impl ClientReader for MockContext {
         Ok(None)
     }
 
+    fn host_height(&self) -> Height {
+        self.latest_height
+    }
+
     fn client_counter(&self) -> Result<u64, Ics02Error> {
         Ok(self.client_ids_counter)
     }
@@ -995,6 +1046,24 @@ impl ClientKeeper for MockContext {
 
     fn increase_client_counter(&mut self) {
         self.client_ids_counter += 1
+    }
+
+    fn store_update_time(&mut self, client_id: ClientId, height: Height) -> Result<(), Ics02Error> {
+        let _ = self
+            .client_processed_times
+            .insert((client_id, height), ChannelReader::host_timestamp(self));
+        Ok(())
+    }
+
+    fn store_update_height(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+    ) -> Result<(), Ics02Error> {
+        let _ = self
+            .client_processed_heights
+            .insert((client_id, height), ClientReader::host_height(self));
+        Ok(())
     }
 }
 

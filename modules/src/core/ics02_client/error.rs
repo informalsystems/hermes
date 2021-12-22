@@ -72,7 +72,7 @@ define_error! {
             | _ | { "the client state was not found" },
 
         EmptyPrefix
-            { source: crate::core::ics23_commitment::merkle::EmptyPrefixError }
+            [ Ics23Error ]
             | _ | { "empty prefix" },
 
         UnknownConsensusStateType
@@ -172,6 +172,10 @@ define_error! {
         InvalidUpgradeConsensusStateProof
             [ Ics23Error ]
             | _ | { "invalid proof for the upgraded consensus state" },
+
+        InvalidCommitmentProof
+            [ Ics23Error ]
+            | _ | { "invalid commitment proof bytes" },
 
         Tendermint
             [ Ics07Error ]

@@ -57,8 +57,6 @@ pub fn process(
         ));
     }
 
-    let client_id = connection_end.client_id().clone();
-
     // Verify packet commitment
     let packet_commitment = ctx.get_packet_commitment(&(
         packet.source_port.clone(),
@@ -78,9 +76,10 @@ pub fn process(
     // Verify the acknowledgement proof
     verify_packet_acknowledgement_proofs(
         ctx,
+        msg.proofs.height(),
         packet,
         msg.acknowledgement().clone(),
-        client_id,
+        &connection_end,
         msg.proofs(),
     )?;
 

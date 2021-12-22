@@ -99,7 +99,8 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
         }
         verify_next_sequence_recv(
             ctx,
-            client_id,
+            msg.proofs().height(),
+            &connection_end,
             packet.clone(),
             msg.next_sequence_recv,
             &msg.proofs.clone(),
@@ -113,7 +114,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
             channel: Some(source_channel_end),
         })
     } else {
-        verify_packet_receipt_absence(ctx, client_id, packet.clone(), &msg.proofs.clone())?;
+        verify_packet_receipt_absence(
+            ctx,
+            msg.proofs().height(),
+            &connection_end,
+            packet.clone(),
+            &msg.proofs().clone(),
+        )?;
 
         PacketResult::Timeout(TimeoutPacketResult {
             port_id: packet.source_port.clone(),
