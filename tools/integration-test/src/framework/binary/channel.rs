@@ -149,10 +149,9 @@ where
 
         info!("written channel environment to {}", env_path.display());
 
-        self.test.run(config, chains, channels)?;
-
-        // No use suspending the test on owned failures, as the chains and channels
-        // are dropped in the inner test already.
+        self.test
+            .run(config, chains, channels)
+            .map_err(config.hang_on_error())?;
 
         Ok(())
     }

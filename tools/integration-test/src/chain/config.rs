@@ -25,6 +25,17 @@ pub fn set_rpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn set_grpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
+    config
+        .get_mut("grpc-web")
+        .ok_or_else(|| eyre!("expect grpc-web section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("address".to_string(), format!("0.0.0.0:{}", port).into());
+
+    Ok(())
+}
+
 /// Set the `p2p` field in the full node config.
 pub fn set_p2p_port(config: &mut Value, port: u16) -> Result<(), Error> {
     config

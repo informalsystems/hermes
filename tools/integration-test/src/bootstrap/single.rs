@@ -42,7 +42,7 @@ pub fn bootstrap_single_node(
     let denom = Denom(format!("coin{:x}", random_u32()));
     let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
 
-    let chain_driver = builder.new_chain(prefix);
+    let chain_driver = builder.new_chain(prefix)?;
 
     chain_driver.initialize()?;
 
@@ -74,7 +74,7 @@ pub fn bootstrap_single_node(
 
     let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
 
-    chain_driver.update_chain_config(|config| {
+    chain_driver.update_chain_config("config.toml", |config| {
         config::set_log_level(config, &log_level)?;
         config::set_rpc_port(config, chain_driver.rpc_port)?;
         config::set_p2p_port(config, chain_driver.p2p_port)?;
@@ -85,6 +85,12 @@ pub fn bootstrap_single_node(
 
         Ok(())
     })?;
+
+    // chain_driver.update_chain_config("app.toml", |config| {
+    //     config::set_grpc_port(config, chain_driver.grpc_port)?;
+
+    //     Ok(())
+    // })?;
 
     let process = chain_driver.start()?;
 
