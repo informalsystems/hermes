@@ -62,13 +62,13 @@ pub fn get_all_events(
                         tracing::trace!("extracted {:?}", chan_event);
                         if matches!(chan_event, IbcEvent::SendPacket(_)) {
                             // Should be the same as the hash of tx_result.tx?
-                            if let Some(hashes) = result
+                            if let Some(hash) = result
                                 .events
                                 .as_ref()
-                                .map(|events| events.get("tx.hash").cloned())
-                                .flatten()
+                                .and_then(|events| events.get("tx.hash"))
+                                .and_then(|values| values.get(0))
                             {
-                                tracing::trace!(event = "SendPacket", "tx hashes: {:?}", hashes);
+                                tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
                             }
                         }
                         vals.push((height, chan_event));
