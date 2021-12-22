@@ -55,6 +55,9 @@ pub trait ClientReader {
         height: Height,
     ) -> Result<Option<AnyConsensusState>, Error>;
 
+    /// Returns the current height of the local chain.
+    fn host_height(&self) -> Height;
+
     /// Returns a natural number, counting how many clients have been created thus far.
     /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.
     fn client_counter(&self) -> Result<u64, Error>;
@@ -84,6 +87,8 @@ pub trait ClientKeeper {
                     res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
+                self.store_update_time(res.client_id.clone(), res.client_state.latest_height())?;
+                self.store_update_height(res.client_id, res.client_state.latest_height())?;
                 Ok(())
             }
             Upgrade(res) => {
@@ -124,4 +129,14 @@ pub trait ClientKeeper {
     /// Increases the counter which keeps track of how many clients have been created.
     /// Should never fail.
     fn increase_client_counter(&mut self);
+
+    /// Called upon successful client update.
+    /// Implementations are expected to use this to record the current (host) time as the time at
+    /// which this update (or header) was processed.
+    fn store_update_time(&mut self, client_id: ClientId, height: Height) -> Result<(), Error>;
+
+    /// Called upon successful client update.
+    /// Implementations are expected to use this to record the current (host) height as the height
+    /// at which this update (or header) was processed.
+    fn store_update_height(&mut self, client_id: ClientId, height: Height) -> Result<(), Error>;
 }

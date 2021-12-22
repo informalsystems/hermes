@@ -109,7 +109,9 @@ pub fn assert_eventually_connection_established<ChainA: ChainHandle, ChainB: Cha
                 .value()
                 .state_matches(&ConnectionState::Open)
             {
-                return Err(eyre!("expected connection end A to be in open state"));
+                return Err(Error::generic(eyre!(
+                    "expected connection end A to be in open state"
+                )));
             }
 
             let connection_id_b = connection_end_a
@@ -124,7 +126,9 @@ pub fn assert_eventually_connection_established<ChainA: ChainHandle, ChainB: Cha
                 .value()
                 .state_matches(&ConnectionState::Open)
             {
-                return Err(eyre!("expected connection end B to be in open state"));
+                return Err(Error::generic(eyre!(
+                    "expected connection end B to be in open state"
+                )));
             }
 
             Ok(connection_id_b)

@@ -96,7 +96,9 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
             let channel_end_a = query_channel_end(handle_a, channel_id_a, port_id_a)?;
 
             if !channel_end_a.value().state_matches(&ChannelState::Open) {
-                return Err(eyre!("expected channel end A to be in open state"));
+                return Err(Error::generic(eyre!(
+                    "expected channel end A to be in open state"
+                )));
             }
 
             let channel_id_b = channel_end_a
@@ -111,7 +113,9 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
                 query_channel_end(handle_b, &channel_id_b.as_ref(), &port_id_b.as_ref())?;
 
             if !channel_end_b.value().state_matches(&ChannelState::Open) {
-                return Err(eyre!("expected channel end B to be in open state"));
+                return Err(Error::generic(eyre!(
+                    "expected channel end B to be in open state"
+                )));
             }
 
             Ok(channel_id_b)

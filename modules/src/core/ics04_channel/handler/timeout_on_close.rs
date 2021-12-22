@@ -41,8 +41,6 @@ pub fn process(
 
     let connection_end = ctx.connection_end(&source_channel_end.connection_hops()[0])?;
 
-    let client_id = connection_end.client_id().clone();
-
     //verify the packet was sent, check the store
     let packet_commitment = ctx.get_packet_commitment(&(
         packet.source_port.clone(),
@@ -81,6 +79,7 @@ pub fn process(
 
     verify_channel_proofs(
         ctx,
+        msg.proofs().height(),
         &source_channel_end,
         &connection_end,
         &expected_channel_end,
@@ -96,7 +95,8 @@ pub fn process(
         }
         verify_next_sequence_recv(
             ctx,
-            client_id,
+            msg.proofs().height(),
+            &connection_end,
             packet.clone(),
             msg.next_sequence_recv,
             &msg.proofs.clone(),
@@ -109,7 +109,13 @@ pub fn process(
             channel: Some(source_channel_end),
         })
     } else {
-        verify_packet_receipt_absence(ctx, client_id, packet.clone(), &msg.proofs.clone())?;
+        verify_packet_receipt_absence(
+            ctx,
+            msg.proofs().height(),
+            &connection_end,
+            packet.clone(),
+            &msg.proofs.clone(),
+        )?;
 
         PacketResult::Timeout(TimeoutPacketResult {
             port_id: packet.source_port.clone(),

@@ -406,7 +406,11 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
 
         let res = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false);
         match res {
-            Ok(_) => return Err(eyre!("expected bootstrap_connection to fail")),
+            Ok(_) => {
+                return Err(Error::generic(eyre!(
+                    "expected bootstrap_connection to fail"
+                )))
+            }
             Err(e) => {
                 info!("bootstrap_connection failed with expected error {}", e);
             }
@@ -426,7 +430,11 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
         );
 
         match res {
-            Ok(_) => return Err(eyre!("expected bootstrap_channel_with_connection to fail")),
+            Ok(_) => {
+                return Err(Error::generic(eyre!(
+                    "expected bootstrap_channel_with_connection to fail"
+                )))
+            }
             Err(e) => {
                 info!(
                     "bootstrap_channel_with_connection failed with expected error {}",
@@ -480,7 +488,10 @@ impl BinaryChainTest for MisbehaviorExpirationTest {
                 .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
             // build a client header that will be expired
-            chains.client_b_to_a.build_latest_update_client_and_send()?;
+            chains
+                .client_b_to_a
+                .build_latest_update_client_and_send()
+                .map_err(handle_generic_error)?;
 
             info!("waiting for the initial client header to expire, while keeping the IBC client refreshed");
 

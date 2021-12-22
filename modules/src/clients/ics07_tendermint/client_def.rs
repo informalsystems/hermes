@@ -1,8 +1,10 @@
-use std::convert::TryInto;
+use core::convert::TryInto;
 
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+use prost::Message;
 use tendermint_light_client::components::verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_light_client::types::{TrustedBlockState, UntrustedBlockState};
+use tendermint_proto::Protobuf;
 use time::OffsetDateTime;
 
 use crate::clients::ics07_tendermint::client_state::ClientState;
@@ -17,13 +19,16 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
 
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
+use crate::core::ics23_commitment::merkle::{apply_prefix, MerkleProof};
 use crate::core::ics24_host::identifier::ConnectionId;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
+use crate::core::ics24_host::Path;
 use crate::prelude::*;
 use crate::Height;
 
@@ -185,114 +190,276 @@ impl ClientDef for TendermintClient {
 
     fn verify_client_consensus_state(
         &self,
-        _client_state: &Self::ClientState,
-        _height: Height,
-        _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProofBytes,
-        _client_id: &ClientId,
-        _consensus_height: Height,
-        _expected_consensus_state: &AnyConsensusState,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        client_id: &ClientId,
+        consensus_height: Height,
+        expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        client_state.verify_height(height)?;
+
+        let path = Path::ClientConsensusState {
+            client_id: client_id.clone(),
+            epoch: consensus_height.revision_number,
+            height: consensus_height.revision_height,
+        }
+        .to_string();
+        let value = expected_consensus_state.encode_vec().unwrap();
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_connection_state(
         &self,
-        _client_state: &Self::ClientState,
-        _height: Height,
-        _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProofBytes,
-        _connection_id: Option<&ConnectionId>,
-        _expected_connection_end: &ConnectionEnd,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        connection_id: &ConnectionId,
+        expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        client_state.verify_height(height)?;
+
+        let path = Path::Connections(connection_id.clone()).to_string();
+        let value = expected_connection_end.encode_vec().unwrap();
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_channel_state(
         &self,
-        _client_state: &Self::ClientState,
-        _height: Height,
-        _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProofBytes,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _expected_channel_end: &ChannelEnd,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        expected_channel_end: &ChannelEnd,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        client_state.verify_height(height)?;
+
+        let path = Path::ChannelEnds(port_id.clone(), channel_id.clone()).to_string();
+        let value = expected_channel_end.encode_vec().unwrap();
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_client_full_state(
         &self,
-        _client_state: &Self::ClientState,
-        _height: Height,
-        _root: &CommitmentRoot,
-        _prefix: &CommitmentPrefix,
-        _client_id: &ClientId,
-        _proof: &CommitmentProofBytes,
-        _expected_client_state: &AnyClientState,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        client_id: &ClientId,
+        expected_client_state: &AnyClientState,
     ) -> Result<(), Ics02Error> {
-        unimplemented!()
+        client_state.verify_height(height)?;
+
+        let path = Path::ClientState(client_id.clone()).to_string();
+        let value = expected_client_state.encode_vec().unwrap();
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_packet_data(
         &self,
-        _client_state: &Self::ClientState,
-        _height: Height,
-        _proof: &CommitmentProofBytes,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _seq: &Sequence,
-        _data: String,
+        ctx: &dyn ChannelReader,
+        client_state: &Self::ClientState,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        commitment: String,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        client_state.verify_height(height)?;
+        verify_delay_passed(ctx, height, connection_end)?;
+
+        let commitment_path = Path::Commitments {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+        };
+        verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            commitment_path.to_string(),
+            commitment.encode_to_vec(),
+        )
     }
 
     fn verify_packet_acknowledgement(
         &self,
-        _client_state: &Self::ClientState,
-        _height: Height,
-        _proof: &CommitmentProofBytes,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _seq: &Sequence,
-        _data: Vec<u8>,
+        ctx: &dyn ChannelReader,
+        client_state: &Self::ClientState,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        ack: Vec<u8>,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        client_state.verify_height(height)?;
+        verify_delay_passed(ctx, height, connection_end)?;
+
+        let ack_path = Path::Acks {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+        };
+        verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            ack_path.to_string(),
+            ack,
+        )
     }
 
     fn verify_next_sequence_recv(
         &self,
-        _client_state: &Self::ClientState,
-        _height: Height,
-        _proof: &CommitmentProofBytes,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _seq: &Sequence,
+        ctx: &dyn ChannelReader,
+        client_state: &Self::ClientState,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        client_state.verify_height(height)?;
+        verify_delay_passed(ctx, height, connection_end)?;
+
+        let seq_path = Path::SeqRecvs(port_id.clone(), channel_id.clone());
+        verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            seq_path.to_string(),
+            u64::from(sequence).encode_to_vec(),
+        )
     }
 
     fn verify_packet_receipt_absence(
         &self,
-        _client_state: &Self::ClientState,
-        _height: Height,
-        _proof: &CommitmentProofBytes,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _seq: &Sequence,
+        ctx: &dyn ChannelReader,
+        client_state: &Self::ClientState,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        client_state.verify_height(height)?;
+        verify_delay_passed(ctx, height, connection_end)?;
+
+        let receipt_path = Path::Receipts {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+        };
+        verify_non_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            receipt_path.to_string(),
+        )
     }
 
     fn verify_upgrade_and_update_state(
         &self,
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-        _proof_upgrade_client: MerkleProof,
-        _proof_upgrade_consensus_state: MerkleProof,
+        _proof_upgrade_client: RawMerkleProof,
+        _proof_upgrade_consensus_state: RawMerkleProof,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
         todo!()
     }
+}
+
+fn verify_membership(
+    client_state: &ClientState,
+    prefix: &CommitmentPrefix,
+    proof: &CommitmentProofBytes,
+    root: &CommitmentRoot,
+    path: String,
+    value: Vec<u8>,
+) -> Result<(), Ics02Error> {
+    let merkle_path = apply_prefix(prefix, vec![path]).map_err(Error::ics23_error)?;
+    let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
+        .map_err(Ics02Error::invalid_commitment_proof)?
+        .into();
+
+    merkle_proof
+        .verify_membership(
+            &client_state.proof_specs,
+            root.clone().into(),
+            merkle_path,
+            value,
+            0,
+        )
+        .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
+}
+
+fn verify_non_membership(
+    client_state: &ClientState,
+    prefix: &CommitmentPrefix,
+    proof: &CommitmentProofBytes,
+    root: &CommitmentRoot,
+    path: String,
+) -> Result<(), Ics02Error> {
+    let merkle_path = apply_prefix(prefix, vec![path]).map_err(Error::ics23_error)?;
+    let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
+        .map_err(Ics02Error::invalid_commitment_proof)?
+        .into();
+
+    merkle_proof
+        .verify_non_membership(&client_state.proof_specs, root.clone().into(), merkle_path)
+        .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
+}
+
+fn verify_delay_passed(
+    ctx: &dyn ChannelReader,
+    height: Height,
+    connection_end: &ConnectionEnd,
+) -> Result<(), Ics02Error> {
+    let current_timestamp = ctx.host_timestamp();
+    let current_height = ctx.host_height();
+
+    let client_id = connection_end.client_id();
+    let processed_time = ctx
+        .client_update_time(client_id, height)
+        .map_err(|_| Error::processed_time_not_found(client_id.clone(), height))?;
+    let processed_height = ctx
+        .client_update_height(client_id, height)
+        .map_err(|_| Error::processed_height_not_found(client_id.clone(), height))?;
+
+    let delay_period_time = connection_end.delay_period();
+    let delay_period_height = ctx.block_delay(delay_period_time);
+
+    ClientState::verify_delay_passed(
+        current_timestamp,
+        current_height,
+        processed_time,
+        processed_height,
+        delay_period_time,
+        delay_period_height,
+    )
+    .map_err(|e| e.into())
 }
 
 fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState, Ics02Error> {

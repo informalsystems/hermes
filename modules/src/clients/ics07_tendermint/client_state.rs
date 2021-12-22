@@ -17,7 +17,7 @@ use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
 use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::ChainId;
-use crate::timestamp::ZERO_DURATION;
+use crate::timestamp::{Timestamp, ZERO_DURATION};
 use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -81,6 +81,14 @@ impl ClientState {
         if latest_height <= Height::zero() {
             return Err(Error::validation(
                 "ClientState latest height must be greater than zero".to_string(),
+            ));
+        }
+
+        // `TrustThreshold` is guaranteed to be in the range `[0, 1)`, but a `TrustThreshold::ZERO`
+        // value is invalid in this context
+        if trust_level == TrustThreshold::ZERO {
+            return Err(Error::validation(
+                "ClientState trust-level cannot be zero".to_string(),
             ));
         }
 
@@ -166,6 +174,46 @@ impl ClientState {
             trusting_period: self.trusting_period,
             clock_drift: self.max_clock_drift,
         })
+    }
+
+    /// Verify the time and height delays
+    pub fn verify_delay_passed(
+        current_time: Timestamp,
+        current_height: Height,
+        processed_time: Timestamp,
+        processed_height: Height,
+        delay_period_time: Duration,
+        delay_period_blocks: u64,
+    ) -> Result<(), Error> {
+        let earliest_time =
+            (processed_time + delay_period_time).map_err(Error::timestamp_overflow)?;
+        if !(current_time == earliest_time || current_time.after(&earliest_time)) {
+            return Err(Error::not_enough_time_elapsed(current_time, earliest_time));
+        }
+
+        let earliest_height = processed_height.add(delay_period_blocks);
+        if current_height < earliest_height {
+            return Err(Error::not_enough_blocks_elapsed(
+                current_height,
+                earliest_height,
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Verify that the client is at a sufficient height and unfrozen at the given height
+    pub fn verify_height(&self, height: Height) -> Result<(), Error> {
+        if self.latest_height < height {
+            return Err(Error::insufficient_height(self.latest_height(), height));
+        }
+
+        match self.frozen_height {
+            Some(frozen_height) if frozen_height <= height => {
+                Err(Error::client_frozen(frozen_height, height))
+            }
+            _ => Ok(()),
+        }
     }
 }
 
@@ -266,7 +314,6 @@ impl From<ClientState> for RawClientState {
 mod tests {
     use crate::prelude::*;
     use core::time::Duration;
-    use std::println;
     use test_log::test;
 
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
@@ -283,7 +330,6 @@ mod tests {
     fn serialization_roundtrip_no_proof() {
         let json_data =
             include_str!("../../../tests/support/query/serialization/client_state.json");
-        println!("json_data: {:?}", json_data);
         test_serialization_roundtrip::<AbciQuery>(json_data);
     }
 
@@ -291,7 +337,6 @@ mod tests {
     fn serialization_roundtrip_with_proof() {
         let json_data =
             include_str!("../../../tests/support/query/serialization/client_state_proof.json");
-        println!("json_data: {:?}", json_data);
         test_serialization_roundtrip::<AbciQuery>(json_data);
     }
 

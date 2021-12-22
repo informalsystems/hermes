@@ -208,7 +208,9 @@ where
                 .get_overrides()
                 .spawn_supervisor(&chains.config, &chains.registry);
 
-            self.test.run(config, chains)?;
+            self.test
+                .run(config, chains)
+                .map_err(config.hang_on_error())?;
         }
 
         Ok(())
@@ -271,7 +273,9 @@ where
 
         let _drop_handle = DropChainHandle(chains.handle_a.clone());
 
-        self.test.run(config, chains)?;
+        self.test
+            .run(config, chains)
+            .map_err(config.hang_on_error())?;
 
         Ok(())
     }

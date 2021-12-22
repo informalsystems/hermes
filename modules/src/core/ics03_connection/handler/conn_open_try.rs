@@ -81,6 +81,7 @@ pub(crate) fn process(
     verify_proofs(
         ctx,
         msg.client_state(),
+        msg.proofs().height(),
         &new_connection_end,
         &expected_conn,
         msg.proofs(),

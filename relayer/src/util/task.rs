@@ -90,6 +90,8 @@ pub fn spawn_background_task<E: Display>(
     interval_pause: Option<Duration>,
     mut step_runner: impl FnMut() -> Result<Next, TaskError<E>> + Send + Sync + 'static,
 ) -> TaskHandle {
+    info!("spawning new background task {}", task_name);
+
     let stopped = Arc::new(RwLock::new(false));
     let write_stopped = stopped.clone();
 
