@@ -8,7 +8,7 @@ use std::thread::sleep;
 
 use crate::bootstrap::binary::chain::bootstrap_foreign_client;
 use crate::bootstrap::binary::channel::{
-    bootstrap_channel, bootstrap_channel_with_chains, bootstrap_channel_with_connection,
+    bootstrap_channel_with_chains, bootstrap_channel_with_connection,
 };
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::ibc::denom::derive_ibc_denom;
@@ -479,23 +479,22 @@ impl BinaryChainTest for MisbehaviorExpirationTest {
             let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
                 .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            bootstrap_channel(
-                &chains.client_b_to_a,
-                &chains.client_a_to_b,
-                &tagged_transfer_port().as_ref(),
-                &tagged_transfer_port().as_ref(),
-                false,
-            )?;
+            // build a client header that will be expired
+            chains.client_b_to_a.build_latest_update_client_and_send()?;
 
             info!("waiting for the initial client header to expire, while keeping the IBC client refreshed");
 
             wait_for_client_expiry();
         }
 
-        let misbehavior_result = chains
-            .client_b_to_a
-            .detect_misbehaviour_and_submit_evidence(None);
-        info!("misbehavior result: {:?}", misbehavior_result);
+        // Calling detect_misbehaviour_and_submit_evidence(None) will always produce error logs
+        for _ in 0..3 {
+            let misbehavior_result = chains
+                .client_b_to_a
+                .detect_misbehaviour_and_submit_evidence(None);
+
+            info!("misbehavior result: {:?}", misbehavior_result);
+        }
 
         suspend()
     }
