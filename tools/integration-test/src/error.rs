@@ -1,8 +1,101 @@
 //! Error type used for the tests.
 
-/**
-   Right now we simply use [`eyre::Report`] as the untyped error type
-   for the tests. This is because we do not need to handle any error
-   during test and they are simply propagated and become a test failure.
-*/
-pub use eyre::Report as Error;
+use core::convert::{From, Into};
+use eyre::Report;
+use flex_error::{define_error, TraceError};
+use ibc_relayer::channel::error::ChannelError;
+use ibc_relayer::connection::ConnectionError;
+use ibc_relayer::error::Error as RelayerError;
+use ibc_relayer::supervisor::error::Error as SupervisorError;
+use ibc_relayer::transfer::PacketError;
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
+
+define_error! {
+    Error {
+        Generic
+            [ TraceError<Report> ]
+            | _ | { "generic error" },
+
+        Io
+            [ TraceError<IoError> ]
+            | _ | { "io error"},
+
+        CommandNotFound
+            { command: String }
+            [ TraceError<IoError> ]
+            | e | { format_args!("failed to execute command: {}. make sure it is available in $PATH", e.command) },
+
+        Relayer
+            [ RelayerError ]
+            | _ | { "relayer error"},
+
+        Supervisor
+            [ SupervisorError ]
+            | _ | { "supervisor error"},
+
+        Channel
+            [ ChannelError ]
+            | _ | { "channel error"},
+
+        Connection
+            [ ConnectionError ]
+            | _ | { "connection error"},
+
+        Packet
+            [ PacketError ]
+            | _ | { "packet error"},
+    }
+}
+
+pub fn handle_generic_error(e: impl Into<Report>) -> Error {
+    Error::generic(e.into())
+}
+
+pub fn handle_exec_error(command: &str) -> impl FnOnce(IoError) -> Error + '_ {
+    |e| match e.kind() {
+        IoErrorKind::NotFound => Error::command_not_found(command.to_string(), e),
+        _ => Error::io(e),
+    }
+}
+
+impl From<Report> for Error {
+    fn from(e: Report) -> Self {
+        Error::generic(e)
+    }
+}
+
+impl From<IoError> for Error {
+    fn from(e: IoError) -> Self {
+        Error::io(e)
+    }
+}
+
+impl From<RelayerError> for Error {
+    fn from(e: RelayerError) -> Self {
+        Error::relayer(e)
+    }
+}
+
+impl From<SupervisorError> for Error {
+    fn from(e: SupervisorError) -> Self {
+        Error::supervisor(e)
+    }
+}
+
+impl From<ChannelError> for Error {
+    fn from(e: ChannelError) -> Self {
+        Error::channel(e)
+    }
+}
+
+impl From<ConnectionError> for Error {
+    fn from(e: ConnectionError) -> Self {
+        Error::connection(e)
+    }
+}
+
+impl From<PacketError> for Error {
+    fn from(e: PacketError) -> Self {
+        Error::packet(e)
+    }
+}
