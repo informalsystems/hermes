@@ -13,9 +13,16 @@ pub struct TrackedMsgs {
 }
 
 impl TrackedMsgs {
-    pub fn new(msgs: Vec<Any>, tid: &str) -> Self {
+    pub fn new(msgs: Vec<Any>, tid: impl Into<String>) -> Self {
         Self {
             msgs,
+            tracking_id: tid.into(),
+        }
+    }
+
+    pub fn new_single(msg: Any, tid: impl Into<String>) -> Self {
+        Self {
+            msgs: vec![msg],
             tracking_id: tid.into(),
         }
     }
@@ -26,13 +33,6 @@ impl TrackedMsgs {
 
     pub fn tracking_id(&self) -> &str {
         &self.tracking_id
-    }
-
-    pub fn new_single(msg: Any, tid: &str) -> Self {
-        Self {
-            msgs: vec![msg],
-            tracking_id: tid.into(),
-        }
     }
 }
 
