@@ -2,6 +2,12 @@ use core::fmt;
 
 use prost_types::Any;
 
+/// A wrapper over a vector of proto-encoded messages
+/// (`Vec<Any>`), which has an associated tracking
+/// number.
+///
+/// A [`TrackedMsgs`] correlates with a [`TrackedEvents`]
+/// by sharing the same `tracking_id`.
 #[derive(Debug, Clone)]
 pub struct TrackedMsgs {
     msgs: Vec<Any>,
