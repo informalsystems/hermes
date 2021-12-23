@@ -1367,7 +1367,7 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bytes",
  "env_logger",
@@ -1397,7 +1397,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-integration-test"
-version = "0.8.0"
+version = "0.10.0"
 dependencies = [
  "color-eyre",
  "crossbeam-channel 0.5.1",
@@ -1442,7 +1442,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1497,7 +1497,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "abscissa_core",
  "atty",
@@ -1537,7 +1537,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "crossbeam-channel 0.5.1",
  "ibc",
@@ -1552,7 +1552,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "crossbeam-channel 0.5.1",
  "ibc",

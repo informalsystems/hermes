@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-rest"
-version      = "0.9.0"
+version      = "0.10.0"
 authors      = ["Informal Systems <hello@informal.systems>"]
 edition      = "2021"
 license      = "Apache-2.0"
@@ -14,8 +14,8 @@ description  = """
 """
 
 [dependencies]
-ibc               = { version = "0.9.0", path = "../modules" }
-ibc-relayer       = { version = "0.9.0", path = "../relayer" }
+ibc               = { version = "0.10.0", path = "../modules" }
+ibc-relayer       = { version = "0.10.0", path = "../relayer" }
 
 crossbeam-channel = "0.5"
 rouille           = "3.5"
