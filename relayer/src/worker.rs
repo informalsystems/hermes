@@ -106,9 +106,6 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     path.clone(),
                 );
                 task_handles.push(packet_task);
-
-                let link_task = packet::spawn_packet_worker(path.clone(), link);
-                task_handles.push(link_task);
             }
         }
     }

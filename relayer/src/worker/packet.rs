@@ -74,35 +74,6 @@ fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     }
 }
 
-pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
-    path: Packet,
-    link: Arc<Link<ChainA, ChainB>>,
-) -> TaskHandle {
-    spawn_background_task(
-        format!("PacketWorker({})", link.a_to_b),
-        Some(Duration::from_millis(500)),
-        move || {
-            link.a_to_b
-                .refresh_schedule()
-                .map_err(handle_link_error_in_task)?;
-
-            link.a_to_b
-                .execute_schedule()
-                .map_err(handle_link_error_in_task)?;
-
-            let summary = link.a_to_b.process_pending_txs();
-
-            if !summary.is_empty() {
-                trace!("Packet worker produced relay summary: {:?}", summary);
-            }
-
-            telemetry!(packet_metrics(&path, &summary));
-
-            Ok(Next::Continue)
-        },
-    )
-}
-
 /// Receives worker commands, which may be:
 ///     - IbcEvent => then it updates schedule
 ///     - NewBlock => schedules packet clearing
@@ -150,6 +121,35 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 
         return RetryResult::Retry(index);
     }
+
+    let schedule_result = link
+        .a_to_b
+        .refresh_schedule()
+        .and_then(|_| link.a_to_b.execute_schedule());
+
+    if let Err(e) = schedule_result {
+        if e.is_expired_or_frozen_error() {
+            error!(
+                "[{}] worker aborting due to expired or frozen client",
+                link.a_to_b
+            );
+            return RetryResult::Err(index);
+        } else {
+            error!(
+                "[{}] worker: schedule execution encountered error: {}",
+                link.a_to_b, e
+            );
+            return RetryResult::Retry(index);
+        }
+    }
+
+    let summary = link.a_to_b.process_pending_txs();
+
+    if !summary.is_empty() {
+        trace!("Packet worker produced relay summary: {:?}", summary);
+    }
+
+    telemetry!(packet_metrics(path, &summary));
 
     RetryResult::Ok(())
 }
