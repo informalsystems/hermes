@@ -534,11 +534,19 @@ impl GrpcStatusSubdetail {
 
     /// Check whether this gRPC error matches
     /// - status: InvalidArgument
-    /// - message: account sequence mismatch ...
+    /// - message: "account sequence mismatch, expected 166791, got 166793: incorrect account sequence: invalid request"
+    ///
+    /// # Note:
+    /// This predicate is tested and validated against errors
+    /// that appear at the `estimate_gas` step. The error
+    /// predicate to be used at the `broadcast_tx_sync` step
+    /// is different & relies on parsing the Response error code.
     pub fn is_account_sequence_mismatch(&self) -> bool {
-        if self.status.code() != tonic::Code::InvalidArgument {
-            return false;
-        }
+        // The code changed in SDK 0.44 from `InvalidArgument` to `Unknown`.
+        // Workaround: Ignore code. We'll match only on the status message.
+        // if self.status.code() != tonic::Code::InvalidArgument {
+        //     return false;
+        // }
 
         self.status
             .message()

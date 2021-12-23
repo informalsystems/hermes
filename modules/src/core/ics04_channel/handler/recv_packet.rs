@@ -60,8 +60,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
     }
 
-    let client_id = connection_end.client_id().clone();
-
     // Check if packet height is newer than the height of the local host chain
     let latest_height = ctx.host_height();
     if (!packet.timeout_height.is_zero()) && (packet.timeout_height <= latest_height) {
@@ -77,7 +75,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         return Err(Error::low_packet_timestamp());
     }
 
-    verify_packet_recv_proofs(ctx, packet, client_id, &msg.proofs)?;
+    verify_packet_recv_proofs(
+        ctx,
+        msg.proofs().height(),
+        packet,
+        &connection_end,
+        &msg.proofs,
+    )?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx

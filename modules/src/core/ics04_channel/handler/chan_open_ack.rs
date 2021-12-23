@@ -75,6 +75,7 @@ pub(crate) fn process(
     //2. Verify proofs
     verify_channel_proofs(
         ctx,
+        msg.proofs().height(),
         &channel_end,
         &conn,
         &expected_channel_end,

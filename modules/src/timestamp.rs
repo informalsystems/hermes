@@ -172,6 +172,7 @@ impl Display for Timestamp {
 }
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     TimestampOverflowError {
         TimestampOverflow
             |_| { "Timestamp overflow when modifying with duration" }

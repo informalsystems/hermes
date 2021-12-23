@@ -113,6 +113,7 @@ pub(crate) fn process(
     // 2. Actual proofs are verified now.
     verify_channel_proofs(
         ctx,
+        msg.proofs().height(),
         &new_channel_end,
         &conn,
         &expected_channel_end,
