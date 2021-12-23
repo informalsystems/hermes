@@ -16,6 +16,10 @@ define_error! {
             [ TraceError<Report> ]
             | _ | { "generic error" },
 
+        Assertion
+            { message: String }
+            | e | { format_args!("assertion failure: {}", e.message) },
+
         Io
             [ TraceError<IoError> ]
             | _ | { "io error"},

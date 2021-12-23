@@ -4,7 +4,7 @@ use core::time::Duration;
 use crossbeam_channel::{bounded, Sender};
 use std::sync::{Arc, RwLock};
 use std::thread;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use crate::util::lock::LockExt;
 
@@ -38,11 +38,6 @@ struct DropJoinHandle(Option<thread::JoinHandle<()>>);
 */
 pub enum TaskError<E> {
     /**
-       Inform the background task runner for a termination without error.
-    */
-    Abort,
-
-    /**
        Inform the background task runner that an ignorable error has occured,
        and the background task runner should log the error and then continue
        execution.
@@ -55,6 +50,11 @@ pub enum TaskError<E> {
        execution.
     */
     Fatal(E),
+}
+
+pub enum Next {
+    Continue,
+    Abort,
 }
 
 /**
@@ -88,7 +88,7 @@ pub enum TaskError<E> {
 pub fn spawn_background_task<E: Display>(
     task_name: String,
     interval_pause: Option<Duration>,
-    mut step_runner: impl FnMut() -> Result<(), TaskError<E>> + Send + Sync + 'static,
+    mut step_runner: impl FnMut() -> Result<Next, TaskError<E>> + Send + Sync + 'static,
 ) -> TaskHandle {
     info!("spawning new background task {}", task_name);
 
@@ -104,8 +104,8 @@ pub fn spawn_background_task<E: Display>(
                     break;
                 }
                 _ => match step_runner() {
-                    Ok(()) => {}
-                    Err(TaskError::Abort) => {
+                    Ok(Next::Continue) => {}
+                    Ok(Next::Abort) => {
                         info!("task is aborting: {}", task_name);
                         break;
                     }
@@ -127,7 +127,7 @@ pub fn spawn_background_task<E: Display>(
         }
 
         *write_stopped.acquire_write() = true;
-        debug!("task {} has terminated", task_name);
+        info!("task {} has terminated", task_name);
     });
 
     TaskHandle {

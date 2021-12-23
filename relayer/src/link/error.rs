@@ -7,7 +7,7 @@ use ibc::Height;
 use crate::channel::ChannelError;
 use crate::connection::ConnectionError;
 use crate::error::Error;
-use crate::foreign_client::ForeignClientError;
+use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
 use crate::supervisor::Error as SupervisorError;
 use crate::transfer::PacketError;
 
@@ -142,5 +142,20 @@ define_error! {
                     e.channel_id, e.chain_id)
             },
 
+    }
+}
+
+impl HasExpiredOrFrozenError for LinkErrorDetail {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        match self {
+            Self::Client(e) => e.source.is_expired_or_frozen_error(),
+            _ => false,
+        }
+    }
+}
+
+impl HasExpiredOrFrozenError for LinkError {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        self.detail().is_expired_or_frozen_error()
     }
 }

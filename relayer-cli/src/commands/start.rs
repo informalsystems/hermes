@@ -173,7 +173,7 @@ fn spawn_telemetry_server(
     Ok(())
 }
 
-fn make_supervisor<Chain: ChainHandle + 'static>(
+fn make_supervisor<Chain: ChainHandle>(
     config: Arc<RwLock<Config>>,
 ) -> Result<SupervisorHandle, Box<dyn Error + Send + Sync>> {
     let registry = SharedRegistry::<Chain>::new(config.clone());

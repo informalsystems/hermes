@@ -12,7 +12,7 @@ pub use ibc_relayer::registry::SharedRegistry;
 pub use tracing::{debug, error, info, warn};
 
 pub use crate::chain::driver::{tagged::TaggedChainDriverExt, ChainDriver};
-pub use crate::error::Error;
+pub use crate::error::{handle_generic_error, Error};
 pub use crate::framework::base::HasOverrides;
 pub use crate::framework::binary::chain::{
     run_binary_chain_test, run_two_way_binary_chain_test, BinaryChainTest,
@@ -34,5 +34,6 @@ pub use crate::types::tagged::{DualTagged, MonoTagged};
 pub use crate::types::wallet::{
     TaggedTestWalletsExt, TaggedWallet, TestWallets, Wallet, WalletAddress, WalletId,
 };
+pub use crate::util::assert::*;
 pub use crate::util::retry::assert_eventually_succeed;
 pub use crate::util::suspend::suspend;

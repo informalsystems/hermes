@@ -240,6 +240,22 @@ define_error! {
     }
 }
 
+pub trait HasExpiredOrFrozenError {
+    fn is_expired_or_frozen_error(&self) -> bool;
+}
+
+impl HasExpiredOrFrozenError for ForeignClientErrorDetail {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        matches!(self, Self::ExpiredOrFrozen(_))
+    }
+}
+
+impl HasExpiredOrFrozenError for ForeignClientError {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        self.detail().is_expired_or_frozen_error()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
     /// The identifier of this client. The host chain determines this id upon client creation,
@@ -548,7 +564,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         Ok(())
     }
 
-    pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+    pub fn validated_client_state(
+        &self,
+    ) -> Result<(AnyClientState, Option<Duration>), ForeignClientError> {
         let client_state = self
             .dst_chain
             .query_client_state(self.id(), Height::zero())
@@ -564,9 +582,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .consensus_state(client_state.latest_height())?
             .timestamp();
 
-        // The refresh_window is the maximum duration
-        // we can backoff between subsequent client updates.
-        let refresh_window = client_state.refresh_period();
         // Compute the duration since the last update of this client
         let elapsed = Timestamp::now().duration_since(&last_update_time);
 
@@ -576,6 +591,23 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 self.dst_chain.id(),
             ));
         }
+
+        Ok((client_state, elapsed))
+    }
+
+    pub fn is_expired_or_frozen(&self) -> bool {
+        match self.validated_client_state() {
+            Ok(_) => false,
+            Err(e) => e.is_expired_or_frozen_error(),
+        }
+    }
+
+    pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+        let (client_state, elapsed) = self.validated_client_state()?;
+
+        // The refresh_window is the maximum duration
+        // we can backoff between subsequent client updates.
+        let refresh_window = client_state.refresh_period();
 
         match (elapsed, refresh_window) {
             (None, _) | (_, None) => Ok(None),
@@ -784,16 +816,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
 
         // Get the latest client state on destination.
-        let client_state = self
-            .dst_chain()
-            .query_client_state(&self.id, Height::default())
-            .map_err(|e| {
-                ForeignClientError::client_update(
-                    self.dst_chain.id(),
-                    "failed querying client state on dst chain".to_string(),
-                    e,
-                )
-            })?;
+        let (client_state, _) = self.validated_client_state()?;
 
         let trusted_height = if trusted_height == Height::zero() {
             self.solve_trusted_height(target_height, &client_state)?
@@ -1144,6 +1167,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // Check for misbehaviour according to the specific source chain type.
             // In case of Tendermint client, this will also check the BFT time violation if
             // a header for the event height cannot be retrieved from the witness.
+            //
+            // FIXME: This returns error if the update event contains expired client state.
+            // This can happen even if the latest client state is unexpired, but the
+            // update event is from earlier.
             let misbehavior = self
                 .src_chain
                 .check_misbehaviour(update_event.clone(), client_state.clone())
@@ -1289,11 +1316,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     );
                     MisbehaviourResults::CannotExecute
                 }
+                ForeignClientErrorDetail::ExpiredOrFrozen(_) => {
+                    error!(
+                        "[{}] cannot check misbehavior on frozen or expired client",
+                        self
+                    );
+                    MisbehaviourResults::CannotExecute
+                }
                 _ => {
                     if update_event.is_some() {
                         MisbehaviourResults::CannotExecute
                     } else {
-                        warn!("[{}] misbehaviour checking result {:?}", self, e);
+                        warn!("[{}] misbehaviour checking result: {:?}", self, e);
                         MisbehaviourResults::ValidClient
                     }
                 }
