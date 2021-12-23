@@ -194,10 +194,6 @@ pub struct OperationalInfo<'a> {
 }
 
 impl<'a> OperationalInfo<'a> {
-    pub fn tracking_id(&self) -> &str {
-        &self.tracking_id
-    }
-
     pub fn target(&self) -> OperationalDataTarget {
         self.target
     }

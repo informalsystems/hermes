@@ -511,8 +511,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         initial_od: OperationalData,
     ) -> Result<S::Reply, LinkError> {
         // We will operate on potentially different operational data if the initial one fails.
-        let span = span!(Level::INFO, "relay", id = %initial_od.info().tracking_id());
-        let _enter = span.enter();
+        let _span = span!(Level::INFO, "relay", odata = %initial_od.info()).entered();
 
         let mut odata = initial_od;
 
@@ -599,7 +598,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if let Some(src_od) = src_opt {
             if src_od.target == op_info.target() {
                 // Our target is the _source_ chain, retry these messages
-                info!("[{}] will retry with op data {}", self, src_od.info());
+                info!(odata = %src_od.info(), "[{}] will retry", self);
                 return Some(src_od);
             } else {
                 // Our target is the _destination_ chain, the data in `src_od` contains
@@ -618,7 +617,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if let Some(dst_od) = dst_opt {
             if dst_od.target == op_info.target() {
                 // Our target is the _destination_ chain, retry these messages
-                info!("[{}] will retry with op data {}", self, dst_od.info());
+                info!(odata = %dst_od.info(), "[{}] will retry", self);
                 return Some(dst_od);
             } else {
                 // Our target is the _source_ chain, but `dst_od` has new messages
@@ -1439,8 +1438,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// If the relaying path has non-zero packet delays, this method also updates the client on the
     /// target chain with the appropriate headers.
     fn schedule_operational_data(&self, mut od: OperationalData) -> Result<(), LinkError> {
-        let span = span!(Level::INFO, "schedule", id = %od.info().tracking_id());
-        let _enter = span.enter();
+        let _span = span!(Level::INFO, "schedule", odata = %od.info()).entered();
 
         if od.batch.is_empty() {
             info!(
