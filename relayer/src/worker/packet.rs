@@ -5,11 +5,12 @@ use std::sync::Arc;
 use tracing::{error, trace};
 
 use crate::chain::handle::ChainHandle;
-use crate::link::{Link, RelaySummary};
+use crate::foreign_client::HasExpiredOrFrozenError;
+use crate::link::{error::LinkError, Link, RelaySummary};
 use crate::object::Packet;
 use crate::telemetry;
 use crate::util::retry::{retry_with_index, RetryResult};
-use crate::util::task::{spawn_background_task, TaskError, TaskHandle};
+use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::worker::retry_strategy;
 
 use super::error::RunError;
@@ -33,7 +34,7 @@ fn should_clear_packets(
     }
 }
 
-pub fn spawn_packet_cmd_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
     link: Arc<Link<ChainA, ChainB>>,
     clear_on_start: bool,
@@ -60,12 +61,20 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandl
                 .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
             }
 
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }
 
-pub fn spawn_packet_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
+    if e.is_expired_or_frozen_error() {
+        TaskError::Fatal(RunError::link(e))
+    } else {
+        TaskError::Ignore(RunError::link(e))
+    }
+}
+
+pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: Packet,
     link: Arc<Link<ChainA, ChainB>>,
 ) -> TaskHandle {
@@ -75,11 +84,11 @@ pub fn spawn_packet_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 
         move || {
             link.a_to_b
                 .refresh_schedule()
-                .map_err(|e| TaskError::Ignore(RunError::link(e)))?;
+                .map_err(handle_link_error_in_task)?;
 
             link.a_to_b
                 .execute_schedule()
-                .map_err(|e| TaskError::Ignore(RunError::link(e)))?;
+                .map_err(handle_link_error_in_task)?;
 
             let summary = link.a_to_b.process_pending_txs();
 
@@ -89,7 +98,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 
 
             telemetry!(packet_metrics(&path, &summary));
 
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }
@@ -102,7 +111,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 
 /// Regardless of the incoming command, this method
 /// also refreshes and executes any scheduled operational
 /// data that is ready.
-fn handle_packet_cmd<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static>(
+fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     is_first_run: &mut bool,
     link: &Link<ChainA, ChainB>,
     clear_on_start: bool,

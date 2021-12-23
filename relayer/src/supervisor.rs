@@ -1,5 +1,6 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use alloc::sync::Arc;
+use core::convert::Infallible;
 use core::ops::Deref;
 use core::time::Duration;
 use std::sync::RwLock;
@@ -15,7 +16,7 @@ use ibc::{
 };
 
 use crate::util::lock::LockExt;
-use crate::util::task::{spawn_background_task, TaskError, TaskHandle};
+use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::{
     chain::{handle::ChainHandle, HealthCheck},
     config::{ChainConfig, Config},
@@ -67,7 +68,7 @@ pub struct SupervisorHandle {
 */
 pub fn spawn_supervisor(
     config: Arc<RwLock<Config>>,
-    registry: SharedRegistry<impl ChainHandle + 'static>,
+    registry: SharedRegistry<impl ChainHandle>,
     rest_rx: Option<rest::Receiver>,
     do_health_check: bool,
 ) -> Result<SupervisorHandle, Error> {
@@ -102,7 +103,7 @@ impl SupervisorHandle {
     }
 }
 
-pub fn spawn_supervisor_tasks<Chain: ChainHandle + 'static>(
+pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     config: Arc<RwLock<Config>>,
     registry: SharedRegistry<Chain>,
     rest_rx: Option<rest::Receiver>,
@@ -157,7 +158,7 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle + 'static>(
     Ok(tasks)
 }
 
-fn spawn_batch_worker<Chain: ChainHandle + 'static>(
+fn spawn_batch_worker<Chain: ChainHandle>(
     config: Arc<RwLock<Config>>,
     registry: SharedRegistry<Chain>,
     client_state_filter: Arc<RwLock<FilterPolicy>>,
@@ -167,7 +168,7 @@ fn spawn_batch_worker<Chain: ChainHandle + 'static>(
     spawn_background_task(
         "supervisor_batch".to_string(),
         Some(Duration::from_millis(500)),
-        move || -> Result<(), TaskError<Error>> {
+        move || -> Result<Next, TaskError<Infallible>> {
             if let Some((chain, batch)) = try_recv_multiple(&subscriptions.acquire_read()) {
                 handle_batch(
                     &config.acquire_read(),
@@ -179,12 +180,12 @@ fn spawn_batch_worker<Chain: ChainHandle + 'static>(
                 );
             }
 
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }
 
-pub fn spawn_cmd_worker<Chain: ChainHandle + 'static>(
+pub fn spawn_cmd_worker<Chain: ChainHandle>(
     config: Arc<RwLock<Config>>,
     registry: SharedRegistry<Chain>,
     client_state_filter: Arc<RwLock<FilterPolicy>>,
@@ -195,7 +196,7 @@ pub fn spawn_cmd_worker<Chain: ChainHandle + 'static>(
     spawn_background_task(
         "supervisor_cmd".to_string(),
         Some(Duration::from_millis(500)),
-        move || -> Result<(), TaskError<Error>> {
+        move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
                 match cmd {
                     SupervisorCmd::UpdateConfig(update) => {
@@ -224,12 +225,12 @@ pub fn spawn_cmd_worker<Chain: ChainHandle + 'static>(
                     }
                 }
             }
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }
 
-pub fn spawn_rest_worker<Chain: ChainHandle + 'static>(
+pub fn spawn_rest_worker<Chain: ChainHandle>(
     config: Arc<RwLock<Config>>,
     registry: SharedRegistry<Chain>,
     workers: Arc<RwLock<WorkerMap>>,
@@ -238,7 +239,7 @@ pub fn spawn_rest_worker<Chain: ChainHandle + 'static>(
     spawn_background_task(
         "supervisor_rest".to_string(),
         Some(Duration::from_millis(500)),
-        move || -> Result<(), TaskError<Error>> {
+        move || -> Result<Next, TaskError<Infallible>> {
             handle_rest_requests(
                 &config.acquire_read(),
                 &registry.read(),
@@ -246,7 +247,7 @@ pub fn spawn_rest_worker<Chain: ChainHandle + 'static>(
                 &rest_rx,
             );
 
-            Ok(())
+            Ok(Next::Continue)
         },
     )
 }
@@ -446,7 +447,7 @@ fn collect_events(
 }
 
 /// Create a new `SpawnContext` for spawning workers.
-fn spawn_context<'a, Chain: ChainHandle + 'static>(
+fn spawn_context<'a, Chain: ChainHandle>(
     config: &'a Config,
     registry: &'a mut Registry<Chain>,
     client_state_filter: &'a mut FilterPolicy,
@@ -575,7 +576,7 @@ fn clear_pending_packets(workers: &mut WorkerMap, chain_id: &ChainId) -> Result<
 }
 
 /// Process a batch of events received from a chain.
-fn process_batch<Chain: ChainHandle + 'static>(
+fn process_batch<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
     client_state_filter: &mut FilterPolicy,
@@ -592,11 +593,7 @@ fn process_batch<Chain: ChainHandle + 'static>(
 
     // If there is a NewBlock event, forward this event first to any workers affected by it.
     if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
-        for worker in workers.to_notify(&src_chain.id()) {
-            worker
-                .send_new_block(height, new_block)
-                .map_err(Error::worker)?
-        }
+        workers.notify_new_block(&src_chain.id(), height, new_block);
     }
 
     // Forward the IBC events.
@@ -641,7 +638,7 @@ fn process_batch<Chain: ChainHandle + 'static>(
 
 /// Process the given batch if it does not contain any errors,
 /// output the errors on the console otherwise.
-fn handle_batch<Chain: ChainHandle + 'static>(
+fn handle_batch<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
     client_state_filter: &mut FilterPolicy,
@@ -677,7 +674,7 @@ fn handle_batch<Chain: ChainHandle + 'static>(
 ///
 /// If the removal had any effect, returns [`CmdEffect::ConfigChanged`] as
 /// subscriptions need to be reset to take into account the newly added chain.
-fn remove_chain<Chain: ChainHandle + 'static>(
+fn remove_chain<Chain: ChainHandle>(
     config: &mut Config,
     registry: &mut Registry<Chain>,
     workers: &mut WorkerMap,
@@ -716,7 +713,7 @@ fn remove_chain<Chain: ChainHandle + 'static>(
 ///
 /// If the addition had any effect, returns [`CmdEffect::ConfigChanged`] as
 /// subscriptions need to be reset to take into account the newly added chain.
-fn add_chain<Chain: ChainHandle + 'static>(
+fn add_chain<Chain: ChainHandle>(
     config: &mut Config,
     registry: &mut Registry<Chain>,
     workers: &mut WorkerMap,
@@ -769,7 +766,7 @@ fn add_chain<Chain: ChainHandle + 'static>(
 ///
 /// If the update had any effect, returns [`CmdEffect::ConfigChanged`] as
 /// subscriptions need to be reset to take into account the newly added chain.
-fn update_chain<Chain: ChainHandle + 'static>(
+fn update_chain<Chain: ChainHandle>(
     config: &mut Config,
     registry: &mut Registry<Chain>,
     workers: &mut WorkerMap,
@@ -795,7 +792,7 @@ fn update_chain<Chain: ChainHandle + 'static>(
 ///
 /// Returns an [`CmdEffect`] which instructs the caller as to
 /// whether or not the event subscriptions needs to be reset or not.
-fn update_config<Chain: ChainHandle + 'static>(
+fn update_config<Chain: ChainHandle>(
     config: &mut Config,
     registry: &mut Registry<Chain>,
     workers: &mut WorkerMap,

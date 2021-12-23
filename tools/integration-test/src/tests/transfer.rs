@@ -6,7 +6,7 @@ use crate::util::random::random_u64_range;
 
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
-    run_two_way_binary_channel_test(&IbcTransferTest)
+    run_binary_channel_test(&IbcTransferTest)
 }
 
 /**

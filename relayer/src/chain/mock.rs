@@ -419,11 +419,16 @@ impl ChainEndpoint for MockChain {
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_consensus_state(
         &self,
-        _client_id: ClientId,
-        _consensus_height: Height,
+        client_id: ClientId,
+        consensus_height: Height,
         _query_height: Height,
     ) -> Result<AnyConsensusState, Error> {
-        unimplemented!()
+        let consensus_states = self.context.consensus_states(&client_id);
+        Ok(consensus_states
+            .into_iter()
+            .find(|s| s.height == consensus_height)
+            .unwrap()
+            .consensus_state)
     }
 
     fn query_upgraded_consensus_state(

@@ -85,6 +85,15 @@ impl WorkerHandle {
         // Drop handle automatically handles the waiting for tasks to terminate.
     }
 
+    pub fn is_stopped(&self) -> bool {
+        for task in self.task_handles.iter() {
+            if !task.is_stopped() {
+                return false;
+            }
+        }
+        true
+    }
+
     /// Wait for the worker thread to finish.
     pub fn join(mut self) {
         let task_handles = mem::take(&mut self.task_handles);
