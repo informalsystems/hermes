@@ -651,6 +651,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             (State::TryOpen, State::TryOpen) => Some(self.build_chan_open_ack_and_send()?),
             (State::Open, State::TryOpen) => Some(self.build_chan_open_confirm_and_send()?),
             (State::Open, State::Open) => return Ok((None, Next::Abort)),
+
+            // If the counterparty state is already Open but current state is TryOpen,
+            // return anyway as the final step is to be done by the counterparty worker.
+            (State::TryOpen, State::Open) => return Ok((None, Next::Abort)),
+
             _ => None,
         };
 
