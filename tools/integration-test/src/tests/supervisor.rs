@@ -1,12 +1,8 @@
 use ibc_relayer::config::{self, Config, ModeConfig};
 
 use crate::prelude::*;
-pub use crate::relayer::channel::{
-    assert_eventually_channel_established, init_channel, query_channel_end,
-};
-pub use crate::relayer::connection::{
-    assert_eventually_connection_established, init_connection, query_connection_end,
-};
+use crate::relayer::channel::{assert_eventually_channel_established, init_channel};
+use crate::relayer::connection::{assert_eventually_connection_established, init_connection};
 
 #[test]
 fn test_supervisor() -> Result<(), Error> {

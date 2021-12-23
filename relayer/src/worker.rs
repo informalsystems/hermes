@@ -100,7 +100,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 let link = Arc::new(link);
                 let packet_task = packet::spawn_packet_cmd_worker(
                     cmd_rx,
-                    link.clone(),
+                    link,
                     packets_config.clear_on_start,
                     packets_config.clear_interval,
                     path.clone(),
