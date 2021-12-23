@@ -69,12 +69,6 @@ impl From<Vec<IbcEvent>> for TrackedEvents {
     }
 }
 
-impl fmt::Display for TrackedEvents {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.tracking_id)
-    }
-}
-
 /// A packet message that is prepared for sending
 /// to a chain, but has not been sent yet.
 ///

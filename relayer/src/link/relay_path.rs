@@ -288,7 +288,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             }
         }
 
-        // Transform into tracked `Events`
+        // Transform into `TrackedEvents`
         result.into()
     }
 
@@ -378,7 +378,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         events: TrackedEvents,
     ) -> Result<(Option<OperationalData>, Option<OperationalData>), LinkError> {
-        let span = span!(Level::DEBUG, "generate", id = %events);
+        let span = span!(Level::DEBUG, "generate", id = %events.tracking_id());
         let _enter = span.enter();
 
         let input = events.events();
