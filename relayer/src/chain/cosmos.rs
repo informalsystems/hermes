@@ -956,8 +956,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("send_messages_and_wait_commit");
 
-        let span = span!(Level::DEBUG, "send_w", id = %tracked_msgs);
-        let _enter = span.enter();
+        let _span = span!(Level::DEBUG, "send_w", id = %tracked_msgs).entered();
 
         let proto_msgs = tracked_msgs.messages();
 
