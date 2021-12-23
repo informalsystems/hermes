@@ -66,8 +66,7 @@ pub struct TxUpdateClientCmd {
     )]
     dst_client_id: ClientId,
 
-    // FIXME: rename the short option to avoid confusion with --help?
-    #[clap(short = 'h', long, about = "the target height of the client update")]
+    #[clap(short = 'H', long, about = "the target height of the client update")]
     target_height: Option<u64>,
 
     #[clap(short = 't', long, about = "the trusted height of the client update")]

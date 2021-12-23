@@ -30,8 +30,7 @@ pub struct QueryClientStateCmd {
     #[clap(required = true, about = "identifier of the client to query")]
     client_id: ClientId,
 
-    // FIXME: rename the short option to avoid confusion with --help?
-    #[clap(short = 'h', long, about = "the chain height context for the query")]
+    #[clap(short = 'H', long, about = "the chain height context for the query")]
     height: Option<u64>,
 }
 
@@ -84,7 +83,7 @@ pub struct QueryClientConsensusCmd {
     heights_only: bool,
 
     #[clap(
-        short = 'h',
+        short = 'H',
         long,
         about = "the chain height context to be used, applicable only to a specific height"
     )]
@@ -172,8 +171,7 @@ pub struct QueryClientHeaderCmd {
     #[clap(required = true, about = "height of header to query")]
     consensus_height: u64,
 
-    // FIXME: rename the short option to avoid confusion with --help?
-    #[clap(short = 'h', long, about = "the chain height context for the query")]
+    #[clap(short = 'H', long, about = "the chain height context for the query")]
     height: Option<u64>,
 }
 
@@ -239,7 +237,7 @@ pub struct QueryClientConnectionsCmd {
     client_id: ClientId,
 
     #[clap(
-        short = 'h',
+        short = 'H',
         long,
         about = "the chain height which this query should reflect"
     )]
