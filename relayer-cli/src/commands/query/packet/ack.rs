@@ -27,8 +27,7 @@ pub struct QueryPacketAcknowledgmentCmd {
     #[clap(required = true, about = "sequence of packet to query")]
     sequence: Sequence,
 
-    // FIXME: rename the short option to avoid confusion with --help?
-    #[clap(short = 'h', long, about = "height of the state to query")]
+    #[clap(short = 'H', long, about = "height of the state to query")]
     height: Option<u64>,
 }
 

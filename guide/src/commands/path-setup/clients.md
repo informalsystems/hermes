@@ -67,7 +67,7 @@ POSITIONAL ARGUMENTS:
     dst_client_id             identifier of the client to be updated on destination chain
 
 FLAGS:
-    -h, --target-height TARGET-HEIGHT
+    -H, --target-height TARGET-HEIGHT
     -t, --trusted-height TRUSTED-HEIGHT
 ```
 

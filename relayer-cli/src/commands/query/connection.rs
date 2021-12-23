@@ -25,8 +25,7 @@ pub struct QueryConnectionEndCmd {
     #[clap(required = true, about = "identifier of the connection to query")]
     connection_id: ConnectionId,
 
-    // FIXME: rename the short option to avoid confusion with --help?
-    #[clap(short = 'h', long, about = "height of the state to query")]
+    #[clap(short = 'H', long, about = "height of the state to query")]
     height: Option<u64>,
 }
 

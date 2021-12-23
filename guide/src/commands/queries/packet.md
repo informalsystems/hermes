@@ -82,7 +82,7 @@ POSITIONAL ARGUMENTS:
     sequence                  sequence of packet to query
 
 FLAGS:
-    -h, --height HEIGHT       height of the state to query
+    -H, --height HEIGHT       height of the state to query
 ```
 
 __Example__
@@ -154,7 +154,7 @@ POSITIONAL ARGUMENTS:
     sequence                  sequence of packet to query
 
 FLAGS:
-    -h, --height HEIGHT       height of the state to query
+    -H, --height HEIGHT       height of the state to query
 ```
 
 __Example__
