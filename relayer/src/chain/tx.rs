@@ -1,5 +1,3 @@
-use core::fmt;
-
 use prost_types::Any;
 
 /// A wrapper over a vector of proto-encoded messages
@@ -26,6 +24,10 @@ impl TrackedMsgs {
         &self.msgs
     }
 
+    pub fn tracking_id(&self) -> &str {
+        &self.tracking_id
+    }
+
     pub fn new_single(msg: Any, tid: &str) -> Self {
         Self {
             msgs: vec![msg],
@@ -37,11 +39,5 @@ impl TrackedMsgs {
 impl From<TrackedMsgs> for Vec<Any> {
     fn from(tm: TrackedMsgs) -> Vec<Any> {
         tm.msgs
-    }
-}
-
-impl fmt::Display for TrackedMsgs {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}; len={}", self.tracking_id, self.msgs.len())
     }
 }
