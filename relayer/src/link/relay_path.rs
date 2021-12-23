@@ -511,7 +511,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         initial_od: OperationalData,
     ) -> Result<S::Reply, LinkError> {
         // We will operate on potentially different operational data if the initial one fails.
-        let span = span!(Level::INFO, "relay", id = %initial_od);
+        let span = span!(Level::INFO, "relay", id = %initial_od.info().tracking_id());
         let _enter = span.enter();
 
         let mut odata = initial_od;
@@ -575,29 +575,31 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         initial_odata: OperationalData,
     ) -> Option<OperationalData> {
+        let op_info = initial_odata.info().into_owned();
+
         warn!(
             "[{}] failed. Regenerate operational data from {} events",
             self,
-            initial_odata.events().len()
+            op_info.batch_len()
         );
 
         // Retry by re-generating the operational data using the initial events
-        let (src_opt, dst_opt) = match self.generate_operational_data(initial_odata.events()) {
+        let (src_opt, dst_opt) = match self.generate_operational_data(initial_odata.into_events()) {
             Ok(new_operational_data) => new_operational_data,
             Err(e) => {
                 error!(
                     "[{}] failed to regenerate operational data from initial data: {} \
                     with error {}, discarding this op. data",
-                    self, initial_odata, e
+                    self, op_info, e
                 );
                 return None;
             } // Cannot retry, contain the error by reporting a None
         };
 
         if let Some(src_od) = src_opt {
-            if src_od.target == initial_odata.target {
+            if src_od.target == op_info.target() {
                 // Our target is the _source_ chain, retry these messages
-                info!("[{}] will retry with op data {}", self, src_od);
+                info!("[{}] will retry with op data {}", self, src_od.info());
                 return Some(src_od);
             } else {
                 // Our target is the _destination_ chain, the data in `src_od` contains
@@ -606,7 +608,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     error!(
                         "[{}] failed to schedule newly-generated operational data from \
                     initial data: {} with error {}, discarding this op. data",
-                        self, initial_odata, e
+                        self, op_info, e
                     );
                     return None;
                 }
@@ -614,9 +616,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         if let Some(dst_od) = dst_opt {
-            if dst_od.target == initial_odata.target {
+            if dst_od.target == op_info.target() {
                 // Our target is the _destination_ chain, retry these messages
-                info!("[{}] will retry with op data {}", self, dst_od);
+                info!("[{}] will retry with op data {}", self, dst_od.info());
                 return Some(dst_od);
             } else {
                 // Our target is the _source_ chain, but `dst_od` has new messages
@@ -629,7 +631,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             }
         } else {
             // There is no message intended for the destination chain
-            if initial_odata.target == OperationalDataTarget::Destination {
+            if op_info.target() == OperationalDataTarget::Destination {
                 info!("[{}] exhausted all events from this operational data", self);
                 return None;
             }
@@ -1368,7 +1370,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         } else if let Some(new_msg) =
                             self.build_timeout_from_send_packet_event(e, &dst_status)?
                         {
-                            debug!("[{}] found a timed-out msg in the op data {}", self, odata);
+                            debug!(
+                                "[{}] found a timed-out msg in the op data {}",
+                                self,
+                                odata.info(),
+                            );
                             timed_out
                                 .entry(odata_pos)
                                 .or_insert_with(|| {
@@ -1433,7 +1439,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// If the relaying path has non-zero packet delays, this method also updates the client on the
     /// target chain with the appropriate headers.
     fn schedule_operational_data(&self, mut od: OperationalData) -> Result<(), LinkError> {
-        let span = span!(Level::INFO, "schedule", id = %od);
+        let span = span!(Level::INFO, "schedule", id = %od.info().tracking_id());
         let _enter = span.enter();
 
         if od.batch.is_empty() {

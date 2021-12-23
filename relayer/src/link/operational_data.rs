@@ -1,3 +1,4 @@
+use alloc::borrow::Cow;
 use core::fmt;
 use core::iter;
 use std::time::Instant;
@@ -45,12 +46,8 @@ impl TrackedEvents {
         &self.list
     }
 
-    pub fn tracking_id(&self) -> &String {
+    pub fn tracking_id(&self) -> &str {
         &self.tracking_id
-    }
-
-    pub fn len(&self) -> usize {
-        self.list.len()
     }
 
     pub fn set_height(&mut self, height: Height) {
@@ -99,13 +96,17 @@ pub struct OperationalData {
 }
 
 impl OperationalData {
-    pub fn new(proofs_height: Height, target: OperationalDataTarget, tn: &str) -> Self {
+    pub fn new(
+        proofs_height: Height,
+        target: OperationalDataTarget,
+        tracking_id: impl Into<String>,
+    ) -> Self {
         OperationalData {
             proofs_height,
             batch: vec![],
             target,
             scheduled_time: Instant::now(),
-            tracking_id: tn.to_string(),
+            tracking_id: tracking_id.into(),
         }
     }
 
@@ -113,11 +114,22 @@ impl OperationalData {
         self.batch.push(msg)
     }
 
-    pub fn events(&self) -> TrackedEvents {
-        let list = self.batch.iter().map(|gm| gm.event.clone()).collect();
+    /// Returns displayable information on the operation's data.
+    pub fn info(&self) -> OperationalInfo<'_> {
+        OperationalInfo {
+            tracking_id: Cow::Borrowed(&self.tracking_id),
+            target: self.target,
+            proofs_height: self.proofs_height,
+            batch_len: self.batch.len(),
+        }
+    }
+
+    /// Transforms `self` into the list of events accompanied with the tracking ID.
+    pub fn into_events(self) -> TrackedEvents {
+        let list = self.batch.into_iter().map(|gm| gm.event).collect();
         TrackedEvents {
             list,
-            tracking_id: self.tracking_id.clone(),
+            tracking_id: self.tracking_id,
         }
     }
 
@@ -172,15 +184,51 @@ impl OperationalData {
     }
 }
 
-impl fmt::Display for OperationalData {
+/// A lightweight informational data structure that can be extracted
+/// out of [`OperationalData`] for e.g. logging purposes.
+pub struct OperationalInfo<'a> {
+    tracking_id: Cow<'a, str>,
+    target: OperationalDataTarget,
+    proofs_height: Height,
+    batch_len: usize,
+}
+
+impl<'a> OperationalInfo<'a> {
+    pub fn tracking_id(&self) -> &str {
+        &self.tracking_id
+    }
+
+    pub fn target(&self) -> OperationalDataTarget {
+        self.target
+    }
+
+    /// Returns the length of the assembled batch of in-transit messages.
+    pub fn batch_len(&self) -> usize {
+        self.batch_len
+    }
+
+    pub fn into_owned(self) -> OperationalInfo<'static> {
+        let Self {
+            tracking_id,
+            target,
+            proofs_height,
+            batch_len,
+        } = self;
+        OperationalInfo {
+            tracking_id: tracking_id.into_owned().into(),
+            target,
+            proofs_height,
+            batch_len,
+        }
+    }
+}
+
+impl<'a> fmt::Display for OperationalInfo<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{} ->{} @{}; len={}",
-            self.tracking_id,
-            self.target,
-            self.proofs_height,
-            self.batch.len(),
+            self.tracking_id, self.target, self.proofs_height, self.batch_len,
         )
     }
 }
