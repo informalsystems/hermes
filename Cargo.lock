@@ -1392,7 +1392,7 @@ dependencies = [
  "thiserror",
  "time",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.4",
 ]
 
 [[package]]
@@ -1424,7 +1424,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.4",
 ]
 
 [[package]]
@@ -1491,7 +1491,7 @@ dependencies = [
  "toml",
  "tonic",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.4",
  "uint",
 ]
 
@@ -1532,7 +1532,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.4",
 ]
 
 [[package]]
@@ -1846,7 +1846,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.4",
  "ureq",
 ]
 
@@ -3592,9 +3592,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "245da694cc7fc4729f3f418b304cb57789f1bed2a78c575407ab8a23f53cb4d3"
+checksum = "d5e6136799e1079699e0d9784c883e03af55cf6a1bee48fe1d79ca552c1bc36f"
 dependencies = [
  "ansi_term",
  "lazy_static",
