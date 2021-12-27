@@ -93,4 +93,4 @@ tracing-subscriber = { version = "0.3.3", features = ["fmt", "env-filter", "json
 test-log = { version = "0.2.8", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.2" }
+tendermint-testgen = { version = "=0.23.3" }
