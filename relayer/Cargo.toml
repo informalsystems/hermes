@@ -83,7 +83,7 @@ default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-proto]
-version = "=0.23.2"
+version = "=0.23.3"
 
 [dev-dependencies]
 ibc = { version = "0.9.0", path = "../modules", features = ["mocks"] }
