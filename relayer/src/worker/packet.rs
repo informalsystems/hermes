@@ -114,6 +114,10 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         return RetryResult::Retry(index);
     }
 
+    // The calls to refresh_schedule and execute_schedule depends on
+    // earlier calls to update_schedule and schedule_packet_clearing.
+    // Hence they must be retried in the same function body so that
+    // the same WorkerCmd is used for retrying the whole execution.
     let schedule_result = link
         .a_to_b
         .refresh_schedule()

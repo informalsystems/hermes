@@ -1,5 +1,5 @@
-use ibc_relayer::config::{self, Config, ModeConfig};
 use crate::ibc::denom::derive_ibc_denom;
+use ibc_relayer::config::{self, Config, ModeConfig};
 
 use crate::prelude::*;
 use crate::relayer::channel::{assert_eventually_channel_established, init_channel};
@@ -75,51 +75,61 @@ impl BinaryChainTest for SupervisorTest {
 
         let denom_a = chains.node_a.denom();
 
-        let chaina_user1_balance = chains
+        let denom_b = derive_ibc_denom(&port_b.as_ref(), &channel_id_b.as_ref(), &denom_a)?;
+
+        // Use the same wallet as the relayer to perform token transfer.
+        // This will cause an account sequence mismatch error.
+        let wallet_a = chains.node_a.wallets().relayer().cloned();
+        let wallet_b = chains.node_b.wallets().user1().cloned();
+
+        let transfer_amount = 1000;
+
+        let balance_a = chains
             .node_a
             .chain_driver()
-            .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
+            .query_balance(&wallet_a.address(), &denom_a)?;
 
-        let a_to_b_amount = 100;
+        // Test that the IBC transfer still succeed even when the packet worker experience
+        // account sequence mismatch error. We perform this a few times as the first transfer
+        // will succeed without error as the packet worker first fetch a fresh account sequence.
+        //
+        // During the test, you should see error logs showing "account sequence mismatch".
+        for i in 1..5 {
+            let total_transferred = i * transfer_amount;
 
-        info!(
-            "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
-            chains.chain_id_a(),
-            chains.chain_id_b(),
-            a_to_b_amount,
-            denom_a
-        );
+            info!(
+                "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
+                chains.chain_id_a(),
+                chains.chain_id_b(),
+                transfer_amount,
+                denom_a
+            );
 
-        chains.node_a.chain_driver().transfer_token(
-            &port_a.as_ref(),
-            &channel_id_a.as_ref(),
-            &chains.node_a.wallets().relayer().address(),
-            &chains.node_b.wallets().user1().address(),
-            a_to_b_amount,
-            &denom_a,
-        )?;
+            chains.node_a.chain_driver().transfer_token(
+                &port_a.as_ref(),
+                &channel_id_a.as_ref(),
+                &wallet_a.address(),
+                &wallet_b.address(),
+                transfer_amount,
+                &denom_a,
+            )?;
 
-        let denom_b = derive_ibc_denom(
-            &port_b.as_ref(),
-            &channel_id_b.as_ref(),
-            &denom_a,
-        )?;
+            info!(
+                "Packet worker should still succeed and recover from account sequence mismatch error",
+            );
 
-        info!(
-            "Packet worker should still succeed and recover from account sequence mismatch error",
-        );
+            chains.node_a.chain_driver().assert_eventual_wallet_amount(
+                &wallet_a.as_ref(),
+                balance_a - total_transferred,
+                &denom_a,
+            )?;
 
-        chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_a.wallets().relayer(),
-            chaina_user1_balance - a_to_b_amount,
-            &denom_a,
-        )?;
-
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_b.wallets().user1(),
-            a_to_b_amount,
-            &denom_b.as_ref(),
-        )?;
+            chains.node_b.chain_driver().assert_eventual_wallet_amount(
+                &wallet_b.as_ref(),
+                total_transferred,
+                &denom_b.as_ref(),
+            )?;
+        }
 
         Ok(())
     }
