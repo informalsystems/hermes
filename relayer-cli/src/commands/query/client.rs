@@ -66,6 +66,7 @@ impl Runnable for QueryClientStateCmd {
 
 /// Query client consensus command
 #[derive(Clone, Command, Debug, Clap)]
+#[clap(setting(DisableHelpFlag))]
 pub struct QueryClientConsensusCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
@@ -231,6 +232,7 @@ impl Runnable for QueryClientHeaderCmd {
 
 /// Query client connections command
 #[derive(Clone, Command, Debug, Clap)]
+#[clap(setting(DisableHelpFlag))]
 pub struct QueryClientConnectionsCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
