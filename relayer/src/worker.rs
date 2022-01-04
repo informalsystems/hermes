@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use core::fmt;
 use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
 
 use crate::foreign_client::ForeignClient;
 use crate::link::{Link, LinkParameters};
@@ -97,15 +98,18 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             );
 
             if let Ok(link) = link {
-                let link = Arc::new(link);
+                let link = Arc::new(Mutex::new(link));
                 let packet_task = packet::spawn_packet_cmd_worker(
                     cmd_rx,
-                    link,
+                    link.clone(),
                     packets_config.clear_on_start,
                     packets_config.clear_interval,
                     path.clone(),
                 );
                 task_handles.push(packet_task);
+
+                let link_task = packet::spawn_packet_worker(path.clone(), link);
+                task_handles.push(link_task);
             }
         }
     }

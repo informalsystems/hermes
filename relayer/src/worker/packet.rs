@@ -1,12 +1,12 @@
 use core::time::Duration;
 use crossbeam_channel::Receiver;
 use ibc::Height;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tracing::{error, trace};
 
 use crate::chain::handle::ChainHandle;
 use crate::foreign_client::HasExpiredOrFrozenError;
-use crate::link::{Link, RelaySummary};
+use crate::link::{error::LinkError, Link, RelaySummary};
 use crate::object::Packet;
 use crate::telemetry;
 use crate::util::retry::{retry_with_index, RetryResult};
@@ -34,23 +34,64 @@ fn should_clear_packets(
     }
 }
 
+fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
+    if e.is_expired_or_frozen_error() {
+        TaskError::Fatal(RunError::link(e))
+    } else {
+        TaskError::Ignore(RunError::link(e))
+    }
+}
+
+pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
+    path: Packet,
+    // Mutex is used to prevent race condition between the packet workers
+    link: Arc<Mutex<Link<ChainA, ChainB>>>,
+) -> TaskHandle {
+    spawn_background_task(
+        format!("PacketWorker({})", link.lock().unwrap().a_to_b),
+        Some(Duration::from_millis(500)),
+        move || {
+            let relay_path = &link.lock().unwrap().a_to_b;
+
+            relay_path
+                .refresh_schedule()
+                .map_err(handle_link_error_in_task)?;
+
+            relay_path
+                .execute_schedule()
+                .map_err(handle_link_error_in_task)?;
+
+            let summary = relay_path.process_pending_txs();
+
+            if !summary.is_empty() {
+                trace!("Packet worker produced relay summary: {:?}", summary);
+            }
+
+            telemetry!(packet_metrics(&path, &summary));
+
+            Ok(Next::Continue)
+        },
+    )
+}
+
 pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
-    link: Arc<Link<ChainA, ChainB>>,
+    // Mutex is used to prevent race condition between the packet workers
+    link: Arc<Mutex<Link<ChainA, ChainB>>>,
     clear_on_start: bool,
     clear_interval: u64,
     path: Packet,
 ) -> TaskHandle {
     let mut is_first_run: bool = true;
     spawn_background_task(
-        format!("PacketCmdWorker({})", link.a_to_b),
+        format!("PacketCmdWorker({})", link.lock().unwrap().a_to_b),
         Some(Duration::from_millis(200)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
                 retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
                     handle_packet_cmd(
                         &mut is_first_run,
-                        &link,
+                        &link.lock().unwrap(),
                         clear_on_start,
                         clear_interval,
                         &path,
@@ -118,6 +159,11 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     // earlier calls to update_schedule and schedule_packet_clearing.
     // Hence they must be retried in the same function body so that
     // the same WorkerCmd is used for retrying the whole execution.
+    //
+    // The worker for spawn_packet_worker is still needed to handle
+    // the case when no PacketCmd arriving, so that it can still
+    // do the refresh and execute schedule.
+
     let schedule_result = link
         .a_to_b
         .refresh_schedule()
