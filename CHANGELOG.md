@@ -47,7 +47,7 @@ If Hermes was configured with `strategy = 'packets'`, then the configuration nee
 ##### `strategy = 'all'`
 
 If Hermes was configured to complete connection and channel handshakes as well, ie. with `strategy = 'all'`,
-then on top of the changes above, `mode.connections.enabled` and `mode.chhanels.enabled` must be set to `true`.
+then on top of the changes above, `mode.connections.enabled` and `mode.channels.enabled` must be set to `true`.
 
 [See the relevant section][config-mode-toml] of the documented `config.toml` file in the repository for more details.
 
