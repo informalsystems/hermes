@@ -1,7 +1,6 @@
 use core::fmt;
 
 use abscissa_core::{Clap, Command, Runnable};
-use clap::AppSettings::DisableHelpFlag;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
@@ -55,7 +54,6 @@ impl Runnable for TxCreateClientCmd {
 }
 
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct TxUpdateClientCmd {
     #[clap(required = true, about = "identifier of the destination chain")]
     dst_chain_id: ChainId,

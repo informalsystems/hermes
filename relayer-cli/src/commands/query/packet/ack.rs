@@ -1,5 +1,4 @@
 use abscissa_core::{Clap, Command, Runnable};
-use clap::AppSettings::DisableHelpFlag;
 use subtle_encoding::{Encoding, Hex};
 
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -13,7 +12,6 @@ use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct QueryPacketAcknowledgmentCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
