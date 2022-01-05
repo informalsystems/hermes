@@ -26,11 +26,12 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
 use crate::channel::version::ResolveContext;
 use crate::connection::Connection;
-use crate::foreign_client::ForeignClient;
+use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::error::Error as SupervisorError;
 use crate::util::retry::retry_with_index;
-use crate::util::retry::RetryResult;
+use crate::util::retry::{retry_count, RetryResult};
+use crate::util::task::Next;
 
 pub mod error;
 mod version;
@@ -419,10 +420,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
     fn do_chan_open_try_and_send_with_retry(&mut self) -> Result<(), ChannelError> {
         retry_with_index(retry_strategy::default(), |_| {
-            self.do_chan_open_try_and_send()
+            if let Err(e) = self.do_chan_open_try_and_send() {
+                if e.is_expired_or_frozen_error() {
+                    RetryResult::Err(e)
+                } else {
+                    RetryResult::Retry(e)
+                }
+            } else {
+                RetryResult::Ok(())
+            }
         })
         .map_err(|err| {
-            error!("failed to open channel after {} retries", err);
+            error!("failed to open channel after {} retries", retry_count(&err));
 
             from_retry_error(
                 err,
@@ -585,15 +594,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     ///
     /// Post-condition: the channel state is `Open` on both ends if successful.
     fn do_chan_open_finalize_with_retry(&self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| self.do_chan_open_finalize()).map_err(
-            |err| {
-                error!("failed to open channel after {} retries", err);
-                from_retry_error(
-                    err,
-                    format!("Failed to finish channel handshake for {:?}", self),
-                )
-            },
-        )?;
+        retry_with_index(retry_strategy::default(), |_| {
+            if let Err(e) = self.do_chan_open_finalize() {
+                if e.is_expired_or_frozen_error() {
+                    RetryResult::Err(e)
+                } else {
+                    RetryResult::Retry(e)
+                }
+            } else {
+                RetryResult::Ok(())
+            }
+        })
+        .map_err(|err| {
+            error!("failed to open channel after {} retries", err);
+            from_retry_error(
+                err,
+                format!("Failed to finish channel handshake for {:?}", self),
+            )
+        })?;
 
         Ok(())
     }
@@ -623,33 +641,51 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))
     }
 
-    pub fn handshake_step(&mut self, state: State) -> Result<Vec<IbcEvent>, ChannelError> {
-        match (state, self.counterparty_state()?) {
-            (State::Init, State::Uninitialized) => Ok(vec![self.build_chan_open_try_and_send()?]),
-            (State::Init, State::Init) => Ok(vec![self.build_chan_open_try_and_send()?]),
-            (State::TryOpen, State::Init) => Ok(vec![self.build_chan_open_ack_and_send()?]),
-            (State::TryOpen, State::TryOpen) => Ok(vec![self.build_chan_open_ack_and_send()?]),
-            (State::Open, State::TryOpen) => Ok(vec![self.build_chan_open_confirm_and_send()?]),
-            _ => Ok(vec![]),
-        }
+    pub fn handshake_step(
+        &mut self,
+        state: State,
+    ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
+        let res = match (state, self.counterparty_state()?) {
+            (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),
+            (State::Init, State::Init) => Some(self.build_chan_open_try_and_send()?),
+            (State::TryOpen, State::Init) => Some(self.build_chan_open_ack_and_send()?),
+            (State::TryOpen, State::TryOpen) => Some(self.build_chan_open_ack_and_send()?),
+            (State::Open, State::TryOpen) => Some(self.build_chan_open_confirm_and_send()?),
+            (State::Open, State::Open) => return Ok((None, Next::Abort)),
+
+            // If the counterparty state is already Open but current state is TryOpen,
+            // return anyway as the final step is to be done by the counterparty worker.
+            (State::TryOpen, State::Open) => return Ok((None, Next::Abort)),
+
+            _ => None,
+        };
+
+        Ok((res, Next::Continue))
     }
 
-    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<(), u64> {
-        let done = '🥳';
-
+    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<Next, u64> {
         match self.handshake_step(state) {
             Err(e) => {
-                error!("Failed Chan{:?} with error: {}", state, e);
-                RetryResult::Retry(index)
+                if e.is_expired_or_frozen_error() {
+                    error!(
+                        "failed to establish channel handshake on frozen client: {}",
+                        e
+                    );
+                    RetryResult::Err(index)
+                } else {
+                    error!("Failed Chan{:?} with error: {}", state, e);
+                    RetryResult::Retry(index)
+                }
             }
-            Ok(ev) => {
-                debug!("{} => {:#?}\n", done, ev);
-                RetryResult::Ok(())
+            Ok((Some(ev), handshake_completed)) => {
+                info!("channel handshake step completed with events: {:#?}\n", ev);
+                RetryResult::Ok(handshake_completed)
             }
+            Ok((None, handshake_completed)) => RetryResult::Ok(handshake_completed),
         }
     }
 
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<(), u64> {
+    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<Next, u64> {
         let state = match event {
             IbcEvent::OpenInitChannel(_) => State::Init,
             IbcEvent::OpenTryChannel(_) => State::TryOpen,

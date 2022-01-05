@@ -67,7 +67,7 @@ use crate::types::tagged::*;
 
 impl<Tag, Handle> ChainHandle for MonoTagged<Tag, Handle>
 where
-    Tag: Send + Sync,
+    Tag: Send + Sync + 'static,
     Handle: ChainHandle,
 {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {

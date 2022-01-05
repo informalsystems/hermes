@@ -47,7 +47,7 @@ pub struct SpawnContext<'a, Chain: ChainHandle> {
     mode: SpawnMode,
 }
 
-impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
+impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
     pub fn new(
         config: &'a Config,
         registry: &'a mut Registry<Chain>,

@@ -11,9 +11,11 @@ use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
+use crate::framework::base::TestConfigOverride;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::PortsOverride;
 use crate::framework::binary::node::NodeConfigOverride;
+use crate::types::config::TestConfig;
 
 /**
    This trait should be implemented for all test cases to allow overriding
@@ -32,6 +34,8 @@ use crate::framework::binary::node::NodeConfigOverride;
    also be defined inside this trait with a default method body.
 */
 pub trait TestOverrides {
+    fn modify_test_config(&self, _config: &mut TestConfig) {}
+
     /**
         Modify the full node config before the chain gets initialized.
 
@@ -69,7 +73,7 @@ pub trait TestOverrides {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
+        registry: &SharedRegistry<impl ChainHandle>,
     ) -> Result<Option<SupervisorHandle>, Error> {
         let handle = spawn_supervisor(config.clone(), registry.clone(), None, false)?;
         Ok(Some(handle))
@@ -104,6 +108,12 @@ impl<Test: TestOverrides> HasOverrides for Test {
     }
 }
 
+impl<Test: TestOverrides> TestConfigOverride for Test {
+    fn modify_test_config(&self, config: &mut TestConfig) {
+        TestOverrides::modify_test_config(self, config)
+    }
+}
+
 impl<Test: TestOverrides> NodeConfigOverride for Test {
     fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
         TestOverrides::modify_node_config(self, config)
@@ -120,7 +130,7 @@ impl<Test: TestOverrides> SupervisorOverride for Test {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
+        registry: &SharedRegistry<impl ChainHandle>,
     ) -> Result<Option<SupervisorHandle>, Error> {
         TestOverrides::spawn_supervisor(self, config, registry)
     }
