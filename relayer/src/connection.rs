@@ -804,7 +804,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_init_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_init()?;
 
-        let tm = TrackedMsgs::new(dst_msgs, "create connection with ConnectionOpenInit");
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenInit");
 
         let events = self
             .dst_chain()
@@ -935,7 +935,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_try_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_try()?;
 
-        let tm = TrackedMsgs::new(dst_msgs, "create connection with ConnectionOpenTry");
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenTry");
 
         let events = self
             .dst_chain()
@@ -1031,7 +1031,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_ack_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_ack()?;
 
-        let tm = TrackedMsgs::new(dst_msgs, "create connection with ConnectionOpenAck");
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenAck");
 
         let events = self
             .dst_chain()
@@ -1110,7 +1110,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_confirm_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_confirm()?;
 
-        let tm = TrackedMsgs::new(dst_msgs, "create connection with ConnectionOpenConfirm");
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenConfirm");
 
         let events = self
             .dst_chain()
