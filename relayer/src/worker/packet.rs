@@ -163,6 +163,8 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     // The worker for spawn_packet_worker is still needed to handle
     // the case when no PacketCmd arriving, so that it can still
     // do the refresh and execute schedule.
+    // This follows the original logic here:
+    // https://github.com/informalsystems/ibc-rs/blob/e7a6403888f48754ddb80e35ebe2281fb7c51c04/relayer/src/worker/packet.rs#L127-L133
 
     let schedule_result = link
         .a_to_b
