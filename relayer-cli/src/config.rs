@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use flex_error::{define_error, TraceError};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::config::{Config, ModeConfig};
-use tendermint_light_client::types::TrustThreshold;
+use tendermint_light_client_verifier::types::TrustThreshold;
 use tracing_subscriber::filter::ParseError;
 
 use crate::application::app_reader;
