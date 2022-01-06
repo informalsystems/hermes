@@ -1,0 +1,1 @@
+- Perform `execute_schedule` after handling packet commands in packet worker ([#1715](https://github.com/informalsystems/ibc-rs/issues/1715))
