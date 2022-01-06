@@ -15,17 +15,22 @@ use ibc::{
     Height,
 };
 
-use crate::util::lock::LockExt;
-use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::{
     chain::{handle::ChainHandle, HealthCheck},
     config::{ChainConfig, Config},
-    event,
-    event::monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+    event::{
+        self,
+        monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+    },
     object::Object,
     registry::{Registry, SharedRegistry},
     rest,
-    util::try_recv_multiple,
+    supervisor::scan::ScanMode,
+    util::{
+        lock::LockExt,
+        task::{spawn_background_task, Next, TaskError, TaskHandle},
+        try_recv_multiple,
+    },
     worker::WorkerMap,
 };
 
@@ -60,6 +65,18 @@ pub struct SupervisorHandle {
     tasks: Vec<TaskHandle>,
 }
 
+/// Options for the supervisor
+#[derive(Debug)]
+pub struct SupervisorOptions {
+    /// Perform a health check of all chains we connect to
+    pub health_check: bool,
+
+    /// Force a full scan of the chains for clients, connections, and channels,
+    /// even when an allow list is configured for a chain and the full scan could
+    /// be omitted.
+    pub force_full_scan: bool,
+}
+
 /**
    Spawn a supervisor for testing purpose using the provided
    [`SharedConfig`] and [`SharedRegistry`]. Returns a
@@ -70,11 +87,11 @@ pub fn spawn_supervisor(
     config: Arc<RwLock<Config>>,
     registry: SharedRegistry<impl ChainHandle>,
     rest_rx: Option<rest::Receiver>,
-    do_health_check: bool,
+    options: SupervisorOptions,
 ) -> Result<SupervisorHandle, Error> {
     let (sender, receiver) = unbounded();
 
-    let tasks = spawn_supervisor_tasks(config, registry, rest_rx, receiver, do_health_check)?;
+    let tasks = spawn_supervisor_tasks(config, registry, rest_rx, receiver, options)?;
 
     Ok(SupervisorHandle { sender, tasks })
 }
@@ -108,9 +125,9 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     registry: SharedRegistry<Chain>,
     rest_rx: Option<rest::Receiver>,
     cmd_rx: Receiver<SupervisorCmd>,
-    do_health_check: bool,
+    options: SupervisorOptions,
 ) -> Result<Vec<TaskHandle>, Error> {
-    if do_health_check {
+    if options.health_check {
         health_check(&config.acquire_read(), &mut registry.write());
     }
 
@@ -121,6 +138,11 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
         &config.acquire_read(),
         &mut registry.write(),
         &mut client_state_filter.acquire_write(),
+        if options.force_full_scan {
+            ScanMode::Full
+        } else {
+            ScanMode::Auto
+        },
     )
     .scan_chains();
 
@@ -464,8 +486,9 @@ fn chain_scanner<'a, Chain: ChainHandle>(
     config: &'a Config,
     registry: &'a mut Registry<Chain>,
     client_state_filter: &'a mut FilterPolicy,
+    full_scan: ScanMode,
 ) -> ChainScanner<'a, Chain> {
-    ChainScanner::new(config, registry, client_state_filter)
+    ChainScanner::new(config, registry, client_state_filter, full_scan)
 }
 
 /// Perform a health check on all connected chains
@@ -748,8 +771,8 @@ fn add_chain<Chain: ChainHandle>(
 
     debug!(chain.id=%id, "scanning chain");
 
-    let scan_result =
-        chain_scanner(config, registry, client_state_filter).scan_chain(&chain_config);
+    let scan_result = chain_scanner(config, registry, client_state_filter, ScanMode::Auto)
+        .scan_chain(&chain_config);
 
     let scan = match scan_result {
         Ok(scan) => scan,

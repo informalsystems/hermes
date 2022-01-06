@@ -217,10 +217,17 @@ impl ChannelScan {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ScanMode {
+    Auto,
+    Full,
+}
+
 pub struct ChainScanner<'a, Chain: ChainHandle> {
     config: &'a Config,
     registry: &'a mut Registry<Chain>,
     client_state_filter: &'a mut FilterPolicy,
+    scan_mode: ScanMode,
 }
 
 impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
@@ -228,11 +235,13 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         config: &'a Config,
         registry: &'a mut Registry<Chain>,
         client_state_filter: &'a mut FilterPolicy,
+        scan_mode: ScanMode,
     ) -> Self {
         Self {
             config,
             registry,
             client_state_filter,
+            scan_mode,
         }
     }
 
@@ -268,16 +277,18 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         let mut scan = ChainScan::new(chain_config.id.clone());
 
-        if let Some(spec) = self.use_allow_list(chain_config) {
-            info!("chain uses an allow list, skipping scan for fast startup");
-            info!("allowed ports/channels: {}", spec);
+        match self.use_allow_list(chain_config) {
+            Some(spec) if self.scan_mode == ScanMode::Auto => {
+                info!("chain uses an allow list, skipping scan for fast startup");
+                info!("allowed ports/channels: {}", spec);
 
-            self.query_allowed_channels(&chain, spec, &mut scan)?;
-        } else {
-            info!("scanning chain for all clients, connections and channels");
-
-            self.scan_all_clients(&chain, &mut scan)?;
-        }
+                self.query_allowed_channels(&chain, spec, &mut scan)?;
+            }
+            _ => {
+                info!("scanning chain for all clients, connections and channels");
+                self.scan_all_clients(&chain, &mut scan)?;
+            }
+        };
 
         Ok(scan)
     }
