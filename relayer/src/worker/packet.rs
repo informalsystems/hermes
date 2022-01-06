@@ -149,7 +149,8 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     if let Err(e) = result {
         error!(
             path = %path.short_name(),
-            "[{}] worker: handling command encountered error: {}",
+            retry_index = %index,
+            "[{}] worker will retry: handling command encountered error: {}",
             link.a_to_b, e
         );
 
@@ -181,7 +182,8 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
             return RetryResult::Err(index);
         } else {
             error!(
-                "[{}] worker: schedule execution encountered error: {}",
+                retry_index = %index,
+                "[{}] worker will retry: schedule execution encountered error: {}",
                 link.a_to_b, e
             );
             return RetryResult::Retry(index);
