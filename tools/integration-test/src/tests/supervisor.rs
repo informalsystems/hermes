@@ -140,6 +140,8 @@ impl BinaryChainTest for SupervisorTest {
             &denom_b.as_ref(),
         )?;
 
+        std::thread::sleep(core::time::Duration::from_secs(10));
+
         Ok(())
     }
 }

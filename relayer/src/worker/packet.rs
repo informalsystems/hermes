@@ -124,6 +124,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd: WorkerCmd,
     index: u64,
 ) -> RetryResult<(), u64> {
+    trace!("[{}] handling packet worker command {:?}", link.a_to_b, cmd);
     let result = match cmd {
         WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
 
