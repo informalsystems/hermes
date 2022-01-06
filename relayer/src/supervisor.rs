@@ -786,12 +786,7 @@ fn update_chain<Chain: ChainHandle>(
 ) -> CmdEffect {
     info!(chain.id=%chain_config.id, "updating existing chain");
 
-    let removed = remove_chain(
-        config,
-        registry,
-        workers,
-        &chain_config.id,
-    );
+    let removed = remove_chain(config, registry, workers, &chain_config.id);
 
     let added = add_chain(config, registry, workers, client_state_filter, chain_config);
 
@@ -813,9 +808,7 @@ fn update_config<Chain: ChainHandle>(
         ConfigUpdate::Add(chain_config) => {
             add_chain(config, registry, workers, client_state_filter, chain_config)
         }
-        ConfigUpdate::Remove(id) => {
-            remove_chain(config, registry, workers, &id)
-        }
+        ConfigUpdate::Remove(id) => remove_chain(config, registry, workers, &id),
         ConfigUpdate::Update(chain_config) => {
             update_chain(config, registry, workers, client_state_filter, chain_config)
         }
