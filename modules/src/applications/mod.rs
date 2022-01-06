@@ -2,7 +2,16 @@
 
 pub mod ics20_fungible_token_transfer;
 
-// TODO: These consts should move into the ICS27 namespace
-pub const ICS27_BANK_SEND_TYPE_URL: &str = "/cosmos.bank.v1beta1.MsgSend";
-pub const ICS27_SEND_TYPE_URL: &str = "/intertx.MsgSend";
-pub const ICS27_REGISTER_TYPE_URL: &str = "/intertx.MsgRegister";
+// TODO: Move into its own directory
+pub mod ics27_interchain_accounts {
+    /// The port identifier that the ICS27 applications
+    /// typically bind with. This is merely a prefix
+    /// of the full port identifier, which has a
+    /// complex structure.
+    ///
+    /// https://github.com/cosmos/ibc/tree/master/spec/app/ics-027-interchain-accounts#registering--controlling-flows
+    pub const PORT_ID_PREFIX: &str = "ics27-1.";
+
+    /// ICS27 application current version.
+    pub const VERSION: &str = "ics27-1";
+}

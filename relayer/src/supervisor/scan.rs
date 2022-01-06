@@ -28,7 +28,7 @@ use crate::{
     },
     config::{ChainConfig, ChannelsSpec, Config, ModeConfig, PacketFilter},
     object::{Channel, Client, Connection, Object, Packet},
-    registry::SharedRegistry,
+    registry::{Registry, SharedRegistry},
     supervisor::client_state_filter::{FilterPolicy, Permission},
     supervisor::error::Error as SupervisorError,
     worker::WorkerMap,
@@ -219,14 +219,14 @@ impl ChannelScan {
 
 pub struct ChainScanner<'a, Chain: ChainHandle> {
     config: &'a Config,
-    registry: SharedRegistry<Chain>,
+    registry: &'a mut Registry<Chain>,
     client_state_filter: &'a mut FilterPolicy,
 }
 
 impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     pub fn new(
         config: &'a Config,
-        registry: SharedRegistry<Chain>,
+        registry: &'a mut Registry<Chain>,
         client_state_filter: &'a mut FilterPolicy,
     ) -> Self {
         Self {
@@ -291,7 +291,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         info!("querying allowed channels...");
 
         for (port_id, channel_id) in spec.iter() {
-            let result = scan_allowed_channel(&mut self.registry, chain, port_id, channel_id);
+            let result = scan_allowed_channel(self.registry, chain, port_id, channel_id);
 
             match result {
                 Ok(ScannedChannel {
@@ -514,7 +514,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         }
 
         let permission = self.client_state_filter.control_connection_end_and_client(
-            &mut self.registry.write(),
+            self.registry,
             &chain.id(),
             &client.client_state,
             &connection.connection_end,
@@ -562,9 +562,9 @@ struct ScannedChannel {
     client: IdentifiedAnyClientState,
 }
 
-fn scan_allowed_channel<C: ChainHandle>(
-    registry: &mut SharedRegistry<C>,
-    chain: &C,
+fn scan_allowed_channel<Chain: ChainHandle>(
+    registry: &'_ mut Registry<Chain>,
+    chain: &Chain,
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ScannedChannel, Error> {
@@ -626,8 +626,8 @@ fn scan_allowed_channel<C: ChainHandle>(
     })
 }
 
-fn query_client<C: ChainHandle>(
-    chain: &C,
+fn query_client<Chain: ChainHandle>(
+    chain: &Chain,
     client_id: &ClientId,
 ) -> Result<IdentifiedAnyClientState, Error> {
     let client = chain
@@ -637,8 +637,8 @@ fn query_client<C: ChainHandle>(
     Ok(IdentifiedAnyClientState::new(client_id.clone(), client))
 }
 
-fn query_channel<C: ChainHandle>(
-    chain: &C,
+fn query_channel<Chain: ChainHandle>(
+    chain: &Chain,
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<IdentifiedChannelEnd, Error> {
@@ -653,8 +653,8 @@ fn query_channel<C: ChainHandle>(
     ))
 }
 
-fn query_connection_for_channel<C: ChainHandle>(
-    chain: &C,
+fn query_connection_for_channel<Chain: ChainHandle>(
+    chain: &Chain,
     channel: &IdentifiedChannelEnd,
 ) -> Result<IdentifiedConnectionEnd, Error> {
     let connection_id = channel
@@ -673,7 +673,9 @@ fn query_connection_for_channel<C: ChainHandle>(
     query_connection(chain, &connection_id)
 }
 
-fn query_all_clients<C: ChainHandle>(chain: &C) -> Result<Vec<IdentifiedAnyClientState>, Error> {
+fn query_all_clients<Chain: ChainHandle>(
+    chain: &Chain,
+) -> Result<Vec<IdentifiedAnyClientState>, Error> {
     let clients_req = QueryClientStatesRequest {
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
     };
@@ -681,8 +683,8 @@ fn query_all_clients<C: ChainHandle>(chain: &C) -> Result<Vec<IdentifiedAnyClien
     chain.query_clients(clients_req).map_err(Error::query)
 }
 
-fn query_client_connections<C: ChainHandle>(
-    chain: &C,
+fn query_client_connections<Chain: ChainHandle>(
+    chain: &Chain,
     client_id: &ClientId,
 ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
     let conns_req = QueryClientConnectionsRequest {
@@ -707,8 +709,8 @@ fn query_client_connections<C: ChainHandle>(
     Ok(connections)
 }
 
-fn query_connection<C: ChainHandle>(
-    chain: &C,
+fn query_connection<Chain: ChainHandle>(
+    chain: &Chain,
     connection_id: &ConnectionId,
 ) -> Result<IdentifiedConnectionEnd, Error> {
     let connection_end = chain
@@ -721,8 +723,8 @@ fn query_connection<C: ChainHandle>(
     })
 }
 
-fn query_connection_channels<C: ChainHandle>(
-    chain: &C,
+fn query_connection_channels<Chain: ChainHandle>(
+    chain: &Chain,
     connection_id: &ConnectionId,
 ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
     let chans_req = QueryConnectionChannelsRequest {

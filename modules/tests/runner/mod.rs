@@ -471,6 +471,7 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> Result<(), String> {
+        let show = step.action.clone();
         let result = self.apply(step.action);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
@@ -529,7 +530,7 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
         }
 
         if !outcome_matches {
-            return Err("Action outcome did not match expected".into());
+            return Err(format!("Action outcome did not match expected: {:?}", show));
         }
 
         if !self.check_chain_states(step.chains) {

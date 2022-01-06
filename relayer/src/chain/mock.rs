@@ -18,6 +18,7 @@ use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectio
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::downcast;
@@ -41,7 +42,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::{ChainEndpoint, StatusResponse};
+use crate::chain::{handle::requests::AppVersion, ChainEndpoint, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -418,11 +419,16 @@ impl ChainEndpoint for MockChain {
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_consensus_state(
         &self,
-        _client_id: ClientId,
-        _consensus_height: Height,
+        client_id: ClientId,
+        consensus_height: Height,
         _query_height: Height,
     ) -> Result<AnyConsensusState, Error> {
-        unimplemented!()
+        let consensus_states = self.context.consensus_states(&client_id);
+        Ok(consensus_states
+            .into_iter()
+            .find(|s| s.height == consensus_height)
+            .unwrap()
+            .consensus_state)
     }
 
     fn query_upgraded_consensus_state(
@@ -430,6 +436,10 @@ impl ChainEndpoint for MockChain {
         _height: Height,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         unimplemented!()
+    }
+
+    fn query_app_version(&self, _request: AppVersion) -> Result<Version, Error> {
+        todo!()
     }
 }
 

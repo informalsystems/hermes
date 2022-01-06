@@ -1,4 +1,5 @@
-use flex_error::define_error;
+use crossbeam_channel::RecvError;
+use flex_error::{define_error, DisplayOnly};
 
 use crate::channel::ChannelError;
 use crate::connection::ConnectionError;
@@ -26,9 +27,13 @@ define_error! {
         Retry
             { retries: retry::Error<u64> }
             | e | {
-                format_args!("Packet worker failed after {} retries",
+                format_args!("Worker failed after {} retries",
                     e.retries)
-            }
+            },
+
+        Recv
+            [ DisplayOnly<RecvError> ]
+            | _ | { "error receiving from channel: sender end has been closed" }
     }
 }
 

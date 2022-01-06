@@ -7,13 +7,15 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
+use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
+use crate::framework::base::TestConfigOverride;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::PortsOverride;
 use crate::framework::binary::node::NodeConfigOverride;
-use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
+use crate::types::config::TestConfig;
 
 /**
    This trait should be implemented for all test cases to allow overriding
@@ -32,6 +34,8 @@ use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
    also be defined inside this trait with a default method body.
 */
 pub trait TestOverrides {
+    fn modify_test_config(&self, _config: &mut TestConfig) {}
+
     /**
         Modify the full node config before the chain gets initialized.
 
@@ -69,10 +73,10 @@ pub trait TestOverrides {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
-    ) -> Option<SupervisorHandle> {
-        let handle = spawn_supervisor(config.clone(), registry.clone());
-        Some(handle)
+        registry: &SharedRegistry<impl ChainHandle>,
+    ) -> Result<Option<SupervisorHandle>, Error> {
+        let handle = spawn_supervisor(config.clone(), registry.clone(), None, false)?;
+        Ok(Some(handle))
     }
 
     /**
@@ -82,7 +86,7 @@ pub trait TestOverrides {
        Implemented for [`PortsOverride`].
     */
     fn channel_port_a(&self) -> PortId {
-        PortId::unsafe_new("transfer")
+        PortId::transfer()
     }
 
     /**
@@ -92,7 +96,7 @@ pub trait TestOverrides {
        Implemented for [`PortsOverride`].
     */
     fn channel_port_b(&self) -> PortId {
-        PortId::unsafe_new("transfer")
+        PortId::transfer()
     }
 }
 
@@ -101,6 +105,12 @@ impl<Test: TestOverrides> HasOverrides for Test {
 
     fn get_overrides(&self) -> &Self {
         self
+    }
+}
+
+impl<Test: TestOverrides> TestConfigOverride for Test {
+    fn modify_test_config(&self, config: &mut TestConfig) {
+        TestOverrides::modify_test_config(self, config)
     }
 }
 
@@ -120,8 +130,8 @@ impl<Test: TestOverrides> SupervisorOverride for Test {
     fn spawn_supervisor(
         &self,
         config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle + 'static>,
-    ) -> Option<SupervisorHandle> {
+        registry: &SharedRegistry<impl ChainHandle>,
+    ) -> Result<Option<SupervisorHandle>, Error> {
         TestOverrides::spawn_supervisor(self, config, registry)
     }
 }

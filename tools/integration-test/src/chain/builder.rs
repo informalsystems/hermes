@@ -4,7 +4,8 @@
 
 use ibc::core::ics24_host::identifier::ChainId;
 
-use super::driver::ChainDriver;
+use crate::chain::driver::ChainDriver;
+use crate::error::Error;
 use crate::types::config::TestConfig;
 use crate::util::random::{random_u32, random_unused_tcp_port};
 
@@ -67,23 +68,27 @@ impl ChainBuilder {
        a [`ChainDriver`] configured with a chain ID  like
        `"ibc-alpha-f5a2a988"`.
     */
-    pub fn new_chain(&self, prefix: &str) -> ChainDriver {
+    pub fn new_chain(&self, prefix: &str) -> Result<ChainDriver, Error> {
         let chain_num = random_u32();
         let chain_id = ChainId::from_string(&format!("ibc-{}-{:x}", prefix, chain_num));
 
         let rpc_port = random_unused_tcp_port();
         let grpc_port = random_unused_tcp_port();
+        let grpc_web_port = random_unused_tcp_port();
         let p2p_port = random_unused_tcp_port();
 
         let home_path = format!("{}/{}", self.base_store_dir, chain_id);
 
-        ChainDriver::new(
+        let driver = ChainDriver::create(
             self.command_path.clone(),
             chain_id,
             home_path,
             rpc_port,
             grpc_port,
+            grpc_web_port,
             p2p_port,
-        )
+        )?;
+
+        Ok(driver)
     }
 }

@@ -9,8 +9,9 @@ use ibc_relayer::registry::SharedRegistry;
 use std::path::PathBuf;
 use tracing::info;
 
+use crate::relayer::foreign_client::TaggedForeignClientExt;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
-use crate::types::id::TaggedChainIdRef;
+use crate::types::id::{TaggedChainIdRef, TaggedClientIdRef};
 use crate::types::single::node::{FullNode, TaggedFullNodeExt};
 use crate::types::tagged::*;
 
@@ -33,17 +34,17 @@ pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
        with the [`Registry`](ibc_relayer::registry::Registry).
 
        Use this shared config when spawning new supervisor using
-       [`spawn_supervisor`](crate::relayer::supervisor::spawn_supervisor).
+       [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
     */
     pub config: SharedConfig,
 
     /**
        The relayer chain [`Registry`](ibc_relayer::registry::Registry)
        that is shared with any running
-       [`Supervisor`](ibc_relayer::supervisor::Supervisor).
+       [supervisor](ibc_relayer::supervisor::SupervisorHandle).
 
        Use this shared registry when spawning new supervisor using
-       [`spawn_supervisor`](crate::relayer::supervisor::spawn_supervisor).
+       [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
     */
     pub registry: SharedRegistry<ProdChainHandle>,
 
@@ -137,6 +138,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
     */
     pub fn chain_id_a(&self) -> TaggedChainIdRef<ChainA> {
         self.node_a.chain_id()
+    }
+
+    pub fn client_id_a(&self) -> TaggedClientIdRef<ChainA, ChainB> {
+        self.client_b_to_a.tagged_client_id()
+    }
+
+    pub fn client_id_b(&self) -> TaggedClientIdRef<ChainB, ChainA> {
+        self.client_a_to_b.tagged_client_id()
     }
 
     /**

@@ -11,27 +11,27 @@ use crate::{
     chain::{counterparty::connection_state_on_destination, handle::ChainHandle},
     config::Config,
     object::{Channel, Client, Connection, Object, Packet},
-    registry::SharedRegistry,
+    registry::Registry,
     supervisor::error::Error as SupervisorError,
     worker::WorkerMap,
 };
 
 use super::{
     scan::{ChainScan, ChainsScan, ChannelScan, ClientScan, ConnectionScan},
-    Error, RwArc,
+    Error,
 };
 
 /// A context for spawning workers within the [`crate::supervisor::Supervisor`].
 pub struct SpawnContext<'a, Chain: ChainHandle> {
-    config: RwArc<Config>,
-    registry: SharedRegistry<Chain>,
+    config: &'a Config,
+    registry: &'a mut Registry<Chain>,
     workers: &'a mut WorkerMap,
 }
 
-impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
+impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
     pub fn new(
-        config: RwArc<Config>,
-        registry: SharedRegistry<Chain>,
+        config: &'a Config,
+        registry: &'a mut Registry<Chain>,
         workers: &'a mut WorkerMap,
     ) -> Self {
         Self {
@@ -125,13 +125,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<(), Error> {
-        let config_conn_enabled = self
-            .config
-            .read()
-            .expect("poisoned lock")
-            .mode
-            .connections
-            .enabled;
+        let config_conn_enabled = self.config.mode.connections.enabled;
 
         let counterparty_chain = self
             .registry
@@ -170,12 +164,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             });
 
             self.workers
-                .spawn(
-                    chain,
-                    counterparty_chain,
-                    &connection_object,
-                    &self.config.read().expect("poisoned lock"),
-                )
+                .spawn(chain, counterparty_chain, &connection_object, self.config)
                 .then(|| {
                     debug!(
                         "spawning Connection worker: {}",
@@ -195,7 +184,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
         client: &IdentifiedAnyClientState,
         channel_scan: ChannelScan,
     ) -> Result<(), Error> {
-        let mode = &self.config.read().expect("poisoned lock").mode;
+        let mode = &self.config.mode;
 
         let counterparty_chain = self
             .registry
@@ -236,7 +225,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                         counterparty_chain.clone(),
                         chain.clone(),
                         &client_object,
-                        &self.config.read().expect("poisoned lock"),
+                        self.config,
                     )
                     .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
             }
@@ -257,7 +246,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                 };
 
                 // If there are any outstanding packets or acks to send, spawn the worker
-                if true || has_packets() || has_acks() {
+                if has_packets() || has_acks() {
                     // Create the Packet object and spawn worker
                     let path_object = Object::Packet(Packet {
                         dst_chain_id: counterparty_chain.id(),
@@ -273,7 +262,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
                             chain.clone(),
                             counterparty_chain.clone(),
                             &path_object,
-                            &self.config.read().expect("poisoned lock"),
+                            self.config,
                         )
                         .then(|| debug!("spawned Packet worker: {}", path_object.short_name()));
                 }
@@ -291,12 +280,7 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
             });
 
             self.workers
-                .spawn(
-                    chain,
-                    counterparty_chain,
-                    &channel_object,
-                    &self.config.read().expect("poisoned lock"),
-                )
+                .spawn(chain, counterparty_chain, &channel_object, self.config)
                 .then(|| debug!("spawned Channel worker: {}", channel_object.short_name()));
         }
 

@@ -1,3 +1,4 @@
+use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -5,13 +6,14 @@ use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::{Packet, Sequence};
-use crate::core::ics24_host::identifier::ClientId;
 use crate::prelude::*;
 use crate::proofs::Proofs;
+use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
 pub fn verify_channel_proofs(
     ctx: &dyn ChannelReader,
+    height: Height,
     channel_end: &ChannelEnd,
     connection_end: &ConnectionEnd,
     expected_chan: &ChannelEnd,
@@ -27,7 +29,7 @@ pub fn verify_channel_proofs(
         return Err(Error::frozen_client(client_id));
     }
 
-    ctx.client_consensus_state(&client_id, proofs.height())?;
+    let consensus_state = ctx.client_consensus_state(&client_id, proofs.height())?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
@@ -36,9 +38,10 @@ pub fn verify_channel_proofs(
     client_def
         .verify_channel_state(
             &client_state,
-            proofs.height(),
+            height,
             connection_end.counterparty().prefix(),
             proofs.object_proof(),
+            consensus_state.root(),
             channel_end.counterparty().port_id(),
             channel_end.counterparty().channel_id().unwrap(),
             expected_chan,
@@ -49,18 +52,20 @@ pub fn verify_channel_proofs(
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
 pub fn verify_packet_recv_proofs(
     ctx: &dyn ChannelReader,
+    height: Height,
     packet: &Packet,
-    client_id: ClientId,
+    connection_end: &ConnectionEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    let client_state = ctx.client_state(&client_id)?;
+    let client_id = connection_end.client_id();
+    let client_state = ctx.client_state(client_id)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Error::frozen_client(client_id));
+        return Err(Error::frozen_client(client_id.clone()));
     }
 
-    ctx.client_consensus_state(&client_id, proofs.height())?;
+    let consensus_state = ctx.client_consensus_state(client_id, proofs.height())?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
@@ -73,12 +78,15 @@ pub fn verify_packet_recv_proofs(
     // Verify the proof for the packet against the chain store.
     client_def
         .verify_packet_data(
+            ctx,
             &client_state,
-            proofs.height(),
+            height,
+            connection_end,
             proofs.object_proof(),
+            consensus_state.root(),
             &packet.source_port,
             &packet.source_channel,
-            &packet.sequence,
+            packet.sequence,
             commitment,
         )
         .map_err(|e| Error::packet_verification_failed(packet.sequence, e))?;
@@ -89,29 +97,36 @@ pub fn verify_packet_recv_proofs(
 /// Entry point for verifying all proofs bundled in an ICS4 packet ack message.
 pub fn verify_packet_acknowledgement_proofs(
     ctx: &dyn ChannelReader,
+    height: Height,
     packet: &Packet,
     acknowledgement: Vec<u8>,
-    client_id: ClientId,
+    connection_end: &ConnectionEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    let client_state = ctx.client_state(&client_id)?;
+    let client_id = connection_end.client_id();
+    let client_state = ctx.client_state(client_id)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Error::frozen_client(client_id));
+        return Err(Error::frozen_client(client_id.clone()));
     }
+
+    let consensus_state = ctx.client_consensus_state(client_id, proofs.height())?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
     // Verify the proof for the packet against the chain store.
     client_def
         .verify_packet_acknowledgement(
+            ctx,
             &client_state,
-            proofs.height(),
+            height,
+            connection_end,
             proofs.object_proof(),
-            &packet.source_port,
-            &packet.source_channel,
-            &packet.sequence,
+            consensus_state.root(),
+            &packet.destination_port,
+            &packet.destination_channel,
+            packet.sequence,
             acknowledgement,
         )
         .map_err(|e| Error::packet_verification_failed(packet.sequence, e))?;
@@ -122,29 +137,36 @@ pub fn verify_packet_acknowledgement_proofs(
 /// Entry point for verifying all timeout proofs.
 pub fn verify_next_sequence_recv(
     ctx: &dyn ChannelReader,
-    client_id: ClientId,
+    height: Height,
+    connection_end: &ConnectionEnd,
     packet: Packet,
     seq: Sequence,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    let client_state = ctx.client_state(&client_id)?;
+    let client_id = connection_end.client_id();
+    let client_state = ctx.client_state(client_id)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Error::frozen_client(client_id));
+        return Err(Error::frozen_client(client_id.clone()));
     }
+
+    let consensus_state = ctx.client_consensus_state(client_id, proofs.height())?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
     // Verify the proof for the packet against the chain store.
     client_def
         .verify_next_sequence_recv(
+            ctx,
             &client_state,
-            proofs.height(),
+            height,
+            connection_end,
             proofs.object_proof(),
+            consensus_state.root(),
             &packet.destination_port,
             &packet.destination_channel,
-            &seq,
+            packet.sequence,
         )
         .map_err(|e| Error::packet_verification_failed(seq, e))?;
 
@@ -153,28 +175,35 @@ pub fn verify_next_sequence_recv(
 
 pub fn verify_packet_receipt_absence(
     ctx: &dyn ChannelReader,
-    client_id: ClientId,
+    height: Height,
+    connection_end: &ConnectionEnd,
     packet: Packet,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    let client_state = ctx.client_state(&client_id)?;
+    let client_id = connection_end.client_id();
+    let client_state = ctx.client_state(client_id)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Error::frozen_client(client_id));
+        return Err(Error::frozen_client(client_id.clone()));
     }
+
+    let consensus_state = ctx.client_consensus_state(client_id, proofs.height())?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
     // Verify the proof for the packet against the chain store.
     client_def
         .verify_packet_receipt_absence(
+            ctx,
             &client_state,
-            proofs.height(),
+            height,
+            connection_end,
             proofs.object_proof(),
+            consensus_state.root(),
             &packet.destination_port,
             &packet.destination_channel,
-            &packet.sequence,
+            packet.sequence,
         )
         .map_err(|e| Error::packet_verification_failed(packet.sequence, e))?;
 

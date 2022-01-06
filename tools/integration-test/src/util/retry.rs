@@ -5,7 +5,7 @@
 use core::time::Duration;
 use eyre::eyre;
 use std::thread::sleep;
-use tracing::debug;
+use tracing::trace;
 
 use crate::error::Error;
 
@@ -17,24 +17,24 @@ use crate::error::Error;
 */
 pub fn assert_eventually_succeed<R>(
     task_name: &str,
-    task: impl Fn() -> Result<R, Error>,
     attempts: u16,
     interval: Duration,
+    task: impl Fn() -> Result<R, Error>,
 ) -> Result<R, Error> {
     sleep(interval);
     for _ in 0..attempts {
         match task() {
             Ok(res) => return Ok(res),
             Err(e) => {
-                debug!("retrying task that failed with error: {}", e);
+                trace!("retrying task that failed with error: {}", e);
                 sleep(interval)
             }
         }
     }
 
-    Err(eyre!(
+    Err(Error::generic(eyre!(
         "Expected task to eventually succeeed, but failed after {} attempts: {}",
         attempts,
         task_name
-    ))
+    )))
 }

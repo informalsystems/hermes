@@ -57,8 +57,6 @@ pub fn process(
         ));
     }
 
-    let client_id = connection_end.client_id().clone();
-
     // Verify packet commitment
     let packet_commitment = ctx.get_packet_commitment(&(
         packet.source_port.clone(),
@@ -78,9 +76,10 @@ pub fn process(
     // Verify the acknowledgement proof
     verify_packet_acknowledgement_proofs(
         ctx,
+        msg.proofs.height(),
         packet,
         msg.acknowledgement().clone(),
-        client_id,
+        &connection_end,
         msg.proofs(),
     )?;
 
@@ -122,6 +121,8 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
+    use test_log::test;
+
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -132,12 +133,12 @@ mod tests {
     use crate::core::ics04_channel::handler::acknowledgement::process;
     use crate::core::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
     use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
+    use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
-    use test_log::test;
 
     #[test]
     fn ack_packet_processing() {
@@ -174,7 +175,7 @@ mod tests {
                 Some(packet.destination_channel.clone()),
             ),
             vec![ConnectionId::default()],
-            "ics20".to_string(),
+            Version::ics20(),
         );
 
         let connection_end = ConnectionEnd::new(

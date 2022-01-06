@@ -51,9 +51,6 @@ define_error! {
             [ TraceError<TendermintError> ]
             | _ | { "invalid version" },
 
-        EmptyVersion
-            | _ | { "empty version string" },
-
         InvalidSigner
             | _ | { "invalid signer address" },
 
@@ -322,6 +319,28 @@ define_error! {
                 format_args!("Missing sequence number for ack packets on port {0} and channel {1}",
                              e.port_channel_id.0,
                              e.port_channel_id.1)
+            },
+
+        ProcessedTimeNotFound
+            {
+                client_id: ClientId,
+                height: Height,
+            }
+            | e | {
+                format_args!(
+                    "Processed time for the client {0} at height {1} not found",
+                    e.client_id, e.height)
+            },
+
+        ProcessedHeightNotFound
+            {
+                client_id: ClientId,
+                height: Height,
+            }
+            | e | {
+                format_args!(
+                    "Processed height for the client {0} at height {1} not found",
+                    e.client_id, e.height)
             },
 
         ImplementationSpecific

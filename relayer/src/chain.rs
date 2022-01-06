@@ -14,6 +14,7 @@ use ibc::core::ics02_client::client_state::{
 use ibc::core::ics02_client::header::Header;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
+use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
@@ -37,6 +38,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
+use crate::chain::handle::requests::AppVersion;
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
 use crate::event::monitor::TxMonitorCmd;
@@ -73,14 +75,6 @@ pub struct QueryResponse {
     pub value: Vec<u8>,
     pub proof: Option<MerkleProof>,
     pub height: Height,
-}
-
-/// Packet query options
-#[derive(Debug)]
-pub struct QueryPacketOptions {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    pub height: u64,
 }
 
 /// Defines a blockchain as understood by the relayer
@@ -234,17 +228,7 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error>;
 
-    // TODO: Introduce a newtype for the module version string
-    fn query_module_version(&self, port_id: &PortId) -> String {
-        // TODO - query the chain, currently hardcoded
-        if port_id.as_str() == "transfer" {
-            "ics20-1".to_string()
-        } else if port_id.as_str() == "ibcaccount" {
-            "ics27-1".to_string()
-        } else {
-            "".to_string()
-        }
-    }
+    fn query_app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
 
     fn query_channel_client_state(
         &self,
