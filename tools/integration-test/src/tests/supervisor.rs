@@ -79,7 +79,7 @@ impl BinaryChainTest for SupervisorTest {
 
         // Use the same wallet as the relayer to perform token transfer.
         // This will cause an account sequence mismatch error.
-        let wallet_a = chains.node_a.wallets().relayer().cloned();
+        let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
         let transfer_amount = 1000;
@@ -89,47 +89,56 @@ impl BinaryChainTest for SupervisorTest {
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
 
-        // Test that the IBC transfer still succeed even when the packet worker experience
-        // account sequence mismatch error. We perform this a few times as the first transfer
-        // will succeed without error as the packet worker first fetch a fresh account sequence.
-        //
+        // Perform local transfers for both chains A and B using the relayer's
+        // wallet to mess up the account sequence number on both sides.
+
+        chains.node_a.chain_driver().local_transfer_token(
+            &chains.node_a.wallets().relayer().address(),
+            &chains.node_a.wallets().user2().address(),
+            1000,
+            &denom_a,
+        )?;
+
+        chains.node_b.chain_driver().local_transfer_token(
+            &chains.node_b.wallets().relayer().address(),
+            &chains.node_b.wallets().user2().address(),
+            1000,
+            &chains.node_b.denom(),
+        )?;
+
+        info!(
+            "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
+            chains.chain_id_a(),
+            chains.chain_id_b(),
+            transfer_amount,
+            denom_a
+        );
+
+        chains.node_a.chain_driver().transfer_token(
+            &port_a.as_ref(),
+            &channel_id_a.as_ref(),
+            &wallet_a.address(),
+            &wallet_b.address(),
+            transfer_amount,
+            &denom_a,
+        )?;
+
         // During the test, you should see error logs showing "account sequence mismatch".
-        for i in 1..5 {
-            let total_transferred = i * transfer_amount;
+        info!(
+            "Packet worker should still succeed and recover from account sequence mismatch error",
+        );
 
-            info!(
-                "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
-                chains.chain_id_a(),
-                chains.chain_id_b(),
-                transfer_amount,
-                denom_a
-            );
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.as_ref(),
+            balance_a - transfer_amount,
+            &denom_a,
+        )?;
 
-            chains.node_a.chain_driver().transfer_token(
-                &port_a.as_ref(),
-                &channel_id_a.as_ref(),
-                &wallet_a.address(),
-                &wallet_b.address(),
-                transfer_amount,
-                &denom_a,
-            )?;
-
-            info!(
-                "Packet worker should still succeed and recover from account sequence mismatch error",
-            );
-
-            chains.node_a.chain_driver().assert_eventual_wallet_amount(
-                &wallet_a.as_ref(),
-                balance_a - total_transferred,
-                &denom_a,
-            )?;
-
-            chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.as_ref(),
-                total_transferred,
-                &denom_b.as_ref(),
-            )?;
-        }
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.as_ref(),
+            transfer_amount,
+            &denom_b.as_ref(),
+        )?;
 
         Ok(())
     }

@@ -11,7 +11,7 @@ use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
 
 use super::query_txs::query_recipient_transactions;
-use super::transfer::transfer_token;
+use super::transfer::{local_transfer_token, transfer_token};
 use super::ChainDriver;
 
 /**
@@ -80,6 +80,14 @@ pub trait TaggedChainDriverExt<Chain> {
         denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<(), Error>;
 
+    fn local_transfer_token(
+        &self,
+        sender: &MonoTagged<Chain, &WalletAddress>,
+        recipient: &MonoTagged<Chain, &WalletAddress>,
+        amount: u64,
+        denom: &MonoTagged<Chain, &Denom>,
+    ) -> Result<(), Error>;
+
     /**
         Taggged version of [`query_recipient_transactions`].
 
@@ -124,6 +132,22 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
             self.value(),
             port_id.value(),
             channel_id.value(),
+            sender.value(),
+            recipient.value(),
+            amount,
+            denom.value(),
+        )
+    }
+
+    fn local_transfer_token(
+        &self,
+        sender: &MonoTagged<Chain, &WalletAddress>,
+        recipient: &MonoTagged<Chain, &WalletAddress>,
+        amount: u64,
+        denom: &MonoTagged<Chain, &Denom>,
+    ) -> Result<(), Error> {
+        local_transfer_token(
+            self.value(),
             sender.value(),
             recipient.value(),
             amount,
