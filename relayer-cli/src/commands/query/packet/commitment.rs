@@ -1,5 +1,4 @@
 use abscissa_core::{Clap, Command, Runnable};
-use clap::AppSettings::DisableHelpFlag;
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
@@ -20,7 +19,6 @@ struct PacketSeqs {
 }
 
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct QueryPacketCommitmentCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
@@ -34,8 +32,7 @@ pub struct QueryPacketCommitmentCmd {
     #[clap(required = true, about = "sequence of packet to query")]
     sequence: Sequence,
 
-    // FIXME: rename the short option to avoid confusion with --help?
-    #[clap(short = 'h', long, about = "height of the state to query")]
+    #[clap(short = 'H', long, about = "height of the state to query")]
     height: Option<u64>,
 }
 
