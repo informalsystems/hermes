@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
 
 use abscissa_core::{Clap, Command, Runnable};
-use clap::AppSettings::DisableHelpFlag;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::{
@@ -17,7 +16,6 @@ use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct QueryConnectionEndCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,

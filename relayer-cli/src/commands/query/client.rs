@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
 
 use abscissa_core::{Clap, Command, Runnable};
-use clap::AppSettings::DisableHelpFlag;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
@@ -22,7 +21,6 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct QueryClientStateCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
@@ -160,7 +158,6 @@ impl Runnable for QueryClientConsensusCmd {
 }
 
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct QueryClientHeaderCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,

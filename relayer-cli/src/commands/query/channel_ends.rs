@@ -1,5 +1,4 @@
 use abscissa_core::{Clap, Command, Runnable};
-use clap::AppSettings::DisableHelpFlag;
 use serde::{Deserialize, Serialize};
 
 use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
@@ -15,7 +14,6 @@ use crate::conclude::Output;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct QueryChannelEndsCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,

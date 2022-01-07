@@ -1,5 +1,4 @@
 use abscissa_core::{Clap, Command, Runnable};
-use clap::AppSettings::DisableHelpFlag;
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
@@ -20,7 +19,6 @@ struct PacketSeqs {
 }
 
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct QueryPacketCommitmentCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
