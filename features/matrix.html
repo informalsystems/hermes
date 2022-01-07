@@ -7,7 +7,7 @@
 
 
         <!-- Custom HTML head -->
-
+        
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -89,7 +89,7 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="menu-bar-hover-placeholder"></div>
+                                <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
                         <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
@@ -158,47 +158,47 @@ of Hermes in comparison with the <a href="https://github.com/cosmos/relayer">cos
 <tr><td><code>.._&lt;msg&gt;_P</code></td><td>building and sending <code>msg</code> from IBC event; doesn't apply to <code>.._Init</code> and <code>FT_Transfer</code> features</td></tr>
 </tbody></table>
 <p><strong>Feature comparison between Hermes and the Go relayer</strong> </p>
-<table><thead><tr><th>Features \      Status</th><th align="center">Hermes</th><th align="center">Cosmos Go</th><th align="left">Feature Details</th></tr></thead><tbody>
-<tr><td>Restart</td><td align="center">✅</td><td align="center">✅</td><td align="left">replays any IBC events that happened before restart</td></tr>
-<tr><td>Multiple_Paths</td><td align="center">✅</td><td align="center">✅</td><td align="left">relays on multiple paths concurrently</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Connection Delay</td><td align="center">✅</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td>Cl_Misbehavior</td><td align="center">✅</td><td align="center">❌</td><td align="left">monitors and submits IBC client misbehavior</td></tr>
-<tr><td>Cl_Refresh</td><td align="center">✅</td><td align="center">❌</td><td align="left">periodically refresh an on-chain client to prevent expiration</td></tr>
-<tr><td>Packet Delay</td><td align="center">✅</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Chan_Unordered</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan_Ordered</td><td align="center">✅</td><td align="center">❓</td><td align="left"></td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Cl_Tendermint_Create</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client creation</td></tr>
-<tr><td>Cl_Tendermint_Update</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client update</td></tr>
-<tr><td>Cl_Tendermint_Upgrade</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client upgrade</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Conn_Open_Handshake_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Conn_Open_Handshake_P</td><td align="center">✅</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Chan_Open_Handshake_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan_Open_Handshake_P</td><td align="center">✅</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td>Chan_Open_Handshake_Optimistic</td><td align="center">❌</td><td align="center">❌</td><td align="left">open a channel on a non-Open connection</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Chan_Close_Handshake_P</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan_Close_Handshake_A</td><td align="center">✅</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>FT_Transfer</td><td align="center">✅</td><td align="center">✅</td><td align="left">can submit an ICS-20 fungible token transfer message</td></tr>
-<tr><td>ICA_Relay</td><td align="center">✅</td><td align="center">❌</td><td align="left">can relay ICS-27 Interchain account packets</td></tr>
-<tr><td>Packet_Recv_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Packet_Recv_P</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Packet_Timeout_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Packet_Timeout_P</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Packet_TimeoutClose_A</td><td align="center">✅</td><td align="center">❓</td><td align="left"></td></tr>
-<tr><td>Packet_TimeoutClose_P</td><td align="center">✅</td><td align="center">❓</td><td align="left"></td></tr>
-<tr><td>Packet_Optimistic</td><td align="center">❌</td><td align="center">❓</td><td align="left">relay packets over non-Open channels</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Cl_Non_Tendermint</td><td align="center">❌</td><td align="center">❌</td><td align="left">supports non tendermint IBC light clients</td></tr>
-<tr><td>Chain_Non_Cosmos</td><td align="center">❌</td><td align="center">❌</td><td align="left">supports non cosmos-SDK chains</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Mgmt_Static</td><td align="center">✅</td><td align="center">✅</td><td align="left">provides means for configuration prior to being started</td></tr>
-<tr><td>Mgmt_Dynamic</td><td align="center">❌</td><td align="center">❌</td><td align="left">provides means for configuration and monitoring during runtime</td></tr>
+<table><thead><tr><th>Features \      Status</th><th style="text-align: center">Hermes</th><th style="text-align: center">Cosmos Go</th><th style="text-align: left">Feature Details</th></tr></thead><tbody>
+<tr><td>Restart</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">replays any IBC events that happened before restart</td></tr>
+<tr><td>Multiple_Paths</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">relays on multiple paths concurrently</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Connection Delay</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td>Cl_Misbehavior</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left">monitors and submits IBC client misbehavior</td></tr>
+<tr><td>Cl_Refresh</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left">periodically refresh an on-chain client to prevent expiration</td></tr>
+<tr><td>Packet Delay</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Unordered</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Ordered</td><td style="text-align: center">✅</td><td style="text-align: center">❓</td><td style="text-align: left"></td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Cl_Tendermint_Create</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">tendermint light client creation</td></tr>
+<tr><td>Cl_Tendermint_Update</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">tendermint light client update</td></tr>
+<tr><td>Cl_Tendermint_Upgrade</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">tendermint light client upgrade</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Conn_Open_Handshake_A</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Conn_Open_Handshake_P</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Open_Handshake_A</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Open_Handshake_P</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Open_Handshake_Optimistic</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: left">open a channel on a non-Open connection</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Close_Handshake_P</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Close_Handshake_A</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>FT_Transfer</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">can submit an ICS-20 fungible token transfer message</td></tr>
+<tr><td>ICA_Relay</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left">can relay ICS-27 Interchain account packets</td></tr>
+<tr><td>Packet_Recv_A</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_Recv_P</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_Timeout_A</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_Timeout_P</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_TimeoutClose_A</td><td style="text-align: center">✅</td><td style="text-align: center">❓</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_TimeoutClose_P</td><td style="text-align: center">✅</td><td style="text-align: center">❓</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_Optimistic</td><td style="text-align: center">❌</td><td style="text-align: center">❓</td><td style="text-align: left">relay packets over non-Open channels</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Cl_Non_Tendermint</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: left">supports non tendermint IBC light clients</td></tr>
+<tr><td>Chain_Non_Cosmos</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: left">supports non cosmos-SDK chains</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Mgmt_Static</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">provides means for configuration prior to being started</td></tr>
+<tr><td>Mgmt_Dynamic</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: left">provides means for configuration and monitoring during runtime</td></tr>
 </tbody></table>
 
                     </main>
