@@ -63,8 +63,6 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             }
         };
 
-        println!("W: Chain: {}", chain.id());
-
         for (_, client_scan) in scan.clients {
             self.spawn_workers_for_client(chain.clone(), client_scan);
         }
@@ -144,8 +142,6 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             conn_state_dst
         );
 
-        println!("W:     Connection: {}", connection.connection_id);
-
         if conn_state_src.is_open() && conn_state_dst.is_open() {
             debug!(
                 "connection {} on chain {} is already open, not spawning Connection worker",
@@ -218,8 +214,6 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                     src_chain_id: client.client_state.chain_id(),
                 });
 
-                println!("W:   Client: {}", client.client_id);
-
                 self.workers
                     .spawn(
                         counterparty_chain.clone(),
@@ -254,8 +248,6 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                         src_channel_id: channel_scan.id().clone(),
                         src_port_id: channel_scan.channel.port_id.clone(),
                     });
-
-                    println!("W:       Channel: {}", channel_scan.id());
 
                     self.workers
                         .spawn(

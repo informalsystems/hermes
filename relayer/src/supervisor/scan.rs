@@ -72,7 +72,7 @@ pub struct ChainsScan {
 impl fmt::Display for ChainsScan {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for scan in self.chains.iter().flatten() {
-            writeln!(f, "# Chain:{}", scan.chain_id)?;
+            writeln!(f, "# Chain: {}", scan.chain_id)?;
 
             for client in scan.clients.values() {
                 writeln!(f, "  - Client: {}", client.client.client_id)?;

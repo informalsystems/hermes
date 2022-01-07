@@ -146,6 +146,9 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     )
     .scan_chains();
 
+    info!("Scanned chains:");
+    info!("{}", scan);
+
     spawn_context(
         &config.acquire_read(),
         &mut registry.write(),
