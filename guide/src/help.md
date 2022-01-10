@@ -78,9 +78,7 @@ FLAGS:
 ```
 
 Additionally, the `-h`/`--help` flags typical for CLI applications work on
-most commands (with the exception of some commands currently using `-h` for
-other purposes; these should be changed to follow the convention in a
-future version).
+all commands.
 
 ## Parametrizing the log output level
 
