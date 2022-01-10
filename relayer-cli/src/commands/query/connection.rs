@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
 
 use abscissa_core::{Clap, Command, Runnable};
-use clap::AppSettings::DisableHelpFlag;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::{
@@ -17,7 +16,6 @@ use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct QueryConnectionEndCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
@@ -25,8 +23,7 @@ pub struct QueryConnectionEndCmd {
     #[clap(required = true, about = "identifier of the connection to query")]
     connection_id: ConnectionId,
 
-    // FIXME: rename the short option to avoid confusion with --help?
-    #[clap(short = 'h', long, about = "height of the state to query")]
+    #[clap(short = 'H', long, about = "height of the state to query")]
     height: Option<u64>,
 }
 

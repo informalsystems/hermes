@@ -31,10 +31,14 @@ impl BinaryChannelTest for IbcTransferTest {
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
 
-        let chaina_user1_balance = chains
+        let wallet_a = chains.node_a.wallets().user1().cloned();
+        let wallet_b = chains.node_b.wallets().user1().cloned();
+        let wallet_c = chains.node_a.wallets().user2().cloned();
+
+        let balance_a = chains
             .node_a
             .chain_driver()
-            .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
+            .query_balance(&wallet_a.address(), &denom_a)?;
 
         let a_to_b_amount = random_u64_range(1000, 5000);
 
@@ -49,8 +53,8 @@ impl BinaryChannelTest for IbcTransferTest {
         chains.node_a.chain_driver().transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &chains.node_a.wallets().user1().address(),
-            &chains.node_b.wallets().user1().address(),
+            &wallet_a.address(),
+            &wallet_b.address(),
             a_to_b_amount,
             &denom_a,
         )?;
@@ -67,13 +71,13 @@ impl BinaryChannelTest for IbcTransferTest {
         );
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_a.wallets().user1(),
-            chaina_user1_balance - a_to_b_amount,
+            &wallet_a.as_ref(),
+            balance_a - a_to_b_amount,
             &denom_a,
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_b.wallets().user1(),
+            &wallet_b.as_ref(),
             a_to_b_amount,
             &denom_b.as_ref(),
         )?;
@@ -84,10 +88,10 @@ impl BinaryChannelTest for IbcTransferTest {
             chains.chain_id_b(),
         );
 
-        let chaina_user2_balance = chains
+        let balance_c = chains
             .node_a
             .chain_driver()
-            .query_balance(&chains.node_a.wallets().user2().address(), &denom_a)?;
+            .query_balance(&wallet_c.address(), &denom_a)?;
 
         let b_to_a_amount = random_u64_range(500, a_to_b_amount);
 
@@ -102,21 +106,21 @@ impl BinaryChannelTest for IbcTransferTest {
         chains.node_b.chain_driver().transfer_token(
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
-            &chains.node_b.wallets().user1().address(),
-            &chains.node_a.wallets().user2().address(),
+            &wallet_b.address(),
+            &wallet_c.address(),
             b_to_a_amount,
             &denom_b.as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_b.wallets().user1(),
+            &wallet_b.as_ref(),
             a_to_b_amount - b_to_a_amount,
             &denom_b.as_ref(),
         )?;
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_a.wallets().user2(),
-            chaina_user2_balance + b_to_a_amount,
+            &wallet_c.as_ref(),
+            balance_c + b_to_a_amount,
             &denom_a,
         )?;
 

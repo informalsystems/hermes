@@ -300,7 +300,7 @@ impl From<ClientState> for RawClientState {
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
-            frozen_height: value.frozen_height.map(|h| h.into()),
+            frozen_height: Some(value.frozen_height.unwrap_or_else(Height::zero).into()),
             latest_height: Some(value.latest_height.into()),
             proof_specs: value.proof_specs.into(),
             allow_update_after_expiry: value.allow_update.after_expiry,

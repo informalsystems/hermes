@@ -122,12 +122,12 @@ mod retry_strategy {
     use core::time::Duration;
 
     // Maximum number of retries for send_tx in the case of
-    // an account sequence mismatch.
-    pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 5;
+    // an account sequence mismatch at broadcast step.
+    pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 1;
 
     // Backoff multiplier to apply while retrying in the case
     // of account sequence mismatch.
-    pub const BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY: u64 = 200;
+    pub const BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY: u64 = 300;
 
     pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
         let backoff_millis = 300; // The periodic backoff
@@ -395,15 +395,16 @@ impl CosmosSdkChain {
         let account_sequence = self.account_sequence()?;
 
         match self.send_tx_with_account_sequence(proto_msgs.clone(), account_sequence) {
-            // Gas estimation failed with acct. s.n. mismatch.
+            // Gas estimation failed with acct. s.n. mismatch at estimate gas step.
             // This indicates that the full node did not yet push the previous tx out of its
             // mempool. Possible explanations: fees too low, network congested, or full node
             // congested. Whichever the case, it is more expedient in production to drop the tx
-            // and refresh the s.n., to allow proceeding to the other transactions.
+            // and refresh the s.n., to allow proceeding to the other transactions. A separate
+            // retry at the worker-level will handle retrying.
             Err(e) if mismatching_account_sequence_number(&e) => {
                 warn!("send_tx failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
                 self.refresh_account()?;
-                // Note: propagating error here can lead to bug:
+                // Note: propagating error here can lead to bug & dropped packets:
                 // https://github.com/informalsystems/ibc-rs/issues/1153
                 // But periodic packet clearing will catch any dropped packets.
                 Err(e)
@@ -693,10 +694,10 @@ impl CosmosSdkChain {
 
     fn refresh_account(&mut self) -> Result<(), Error> {
         let account = self.block_on(query_account(self, self.key()?.account))?;
-        debug!(
+        info!(
             sequence = %account.sequence,
             number = %account.account_number,
-            "[{}] send_tx: retrieved account",
+            "[{}] refresh: retrieved account",
             self.id()
         );
 

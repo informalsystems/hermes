@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
 
 use abscissa_core::{Clap, Command, Runnable};
-use clap::AppSettings::DisableHelpFlag;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::ChainId;
@@ -13,7 +12,6 @@ use crate::prelude::*;
 use ibc::core::ics04_channel::channel::State;
 
 #[derive(Clone, Command, Debug, Clap)]
-#[clap(setting(DisableHelpFlag))]
 pub struct QueryChannelEndCmd {
     #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
@@ -24,8 +22,7 @@ pub struct QueryChannelEndCmd {
     #[clap(required = true, about = "identifier of the channel to query")]
     channel_id: ChannelId,
 
-    // FIXME: rename the short option to avoid confusion with --help?
-    #[clap(short = 'h', long, about = "height of the state to query")]
+    #[clap(short = 'H', long, about = "height of the state to query")]
     height: Option<u64>,
 }
 
