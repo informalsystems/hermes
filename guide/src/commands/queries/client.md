@@ -100,7 +100,7 @@ POSITIONAL ARGUMENTS:
     client_id                 identifier of the client to query
 
 FLAGS:
-    -h, --height HEIGHT       the chain height which this query should reflect
+    -H, --height HEIGHT       the chain height which this query should reflect
 ```
 
 __Example__
@@ -159,7 +159,7 @@ POSITIONAL ARGUMENTS:
 FLAGS:
     -c, --consensus-height    CONSENSUS-HEIGHT
     -s, --heights-only        show only consensus heights
-    -h, --height HEIGHT       the chain height context to be used, applicable only to a specific height
+    -H, --height HEIGHT       the chain height context to be used, applicable only to a specific height
 ```
 
 __Example__
@@ -235,7 +235,7 @@ POSITIONAL ARGUMENTS:
     client_id                 identifier of the client to query
 
 FLAGS:
-    -h, --height HEIGHT       the chain height which this query should reflect
+    -H, --height HEIGHT       the chain height which this query should reflect
 ```
 
 __Example__
@@ -268,7 +268,7 @@ POSITIONAL ARGUMENTS:
     consensus_height          height of header to query
 
 FLAGS:
-    -h, --height HEIGHT       the chain height context for the query
+    -H, --height HEIGHT       the chain height context for the query
 ```
 
 __Example__

@@ -49,3 +49,31 @@ pub fn transfer_token(
 
     Ok(())
 }
+
+pub fn local_transfer_token(
+    driver: &ChainDriver,
+    sender: &WalletAddress,
+    recipient: &WalletAddress,
+    amount: u64,
+    denom: &Denom,
+) -> Result<(), Error> {
+    driver.exec(&[
+        "--node",
+        &driver.rpc_listen_address(),
+        "tx",
+        "bank",
+        "send",
+        &sender.0,
+        &recipient.0,
+        &format!("{}{}", amount, denom.0),
+        "--chain-id",
+        driver.chain_id.as_str(),
+        "--home",
+        &driver.home_path,
+        "--keyring-backend",
+        "test",
+        "--yes",
+    ])?;
+
+    Ok(())
+}
