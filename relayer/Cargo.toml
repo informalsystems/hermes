@@ -38,7 +38,7 @@ bytes = "1.1.0"
 prost = { version = "0.9" }
 prost-types = { version = "0.9" }
 futures = "0.3.19"
-crossbeam-channel = "0.5.1"
+crossbeam-channel = "0.5.2"
 k256 = { version = "0.10.0", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
 bitcoin = { version = "=0.27", features = ["use-serde"] }
