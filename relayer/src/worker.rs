@@ -71,9 +71,11 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 task_handles.push(refresh_task);
             }
 
-            let misbehavior_task = client::detect_misbehavior_task(cmd_rx, client);
-            if let Some(task) = misbehavior_task {
-                task_handles.push(task);
+            if config.mode.clients.misbehaviour {
+                let misbehavior_task = client::detect_misbehavior_task(cmd_rx, client);
+                if let Some(task) = misbehavior_task {
+                    task_handles.push(task);
+                }
             }
         }
         Object::Connection(connection) => {
