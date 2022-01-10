@@ -4,7 +4,7 @@ use core::time::Duration;
 use crossbeam_channel::{bounded, Sender};
 use std::sync::{Arc, RwLock};
 use std::thread;
-use tracing::{error, info, warn};
+use tracing::{error, info, span, warn};
 
 use crate::util::lock::LockExt;
 
@@ -90,14 +90,19 @@ pub fn spawn_background_task<E: Display>(
     interval_pause: Option<Duration>,
     mut step_runner: impl FnMut() -> Result<Next, TaskError<E>> + Send + Sync + 'static,
 ) -> TaskHandle {
-    info!("spawning new background task {}", task_name);
+    let span = span!(tracing::Level::ERROR, "task", name = %task_name);
+    let _entered = span.enter();
+
+    info!("spawning");
 
     let stopped = Arc::new(RwLock::new(false));
     let write_stopped = stopped.clone();
 
     let (shutdown_sender, receiver) = bounded(1);
+    let thread_span = span.clone();
 
     let join_handle = thread::spawn(move || {
+        let _entered = thread_span.enter();
         loop {
             match receiver.try_recv() {
                 Ok(()) => {
@@ -106,17 +111,14 @@ pub fn spawn_background_task<E: Display>(
                 _ => match step_runner() {
                     Ok(Next::Continue) => {}
                     Ok(Next::Abort) => {
-                        info!("task is aborting: {}", task_name);
+                        info!("aborting");
                         break;
                     }
                     Err(TaskError::Ignore(e)) => {
-                        warn!("task {} encountered ignorable error: {}", task_name, e);
+                        warn!("encountered ignorable error: {}", e);
                     }
                     Err(TaskError::Fatal(e)) => {
-                        error!(
-                            "aborting task {} after encountering fatal error: {}",
-                            task_name, e
-                        );
+                        error!("aborting after encountering fatal error: {}", e);
                         break;
                     }
                 },
@@ -127,7 +129,7 @@ pub fn spawn_background_task<E: Display>(
         }
 
         *write_stopped.acquire_write() = true;
-        info!("task {} has terminated", task_name);
+        info!("terminated");
     });
 
     TaskHandle {
