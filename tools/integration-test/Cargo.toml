@@ -35,7 +35,7 @@ serde_yaml = "0.8.23"
 itertools = "0.10"
 toml = "0.5"
 subtle-encoding = "0.5.1"
-sha2 = "0.9.8"
+sha2 = "0.10.1"
 crossbeam-channel = "0.5.2"
 prost = { version = "0.9", default-features = false }
 prost-types = { version = "0.9", default-features = false }
