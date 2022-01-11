@@ -596,7 +596,12 @@ impl CosmosSdkChain {
         self.config.max_tx_size.into()
     }
 
-    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
+    fn query<P: Into<Path>>(
+        &self,
+        data: P,
+        height: ICSHeight,
+        prove: bool,
+    ) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
         // SAFETY: Creating a Path from a constant; this should never fail
@@ -605,6 +610,7 @@ impl CosmosSdkChain {
 
         let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
+        let data = data.into();
         if !data.is_provable() & prove {
             return Err(Error::private_store());
         }
@@ -1255,11 +1261,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_client_state");
 
         let client_state = self
-            .query(
-                Path::ClientState(ClientStatePath(client_id.clone())),
-                height,
-                false,
-            )
+            .query(ClientStatePath(client_id.clone()), height, false)
             .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
         let client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
             .ok_or_else(|| Error::client_state_type(format!("{:?}", client_state)))?;
@@ -1552,7 +1554,7 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error> {
         let res = self.query(
-            Path::ChannelEnds(ChannelEndsPath(port_id.clone(), channel_id.clone())),
+            ChannelEndsPath(port_id.clone(), channel_id.clone()),
             height,
             false,
         )?;
@@ -1910,11 +1912,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         crate::time!("proven_client_state");
 
-        let res = self.query(
-            Path::ClientState(ClientStatePath(client_id.clone())),
-            height,
-            true,
-        )?;
+        let res = self.query(ClientStatePath(client_id.clone()), height, true)?;
 
         let client_state = AnyClientState::decode_vec(&res.value).map_err(Error::decode)?;
 
@@ -1936,11 +1934,11 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("proven_client_consensus");
 
         let res = self.query(
-            Path::ClientConsensusState(ClientConsensusStatePath {
+            ClientConsensusStatePath {
                 client_id: client_id.clone(),
                 epoch: consensus_height.revision_number,
                 height: consensus_height.revision_height,
-            }),
+            },
             height,
             true,
         )?;
@@ -1962,11 +1960,7 @@ impl ChainEndpoint for CosmosSdkChain {
         connection_id: &ConnectionId,
         height: ICSHeight,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        let res = self.query(
-            Path::Connections(ConnectionsPath(connection_id.clone())),
-            height,
-            true,
-        )?;
+        let res = self.query(ConnectionsPath(connection_id.clone()), height, true)?;
         let connection_end = ConnectionEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok((
@@ -1982,7 +1976,7 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<(ChannelEnd, MerkleProof), Error> {
         let res = self.query(
-            Path::ChannelEnds(ChannelEndsPath(port_id.clone(), channel_id.clone())),
+            ChannelEndsPath(port_id.clone(), channel_id.clone()),
             height,
             true,
         )?;
