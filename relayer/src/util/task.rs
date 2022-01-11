@@ -4,7 +4,7 @@ use core::time::Duration;
 use crossbeam_channel::{bounded, Sender};
 use std::sync::{Arc, RwLock};
 use std::thread;
-use tracing::{error, info, span, warn};
+use tracing::{error, info, warn};
 
 use crate::util::lock::LockExt;
 
@@ -86,23 +86,19 @@ pub enum Next {
    [`TaskHandle`].
 */
 pub fn spawn_background_task<E: Display>(
-    task_name: String,
+    span: tracing::Span,
     interval_pause: Option<Duration>,
     mut step_runner: impl FnMut() -> Result<Next, TaskError<E>> + Send + Sync + 'static,
 ) -> TaskHandle {
-    let span = span!(tracing::Level::ERROR, "task", name = %task_name);
-    let _entered = span.enter();
-
-    info!("spawning");
+    info!(parent: &span, "spawning");
 
     let stopped = Arc::new(RwLock::new(false));
     let write_stopped = stopped.clone();
 
     let (shutdown_sender, receiver) = bounded(1);
-    let thread_span = span.clone();
 
     let join_handle = thread::spawn(move || {
-        let _entered = thread_span.enter();
+        let _entered = span.enter();
         loop {
             match receiver.try_recv() {
                 Ok(()) => {
