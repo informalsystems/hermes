@@ -36,20 +36,3 @@ define_error! {
             | _ | { "error receiving from channel: sender end has been closed" }
     }
 }
-
-define_error! {
-    WorkerError {
-        ChannelSend
-            { reason: String }
-            |e| {
-                format_args!("error sending through crossbeam channel: {}",
-                    e.reason)
-            },
-    }
-}
-
-impl WorkerError {
-    pub fn send<T>(e: crossbeam_channel::SendError<T>) -> WorkerError {
-        WorkerError::channel_send(format!("{}", e))
-    }
-}

@@ -569,7 +569,7 @@ fn handle_rest_cmd<Chain: ChainHandle>(
 
 fn clear_pending_packets(workers: &mut WorkerMap, chain_id: &ChainId) -> Result<(), Error> {
     for worker in workers.workers_for_chain(chain_id) {
-        worker.clear_pending_packets().map_err(Error::worker)?;
+        worker.clear_pending_packets();
     }
 
     Ok(())
@@ -626,11 +626,9 @@ fn process_batch<Chain: ChainHandle>(
             .get_or_spawn(object.dst_chain_id())
             .map_err(Error::spawn)?;
 
-        let worker = { workers.get_or_spawn(object, src, dst, config) };
+        let worker = workers.get_or_spawn(object, src, dst, config);
 
-        worker
-            .send_events(height, events, chain_id.clone())
-            .map_err(Error::worker)?
+        worker.send_events(height, events, chain_id.clone());
     }
 
     Ok(())
