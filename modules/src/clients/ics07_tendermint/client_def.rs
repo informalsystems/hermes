@@ -32,6 +32,10 @@ use crate::core::ics24_host::Path;
 use crate::prelude::*;
 use crate::Height;
 
+use crate::core::ics24_host::path::{
+    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
+    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+};
 use crate::downcast;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -201,11 +205,11 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
-        let path = Path::ClientConsensusState {
+        let path = Path::ClientConsensusState(ClientConsensusStatePath {
             client_id: client_id.clone(),
             epoch: consensus_height.revision_number,
             height: consensus_height.revision_height,
-        }
+        })
         .to_string();
         let value = expected_consensus_state.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
@@ -223,7 +227,7 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
-        let path = Path::Connections(connection_id.clone()).to_string();
+        let path = Path::Connections(ConnectionsPath(connection_id.clone())).to_string();
         let value = expected_connection_end.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
@@ -241,7 +245,8 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
-        let path = Path::ChannelEnds(port_id.clone(), channel_id.clone()).to_string();
+        let path =
+            Path::ChannelEnds(ChannelEndsPath(port_id.clone(), channel_id.clone())).to_string();
         let value = expected_channel_end.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
@@ -258,7 +263,7 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
-        let path = Path::ClientState(client_id.clone()).to_string();
+        let path = Path::ClientState(ClientStatePath(client_id.clone())).to_string();
         let value = expected_client_state.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
@@ -279,11 +284,11 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
-        let commitment_path = Path::Commitments {
+        let commitment_path = Path::Commitments(CommitmentsPath {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             sequence,
-        };
+        });
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
@@ -310,11 +315,11 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
-        let ack_path = Path::Acks {
+        let ack_path = Path::Acks(AcksPath {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             sequence,
-        };
+        });
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
@@ -340,7 +345,7 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
-        let seq_path = Path::SeqRecvs(port_id.clone(), channel_id.clone());
+        let seq_path = Path::SeqRecvs(SeqRecvsPath(port_id.clone(), channel_id.clone()));
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
@@ -366,11 +371,11 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
-        let receipt_path = Path::Receipts {
+        let receipt_path = Path::Receipts(ReceiptsPath {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             sequence,
-        };
+        });
         verify_non_membership(
             client_state,
             connection_end.counterparty().prefix(),

@@ -50,8 +50,6 @@ use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::core::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
-use ibc::core::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::{QueryTxHash, QueryTxRequest};
@@ -97,6 +95,10 @@ use crate::{
 };
 
 use super::{ChainEndpoint, HealthCheck};
+use ibc::core::ics24_host::path::{
+    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
+    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+};
 
 mod compatibility;
 pub mod version;
@@ -1253,7 +1255,11 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_client_state");
 
         let client_state = self
-            .query(ClientStatePath(client_id.clone()), height, false)
+            .query(
+                Path::ClientState(ClientStatePath(client_id.clone())),
+                height,
+                false,
+            )
             .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
         let client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
             .ok_or_else(|| Error::client_state_type(format!("{:?}", client_state)))?;
@@ -1546,7 +1552,7 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error> {
         let res = self.query(
-            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+            Path::ChannelEnds(ChannelEndsPath(port_id.clone(), channel_id.clone())),
             height,
             false,
         )?;
@@ -1904,7 +1910,11 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         crate::time!("proven_client_state");
 
-        let res = self.query(ClientStatePath(client_id.clone()), height, true)?;
+        let res = self.query(
+            Path::ClientState(ClientStatePath(client_id.clone())),
+            height,
+            true,
+        )?;
 
         let client_state = AnyClientState::decode_vec(&res.value).map_err(Error::decode)?;
 
@@ -1926,11 +1936,11 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("proven_client_consensus");
 
         let res = self.query(
-            ClientConsensusPath {
+            Path::ClientConsensusState(ClientConsensusStatePath {
                 client_id: client_id.clone(),
                 epoch: consensus_height.revision_number,
                 height: consensus_height.revision_height,
-            },
+            }),
             height,
             true,
         )?;
@@ -1952,7 +1962,11 @@ impl ChainEndpoint for CosmosSdkChain {
         connection_id: &ConnectionId,
         height: ICSHeight,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        let res = self.query(Path::Connections(connection_id.clone()), height, true)?;
+        let res = self.query(
+            Path::Connections(ConnectionsPath(connection_id.clone())),
+            height,
+            true,
+        )?;
         let connection_end = ConnectionEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok((
@@ -1968,7 +1982,7 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<(ChannelEnd, MerkleProof), Error> {
         let res = self.query(
-            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+            Path::ChannelEnds(ChannelEndsPath(port_id.clone(), channel_id.clone())),
             height,
             true,
         )?;
@@ -1990,30 +2004,27 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         let data = match packet_type {
-            PacketMsgType::Recv => Path::Commitments {
+            PacketMsgType::Recv => Path::Commitments(CommitmentsPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
-            PacketMsgType::Ack => Path::Acks {
+            }),
+            PacketMsgType::Ack => Path::Acks(AcksPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
-            PacketMsgType::TimeoutUnordered => Path::Receipts {
+            }),
+            PacketMsgType::TimeoutUnordered => Path::Receipts(ReceiptsPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
-            PacketMsgType::TimeoutOrdered => Path::SeqRecvs {
-                0: port_id,
-                1: channel_id,
-            },
-            PacketMsgType::TimeoutOnClose => Path::Receipts {
+            }),
+            PacketMsgType::TimeoutOrdered => Path::SeqRecvs(SeqRecvsPath(port_id, channel_id)),
+            PacketMsgType::TimeoutOnClose => Path::Receipts(ReceiptsPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
+            }),
         };
 
         let res = self.query(data, height, true)?;

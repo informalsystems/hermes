@@ -30,36 +30,75 @@ const UPGRADED_CLIENT_CONSENSUS_STATE: &str = "upgradedConsState";
 /// The Path enum abstracts out the different sub-paths.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Path {
-    ClientType(ClientId),
-    ClientState(ClientId),
-    ClientConsensusState {
-        client_id: ClientId,
-        epoch: u64,
-        height: u64,
-    },
-    ClientConnections(ClientId),
-    Connections(ConnectionId),
-    Ports(PortId),
-    ChannelEnds(PortId, ChannelId),
-    SeqSends(PortId, ChannelId),
-    SeqRecvs(PortId, ChannelId),
-    SeqAcks(PortId, ChannelId),
-    Commitments {
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: Sequence,
-    },
-    Acks {
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: Sequence,
-    },
-    Receipts {
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: Sequence,
-    },
+    ClientType(ClientTypePath),
+    ClientState(ClientStatePath),
+    ClientConsensusState(ClientConsensusStatePath),
+    ClientConnections(ClientConnectionsPath),
+    Connections(ConnectionsPath),
+    Ports(PortsPath),
+    ChannelEnds(ChannelEndsPath),
+    SeqSends(SeqSendsPath),
+    SeqRecvs(SeqRecvsPath),
+    SeqAcks(SeqAcksPath),
+    Commitments(CommitmentsPath),
+    Acks(AcksPath),
+    Receipts(ReceiptsPath),
     Upgrade(ClientUpgradePath),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ClientTypePath(pub ClientId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ClientStatePath(pub ClientId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ClientConsensusStatePath {
+    pub client_id: ClientId,
+    pub epoch: u64,
+    pub height: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ClientConnectionsPath(pub ClientId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ConnectionsPath(pub ConnectionId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct PortsPath(pub PortId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ChannelEndsPath(pub PortId, pub ChannelId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SeqSendsPath(pub PortId, pub ChannelId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SeqRecvsPath(pub PortId, pub ChannelId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SeqAcksPath(pub PortId, pub ChannelId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CommitmentsPath {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: Sequence,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct AcksPath {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: Sequence,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ReceiptsPath {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: Sequence,
 }
 
 /// Paths that are specific for client upgrades.
@@ -94,61 +133,69 @@ impl Path {
 impl Display for Path {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self {
-            Path::ClientType(client_id) => write!(f, "clients/{}/clientType", client_id),
-            Path::ClientState(client_id) => write!(f, "clients/{}/clientState", client_id),
-            Path::ClientConsensusState {
+            Path::ClientType(ClientTypePath(client_id)) => {
+                write!(f, "clients/{}/clientType", client_id)
+            }
+            Path::ClientState(ClientStatePath(client_id)) => {
+                write!(f, "clients/{}/clientState", client_id)
+            }
+            Path::ClientConsensusState(ClientConsensusStatePath {
                 client_id,
                 epoch,
                 height,
-            } => write!(
+            }) => write!(
                 f,
                 "clients/{}/consensusStates/{}-{}",
                 client_id, epoch, height
             ),
-            Path::ClientConnections(client_id) => write!(f, "clients/{}/connections", client_id),
-            Path::Connections(connection_id) => write!(f, "connections/{}", connection_id),
-            Path::Ports(port_id) => write!(f, "ports/{}", port_id),
-            Path::ChannelEnds(port_id, channel_id) => {
+            Path::ClientConnections(ClientConnectionsPath(client_id)) => {
+                write!(f, "clients/{}/connections", client_id)
+            }
+            Path::Connections(ConnectionsPath(connection_id)) => {
+                write!(f, "connections/{}", connection_id)
+            }
+            Path::Ports(PortsPath(port_id)) => write!(f, "ports/{}", port_id),
+            Path::ChannelEnds(ChannelEndsPath(port_id, channel_id)) => {
                 write!(f, "channelEnds/ports/{}/channels/{}", port_id, channel_id)
             }
-            Path::SeqSends(port_id, channel_id) => write!(
+            Path::SeqSends(SeqSendsPath(port_id, channel_id)) => write!(
                 f,
                 "nextSequenceSend/ports/{}/channels/{}",
                 port_id, channel_id
             ),
-            Path::SeqRecvs(port_id, channel_id) => write!(
+            Path::SeqRecvs(SeqRecvsPath(port_id, channel_id)) => write!(
                 f,
                 "nextSequenceRecv/ports/{}/channels/{}",
                 port_id, channel_id
             ),
-            Path::SeqAcks(port_id, channel_id) => write!(
+            Path::SeqAcks(SeqAcksPath(port_id, channel_id)) => write!(
                 f,
                 "nextSequenceAck/ports/{}/channels/{}",
                 port_id, channel_id
             ),
-            Path::Commitments {
+            Path::Commitments(CommitmentsPath {
                 port_id,
                 channel_id,
                 sequence,
-            } => write!(
+            }) => write!(
                 f,
                 "commitments/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
             ),
-            Path::Acks {
+            Path::Acks(AcksPath {
                 port_id,
                 channel_id,
                 sequence,
-            } => write!(
+            }) => write!(
                 f,
                 "acks/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
             ),
-            Path::Receipts {
+            Path::Receipts(ReceiptsPath {
                 port_id,
                 channel_id,
                 sequence,
-            } => write!(
+            }) => write!(
                 f,
                 "receipts/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
@@ -213,9 +260,9 @@ fn parse_client_paths(components: &[&str]) -> Option<Path> {
 
     if components.len() == 3 {
         match components[2] {
-            "clientType" => Some(Path::ClientType(client_id)),
-            "clientState" => Some(Path::ClientState(client_id)),
-            "connections" => Some(Path::ClientConnections(client_id)),
+            "clientType" => Some(Path::ClientType(ClientTypePath(client_id))),
+            "clientState" => Some(Path::ClientState(ClientStatePath(client_id))),
+            "connections" => Some(Path::ClientConnections(ClientConnectionsPath(client_id))),
             _ => None,
         }
     } else if components.len() == 4 {
@@ -247,11 +294,11 @@ fn parse_client_paths(components: &[&str]) -> Option<Path> {
             Err(_) => return None,
         };
 
-        Some(Path::ClientConsensusState {
+        Some(Path::ClientConsensusState(ClientConsensusStatePath {
             client_id,
             epoch,
             height,
-        })
+        }))
     } else {
         None
     }
@@ -281,7 +328,7 @@ fn parse_connections(components: &[&str]) -> Option<Path> {
         Err(_) => return None,
     };
 
-    Some(Path::Connections(connection_id))
+    Some(Path::Connections(ConnectionsPath(connection_id)))
 }
 
 fn parse_ports(components: &[&str]) -> Option<Path> {
@@ -308,7 +355,7 @@ fn parse_ports(components: &[&str]) -> Option<Path> {
         Err(_) => return None,
     };
 
-    Some(Path::Ports(port_id))
+    Some(Path::Ports(PortsPath(port_id)))
 }
 
 fn parse_channels(components: &[&str]) -> Option<SubPath> {
@@ -380,7 +427,7 @@ fn parse_channel_ends(components: &[&str]) -> Option<Path> {
     let port = parse_ports(&components[1..=2]);
     let channel = parse_channels(&components[3..=4]);
 
-    let port_id = if let Some(Path::Ports(port_id)) = port {
+    let port_id = if let Some(Path::Ports(PortsPath(port_id))) = port {
         port_id
     } else {
         return None;
@@ -392,7 +439,7 @@ fn parse_channel_ends(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    Some(Path::ChannelEnds(port_id, channel_id))
+    Some(Path::ChannelEnds(ChannelEndsPath(port_id, channel_id)))
 }
 
 fn parse_seqs(components: &[&str]) -> Option<Path> {
@@ -408,7 +455,7 @@ fn parse_seqs(components: &[&str]) -> Option<Path> {
     let port = parse_ports(&components[1..=2]);
     let channel = parse_channels(&components[3..=4]);
 
-    let port_id = if let Some(Path::Ports(port_id)) = port {
+    let port_id = if let Some(Path::Ports(PortsPath(port_id))) = port {
         port_id
     } else {
         return None;
@@ -421,9 +468,9 @@ fn parse_seqs(components: &[&str]) -> Option<Path> {
     };
 
     match first {
-        "nextSequenceSend" => Some(Path::SeqSends(port_id, channel_id)),
-        "nextSequenceRecv" => Some(Path::SeqRecvs(port_id, channel_id)),
-        "nextSequenceAck" => Some(Path::SeqAcks(port_id, channel_id)),
+        "nextSequenceSend" => Some(Path::SeqSends(SeqSendsPath(port_id, channel_id))),
+        "nextSequenceRecv" => Some(Path::SeqRecvs(SeqRecvsPath(port_id, channel_id))),
+        "nextSequenceAck" => Some(Path::SeqAcks(SeqAcksPath(port_id, channel_id))),
         _ => None,
     }
 }
@@ -446,7 +493,7 @@ fn parse_commitments(components: &[&str]) -> Option<Path> {
     let channel = parse_channels(&components[3..=4]);
     let sequence = parse_sequences(&components[5..]);
 
-    let port_id = if let Some(Path::Ports(port_id)) = port {
+    let port_id = if let Some(Path::Ports(PortsPath(port_id))) = port {
         port_id
     } else {
         return None;
@@ -464,11 +511,11 @@ fn parse_commitments(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    Some(Path::Commitments {
+    Some(Path::Commitments(CommitmentsPath {
         port_id,
         channel_id,
         sequence,
-    })
+    }))
 }
 
 fn parse_acks(components: &[&str]) -> Option<Path> {
@@ -489,7 +536,7 @@ fn parse_acks(components: &[&str]) -> Option<Path> {
     let channel = parse_channels(&components[3..=4]);
     let sequence = parse_sequences(&components[5..]);
 
-    let port_id = if let Some(Path::Ports(port_id)) = port {
+    let port_id = if let Some(Path::Ports(PortsPath(port_id))) = port {
         port_id
     } else {
         return None;
@@ -507,11 +554,11 @@ fn parse_acks(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    Some(Path::Acks {
+    Some(Path::Acks(AcksPath {
         port_id,
         channel_id,
         sequence,
-    })
+    }))
 }
 
 fn parse_receipts(components: &[&str]) -> Option<Path> {
@@ -532,7 +579,7 @@ fn parse_receipts(components: &[&str]) -> Option<Path> {
     let channel = parse_channels(&components[3..=4]);
     let sequence = parse_sequences(&components[5..]);
 
-    let port_id = if let Some(Path::Ports(port_id)) = port {
+    let port_id = if let Some(Path::Ports(PortsPath(port_id))) = port {
         port_id
     } else {
         return None;
@@ -550,11 +597,11 @@ fn parse_receipts(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    Some(Path::Receipts {
+    Some(Path::Receipts(ReceiptsPath {
         port_id,
         channel_id,
         sequence,
-    })
+    }))
 }
 
 fn parse_upgrades(components: &[&str]) -> Option<Path> {
@@ -611,7 +658,7 @@ mod tests {
 
         assert_eq!(
             parse_client_paths(&components),
-            Some(Path::ClientType(ClientId::default()))
+            Some(Path::ClientType(ClientTypePath(ClientId::default())))
         );
 
         let path = "clients/07-tendermint-0/clientState";
@@ -619,7 +666,7 @@ mod tests {
 
         assert_eq!(
             parse_client_paths(&components),
-            Some(Path::ClientState(ClientId::default()))
+            Some(Path::ClientState(ClientStatePath(ClientId::default())))
         );
 
         let path = "clients/07-tendermint-0/consensusStates/15-31";
@@ -627,11 +674,11 @@ mod tests {
 
         assert_eq!(
             parse_client_paths(&components),
-            Some(Path::ClientConsensusState {
+            Some(Path::ClientConsensusState(ClientConsensusStatePath {
                 client_id: ClientId::default(),
                 epoch: 15,
                 height: 31,
-            })
+            }))
         );
     }
 
@@ -641,7 +688,10 @@ mod tests {
         let path = Path::from_str(path);
 
         assert!(path.is_ok());
-        assert_eq!(path.unwrap(), Path::ClientType(ClientId::default()),);
+        assert_eq!(
+            path.unwrap(),
+            Path::ClientType(ClientTypePath(ClientId::default()))
+        );
     }
 
     #[test]
@@ -650,7 +700,10 @@ mod tests {
         let path = Path::from_str(path);
 
         assert!(path.is_ok());
-        assert_eq!(path.unwrap(), Path::ClientState(ClientId::default()));
+        assert_eq!(
+            path.unwrap(),
+            Path::ClientState(ClientStatePath(ClientId::default()))
+        );
     }
 
     #[test]
@@ -661,11 +714,11 @@ mod tests {
         assert!(path.is_ok());
         assert_eq!(
             path.unwrap(),
-            Path::ClientConsensusState {
+            Path::ClientConsensusState(ClientConsensusStatePath {
                 client_id: ClientId::default(),
                 epoch: 15,
                 height: 31,
-            }
+            })
         );
     }
 
@@ -675,7 +728,10 @@ mod tests {
         let path = Path::from_str(path);
 
         assert!(path.is_ok());
-        assert_eq!(path.unwrap(), Path::ClientConnections(ClientId::default()));
+        assert_eq!(
+            path.unwrap(),
+            Path::ClientConnections(ClientConnectionsPath(ClientId::default()))
+        );
     }
 
     #[test]
@@ -685,7 +741,7 @@ mod tests {
 
         assert_eq!(
             parse_connections(&components),
-            Some(Path::Connections(ConnectionId::new(0))),
+            Some(Path::Connections(ConnectionsPath(ConnectionId::new(0)))),
         );
     }
 
@@ -695,7 +751,10 @@ mod tests {
         let path = Path::from_str(path);
 
         assert!(path.is_ok());
-        assert_eq!(path.unwrap(), Path::Connections(ConnectionId::new(0)));
+        assert_eq!(
+            path.unwrap(),
+            Path::Connections(ConnectionsPath(ConnectionId::new(0)))
+        );
     }
 
     #[test]
@@ -705,7 +764,7 @@ mod tests {
 
         assert_eq!(
             parse_ports(&components),
-            Some(Path::Ports(PortId::default())),
+            Some(Path::Ports(PortsPath(PortId::default()))),
         );
     }
 
@@ -715,7 +774,7 @@ mod tests {
         let path = Path::from_str(path);
 
         assert!(path.is_ok());
-        assert_eq!(path.unwrap(), Path::Ports(PortId::default()));
+        assert_eq!(path.unwrap(), Path::Ports(PortsPath(PortId::default())));
     }
 
     #[test]
@@ -763,7 +822,10 @@ mod tests {
 
         assert_eq!(
             parse_channel_ends(&components),
-            Some(Path::ChannelEnds(PortId::default(), ChannelId::default())),
+            Some(Path::ChannelEnds(ChannelEndsPath(
+                PortId::default(),
+                ChannelId::default()
+            ))),
         );
     }
 
@@ -775,7 +837,7 @@ mod tests {
         assert!(path.is_ok());
         assert_eq!(
             path.unwrap(),
-            Path::ChannelEnds(PortId::default(), ChannelId::default()),
+            Path::ChannelEnds(ChannelEndsPath(PortId::default(), ChannelId::default())),
         );
     }
 
@@ -786,7 +848,10 @@ mod tests {
 
         assert_eq!(
             parse_seqs(&components),
-            Some(Path::SeqSends(PortId::default(), ChannelId::default())),
+            Some(Path::SeqSends(SeqSendsPath(
+                PortId::default(),
+                ChannelId::default()
+            ))),
         );
 
         let path = "nextSequenceRecv/ports/defaultPort/channels/channel-0";
@@ -794,7 +859,10 @@ mod tests {
 
         assert_eq!(
             parse_seqs(&components),
-            Some(Path::SeqRecvs(PortId::default(), ChannelId::default())),
+            Some(Path::SeqRecvs(SeqRecvsPath(
+                PortId::default(),
+                ChannelId::default()
+            ))),
         );
 
         let path = "nextSequenceAck/ports/defaultPort/channels/channel-0";
@@ -802,7 +870,10 @@ mod tests {
 
         assert_eq!(
             parse_seqs(&components),
-            Some(Path::SeqAcks(PortId::default(), ChannelId::default())),
+            Some(Path::SeqAcks(SeqAcksPath(
+                PortId::default(),
+                ChannelId::default()
+            ))),
         );
     }
 
@@ -814,7 +885,7 @@ mod tests {
         assert!(path.is_ok());
         assert_eq!(
             path.unwrap(),
-            Path::SeqSends(PortId::default(), ChannelId::default()),
+            Path::SeqSends(SeqSendsPath(PortId::default(), ChannelId::default())),
         );
     }
 
@@ -826,7 +897,7 @@ mod tests {
         assert!(path.is_ok());
         assert_eq!(
             path.unwrap(),
-            Path::SeqRecvs(PortId::default(), ChannelId::default()),
+            Path::SeqRecvs(SeqRecvsPath(PortId::default(), ChannelId::default())),
         );
     }
 
@@ -838,7 +909,7 @@ mod tests {
         assert!(path.is_ok());
         assert_eq!(
             path.unwrap(),
-            Path::SeqAcks(PortId::default(), ChannelId::default()),
+            Path::SeqAcks(SeqAcksPath(PortId::default(), ChannelId::default())),
         );
     }
 
@@ -849,11 +920,11 @@ mod tests {
 
         assert_eq!(
             parse_commitments(&components),
-            Some(Path::Commitments {
+            Some(Path::Commitments(CommitmentsPath {
                 port_id: PortId::default(),
                 channel_id: ChannelId::default(),
                 sequence: Sequence::default(),
-            }),
+            })),
         );
     }
 
@@ -865,11 +936,11 @@ mod tests {
         assert!(path.is_ok());
         assert_eq!(
             path.unwrap(),
-            Path::Commitments {
+            Path::Commitments(CommitmentsPath {
                 port_id: PortId::default(),
                 channel_id: ChannelId::default(),
                 sequence: Sequence::default(),
-            },
+            }),
         );
     }
 
@@ -880,11 +951,11 @@ mod tests {
 
         assert_eq!(
             parse_acks(&components),
-            Some(Path::Acks {
+            Some(Path::Acks(AcksPath {
                 port_id: PortId::default(),
                 channel_id: ChannelId::default(),
                 sequence: Sequence::default(),
-            }),
+            })),
         );
     }
 
@@ -896,11 +967,11 @@ mod tests {
         assert!(path.is_ok());
         assert_eq!(
             path.unwrap(),
-            Path::Acks {
+            Path::Acks(AcksPath {
                 port_id: PortId::default(),
                 channel_id: ChannelId::default(),
                 sequence: Sequence::default(),
-            },
+            }),
         );
     }
 
@@ -911,11 +982,11 @@ mod tests {
 
         assert_eq!(
             parse_receipts(&components),
-            Some(Path::Receipts {
+            Some(Path::Receipts(ReceiptsPath {
                 port_id: PortId::default(),
                 channel_id: ChannelId::default(),
                 sequence: Sequence::default(),
-            }),
+            })),
         );
     }
 
@@ -927,11 +998,11 @@ mod tests {
         assert!(path.is_ok());
         assert_eq!(
             path.unwrap(),
-            Path::Receipts {
+            Path::Receipts(ReceiptsPath {
                 port_id: PortId::default(),
                 channel_id: ChannelId::default(),
                 sequence: Sequence::default(),
-            },
+            }),
         );
     }
 
