@@ -4,12 +4,12 @@ use crate::prelude::*;
 /// https://github.com/cosmos/ibc/tree/master/spec/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
 ///
-use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
 
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 
+use derive_more::{Display, From};
 use flex_error::define_error;
 
 /// ABCI Query path for the IBC sub-store
@@ -28,20 +28,53 @@ const UPGRADED_CLIENT_STATE: &str = "upgradedClient";
 const UPGRADED_CLIENT_CONSENSUS_STATE: &str = "upgradedConsState";
 
 /// The Path enum abstracts out the different sub-paths.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, From, Display)]
 pub enum Path {
+    #[display(fmt = "clients/{}/clientType", "_0.0")]
     ClientType(ClientTypePath),
+    #[display(fmt = "clients/{}/clientState", "_0.0")]
     ClientState(ClientStatePath),
+    #[display(
+        fmt = "clients/{}/consensusStates/{}-{}",
+        "_0.client_id",
+        "_0.epoch",
+        "_0.height"
+    )]
     ClientConsensusState(ClientConsensusStatePath),
+    #[display(fmt = "clients/{}/connections", "_0.0")]
     ClientConnections(ClientConnectionsPath),
+    #[display(fmt = "connections/{}", "_0.0")]
     Connections(ConnectionsPath),
+    #[display(fmt = "ports/{}", "_0.0")]
     Ports(PortsPath),
+    #[display(fmt = "channelEnds/ports/{}/channels/{}", "_0.0", "_0.1")]
     ChannelEnds(ChannelEndsPath),
+    #[display(fmt = "nextSequenceSend/ports/{}/channels/{}", "_0.0", "_0.1")]
     SeqSends(SeqSendsPath),
+    #[display(fmt = "nextSequenceRecv/ports/{}/channels/{}", "_0.0", "_0.1")]
     SeqRecvs(SeqRecvsPath),
+    #[display(fmt = "nextSequenceAck/ports/{}/channels/{}", "_0.0", "_0.1")]
     SeqAcks(SeqAcksPath),
+    #[display(
+        fmt = "commitments/ports/{}/channels/{}/sequences/{}",
+        "_0.port_id",
+        "_0.channel_id",
+        "_0.sequence"
+    )]
     Commitments(CommitmentsPath),
+    #[display(
+        fmt = "acks/ports/{}/channels/{}/sequences/{}",
+        "_0.port_id",
+        "_0.channel_id",
+        "_0.sequence"
+    )]
     Acks(AcksPath),
+    #[display(
+        fmt = "receipts/ports/{}/channels/{}/sequences/{}",
+        "_0.port_id",
+        "_0.channel_id",
+        "_0.sequence"
+    )]
     Receipts(ReceiptsPath),
     Upgrade(ClientUpgradePath),
 }
@@ -102,9 +135,16 @@ pub struct ReceiptsPath {
 }
 
 /// Paths that are specific for client upgrades.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
 pub enum ClientUpgradePath {
+    #[display(fmt = "{}/{}/{}", UPGRADED_IBC_STATE, _0, UPGRADED_CLIENT_STATE)]
     UpgradedClientState(u64),
+    #[display(
+        fmt = "{}/{}/{}",
+        UPGRADED_IBC_STATE,
+        _0,
+        UPGRADED_CLIENT_CONSENSUS_STATE
+    )]
     UpgradedClientConsensusState(u64),
 }
 
@@ -125,92 +165,6 @@ impl Path {
     /// into_bytes implementation
     pub fn into_bytes(self) -> Vec<u8> {
         self.to_string().into_bytes()
-    }
-}
-
-/// The Display trait adds the `.to_string()` method to the Path struct.
-/// This is where the different path strings are constructed.
-impl Display for Path {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match &self {
-            Path::ClientType(ClientTypePath(client_id)) => {
-                write!(f, "clients/{}/clientType", client_id)
-            }
-            Path::ClientState(ClientStatePath(client_id)) => {
-                write!(f, "clients/{}/clientState", client_id)
-            }
-            Path::ClientConsensusState(ClientConsensusStatePath {
-                client_id,
-                epoch,
-                height,
-            }) => write!(
-                f,
-                "clients/{}/consensusStates/{}-{}",
-                client_id, epoch, height
-            ),
-            Path::ClientConnections(ClientConnectionsPath(client_id)) => {
-                write!(f, "clients/{}/connections", client_id)
-            }
-            Path::Connections(ConnectionsPath(connection_id)) => {
-                write!(f, "connections/{}", connection_id)
-            }
-            Path::Ports(PortsPath(port_id)) => write!(f, "ports/{}", port_id),
-            Path::ChannelEnds(ChannelEndsPath(port_id, channel_id)) => {
-                write!(f, "channelEnds/ports/{}/channels/{}", port_id, channel_id)
-            }
-            Path::SeqSends(SeqSendsPath(port_id, channel_id)) => write!(
-                f,
-                "nextSequenceSend/ports/{}/channels/{}",
-                port_id, channel_id
-            ),
-            Path::SeqRecvs(SeqRecvsPath(port_id, channel_id)) => write!(
-                f,
-                "nextSequenceRecv/ports/{}/channels/{}",
-                port_id, channel_id
-            ),
-            Path::SeqAcks(SeqAcksPath(port_id, channel_id)) => write!(
-                f,
-                "nextSequenceAck/ports/{}/channels/{}",
-                port_id, channel_id
-            ),
-            Path::Commitments(CommitmentsPath {
-                port_id,
-                channel_id,
-                sequence,
-            }) => write!(
-                f,
-                "commitments/ports/{}/channels/{}/sequences/{}",
-                port_id, channel_id, sequence
-            ),
-            Path::Acks(AcksPath {
-                port_id,
-                channel_id,
-                sequence,
-            }) => write!(
-                f,
-                "acks/ports/{}/channels/{}/sequences/{}",
-                port_id, channel_id, sequence
-            ),
-            Path::Receipts(ReceiptsPath {
-                port_id,
-                channel_id,
-                sequence,
-            }) => write!(
-                f,
-                "receipts/ports/{}/channels/{}/sequences/{}",
-                port_id, channel_id, sequence
-            ),
-            Path::Upgrade(ClientUpgradePath::UpgradedClientState(height)) => write!(
-                f,
-                "{}/{}/{}",
-                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_STATE
-            ),
-            Path::Upgrade(ClientUpgradePath::UpgradedClientConsensusState(height)) => write!(
-                f,
-                "{}/{}/{}",
-                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_CONSENSUS_STATE
-            ),
-        }
     }
 }
 
@@ -260,9 +214,9 @@ fn parse_client_paths(components: &[&str]) -> Option<Path> {
 
     if components.len() == 3 {
         match components[2] {
-            "clientType" => Some(Path::ClientType(ClientTypePath(client_id))),
-            "clientState" => Some(Path::ClientState(ClientStatePath(client_id))),
-            "connections" => Some(Path::ClientConnections(ClientConnectionsPath(client_id))),
+            "clientType" => Some(ClientTypePath(client_id).into()),
+            "clientState" => Some(ClientStatePath(client_id).into()),
+            "connections" => Some(ClientConnectionsPath(client_id).into()),
             _ => None,
         }
     } else if components.len() == 4 {
@@ -294,11 +248,14 @@ fn parse_client_paths(components: &[&str]) -> Option<Path> {
             Err(_) => return None,
         };
 
-        Some(Path::ClientConsensusState(ClientConsensusStatePath {
-            client_id,
-            epoch,
-            height,
-        }))
+        Some(
+            ClientConsensusStatePath {
+                client_id,
+                epoch,
+                height,
+            }
+            .into(),
+        )
     } else {
         None
     }
@@ -328,7 +285,7 @@ fn parse_connections(components: &[&str]) -> Option<Path> {
         Err(_) => return None,
     };
 
-    Some(Path::Connections(ConnectionsPath(connection_id)))
+    Some(ConnectionsPath(connection_id).into())
 }
 
 fn parse_ports(components: &[&str]) -> Option<Path> {
@@ -355,7 +312,7 @@ fn parse_ports(components: &[&str]) -> Option<Path> {
         Err(_) => return None,
     };
 
-    Some(Path::Ports(PortsPath(port_id)))
+    Some(PortsPath(port_id).into())
 }
 
 fn parse_channels(components: &[&str]) -> Option<SubPath> {
@@ -439,7 +396,7 @@ fn parse_channel_ends(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    Some(Path::ChannelEnds(ChannelEndsPath(port_id, channel_id)))
+    Some(ChannelEndsPath(port_id, channel_id).into())
 }
 
 fn parse_seqs(components: &[&str]) -> Option<Path> {
@@ -468,9 +425,9 @@ fn parse_seqs(components: &[&str]) -> Option<Path> {
     };
 
     match first {
-        "nextSequenceSend" => Some(Path::SeqSends(SeqSendsPath(port_id, channel_id))),
-        "nextSequenceRecv" => Some(Path::SeqRecvs(SeqRecvsPath(port_id, channel_id))),
-        "nextSequenceAck" => Some(Path::SeqAcks(SeqAcksPath(port_id, channel_id))),
+        "nextSequenceSend" => Some(SeqSendsPath(port_id, channel_id).into()),
+        "nextSequenceRecv" => Some(SeqRecvsPath(port_id, channel_id).into()),
+        "nextSequenceAck" => Some(SeqAcksPath(port_id, channel_id).into()),
         _ => None,
     }
 }
@@ -511,11 +468,14 @@ fn parse_commitments(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    Some(Path::Commitments(CommitmentsPath {
-        port_id,
-        channel_id,
-        sequence,
-    }))
+    Some(
+        CommitmentsPath {
+            port_id,
+            channel_id,
+            sequence,
+        }
+        .into(),
+    )
 }
 
 fn parse_acks(components: &[&str]) -> Option<Path> {
@@ -554,11 +514,14 @@ fn parse_acks(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    Some(Path::Acks(AcksPath {
-        port_id,
-        channel_id,
-        sequence,
-    }))
+    Some(
+        AcksPath {
+            port_id,
+            channel_id,
+            sequence,
+        }
+        .into(),
+    )
 }
 
 fn parse_receipts(components: &[&str]) -> Option<Path> {
@@ -597,11 +560,14 @@ fn parse_receipts(components: &[&str]) -> Option<Path> {
         return None;
     };
 
-    Some(Path::Receipts(ReceiptsPath {
-        port_id,
-        channel_id,
-        sequence,
-    }))
+    Some(
+        ReceiptsPath {
+            port_id,
+            channel_id,
+            sequence,
+        }
+        .into(),
+    )
 }
 
 fn parse_upgrades(components: &[&str]) -> Option<Path> {
@@ -629,12 +595,10 @@ fn parse_upgrades(components: &[&str]) -> Option<Path> {
     };
 
     match last {
-        UPGRADED_CLIENT_STATE => Some(Path::Upgrade(ClientUpgradePath::UpgradedClientState(
-            height,
-        ))),
-        UPGRADED_CLIENT_CONSENSUS_STATE => Some(Path::Upgrade(
-            ClientUpgradePath::UpgradedClientConsensusState(height),
-        )),
+        UPGRADED_CLIENT_STATE => Some(ClientUpgradePath::UpgradedClientState(height).into()),
+        UPGRADED_CLIENT_CONSENSUS_STATE => {
+            Some(ClientUpgradePath::UpgradedClientConsensusState(height).into())
+        }
         _ => None,
     }
 }

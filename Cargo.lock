@@ -1382,6 +1382,7 @@ name = "ibc"
 version = "0.9.0"
 dependencies = [
  "bytes",
+ "derive_more",
  "env_logger",
  "flex-error",
  "ibc-proto",
