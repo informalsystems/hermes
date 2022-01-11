@@ -36,7 +36,7 @@ itertools = "0.10"
 toml = "0.5"
 subtle-encoding = "0.5.1"
 sha2 = "0.9.8"
-crossbeam-channel = "0.5.1"
+crossbeam-channel = "0.5.2"
 prost = { version = "0.9", default-features = false }
 prost-types = { version = "0.9", default-features = false }
 semver = "1.0.4"
