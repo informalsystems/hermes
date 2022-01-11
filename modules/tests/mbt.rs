@@ -2,7 +2,10 @@ extern crate alloc;
 
 mod runner;
 
-use modelator::{run_tla_steps, ModelChecker, TestError};
+use modelator::{
+    model::checker::{ModelChecker, ModelCheckerRuntime},
+    Error,
+};
 use runner::IbcTestRunner;
 
 #[test]
@@ -14,14 +17,14 @@ fn mbt() {
     }
 }
 
-fn run_tests() -> Result<(), TestError> {
+fn run_tests() -> Result<(), Error> {
     // run the test
     let tla_tests_file = "tests/support/model_based/IBCTests.tla";
     let tla_config_file = "tests/support/model_based/IBCTests.cfg";
-    let mut opts = modelator::Options::default();
-    opts.model_checker_options.model_checker = ModelChecker::Tlc;
+    let runtime = modelator::ModelatorRuntime::default()
+        .model_checker_runtime(ModelCheckerRuntime::default().model_checker(ModelChecker::Tlc));
 
     let mut runner = IbcTestRunner::new();
-    run_tla_steps(tla_tests_file, tla_config_file, &opts, &mut runner)?;
+    runtime.run_tla_steps(tla_tests_file, tla_config_file, &mut runner)?;
     Ok(())
 }

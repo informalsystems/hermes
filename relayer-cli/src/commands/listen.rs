@@ -2,7 +2,8 @@ use alloc::sync::Arc;
 use core::{fmt, ops::Deref, str::FromStr};
 use std::thread;
 
-use abscissa_core::{application::fatal_error, Command, Options, Runnable};
+use abscissa_core::{application::fatal_error, Runnable};
+use clap::{App, Arg, ArgMatches, Args, FromArgMatches};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info};
@@ -46,7 +47,7 @@ impl fmt::Display for EventFilter {
 }
 
 impl FromStr for EventFilter {
-    type Err = Box<dyn std::error::Error>;
+    type Err = Box<dyn std::error::Error + Send + Sync + 'static>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -57,14 +58,12 @@ impl FromStr for EventFilter {
     }
 }
 
-#[derive(Command, Debug, Options)]
+#[derive(Debug)]
 pub struct ListenCmd {
     /// Identifier of the chain to listen for events from
-    #[options(free)]
     chain_id: ChainId,
 
-    /// Add an event type to listen for, can be repeated. Listen for all events by default (available: Tx, NewBlock)
-    #[options(short = "e", long = "event", meta = "EVENT")]
+    /// Event types to listen for
     events: Vec<EventFilter>,
 }
 
@@ -86,6 +85,69 @@ impl ListenCmd {
     }
 }
 
+// Can't derive Clap: a Vec struct field is translated by clap_derive to an
+// arg with multiple_values(true), not multiple_occurrences(true).
+// Implement all the necessary traits manually instead.
+// See https://github.com/clap-rs/clap/issues/1772
+
+impl Args for ListenCmd {
+    fn augment_args(app: App<'_>) -> App<'_> {
+        augment_args(app, true)
+    }
+
+    fn augment_args_for_update(app: App<'_>) -> App<'_> {
+        augment_args(app, false)
+    }
+}
+
+fn augment_args(app: App<'_>, required: bool) -> App<'_> {
+    app.arg(
+        Arg::new("chain_id")
+            .required(required)
+            .about("Identifier of the chain to listen for events from")
+            .validator(ChainId::from_str),
+    )
+    .arg(
+        Arg::new("events")
+            .multiple_occurrences(true)
+            .short('e')
+            .long("event")
+            .value_name("EVENT")
+            .about(
+                "Add an event type to listen for, can be repeated.\n\
+                Listen for all events by default (available: Tx, NewBlock)",
+            )
+            .validator(EventFilter::from_str),
+    )
+}
+
+impl FromArgMatches for ListenCmd {
+    fn from_arg_matches(matches: &ArgMatches) -> Option<Self> {
+        let chain_id = parse_chain_id(matches).expect("the required argument should be present");
+        let events = parse_event_filters(matches).unwrap_or_default();
+        Some(ListenCmd { chain_id, events })
+    }
+
+    fn update_from_arg_matches(&mut self, matches: &ArgMatches) {
+        if let Some(chain_id) = parse_chain_id(matches) {
+            self.chain_id = chain_id;
+        }
+        if let Some(events) = parse_event_filters(matches) {
+            self.events = events;
+        }
+    }
+}
+
+fn parse_chain_id(matches: &ArgMatches) -> Option<ChainId> {
+    let val = matches.value_of("chain_id")?;
+    Some(ChainId::from_str(val).unwrap())
+}
+
+fn parse_event_filters(matches: &ArgMatches) -> Option<Vec<EventFilter>> {
+    let vals = matches.values_of("events")?;
+    Some(vals.map(|s| EventFilter::from_str(s).unwrap()).collect())
+}
+
 impl Runnable for ListenCmd {
     fn run(&self) {
         self.cmd()
@@ -98,14 +160,14 @@ pub fn listen(
     config: &ChainConfig,
     filters: &[EventFilter],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    info!(
-        "listening for events `{}` on '{}'...",
-        filters.iter().format(", "),
-        config.id
-    );
-
     let rt = Arc::new(TokioRuntime::new()?);
     let (event_monitor, rx) = subscribe(config, rt)?;
+
+    info!(
+        "[{}] listening for queries {}",
+        config.id,
+        event_monitor.queries().iter().format(", "),
+    );
 
     thread::spawn(|| event_monitor.run());
 

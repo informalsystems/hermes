@@ -1,4 +1,4 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use subtle_encoding::{Encoding, Hex};
 
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -11,21 +11,21 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct QueryPacketAcknowledgmentCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the port to query")]
+    #[clap(required = true, about = "identifier of the port to query")]
     port_id: PortId,
 
-    #[options(free, required, help = "identifier of the channel to query")]
+    #[clap(required = true, about = "identifier of the channel to query")]
     channel_id: ChannelId,
 
-    #[options(free, required, help = "sequence of packet to query")]
+    #[clap(required = true, about = "sequence of packet to query")]
     sequence: Sequence,
 
-    #[options(help = "height of the state to query", short = "h")]
+    #[clap(short = 'H', long, about = "height of the state to query")]
     height: Option<u64>,
 }
 

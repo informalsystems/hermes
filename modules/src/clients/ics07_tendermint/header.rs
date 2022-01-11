@@ -1,7 +1,6 @@
 use core::cmp::Ordering;
 
 use bytes::Buf;
-use chrono::DateTime;
 use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
@@ -78,7 +77,7 @@ impl crate::core::ics02_client::header::Header for Header {
     }
 
     fn timestamp(&self) -> Timestamp {
-        Timestamp::from_datetime(DateTime::from(self.signed_header.header.time))
+        self.signed_header.header.time.into()
     }
 
     fn wrap_any(self) -> AnyHeader {

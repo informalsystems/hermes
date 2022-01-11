@@ -62,11 +62,12 @@ pub(crate) fn process(
         *channel_end.ordering(),
         expected_counterparty,
         expected_connection_hops,
-        channel_end.version(),
+        channel_end.version().clone(),
     );
 
     verify_channel_proofs(
         ctx,
+        msg.proofs().height(),
         &channel_end,
         &conn,
         &expected_channel_end,

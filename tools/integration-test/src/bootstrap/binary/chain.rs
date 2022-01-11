@@ -57,6 +57,11 @@ pub fn boostrap_chain_pair_with_nodes(
     let handle_a = spawn_chain_handle(|| {}, &registry, &node_a)?;
     let handle_b = spawn_chain_handle(|| {}, &registry, &node_b)?;
 
+    if test_config.bootstrap_with_random_ids {
+        pad_client_ids(&handle_a, &handle_b)?;
+        pad_client_ids(&handle_b, &handle_a)?;
+    }
+
     let client_a_to_b = bootstrap_foreign_client(&handle_a, &handle_b)?;
     let client_b_to_a = bootstrap_foreign_client(&handle_b, &handle_a)?;
 
@@ -123,6 +128,21 @@ pub fn boostrap_self_connected_chain(
     ))
 }
 
+pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain_a: &ChainA,
+    chain_b: &ChainB,
+) -> Result<(), Error> {
+    let foreign_client =
+        ForeignClient::restore(ClientId::default(), chain_b.clone(), chain_a.clone());
+
+    for i in 0..random_u64_range(1, 6) {
+        debug!("creating new client id {} on chain {}", i + 1, chain_b.id());
+        foreign_client.build_create_client_and_send()?;
+    }
+
+    Ok(())
+}
+
 /**
    Bootstrap a foreign client from `ChainA` to `ChainB`, i.e. the foreign
    client collects information from `ChainA` and submits them as transactions
@@ -136,15 +156,11 @@ pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a: &ChainA,
     chain_b: &ChainB,
 ) -> Result<ForeignClient<ChainB, ChainA>, Error> {
-    let mut client_id = ClientId::default();
     let foreign_client =
         ForeignClient::restore(ClientId::default(), chain_b.clone(), chain_a.clone());
 
-    for i in 0..random_u64_range(1, 6) {
-        debug!("creating new client id {} on chain {}", i + 1, chain_b.id());
-        let event = foreign_client.build_create_client_and_send()?;
-        client_id = extract_client_id(&event)?.clone();
-    }
+    let event = foreign_client.build_create_client_and_send()?;
+    let client_id = extract_client_id(&event)?.clone();
 
     info!(
         "created foreign client from chain {} to chain {} with client id {} on chain {}",
@@ -190,7 +206,7 @@ pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
 */
 pub fn spawn_chain_handle<Seed>(
     _: Seed,
-    registry: &SharedRegistry<impl ChainHandle + 'static>,
+    registry: &SharedRegistry<impl ChainHandle>,
     node: &FullNode,
 ) -> Result<impl ChainHandle, Error> {
     let chain_id = &node.chain_driver.chain_id;

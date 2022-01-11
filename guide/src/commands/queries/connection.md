@@ -68,7 +68,7 @@ POSITIONAL ARGUMENTS:
     connection_id             identifier of the connection to query
 
 FLAGS:
-    -h, --height HEIGHT       height of the state to query
+    -H, --height HEIGHT       height of the state to query
 ```
 
 __Example__

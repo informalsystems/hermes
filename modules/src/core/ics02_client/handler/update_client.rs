@@ -159,7 +159,7 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState(
+                            AnyClientState::Mock(MockClientState::new(
                                 MockHeader::new(msg.header.height()).with_timestamp(timestamp)
                             ))
                         )

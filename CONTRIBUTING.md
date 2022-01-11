@@ -88,22 +88,30 @@ To pull in updates from the origin repo, run
 
 Every non-trivial PR must update the [CHANGELOG](CHANGELOG.md). This is
 accomplished indirectly by adding entries to the `.changelog` folder in
-[unclog](https://github.com/informalsystems/unclog) format. `CHANGELOG.md` will
-be built by whomever is responsible for performing a release just prior to
-release - this is to avoid changelog conflicts prior to releases. For example:
+[`unclog`](https://github.com/informalsystems/unclog) format using the `unclog` CLI tool.
+`CHANGELOG.md` will be built by whomever is responsible for performing a release just 
+prior to release - this is to avoid changelog conflicts prior to releases. 
 
-### Add a .changelog entry for the `ibc` crate (in the `modules` directory)
-### under the `IMPROVEMENTS` section in CHANGELOG.md.
+### Install `unclog`
 
 ```bash
-unclog add -c ibc improvements 1234-some-issue
+cargo install unclog
 ```
 
-### Add a .changelog entry for the `ibc-relayer-cli` crate (in the `relayer-cli`
-### directory) under the `FEATURES` section in CHANGELOG.md.
+### Examples
+
+Add a .changelog entry to signal that a bug was fixed, without mentioning any
+component.
 
 ```bash
-unclog add -c ibc-relayer-cli features 1235-some-other-issue
+$ unclog add -i update-unclog-instructions -s bug -n 1634 -m "Update CONTRIBUTING.md for latest version of unclog" --editor vim
+```
+
+Add a .changelog entry for the `ibc-relayer-cli` crate (the component in the `relayer-cli`
+directory) under the `FEATURES` section in CHANGELOG.md.
+
+```bash
+$ unclog add -c ibc-relayer-cli -s features --id a-new-feature --issue-no 1235 -m "msg about this new-feature" --editor vim
 ```
 
 ### Preview unreleased changes

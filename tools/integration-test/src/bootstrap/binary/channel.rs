@@ -28,12 +28,14 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: &ConnectedChains<ChainA, ChainB>,
     port_a: &PortId,
     port_b: &PortId,
+    bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let channel = bootstrap_channel(
         &chains.client_b_to_a,
         &chains.client_a_to_b,
         &DualTagged::new(port_a),
         &DualTagged::new(port_b),
+        bootstrap_with_random_ids,
     )?;
 
     Ok(channel)
@@ -48,8 +50,9 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_a_to_b: &ForeignClient<ChainB, ChainA>,
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
+    bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
-    let connection = bootstrap_connection(client_b_to_a, client_a_to_b)?;
+    let connection = bootstrap_connection(client_b_to_a, client_a_to_b, bootstrap_with_random_ids)?;
 
     bootstrap_channel_with_connection(
         &client_a_to_b.src_chain(),
@@ -57,6 +60,7 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         connection,
         port_a,
         port_b,
+        bootstrap_with_random_ids,
     )
 }
 
@@ -69,9 +73,12 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
     connection: ConnectedConnection<ChainA, ChainB>,
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
+    bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
-    pad_channel_id(chain_a, chain_b, &connection, port_a)?;
-    pad_channel_id(chain_b, chain_a, &connection.clone().flip(), port_b)?;
+    if bootstrap_with_random_ids {
+        pad_channel_id(chain_a, chain_b, &connection, port_a)?;
+        pad_channel_id(chain_b, chain_a, &connection.clone().flip(), port_b)?;
+    }
 
     let channel = Channel::new(
         connection.connection.clone(),
@@ -151,6 +158,7 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
                 connection.connection_id_b.value().clone(),
                 port_id.cloned().into_value(),
                 None,
+                None,
             ),
             b_side: ChannelSide::new(
                 chain_a.clone(),
@@ -158,9 +166,9 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
                 connection.connection_id_a.value().clone(),
                 port_id.cloned().into_value(),
                 None,
+                None,
             ),
             connection_delay: connection.connection.delay_period,
-            version: None,
         };
 
         channel.build_chan_open_init_and_send()?;

@@ -24,6 +24,7 @@ use crate::util::random::random_u64_range;
 pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_b_to_a: &ForeignClient<ChainA, ChainB>,
     client_a_to_b: &ForeignClient<ChainB, ChainA>,
+    bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedConnection<ChainA, ChainB>, Error> {
     let chain_a = client_a_to_b.src_chain();
     let chain_b = client_a_to_b.dst_chain();
@@ -31,9 +32,10 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     let client_id_a = client_b_to_a.tagged_client_id();
     let client_id_b = client_a_to_b.tagged_client_id();
 
-    pad_connection_id(&chain_a, &chain_b, &client_id_a, &client_id_b)?;
-
-    pad_connection_id(&chain_b, &chain_a, &client_id_b, &client_id_a)?;
+    if bootstrap_with_random_ids {
+        pad_connection_id(&chain_a, &chain_b, &client_id_a, &client_id_b)?;
+        pad_connection_id(&chain_b, &chain_a, &client_id_b, &client_id_a)?;
+    }
 
     let connection = Connection::new(
         client_b_to_a.clone(),

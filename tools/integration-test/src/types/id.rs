@@ -70,3 +70,7 @@ pub type TaggedConnectionId<ChainA, ChainB> = DualTagged<ChainA, ChainB, Connect
    chain that the connection ID corresponds to.
 */
 pub type TaggedConnectionIdRef<'a, ChainA, ChainB> = DualTagged<ChainA, ChainB, &'a ConnectionId>;
+
+pub fn tagged_transfer_port<ChainA, ChainB>() -> TaggedPortId<ChainA, ChainB> {
+    DualTagged::new(PortId::transfer())
+}

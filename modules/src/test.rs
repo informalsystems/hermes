@@ -1,6 +1,5 @@
 use core::fmt::Debug;
 use serde::{de::DeserializeOwned, Serialize};
-use std::println;
 
 /// Test that a struct `T` can be:
 ///
@@ -22,9 +21,6 @@ where
 
     let parsed1 = serde_json::from_str::<T>(&serialized);
     assert!(parsed1.is_ok());
-    let parsed1 = parsed1.unwrap();
-    println!("json_data0: {:?}", parsed0);
-    println!("json_data1: {:?}", parsed1);
 
     // TODO - fix PartialEq bound issue in AbciQuery
     //assert_eq!(parsed0, parsed1);

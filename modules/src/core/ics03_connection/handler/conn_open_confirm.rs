@@ -40,7 +40,14 @@ pub(crate) fn process(
     );
 
     // 2. Pass the details to the verification function.
-    verify_proofs(ctx, None, &conn_end, &expected_conn, msg.proofs())?;
+    verify_proofs(
+        ctx,
+        None,
+        msg.proofs().height(),
+        &conn_end,
+        &expected_conn,
+        msg.proofs(),
+    )?;
 
     output.log("success: connection verification passed");
 

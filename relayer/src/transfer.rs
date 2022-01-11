@@ -2,7 +2,6 @@ use core::fmt::{Display, Formatter};
 use core::str::FromStr;
 use core::time::Duration;
 
-use chrono::Utc;
 use flex_error::{define_error, DetailOnly};
 use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
@@ -98,8 +97,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
         Timestamp::none()
     } else {
-        (Timestamp::from_datetime(Utc::now()) + opts.timeout_seconds)
-            .map_err(PacketError::timestamp_overflow)?
+        (Timestamp::now() + opts.timeout_seconds).map_err(PacketError::timestamp_overflow)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {

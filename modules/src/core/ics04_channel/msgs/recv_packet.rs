@@ -30,6 +30,10 @@ impl MsgRecvPacket {
             signer,
         }
     }
+
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
 }
 
 impl Msg for MsgRecvPacket {

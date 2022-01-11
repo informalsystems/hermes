@@ -2,7 +2,10 @@ use crate::prelude::*;
 
 use flex_error::{define_error, TraceError};
 
+use crate::core::ics23_commitment::error::Error as Ics23Error;
 use crate::core::ics24_host::error::ValidationError;
+use crate::core::ics24_host::identifier::ClientId;
+use crate::timestamp::{Timestamp, TimestampOverflowError};
 use crate::Height;
 use tendermint::account::Id;
 use tendermint::hash::Hash;
@@ -146,6 +149,24 @@ define_error! {
                 format_args!("given other previous updates, header timestamp should be at least {0}, but was {1}", e.min, e.actual)
             },
 
+        TimestampOverflow
+            [ TimestampOverflowError ]
+            |_| { "timestamp overflowed" },
+
+        NotEnoughTimeElapsed
+            {
+                current_time: Timestamp,
+                earliest_time: Timestamp,
+            }
+            |_| { "not enough time elapsed, current timestamp {0} is still less than earliest acceptable timestamp {1}" },
+
+        NotEnoughBlocksElapsed
+            {
+                current_height: Height,
+                earliest_height: Height,
+            }
+            |_| { "not enough blocks elapsed, current height {0} is still less than earliest acceptable height {1}" },
+
         InvalidHeaderHeight
             { height: Height }
             | e | {
@@ -198,7 +219,51 @@ define_error! {
             { detail: tendermint_light_client::predicates::errors::VerificationErrorDetail }
             | e | {
                 format_args!("verification failed: {}", e.detail)
+            },
+
+        ProcessedTimeNotFound
+            {
+                client_id: ClientId,
+                height: Height,
             }
+            | e | {
+                format_args!(
+                    "Processed time for the client {0} at height {1} not found",
+                    e.client_id, e.height)
+            },
+
+        ProcessedHeightNotFound
+            {
+                client_id: ClientId,
+                height: Height,
+            }
+            | e | {
+                format_args!(
+                    "Processed height for the client {0} at height {1} not found",
+                    e.client_id, e.height)
+            },
+
+        Ics23Error
+            [ Ics23Error ]
+            | _ | { "ics23 commitment error" },
+
+        InsufficientHeight
+            {
+                latest_height: Height,
+                target_height: Height,
+            }
+            | e | {
+                format_args!("the height is insufficient: latest_height={0} target_height={1}", e.latest_height, e.target_height)
+            },
+
+        ClientFrozen
+            {
+                frozen_height: Height,
+                target_height: Height,
+            }
+            | e | {
+                format_args!("the client is frozen: frozen_height={0} target_height={1}", e.frozen_height, e.target_height)
+            },
     }
 }
 
