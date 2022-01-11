@@ -1,7 +1,7 @@
 use core::fmt;
 use core::mem;
 use crossbeam_channel::Sender;
-use tracing::{info, trace};
+use tracing::{debug, trace};
 
 use ibc::{
     core::{ics02_client::events::NewBlock, ics24_host::identifier::ChainId},
@@ -45,7 +45,7 @@ impl WorkerHandle {
         };
 
         if res.is_err() {
-            info!("dropping sender end for worker {} as the receiver is dropped with the worker task terminated", self.id);
+            debug!("dropping sender end for worker {} as the receiver was dropped when the worker task terminated", self.id);
             *self.tx.acquire_write() = None;
         }
     }
