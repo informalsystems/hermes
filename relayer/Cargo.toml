@@ -46,7 +46,7 @@ tiny-bip39 = "0.8.0"
 hdpath = { version = "0.6.0", features = ["with-bitcoin"] }
 sha2 = "0.10.1"
 tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = false }
-ripemd160 = "0.9.1"
+ripemd160 = "0.10.0"
 bech32 = "0.8.1"
 itertools = "0.10.3"
 tonic = { version = "0.6", features = ["tls", "tls-roots"] }

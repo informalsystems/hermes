@@ -1481,7 +1481,7 @@ dependencies = [
  "prost",
  "prost-types",
  "retry",
- "ripemd160",
+ "ripemd160 0.10.0",
  "semver",
  "serde",
  "serde_derive",
@@ -1585,7 +1585,7 @@ dependencies = [
  "bytes",
  "hex",
  "prost",
- "ripemd160",
+ "ripemd160 0.9.1",
  "sha2 0.9.8",
  "sha3",
  "sp-std",
@@ -2522,6 +2522,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ripemd160"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f923401a7e6614f2838037bd9bac86c003d1629446d2b5816d3159472071be4f"
+
+[[package]]
 name = "rouille"
 version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3092,7 +3098,7 @@ dependencies = [
  "once_cell",
  "prost",
  "prost-types",
- "ripemd160",
+ "ripemd160 0.9.1",
  "serde",
  "serde_bytes",
  "serde_json",
