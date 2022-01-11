@@ -1,6 +1,5 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
-use core::fmt;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Instant;
@@ -301,8 +300,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             match cleared {
                 Ok(()) => return Ok(()),
                 Err(e) => error!(
-                    "[{}] failed to clear packets, retry {}/{}: {}",
-                    self, i, MAX_RETRIES, e
+                    "failed to clear packets, retry {}/{}: {}",
+                    i, MAX_RETRIES, e
                 ),
             }
         }
@@ -335,7 +334,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             self.relay_pending_packets(clear_height)?;
 
-            debug!(height = ?clear_height, "[{}] done scheduling", self);
+            debug!(height = ?clear_height, "done scheduling");
         }
 
         Ok(())
@@ -406,7 +405,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         );
 
         for event in input {
-            trace!("[{}] {} => {}", self, self.src_chain().id(), event);
+            trace!("processing event: {}", event);
             let (dst_msg, src_msg) = match event {
                 IbcEvent::CloseInitChannel(_) => {
                     (Some(self.build_chan_close_confirm_from_event(event)?), None)
@@ -429,7 +428,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
                 IbcEvent::SendPacket(ref send_packet_ev) => {
                     if self.send_packet_event_handled(send_packet_ev)? {
-                        debug!("[{}] {} already handled", self, send_packet_ev);
+                        debug!("{} already handled", send_packet_ev);
                         (None, None)
                     } else {
                         self.build_recv_or_timeout_from_send_packet_event(
@@ -445,7 +444,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     {
                         (None, None)
                     } else if self.write_ack_event_handled(write_ack_ev)? {
-                        debug!("[{}] {} already handled", self, write_ack_ev);
+                        debug!("{} already handled", write_ack_ev);
                         (None, None)
                     } else {
                         (self.build_ack_from_recv_event(write_ack_ev)?, None)
@@ -456,13 +455,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             // Collect messages to be sent to the destination chain (e.g., RecvPacket)
             if let Some(msg) = dst_msg {
-                debug!(
-                    "[{}] {} <= {} from {}",
-                    self,
-                    self.dst_chain().id(),
-                    msg.type_url,
-                    event
-                );
+                debug!("{} from {}", msg.type_url, event);
                 dst_od.batch.push(TransitMessage {
                     event: event.clone(),
                     msg,
@@ -474,13 +467,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 // For Ordered channels a single timeout event should be sent as this closes the channel.
                 // Otherwise a multi message transaction will fail.
                 if self.unordered_channel() || src_od.batch.is_empty() {
-                    debug!(
-                        "[{}] {} <= {} from {}",
-                        self,
-                        self.src_chain().id(),
-                        msg.type_url,
-                        event
-                    );
+                    debug!("{} from {}", msg.type_url, event);
                     src_od.batch.push(TransitMessage {
                         event: event.clone(),
                         msg,
@@ -517,8 +504,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         for i in 0..MAX_RETRIES {
             debug!(
-                "[{}] delayed by: {:?} [try {}/{}]",
-                self,
+                "delayed by: {:?} [try {}/{}]",
                 odata.scheduled_time.elapsed(),
                 i + 1,
                 MAX_RETRIES
@@ -528,20 +514,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             match self.send_from_operational_data::<S>(odata.clone()) {
                 Ok(reply) => {
                     // Done with this op. data
-                    info!("[{}] success", self);
+                    info!("success");
 
                     return Ok(reply);
                 }
                 Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
                     // This error means we could retry
-                    error!("[{}] error {}", self, e.event);
+                    error!("error {}", e.event);
                     if i + 1 == MAX_RETRIES {
-                        error!(
-                            "[{}] {}/{} retries exhausted. giving up",
-                            self,
-                            i + 1,
-                            MAX_RETRIES
-                        )
+                        error!("{}/{} retries exhausted. giving up", i + 1, MAX_RETRIES)
                     } else {
                         // If we haven't exhausted all retries, regenerate the op. data & retry
                         match self.regenerate_operational_data(odata.clone()) {
@@ -577,8 +558,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let op_info = initial_odata.info().into_owned();
 
         warn!(
-            "[{}] failed. Regenerate operational data from {} events",
-            self,
+            "failed. Regenerate operational data from {} events",
             op_info.batch_len()
         );
 
@@ -587,9 +567,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Ok(new_operational_data) => new_operational_data,
             Err(e) => {
                 error!(
-                    "[{}] failed to regenerate operational data from initial data: {} \
+                    "failed to regenerate operational data from initial data: {} \
                     with error {}, discarding this op. data",
-                    self, op_info, e
+                    op_info, e
                 );
                 return None;
             } // Cannot retry, contain the error by reporting a None
@@ -598,16 +578,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if let Some(src_od) = src_opt {
             if src_od.target == op_info.target() {
                 // Our target is the _source_ chain, retry these messages
-                info!(odata = %src_od.info(), "[{}] will retry", self);
+                info!(odata = %src_od.info(), "will retry");
                 return Some(src_od);
             } else {
                 // Our target is the _destination_ chain, the data in `src_od` contains
                 // potentially new timeout messages that have to be handled separately.
                 if let Err(e) = self.schedule_operational_data(src_od) {
                     error!(
-                        "[{}] failed to schedule newly-generated operational data from \
-                    initial data: {} with error {}, discarding this op. data",
-                        self, op_info, e
+                        "failed to schedule newly-generated operational data from \
+                        initial data: {} with error {}, discarding this op. data",
+                        op_info, e
                     );
                     return None;
                 }
@@ -617,21 +597,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if let Some(dst_od) = dst_opt {
             if dst_od.target == op_info.target() {
                 // Our target is the _destination_ chain, retry these messages
-                info!(odata = %dst_od.info(), "[{}] will retry", self);
+                info!(odata = %dst_od.info(), "will retry");
                 return Some(dst_od);
             } else {
                 // Our target is the _source_ chain, but `dst_od` has new messages
                 // intended for the destination chain, this should never be the case
                 error!(
-                    "[{}] generated new messages for destination chain while handling \
+                    "generated new messages for destination chain while handling \
                     failed events targeting the source chain!",
-                    self
                 );
             }
         } else {
             // There is no message intended for the destination chain
             if op_info.target() == OperationalDataTarget::Destination {
-                info!("[{}] exhausted all events from this operational data", self);
+                info!("exhausted all events from this operational data");
                 return None;
             }
         }
@@ -653,7 +632,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         odata: OperationalData,
     ) -> Result<S::Reply, LinkError> {
         if odata.batch.is_empty() {
-            error!("[{}] ignoring empty operational data!", self);
+            error!("ignoring empty operational data!");
             return Ok(S::Reply::empty());
         }
 
@@ -764,9 +743,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         for i in 0..MAX_RETRIES {
             let dst_update = self.build_update_client_on_dst(src_chain_height)?;
             info!(
-                "[{}] sending updateClient to client hosted on dest. chain {} for height {} [try {}/{}]",
-                self,
-                self.dst_chain().id(),
+                "sending updateClient to client hosted on destination chain for height {} [try {}/{}]",
                 src_chain_height,
                 i + 1, MAX_RETRIES,
             );
@@ -777,7 +754,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 .dst_chain()
                 .send_messages_and_wait_commit(tm)
                 .map_err(LinkError::relayer)?;
-            info!("[{}] result {}\n", self, PrettyEvents(&dst_tx_events));
+            info!("result: {}", PrettyEvents(&dst_tx_events));
 
             dst_err_ev = dst_tx_events
                 .into_iter()
@@ -812,9 +789,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         for _ in 0..MAX_RETRIES {
             let src_update = self.build_update_client_on_src(dst_chain_height)?;
             info!(
-                "[{}] sending updateClient to client hosted on src. chain {} for height {}",
-                self,
-                self.src_chain().id(),
+                "sending updateClient to client hosted on source chain for height {}",
                 dst_chain_height,
             );
 
@@ -824,7 +799,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 .src_chain()
                 .send_messages_and_wait_commit(tm)
                 .map_err(LinkError::relayer)?;
-            info!("[{}] result {}\n", self, PrettyEvents(&src_tx_events));
+            info!("result: {}", PrettyEvents(&src_tx_events));
 
             src_err_ev = src_tx_events
                 .into_iter()
@@ -870,16 +845,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         debug!(
-            "[{}] packet seq. that still have commitments on {}: {} (first 10 shown here; total={})",
-            self,
+            "packet seq. that still have commitments on {}: {} (first 10 shown here; total={})",
             self.src_chain().id(),
             commit_sequences.iter().take(10).join(", "),
             commit_sequences.len()
         );
 
         debug!(
-            "[{}] recv packets to send out to {} of the ones with commitments on source {}: {} (first 10 shown here; total={})",
-            self,
+            "recv packets to send out to {} of the ones with commitments on {}: {} (first 10 shown here; total={})",
             self.dst_chain().id(),
             self.src_chain().id(),
             sequences.iter().take(10).join(", "), sequences.len()
@@ -918,9 +891,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Default::default()
         };
 
-        trace!("[{}] start_block_events {:?}", self, start_block_events);
-        trace!("[{}] tx_events {:?}", self, tx_events);
-        trace!("[{}] end_block_events {:?}", self, end_block_events);
+        trace!("start_block_events {:?}", start_block_events);
+        trace!("tx_events {:?}", tx_events);
+        trace!("end_block_events {:?}", end_block_events);
 
         // events must be ordered in the following fashion -
         // start-block events followed by tx-events followed by end-block events
@@ -929,10 +902,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         events_result.extend(end_block_events);
 
         if events_result.is_empty() {
-            info!(
-                "[{}] found zero unprocessed SendPacket events on source chain, nothing to do",
-                self
-            );
+            info!("found zero unprocessed SendPacket events on source chain, nothing to do");
         } else {
             let mut packet_sequences = vec![];
             for event in events_result.iter() {
@@ -948,8 +918,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
             }
             info!(
-                "[{}] found unprocessed SendPacket events for {:?} (first 10 shown here; total={})",
-                self,
+                "found unprocessed SendPacket events for {:?} (first 10 shown here; total={})",
                 packet_sequences,
                 events_result.len()
             );
@@ -988,8 +957,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         debug!(
-            "[{}] packets that have acknowledgments on {}: [{:?}..{:?}] (total={})",
-            self,
+            "packets that have acknowledgments on {}: [{:?}..{:?}] (total={})",
             self.src_chain().id(),
             acks_on_src.first(),
             acks_on_src.last(),
@@ -997,8 +965,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         );
 
         debug!(
-            "[{}] ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
-            self,
+            "ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
             self.dst_chain().id(),
             self.src_chain().id(),
             sequences.iter().take(10).join(", "), sequences.len()
@@ -1019,8 +986,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         if events_result.is_empty() {
             info!(
-                "[{}] found zero unprocessed WriteAcknowledgement events on source chain, nothing to do",
-                self
+                "found zero unprocessed WriteAcknowledgement events on source chain, nothing to do",
             );
         } else {
             let mut packet_sequences = vec![];
@@ -1038,7 +1004,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     }
                 }
             }
-            info!("[{}] found unprocessed WriteAcknowledgement events for {:?} (first 10 shown here; total={})", self, packet_sequences, events_result.len());
+            info!(
+                "found unprocessed WriteAcknowledgement events for {:?} (first 10 shown here; total={})",
+                packet_sequences,
+                events_result.len(),
+            );
         }
 
         Ok((events_result.into(), query_height))
@@ -1103,8 +1073,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?);
 
         trace!(
-            "[{}] built recv_packet msg {}, proofs at height {}",
-            self,
+            "built recv_packet msg {}, proofs at height {}",
             msg.packet,
             proofs.height()
         );
@@ -1137,8 +1106,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         );
 
         trace!(
-            "[{}] built acknowledgment msg {}, proofs at height {}",
-            self,
+            "built acknowledgment msg {}, proofs at height {}",
             msg.packet,
             proofs.height()
         );
@@ -1185,8 +1153,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         );
 
         trace!(
-            "[{}] built timeout msg {}, proofs at height {}",
-            self,
+            "built timeout msg {}, proofs at height {}",
             msg.packet,
             proofs.height()
         );
@@ -1218,8 +1185,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         );
 
         trace!(
-            "[{}] built timeout on close msg {}, proofs at height {}",
-            self,
+            "built timeout on close msg {}, proofs at height {}",
             msg.packet,
             proofs.height()
         );
@@ -1365,15 +1331,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
                         if self.send_packet_event_handled(e)? {
-                            debug!("[{}] already handled send packet {}", self, e);
+                            debug!("already handled send packet {}", e);
                         } else if let Some(new_msg) =
                             self.build_timeout_from_send_packet_event(e, &dst_status)?
                         {
-                            debug!(
-                                "[{}] found a timed-out msg in the op data {}",
-                                self,
-                                odata.info(),
-                            );
+                            debug!("found a timed-out msg in the op data {}", odata.info(),);
                             timed_out
                                 .entry(odata_pos)
                                 .or_insert_with(|| {
@@ -1394,7 +1356,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     }
                     IbcEvent::WriteAcknowledgement(e) => {
                         if self.write_ack_event_handled(e)? {
-                            debug!("[{}] already handled {} write ack ", self, e);
+                            debug!("already handled {} write ack ", e);
                         } else {
                             retain_batch.push(gm.clone());
                         }
@@ -1423,8 +1385,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Schedule new operational data targeting the source chain
         for (_, new_od) in timed_out.into_iter() {
             info!(
-                "[{}] re-scheduling from new timed-out batch of size {}",
-                self,
+                "re-scheduling from new timed-out batch of size {}",
                 new_od.batch.len()
             );
 
@@ -1442,15 +1403,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         if od.batch.is_empty() {
             info!(
-                "[{}] ignoring operational data for {} because it has no messages",
-                self, od.target
+                "ignoring operational data for {} because it has no messages",
+                od.target
             );
             return Ok(());
         }
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
         if !self.zero_delay() {
-            debug!("[{}] connection delay is non-zero: updating client", self);
+            debug!("connection delay is non-zero: updating client");
             let target_height = od.proofs_height.increment();
             match od.target {
                 OperationalDataTarget::Source => {
@@ -1461,10 +1422,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
             };
         } else {
-            debug!(
-                "[{}] connection delay is zero: client update message will be prepended later",
-                self
-            );
+            debug!("connection delay is zero: client update message will be prepended later");
         }
 
         od.scheduled_time = Instant::now();
@@ -1539,15 +1497,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             match delay_left {
                 None => info!(
-                    "[{}] ready to fetch a scheduled op. data with batch of size {} targeting {}",
-                    self,
+                    "ready to fetch a scheduled op. data with batch of size {} targeting {}",
                     odata.batch.len(),
                     odata.target,
                 ),
                 Some(delay_left) => {
                     info!(
-                        "[{}] waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
-                        self,
+                        "waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
                         delay_left,
                         odata.batch.len(),
                         odata.target,
@@ -1577,19 +1533,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             self.dst_client_id().clone(),
             self.dst_chain().clone(),
             self.src_chain().clone(),
-        )
-    }
-}
-
-impl<ChainA: ChainHandle, ChainB: ChainHandle> fmt::Display for RelayPath<ChainA, ChainB> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:{}/{} -> {}",
-            self.src_chain().id(),
-            self.src_port_id(),
-            self.src_channel_id(),
-            self.dst_chain().id()
         )
     }
 }

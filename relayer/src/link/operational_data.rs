@@ -145,8 +145,8 @@ impl OperationalData {
             let update_height = self.proofs_height.increment();
 
             debug!(
-                "[{}] prepending {} client update @ height {}",
-                relay_path, self.target, update_height
+                "prepending {} client update at height {}",
+                self.target, update_height
             );
 
             // Fetch the client update message. Vector may be empty if the client already has the header
@@ -174,11 +174,7 @@ impl OperationalData {
 
         let tm = TrackedMsgs::new(msgs, &self.tracking_id);
 
-        info!(
-            "[{}] assembled batch of {} message(s)",
-            relay_path,
-            tm.messages().len()
-        );
+        info!("assembled batch of {} message(s)", tm.messages().len());
 
         Ok(tm)
     }
