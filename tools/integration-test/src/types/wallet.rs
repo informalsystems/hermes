@@ -115,6 +115,20 @@ impl Wallet {
     }
 }
 
+impl<Chain> TaggedWallet<Chain> for MonoTagged<Chain, Wallet> {
+    fn id(&self) -> MonoTagged<Chain, &WalletId> {
+        self.map_ref(|w| &w.id)
+    }
+
+    fn address(&self) -> MonoTagged<Chain, &WalletAddress> {
+        self.map_ref(|w| &w.address)
+    }
+
+    fn key(&self) -> MonoTagged<Chain, &KeyEntry> {
+        self.map_ref(|w| &w.key)
+    }
+}
+
 impl<'a, Chain> TaggedWallet<Chain> for MonoTagged<Chain, &'a Wallet> {
     fn id(&self) -> MonoTagged<Chain, &WalletId> {
         self.map_ref(|w| &w.id)
@@ -126,6 +140,24 @@ impl<'a, Chain> TaggedWallet<Chain> for MonoTagged<Chain, &'a Wallet> {
 
     fn key(&self) -> MonoTagged<Chain, &KeyEntry> {
         self.map_ref(|w| &w.key)
+    }
+}
+
+impl<Chain> TaggedTestWalletsExt<Chain> for MonoTagged<Chain, TestWallets> {
+    fn validator(&self) -> MonoTagged<Chain, &Wallet> {
+        self.map_ref(|w| &w.validator)
+    }
+
+    fn relayer(&self) -> MonoTagged<Chain, &Wallet> {
+        self.map_ref(|w| &w.relayer)
+    }
+
+    fn user1(&self) -> MonoTagged<Chain, &Wallet> {
+        self.map_ref(|w| &w.user1)
+    }
+
+    fn user2(&self) -> MonoTagged<Chain, &Wallet> {
+        self.map_ref(|w| &w.user2)
     }
 }
 

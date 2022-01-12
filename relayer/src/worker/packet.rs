@@ -1,7 +1,7 @@
 use core::time::Duration;
 use crossbeam_channel::Receiver;
 use ibc::Height;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tracing::{error, trace};
 
 use crate::chain::handle::ChainHandle;
@@ -34,38 +34,6 @@ fn should_clear_packets(
     }
 }
 
-pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
-    cmd_rx: Receiver<WorkerCmd>,
-    link: Arc<Link<ChainA, ChainB>>,
-    clear_on_start: bool,
-    clear_interval: u64,
-    path: Packet,
-) -> TaskHandle {
-    let mut is_first_run: bool = true;
-    spawn_background_task(
-        format!("PacketCmdWorker({})", link.a_to_b),
-        Some(Duration::from_millis(200)),
-        move || {
-            if let Ok(cmd) = cmd_rx.try_recv() {
-                retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
-                    handle_packet_cmd(
-                        &mut is_first_run,
-                        &link,
-                        clear_on_start,
-                        clear_interval,
-                        &path,
-                        cmd.clone(),
-                        index,
-                    )
-                })
-                .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
-            }
-
-            Ok(Next::Continue)
-        },
-    )
-}
-
 fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     if e.is_expired_or_frozen_error() {
         TaskError::Fatal(RunError::link(e))
@@ -76,27 +44,63 @@ fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
 
 pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: Packet,
-    link: Arc<Link<ChainA, ChainB>>,
+    // Mutex is used to prevent race condition between the packet workers
+    link: Arc<Mutex<Link<ChainA, ChainB>>>,
 ) -> TaskHandle {
     spawn_background_task(
-        format!("PacketWorker({})", link.a_to_b),
-        Some(Duration::from_millis(500)),
+        format!("PacketWorker({})", link.lock().unwrap().a_to_b),
+        Some(Duration::from_millis(1000)),
         move || {
-            link.a_to_b
+            let relay_path = &link.lock().unwrap().a_to_b;
+
+            relay_path
                 .refresh_schedule()
                 .map_err(handle_link_error_in_task)?;
 
-            link.a_to_b
+            relay_path
                 .execute_schedule()
                 .map_err(handle_link_error_in_task)?;
 
-            let summary = link.a_to_b.process_pending_txs();
+            let summary = relay_path.process_pending_txs();
 
             if !summary.is_empty() {
                 trace!("Packet worker produced relay summary: {:?}", summary);
             }
 
             telemetry!(packet_metrics(&path, &summary));
+
+            Ok(Next::Continue)
+        },
+    )
+}
+
+pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
+    cmd_rx: Receiver<WorkerCmd>,
+    // Mutex is used to prevent race condition between the packet workers
+    link: Arc<Mutex<Link<ChainA, ChainB>>>,
+    clear_on_start: bool,
+    clear_interval: u64,
+    path: Packet,
+) -> TaskHandle {
+    let mut is_first_run: bool = true;
+    spawn_background_task(
+        format!("PacketCmdWorker({})", link.lock().unwrap().a_to_b),
+        Some(Duration::from_millis(200)),
+        move || {
+            if let Ok(cmd) = cmd_rx.try_recv() {
+                retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
+                    handle_packet_cmd(
+                        &mut is_first_run,
+                        &link.lock().unwrap(),
+                        clear_on_start,
+                        clear_interval,
+                        &path,
+                        cmd.clone(),
+                        index,
+                    )
+                })
+                .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
+            }
 
             Ok(Next::Continue)
         },
@@ -120,6 +124,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd: WorkerCmd,
     index: u64,
 ) -> RetryResult<(), u64> {
+    trace!("[{}] handling packet worker command {:?}", link.a_to_b, cmd);
     let result = match cmd {
         WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
 
@@ -144,12 +149,54 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     if let Err(e) = result {
         error!(
             path = %path.short_name(),
-            "[{}] worker: handling command encountered error: {}",
+            retry_index = %index,
+            "[{}] worker will retry: handling command encountered error: {}",
             link.a_to_b, e
         );
 
         return RetryResult::Retry(index);
     }
+
+    // The calls to refresh_schedule and execute_schedule depends on
+    // earlier calls to update_schedule and schedule_packet_clearing.
+    // Hence they must be retried in the same function body so that
+    // the same WorkerCmd is used for retrying the whole execution.
+    //
+    // The worker for spawn_packet_worker is still needed to handle
+    // the case when no PacketCmd arriving, so that it can still
+    // do the refresh and execute schedule.
+    // This follows the original logic here:
+    // https://github.com/informalsystems/ibc-rs/blob/e7a6403888f48754ddb80e35ebe2281fb7c51c04/relayer/src/worker/packet.rs#L127-L133
+
+    let schedule_result = link
+        .a_to_b
+        .refresh_schedule()
+        .and_then(|_| link.a_to_b.execute_schedule());
+
+    if let Err(e) = schedule_result {
+        if e.is_expired_or_frozen_error() {
+            error!(
+                "[{}] worker aborting due to expired or frozen client",
+                link.a_to_b
+            );
+            return RetryResult::Err(index);
+        } else {
+            error!(
+                retry_index = %index,
+                "[{}] worker will retry: schedule execution encountered error: {}",
+                link.a_to_b, e
+            );
+            return RetryResult::Retry(index);
+        }
+    }
+
+    let summary = link.a_to_b.process_pending_txs();
+
+    if !summary.is_empty() {
+        trace!("Packet worker produced relay summary: {:?}", summary);
+    }
+
+    telemetry!(packet_metrics(path, &summary));
 
     RetryResult::Ok(())
 }
