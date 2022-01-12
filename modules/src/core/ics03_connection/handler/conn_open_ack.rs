@@ -188,13 +188,12 @@ mod tests {
                 name: "Processing fails due to connections mismatch (incorrect 'open' state)"
                     .to_string(),
                 ctx: default_context
-                    .clone()
                     .with_client(&client_id, proof_height)
                     .with_connection(conn_id.clone(), conn_end_open),
-                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
                 want_pass: false,
                 match_error: {
-                    let connection_id = conn_id.clone();
+                    let connection_id = conn_id;
                     Box::new(move |e| match e.detail() {
                         error::ErrorDetail::ConnectionMismatch(e) => {
                             assert_eq!(e.connection_id, connection_id);
