@@ -145,7 +145,7 @@ mod tests {
             Counterparty::new(
                 client_id.clone(),
                 Some(msg_ack.counterparty_connection_id().clone()),
-                CommitmentPrefix::from(b"ibc".to_vec()),
+                CommitmentPrefix::try_from(b"ibc".to_vec()).unwrap(),
             ),
             vec![msg_ack.version().clone()],
             ZERO_DURATION,
@@ -162,7 +162,7 @@ mod tests {
         conn_end_prefix.set_counterparty(Counterparty::new(
             client_id.clone(),
             Some(msg_ack.counterparty_connection_id().clone()),
-            CommitmentPrefix::from(Vec::new()), // incorrect field
+            CommitmentPrefix::try_from(b"foo".to_vec()).unwrap(), // incorrect field
         ));
 
         let tests: Vec<Test> = vec![

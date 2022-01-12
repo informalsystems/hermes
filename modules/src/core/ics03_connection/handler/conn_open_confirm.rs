@@ -104,7 +104,7 @@ mod tests {
         let counterparty = Counterparty::new(
             client_id.clone(),
             Some(msg_confirm.connection_id().clone()),
-            CommitmentPrefix::from(Vec::new()),
+            CommitmentPrefix::try_from(b"ibc".to_vec()).unwrap(),
         );
 
         let context = MockContext::default();
