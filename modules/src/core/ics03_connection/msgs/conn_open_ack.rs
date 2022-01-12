@@ -186,7 +186,7 @@ pub mod test_util {
                 revision_height: consensus_height,
             }),
             client_state: None,
-            proof_client: Vec::new(),
+            proof_client: get_dummy_proof(),
             version: Some(Version::default().into()),
             signer: get_dummy_bech32_account(),
         }
