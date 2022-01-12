@@ -399,7 +399,7 @@ fn verify_membership(
     path: String,
     value: Vec<u8>,
 ) -> Result<(), Ics02Error> {
-    let merkle_path = apply_prefix(prefix, vec![path]).map_err(Error::ics23_error)?;
+    let merkle_path = apply_prefix(prefix, vec![path]);
     let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
         .map_err(Ics02Error::invalid_commitment_proof)?
         .into();
@@ -422,7 +422,7 @@ fn verify_non_membership(
     root: &CommitmentRoot,
     path: String,
 ) -> Result<(), Ics02Error> {
-    let merkle_path = apply_prefix(prefix, vec![path]).map_err(Error::ics23_error)?;
+    let merkle_path = apply_prefix(prefix, vec![path]);
     let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
         .map_err(Ics02Error::invalid_commitment_proof)?
         .into();
