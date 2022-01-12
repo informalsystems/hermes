@@ -560,9 +560,9 @@ fn handle_rest_cmd<Chain: ChainHandle>(
     match m {
         rest::Command::DumpState(reply) => {
             let state = state(registry, workers);
-            reply.send(Ok(state)).unwrap_or_else(|e| {
-                error!("[rest/supervisor] error replying to a REST request {}", e)
-            });
+            reply
+                .send(Ok(state))
+                .unwrap_or_else(|e| error!("error replying to a REST request {}", e));
         }
     }
 }
