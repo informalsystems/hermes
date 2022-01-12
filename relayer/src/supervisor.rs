@@ -166,7 +166,7 @@ fn spawn_batch_worker<Chain: ChainHandle>(
     subscriptions: Arc<RwLock<Vec<(Chain, Subscription)>>>,
 ) -> TaskHandle {
     spawn_background_task(
-        error_span!("supervisor_batch"),
+        tracing::Span::none(),
         Some(Duration::from_millis(500)),
         move || -> Result<Next, TaskError<Infallible>> {
             if let Some((chain, batch)) = try_recv_multiple(&subscriptions.acquire_read()) {
@@ -194,7 +194,7 @@ pub fn spawn_cmd_worker<Chain: ChainHandle>(
     cmd_rx: Receiver<SupervisorCmd>,
 ) -> TaskHandle {
     spawn_background_task(
-        error_span!("supervisor_cmd"),
+        error_span!("cmd"),
         Some(Duration::from_millis(500)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
@@ -237,7 +237,7 @@ pub fn spawn_rest_worker<Chain: ChainHandle>(
     rest_rx: rest::Receiver,
 ) -> TaskHandle {
     spawn_background_task(
-        error_span!("supervisor_rest"),
+        error_span!("rest"),
         Some(Duration::from_millis(500)),
         move || -> Result<Next, TaskError<Infallible>> {
             handle_rest_requests(
