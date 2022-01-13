@@ -394,12 +394,12 @@ impl ClientDef for TendermintClient {
     }
 }
 
-fn verify_membership<P: Into<Path>>(
+fn verify_membership(
     client_state: &ClientState,
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
-    path: P,
+    path: impl Into<Path>,
     value: Vec<u8>,
 ) -> Result<(), Ics02Error> {
     let merkle_path =
@@ -419,12 +419,12 @@ fn verify_membership<P: Into<Path>>(
         .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
 }
 
-fn verify_non_membership<P: Into<Path>>(
+fn verify_non_membership(
     client_state: &ClientState,
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
-    path: P,
+    path: impl Into<Path>,
 ) -> Result<(), Ics02Error> {
     let merkle_path =
         apply_prefix(prefix, vec![path.into().to_string()]).map_err(Error::ics23_error)?;

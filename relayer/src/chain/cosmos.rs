@@ -596,9 +596,9 @@ impl CosmosSdkChain {
         self.config.max_tx_size.into()
     }
 
-    fn query<P: Into<Path>>(
+    fn query(
         &self,
-        data: P,
+        data: impl Into<Path>,
         height: ICSHeight,
         prove: bool,
     ) -> Result<QueryResponse, Error> {
