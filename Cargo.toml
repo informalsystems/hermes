@@ -23,10 +23,3 @@ exclude = [
 # tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-
-# [patch.crates-io]
-# tendermint              = { path = "../tendermint-rs/tendermint" }
-# tendermint-rpc          = { path = "../tendermint-rs/rpc" }
-# tendermint-proto        = { path = "../tendermint-rs/proto" }
-# tendermint-light-client = { path = "../tendermint-rs/light-client" }
-# tendermint-testgen      = { path = "../tendermint-rs/testgen" }
