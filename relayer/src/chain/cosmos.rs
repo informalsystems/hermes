@@ -1997,28 +1997,32 @@ impl ChainEndpoint for CosmosSdkChain {
         sequence: Sequence,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let data = match packet_type {
-            PacketMsgType::Recv => Path::Commitments(CommitmentsPath {
+        let data: Path = match packet_type {
+            PacketMsgType::Recv => CommitmentsPath {
                 port_id,
                 channel_id,
                 sequence,
-            }),
-            PacketMsgType::Ack => Path::Acks(AcksPath {
+            }
+            .into(),
+            PacketMsgType::Ack => AcksPath {
                 port_id,
                 channel_id,
                 sequence,
-            }),
-            PacketMsgType::TimeoutUnordered => Path::Receipts(ReceiptsPath {
+            }
+            .into(),
+            PacketMsgType::TimeoutUnordered => ReceiptsPath {
                 port_id,
                 channel_id,
                 sequence,
-            }),
-            PacketMsgType::TimeoutOrdered => Path::SeqRecvs(SeqRecvsPath(port_id, channel_id)),
-            PacketMsgType::TimeoutOnClose => Path::Receipts(ReceiptsPath {
+            }
+            .into(),
+            PacketMsgType::TimeoutOrdered => SeqRecvsPath(port_id, channel_id).into(),
+            PacketMsgType::TimeoutOnClose => ReceiptsPath {
                 port_id,
                 channel_id,
                 sequence,
-            }),
+            }
+            .into(),
         };
 
         let res = self.query(data, height, true)?;
