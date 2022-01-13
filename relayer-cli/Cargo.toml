@@ -56,18 +56,18 @@ flex-error = { version = "0.4.4", default-features = false, features = ["std", "
 signal-hook = "0.3.13"
 
 [dependencies.tendermint-proto]
-version = "=0.23.2"
+version = "=0.23.4"
 
 [dependencies.tendermint]
-version = "=0.23.2"
+version = "=0.23.4"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.2"
+version = "=0.23.4"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.2"
+version = "=0.23.4"
 features = ["unstable"]
 
 [dependencies.abscissa_core]
