@@ -5,7 +5,6 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId
 
 use crate::error::Error as RelayerError;
 use crate::registry::SpawnError;
-use crate::worker::WorkerError;
 
 define_error! {
     Error {
@@ -65,9 +64,5 @@ define_error! {
         Spawn
             [ SpawnError ]
             |_| { "supervisor was not able to connect to any chains" },
-
-        Worker
-            [ WorkerError ]
-            |_| { "worker error" },
     }
 }
