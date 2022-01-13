@@ -21,16 +21,19 @@ jobs:
   upload-assets:
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-    runs-on: ${{ matrix.os }}
+        config:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-latest, target: aarch64-unknown-linux-gnu }
+          - { os: macos-latest, target: x86_64-apple-darwin }
+    runs-on: ${{ matrix.config.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required)
           bin: hermes
+          # (optional) Target triple
+          target: ${{ matrix.config.target }}
           # (optional) On which platform to distribute the `.tar.gz` file.
           # [default value: unix]
           # [possible values: all, unix, windows, none]

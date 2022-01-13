@@ -1,4 +1,4 @@
-# Hermes Guide (v0.9.0)
+# Hermes Guide (v0.10.0)
 
 
 Hermes is a an open-source Rust implementation of a relayer for the
@@ -51,4 +51,3 @@ packets between two or more IBC-enabled chains.
 ## Disclaimer
 
 This project is undergoing heavy development, use at your own risk.
-
