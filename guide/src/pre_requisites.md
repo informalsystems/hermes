@@ -38,11 +38,6 @@ You will also need the __Go__ programming language installed and configured on y
 
 To install and configure Golang on your machine please follow the [Golang official documentation](https://golang.org/doc/install).
 
-## 3. Libraries
-
-The OpenSSL library with its headers is required. Refer to the
-[openssl crate documentation](https://docs.rs/openssl) for the ways to install OpenSSL on different platforms and make it available to the build script if necessary.
-
 ## Next Steps
 
 Next, go to the [Installation](./installation.md) section to learn how to build Hermes.
