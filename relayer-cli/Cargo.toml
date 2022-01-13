@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "0.9.0"
+version    = "0.10.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -26,11 +26,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.9.0", path = "../modules" }
-ibc-relayer      = { version = "0.9.0", path = "../relayer" }
-ibc-proto        = { version = "0.13.0", path = "../proto" }
-ibc-telemetry    = { version = "0.9.0", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.9.0", path = "../relayer-rest", optional = true }
+ibc              = { version = "0.10.0", path = "../modules" }
+ibc-relayer      = { version = "0.10.0", path = "../relayer" }
+ibc-proto        = { version = "0.14.0", path = "../proto" }
+ibc-telemetry    = { version = "0.10.0", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.10.0", path = "../relayer-rest", optional = true }
 
 clap = { version = "=3.0.0-beta.5" }
 serde = { version = "1.0", features = ["serde_derive"] }
@@ -47,7 +47,7 @@ serde_json = "1"
 prost = { version = "0.9" }
 prost-types = { version ="0.9" }
 hex = "0.4"
-crossbeam-channel = "0.5.1"
+crossbeam-channel = "0.5.2"
 subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.3"
@@ -56,18 +56,18 @@ flex-error = { version = "0.4.4", default-features = false, features = ["std", "
 signal-hook = "0.3.13"
 
 [dependencies.tendermint-proto]
-version = "=0.23.2"
+version = "=0.23.4"
 
 [dependencies.tendermint]
-version = "=0.23.2"
+version = "=0.23.4"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.2"
+version = "=0.23.4"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.2"
+version = "=0.23.4"
 features = ["unstable"]
 
 [dependencies.abscissa_core]
