@@ -3,6 +3,20 @@
 ## v0.10.0
 *January 13th, 2021*
 
+This release notably updates the underlying CLI framework (`abscissa`) to version 0.6.0-beta.1,
+which now uses `clap` for parsing command line arguments. This substantially improves the UX of the CLI,
+by adding support for `--help` flags in subcommands and improving help and usage printouts.
+
+The `--version` option of the `create channel` subcommand has been renamed
+to `--channel-version`, with the old name still supported as an alias.
+Additionally, the `-h` short flag on many commands is now `-H` to avoid
+clashes with the clap-provided short flag for help.
+
+This release also improves the handling of account sequence mismatch errors,
+with a recovery mechanism to automatically retry or drop tx upon such errors.
+
+The relayer now also supports dynamic versions in channel open handshake (which is needed by Interchain Accounts), and enables full support for IBC v2.
+
 ### BREAKING CHANGES
 
 - General
@@ -10,26 +24,29 @@
     ([#1660](https://github.com/informalsystems/ibc-rs/issues/1660))
   - Pin tendermint-rs dependencies to =0.23.2
     ([#1665](https://github.com/informalsystems/ibc-rs/pull/1665))
-  - Update `CONTRIBUTING.md` for latest version of unclog
-    ([#1634](https://github.com/informalsystems/ibc-rs/issues/1634))
 - [IBC Modules](modules)
-  - Add the `frozen_height()` method to the `ClientState` trait. (Includes breaking changes to the Tendermint
-    `ClientState` API.)
+  - Add the `frozen_height()` method to the `ClientState` trait (includes breaking changes to the Tendermint `ClientState` API).
     ([#1618](https://github.com/informalsystems/ibc-rs/issues/1618))
   - Remove `Timestamp` API that depended on the `chrono` crate:
     ([#1665](https://github.com/informalsystems/ibc-rs/pull/1665)):
-  - `Timestamp::from_datetime`; use `From<tendermint::Time>`
-  - `Timestamp::as_datetime`, superseded by `Timestamp::into_datetime`
+    - `Timestamp::from_datetime`; use `From<tendermint::Time>`
+    - `Timestamp::as_datetime`, superseded by `Timestamp::into_datetime`
 - [Relayer Library](relayer)
-  -  Improve spawning of supervisor worker tasks ([#1656](https://github.com/informalsystems/ibc-rs/issues/1656))
-  - The `Supervisor` struct is removed.
-  - Supervisor is now spawned using the `spawn_supervisor` function.
+  - Improve spawning of supervisor worker tasks ([#1656](https://github.com/informalsystems/ibc-rs/issues/1656))
+    - The `Supervisor` struct is removed.
+    - Supervisor is now spawned using the `spawn_supervisor` function.
+- [Relayer CLI](relayer-cli)
+  - Update to abscissa framework version 0.6.0-beta.1, adding support for
+    `--help` flags in subcommands and improving help and usage printouts.
+    The `--version` option of the `create channel` subcommand has been renamed
+    to `--channel-version`, with the old name still supported as an alias.
+    Additionally, the `-h` short flag on many commands is now `-H` to avoid
+    clashes with the clap-provided short flag for help.
+    ([#1576](https://github.com/informalsystems/ibc-rs/pull/1576),
+    [#1743](https://github.com/informalsystems/ibc-rs/pull/1743))
 
 ### BUG FIXES
 
-- General
-  - Added a recovery mechanism to automatically retry or drop tx upon account
-    sequence mismatch errors ([#1264](https://github.com/informalsystems/ibc-rs/issues/1264))
 - [IBC Modules](modules)
   - Delete packet commitment instead of acknowledgement in acknowledgePacket
     [#1573](https://github.com/informalsystems/ibc-rs/issues/1573)
@@ -56,6 +73,8 @@
   - Implement proof verification for Tendermint client (ICS07).
     ([#1583](https://github.com/informalsystems/ibc-rs/pull/1583))
 - [Relayer Library](relayer)
+  - Added a recovery mechanism to automatically retry or drop tx upon account
+    sequence mismatch errors ([#1264](https://github.com/informalsystems/ibc-rs/issues/1264))
   - Support dynamic versions in channel open handshake & enable full support for
     ibc-go v2 ([#1410](https://github.com/informalsystems/ibc-rs/issues/1410))
   - Allow custom proof-specs in chain config
@@ -63,18 +82,14 @@
 
 ### IMPROVEMENTS
 
+- General
+  - Update `CONTRIBUTING.md` for latest version of unclog
+    ([#1634](https://github.com/informalsystems/ibc-rs/issues/1634))
 - [IBC Modules](modules)
   - More conventional ad-hoc conversion methods on `Timestamp`
     ([#1665](https://github.com/informalsystems/ibc-rs/pull/1665)):
   - `Timestamp::nanoseconds` replaces `Timestamp::as_nanoseconds`
   - `Timestamp::into_datetime` substitutes `Timestamp::as_datetime`
-- [Relayer Library](relayer)
-  - Update to abscissa framework version 0.6.0-beta.1, adding support for
-    `--help` flags in subcommands and improving help and usage printouts.
-    The `--version` option of the `create channel` subcommand has been renamed
-    to `--channel-version`, with the old name still supported as an alias.
-    ([#1576](https://github.com/informalsystems/ibc-rs/pull/1576),
-    [#1743](https://github.com/informalsystems/ibc-rs/pull/1743))
 - [Relayer CLI](relayer-cli)
   - Improve performance of standalone commands by starting the event monitor on-demand
     ([#1063](https://github.com/informalsystems/ibc-rs/issues/1063))
