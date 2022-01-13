@@ -476,9 +476,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06ed27e177f16d65f0f0c22a213e17c696ace5dd64b14258b52f9417ccb52db4"
+checksum = "e54ea8bc3fb1ee042f5aace6e3c6e025d3874866da222930f70ce62aceba0bfa"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils 0.8.5",
@@ -775,9 +775,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.11.5"
+version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f01ff20862362c34074072c8be2de97399633d6b1d2114afa56bf77a8b7f0a4"
+checksum = "decb3a27ea454a5f23f96eb182af0671c12694d64ecc33dada74edd1301f6cfc"
 dependencies = [
  "crypto-bigint",
  "der",
@@ -863,21 +863,6 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
-
-[[package]]
-name = "foreign-types"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
-dependencies = [
- "foreign-types-shared",
-]
-
-[[package]]
-name = "foreign-types-shared"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "form_urlencoded"
@@ -1261,11 +1246,12 @@ dependencies = [
  "headers",
  "http",
  "hyper",
- "hyper-tls",
- "native-tls",
+ "hyper-rustls",
+ "rustls-native-certs",
  "tokio",
- "tokio-native-tls",
+ "tokio-rustls",
  "tower-service",
+ "webpki 0.21.4",
 ]
 
 [[package]]
@@ -1299,21 +1285,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyper-tls"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6183ddfa99b85da61a140bea0efc93fdf56ceaa041b37d553518030827f9905"
-dependencies = [
- "bytes",
- "hyper",
- "native-tls",
- "tokio",
- "tokio-native-tls",
-]
-
-[[package]]
 name = "ibc"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bytes",
  "env_logger",
@@ -1327,7 +1300,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "sha2 0.10.0",
+ "sha2 0.10.1",
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
@@ -1338,15 +1311,15 @@ dependencies = [
  "thiserror",
  "time",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.5",
 ]
 
 [[package]]
 name = "ibc-integration-test"
-version = "0.8.0"
+version = "0.10.0"
 dependencies = [
  "color-eyre",
- "crossbeam-channel 0.5.1",
+ "crossbeam-channel 0.5.2",
  "env_logger",
  "eyre",
  "flex-error",
@@ -1363,19 +1336,19 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "sha2 0.9.8",
+ "sha2 0.10.1",
  "subtle-encoding",
  "tendermint",
  "tendermint-rpc",
  "tokio",
  "toml",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.5",
 ]
 
 [[package]]
 name = "ibc-proto"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "bytes",
  "getrandom 0.2.3",
@@ -1388,14 +1361,14 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "async-stream",
  "bech32",
  "bitcoin",
  "bytes",
- "crossbeam-channel 0.5.1",
+ "crossbeam-channel 0.5.2",
  "dirs-next",
  "env_logger",
  "flex-error",
@@ -1421,7 +1394,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "serial_test",
- "sha2 0.9.8",
+ "sha2 0.10.1",
  "signature",
  "subtle-encoding",
  "tendermint",
@@ -1438,19 +1411,19 @@ dependencies = [
  "toml",
  "tonic",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.5",
  "uint",
 ]
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "abscissa_core",
  "atty",
  "clap",
  "color-eyre",
- "crossbeam-channel 0.5.1",
+ "crossbeam-channel 0.5.2",
  "dirs-next",
  "eyre",
  "flex-error",
@@ -1480,14 +1453,14 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.5",
 ]
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
- "crossbeam-channel 0.5.1",
+ "crossbeam-channel 0.5.2",
  "ibc",
  "ibc-relayer",
  "rouille",
@@ -1500,9 +1473,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
- "crossbeam-channel 0.5.1",
+ "crossbeam-channel 0.5.2",
  "ibc",
  "once_cell",
  "opentelemetry",
@@ -1610,9 +1583,9 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58e786b08b1c90389266b21e238894b88c03296b44db6c6a797484c6fb3e6e5a"
+checksum = "7511aa19fa182a8a4885760c4e5675b17173b02ae86ec5d376d34f5278c874b9"
 dependencies = [
  "cfg-if 1.0.0",
  "ecdsa",
@@ -1782,7 +1755,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.3.3",
+ "tracing-subscriber 0.3.5",
  "ureq",
 ]
 
@@ -1802,24 +1775,6 @@ dependencies = [
  "safemem",
  "tempfile",
  "twoway",
-]
-
-[[package]]
-name = "native-tls"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48ba9f7719b5a0f42f338907614285fb5fd70e53858141f69898a1fb7203b24d"
-dependencies = [
- "lazy_static",
- "libc",
- "log",
- "openssl",
- "openssl-probe",
- "openssl-sys",
- "schannel",
- "security-framework",
- "security-framework-sys",
- "tempfile",
 ]
 
 [[package]]
@@ -1935,37 +1890,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
-name = "openssl"
-version = "0.10.38"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c7ae222234c30df141154f159066c5093ff73b63204dcda7121eb082fc56a95"
-dependencies = [
- "bitflags",
- "cfg-if 1.0.0",
- "foreign-types",
- "libc",
- "once_cell",
- "openssl-sys",
-]
-
-[[package]]
 name = "openssl-probe"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28988d872ab76095a6e6ac88d99b54fd267702734fd7ffe610ca27f533ddb95a"
-
-[[package]]
-name = "openssl-sys"
-version = "0.9.71"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7df13d165e607909b363a4757a6f133f8a818a74e9d3a98d09c6128e15fa4c73"
-dependencies = [
- "autocfg",
- "cc",
- "libc",
- "pkg-config",
- "vcpkg",
-]
 
 [[package]]
 name = "opentelemetry"
@@ -1974,7 +1902,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff27b33e30432e7b9854936693ca103d8591b0501f7ae9f633de48cda3bf2a67"
 dependencies = [
  "async-trait",
- "crossbeam-channel 0.5.1",
+ "crossbeam-channel 0.5.2",
  "dashmap",
  "fnv",
  "futures",
@@ -2127,12 +2055,6 @@ dependencies = [
  "spki",
  "zeroize",
 ]
-
-[[package]]
-name = "pkg-config"
-version = "0.3.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12295df4f294471248581bc09bef3c38a5e46f1e36d6a37353621a0c6c357e1f"
 
 [[package]]
 name = "ppv-lite86"
@@ -2341,7 +2263,7 @@ version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d78120e2c850279833f1dd3582f730c4ab53ed95aeaaaa862a2a5c71b1656d8e"
 dependencies = [
- "crossbeam-channel 0.5.1",
+ "crossbeam-channel 0.5.2",
  "crossbeam-deque",
  "crossbeam-utils 0.8.5",
  "lazy_static",
@@ -2826,9 +2748,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "900d964dd36bb15bcf2f2b35694c072feab74969a54f2bbeec7a2d725d2bdcb6"
+checksum = "99c3bd8169c58782adad9290a9af5939994036b76187f7b4f0e6de91dbbfc0ec"
 dependencies = [
  "cfg-if 1.0.0",
  "cpufeatures",
@@ -3001,8 +2923,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.23.3"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/light-client-verifier-v0.23#429ad535abc34cb20bfa9f3ada449e8d430ff671"
+version = "0.23.4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#7db7c01f266703b31b12b3594f541938d5db9a52"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3031,8 +2953,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.23.3"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/light-client-verifier-v0.23#429ad535abc34cb20bfa9f3ada449e8d430ff671"
+version = "0.23.4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#7db7c01f266703b31b12b3594f541938d5db9a52"
 dependencies = [
  "flex-error",
  "serde",
@@ -3044,8 +2966,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.23.3"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/light-client-verifier-v0.23#429ad535abc34cb20bfa9f3ada449e8d430ff671"
+version = "0.23.4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#7db7c01f266703b31b12b3594f541938d5db9a52"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3065,8 +2987,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-verifier"
-version = "0.23.3"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/light-client-verifier-v0.23#429ad535abc34cb20bfa9f3ada449e8d430ff671"
+version = "0.23.4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#7db7c01f266703b31b12b3594f541938d5db9a52"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3078,8 +3000,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.3"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/light-client-verifier-v0.23#429ad535abc34cb20bfa9f3ada449e8d430ff671"
+version = "0.23.4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#7db7c01f266703b31b12b3594f541938d5db9a52"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3095,8 +3017,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.23.3"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/light-client-verifier-v0.23#429ad535abc34cb20bfa9f3ada449e8d430ff671"
+version = "0.23.4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#7db7c01f266703b31b12b3594f541938d5db9a52"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3128,8 +3050,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-testgen"
-version = "0.23.3"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/light-client-verifier-v0.23#429ad535abc34cb20bfa9f3ada449e8d430ff671"
+version = "0.23.4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#7db7c01f266703b31b12b3594f541938d5db9a52"
 dependencies = [
  "ed25519-dalek",
  "gumdrop",
@@ -3319,16 +3241,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "tokio-native-tls"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7d995660bd2b7f8c1568414c1126076c13fbb725c40112dc0120b78eb9b717b"
-dependencies = [
- "native-tls",
- "tokio",
 ]
 
 [[package]]
@@ -3536,9 +3448,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.3.3"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "245da694cc7fc4729f3f418b304cb57789f1bed2a78c575407ab8a23f53cb4d3"
+checksum = "5d81bfa81424cc98cb034b837c985b7a290f592e5b4322f353f94a0ab0f9f594"
 dependencies = [
  "ansi_term",
  "lazy_static",
@@ -3695,12 +3607,6 @@ name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-
-[[package]]
-name = "vcpkg"
-version = "0.2.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "version_check"

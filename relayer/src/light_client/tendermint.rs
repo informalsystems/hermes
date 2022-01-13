@@ -9,7 +9,7 @@ use tendermint_light_client::{
 use tendermint_light_client_verifier::operations;
 use tendermint_light_client_verifier::options::Options as TmOptions;
 use tendermint_light_client_verifier::types::{Height as TMHeight, LightBlock, PeerId, Status};
-use tendermint_light_client_verifier::verifier::ProdVerifier;
+use tendermint_light_client_verifier::ProdVerifier;
 use tendermint_rpc as rpc;
 
 use ibc::{

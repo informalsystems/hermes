@@ -1,7 +1,7 @@
 use core::fmt;
 use core::mem;
 use crossbeam_channel::Sender;
-use tracing::trace;
+use tracing::{debug, trace};
 
 use ibc::{
     core::{ics02_client::events::NewBlock, ics24_host::identifier::ChainId},
@@ -9,16 +9,16 @@ use ibc::{
     Height,
 };
 
+use crate::util::lock::{LockExt, RwArc};
 use crate::util::task::TaskHandle;
 use crate::{event::monitor::EventBatch, object::Object};
 
-use super::error::WorkerError;
 use super::{WorkerCmd, WorkerId};
 
 pub struct WorkerHandle {
     id: WorkerId,
     object: Object,
-    tx: Sender<WorkerCmd>,
+    tx: RwArc<Option<Sender<WorkerCmd>>>,
     task_handles: Vec<TaskHandle>,
 }
 
@@ -26,47 +26,49 @@ impl WorkerHandle {
     pub fn new(
         id: WorkerId,
         object: Object,
-        tx: Sender<WorkerCmd>,
+        tx: Option<Sender<WorkerCmd>>,
         task_handles: Vec<TaskHandle>,
     ) -> Self {
         Self {
             id,
             object,
-            tx,
+            tx: <RwArc<_>>::new_lock(tx),
             task_handles,
         }
     }
 
+    pub fn try_send_command(&self, cmd: WorkerCmd) {
+        let res = if let Some(tx) = self.tx.acquire_read().as_ref() {
+            tx.send(cmd)
+        } else {
+            Ok(())
+        };
+
+        if res.is_err() {
+            debug!("dropping sender end for worker {} as the receiver was dropped when the worker task terminated", self.id);
+            *self.tx.acquire_write() = None;
+        }
+    }
+
     /// Send a batch of events to the worker.
-    pub fn send_events(
-        &self,
-        height: Height,
-        events: Vec<IbcEvent>,
-        chain_id: ChainId,
-    ) -> Result<(), WorkerError> {
+    pub fn send_events(&self, height: Height, events: Vec<IbcEvent>, chain_id: ChainId) {
         let batch = EventBatch {
             chain_id,
             height,
             events,
         };
 
-        self.tx
-            .send(WorkerCmd::IbcEvents { batch })
-            .map_err(WorkerError::send)
+        self.try_send_command(WorkerCmd::IbcEvents { batch });
     }
 
     /// Send a batch of [`NewBlock`] event to the worker.
-    pub fn send_new_block(&self, height: Height, new_block: NewBlock) -> Result<(), WorkerError> {
-        self.tx
-            .send(WorkerCmd::NewBlock { height, new_block })
-            .map_err(WorkerError::send)
+    pub fn send_new_block(&self, height: Height, new_block: NewBlock) {
+        self.try_send_command(WorkerCmd::NewBlock { height, new_block });
     }
 
     /// Instruct the worker to clear pending packets.
-    pub fn clear_pending_packets(&self) -> Result<(), WorkerError> {
-        self.tx
-            .send(WorkerCmd::ClearPendingPackets)
-            .map_err(WorkerError::send)
+    pub fn clear_pending_packets(&self) {
+        self.try_send_command(WorkerCmd::ClearPendingPackets);
     }
 
     /// Shutdown all worker tasks without waiting for them to terminate.
