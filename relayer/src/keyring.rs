@@ -427,6 +427,7 @@ fn get_address(pk: ExtendedPubKey, at: &AddressType) -> Vec<u8> {
             let pk_hash = hasher.finalize();
 
             // Plug the hash result into the next crypto hash function.
+            use ripemd160::Digest;
             let mut rip_hasher = Ripemd160::new();
             rip_hasher.update(pk_hash);
             let rip_result = rip_hasher.finalize();

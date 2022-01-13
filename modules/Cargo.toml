@@ -1,6 +1,6 @@
 [package]
 name         = "ibc"
-version      = "0.9.0"
+version      = "0.10.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -25,7 +25,7 @@ mocks = ["tendermint-testgen"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.13.0", path = "../proto" }
+ibc-proto = { version = "0.14.0", path = "../proto" }
 ics23 = { version = "0.6.7", default-features = false }
 time = { version = "0.3", default-features = false }
 thiserror = { version = "1.0.30", default-features = false }
@@ -38,21 +38,21 @@ prost-types = { version = "0.9", default-features = false }
 bytes = { version = "1.1.0", default-features = false }
 safe-regex = { version = "0.2.4", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
-sha2 = { version = "0.10.0", default-features = false }
+sha2 = { version = "0.10.1", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 
 [dependencies.tendermint]
-version = "=0.23.2"
+version = "=0.23.4"
 
 [dependencies.tendermint-proto]
-version = "=0.23.2"
+version = "=0.23.4"
 
 [dependencies.tendermint-light-client]
-version = "=0.23.2"
+version = "=0.23.4"
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "=0.23.2"
+version = "=0.23.4"
 optional = true
 
 [dev-dependencies]
@@ -60,9 +60,9 @@ env_logger = "0.9.0"
 tracing-subscriber = { version = "0.3.5", features = ["fmt", "env-filter", "json"]}
 test-log = { version = "0.2.8", features = ["trace"] }
 modelator = "0.4.1"
-sha2 = { version = "0.10.0" }
-tendermint-rpc = { version = "=0.23.2", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.23.2" } # Needed for generating (synthetic) light blocks.
+sha2 = { version = "0.10.1" }
+tendermint-rpc = { version = "=0.23.4", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "=0.23.4" } # Needed for generating (synthetic) light blocks.
 
 [[test]]
 name = "mbt"
