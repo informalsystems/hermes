@@ -675,6 +675,10 @@ impl ChannelReader for MockContext {
         self.timestamp
     }
 
+    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
+        ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
+    }
+
     fn client_update_time(
         &self,
         client_id: &ClientId,
@@ -858,10 +862,7 @@ impl ConnectionReader for MockContext {
     }
 
     fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics03Error> {
-        match self.host_block(height) {
-            Some(block_ref) => Ok(block_ref.clone().into()),
-            None => Err(Ics03Error::missing_local_consensus_state(height)),
-        }
+        ClientReader::host_consensus_state(self, height).map_err(Ics03Error::ics02_client)
     }
 
     fn connection_counter(&self) -> Result<u64, Ics03Error> {
@@ -991,6 +992,13 @@ impl ClientReader for MockContext {
         self.latest_height
     }
 
+    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics02Error> {
+        match self.host_block(height) {
+            Some(block_ref) => Ok(block_ref.clone().into()),
+            None => Err(Ics02Error::missing_local_consensus_state(height)),
+        }
+    }
+
     fn client_counter(&self) -> Result<u64, Ics02Error> {
         Ok(self.client_ids_counter)
     }
@@ -1049,10 +1057,15 @@ impl ClientKeeper for MockContext {
         self.client_ids_counter += 1
     }
 
-    fn store_update_time(&mut self, client_id: ClientId, height: Height) -> Result<(), Ics02Error> {
+    fn store_update_time(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+        timestamp: Timestamp,
+    ) -> Result<(), Ics02Error> {
         let _ = self
             .client_processed_times
-            .insert((client_id, height), ChannelReader::host_timestamp(self));
+            .insert((client_id, height), timestamp);
         Ok(())
     }
 
@@ -1060,10 +1073,11 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         height: Height,
+        host_height: Height,
     ) -> Result<(), Ics02Error> {
         let _ = self
             .client_processed_heights
-            .insert((client_id, height), ClientReader::host_height(self));
+            .insert((client_id, height), host_height);
         Ok(())
     }
 }
