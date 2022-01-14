@@ -78,6 +78,8 @@ pub trait ClientKeeper {
                     res.consensus_state,
                 )?;
                 self.increase_client_counter();
+                self.store_update_time(res.client_id.clone(), res.client_state.latest_height())?;
+                self.store_update_height(res.client_id, res.client_state.latest_height())?;
                 Ok(())
             }
             Update(res) => {
