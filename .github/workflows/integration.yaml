@@ -4,6 +4,7 @@ on:
     paths:
       - .github/workflows/rust.yml
       - Cargo.toml
+      - Cargo.lock
       - ci/**
       - e2e/**
       - proto/**
@@ -17,6 +18,7 @@ on:
     paths:
       - .github/workflows/rust.yml
       - Cargo.toml
+      - Cargo.lock
       - ci/**
       - e2e/**
       - proto/**
@@ -41,6 +43,7 @@ jobs:
       matrix:
         gaiad:
           - gaia4
+          - gaia5
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15

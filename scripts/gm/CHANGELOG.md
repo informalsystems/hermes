@@ -1,9 +1,15 @@
 # Gaiad Manager Change Log
 
-## UNRELEASED
+## v0.1.0
 
-- Increased default Hermes config constants `rpc_timeout` and `max_gas`
-- Fixed undefaulted `$OUPUT` in `lib-gm`
+### FEATURES
+- Implemented JSON output if `OUTPUT=json` is set in the environment.
+- Added the `extra_wallets` parameter to generate extra wallets for networks.
+
+### BUGFIXES
+- Increased default Hermes config constants `rpc_timeout` and `max_gas`.
+- Fixed default for `$OUPUT` in `lib-gm`.
+- Updated Hermes config for Hermes 0.9.0 compatibility.
 
 ## v0.0.9
 

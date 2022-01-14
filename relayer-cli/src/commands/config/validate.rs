@@ -1,10 +1,10 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 
 use crate::conclude::Output;
 use crate::config;
 use crate::prelude::*;
 
-#[derive(Command, Debug, Options)]
+#[derive(Command, Debug, Clap)]
 pub struct ValidateCmd {}
 
 impl Runnable for ValidateCmd {

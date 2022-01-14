@@ -54,14 +54,10 @@ impl core::fmt::Display for PacketMsgType {
 }
 
 /// The sequence number of a packet enforces ordering among packets from the same source.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, PartialOrd, Ord)]
+#[derive(
+    Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Deserialize, Serialize,
+)]
 pub struct Sequence(u64);
-
-impl Default for Sequence {
-    fn default() -> Self {
-        Sequence(0)
-    }
-}
 
 impl FromStr for Sequence {
     type Err = Error;
@@ -242,7 +238,7 @@ impl From<Packet> for RawPacket {
             destination_channel: packet.destination_channel.to_string(),
             data: packet.data,
             timeout_height: Some(packet.timeout_height.into()),
-            timeout_timestamp: packet.timeout_timestamp.as_nanoseconds(),
+            timeout_timestamp: packet.timeout_timestamp.nanoseconds(),
         }
     }
 }

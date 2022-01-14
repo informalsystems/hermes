@@ -1,7 +1,7 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
-use core::cell::RefCell;
 use core::fmt;
+use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Instant;
 
@@ -49,6 +49,7 @@ use crate::link::pending::PendingTxs;
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
 use crate::link::{pending, relay_sender};
+use crate::util::lock::LockExt;
 use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
@@ -65,7 +66,7 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // Marks whether this path has already cleared pending packets.
     // Packets should be cleared once (at startup), then this
     // flag turns to `false`.
-    clear_packets: RefCell<bool>,
+    clear_packets: Arc<RwLock<bool>>,
 
     // Operational data, targeting both the source and destination chain.
     // These vectors of operational data are ordered decreasingly by
@@ -119,7 +120,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_channel_id: dst_channel_id.clone(),
             dst_port_id: dst_port_id.clone(),
 
-            clear_packets: RefCell::new(true),
+            clear_packets: Arc::new(RwLock::new(true)),
             src_operational_data: Queue::new(),
             dst_operational_data: Queue::new(),
 
@@ -305,7 +306,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn should_clear_packets(&self) -> bool {
-        *self.clear_packets.borrow()
+        *self.clear_packets.acquire_read()
     }
 
     /// Clears any packets that were sent before `height`, either if the `clear_packets` flag
@@ -318,7 +319,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if self.should_clear_packets() || force {
             // Disable further clearing of old packets by default.
             // Clearing may still happen: upon new blocks, when `force = true`.
-            self.clear_packets.replace(false);
+            *self.clear_packets.acquire_write() = false;
 
             let clear_height = height
                 .map(|h| h.decrement().map_err(|e| LinkError::decrement_height(h, e)))

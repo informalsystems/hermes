@@ -4,6 +4,7 @@
 */
 
 use eyre::Report as Error;
+use ibc_relayer_cli::components::enable_ansi;
 use std::env;
 use std::fs;
 use std::sync::Once;
@@ -25,7 +26,9 @@ static INIT: Once = Once::new();
 */
 pub fn init_test() -> Result<TestConfig, Error> {
     INIT.call_once(|| {
-        color_eyre::install().unwrap();
+        if enable_ansi() {
+            color_eyre::install().unwrap();
+        }
         install_logger();
     });
 
@@ -48,6 +51,7 @@ pub fn init_test() -> Result<TestConfig, Error> {
         chain_command_path,
         chain_store_dir,
         hang_on_fail,
+        bootstrap_with_random_ids: true,
     })
 }
 

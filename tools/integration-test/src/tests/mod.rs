@@ -5,7 +5,9 @@
    will pick up the definition by default.
 */
 
+pub mod client_expiration;
 pub mod memo;
+pub mod supervisor;
 pub mod transfer;
 
 #[cfg(any(doc, feature = "manual"))]

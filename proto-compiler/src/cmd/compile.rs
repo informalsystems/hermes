@@ -105,6 +105,7 @@ impl CompileCmd {
 
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
+        let attrs_serde_eq = "#[derive(::serde::Serialize, ::serde::Deserialize, Eq)]";
 
         let compilation = tonic_build::configure()
             .build_client(build_tonic)
@@ -112,6 +113,10 @@ impl CompileCmd {
             .format(true)
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
+            .type_attribute(".ics23.LeafOp", attrs_serde_eq)
+            .type_attribute(".ics23.InnerOp", attrs_serde_eq)
+            .type_attribute(".ics23.ProofSpec", attrs_serde_eq)
+            .type_attribute(".ics23.InnerSpec", attrs_serde_eq)
             .compile(&protos, &includes);
 
         match compilation {
@@ -144,7 +149,6 @@ impl CompileCmd {
             format!("{}/proto/cosmos/upgrade", sdk_dir.display()),
         ];
 
-
         let mut proto_includes_paths = vec![
             format!("{}/../proto", root),
             format!("{}/proto", sdk_dir.display()),
@@ -153,7 +157,7 @@ impl CompileCmd {
 
         if let Some(ibc_dir) = ibc_dep {
             // Use the IBC proto files from the SDK
-            proto_includes_paths.push(format!("{}/proto", ibc_dir.display()),);
+            proto_includes_paths.push(format!("{}/proto", ibc_dir.display()));
         }
 
         // List available proto files

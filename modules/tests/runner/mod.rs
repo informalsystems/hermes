@@ -155,7 +155,7 @@ impl IbcTestRunner {
     }
 
     pub fn client_state(height: Height) -> AnyClientState {
-        AnyClientState::Mock(MockClientState(Self::mock_header(height)))
+        AnyClientState::Mock(MockClientState::new(Self::mock_header(height)))
     }
 
     pub fn consensus_state(height: Height) -> AnyConsensusState {
@@ -347,7 +347,7 @@ impl IbcTestRunner {
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient {
                     client_id: Self::client_id(client_id),
-                    client_state: MockClientState(MockHeader::new(header)).into(),
+                    client_state: MockClientState::new(MockHeader::new(header)).into(),
                     consensus_state: MockConsensusState::new(MockHeader::new(header)).into(),
                     proof_upgrade_client: MerkleProof::try_from(c_bytes).unwrap(),
                     proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes).unwrap(),
@@ -471,6 +471,7 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> Result<(), String> {
+        let show = step.action.clone();
         let result = self.apply(step.action);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
@@ -529,7 +530,7 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
         }
 
         if !outcome_matches {
-            return Err("Action outcome did not match expected".into());
+            return Err(format!("Action outcome did not match expected: {:?}", show));
         }
 
         if !self.check_chain_states(step.chains) {

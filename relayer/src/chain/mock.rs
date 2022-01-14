@@ -18,7 +18,8 @@ use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectio
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::core::ics04_channel::Version;
+use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::downcast;
 use ibc::events::IbcEvent;
@@ -41,7 +42,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::{ChainEndpoint, StatusResponse};
+use crate::chain::{handle::requests::AppVersion, ChainEndpoint, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -355,7 +356,7 @@ impl ChainEndpoint for MockChain {
             // See `calculate_client_state_drift`
             self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
             height,
-            Height::zero(),
+            ProofSpecs::default(),
             vec!["upgrade/upgradedClient".to_string()],
             AllowUpdate {
                 after_expiry: false,
@@ -418,11 +419,16 @@ impl ChainEndpoint for MockChain {
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_consensus_state(
         &self,
-        _client_id: ClientId,
-        _consensus_height: Height,
+        client_id: ClientId,
+        consensus_height: Height,
         _query_height: Height,
     ) -> Result<AnyConsensusState, Error> {
-        unimplemented!()
+        let consensus_states = self.context.consensus_states(&client_id);
+        Ok(consensus_states
+            .into_iter()
+            .find(|s| s.height == consensus_height)
+            .unwrap()
+            .consensus_state)
     }
 
     fn query_upgraded_consensus_state(
@@ -430,6 +436,10 @@ impl ChainEndpoint for MockChain {
         _height: Height,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         unimplemented!()
+    }
+
+    fn query_app_version(&self, _request: AppVersion) -> Result<Version, Error> {
+        todo!()
     }
 }
 
@@ -459,6 +469,7 @@ pub mod test_utils {
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
+            fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
@@ -468,6 +479,7 @@ pub mod test_utils {
             packet_filter: PacketFilter::default(),
             address_type: AddressType::default(),
             memo_prefix: Default::default(),
+            proof_specs: Default::default(),
         }
     }
 }

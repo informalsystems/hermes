@@ -12,15 +12,14 @@ use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
-use chrono::DateTime;
 use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
-use tendermint::abci::{Event, Path as TendermintABCIPath};
+use tendermint::abci::{Code, Event, Path as TendermintABCIPath};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
-use tendermint_light_client::types::LightBlock as TMLightBlock;
+use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::{EventType, Query};
@@ -42,6 +41,7 @@ use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientS
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest,
 };
@@ -56,7 +56,6 @@ use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
-use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
@@ -79,13 +78,18 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
-use crate::{chain::QueryResponse, chain::StatusResponse, event::monitor::TxMonitorCmd};
+use crate::util::retry::{retry_with_index, RetryResult};
+use crate::{
+    chain::handle::requests::AppVersion, chain::QueryResponse, chain::StatusResponse,
+    event::monitor::TxMonitorCmd,
+};
 use crate::{config::types::Memo, error::Error};
 use crate::{
     config::{AddressType, ChainConfig, GasPrice},
@@ -98,18 +102,32 @@ mod compatibility;
 pub mod version;
 
 /// Default gas limit when submitting a transaction.
-const DEFAULT_MAX_GAS: u64 = 300_000;
+const DEFAULT_MAX_GAS: u64 = 400_000;
 
 /// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
+
+const DEFAULT_FEE_GRANTER: &str = "";
 
 /// Upper limit on the size of transactions submitted by Hermes, expressed as a
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 
+// The error "incorrect account sequence" is defined as the unique error code 32 in cosmos-sdk:
+// https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
+pub const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
+
 mod retry_strategy {
     use crate::util::retry::Fixed;
     use core::time::Duration;
+
+    // Maximum number of retries for send_tx in the case of
+    // an account sequence mismatch at broadcast step.
+    pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 1;
+
+    // Backoff multiplier to apply while retrying in the case
+    // of account sequence mismatch.
+    pub const BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY: u64 = 300;
 
     pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
         let backoff_millis = 300; // The periodic backoff
@@ -277,11 +295,11 @@ impl CosmosSdkChain {
         self.rt.block_on(f)
     }
 
-    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
-        crate::time!("send_tx");
-
-        let account_seq = self.account_sequence()?;
-
+    fn send_tx_with_account_sequence(
+        &mut self,
+        proto_msgs: Vec<Any>,
+        account_seq: u64,
+    ) -> Result<Response, Error> {
         debug!(
             "[{}] send_tx: sending {} messages using account sequence {}",
             self.id(),
@@ -309,6 +327,7 @@ impl CosmosSdkChain {
             signatures: vec![signed_doc],
         };
 
+        // This may result in an account sequence mismatch error
         let estimated_gas = self.estimate_gas(simulate_tx)?;
 
         if estimated_gas > self.max_gas() {
@@ -345,31 +364,111 @@ impl CosmosSdkChain {
         prost::Message::encode(&tx_raw, &mut tx_bytes)
             .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
-        let response = self.block_on(broadcast_tx_sync(
+        self.block_on(broadcast_tx_sync(
             self.rpc_client(),
             &self.config.rpc_addr,
             tx_bytes,
-        ))?;
+        ))
+    }
 
-        match response.code {
-            tendermint::abci::Code::Ok => {
-                // A success means the account s.n. was increased
-                self.incr_account_sequence()?;
-                debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
+    /// Try to `send_tx` with retry on account sequence error.
+    /// An account sequence error can occur if the account sequence that
+    /// the relayer caches becomes outdated. This may happen if the relayer
+    /// wallet is used concurrently elsewhere, or when tx fees are mis-configured
+    /// leading to transactions hanging in the mempool.
+    ///
+    /// Account sequence mismatch error can occur at two separate steps:
+    ///   1. as Err variant, propagated from the `estimate_gas` step.
+    ///   2. as an Ok variant, with an Code::Err response, propagated from
+    ///     the `broadcast_tx_sync` step.
+    ///
+    /// We treat both cases by re-fetching the account sequence number
+    /// from the full node.
+    /// Upon case #1, we do not retry submitting the same tx (retry happens
+    /// nonetheless at the worker `step` level). Upon case #2, we retry
+    /// submitting the same transaction.
+    fn send_tx_with_account_sequence_retry(
+        &mut self,
+        proto_msgs: Vec<Any>,
+        retry_counter: u32,
+    ) -> Result<Response, Error> {
+        let account_sequence = self.account_sequence()?;
+
+        match self.send_tx_with_account_sequence(proto_msgs.clone(), account_sequence) {
+            // Gas estimation failed with acct. s.n. mismatch at estimate gas step.
+            // This indicates that the full node did not yet push the previous tx out of its
+            // mempool. Possible explanations: fees too low, network congested, or full node
+            // congested. Whichever the case, it is more expedient in production to drop the tx
+            // and refresh the s.n., to allow proceeding to the other transactions. A separate
+            // retry at the worker-level will handle retrying.
+            Err(e) if mismatching_account_sequence_number(&e) => {
+                warn!("send_tx failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
+                self.refresh_account()?;
+                // Note: propagating error here can lead to bug & dropped packets:
+                // https://github.com/informalsystems/ibc-rs/issues/1153
+                // But periodic packet clearing will catch any dropped packets.
+                Err(e)
             }
-            tendermint::abci::Code::Err(code) => {
-                // Avoid increasing the account s.n. if CheckTx failed
-                // Log the error
-                error!(
-                    "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
-                    self.id(),
-                    response,
-                    sdk_error_from_tx_sync_error_code(code)
-                );
+
+            // Gas estimation succeeded. Broadcasting failed with a retry-able error.
+            Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
+                if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
+                    let retry_counter = retry_counter + 1;
+                    warn!("send_tx failed at broadcast step with incorrect account sequence. retrying ({}/{})",
+                        retry_counter, retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY);
+                    // Backoff & re-fetch the account s.n.
+                    let backoff = (retry_counter as u64)
+                        * retry_strategy::BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
+                    thread::sleep(Duration::from_millis(backoff));
+                    self.refresh_account()?;
+
+                    // Now retry.
+                    self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
+                } else {
+                    // If after the max retry we still get an account sequence mismatch error,
+                    // we ignore the error and return the original response to downstream.
+                    // We do not return an error here, because the current convention
+                    // let the caller handle error responses separately.
+                    error!("failed to send_tx due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
+                    Ok(response)
+                }
             }
+
+            // Catch-all arm for the Ok variant.
+            // This is the case when gas estimation succeeded.
+            Ok(response) => {
+                // Complete success.
+                match response.code {
+                    tendermint::abci::Code::Ok => {
+                        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
+
+                        self.incr_account_sequence();
+                        Ok(response)
+                    }
+                    // Gas estimation succeeded, but broadcasting failed with unrecoverable error.
+                    tendermint::abci::Code::Err(code) => {
+                        // Avoid increasing the account s.n. if CheckTx failed
+                        // Log the error
+                        error!(
+                            "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
+                            self.id(),
+                            response,
+                            sdk_error_from_tx_sync_error_code(code)
+                        );
+                        Ok(response)
+                    }
+                }
+            }
+
+            // Catch-all case for the Err variant.
+            // Gas estimation failure or other unrecoverable error, propagate.
+            Err(e) => Err(e),
         }
+    }
 
-        Ok(response)
+    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
+        crate::time!("send_tx");
+        self.send_tx_with_account_sequence_retry(proto_msgs, 0)
     }
 
     /// Try to simulate the given tx in order to estimate how much gas will be needed to submit it.
@@ -380,7 +479,7 @@ impl CosmosSdkChain {
     ///
     /// If the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check.
     /// In this case we use the `default_gas` param.
-    fn estimate_gas(&self, tx: Tx) -> Result<u64, Error> {
+    fn estimate_gas(&mut self, tx: Tx) -> Result<u64, Error> {
         let simulated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
 
         match simulated_gas {
@@ -419,11 +518,11 @@ impl CosmosSdkChain {
 
             Err(e) => {
                 error!(
-                    "[{}] estimate_gas: failed to simulate tx with non-recoverable error: {}",
+                    "[{}] estimate_gas: failed to simulate tx. propagating error to caller: {}",
                     self.id(),
                     e.detail()
                 );
-
+                // Propagate the error, the retrying mechanism at caller may catch & retry.
                 Err(e)
             }
         }
@@ -438,6 +537,14 @@ impl CosmosSdkChain {
     /// The maximum amount of gas the relayer is willing to pay for a transaction
     fn max_gas(&self) -> u64 {
         self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
+    }
+
+    /// Get the fee granter address
+    fn fee_granter(&self) -> &str {
+        self.config
+            .fee_granter
+            .as_deref()
+            .unwrap_or(DEFAULT_FEE_GRANTER)
     }
 
     /// The gas price
@@ -585,21 +692,27 @@ impl CosmosSdkChain {
         Ok((key, key_bytes))
     }
 
-    fn account(&mut self) -> Result<&mut BaseAccount, Error> {
+    fn refresh_account(&mut self) -> Result<(), Error> {
+        let account = self.block_on(query_account(self, self.key()?.account))?;
+        info!(
+            sequence = %account.sequence,
+            number = %account.account_number,
+            "[{}] refresh: retrieved account",
+            self.id()
+        );
+
+        self.account = Some(account);
+        Ok(())
+    }
+
+    fn account(&mut self) -> Result<&BaseAccount, Error> {
         if self.account == None {
-            let account = self.block_on(query_account(self, self.key()?.account))?;
-            debug!(
-                sequence = %account.sequence,
-                number = %account.account_number,
-                "[{}] send_tx: retrieved account",
-                self.id()
-            );
-            self.account = Some(account);
+            self.refresh_account()?;
         }
 
         Ok(self
             .account
-            .as_mut()
+            .as_ref()
             .expect("account was supposedly just cached"))
     }
 
@@ -611,9 +724,10 @@ impl CosmosSdkChain {
         Ok(self.account()?.sequence)
     }
 
-    fn incr_account_sequence(&mut self) -> Result<(), Error> {
-        self.account()?.sequence += 1;
-        Ok(())
+    fn incr_account_sequence(&mut self) {
+        if let Some(account) = &mut self.account {
+            account.sequence += 1;
+        }
     }
 
     fn signer(&self, sequence: u64) -> Result<SignerInfo, Error> {
@@ -644,7 +758,7 @@ impl CosmosSdkChain {
             amount: vec![self.max_fee_in_coins()],
             gas_limit: self.max_gas(),
             payer: "".to_string(),
-            granter: "".to_string(),
+            granter: self.fee_granter().to_string(),
         }
     }
 
@@ -655,7 +769,7 @@ impl CosmosSdkChain {
             amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
             gas_limit: adjusted_gas_limit,
             payer: "".to_string(),
-            granter: "".to_string(),
+            granter: self.fee_granter().to_string(),
         }
     }
 
@@ -697,8 +811,6 @@ impl CosmosSdkChain {
         &self,
         mut tx_sync_results: Vec<TxSyncResult>,
     ) -> Result<Vec<TxSyncResult>, Error> {
-        use crate::util::retry::{retry_with_index, RetryResult};
-
         let hashes = tx_sync_results
             .iter()
             .map(|res| res.response.hash.to_string())
@@ -847,7 +959,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn init_light_client(&self) -> Result<Self::LightClient, Error> {
-        use tendermint_light_client::types::PeerId;
+        use tendermint_light_client_verifier::types::PeerId;
 
         crate::time!("init_light_client");
 
@@ -1088,7 +1200,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_status");
         let status = self.status()?;
 
-        let time = DateTime::from(status.sync_info.latest_block_time);
+        let time = status.sync_info.latest_block_time;
         let height = ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
             revision_height: u64::from(status.sync_info.latest_block_height),
@@ -1096,7 +1208,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok(StatusResponse {
             height,
-            timestamp: Timestamp::from_datetime(time),
+            timestamp: time.into(),
         })
     }
 
@@ -1928,7 +2040,7 @@ impl ChainEndpoint for CosmosSdkChain {
             unbonding_period,
             max_clock_drift,
             height,
-            ICSHeight::zero(),
+            self.config.proof_specs.clone(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             AllowUpdate {
                 after_expiry: true,
@@ -1961,6 +2073,24 @@ impl ChainEndpoint for CosmosSdkChain {
             light_client.header_and_minimal_set(trusted_height, target_height, client_state)?;
 
         Ok((target, supporting))
+    }
+
+    fn query_app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error> {
+        use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
+
+        let mut client = self
+            .block_on(QueryClient::connect(self.grpc_addr.clone()))
+            .map_err(Error::grpc_transport)?;
+
+        let tonic_req: QueryAppVersionRequest = request.into();
+        let response = self.block_on(client.app_version(tonic_req));
+        let resp_version = response
+            .map_err(Error::grpc_status)?
+            .into_inner()
+            .version
+            .into();
+
+        Ok(resp_version)
     }
 }
 
@@ -2381,6 +2511,18 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
     }
 }
 
+/// Determine whether the given error yielded by `tx_simulate`
+/// indicates that the current sequence number cached in Hermes
+/// may be out-of-sync with the full node's version of the s.n.
+fn mismatching_account_sequence_number(e: &Error) -> bool {
+    use crate::error::ErrorDetail::*;
+
+    match e.detail() {
+        GrpcStatus(detail) => detail.is_account_sequence_mismatch(),
+        _ => false,
+    }
+}
+
 struct PrettyFee<'a>(&'a Fee);
 
 impl fmt::Display for PrettyFee<'_> {
@@ -2488,15 +2630,15 @@ mod tests {
         let mut clients: Vec<IdentifiedAnyClientState> = vec![
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 4).unwrap(),
-                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 1).unwrap(),
-                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 7).unwrap(),
-                AnyClientState::Mock(MockClientState(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
             ),
         ];
         clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));

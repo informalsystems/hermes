@@ -92,15 +92,15 @@ impl From<MsgTransfer> for RawMsgTransfer {
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
             timeout_height: Some(domain_msg.timeout_height.into()),
-            timeout_timestamp: domain_msg.timeout_timestamp.as_nanoseconds(),
+            timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
-    use std::ops::Add;
-    use std::time::Duration;
+    use core::ops::Add;
+    use core::time::Duration;
 
     use crate::{
         core::ics24_host::identifier::{ChannelId, PortId},

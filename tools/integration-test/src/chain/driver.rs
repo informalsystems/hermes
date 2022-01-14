@@ -7,15 +7,18 @@ use core::time::Duration;
 use eyre::eyre;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
+use semver::Version;
 use serde_json as json;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::str;
 use toml;
-use tracing::{debug, trace};
+use tracing::debug;
 
-use crate::error::Error;
+use crate::chain::exec::{simple_exec, ExecOutput};
+use crate::chain::version::get_chain_command_version;
+use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
@@ -52,6 +55,8 @@ pub struct ChainDriver {
     */
     pub command_path: String,
 
+    pub command_version: Version,
+
     /**
        The ID of the chain.
     */
@@ -72,6 +77,8 @@ pub struct ChainDriver {
     */
     pub grpc_port: u16,
 
+    pub grpc_web_port: u16,
+
     /**
        The port used for P2P. (Currently unused other than for setup)
     */
@@ -89,22 +96,27 @@ impl ExportEnv for ChainDriver {
 
 impl ChainDriver {
     /// Create a new [`ChainDriver`]
-    pub fn new(
+    pub fn create(
         command_path: String,
         chain_id: ChainId,
         home_path: String,
         rpc_port: u16,
         grpc_port: u16,
+        grpc_web_port: u16,
         p2p_port: u16,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, Error> {
+        let command_version = get_chain_command_version(&command_path)?;
+
+        Ok(Self {
             command_path,
+            command_version,
             chain_id,
             home_path,
             rpc_port,
             grpc_port,
+            grpc_web_port,
             p2p_port,
-        }
+        })
     }
 
     /// Returns the full URL for the RPC address.
@@ -156,28 +168,8 @@ impl ChainDriver {
        executed, so that users can manually re-run the commands by
        copying from the logs.
     */
-    pub fn exec(&self, args: &[&str]) -> Result<String, Error> {
-        debug!(
-            "Executing command: {} {}",
-            self.command_path,
-            itertools::join(args, " ")
-        );
-
-        let output = Command::new(&self.command_path).args(args).output()?;
-
-        if output.status.success() {
-            let message = str::from_utf8(&output.stdout)?.to_string();
-            trace!("command executed successfully with output: {}", message);
-
-            Ok(message)
-        } else {
-            let message = str::from_utf8(&output.stderr)?.to_string();
-            Err(eyre!(
-                "command exited with error status {:?} and message: {}",
-                output.status.code(),
-                message
-            ))
-        }
+    pub fn exec(&self, args: &[&str]) -> Result<ExecOutput, Error> {
+        simple_exec(&self.command_path, args)
     }
 
     /**
@@ -238,7 +230,7 @@ impl ChainDriver {
        Add a wallet with the given ID to the full node's keyring.
     */
     pub fn add_wallet(&self, wallet_id: &str) -> Result<Wallet, Error> {
-        let seed_content = self.exec(&[
+        let output = self.exec(&[
             "--home",
             self.home_path.as_str(),
             "keys",
@@ -250,7 +242,15 @@ impl ChainDriver {
             "json",
         ])?;
 
-        let json_val: json::Value = json::from_str(&seed_content)?;
+        // gaia6 somehow displays result in stderr instead of stdout
+        let seed_content = if output.stdout.is_empty() {
+            output.stderr
+        } else {
+            output.stdout
+        };
+
+        let json_val: json::Value = json::from_str(&seed_content).map_err(handle_generic_error)?;
+
         let wallet_address = json_val
             .get("address")
             .ok_or_else(|| eyre!("expect address string field to be present in json result"))?
@@ -264,9 +264,9 @@ impl ChainDriver {
         let hd_path = HDPath::from_str(COSMOS_HD_PATH)
             .map_err(|e| eyre!("failed to create HDPath: {:?}", e))?;
 
-        let key_file: KeyFile = json::from_str(&seed_content)?;
+        let key_file: KeyFile = json::from_str(&seed_content).map_err(handle_generic_error)?;
 
-        let key = KeyEntry::from_key_file(key_file, &hd_path)?;
+        let key = KeyEntry::from_key_file(key_file, &hd_path).map_err(handle_generic_error)?;
 
         Ok(Wallet::new(wallet_id.to_string(), wallet_address, key))
     }
@@ -339,15 +339,16 @@ impl ChainDriver {
     */
     pub fn update_chain_config(
         &self,
+        file: &str,
         cont: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
     ) -> Result<(), Error> {
-        let config1 = self.read_file("config/config.toml")?;
+        let config1 = self.read_file(&format!("config/{}", file))?;
 
-        let mut config2 = toml::from_str(&config1)?;
+        let mut config2 = toml::from_str(&config1).map_err(handle_generic_error)?;
 
         cont(&mut config2)?;
 
-        let config3 = toml::to_string_pretty(&config2)?;
+        let config3 = toml::to_string_pretty(&config2).map_err(handle_generic_error)?;
 
         self.write_file("config/config.toml", &config3)?;
 
@@ -361,18 +362,35 @@ impl ChainDriver {
        value is dropped.
     */
     pub fn start(&self) -> Result<ChildProcess, Error> {
+        let base_args = [
+            "--home",
+            &self.home_path,
+            "start",
+            "--pruning",
+            "nothing",
+            "--grpc.address",
+            &self.grpc_listen_address(),
+            "--rpc.laddr",
+            &self.rpc_listen_address(),
+        ];
+
+        // Gaia v6 requires the GRPC web port to be unique,
+        // but the argument is not available in earlier version
+        let extra_args = [
+            "--grpc-web.address",
+            &format!("localhost:{}", self.grpc_web_port),
+        ];
+
+        let args: Vec<&str> = if self.command_version.major >= 6 {
+            let mut list = base_args.to_vec();
+            list.extend_from_slice(&extra_args);
+            list
+        } else {
+            base_args.to_vec()
+        };
+
         let mut child = Command::new(&self.command_path)
-            .args(&[
-                "--home",
-                &self.home_path,
-                "start",
-                "--pruning",
-                "nothing",
-                "--grpc.address",
-                &self.grpc_listen_address(),
-                "--rpc.laddr",
-                &self.rpc_listen_address(),
-            ])
+            .args(&args)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -398,27 +416,30 @@ impl ChainDriver {
        Query for the balances for a given wallet address and denomination
     */
     pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<u64, Error> {
-        let res = self.exec(&[
-            "--node",
-            &self.rpc_listen_address(),
-            "query",
-            "bank",
-            "balances",
-            &wallet_id.0,
-            "--denom",
-            denom.0.as_str(),
-            "--output",
-            "json",
-        ])?;
+        let res = self
+            .exec(&[
+                "--node",
+                &self.rpc_listen_address(),
+                "query",
+                "bank",
+                "balances",
+                &wallet_id.0,
+                "--denom",
+                denom.0.as_str(),
+                "--output",
+                "json",
+            ])?
+            .stdout;
 
-        let amount_str = json::from_str::<json::Value>(&res)?
+        let amount_str = json::from_str::<json::Value>(&res)
+            .map_err(handle_generic_error)?
             .get("amount")
             .ok_or_else(|| eyre!("expected amount field"))?
             .as_str()
             .ok_or_else(|| eyre!("expected string field"))?
             .to_string();
 
-        let amount = u64::from_str(&amount_str)?;
+        let amount = u64::from_str(&amount_str).map_err(handle_generic_error)?;
 
         Ok(amount)
     }
@@ -435,21 +456,21 @@ impl ChainDriver {
     ) -> Result<(), Error> {
         assert_eventually_succeed(
             "wallet reach expected amount",
+            20,
+            Duration::from_secs(1),
             || {
                 let amount = self.query_balance(&user.address, denom)?;
 
                 if amount == target_amount {
                     Ok(())
                 } else {
-                    Err(eyre!(
+                    Err(Error::generic(eyre!(
                         "current balance amount {} does not match the target amount {}",
                         amount,
                         target_amount
-                    ))
+                    )))
                 }
             },
-            20,
-            Duration::from_secs(1),
         )?;
 
         Ok(())

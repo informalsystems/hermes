@@ -26,6 +26,7 @@ use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientS
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
@@ -54,6 +55,7 @@ use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusS
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
+use ibc_relayer::chain::handle::requests::AppVersion;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::{HealthCheck, StatusResponse};
 use ibc_relayer::config::ChainConfig;
@@ -64,7 +66,7 @@ use crate::types::tagged::*;
 
 impl<Tag, Handle> ChainHandle for MonoTagged<Tag, Handle>
 where
-    Tag: Send + Sync,
+    Tag: Send + Sync + 'static,
     Handle: ChainHandle,
 {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
@@ -117,8 +119,8 @@ where
         self.value().add_key(key_name, key)
     }
 
-    fn module_version(&self, port_id: &PortId) -> Result<String, Error> {
-        self.value().module_version(port_id)
+    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error> {
+        self.value().app_version(request)
     }
 
     fn query_status(&self) -> Result<StatusResponse, Error> {

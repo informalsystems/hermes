@@ -1,4 +1,4 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Clap, Command, Runnable};
 use serde::Serialize;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
@@ -16,15 +16,15 @@ struct PacketSeqs {
     seqs: Vec<u64>,
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Clap)]
 pub struct QueryPacketCommitmentsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, about = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the port to query")]
+    #[clap(required = true, about = "identifier of the port to query")]
     port_id: PortId,
 
-    #[options(free, required, help = "identifier of the channel to query")]
+    #[clap(required = true, about = "identifier of the channel to query")]
     channel_id: ChannelId,
 }
 
