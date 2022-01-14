@@ -28,6 +28,7 @@ pub struct QueryAppVersionResponse {
     pub version: ::prost::alloc::string::String,
 }
 #[doc = r" Generated client implementations."]
+#[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
