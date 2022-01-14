@@ -21,7 +21,7 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.10.0", path = "../modules" }
+ibc           = { version = "0.10.0", path = "../modules", features = ["clock"] }
 ibc-proto     = { version = "0.14.0", path = "../proto" }
 ibc-telemetry = { version = "0.10.0", path = "../telemetry", optional = true }
 
