@@ -64,8 +64,8 @@ impl HostBlock {
         // same timestamp as two block can be generated per second.
         let ten_millis = core::time::Duration::from_millis(1000);
         std::thread::sleep(ten_millis);
+
         let time: Time = OffsetDateTime::now_utc().try_into().unwrap();
-        let time = time.duration_since(Time::unix_epoch()).unwrap().as_secs();
 
         TestgenLightBlock::new_default_with_time_and_chain_id(chain_id.to_string(), time, height)
             .generate()
