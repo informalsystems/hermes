@@ -1353,6 +1353,7 @@ dependencies = [
  "bytes",
  "prost",
  "prost-types",
+ "serde",
  "tendermint-proto",
  "tonic",
 ]
