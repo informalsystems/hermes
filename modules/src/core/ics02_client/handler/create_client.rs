@@ -17,6 +17,7 @@ use crate::core::ics24_host::identifier::ClientId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Timestamp;
+
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -52,7 +53,7 @@ pub fn process(
         client_type: msg.client_state().client_type(),
         client_state: msg.client_state(),
         consensus_state: msg.consensus_state(),
-        processed_time: now.into(),
+        processed_time: ctx.host_timestamp(),
         processed_height: ctx.host_height(),
     });
 
