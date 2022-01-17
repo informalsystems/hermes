@@ -6,10 +6,12 @@ use crate::core::ics23_commitment::error::Error as Ics23Error;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::{Timestamp, TimestampOverflowError};
+
 use crate::Height;
 use tendermint::account::Id;
 use tendermint::hash::Hash;
 use tendermint::Error as TendermintError;
+use tendermint_light_client_verifier::errors::VerificationErrorDetail as LightClientErrorDetail;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -216,7 +218,7 @@ define_error! {
             },
 
         VerificationError
-            { detail: tendermint_light_client::predicates::errors::VerificationErrorDetail }
+            { detail: LightClientErrorDetail }
             | e | {
                 format_args!("verification failed: {}", e.detail)
             },

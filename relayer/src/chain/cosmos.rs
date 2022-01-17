@@ -19,7 +19,7 @@ use tendermint::abci::{Code, Event, Path as TendermintABCIPath};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
-use tendermint_light_client::types::LightBlock as TMLightBlock;
+use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::{EventType, Query};
@@ -51,8 +51,6 @@ use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::core::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
-use ibc::core::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::{QueryTxHash, QueryTxRequest};
@@ -98,6 +96,10 @@ use crate::{
 };
 
 use super::{ChainEndpoint, HealthCheck};
+use ibc::core::ics24_host::path::{
+    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
+    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+};
 
 mod compatibility;
 pub mod version;
@@ -595,7 +597,12 @@ impl CosmosSdkChain {
         self.config.max_tx_size.into()
     }
 
-    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
+    fn query(
+        &self,
+        data: impl Into<Path>,
+        height: ICSHeight,
+        prove: bool,
+    ) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
         // SAFETY: Creating a Path from a constant; this should never fail
@@ -604,6 +611,7 @@ impl CosmosSdkChain {
 
         let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
+        let data = data.into();
         if !data.is_provable() & prove {
             return Err(Error::private_store());
         }
@@ -960,7 +968,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn init_light_client(&self) -> Result<Self::LightClient, Error> {
-        use tendermint_light_client::types::PeerId;
+        use tendermint_light_client_verifier::types::PeerId;
 
         crate::time!("init_light_client");
 
@@ -1546,7 +1554,7 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error> {
         let res = self.query(
-            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+            ChannelEndsPath(port_id.clone(), channel_id.clone()),
             height,
             false,
         )?;
@@ -1926,7 +1934,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("proven_client_consensus");
 
         let res = self.query(
-            ClientConsensusPath {
+            ClientConsensusStatePath {
                 client_id: client_id.clone(),
                 epoch: consensus_height.revision_number,
                 height: consensus_height.revision_height,
@@ -1952,7 +1960,7 @@ impl ChainEndpoint for CosmosSdkChain {
         connection_id: &ConnectionId,
         height: ICSHeight,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        let res = self.query(Path::Connections(connection_id.clone()), height, true)?;
+        let res = self.query(ConnectionsPath(connection_id.clone()), height, true)?;
         let connection_end = ConnectionEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok((
@@ -1968,7 +1976,7 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<(ChannelEnd, MerkleProof), Error> {
         let res = self.query(
-            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+            ChannelEndsPath(port_id.clone(), channel_id.clone()),
             height,
             true,
         )?;
@@ -1989,31 +1997,32 @@ impl ChainEndpoint for CosmosSdkChain {
         sequence: Sequence,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let data = match packet_type {
-            PacketMsgType::Recv => Path::Commitments {
+        let data: Path = match packet_type {
+            PacketMsgType::Recv => CommitmentsPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
-            PacketMsgType::Ack => Path::Acks {
+            }
+            .into(),
+            PacketMsgType::Ack => AcksPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
-            PacketMsgType::TimeoutUnordered => Path::Receipts {
+            }
+            .into(),
+            PacketMsgType::TimeoutUnordered => ReceiptsPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
-            PacketMsgType::TimeoutOrdered => Path::SeqRecvs {
-                0: port_id,
-                1: channel_id,
-            },
-            PacketMsgType::TimeoutOnClose => Path::Receipts {
+            }
+            .into(),
+            PacketMsgType::TimeoutOrdered => SeqRecvsPath(port_id, channel_id).into(),
+            PacketMsgType::TimeoutOnClose => ReceiptsPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
+            }
+            .into(),
         };
 
         let res = self.query(data, height, true)?;
