@@ -50,7 +50,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     let span = {
         let relay_path = &link.lock().unwrap().a_to_b;
         error_span!(
-            "PacketWorker",
+            "packet",
             src_chain = %relay_path.src_chain().id(),
             src_port = %relay_path.src_port_id(),
             src_channel = %relay_path.src_channel_id(),
@@ -92,7 +92,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     let span = {
         let relay_path = &link.lock().unwrap().a_to_b;
         error_span!(
-            "PacketCmdWorker",
+            "packet_cmd",
             src_chain = %relay_path.src_chain().id(),
             src_port = %relay_path.src_port_id(),
             src_channel = %relay_path.src_channel_id(),

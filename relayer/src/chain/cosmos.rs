@@ -301,8 +301,7 @@ impl CosmosSdkChain {
         account_seq: u64,
     ) -> Result<Response, Error> {
         debug!(
-            "[{}] send_tx: sending {} messages using account sequence {}",
-            self.id(),
+            "sending {} messages using account sequence {}",
             proto_msgs.len(),
             account_seq,
         );
@@ -311,8 +310,7 @@ impl CosmosSdkChain {
         let max_fee = self.max_fee();
 
         debug!(
-            "[{}] send_tx: max fee, for use in tx simulation: {}",
-            self.id(),
+            "max fee, for use in tx simulation: {}",
             PrettyFee(&max_fee)
         );
 
@@ -343,8 +341,7 @@ impl CosmosSdkChain {
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
-            "[{}] send_tx: using {} gas, fee {}",
-            self.id(),
+            "using {} gas, fee {}",
             estimated_gas,
             PrettyFee(&adjusted_fee)
         );
@@ -402,7 +399,7 @@ impl CosmosSdkChain {
             // and refresh the s.n., to allow proceeding to the other transactions. A separate
             // retry at the worker-level will handle retrying.
             Err(e) if mismatching_account_sequence_number(&e) => {
-                warn!("send_tx failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
+                warn!("failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
                 self.refresh_account()?;
                 // Note: propagating error here can lead to bug & dropped packets:
                 // https://github.com/informalsystems/ibc-rs/issues/1153
@@ -414,7 +411,7 @@ impl CosmosSdkChain {
             Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
                 if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
                     let retry_counter = retry_counter + 1;
-                    warn!("send_tx failed at broadcast step with incorrect account sequence. retrying ({}/{})",
+                    warn!("failed at broadcast step with incorrect account sequence. retrying ({}/{})",
                         retry_counter, retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY);
                     // Backoff & re-fetch the account s.n.
                     let backoff = (retry_counter as u64)
@@ -429,7 +426,7 @@ impl CosmosSdkChain {
                     // we ignore the error and return the original response to downstream.
                     // We do not return an error here, because the current convention
                     // let the caller handle error responses separately.
-                    error!("failed to send_tx due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
+                    error!("failed due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
                     Ok(response)
                 }
             }
@@ -440,7 +437,7 @@ impl CosmosSdkChain {
                 // Complete success.
                 match response.code {
                     tendermint::abci::Code::Ok => {
-                        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
+                        debug!("broadcast_tx_sync: {:?}", response);
 
                         self.incr_account_sequence();
                         Ok(response)
@@ -450,8 +447,7 @@ impl CosmosSdkChain {
                         // Avoid increasing the account s.n. if CheckTx failed
                         // Log the error
                         error!(
-                            "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
-                            self.id(),
+                            "broadcast_tx_sync: {:?}: diagnostic: {:?}",
                             response,
                             sdk_error_from_tx_sync_error_code(code)
                         );
@@ -468,6 +464,8 @@ impl CosmosSdkChain {
 
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
+        let _span = span!(Level::ERROR, "send_tx", id = %self.id()).entered();
+
         self.send_tx_with_account_sequence_retry(proto_msgs, 0)
     }
 
@@ -481,12 +479,13 @@ impl CosmosSdkChain {
     /// In this case we use the `default_gas` param.
     fn estimate_gas(&mut self, tx: Tx) -> Result<u64, Error> {
         let simulated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
+        let _span = span!(Level::ERROR, "estimate_gas").entered();
+
 
         match simulated_gas {
             Ok(Some(gas_info)) => {
                 debug!(
-                    "[{}] estimate_gas: tx simulation successful, gas amount used: {:?}",
-                    self.id(),
+                    "tx simulation successful, gas amount used: {:?}",
                     gas_info.gas_used
                 );
 
@@ -495,8 +494,7 @@ impl CosmosSdkChain {
 
             Ok(None) => {
                 warn!(
-                    "[{}] estimate_gas: tx simulation successful but no gas amount used was returned, falling back on default gas: {}",
-                    self.id(),
+                    "tx simulation successful but no gas amount used was returned, falling back on default gas: {}",
                     self.default_gas()
                 );
 
@@ -508,8 +506,7 @@ impl CosmosSdkChain {
             // See `can_recover_from_simulation_failure` for more info.
             Err(e) if can_recover_from_simulation_failure(&e) => {
                 warn!(
-                    "[{}] estimate_gas: failed to simulate tx, falling back on default gas because the error is potentially recoverable: {}",
-                    self.id(),
+                    "failed to simulate tx, falling back on default gas because the error is potentially recoverable: {}",
                     e.detail()
                 );
 
@@ -518,8 +515,7 @@ impl CosmosSdkChain {
 
             Err(e) => {
                 error!(
-                    "[{}] estimate_gas: failed to simulate tx. propagating error to caller: {}",
-                    self.id(),
+                    "failed to simulate tx. propagating error to caller: {}",
                     e.detail()
                 );
                 // Propagate the error, the retrying mechanism at caller may catch & retry.
@@ -697,8 +693,7 @@ impl CosmosSdkChain {
         info!(
             sequence = %account.sequence,
             number = %account.account_number,
-            "[{}] refresh: retrieved account",
-            self.id()
+            "refresh: retrieved account",
         );
 
         self.account = Some(account);

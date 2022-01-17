@@ -27,7 +27,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
         Some(spawn_background_task(
             span!(
                 tracing::Level::ERROR,
-                "RefreshClientWorker",
+                "refresh",
                 client = %client.id,
                 src_chain = %client.src_chain.id(),
                 dst_chain = %client.dst_chain.id(),
