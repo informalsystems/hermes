@@ -2,10 +2,10 @@ use core::convert::TryInto;
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use prost::Message;
+use tendermint::Time;
 use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
 use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_proto::Protobuf;
-use time::OffsetDateTime;
 
 use crate::clients::ics07_tendermint::client_state::ClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -32,6 +32,10 @@ use crate::core::ics24_host::Path;
 use crate::prelude::*;
 use crate::Height;
 
+use crate::core::ics24_host::path::{
+    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
+    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+};
 use crate::downcast;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -46,6 +50,7 @@ impl ClientDef for TendermintClient {
 
     fn check_header_and_update_state(
         &self,
+        now: Time,
         ctx: &dyn ClientReader,
         client_id: ClientId,
         client_state: Self::ClientState,
@@ -108,12 +113,9 @@ impl ClientDef for TendermintClient {
 
         let options = client_state.as_light_client_options()?;
 
-        let verdict = self.verifier.verify(
-            untrusted_state,
-            trusted_state,
-            &options,
-            OffsetDateTime::now_utc().try_into().unwrap(),
-        );
+        let verdict = self
+            .verifier
+            .verify(untrusted_state, trusted_state, &options, now);
 
         match verdict {
             Verdict::Success => {}
@@ -201,12 +203,11 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
-        let path = Path::ClientConsensusState {
+        let path = ClientConsensusStatePath {
             client_id: client_id.clone(),
             epoch: consensus_height.revision_number,
             height: consensus_height.revision_height,
-        }
-        .to_string();
+        };
         let value = expected_consensus_state.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
@@ -223,7 +224,7 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
-        let path = Path::Connections(connection_id.clone()).to_string();
+        let path = ConnectionsPath(connection_id.clone());
         let value = expected_connection_end.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
@@ -241,7 +242,7 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
-        let path = Path::ChannelEnds(port_id.clone(), channel_id.clone()).to_string();
+        let path = ChannelEndsPath(port_id.clone(), channel_id.clone());
         let value = expected_channel_end.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
@@ -258,7 +259,7 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
-        let path = Path::ClientState(client_id.clone()).to_string();
+        let path = ClientStatePath(client_id.clone());
         let value = expected_client_state.encode_vec().unwrap();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
@@ -279,7 +280,7 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
-        let commitment_path = Path::Commitments {
+        let commitment_path = CommitmentsPath {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             sequence,
@@ -289,7 +290,7 @@ impl ClientDef for TendermintClient {
             connection_end.counterparty().prefix(),
             proof,
             root,
-            commitment_path.to_string(),
+            commitment_path,
             commitment.encode_to_vec(),
         )
     }
@@ -310,7 +311,7 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
-        let ack_path = Path::Acks {
+        let ack_path = AcksPath {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             sequence,
@@ -320,7 +321,7 @@ impl ClientDef for TendermintClient {
             connection_end.counterparty().prefix(),
             proof,
             root,
-            ack_path.to_string(),
+            ack_path,
             ack,
         )
     }
@@ -340,13 +341,13 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
-        let seq_path = Path::SeqRecvs(port_id.clone(), channel_id.clone());
+        let seq_path = SeqRecvsPath(port_id.clone(), channel_id.clone());
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
             proof,
             root,
-            seq_path.to_string(),
+            seq_path,
             u64::from(sequence).encode_to_vec(),
         )
     }
@@ -366,7 +367,7 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
-        let receipt_path = Path::Receipts {
+        let receipt_path = ReceiptsPath {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             sequence,
@@ -376,7 +377,7 @@ impl ClientDef for TendermintClient {
             connection_end.counterparty().prefix(),
             proof,
             root,
-            receipt_path.to_string(),
+            receipt_path,
         )
     }
 
@@ -396,10 +397,11 @@ fn verify_membership(
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
-    path: String,
+    path: impl Into<Path>,
     value: Vec<u8>,
 ) -> Result<(), Ics02Error> {
-    let merkle_path = apply_prefix(prefix, vec![path]).map_err(Error::ics23_error)?;
+    let merkle_path =
+        apply_prefix(prefix, vec![path.into().to_string()]).map_err(Error::ics23_error)?;
     let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
         .map_err(Ics02Error::invalid_commitment_proof)?
         .into();
@@ -420,9 +422,10 @@ fn verify_non_membership(
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
-    path: String,
+    path: impl Into<Path>,
 ) -> Result<(), Ics02Error> {
-    let merkle_path = apply_prefix(prefix, vec![path]).map_err(Error::ics23_error)?;
+    let merkle_path =
+        apply_prefix(prefix, vec![path.into().to_string()]).map_err(Error::ics23_error)?;
     let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
         .map_err(Ics02Error::invalid_commitment_proof)?
         .into();

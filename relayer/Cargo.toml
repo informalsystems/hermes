@@ -21,7 +21,7 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.10.0", path = "../modules" }
+ibc           = { version = "0.10.0", path = "../modules", features = ["clock"] }
 ibc-proto     = { version = "0.14.0", path = "../proto" }
 ibc-telemetry = { version = "0.10.0", path = "../telemetry", optional = true }
 
@@ -60,6 +60,7 @@ anyhow = "1.0"
 semver = "1.0"
 uint = "0.9"
 humantime = "2.1.0"
+nanoid = "0.4.0"
 
 [dependencies.num-bigint]
 version = "0.4"

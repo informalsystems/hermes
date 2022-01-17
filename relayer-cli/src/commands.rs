@@ -5,6 +5,7 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
+use core::time::Duration;
 use std::path::PathBuf;
 
 use abscissa_core::clap::Parser;
@@ -131,6 +132,14 @@ impl Configurable<Config> for CliCmd {
             ccfg.memo_prefix.apply_suffix(&suffix);
         }
 
+        // For all commands except for `start` Hermes retries
+        // for a prolonged period of time.
+        if !matches!(self, CliCmd::Start(_)) {
+            for c in config.chains.iter_mut() {
+                c.rpc_timeout = Duration::from_secs(120);
+            }
+        }
+
         match self {
             CliCmd::Tx(cmd) => cmd.override_config(config),
             // CliCmd::Help(cmd) => cmd.override_config(config),
@@ -139,7 +148,6 @@ impl Configurable<Config> for CliCmd {
             // CliCmd::Update(cmd) => cmd.override_config(config),
             // CliCmd::Upgrade(cmd) => cmd.override_config(config),
             // CliCmd::Start(cmd) => cmd.override_config(config),
-            // CliCmd::StartMulti(cmd) => cmd.override_config(config),
             // CliCmd::Query(cmd) => cmd.override_config(config),
             // CliCmd::Listen(cmd) => cmd.override_config(config),
             // CliCmd::Misbehaviour(cmd) => cmd.override_config(config),

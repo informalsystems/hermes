@@ -10,19 +10,19 @@ define_error! {
     RunError {
         Ics02
             [ Ics02Error ]
-            | _ | { "client errror" },
+            | _ | { "client error" },
 
         Connection
             [ ConnectionError ]
-            | _ | { "connection errror" },
+            | _ | { "connection error" },
 
         Channel
             [ ChannelError ]
-            | _ | { "channel errror" },
+            | _ | { "channel error" },
 
         Link
             [ LinkError ]
-            | _ | { "link errror" },
+            | _ | { "link error" },
 
         Retry
             { retries: retry::Error<u64> }

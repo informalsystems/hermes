@@ -29,7 +29,7 @@ use tendermint_rpc::{
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, span, trace, warn, Level};
 
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
@@ -50,8 +50,6 @@ use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::core::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
-use ibc::core::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::{QueryTxHash, QueryTxRequest};
@@ -96,7 +94,11 @@ use crate::{
     sdk_error::sdk_error_from_tx_sync_error_code,
 };
 
-use super::{ChainEndpoint, HealthCheck};
+use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
+use ibc::core::ics24_host::path::{
+    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
+    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+};
 
 mod compatibility;
 pub mod version;
@@ -301,8 +303,7 @@ impl CosmosSdkChain {
         account_seq: u64,
     ) -> Result<Response, Error> {
         debug!(
-            "[{}] send_tx: sending {} messages using account sequence {}",
-            self.id(),
+            "sending {} messages using account sequence {}",
             proto_msgs.len(),
             account_seq,
         );
@@ -310,11 +311,7 @@ impl CosmosSdkChain {
         let signer_info = self.signer(account_seq)?;
         let max_fee = self.max_fee();
 
-        debug!(
-            "[{}] send_tx: max fee, for use in tx simulation: {}",
-            self.id(),
-            PrettyFee(&max_fee)
-        );
+        debug!("max fee, for use in tx simulation: {}", PrettyFee(&max_fee));
 
         let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
 
@@ -343,8 +340,7 @@ impl CosmosSdkChain {
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
-            "[{}] send_tx: using {} gas, fee {}",
-            self.id(),
+            "using {} gas, fee {}",
             estimated_gas,
             PrettyFee(&adjusted_fee)
         );
@@ -402,7 +398,7 @@ impl CosmosSdkChain {
             // and refresh the s.n., to allow proceeding to the other transactions. A separate
             // retry at the worker-level will handle retrying.
             Err(e) if mismatching_account_sequence_number(&e) => {
-                warn!("send_tx failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
+                warn!("failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
                 self.refresh_account()?;
                 // Note: propagating error here can lead to bug & dropped packets:
                 // https://github.com/informalsystems/ibc-rs/issues/1153
@@ -414,7 +410,7 @@ impl CosmosSdkChain {
             Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
                 if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
                     let retry_counter = retry_counter + 1;
-                    warn!("send_tx failed at broadcast step with incorrect account sequence. retrying ({}/{})",
+                    warn!("failed at broadcast step with incorrect account sequence. retrying ({}/{})",
                         retry_counter, retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY);
                     // Backoff & re-fetch the account s.n.
                     let backoff = (retry_counter as u64)
@@ -429,7 +425,7 @@ impl CosmosSdkChain {
                     // we ignore the error and return the original response to downstream.
                     // We do not return an error here, because the current convention
                     // let the caller handle error responses separately.
-                    error!("failed to send_tx due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
+                    error!("failed due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
                     Ok(response)
                 }
             }
@@ -440,7 +436,7 @@ impl CosmosSdkChain {
                 // Complete success.
                 match response.code {
                     tendermint::abci::Code::Ok => {
-                        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
+                        debug!("broadcast_tx_sync: {:?}", response);
 
                         self.incr_account_sequence();
                         Ok(response)
@@ -450,8 +446,7 @@ impl CosmosSdkChain {
                         // Avoid increasing the account s.n. if CheckTx failed
                         // Log the error
                         error!(
-                            "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
-                            self.id(),
+                            "broadcast_tx_sync: {:?}: diagnostic: {:?}",
                             response,
                             sdk_error_from_tx_sync_error_code(code)
                         );
@@ -468,6 +463,8 @@ impl CosmosSdkChain {
 
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
+        let _span = span!(Level::ERROR, "send_tx", id = %self.id()).entered();
+
         self.send_tx_with_account_sequence_retry(proto_msgs, 0)
     }
 
@@ -481,12 +478,12 @@ impl CosmosSdkChain {
     /// In this case we use the `default_gas` param.
     fn estimate_gas(&mut self, tx: Tx) -> Result<u64, Error> {
         let simulated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
+        let _span = span!(Level::ERROR, "estimate_gas").entered();
 
         match simulated_gas {
             Ok(Some(gas_info)) => {
                 debug!(
-                    "[{}] estimate_gas: tx simulation successful, gas amount used: {:?}",
-                    self.id(),
+                    "tx simulation successful, gas amount used: {:?}",
                     gas_info.gas_used
                 );
 
@@ -495,8 +492,7 @@ impl CosmosSdkChain {
 
             Ok(None) => {
                 warn!(
-                    "[{}] estimate_gas: tx simulation successful but no gas amount used was returned, falling back on default gas: {}",
-                    self.id(),
+                    "tx simulation successful but no gas amount used was returned, falling back on default gas: {}",
                     self.default_gas()
                 );
 
@@ -508,8 +504,7 @@ impl CosmosSdkChain {
             // See `can_recover_from_simulation_failure` for more info.
             Err(e) if can_recover_from_simulation_failure(&e) => {
                 warn!(
-                    "[{}] estimate_gas: failed to simulate tx, falling back on default gas because the error is potentially recoverable: {}",
-                    self.id(),
+                    "failed to simulate tx, falling back on default gas because the error is potentially recoverable: {}",
                     e.detail()
                 );
 
@@ -518,8 +513,7 @@ impl CosmosSdkChain {
 
             Err(e) => {
                 error!(
-                    "[{}] estimate_gas: failed to simulate tx. propagating error to caller: {}",
-                    self.id(),
+                    "failed to simulate tx. propagating error to caller: {}",
                     e.detail()
                 );
                 // Propagate the error, the retrying mechanism at caller may catch & retry.
@@ -594,7 +588,12 @@ impl CosmosSdkChain {
         self.config.max_tx_size.into()
     }
 
-    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
+    fn query(
+        &self,
+        data: impl Into<Path>,
+        height: ICSHeight,
+        prove: bool,
+    ) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
         // SAFETY: Creating a Path from a constant; this should never fail
@@ -603,6 +602,7 @@ impl CosmosSdkChain {
 
         let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
+        let data = data.into();
         if !data.is_provable() & prove {
             return Err(Error::private_store());
         }
@@ -697,8 +697,7 @@ impl CosmosSdkChain {
         info!(
             sequence = %account.sequence,
             number = %account.account_number,
-            "[{}] refresh: retrieved account",
-            self.id()
+            "refresh: retrieved account",
         );
 
         self.account = Some(account);
@@ -1051,13 +1050,14 @@ impl ChainEndpoint for CosmosSdkChain {
     /// msgs in a Tx until any of the max size, max num msgs, max fee are exceeded.
     fn send_messages_and_wait_commit(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("send_messages_and_wait_commit");
-        debug!(
-            "send_messages_and_wait_commit with {} messages",
-            proto_msgs.len()
-        );
+
+        let _span =
+            span!(Level::DEBUG, "send_tx_commit", id = %tracked_msgs.tracking_id()).entered();
+
+        let proto_msgs = tracked_msgs.messages();
 
         if proto_msgs.is_empty() {
             return Ok(vec![]);
@@ -1108,13 +1108,14 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn send_messages_and_wait_check_tx(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<Response>, Error> {
         crate::time!("send_messages_and_wait_check_tx");
-        debug!(
-            "send_messages_and_wait_check_tx with {} messages",
-            proto_msgs.len()
-        );
+
+        let span = span!(Level::DEBUG, "send_tx_check", id = %tracked_msgs.tracking_id());
+        let _enter = span.enter();
+
+        let proto_msgs = tracked_msgs.messages();
 
         if proto_msgs.is_empty() {
             return Ok(vec![]);
@@ -1546,7 +1547,7 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error> {
         let res = self.query(
-            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+            ChannelEndsPath(port_id.clone(), channel_id.clone()),
             height,
             false,
         )?;
@@ -1926,7 +1927,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("proven_client_consensus");
 
         let res = self.query(
-            ClientConsensusPath {
+            ClientConsensusStatePath {
                 client_id: client_id.clone(),
                 epoch: consensus_height.revision_number,
                 height: consensus_height.revision_height,
@@ -1952,7 +1953,7 @@ impl ChainEndpoint for CosmosSdkChain {
         connection_id: &ConnectionId,
         height: ICSHeight,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        let res = self.query(Path::Connections(connection_id.clone()), height, true)?;
+        let res = self.query(ConnectionsPath(connection_id.clone()), height, true)?;
         let connection_end = ConnectionEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok((
@@ -1968,7 +1969,7 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<(ChannelEnd, MerkleProof), Error> {
         let res = self.query(
-            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+            ChannelEndsPath(port_id.clone(), channel_id.clone()),
             height,
             true,
         )?;
@@ -1989,31 +1990,32 @@ impl ChainEndpoint for CosmosSdkChain {
         sequence: Sequence,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let data = match packet_type {
-            PacketMsgType::Recv => Path::Commitments {
+        let data: Path = match packet_type {
+            PacketMsgType::Recv => CommitmentsPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
-            PacketMsgType::Ack => Path::Acks {
+            }
+            .into(),
+            PacketMsgType::Ack => AcksPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
-            PacketMsgType::TimeoutUnordered => Path::Receipts {
+            }
+            .into(),
+            PacketMsgType::TimeoutUnordered => ReceiptsPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
-            PacketMsgType::TimeoutOrdered => Path::SeqRecvs {
-                0: port_id,
-                1: channel_id,
-            },
-            PacketMsgType::TimeoutOnClose => Path::Receipts {
+            }
+            .into(),
+            PacketMsgType::TimeoutOrdered => SeqRecvsPath(port_id, channel_id).into(),
+            PacketMsgType::TimeoutOnClose => ReceiptsPath {
                 port_id,
                 channel_id,
                 sequence,
-            },
+            }
+            .into(),
         };
 
         let res = self.query(data, height, true)?;

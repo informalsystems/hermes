@@ -57,6 +57,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_relayer::chain::handle::requests::AppVersion;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
+use ibc_relayer::chain::tx::TrackedMsgs;
 use ibc_relayer::chain::{HealthCheck, StatusResponse};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::error::Error;
@@ -91,16 +92,16 @@ where
 
     fn send_messages_and_wait_commit(
         &self,
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
-        self.value().send_messages_and_wait_commit(proto_msgs)
+        self.value().send_messages_and_wait_commit(tracked_msgs)
     }
 
     fn send_messages_and_wait_check_tx(
         &self,
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
-        self.value().send_messages_and_wait_check_tx(proto_msgs)
+        self.value().send_messages_and_wait_check_tx(tracked_msgs)
     }
 
     fn get_signer(&self) -> Result<Signer, Error> {
