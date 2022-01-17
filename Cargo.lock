@@ -1706,8 +1706,9 @@ dependencies = [
 
 [[package]]
 name = "modelator"
-version = "0.4.1"
-source = "git+https://github.com/informalsystems/modelator.git?branch=rnbguy/rust/clap-v3#0aa7d41b16cec662915fdc34df0802082d6f5889"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "698fbc4b1fd2af323ed1711664a873b332faa4dc740e0f810f40210573ba36fd"
 dependencies = [
  "clap",
  "clap_complete",
