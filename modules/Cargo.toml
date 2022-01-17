@@ -40,6 +40,7 @@ safe-regex = { version = "0.2.4", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 sha2 = { version = "0.10.1", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
+derive_more = { version = "0.99.0", default-features = false, features = ["from", "display"] }
 
 [dependencies.tendermint]
 version = "=0.23.5"

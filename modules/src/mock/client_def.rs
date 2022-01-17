@@ -14,6 +14,7 @@ use crate::core::ics23_commitment::commitment::{
 };
 use crate::core::ics23_commitment::merkle::apply_prefix;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics24_host::path::ClientConsensusStatePath;
 use crate::core::ics24_host::Path;
 use crate::mock::client_state::{MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
@@ -58,11 +59,11 @@ impl ClientDef for MockClient {
         consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
-        let client_prefixed_path = Path::ClientConsensusState {
+        let client_prefixed_path = Path::ClientConsensusState(ClientConsensusStatePath {
             client_id: client_id.clone(),
             epoch: consensus_height.revision_number,
             height: consensus_height.revision_height,
-        }
+        })
         .to_string();
 
         let _path =
