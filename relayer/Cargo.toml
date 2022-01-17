@@ -60,6 +60,7 @@ anyhow = "1.0"
 semver = "1.0"
 uint = "0.9"
 humantime = "2.1.0"
+nanoid = "0.4.0"
 
 [dependencies.num-bigint]
 version = "0.4"

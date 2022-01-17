@@ -1,7 +1,7 @@
 use core::convert::Infallible;
 use core::time::Duration;
 use crossbeam_channel::Receiver;
-use tracing::{debug, trace, warn};
+use tracing::{debug, span, trace, warn};
 
 use ibc::events::IbcEvent;
 
@@ -19,13 +19,19 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Option<TaskHandle> {
     if client.is_expired_or_frozen() {
         warn!(
-            "skipping refresh client task on frozen client: {}",
-            client.id()
+            client = %client.id,
+            "skipping refresh client task on frozen client",
         );
         None
     } else {
         Some(spawn_background_task(
-            format!("RefreshClientWorker({})", client),
+            span!(
+                tracing::Level::ERROR,
+                "refresh",
+                client = %client.id,
+                src_chain = %client.src_chain.id(),
+                dst_chain = %client.dst_chain.id(),
+            ),
             Some(Duration::from_secs(1)),
             move || {
                 let res = client.refresh().map_err(|e| {
@@ -52,40 +58,47 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Option<TaskHandle> {
     if client.is_expired_or_frozen() {
         warn!(
-            "skipping detect misbehavior task on frozen client: {}",
-            client.id()
+            client = %client.id(),
+            "skipping detect misbehavior task on frozen client",
         );
         return None;
     }
 
     {
-        debug!("[{}] doing first misbehavior check", client);
+        let _span = span!(
+            tracing::Level::DEBUG,
+            "DetectMisbehaviorFirstCheck",
+            client = %client.id,
+            src_chain = %client.src_chain.id(),
+            dst_chain = %client.dst_chain.id(),
+        )
+        .entered();
+        debug!("doing first check");
         let misbehavior_result = client.detect_misbehaviour_and_submit_evidence(None);
-        debug!(
-            "[{}] detect misbehavior result: {:?}",
-            client, misbehavior_result
-        );
+        trace!("detect misbehavior result: {:?}", misbehavior_result);
     }
 
     let handle = spawn_background_task(
-        format!("DetectMisbehaviorWorker({})", client),
+        span!(
+            tracing::Level::ERROR,
+            "DetectMisbehaviorWorker",
+            client = %client.id,
+            src_chain = %client.src_chain.id(),
+            dst_chain = %client.dst_chain.id(),
+        ),
         Some(Duration::from_millis(600)),
         move || -> Result<Next, TaskError<Infallible>> {
             if let Ok(cmd) = receiver.try_recv() {
                 match cmd {
                     WorkerCmd::IbcEvents { batch } => {
-                        trace!("[{}] worker received batch: {:?}", client, batch);
+                        trace!("received batch: {:?}", batch);
 
                         for event in batch.events {
                             if let IbcEvent::UpdateClient(update) = event {
-                                debug!("[{}] checking misbehavior for updated client", client);
+                                debug!("checking misbehavior for updated client");
                                 let misbehavior_result =
                                     client.detect_misbehaviour_and_submit_evidence(Some(update));
-                                trace!(
-                                    "[{}] detect misbehavior result: {:?}",
-                                    client,
-                                    misbehavior_result
-                                );
+                                trace!("detect misbehavior result: {:?}", misbehavior_result);
 
                                 match misbehavior_result {
                                     MisbehaviourResults::ValidClient => {}

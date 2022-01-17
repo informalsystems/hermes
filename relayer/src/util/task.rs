@@ -86,11 +86,11 @@ pub enum Next {
    [`TaskHandle`].
 */
 pub fn spawn_background_task<E: Display>(
-    task_name: String,
+    span: tracing::Span,
     interval_pause: Option<Duration>,
     mut step_runner: impl FnMut() -> Result<Next, TaskError<E>> + Send + Sync + 'static,
 ) -> TaskHandle {
-    info!("spawning new background task {}", task_name);
+    info!(parent: &span, "spawning");
 
     let stopped = Arc::new(RwLock::new(false));
     let write_stopped = stopped.clone();
@@ -98,6 +98,7 @@ pub fn spawn_background_task<E: Display>(
     let (shutdown_sender, receiver) = bounded(1);
 
     let join_handle = thread::spawn(move || {
+        let _entered = span.enter();
         loop {
             match receiver.try_recv() {
                 Ok(()) => {
@@ -106,17 +107,14 @@ pub fn spawn_background_task<E: Display>(
                 _ => match step_runner() {
                     Ok(Next::Continue) => {}
                     Ok(Next::Abort) => {
-                        info!("task is aborting: {}", task_name);
+                        info!("aborting");
                         break;
                     }
                     Err(TaskError::Ignore(e)) => {
-                        warn!("task {} encountered ignorable error: {}", task_name, e);
+                        warn!("encountered ignorable error: {}", e);
                     }
                     Err(TaskError::Fatal(e)) => {
-                        error!(
-                            "aborting task {} after encountering fatal error: {}",
-                            task_name, e
-                        );
+                        error!("aborting after encountering fatal error: {}", e);
                         break;
                     }
                 },
@@ -127,7 +125,7 @@ pub fn spawn_background_task<E: Display>(
         }
 
         *write_stopped.acquire_write() = true;
-        info!("task {} has terminated", task_name);
+        info!("terminated");
     });
 
     TaskHandle {

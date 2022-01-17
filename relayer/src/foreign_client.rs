@@ -6,6 +6,7 @@ use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
 
+use crate::chain::tx::TrackedMsgs;
 use crate::error::Error as RelayerError;
 use flex_error::define_error;
 use ibc::core::ics02_client::client_consensus::{
@@ -433,9 +434,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         msgs.push(msg_upgrade);
 
+        let tm = TrackedMsgs::new(msgs, "upgrade client");
+
         let res = self
             .dst_chain
-            .send_messages_and_wait_commit(msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
                     self.id.clone(),
@@ -538,7 +541,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         let res = self
             .dst_chain
-            .send_messages_and_wait_commit(vec![new_msg.to_any()])
+            .send_messages_and_wait_commit(TrackedMsgs::new_single(
+                new_msg.to_any(),
+                "create client",
+            ))
             .map_err(|e| {
                 ForeignClientError::client_create(
                     self.dst_chain.id(),
@@ -922,9 +928,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             ));
         }
 
+        let tm = TrackedMsgs::new(new_msgs, "update client");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(new_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| {
                 ForeignClientError::client_update(
                     self.dst_chain.id(),
@@ -1252,9 +1260,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .to_any(),
         );
 
+        let tm = TrackedMsgs::new(msgs, "evidence");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| {
                 ForeignClientError::misbehaviour(
                     format!(

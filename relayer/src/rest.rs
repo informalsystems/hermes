@@ -44,48 +44,48 @@ pub fn process_incoming_requests(config: &Config, channel: &Receiver) -> Option<
     match channel.try_recv() {
         Ok(request) => match request {
             Request::Version { reply_to } => {
-                trace!("[rest] Version");
+                trace!("Version");
 
                 let v = VersionInfo {
                     name: NAME.to_string(),
                     version: VER.to_string(),
                 };
 
-                reply_to.send(Ok(v)).unwrap_or_else(|e| {
-                    error!("[rest/supervisor] error replying to a REST request {}", e)
-                });
+                reply_to
+                    .send(Ok(v))
+                    .unwrap_or_else(|e| error!("error replying to a REST request {}", e));
             }
 
             Request::GetChains { reply_to } => {
-                trace!("[rest] GetChains");
+                trace!("GetChains");
 
                 reply_to
                     .send(Ok(config.chains.iter().map(|c| c.id.clone()).collect()))
-                    .unwrap_or_else(|e| error!("[rest] error replying to a REST request {}", e));
+                    .unwrap_or_else(|e| error!("error replying to a REST request {}", e));
             }
 
             Request::GetChain { chain_id, reply_to } => {
-                trace!("[rest] GetChain {}", chain_id);
+                trace!("GetChain {}", chain_id);
 
                 let result = config
                     .find_chain(&chain_id)
                     .cloned()
                     .ok_or(RestApiError::ChainConfigNotFound(chain_id));
 
-                reply_to.send(result).unwrap_or_else(|e| {
-                    error!("[rest/supervisor] error replying to a REST request {}", e)
-                });
+                reply_to
+                    .send(result)
+                    .unwrap_or_else(|e| error!("error replying to a REST request {}", e));
             }
 
             Request::State { reply_to } => {
-                trace!("[rest] State");
+                trace!("State");
 
                 return Some(Command::DumpState(reply_to));
             }
         },
         Err(e) => {
             if !matches!(e, TryRecvError::Empty) {
-                error!("[rest] error while waiting for requests: {}", e);
+                error!("error while waiting for requests: {}", e);
             }
         }
     }

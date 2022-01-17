@@ -37,6 +37,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
+use crate::chain::tx::TrackedMsgs;
 use crate::{
     chain::handle::requests::AppVersion, chain::StatusResponse, config::ChainConfig,
     connection::ConnectionMsgType, error::Error, keyring::KeyEntry,
@@ -98,20 +99,20 @@ impl ChainHandle for ProdChainHandle {
 
     fn send_messages_and_wait_commit(
         &self,
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
         self.send(|reply_to| ChainRequest::SendMessagesAndWaitCommit {
-            proto_msgs,
+            tracked_msgs,
             reply_to,
         })
     }
 
     fn send_messages_and_wait_check_tx(
         &self,
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
         self.send(|reply_to| ChainRequest::SendMessagesAndWaitCheckTx {
-            proto_msgs,
+            tracked_msgs,
             reply_to,
         })
     }
