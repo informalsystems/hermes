@@ -1,4 +1,5 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use tendermint::Time;
 
 use crate::clients::ics07_tendermint::client_def::TendermintClient;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
@@ -29,6 +30,7 @@ pub trait ClientDef: Clone {
 
     fn check_header_and_update_state(
         &self,
+        now: Time,
         ctx: &dyn ClientReader,
         client_id: ClientId,
         client_state: Self::ClientState,
@@ -195,6 +197,7 @@ impl ClientDef for AnyClient {
     /// Validates an incoming `header` against the latest consensus state of this client.
     fn check_header_and_update_state(
         &self,
+        now: Time,
         ctx: &dyn ClientReader,
         client_id: ClientId,
         client_state: AnyClientState,
@@ -208,8 +211,13 @@ impl ClientDef for AnyClient {
                 )
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
-                let (new_state, new_consensus) =
-                    client.check_header_and_update_state(ctx, client_id, client_state, header)?;
+                let (new_state, new_consensus) = client.check_header_and_update_state(
+                    now,
+                    ctx,
+                    client_id,
+                    client_state,
+                    header,
+                )?;
 
                 Ok((
                     AnyClientState::Tendermint(new_state),
@@ -225,8 +233,13 @@ impl ClientDef for AnyClient {
                 )
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
-                let (new_state, new_consensus) =
-                    client.check_header_and_update_state(ctx, client_id, client_state, header)?;
+                let (new_state, new_consensus) = client.check_header_and_update_state(
+                    now,
+                    ctx,
+                    client_id,
+                    client_state,
+                    header,
+                )?;
 
                 Ok((
                     AnyClientState::Mock(new_state),
