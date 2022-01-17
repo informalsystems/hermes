@@ -2,8 +2,8 @@ use core::convert::TryInto;
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use prost::Message;
-use tendermint_light_client::components::verifier::{ProdVerifier, Verdict, Verifier};
-use tendermint_light_client::types::{TrustedBlockState, UntrustedBlockState};
+use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
+use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_proto::Protobuf;
 use time::OffsetDateTime;
 

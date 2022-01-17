@@ -19,7 +19,7 @@ use tendermint::abci::{Code, Event, Path as TendermintABCIPath};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
-use tendermint_light_client::types::LightBlock as TMLightBlock;
+use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::{EventType, Query};
@@ -959,7 +959,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn init_light_client(&self) -> Result<Self::LightClient, Error> {
-        use tendermint_light_client::types::PeerId;
+        use tendermint_light_client_verifier::types::PeerId;
 
         crate::time!("init_light_client");
 
