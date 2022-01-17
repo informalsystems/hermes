@@ -2,8 +2,8 @@ use alloc::sync::Arc;
 use core::{fmt, ops::Deref, str::FromStr};
 use std::thread;
 
+use abscissa_core::clap::Parser;
 use abscissa_core::{application::fatal_error, Runnable};
-use clap::{App, Arg, ArgMatches, Args, FromArgMatches};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info};
@@ -58,12 +58,14 @@ impl FromStr for EventFilter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Parser)]
 pub struct ListenCmd {
     /// Identifier of the chain to listen for events from
     chain_id: ChainId,
 
-    /// Event types to listen for
+    /// Add an event type to listen for, can be repeated.
+    /// Listen for all events by default (available: Tx, NewBlock).
+    #[clap(short = 'e', long = "event", value_name = "EVENT")]
     events: Vec<EventFilter>,
 }
 
@@ -83,70 +85,6 @@ impl ListenCmd {
 
         listen(chain_config, events)
     }
-}
-
-// Can't derive Clap: a Vec struct field is translated by clap_derive to an
-// arg with multiple_values(true), not multiple_occurrences(true).
-// Implement all the necessary traits manually instead.
-// See https://github.com/clap-rs/clap/issues/1772
-
-impl Args for ListenCmd {
-    fn augment_args(app: App<'_>) -> App<'_> {
-        augment_args(app, true)
-    }
-
-    fn augment_args_for_update(app: App<'_>) -> App<'_> {
-        augment_args(app, false)
-    }
-}
-
-fn augment_args(app: App<'_>, required: bool) -> App<'_> {
-    app.arg(
-        Arg::new("chain_id")
-            .required(required)
-            .help("Identifier of the chain to listen for events from")
-            .validator(ChainId::from_str),
-    )
-    .arg(
-        Arg::new("events")
-            .multiple_occurrences(true)
-            .short('e')
-            .long("event")
-            .value_name("EVENT")
-            .help(
-                "Add an event type to listen for, can be repeated.\n\
-                Listen for all events by default (available: Tx, NewBlock)",
-            )
-            .validator(EventFilter::from_str),
-    )
-}
-
-impl FromArgMatches for ListenCmd {
-    fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
-        let chain_id = parse_chain_id(matches).expect("the required argument should be present");
-        let events = parse_event_filters(matches).unwrap_or_default();
-        Ok(ListenCmd { chain_id, events })
-    }
-
-    fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> Result<(), clap::Error> {
-        if let Some(chain_id) = parse_chain_id(matches) {
-            self.chain_id = chain_id;
-        }
-        if let Some(events) = parse_event_filters(matches) {
-            self.events = events;
-        }
-        Ok(())
-    }
-}
-
-fn parse_chain_id(matches: &ArgMatches) -> Option<ChainId> {
-    let val = matches.value_of("chain_id")?;
-    Some(ChainId::from_str(val).unwrap())
-}
-
-fn parse_event_filters(matches: &ArgMatches) -> Option<Vec<EventFilter>> {
-    let vals = matches.values_of("events")?;
-    Some(vals.map(|s| EventFilter::from_str(s).unwrap()).collect())
 }
 
 impl Runnable for ListenCmd {
