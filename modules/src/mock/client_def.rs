@@ -68,8 +68,7 @@ impl ClientDef for MockClient {
         })
         .to_string();
 
-        let _path =
-            apply_prefix(prefix, vec![client_prefixed_path]).map_err(Error::empty_prefix)?;
+        let _path = apply_prefix(prefix, vec![client_prefixed_path]);
 
         Ok(())
     }

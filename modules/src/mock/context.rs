@@ -844,7 +844,7 @@ impl ConnectionReader for MockContext {
     }
 
     fn commitment_prefix(&self) -> CommitmentPrefix {
-        CommitmentPrefix::from(Vec::new())
+        CommitmentPrefix::try_from(b"mock".to_vec()).unwrap()
     }
 
     fn client_consensus_state(

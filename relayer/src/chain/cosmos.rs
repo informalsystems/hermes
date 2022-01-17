@@ -39,6 +39,7 @@ use ibc::core::ics02_client::client_consensus::{
 };
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::client_type::ClientType;
+use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel;
@@ -1191,9 +1192,8 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_commitment_prefix");
 
         // TODO - do a real chain query
-        Ok(CommitmentPrefix::from(
-            self.config().store_prefix.as_bytes().to_vec(),
-        ))
+        CommitmentPrefix::try_from(self.config().store_prefix.as_bytes().to_vec())
+            .map_err(|_| Error::ics02(ClientError::empty_prefix()))
     }
 
     /// Query the chain status

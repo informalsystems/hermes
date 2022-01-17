@@ -66,7 +66,10 @@ impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
 
     fn try_from(raw_msg: RawMsgChannelCloseConfirm) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_init.into(),
+            raw_msg
+                .proof_init
+                .try_into()
+                .map_err(Error::invalid_proof)?,
             None,
             None,
             None,

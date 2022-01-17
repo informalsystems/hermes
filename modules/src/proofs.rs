@@ -41,10 +41,6 @@ impl Proofs {
             return Err(ProofError::zero_height());
         }
 
-        if object_proof.is_empty() {
-            return Err(ProofError::empty_proof());
-        }
-
         Ok(Self {
             object_proof,
             client_proof,
@@ -95,9 +91,6 @@ impl ConsensusProof {
     ) -> Result<Self, ProofError> {
         if consensus_height.is_zero() {
             return Err(ProofError::zero_height());
-        }
-        if consensus_proof.is_empty() {
-            return Err(ProofError::empty_proof());
         }
 
         Ok(Self {
