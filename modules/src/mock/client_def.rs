@@ -1,4 +1,5 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use tendermint::Time;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
@@ -31,6 +32,7 @@ impl ClientDef for MockClient {
 
     fn check_header_and_update_state(
         &self,
+        _now: Time,
         _ctx: &dyn ClientReader,
         _client_id: ClientId,
         client_state: Self::ClientState,

@@ -9,6 +9,7 @@ use tracing::debug;
 
 use prost_types::Any;
 use sha2::Digest;
+use tendermint::Time;
 
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
@@ -464,7 +465,7 @@ impl MockContext {
     /// Alternative method to `Ics18Context::send` that does not exercise any serialization.
     /// Used in testing the Ics18 algorithms, hence this may return a Ics18Error.
     pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), Ics18Error> {
-        dispatch(self, msg).map_err(Ics18Error::transaction_failed)?;
+        dispatch(Time::now(), self, msg).map_err(Ics18Error::transaction_failed)?;
         // Create a new block.
         self.advance_host_chain_height();
         Ok(())
@@ -1084,7 +1085,7 @@ impl Ics18Context for MockContext {
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Ics18Error> {
         // Forward call to Ics26 delivery method.
-        let events = deliver(self, msgs).map_err(Ics18Error::transaction_failed)?;
+        let events = deliver(Time::now(), self, msgs).map_err(Ics18Error::transaction_failed)?;
 
         self.advance_host_chain_height(); // Advance chain height
         Ok(events)

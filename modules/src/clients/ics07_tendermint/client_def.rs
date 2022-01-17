@@ -2,10 +2,10 @@ use core::convert::TryInto;
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use prost::Message;
+use tendermint::Time;
 use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
 use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_proto::Protobuf;
-use time::OffsetDateTime;
 
 use crate::clients::ics07_tendermint::client_state::ClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -50,6 +50,7 @@ impl ClientDef for TendermintClient {
 
     fn check_header_and_update_state(
         &self,
+        now: Time,
         ctx: &dyn ClientReader,
         client_id: ClientId,
         client_state: Self::ClientState,
@@ -112,12 +113,9 @@ impl ClientDef for TendermintClient {
 
         let options = client_state.as_light_client_options()?;
 
-        let verdict = self.verifier.verify(
-            untrusted_state,
-            trusted_state,
-            &options,
-            OffsetDateTime::now_utc().try_into().unwrap(),
-        );
+        let verdict = self
+            .verifier
+            .verify(untrusted_state, trusted_state, &options, now);
 
         match verdict {
             Verdict::Success => {}
