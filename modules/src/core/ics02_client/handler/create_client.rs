@@ -1,7 +1,5 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
-use tendermint::Time;
-
 use crate::prelude::*;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
@@ -31,7 +29,6 @@ pub struct Result {
 }
 
 pub fn process(
-    now: Time,
     ctx: &dyn ClientReader,
     msg: MsgCreateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
@@ -71,7 +68,6 @@ mod tests {
     use crate::prelude::*;
 
     use core::time::Duration;
-    use tendermint::Time;
     use test_log::test;
 
     use crate::clients::ics07_tendermint::client_state::{
@@ -108,7 +104,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(Time::now(), &ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -199,7 +195,7 @@ mod tests {
         let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
 
         for msg in create_client_msgs {
-            let output = dispatch(Time::now(), &ctx, ClientMsg::CreateClient(msg.clone()));
+            let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
             match output {
                 Ok(HandlerOutput {
@@ -261,7 +257,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(Time::now(), &ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {

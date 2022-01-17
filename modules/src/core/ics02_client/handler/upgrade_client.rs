@@ -78,7 +78,6 @@ mod tests {
     use crate::prelude::*;
 
     use core::str::FromStr;
-    use tendermint::Time;
 
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
@@ -110,7 +109,7 @@ mod tests {
             signer,
         };
 
-        let output = dispatch(Time::now(), &ctx, ClientMsg::UpgradeClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::UpgradeClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -155,7 +154,7 @@ mod tests {
             signer,
         };
 
-        let output = dispatch(Time::now(), &ctx, ClientMsg::UpgradeClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::UpgradeClient(msg.clone()));
 
         match output {
             Err(Error(ErrorDetail::ClientNotFound(e), _)) => {
@@ -183,7 +182,7 @@ mod tests {
             signer,
         };
 
-        let output = dispatch(Time::now(), &ctx, ClientMsg::UpgradeClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::UpgradeClient(msg.clone()));
 
         match output {
             Err(Error(ErrorDetail::LowUpgradeHeight(e), _)) => {
