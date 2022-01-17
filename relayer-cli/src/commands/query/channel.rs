@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::ChainId;
@@ -11,18 +12,18 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc::core::ics04_channel::channel::State;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryChannelEndCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the port to query")]
+    #[clap(required = true, help = "identifier of the port to query")]
     port_id: PortId,
 
-    #[clap(required = true, about = "identifier of the channel to query")]
+    #[clap(required = true, help = "identifier of the channel to query")]
     channel_id: ChannelId,
 
-    #[clap(short = 'H', long, about = "height of the state to query")]
+    #[clap(short = 'H', long, help = "height of the state to query")]
     height: Option<u64>,
 }
 

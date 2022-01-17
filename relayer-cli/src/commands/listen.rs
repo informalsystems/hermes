@@ -104,7 +104,7 @@ fn augment_args(app: App<'_>, required: bool) -> App<'_> {
     app.arg(
         Arg::new("chain_id")
             .required(required)
-            .about("Identifier of the chain to listen for events from")
+            .help("Identifier of the chain to listen for events from")
             .validator(ChainId::from_str),
     )
     .arg(
@@ -113,7 +113,7 @@ fn augment_args(app: App<'_>, required: bool) -> App<'_> {
             .short('e')
             .long("event")
             .value_name("EVENT")
-            .about(
+            .help(
                 "Add an event type to listen for, can be repeated.\n\
                 Listen for all events by default (available: Tx, NewBlock)",
             )
@@ -122,19 +122,20 @@ fn augment_args(app: App<'_>, required: bool) -> App<'_> {
 }
 
 impl FromArgMatches for ListenCmd {
-    fn from_arg_matches(matches: &ArgMatches) -> Option<Self> {
+    fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
         let chain_id = parse_chain_id(matches).expect("the required argument should be present");
         let events = parse_event_filters(matches).unwrap_or_default();
-        Some(ListenCmd { chain_id, events })
+        Ok(ListenCmd { chain_id, events })
     }
 
-    fn update_from_arg_matches(&mut self, matches: &ArgMatches) {
+    fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> Result<(), clap::Error> {
         if let Some(chain_id) = parse_chain_id(matches) {
             self.chain_id = chain_id;
         }
         if let Some(events) = parse_event_filters(matches) {
             self.events = events;
         }
+        Ok(())
     }
 }
 

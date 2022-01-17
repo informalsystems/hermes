@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::{
@@ -15,15 +16,15 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryConnectionEndCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the connection to query")]
+    #[clap(required = true, help = "identifier of the connection to query")]
     connection_id: ConnectionId,
 
-    #[clap(short = 'H', long, about = "height of the state to query")]
+    #[clap(short = 'H', long, help = "height of the state to query")]
     height: Option<u64>,
 }
 
@@ -71,12 +72,12 @@ impl Runnable for QueryConnectionEndCmd {
 /// Command for querying the channel identifiers associated with a connection.
 /// Sample invocation:
 /// `cargo run --bin hermes -- query connection channels ibc-0 connection-0`
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryConnectionChannelsCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the connection to query")]
+    #[clap(required = true, help = "identifier of the connection to query")]
     connection_id: ConnectionId,
 }
 

@@ -1,13 +1,13 @@
 //! `config` subcommand
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 mod validate;
 
 /// `config` subcommand
-#[derive(Command, Debug, Clap, Runnable)]
+#[derive(Command, Debug, Parser, Runnable)]
 pub enum ConfigCmd {
-    /// The `config validate` subcommand
-    #[clap(about = "validate the relayer configuration")]
+    /// Validate the relayer configuration
     Validate(validate::ValidateCmd),
 }
