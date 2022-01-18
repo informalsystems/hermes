@@ -4,11 +4,11 @@ use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap;
 use core::cmp::min;
-
-use tracing::debug;
+use core::time::Duration;
 
 use prost_types::Any;
 use sha2::Digest;
+use tracing::debug;
 
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
@@ -42,7 +42,9 @@ use crate::relayer::ics18_relayer::error::Error as Ics18Error;
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use core::time::Duration;
+use core::ops::{Add, Sub};
+
+pub const DEFAULT_BLOCK_TIME_SECS: u64 = 3;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
@@ -58,9 +60,6 @@ pub struct MockContext {
 
     /// Highest height (i.e., most recent) of the blocks in the history.
     latest_height: Height,
-
-    /// Highest timestamp, i.e., of the most recent block in the history.
-    timestamp: Timestamp,
 
     /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
     /// blocks, ascending order by their height (latest block is on the last position).
@@ -116,6 +115,12 @@ pub struct MockContext {
 
     // Used by unordered channel
     packet_receipt: BTreeMap<(PortId, ChannelId, Sequence), Receipt>,
+
+    /// Average time duration between blocks
+    block_time: Duration,
+
+    /// The block whose txs are currently being executed
+    pending_block: HostBlock,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -159,19 +164,31 @@ impl MockContext {
             "The version in the chain identifier must match the version in the latest height"
         );
 
+        // We want the `pending_block` to have a timestamp in the future. One way to think
+        // about this is that once a `MockContext` is built, it should be in a state where it is
+        // able to execute a new block. In a normal scenario this happens after `block_time`
+        // duration has passed since the latest block's time.
+        // This means tests that use `MockClient` don't need to add delays to wait for `block_time`
+        // before submitting IBC messages.
+        let block_time = Duration::from_secs(DEFAULT_BLOCK_TIME_SECS);
+        let next_block_timestamp = Timestamp::now().add(block_time).unwrap();
         MockContext {
             host_chain_type: host_type,
             host_chain_id: host_id.clone(),
             max_history_size,
             latest_height,
-            timestamp: Default::default(),
             history: (0..n)
                 .rev()
                 .map(|i| {
+                    // generate blocks with timestamps -> N, N - BT, N - 2BT, ...
+                    // where N = now(), BT = block_time
                     HostBlock::generate_block(
                         host_id.clone(),
                         host_type,
                         latest_height.sub(i).unwrap().revision_height,
+                        next_block_timestamp
+                            .sub(Duration::from_secs(DEFAULT_BLOCK_TIME_SECS * (i + 1)))
+                            .unwrap(),
                     )
                 })
                 .collect(),
@@ -192,6 +209,13 @@ impl MockContext {
             packet_acknowledgement: Default::default(),
             connection_ids_counter: 0,
             channel_ids_counter: 0,
+            block_time,
+            pending_block: HostBlock::generate_block(
+                host_id.clone(),
+                host_type,
+                latest_height.increment().revision_height,
+                next_block_timestamp,
+            ),
         }
     }
 
@@ -229,6 +253,7 @@ impl MockContext {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
                     cs_height.revision_height,
+                    Timestamp::now(),
                 );
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());
@@ -263,6 +288,7 @@ impl MockContext {
         let prev_cs_height = cs_height.clone().sub(1).unwrap_or(client_state_height);
 
         let client_type = client_type.unwrap_or(ClientType::Mock);
+        let now = Timestamp::now();
 
         let (client_state, consensus_state) = match client_type {
             // If it's a mock client, create the corresponding mock states.
@@ -275,6 +301,7 @@ impl MockContext {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
                     cs_height.revision_height,
+                    now,
                 );
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());
@@ -294,6 +321,7 @@ impl MockContext {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
                     prev_cs_height.revision_height,
+                    now.sub(self.block_time).unwrap(),
                 );
                 AnyConsensusState::from(light_block)
             }
@@ -387,10 +415,6 @@ impl MockContext {
         }
     }
 
-    pub fn with_timestamp(self, timestamp: Timestamp) -> Self {
-        Self { timestamp, ..self }
-    }
-
     pub fn with_height(self, target_height: Height) -> Self {
         if target_height.revision_number > self.latest_height.revision_number {
             unimplemented!()
@@ -445,18 +469,23 @@ impl MockContext {
         let new_block = HostBlock::generate_block(
             self.host_chain_id.clone(),
             self.host_chain_type,
-            self.latest_height.increment().revision_height,
+            self.pending_block.height().increment().revision_height,
+            self.pending_block.timestamp().add(self.block_time).unwrap(),
         );
+
+        let pending_block = self.pending_block.clone();
 
         // Append the new header at the tip of the history.
         if self.history.len() >= self.max_history_size {
             // History is full, we rotate and replace the tip with the new header.
             self.history.rotate_left(1);
-            self.history[self.max_history_size - 1] = new_block;
+            self.history[self.max_history_size - 1] = pending_block;
         } else {
             // History is not full yet.
-            self.history.push(new_block);
+            self.history.push(pending_block);
         }
+
+        self.pending_block = new_block;
         self.latest_height = self.latest_height.increment();
     }
 
@@ -670,10 +699,6 @@ impl ChannelReader for MockContext {
         self.latest_height
     }
 
-    fn host_timestamp(&self) -> Timestamp {
-        self.timestamp
-    }
-
     fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
         ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
     }
@@ -717,7 +742,7 @@ impl ChannelReader for MockContext {
     }
 
     fn max_expected_time_per_block(&self) -> Duration {
-        Duration::from_secs(10)
+        self.block_time
     }
 }
 
@@ -992,6 +1017,9 @@ impl ClientReader for MockContext {
     }
 
     fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics02Error> {
+        if height.is_zero() {
+            return Ok(self.pending_block.clone().into());
+        }
         match self.host_block(height) {
             Some(block_ref) => Ok(block_ref.clone().into()),
             None => Err(Ics02Error::missing_local_consensus_state(height)),
