@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
 
-use prost_types::Any;
 use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
