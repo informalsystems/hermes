@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use serde::Serialize;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -14,20 +15,20 @@ use crate::error::Error;
 use crate::prelude::*;
 
 /// Query clients command
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryAllClientsCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
     #[clap(
         short,
         long,
-        about = "filter for clients which target a specific chain id (implies '-o')",
+        help = "filter for clients which target a specific chain id (implies '-o')",
         value_name = "ID"
     )]
     src_chain_id: Option<ChainId>,
 
-    #[clap(short, long, about = "omit printing the source chain for each client")]
+    #[clap(short, long, help = "omit printing the source chain for each client")]
     omit_chain_ids: bool,
 }
 

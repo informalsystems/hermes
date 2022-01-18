@@ -1,4 +1,5 @@
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use serde::{Deserialize, Serialize};
 
 use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
@@ -13,24 +14,24 @@ use ibc_relayer::registry::Registry;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryChannelEndsCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the port to query")]
+    #[clap(required = true, help = "identifier of the port to query")]
     port_id: PortId,
 
-    #[clap(required = true, about = "identifier of the channel to query")]
+    #[clap(required = true, help = "identifier of the channel to query")]
     channel_id: ChannelId,
 
-    #[clap(short = 'H', long, about = "height of the state to query")]
+    #[clap(short = 'H', long, help = "height of the state to query")]
     height: Option<u64>,
 
     #[clap(
         short = 'v',
         long,
-        about = "enable verbose output, displaying all details of channels, connections & clients"
+        help = "enable verbose output, displaying all details of channels, connections & clients"
     )]
     verbose: bool,
 }
