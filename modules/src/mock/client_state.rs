@@ -194,10 +194,6 @@ impl ConsensusState for MockConsensusState {
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Infallible> {
-        Ok(())
-    }
-
     fn wrap_any(self) -> AnyConsensusState {
         AnyConsensusState::Mock(self)
     }
