@@ -91,7 +91,10 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
 
     fn try_from(raw_msg: RawMsgChannelOpenTry) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_init.into(),
+            raw_msg
+                .proof_init
+                .try_into()
+                .map_err(ChannelError::invalid_proof)?,
             None,
             None,
             None,

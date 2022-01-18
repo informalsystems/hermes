@@ -7,7 +7,7 @@ readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/ibc-rs"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.57"
+rust-version = "1.58"
 description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
@@ -21,7 +21,7 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.10.0", path = "../modules" }
+ibc           = { version = "0.10.0", path = "../modules", features = ["clock"] }
 ibc-proto     = { version = "0.14.0", path = "../proto" }
 ibc-telemetry = { version = "0.10.0", path = "../telemetry", optional = true }
 
@@ -60,6 +60,7 @@ anyhow = "1.0"
 semver = "1.0"
 uint = "0.9"
 humantime = "2.1.0"
+nanoid = "0.4.0"
 
 [dependencies.num-bigint]
 version = "0.4"
@@ -70,20 +71,24 @@ version = "0.4.0"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "=0.23.4"
+version = "=0.23.5"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.4"
+version = "=0.23.5"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.4"
+version = "=0.23.5"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
+[dependencies.tendermint-light-client-verifier]
+version = "=0.23.5"
+default-features = false
+
 [dependencies.tendermint-proto]
-version = "=0.23.4"
+version = "=0.23.5"
 
 [dev-dependencies]
 ibc = { version = "0.10.0", path = "../modules", features = ["mocks"] }
@@ -93,4 +98,4 @@ tracing-subscriber = { version = "0.3.5", features = ["fmt", "env-filter", "json
 test-log = { version = "0.2.8", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.4" }
+tendermint-testgen = { version = "=0.23.5" }

@@ -145,7 +145,7 @@ mod tests {
             Counterparty::new(
                 client_id.clone(),
                 Some(msg_ack.counterparty_connection_id().clone()),
-                CommitmentPrefix::from(b"ibc".to_vec()),
+                CommitmentPrefix::try_from(b"ibc".to_vec()).unwrap(),
             ),
             vec![msg_ack.version().clone()],
             ZERO_DURATION,
@@ -154,16 +154,6 @@ mod tests {
         // A connection end with incorrect state `Open`; will be part of the context.
         let mut conn_end_open = default_conn_end.clone();
         conn_end_open.set_state(State::Open); // incorrect field
-
-        // A connection end with correct state, but incorrect prefix for the
-        // counterparty; will be part of the context to exercise unsuccessful path.
-        let mut conn_end_prefix = conn_end_open.clone();
-        conn_end_prefix.set_state(State::Init);
-        conn_end_prefix.set_counterparty(Counterparty::new(
-            client_id.clone(),
-            Some(msg_ack.counterparty_connection_id().clone()),
-            CommitmentPrefix::from(Vec::new()), // incorrect field
-        ));
 
         let tests: Vec<Test> = vec![
             Test {
@@ -174,69 +164,45 @@ mod tests {
                     .with_connection(conn_id.clone(), default_conn_end),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: true,
-                match_error: Box::new(|_| {
-                    panic!("should not have error")
-                }),
+                match_error: Box::new(|_| panic!("should not have error")),
             },
             Test {
-                name: "Processing fails because the connection does not exist in the context".to_string(),
+                name: "Processing fails because the connection does not exist in the context"
+                    .to_string(),
                 ctx: default_context.clone(),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
                 match_error: {
                     let connection_id = conn_id.clone();
-                    Box::new(move |e| {
-                        match e.detail() {
-                            error::ErrorDetail::ConnectionNotFound(e) => {
-                                assert_eq!(e.connection_id, connection_id)
-                            }
-                            _ => {
-                                panic!("Expected ConnectionNotFound error");
-                            }
+                    Box::new(move |e| match e.detail() {
+                        error::ErrorDetail::ConnectionNotFound(e) => {
+                            assert_eq!(e.connection_id, connection_id)
+                        }
+                        _ => {
+                            panic!("Expected ConnectionNotFound error");
                         }
                     })
                 },
             },
             Test {
-                name: "Processing fails due to connections mismatch (incorrect 'open' state)".to_string(),
+                name: "Processing fails due to connections mismatch (incorrect 'open' state)"
+                    .to_string(),
                 ctx: default_context
-                    .clone()
                     .with_client(&client_id, proof_height)
                     .with_connection(conn_id.clone(), conn_end_open),
-                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
                 want_pass: false,
                 match_error: {
-                    let connection_id = conn_id.clone();
-                    Box::new(move |e| {
-                        match e.detail() {
-                            error::ErrorDetail::ConnectionMismatch(e) => {
-                                assert_eq!(e.connection_id, connection_id);
-                            }
-                            _ => {
-                                panic!("Expected ConnectionMismatch error");
-                            }
+                    let connection_id = conn_id;
+                    Box::new(move |e| match e.detail() {
+                        error::ErrorDetail::ConnectionMismatch(e) => {
+                            assert_eq!(e.connection_id, connection_id);
+                        }
+                        _ => {
+                            panic!("Expected ConnectionMismatch error");
                         }
                     })
                 },
-            },
-            Test {
-                name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
-                ctx: default_context
-                    .with_client(&client_id, proof_height)
-                    .with_connection(conn_id, conn_end_prefix),
-                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
-                want_pass: false,
-                match_error:
-                    Box::new(move |e| {
-                        match e.detail() {
-                            error::ErrorDetail::ConsensusStateVerificationFailure(e) => {
-                                assert_eq!(e.height, proof_height)
-                            }
-                            _ => {
-                                panic!("Expected ConsensusStateVerificationFailure error");
-                            }
-                        }
-                    }),
             },
             /*
             Test {

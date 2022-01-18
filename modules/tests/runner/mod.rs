@@ -2,6 +2,7 @@ pub mod step;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
 
+use core::convert::TryInto;
 use core::fmt::Debug;
 use core::time::Duration;
 
@@ -38,7 +39,6 @@ use ibc::relayer::ics18_relayer::error as relayer_error;
 use ibc::signer::Signer;
 use ibc::timestamp::ZERO_DURATION;
 use ibc::Height;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use step::{Action, ActionOutcome, Chain, Step};
 
@@ -178,11 +178,11 @@ impl IbcTestRunner {
     }
 
     pub fn commitment_prefix() -> CommitmentPrefix {
-        vec![0].into()
+        vec![0].try_into().unwrap()
     }
 
     pub fn commitment_proof_bytes() -> CommitmentProofBytes {
-        vec![0].into()
+        vec![0].try_into().unwrap()
     }
 
     pub fn consensus_proof(height: Height) -> ConsensusProof {
@@ -338,19 +338,13 @@ impl IbcTestRunner {
                 // get chain's context
                 let ctx = self.chain_context_mut(chain_id);
 
-                let buf: Vec<u8> = Vec::new();
-                let buf2: Vec<u8> = Vec::new();
-
-                let c_bytes = CommitmentProofBytes::from(buf);
-                let cs_bytes = CommitmentProofBytes::from(buf2);
-
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient {
                     client_id: Self::client_id(client_id),
                     client_state: MockClientState::new(MockHeader::new(header)).into(),
                     consensus_state: MockConsensusState::new(MockHeader::new(header)).into(),
-                    proof_upgrade_client: MerkleProof::try_from(c_bytes).unwrap(),
-                    proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes).unwrap(),
+                    proof_upgrade_client: Default::default(),
+                    proof_upgrade_consensus_state: Default::default(),
                     signer: Self::signer(),
                 }));
                 ctx.deliver(msg)

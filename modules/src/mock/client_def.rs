@@ -1,4 +1,5 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use tendermint::Time;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
@@ -14,6 +15,7 @@ use crate::core::ics23_commitment::commitment::{
 };
 use crate::core::ics23_commitment::merkle::apply_prefix;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics24_host::path::ClientConsensusStatePath;
 use crate::core::ics24_host::Path;
 use crate::mock::client_state::{MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
@@ -30,6 +32,7 @@ impl ClientDef for MockClient {
 
     fn check_header_and_update_state(
         &self,
+        _now: Time,
         _ctx: &dyn ClientReader,
         _client_id: ClientId,
         client_state: Self::ClientState,
@@ -58,15 +61,14 @@ impl ClientDef for MockClient {
         consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
-        let client_prefixed_path = Path::ClientConsensusState {
+        let client_prefixed_path = Path::ClientConsensusState(ClientConsensusStatePath {
             client_id: client_id.clone(),
             epoch: consensus_height.revision_number,
             height: consensus_height.revision_height,
-        }
+        })
         .to_string();
 
-        let _path =
-            apply_prefix(prefix, vec![client_prefixed_path]).map_err(Error::empty_prefix)?;
+        let _path = apply_prefix(prefix, vec![client_prefixed_path]);
 
         Ok(())
     }

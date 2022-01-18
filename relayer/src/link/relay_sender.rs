@@ -1,12 +1,12 @@
 use core::fmt;
 
-use prost_types::Any;
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tracing::info;
 
 use ibc::events::{IbcEvent, PrettyEvents};
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::tx::TrackedMsgs;
 use crate::link::error::LinkError;
 use crate::link::RelaySummary;
 
@@ -24,7 +24,7 @@ impl SubmitReply for RelaySummary {
 pub trait Submit {
     type Reply: SubmitReply;
 
-    fn submit(target: &impl ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError>;
+    fn submit(target: &impl ChainHandle, msgs: TrackedMsgs) -> Result<Self::Reply, LinkError>;
 }
 
 /// Synchronous sender
@@ -36,7 +36,7 @@ impl Submit for SyncSender {
     // TODO: Switch from the `Chain::send_msgs` interface in this method
     //  to use `Chain::submit_msgs` instead; implement waiting for block
     //  commits directly here (instead of blocking in the chain runtime).
-    fn submit(target: &impl ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
+    fn submit(target: &impl ChainHandle, msgs: TrackedMsgs) -> Result<Self::Reply, LinkError> {
         let tx_events = target
             .send_messages_and_wait_commit(msgs)
             .map_err(LinkError::relayer)?;
@@ -76,7 +76,7 @@ pub struct AsyncSender;
 impl Submit for AsyncSender {
     type Reply = AsyncReply;
 
-    fn submit(target: &impl ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
+    fn submit(target: &impl ChainHandle, msgs: TrackedMsgs) -> Result<Self::Reply, LinkError> {
         let a = target
             .send_messages_and_wait_check_tx(msgs)
             .map_err(LinkError::relayer)?;

@@ -12,6 +12,7 @@ use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
+use crate::core::ics23_commitment::error::Error as Ics23Error;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -65,15 +66,17 @@ impl Protobuf<RawMsgUpgradeClient> for MsgUpgradeAnyClient {}
 
 impl From<MsgUpgradeAnyClient> for RawMsgUpgradeClient {
     fn from(dm_msg: MsgUpgradeAnyClient) -> RawMsgUpgradeClient {
-        let c_bytes: CommitmentProofBytes = dm_msg.proof_upgrade_client.into();
-        let cs_bytes: CommitmentProofBytes = dm_msg.proof_upgrade_consensus_state.into();
+        let c_bytes = CommitmentProofBytes::try_from(dm_msg.proof_upgrade_client)
+            .map_or(vec![], |c| c.into());
+        let cs_bytes = CommitmentProofBytes::try_from(dm_msg.proof_upgrade_consensus_state)
+            .map_or(vec![], |c| c.into());
 
         RawMsgUpgradeClient {
             client_id: dm_msg.client_id.to_string(),
             client_state: Some(dm_msg.client_state.into()),
             consensus_state: Some(dm_msg.consensus_state.into()),
-            proof_upgrade_client: c_bytes.into(),
-            proof_upgrade_consensus_state: cs_bytes.into(),
+            proof_upgrade_client: c_bytes,
+            proof_upgrade_consensus_state: cs_bytes,
             signer: dm_msg.signer.to_string(),
         }
     }
@@ -91,8 +94,12 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
             .consensus_state
             .ok_or_else(Error::missing_raw_client_state)?;
 
-        let c_bytes = CommitmentProofBytes::from(proto_msg.proof_upgrade_client);
-        let cs_bytes = CommitmentProofBytes::from(proto_msg.proof_upgrade_consensus_state);
+        let c_bytes = CommitmentProofBytes::try_from(proto_msg.proof_upgrade_client)
+            .map_err(|_| Error::invalid_upgrade_client_proof(Ics23Error::empty_merkle_proof()))?;
+        let cs_bytes = CommitmentProofBytes::try_from(proto_msg.proof_upgrade_consensus_state)
+            .map_err(|_| {
+                Error::invalid_upgrade_consensus_state_proof(Ics23Error::empty_merkle_proof())
+            })?;
 
         Ok(MsgUpgradeAnyClient {
             client_id: ClientId::from_str(&proto_msg.client_id)

@@ -269,11 +269,11 @@ impl fmt::Display for OutputBuffer {
                         )?;
                         match inner_result {
                             Ok(events) => writeln!(f, "{:#?}", events)?,
-                            Err(e) => writeln!(f, "{}", e.to_string())?,
+                            Err(e) => writeln!(f, "{}", e)?,
                         }
                     }
                 }
-                Err(e) => writeln!(f, " {}", e.to_string())?,
+                Err(e) => writeln!(f, " {}", e)?,
             }
         }
         Ok(())

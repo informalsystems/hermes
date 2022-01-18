@@ -63,7 +63,10 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
 
     fn try_from(raw_msg: RawMsgTimeout) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_unreceived.into(),
+            raw_msg
+                .proof_unreceived
+                .try_into()
+                .map_err(Error::invalid_proof)?,
             None,
             None,
             None,

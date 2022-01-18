@@ -1,5 +1,7 @@
 //! This module implements the processing logic for ICS2 (client abstractions and functions) msgs.
 
+use tendermint::Time;
+
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::msgs::ClientMsg;
@@ -17,13 +19,17 @@ pub enum ClientResult {
 }
 
 /// General entry point for processing any message related to ICS2 (client functions) protocols.
-pub fn dispatch<Ctx>(ctx: &Ctx, msg: ClientMsg) -> Result<HandlerOutput<ClientResult>, Error>
+pub fn dispatch<Ctx>(
+    now: Time,
+    ctx: &Ctx,
+    msg: ClientMsg,
+) -> Result<HandlerOutput<ClientResult>, Error>
 where
     Ctx: ClientReader,
 {
     match msg {
-        ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),
-        ClientMsg::UpdateClient(msg) => update_client::process(ctx, msg),
+        ClientMsg::CreateClient(msg) => create_client::process(now, ctx, msg),
+        ClientMsg::UpdateClient(msg) => update_client::process(now, ctx, msg),
         ClientMsg::UpgradeClient(msg) => upgrade_client::process(ctx, msg),
         _ => {
             unimplemented!()

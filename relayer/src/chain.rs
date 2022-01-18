@@ -1,4 +1,6 @@
 use alloc::sync::Arc;
+use core::convert::TryFrom;
+
 use prost_types::Any;
 use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -46,10 +48,13 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
+use self::tx::TrackedMsgs;
+
 pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
 pub mod runtime;
+pub mod tx;
 
 #[cfg(test)]
 pub mod mock;
@@ -125,14 +130,14 @@ pub trait ChainEndpoint: Sized {
     // synchronously wait for it to be committed.
     fn send_messages_and_wait_commit(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error>;
 
     /// Sends one or more transactions with `msgs` to chain.
     /// Non-blocking alternative to `send_messages_and_wait_commit` interface.
     fn send_messages_and_wait_check_tx(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<TxResponse>, Error>;
 
     fn get_signer(&mut self) -> Result<Signer, Error>;
@@ -370,7 +375,10 @@ pub trait ChainEndpoint: Sized {
                 let (client_state_value, client_state_proof) =
                     self.proven_client_state(client_id, height)?;
 
-                client_proof = Some(CommitmentProofBytes::from(client_state_proof));
+                client_proof = Some(
+                    CommitmentProofBytes::try_from(client_state_proof)
+                        .map_err(Error::malformed_proof)?,
+                );
 
                 let consensus_state_proof = self
                     .proven_client_consensus(client_id, client_state_value.latest_height(), height)?
@@ -378,7 +386,8 @@ pub trait ChainEndpoint: Sized {
 
                 consensus_proof = Option::from(
                     ConsensusProof::new(
-                        CommitmentProofBytes::from(consensus_state_proof),
+                        CommitmentProofBytes::try_from(consensus_state_proof)
+                            .map_err(Error::malformed_proof)?,
                         client_state_value.latest_height(),
                     )
                     .map_err(Error::consensus_proof)?,
@@ -392,7 +401,7 @@ pub trait ChainEndpoint: Sized {
         Ok((
             client_state,
             Proofs::new(
-                CommitmentProofBytes::from(connection_proof),
+                CommitmentProofBytes::try_from(connection_proof).map_err(Error::malformed_proof)?,
                 client_proof,
                 consensus_proof,
                 None,
@@ -411,7 +420,8 @@ pub trait ChainEndpoint: Sized {
     ) -> Result<Proofs, Error> {
         // Collect all proofs as required
         let channel_proof =
-            CommitmentProofBytes::from(self.proven_channel(port_id, channel_id, height)?.1);
+            CommitmentProofBytes::try_from(self.proven_channel(port_id, channel_id, height)?.1)
+                .map_err(Error::malformed_proof)?;
 
         Proofs::new(channel_proof, None, None, None, height.increment())
             .map_err(Error::malformed_proof)
@@ -427,9 +437,12 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<(Vec<u8>, Proofs), Error> {
         let channel_proof = if packet_type == PacketMsgType::TimeoutOnClose {
-            Some(CommitmentProofBytes::from(
-                self.proven_channel(&port_id, &channel_id, height)?.1,
-            ))
+            Some(
+                CommitmentProofBytes::try_from(
+                    self.proven_channel(&port_id, &channel_id, height)?.1,
+                )
+                .map_err(Error::malformed_proof)?,
+            )
         } else {
             None
         };
@@ -438,7 +451,7 @@ pub trait ChainEndpoint: Sized {
             self.proven_packet(packet_type, port_id, channel_id, sequence, height)?;
 
         let proofs = Proofs::new(
-            CommitmentProofBytes::from(packet_proof),
+            CommitmentProofBytes::try_from(packet_proof).map_err(Error::malformed_proof)?,
             None,
             None,
             channel_proof,

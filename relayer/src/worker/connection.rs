@@ -1,6 +1,6 @@
 use core::time::Duration;
 use crossbeam_channel::Receiver;
-use tracing::debug;
+use tracing::{debug, error_span};
 
 use crate::connection::Connection as RelayConnection;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
@@ -20,7 +20,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
 ) -> TaskHandle {
     spawn_background_task(
-        format!("ConnectionWorker({})", connection.short_name()),
+        error_span!("connection", connection = %connection.short_name()),
         Some(Duration::from_millis(200)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
@@ -30,10 +30,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         // process the last event, the one with highest "rank".
                         let last_event = batch.events.last();
 
-                        debug!(
-                            connection = %connection.short_name(),
-                            "connection worker starts processing {:#?}", last_event
-                        );
+                        debug!("starts processing {:#?}", last_event);
 
                         if let Some(event) = last_event {
                             let mut handshake_connection = RelayConnection::restore_from_event(
@@ -56,11 +53,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         height: current_height,
                         new_block: _,
                     } => {
-                        debug!(
-                            connection = %connection.short_name(),
-                            "connection worker starts processing block event at {}",
-                            current_height
-                        );
+                        debug!("starts processing block event at {}", current_height);
 
                         let height = current_height
                             .decrement()

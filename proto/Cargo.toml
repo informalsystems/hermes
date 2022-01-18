@@ -9,7 +9,7 @@ readme       = "README.md"
 categories   = ["cryptography", "cryptography::cryptocurrencies", "database"]
 keywords     = ["blockchain", "cosmos", "tendermint", "ibc", "proto"]
 exclude      = ["definitions"]
-rust-version = "1.57"
+rust-version = "1.58"
 description  = """
     ibc-proto is a Rust implementation of the Cosmos SDK & IBC proto structs
 """
@@ -30,4 +30,4 @@ getrandom = { version = "0.2", features = ["js"] }
 serde = "1.0"
 
 [dependencies.tendermint-proto]
-version = "=0.23.4"
+version = "=0.23.5"

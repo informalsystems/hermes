@@ -85,17 +85,21 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             .consensus_height
             .ok_or_else(Error::missing_consensus_height)?
             .into();
-        let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
-            .map_err(Error::invalid_proof)?;
+        let consensus_proof_obj = ConsensusProof::new(
+            msg.proof_consensus
+                .try_into()
+                .map_err(Error::invalid_proof)?,
+            consensus_height,
+        )
+        .map_err(Error::invalid_proof)?;
 
         let proof_height = msg
             .proof_height
             .ok_or_else(Error::missing_proof_height)?
             .into();
 
-        let client_proof = Some(msg.proof_client)
-            .filter(|x| !x.is_empty())
-            .map(CommitmentProofBytes::from);
+        let client_proof =
+            CommitmentProofBytes::try_from(msg.proof_client).map_err(Error::invalid_proof)?;
 
         Ok(Self {
             connection_id: msg
@@ -113,8 +117,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 .map_err(Error::ics02_client)?,
             version: msg.version.ok_or_else(Error::empty_versions)?.try_into()?,
             proofs: Proofs::new(
-                msg.proof_try.into(),
-                client_proof,
+                msg.proof_try.try_into().map_err(Error::invalid_proof)?,
+                Some(client_proof),
                 Option::from(consensus_proof_obj),
                 None,
                 proof_height,
@@ -182,7 +186,7 @@ pub mod test_util {
                 revision_height: consensus_height,
             }),
             client_state: None,
-            proof_client: Vec::new(),
+            proof_client: get_dummy_proof(),
             version: Some(Version::default().into()),
             signer: get_dummy_bech32_account(),
         }
