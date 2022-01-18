@@ -5,9 +5,11 @@ use core::time::Duration;
 
 use bytes::BufMut;
 use flex_error::define_error;
+use ibc::clients::ics07_tendermint::client_state::UpgradeOptions;
+use ibc::downcast;
 use prost_types::Any;
 
-use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
@@ -34,17 +36,17 @@ define_error! {
             { chain_id: ChainId }
             [ Error ]
             |e| {
-                format!("failed while submitting the Transfer message to chain {0}",
-                    e.chain_id)
+                format!("failed while submitting the Transfer message to chain {0}", e.chain_id)
             },
 
         TxResponse
             { event: String }
             |e| {
-                format!("tx response event consists of an error: {}",
-                    e.event)
+                format!("tx response event consists of an error: {}", e.event)
             },
 
+        TendermintOnly
+            |_| { "only Tendermint clients can be upgraded" }
     }
 }
 
@@ -75,21 +77,26 @@ pub fn build_and_send_ibc_upgrade_proposal(
         .query_client_state(&opts.src_client_id, Height::zero())
         .map_err(UpgradeChainError::query)?;
 
+    let client_state = downcast!(client_state => AnyClientState::Tendermint)
+        .ok_or_else(UpgradeChainError::tendermint_only)?;
+
     // Retain the old unbonding period in case the user did not specify a new one
-    let upgraded_unbonding_period = opts
-        .upgraded_unbonding_period
-        .unwrap_or_else(|| client_state.unbonding_period());
+    let upgrade_options = UpgradeOptions {
+        unbonding_period: opts
+            .upgraded_unbonding_period
+            .unwrap_or(client_state.unbonding_period),
+    };
 
     let upgraded_client_state = client_state.upgrade(
         upgrade_height.increment(),
-        upgraded_unbonding_period,
+        upgrade_options,
         opts.upgraded_chain_id.clone(),
     );
 
     let proposal = UpgradeProposal {
         title: "proposal 0".to_string(),
         description: "upgrade the chain software and unbonding period".to_string(),
-        upgraded_client_state: Some(Any::from(upgraded_client_state)),
+        upgraded_client_state: Some(Any::from(upgraded_client_state.wrap_any())),
         plan: Some(Plan {
             name: opts.upgrade_plan_name.clone(),
             height: upgrade_height.revision_height as i64,

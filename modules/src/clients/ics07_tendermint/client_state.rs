@@ -205,7 +205,14 @@ impl ClientState {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpgradeOptions {
+    pub unbonding_period: Duration,
+}
+
 impl crate::core::ics02_client::client_state::ClientState for ClientState {
+    type UpgradeOptions = UpgradeOptions;
+
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -222,14 +229,10 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
         self.frozen_height
     }
 
-    fn unbonding_period(&self) -> Duration {
-        self.unbonding_period
-    }
-
     fn upgrade(
         mut self,
         upgrade_height: Height,
-        unbonding_period: Duration,
+        upgrade_options: UpgradeOptions,
         chain_id: ChainId,
     ) -> Self {
         // Reset custom fields to zero values
@@ -242,7 +245,7 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
 
         // Upgrade the client state
         self.latest_height = upgrade_height;
-        self.unbonding_period = unbonding_period;
+        self.unbonding_period = upgrade_options.unbonding_period;
         self.chain_id = chain_id;
 
         self

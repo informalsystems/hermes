@@ -92,6 +92,8 @@ impl From<MockClientState> for RawMockClientState {
 }
 
 impl ClientState for MockClientState {
+    type UpgradeOptions = ();
+
     fn chain_id(&self) -> ChainId {
         todo!()
     }
@@ -108,16 +110,7 @@ impl ClientState for MockClientState {
         self.frozen_height
     }
 
-    fn unbonding_period(&self) -> Duration {
-        todo!()
-    }
-
-    fn upgrade(
-        self,
-        _upgrade_height: Height,
-        _unbonding_period: Duration,
-        _chain_id: ChainId,
-    ) -> Self {
+    fn upgrade(self, _upgrade_height: Height, _upgrade_options: (), _chain_id: ChainId) -> Self {
         todo!()
     }
 
