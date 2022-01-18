@@ -1,4 +1,5 @@
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use clap::AppSettings;
 
 use ibc::core::ics02_client::client_state::ClientState;
@@ -16,43 +17,43 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 #[clap(setting(AppSettings::DisableVersionFlag))]
 pub struct CreateChannelCommand {
     #[clap(
         required = true,
-        about = "identifier of the side `a` chain for the new channel"
+        help = "identifier of the side `a` chain for the new channel"
     )]
     chain_a_id: ChainId,
 
-    #[clap(about = "identifier of the side `b` chain for the new channel (optional)")]
+    #[clap(help = "identifier of the side `b` chain for the new channel (optional)")]
     chain_b_id: Option<ChainId>,
 
     #[clap(
         short,
         long,
-        about = "identifier of the connection on chain `a` to use in creating the new channel"
+        help = "identifier of the connection on chain `a` to use in creating the new channel"
     )]
     connection_a: Option<ConnectionId>,
 
     #[clap(
         long,
         required = true,
-        about = "identifier of the side `a` port for the new channel"
+        help = "identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
 
     #[clap(
         long,
         required = true,
-        about = "identifier of the side `b` port for the new channel"
+        help = "identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
 
     #[clap(
         short,
         long,
-        about = "the channel ordering, valid options 'unordered' (default) and 'ordered'",
+        help = "the channel ordering, valid options 'unordered' (default) and 'ordered'",
         default_value_t
     )]
     order: Order,
@@ -61,7 +62,7 @@ pub struct CreateChannelCommand {
         short,
         long = "channel-version",
         alias = "version",
-        about = "the version for the new channel"
+        help = "the version for the new channel"
     )]
     version: Option<String>,
 }
