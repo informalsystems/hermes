@@ -38,6 +38,8 @@ pub trait ConnectionReader {
     ) -> Result<AnyConsensusState, Error>;
 
     /// Returns the ConsensusState of the host (local) chain at a specific height.
+    /// Note that `Height::zero()` has a special significance as it is represents the pending (i.e.
+    /// currently executing) block's height.
     fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
 
     /// Function required by ICS 03. Returns the list of all possible versions that the connection
