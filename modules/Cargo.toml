@@ -63,7 +63,7 @@ default-features = false
 
 [dev-dependencies]
 env_logger = "0.9.0"
-tracing-subscriber = { version = "0.3.5", features = ["fmt", "env-filter", "json"]}
+tracing-subscriber = { version = "0.3.6", features = ["fmt", "env-filter", "json"]}
 test-log = { version = "0.2.8", features = ["trace"] }
 modelator = "0.4.1"
 sha2 = { version = "0.10.1" }
