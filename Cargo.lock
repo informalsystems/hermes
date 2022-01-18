@@ -24,7 +24,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-log",
- "tracing-subscriber 0.3.5",
+ "tracing-subscriber",
  "wait-timeout",
 ]
 
@@ -1310,7 +1310,7 @@ dependencies = [
  "thiserror",
  "time",
  "tracing",
- "tracing-subscriber 0.3.6",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -1342,7 +1342,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
- "tracing-subscriber 0.3.6",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -1411,7 +1411,7 @@ dependencies = [
  "toml",
  "tonic",
  "tracing",
- "tracing-subscriber 0.3.6",
+ "tracing-subscriber",
  "uint",
 ]
 
@@ -1422,6 +1422,7 @@ dependencies = [
  "abscissa_core",
  "atty",
  "clap",
+ "clap_complete",
  "color-eyre 0.6.0",
  "crossbeam-channel 0.5.2",
  "dirs-next",
@@ -1453,7 +1454,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
- "tracing-subscriber 0.3.6",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -1747,7 +1748,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.3.6",
+ "tracing-subscriber",
  "ureq",
 ]
 
@@ -3405,7 +3406,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d686ec1c0f384b1277f097b2f279a2ecc11afe8c133c1aabf036a27cb4cd206e"
 dependencies = [
  "tracing",
- "tracing-subscriber 0.3.6",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -3436,17 +3437,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb65ea441fbb84f9f6748fd496cf7f63ec9af5bca94dd86456978d055e8eb28b"
 dependencies = [
  "serde",
- "tracing-core",
-]
-
-[[package]]
-name = "tracing-subscriber"
-version = "0.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e0d2eaa99c3c2e41547cfa109e910a68ea03823cccad4a0525dcbc9b01e8c71"
-dependencies = [
- "sharded-slab",
- "thread_local",
  "tracing-core",
 ]
 

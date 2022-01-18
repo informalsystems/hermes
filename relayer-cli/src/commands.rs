@@ -5,6 +5,7 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
+mod completions;
 mod config;
 mod create;
 mod health;
@@ -19,9 +20,9 @@ mod upgrade;
 mod version;
 
 use self::{
-    config::ConfigCmd, create::CreateCmds, health::HealthCheckCmd, keys::KeysCmd,
-    listen::ListenCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
-    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
+    completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds, health::HealthCheckCmd,
+    keys::KeysCmd, listen::ListenCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd,
+    start::StartCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
 };
 
 use core::time::Duration;
@@ -86,6 +87,10 @@ pub enum CliCmd {
 
     /// Performs a health check of all chains in the the config
     HealthCheck(HealthCheckCmd),
+
+    /// Generate auto-complete scripts for different shells.
+    #[clap(display_order = 1000)]
+    Completions(CompletionsCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.
