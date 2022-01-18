@@ -211,7 +211,7 @@ impl MockContext {
             channel_ids_counter: 0,
             block_time,
             pending_block: HostBlock::generate_block(
-                host_id.clone(),
+                host_id,
                 host_type,
                 latest_height.increment().revision_height,
                 next_block_timestamp,
