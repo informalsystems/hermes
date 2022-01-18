@@ -5,22 +5,6 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
-use core::time::Duration;
-use std::path::PathBuf;
-
-use abscissa_core::clap::Parser;
-use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Runnable};
-use tracing::{error, info};
-
-use crate::DEFAULT_CONFIG_PATH;
-use ibc_relayer::config::Config;
-
-use self::{
-    config::ConfigCmd, create::CreateCmds, health::HealthCheckCmd, keys::KeysCmd,
-    listen::ListenCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
-    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
-};
-
 mod config;
 mod create;
 mod health;
@@ -33,6 +17,22 @@ mod tx;
 mod update;
 mod upgrade;
 mod version;
+
+use self::{
+    config::ConfigCmd, create::CreateCmds, health::HealthCheckCmd, keys::KeysCmd,
+    listen::ListenCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
+    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
+};
+
+use core::time::Duration;
+use std::path::PathBuf;
+
+use abscissa_core::clap::Parser;
+use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Runnable};
+use tracing::{error, info};
+
+use crate::DEFAULT_CONFIG_PATH;
+use ibc_relayer::config::Config;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
