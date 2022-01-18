@@ -19,6 +19,6 @@ pub enum KeysCmd {
     /// List keys configured on a chain
     List(list::KeysListCmd),
 
-    /// restore a key to a configured chain using a mnemonic
+    /// Restore a key to a configured chain using a mnemonic
     Restore(restore::KeyRestoreCmd),
 }
