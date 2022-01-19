@@ -13,7 +13,7 @@ use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint_light_client::types::TrustThreshold;
+use tendermint_light_client_verifier::types::TrustThreshold;
 
 use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};

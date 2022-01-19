@@ -74,9 +74,9 @@ impl Timestamp {
     }
 
     /// Returns a `Timestamp` representation of the current time.
+    #[cfg(feature = "clock")]
     pub fn now() -> Timestamp {
-        let ts = OffsetDateTime::now_utc().try_into().unwrap();
-        Timestamp { time: Some(ts) }
+        Time::now().into()
     }
 
     /// Returns a `Timestamp` representation of a timestamp not being set.

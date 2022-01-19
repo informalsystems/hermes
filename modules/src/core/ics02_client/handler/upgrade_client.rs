@@ -78,13 +78,13 @@ mod tests {
     use crate::prelude::*;
 
     use core::str::FromStr;
+    use tendermint::Time;
 
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Upgrade;
     use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
     use crate::core::ics02_client::msgs::ClientMsg;
-    use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
     use crate::core::ics24_host::identifier::ClientId;
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
@@ -93,7 +93,6 @@ mod tests {
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
     use crate::Height;
-    use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
     #[test]
     fn test_upgrade_client_ok() {
@@ -102,22 +101,16 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
-        let buf: Vec<u8> = Vec::new();
-        let buf2: Vec<u8> = Vec::new();
-
-        let c_bytes = CommitmentProofBytes::from(buf);
-        let cs_bytes = CommitmentProofBytes::from(buf2);
-
         let msg = MsgUpgradeAnyClient {
             client_id: client_id.clone(),
             client_state: MockClientState::new(MockHeader::new(Height::new(1, 26))).into(),
             consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26))).into(),
-            proof_upgrade_client: MerkleProof::try_from(c_bytes).unwrap(),
-            proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes).unwrap(),
+            proof_upgrade_client: Default::default(),
+            proof_upgrade_consensus_state: Default::default(),
             signer,
         };
 
-        let output = dispatch(&ctx, ClientMsg::UpgradeClient(msg.clone()));
+        let output = dispatch(Time::now(), &ctx, ClientMsg::UpgradeClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -153,22 +146,16 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
-        let buf: Vec<u8> = Vec::new();
-        let buf2: Vec<u8> = Vec::new();
-
-        let c_bytes = CommitmentProofBytes::from(buf);
-        let cs_bytes = CommitmentProofBytes::from(buf2);
-
         let msg = MsgUpgradeAnyClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
             client_state: MockClientState::new(MockHeader::new(Height::new(1, 26))).into(),
             consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26))).into(),
-            proof_upgrade_client: MerkleProof::try_from(c_bytes).unwrap(),
-            proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes).unwrap(),
+            proof_upgrade_client: Default::default(),
+            proof_upgrade_consensus_state: Default::default(),
             signer,
         };
 
-        let output = dispatch(&ctx, ClientMsg::UpgradeClient(msg.clone()));
+        let output = dispatch(Time::now(), &ctx, ClientMsg::UpgradeClient(msg.clone()));
 
         match output {
             Err(Error(ErrorDetail::ClientNotFound(e), _)) => {
@@ -187,22 +174,16 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
-        let buf: Vec<u8> = Vec::new();
-        let buf2: Vec<u8> = Vec::new();
-
-        let c_bytes = CommitmentProofBytes::from(buf);
-        let cs_bytes = CommitmentProofBytes::from(buf2);
-
         let msg = MsgUpgradeAnyClient {
             client_id,
             client_state: MockClientState::new(MockHeader::new(Height::new(0, 26))).into(),
             consensus_state: MockConsensusState::new(MockHeader::new(Height::new(0, 26))).into(),
-            proof_upgrade_client: MerkleProof::try_from(c_bytes).unwrap(),
-            proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes).unwrap(),
+            proof_upgrade_client: Default::default(),
+            proof_upgrade_consensus_state: Default::default(),
             signer,
         };
 
-        let output = dispatch(&ctx, ClientMsg::UpgradeClient(msg.clone()));
+        let output = dispatch(Time::now(), &ctx, ClientMsg::UpgradeClient(msg.clone()));
 
         match output {
             Err(Error(ErrorDetail::LowUpgradeHeight(e), _)) => {

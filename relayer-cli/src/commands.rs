@@ -5,10 +5,11 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
+use core::time::Duration;
 use std::path::PathBuf;
 
-use abscissa_core::{config::Override, Clap, Command, Configurable, FrameworkError, Runnable};
-use clap::AppSettings::Hidden;
+use abscissa_core::clap::Parser;
+use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Runnable};
 use tracing::{error, info};
 
 use crate::DEFAULT_CONFIG_PATH;
@@ -39,58 +40,51 @@ pub fn default_config_file() -> Option<PathBuf> {
 }
 
 /// Cli Subcommands
-#[derive(Command, Clap, Debug, Runnable)]
+#[derive(Command, Parser, Debug, Runnable)]
 pub enum CliCmd {
-    /// The `config` subcommand
-    #[clap(subcommand, about = "Validate Hermes configuration file")]
+    /// Validate Hermes configuration file
+    #[clap(subcommand)]
     Config(ConfigCmd),
 
-    /// The `keys` subcommand
-    #[clap(subcommand, about = "Manage keys in the relayer for each chain")]
+    /// Manage keys in the relayer for each chain
+    #[clap(subcommand)]
     Keys(KeysCmd),
 
-    /// The `create` subcommand
-    #[clap(
-        subcommand,
-        about = "Create objects (client, connection, or channel) on chains"
-    )]
+    /// Create objects (client, connection, or channel) on chains
+    #[clap(subcommand)]
     Create(CreateCmds),
 
-    /// The `update` subcommand
-    #[clap(subcommand, about = "Update objects (clients) on chains")]
+    /// Update objects (clients) on chains
+    #[clap(subcommand)]
     Update(UpdateCmds),
 
-    /// The `upgrade` subcommand
-    #[clap(subcommand, about = "Upgrade objects (clients) after chain upgrade")]
+    /// Upgrade objects (clients) after chain upgrade
+    #[clap(subcommand)]
     Upgrade(UpgradeCmds),
 
-    /// The `start` subcommand
-    #[clap(about = "Start the relayer in multi-chain mode. \
-                      Relays packets and open handshake messages between all chains in the config.")]
+    /// Start the relayer in multi-chain mode.
+    ///
+    /// Relays packets and open handshake messages between all chains in the config.
     Start(StartCmd),
 
-    /// The `query` subcommand
-    #[clap(subcommand, about = "Query objects from the chain")]
+    /// Query objects from the chain
+    #[clap(subcommand)]
     Query(QueryCmd),
 
-    /// The `tx` subcommand
-    #[clap(subcommand, about = "Create and send IBC transactions")]
+    /// Create and send IBC transactions
+    #[clap(subcommand)]
     Tx(TxCmd),
 
-    /// The `listen` subcommand
-    #[clap(about = "Listen to and display IBC events emitted by a chain")]
+    /// Listen to and display IBC events emitted by a chain
     Listen(ListenCmd),
 
-    /// The `misbehaviour` subcommand
-    #[clap(about = "Listen to client update IBC events and handles misbehaviour")]
+    /// Listen to client update IBC events and handles misbehaviour
     Misbehaviour(MisbehaviourCmd),
 
     /// The `version` subcommand, retained for backward compatibility.
-    #[clap(setting(Hidden))]
     Version(VersionCmd),
 
-    /// The `health` subcommand
-    #[clap(about = "Performs a health check of all chains in the the config")]
+    /// Performs a health check of all chains in the the config
     HealthCheck(HealthCheckCmd),
 }
 
@@ -138,6 +132,14 @@ impl Configurable<Config> for CliCmd {
             ccfg.memo_prefix.apply_suffix(&suffix);
         }
 
+        // For all commands except for `start` Hermes retries
+        // for a prolonged period of time.
+        if !matches!(self, CliCmd::Start(_)) {
+            for c in config.chains.iter_mut() {
+                c.rpc_timeout = Duration::from_secs(120);
+            }
+        }
+
         match self {
             CliCmd::Tx(cmd) => cmd.override_config(config),
             // CliCmd::Help(cmd) => cmd.override_config(config),
@@ -146,7 +148,6 @@ impl Configurable<Config> for CliCmd {
             // CliCmd::Update(cmd) => cmd.override_config(config),
             // CliCmd::Upgrade(cmd) => cmd.override_config(config),
             // CliCmd::Start(cmd) => cmd.override_config(config),
-            // CliCmd::StartMulti(cmd) => cmd.override_config(config),
             // CliCmd::Query(cmd) => cmd.override_config(config),
             // CliCmd::Listen(cmd) => cmd.override_config(config),
             // CliCmd::Misbehaviour(cmd) => cmd.override_config(config),

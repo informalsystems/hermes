@@ -1,6 +1,6 @@
 use core::time::Duration;
 use crossbeam_channel::Receiver;
-use tracing::debug;
+use tracing::{debug, error_span};
 
 use crate::channel::Channel as RelayChannel;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
@@ -20,7 +20,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
 ) -> TaskHandle {
     spawn_background_task(
-        format!("ChannelWorker({})", channel.short_name()),
+        error_span!("channel", channel = %channel.short_name()),
         Some(Duration::from_millis(200)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
@@ -29,10 +29,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         // there can be up to two event for this channel, e.g. init and try.
                         // process the last event, the one with highest "rank".
                         let last_event = batch.events.last();
-                        debug!(
-                            channel = %channel.short_name(),
-                            "channel worker starts processing {:#?}", last_event
-                        );
+                        debug!("starts processing {:#?}", last_event);
 
                         if let Some(event) = last_event {
                             let mut handshake_channel = RelayChannel::restore_from_event(
@@ -54,10 +51,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         height: current_height,
                         new_block: _,
                     } => {
-                        debug!(
-                            channel = %channel.short_name(),
-                            "Channel worker starts processing block event at {:#?}", current_height
-                        );
+                        debug!("starts processing block event at {:#?}", current_height);
 
                         let height = current_height
                             .decrement()

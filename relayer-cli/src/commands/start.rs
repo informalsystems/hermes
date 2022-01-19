@@ -4,7 +4,8 @@ use std::error::Error;
 use std::io;
 use std::sync::RwLock;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use crossbeam_channel::Sender;
 
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
@@ -18,12 +19,12 @@ use crate::conclude::json;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct StartCmd {
     #[clap(
         short = 'f',
         long = "full-scan",
-        about = "Force a full scan of the chains for clients, connections and channels"
+        help = "Force a full scan of the chains for clients, connections and channels"
     )]
     full_scan: bool,
 }

@@ -4,7 +4,7 @@ use core::convert::{TryFrom, TryInto};
 use core::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use tendermint_light_client::light_client::Options;
+use tendermint_light_client_verifier::options::Options;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;

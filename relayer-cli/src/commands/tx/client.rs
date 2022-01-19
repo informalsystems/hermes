@@ -1,6 +1,7 @@
 use core::fmt;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
@@ -15,12 +16,12 @@ use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHa
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxCreateClientCmd {
-    #[clap(required = true, about = "identifier of the destination chain")]
+    #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the source chain")]
+    #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 }
 
@@ -53,21 +54,21 @@ impl Runnable for TxCreateClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpdateClientCmd {
-    #[clap(required = true, about = "identifier of the destination chain")]
+    #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
     #[clap(
         required = true,
-        about = "identifier of the client to be updated on destination chain"
+        help = "identifier of the client to be updated on destination chain"
     )]
     dst_client_id: ClientId,
 
-    #[clap(short = 'H', long, about = "the target height of the client update")]
+    #[clap(short = 'H', long, help = "the target height of the client update")]
     target_height: Option<u64>,
 
-    #[clap(short = 't', long, about = "the trusted height of the client update")]
+    #[clap(short = 't', long, help = "the trusted height of the client update")]
     trusted_height: Option<u64>,
 }
 
@@ -121,15 +122,15 @@ impl Runnable for TxUpdateClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientCmd {
     #[clap(
         required = true,
-        about = "identifier of the chain that hosts the client"
+        help = "identifier of the chain that hosts the client"
     )]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the client to be upgraded")]
+    #[clap(required = true, help = "identifier of the client to be upgraded")]
     client_id: ClientId,
 }
 
@@ -171,11 +172,11 @@ impl Runnable for TxUpgradeClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientsCmd {
     #[clap(
         required = true,
-        about = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
+        help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
     src_chain_id: ChainId,
 }
@@ -269,11 +270,11 @@ impl fmt::Display for OutputBuffer {
                         )?;
                         match inner_result {
                             Ok(events) => writeln!(f, "{:#?}", events)?,
-                            Err(e) => writeln!(f, "{}", e.to_string())?,
+                            Err(e) => writeln!(f, "{}", e)?,
                         }
                     }
                 }
-                Err(e) => writeln!(f, " {}", e.to_string())?,
+                Err(e) => writeln!(f, " {}", e)?,
             }
         }
         Ok(())

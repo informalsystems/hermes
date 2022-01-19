@@ -1,6 +1,7 @@
 use core::fmt::{Debug, Error, Formatter};
 
-use abscissa_core::{Clap, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::Runnable;
 use serde::Serialize;
 
 use ibc::core::ics02_client::client_state::ClientState;
@@ -15,22 +16,22 @@ use crate::commands::query::channel_ends::ChannelEnds;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryChannelsCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
     #[clap(
         short = 'd',
         long,
-        about = "identifier of the channel's destination chain"
+        help = "identifier of the channel's destination chain"
     )]
     destination_chain: Option<ChainId>,
 
     #[clap(
         short = 'v',
         long,
-        about = "enable verbose output, displaying all client and connection ids"
+        help = "enable verbose output, displaying all client and connection ids"
     )]
     verbose: bool,
 }

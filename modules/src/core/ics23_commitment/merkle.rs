@@ -14,15 +14,10 @@ use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot
 use crate::core::ics23_commitment::error::Error;
 use crate::core::ics23_commitment::specs::ProofSpecs;
 
-pub fn apply_prefix(prefix: &CommitmentPrefix, mut path: Vec<String>) -> Result<MerklePath, Error> {
-    if prefix.is_empty() {
-        return Err(Error::empty_commitment_prefix());
-    }
-
-    let mut result: Vec<String> = vec![format!("{:?}", prefix)];
-    result.append(&mut path);
-
-    Ok(MerklePath { key_path: result })
+pub fn apply_prefix(prefix: &CommitmentPrefix, mut path: Vec<String>) -> MerklePath {
+    let mut key_path: Vec<String> = vec![format!("{:?}", prefix)];
+    key_path.append(&mut path);
+    MerklePath { key_path }
 }
 
 impl From<CommitmentRoot> for MerkleRoot {

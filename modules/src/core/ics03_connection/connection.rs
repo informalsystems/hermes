@@ -12,6 +12,7 @@ use ibc_proto::ibc::core::connection::v1::{
     IdentifiedConnection as RawIdentifiedConnection,
 };
 
+use crate::core::ics02_client::error::Error as ClientError;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::version::Version;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
@@ -262,7 +263,8 @@ impl TryFrom<RawCounterparty> for Counterparty {
                 .prefix
                 .ok_or_else(Error::missing_counterparty)?
                 .key_prefix
-                .into(),
+                .try_into()
+                .map_err(|_| Error::ics02_client(ClientError::empty_prefix()))?,
         ))
     }
 }

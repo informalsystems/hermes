@@ -1,4 +1,4 @@
-use tracing::{debug, error};
+use tracing::{debug, error, trace};
 
 use ibc::core::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
@@ -143,7 +143,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         );
 
         if conn_state_src.is_open() && conn_state_dst.is_open() {
-            debug!(
+            trace!(
                 "connection {} on chain {} is already open, not spawning Connection worker",
                 connection.connection_id,
                 chain.id()

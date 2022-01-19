@@ -1,6 +1,7 @@
 use core::time::Duration;
 
 use crate::chain::counterparty::connection_state_on_destination;
+use crate::chain::tx::TrackedMsgs;
 use crate::util::retry::RetryResult;
 use flex_error::define_error;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
@@ -803,9 +804,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_init_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_init()?;
 
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenInit");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(dst_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection init
@@ -860,8 +863,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
+
+        let tm = TrackedMsgs::new(client_msgs, "update client on source for ConnectionOpenTry");
         self.src_chain()
-            .send_messages_and_wait_commit(client_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.src_chain().id(), e))?;
 
         let query_height = self
@@ -930,9 +935,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_try_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_try()?;
 
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenTry");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(dst_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection try transaction
@@ -977,8 +984,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
+
+        let tm = TrackedMsgs::new(client_msgs, "update client on source for ConnectionOpenAck");
+
         self.src_chain()
-            .send_messages_and_wait_commit(client_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.src_chain().id(), e))?;
 
         let query_height = self
@@ -1021,9 +1031,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_ack_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_ack()?;
 
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenAck");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(dst_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection ack
@@ -1098,9 +1110,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_confirm_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_confirm()?;
 
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenConfirm");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(dst_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection confirm

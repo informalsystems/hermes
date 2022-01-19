@@ -1,22 +1,23 @@
 use std::path::PathBuf;
 use std::process;
 
-use abscissa_core::{Clap, Command, Configurable, FrameworkError, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Configurable, FrameworkError, Runnable};
 use clap::IntoApp;
 use ibc_relayer::config::Config;
 
 use crate::commands::CliCmd;
 
 /// Entry point for Hermes CLI.
-#[derive(Command, Debug, Clap)]
+#[derive(Command, Debug, Parser)]
 #[clap(author, about, version)]
 pub struct EntryPoint {
     /// Path to the configuration file
-    #[clap(short = 'c', long, about = "path to configuration file")]
+    #[clap(short = 'c', long, help = "path to configuration file")]
     pub config: Option<PathBuf>,
 
     /// Toggle JSON output mode one verbosity setting
-    #[clap(short = 'j', long, about = "enable JSON output")]
+    #[clap(short = 'j', long, help = "enable JSON output")]
     pub json: bool,
 
     /// Subcommand to execute.

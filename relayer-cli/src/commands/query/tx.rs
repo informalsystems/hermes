@@ -1,13 +1,13 @@
 //! `query tx` subcommand
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 mod events;
 
 /// `query tx` subcommand
-#[derive(Command, Debug, Clap, Runnable)]
+#[derive(Command, Debug, Parser, Runnable)]
 pub enum QueryTxCmd {
-    /// The `query tx events` subcommand
-    #[clap(about = "Query the events emitted by transaction")]
+    /// Query the events emitted by transaction
     Events(events::QueryTxEventsCmd),
 }

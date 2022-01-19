@@ -1,5 +1,6 @@
 use crate::core::ics23_commitment::error::Error;
 use crate::prelude::*;
+use crate::proofs::ProofError;
 
 use core::{convert::TryFrom, fmt};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
@@ -59,15 +60,15 @@ impl fmt::Debug for CommitmentProofBytes {
     }
 }
 
-impl CommitmentProofBytes {
-    pub fn is_empty(&self) -> bool {
-        self.bytes.len() == 0
-    }
-}
+impl TryFrom<Vec<u8>> for CommitmentProofBytes {
+    type Error = ProofError;
 
-impl From<Vec<u8>> for CommitmentProofBytes {
-    fn from(bytes: Vec<u8>) -> Self {
-        Self { bytes }
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        if bytes.is_empty() {
+            Err(Self::Error::empty_proof())
+        } else {
+            Ok(Self { bytes })
+        }
     }
 }
 
@@ -77,18 +78,13 @@ impl From<CommitmentProofBytes> for Vec<u8> {
     }
 }
 
-// impl From<MerkleProof> for CommitmentProofBytes {
-//     fn from(proof: MerkleProof) -> Self {
-//         let raw_proof: RawMerkleProof = proof.into();
-//         raw_proof.into()
-//     }
-// }
+impl TryFrom<RawMerkleProof> for CommitmentProofBytes {
+    type Error = ProofError;
 
-impl From<RawMerkleProof> for CommitmentProofBytes {
-    fn from(proof: RawMerkleProof) -> Self {
+    fn try_from(proof: RawMerkleProof) -> Result<Self, Self::Error> {
         let mut buf = Vec::new();
         prost::Message::encode(&proof, &mut buf).unwrap();
-        buf.into()
+        buf.try_into()
     }
 }
 
@@ -109,16 +105,6 @@ pub struct CommitmentPrefix {
 }
 
 impl CommitmentPrefix {
-    pub fn from_bytes(bytes: &[u8]) -> Self {
-        Self {
-            bytes: Vec::from(bytes),
-        }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.bytes.len() == 0
-    }
-
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes
     }
@@ -128,9 +114,15 @@ impl CommitmentPrefix {
     }
 }
 
-impl From<Vec<u8>> for CommitmentPrefix {
-    fn from(bytes: Vec<u8>) -> Self {
-        Self { bytes }
+impl TryFrom<Vec<u8>> for CommitmentPrefix {
+    type Error = Error;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        if bytes.is_empty() {
+            Err(Self::Error::empty_commitment_prefix())
+        } else {
+            Ok(Self { bytes })
+        }
     }
 }
 

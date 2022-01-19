@@ -84,7 +84,7 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
 
     fn try_from(raw_msg: RawMsgChannelOpenAck) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_try.into(),
+            raw_msg.proof_try.try_into().map_err(Error::invalid_proof)?,
             None,
             None,
             None,
