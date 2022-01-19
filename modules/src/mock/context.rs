@@ -4,6 +4,8 @@ use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap;
 use core::cmp::min;
+use core::mem::replace;
+use core::ops::{Add, Sub};
 use core::time::Duration;
 
 use prost_types::Any;
@@ -42,7 +44,6 @@ use crate::relayer::ics18_relayer::error::Error as Ics18Error;
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use core::ops::{Add, Sub};
 
 pub const DEFAULT_BLOCK_TIME_SECS: u64 = 3;
 
@@ -473,7 +474,7 @@ impl MockContext {
             self.pending_block.timestamp().add(self.block_time).unwrap(),
         );
 
-        let old_pending_block = core::mem::replace(&mut self.pending_block, new_block);
+        let old_pending_block = replace(&mut self.pending_block, new_block);
 
         // Append the new header at the tip of the history.
         if self.history.len() >= self.max_history_size {
