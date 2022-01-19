@@ -473,19 +473,18 @@ impl MockContext {
             self.pending_block.timestamp().add(self.block_time).unwrap(),
         );
 
-        let pending_block = self.pending_block.clone();
+        let old_pending_block = core::mem::replace(&mut self.pending_block, new_block);
 
         // Append the new header at the tip of the history.
         if self.history.len() >= self.max_history_size {
             // History is full, we rotate and replace the tip with the new header.
             self.history.rotate_left(1);
-            self.history[self.max_history_size - 1] = pending_block;
+            self.history[self.max_history_size - 1] = old_pending_block;
         } else {
             // History is not full yet.
-            self.history.push(pending_block);
+            self.history.push(old_pending_block);
         }
 
-        self.pending_block = new_block;
         self.latest_height = self.latest_height.increment();
     }
 
