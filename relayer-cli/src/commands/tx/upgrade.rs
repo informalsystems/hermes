@@ -67,7 +67,7 @@ pub struct TxIbcUpgradeChainCmd {
     #[clap(
         short = 'd',
         long,
-        help = "denomination for the depoisit (default: 'stake')"
+        help = "denomination for the deposit (default: 'stake')"
     )]
     denom: Option<String>,
 
