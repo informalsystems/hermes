@@ -65,6 +65,13 @@ pub struct TxIbcUpgradeChainCmd {
     upgrade_name: Option<String>,
 
     #[clap(
+        short = 'd',
+        long,
+        help = "denomination for the depoisit (default: 'stake')"
+    )]
+    denom: Option<String>,
+
+    #[clap(
         short = 'l',
         long,
         help = "use legacy upgrade proposal constructs (for chains built with Cosmos SDK < v0.43.0)"
@@ -93,6 +100,12 @@ impl TxIbcUpgradeChainCmd {
             src_chain_config: src_chain_config.clone(),
             src_client_id: self.src_client_id.clone(),
             amount: self.amount,
+            denom: self
+                .denom
+                .as_ref()
+                .map(|v| v.as_str())
+                .unwrap_or("stake")
+                .into(),
             height_offset: self.height_offset,
             upgraded_chain_id: self
                 .new_chain_id
