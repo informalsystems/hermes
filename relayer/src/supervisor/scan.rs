@@ -60,7 +60,20 @@ flex_error::define_error! {
                     "could not retrieve the connection hop underlying port/channel {}/{} on chain '{}'",
                     e.port_id, e.channel_id, e.chain_id
                 )
+            },
+
+        UninitializedChannel
+            {
+                port_id: PortId,
+                channel_id: ChannelId,
+                chain_id: ChainId,
             }
+            |e| {
+                format_args!(
+                    "channel '{}/{}' on chain '{}' is uninitialized",
+                    e.port_id, e.channel_id, e.chain_id
+                )
+            },
     }
 }
 
@@ -582,8 +595,20 @@ fn scan_allowed_channel<Chain: ChainHandle>(
     let span = info_span!("scan.channel", port_id = %port_id, channel_id = %channel_id);
     let _guard = span.enter();
 
-    info!("querying channel {}/{}...", port_id, channel_id);
+    info!("querying channel '{}/{}'...", port_id, channel_id);
     let channel = query_channel(chain, port_id, channel_id)?;
+
+    if channel
+        .channel_end
+        .state_matches(&ChannelState::Uninitialized)
+    {
+        return Err(Error::uninitialized_channel(
+            port_id.clone(),
+            channel_id.clone(),
+            chain.id(),
+        ));
+    }
+
     let connection = query_connection_for_channel(chain, &channel)?;
     let client_id = connection.connection_end.client_id();
 
