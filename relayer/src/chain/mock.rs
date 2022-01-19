@@ -197,7 +197,7 @@ impl ChainEndpoint for MockChain {
     fn query_upgraded_client_state(
         &self,
         _height: Height,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
         unimplemented!()
     }
 
@@ -434,7 +434,7 @@ impl ChainEndpoint for MockChain {
     fn query_upgraded_consensus_state(
         &self,
         _height: Height,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
 
