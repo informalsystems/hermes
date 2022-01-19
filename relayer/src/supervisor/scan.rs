@@ -329,7 +329,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                         .entry(channel.channel_id.clone())
                         .or_insert_with(|| ChannelScan::new(channel, counterparty_channel));
                 }
-                Err(e) => error!("failed to scan channel {}, reason: {}", channel_id, e),
+                Err(e) => error!("failed to scan channel '{}', reason: {}", channel_id, e),
             }
         }
 
