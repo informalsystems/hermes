@@ -54,6 +54,7 @@ pub struct UpgradePlanOptions {
     pub dst_chain_config: ChainConfig,
     pub src_client_id: ClientId,
     pub amount: u64,
+    pub denom: String,
     pub height_offset: u64,
     pub upgraded_chain_id: ChainId,
     pub upgraded_unbonding_period: Option<Duration>,
@@ -115,7 +116,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     let proposer = dst_chain.get_signer().map_err(UpgradeChainError::key)?;
 
     let coins = ibc_proto::cosmos::base::v1beta1::Coin {
-        denom: "stake".to_string(),
+        denom: opts.denom.clone(),
         amount: opts.amount.to_string(),
     };
 
