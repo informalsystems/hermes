@@ -100,12 +100,7 @@ impl TxIbcUpgradeChainCmd {
             src_chain_config: src_chain_config.clone(),
             src_client_id: self.src_client_id.clone(),
             amount: self.amount,
-            denom: self
-                .denom
-                .as_ref()
-                .map(|v| v.as_str())
-                .unwrap_or("stake")
-                .into(),
+            denom: self.denom.as_deref().unwrap_or("stake").into(),
             height_offset: self.height_offset,
             upgraded_chain_id: self
                 .new_chain_id
