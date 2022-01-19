@@ -608,7 +608,7 @@ fn scan_allowed_channel<Chain: ChainHandle>(
         channel_on_destination(&channel, &connection, &counterparty_chain).unwrap_or_default();
 
     info!(
-        "found counterparty channel {}",
+        "found counterparty channel: {}",
         counterparty_channel
             .as_ref()
             .map(|c| c.channel_id.to_string())
@@ -621,10 +621,10 @@ fn scan_allowed_channel<Chain: ChainHandle>(
             .unwrap_or_default();
 
     info!(
-        "found counterparty channel {}",
-        counterparty_channel
+        "found counterparty connection state: {}",
+        counterparty_connection_state
             .as_ref()
-            .map(|c| c.channel_id.to_string())
+            .map(|s| s.to_string())
             .unwrap_or_else(|| "<none>".to_string())
     );
 
