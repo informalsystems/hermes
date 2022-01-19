@@ -52,7 +52,6 @@ use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
-use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::QueryBlockRequest;
 use ibc::query::{QueryTxHash, QueryTxRequest};
@@ -1264,7 +1263,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_upgraded_client_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
 
         // Query for the value and the proof.
@@ -1277,17 +1276,13 @@ impl ChainEndpoint for CosmosSdkChain {
         let client_state = AnyClientState::decode_vec(&upgraded_client_state_raw)
             .map_err(Error::conversion_from_any)?;
 
-        let client_type = client_state.client_type();
-        let tm_client_state = downcast!(client_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_type_mismatch(ClientType::Tendermint, client_type))?;
-
-        Ok((tm_client_state, proof))
+        Ok((client_state, proof))
     }
 
     fn query_upgraded_consensus_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         crate::time!("query_upgraded_consensus_state");
 
         let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
@@ -1301,13 +1296,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let consensus_state = AnyConsensusState::decode_vec(&upgraded_consensus_state_raw)
             .map_err(Error::conversion_from_any)?;
 
-        let cs_client_type = consensus_state.client_type();
-        let tm_consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-            .ok_or_else(|| {
-                Error::consensus_state_type_mismatch(ClientType::Tendermint, cs_client_type)
-            })?;
-
-        Ok((tm_consensus_state, proof))
+        Ok((consensus_state, proof))
     }
 
     /// Performs a query to retrieve the identifiers of all connections.

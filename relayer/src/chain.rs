@@ -188,12 +188,12 @@ pub trait ChainEndpoint: Sized {
     fn query_upgraded_client_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error>;
+    ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn query_upgraded_consensus_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
+    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_connections(
