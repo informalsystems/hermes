@@ -82,7 +82,7 @@ define_error! {
             },
 
         EmptyConsensusStateResponse
-            | _ | { "the client state was not found" },
+            | _ | { "the client consensus state was not found" },
 
         UnknownHeaderType
             { header_type: String }
