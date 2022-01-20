@@ -330,7 +330,10 @@ impl CosmosSdkChain {
         let estimated_gas = self.estimate_gas(simulate_tx)?;
 
         if estimated_gas > self.max_gas() {
-            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+            debug!(
+                id = %self.id(), estimated = ?estimated_gas, max = ?self.max_gas(),
+                "send_tx: estimated gas is higher than max gas"
+            );
 
             return Err(Error::tx_simulate_gas_estimate_exceeded(
                 self.id().clone(),
@@ -342,7 +345,8 @@ impl CosmosSdkChain {
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
-            "using {} gas, fee {}",
+            id = %self.id(),
+            "send_tx: using {} gas, fee {}",
             estimated_gas,
             PrettyFee(&adjusted_fee)
         );
@@ -818,8 +822,8 @@ impl CosmosSdkChain {
             .join(", ");
 
         info!(
-            "[{}] waiting for commit of tx hashes(s) {}",
-            self.id(),
+            id = %self.id(),
+            "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
             hashes
         );
 
@@ -832,8 +836,8 @@ impl CosmosSdkChain {
             |index| {
                 if all_tx_results_found(&tx_sync_results) {
                     trace!(
-                        "[{}] wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
-                        self.id(),
+                        id = %self.id(),
+                        "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
                         tx_sync_results.len(),
                         index,
                         start.elapsed().as_millis()
