@@ -53,10 +53,10 @@ use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::events::{from_tx_response_event, IbcEvent};
+use ibc::query::QueryBlockRequest;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
@@ -1250,21 +1250,20 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<Self::ClientState, Error> {
+    ) -> Result<AnyClientState, Error> {
         crate::time!("query_client_state");
 
         let client_state = self
             .query(ClientStatePath(client_id.clone()), height, false)
             .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
-        let client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_state_type(format!("{:?}", client_state)))?;
+
         Ok(client_state)
     }
 
     fn query_upgraded_client_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
 
         // Query for the value and the proof.
@@ -1277,17 +1276,13 @@ impl ChainEndpoint for CosmosSdkChain {
         let client_state = AnyClientState::decode_vec(&upgraded_client_state_raw)
             .map_err(Error::conversion_from_any)?;
 
-        let client_type = client_state.client_type();
-        let tm_client_state = downcast!(client_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_type_mismatch(ClientType::Tendermint, client_type))?;
-
-        Ok((tm_client_state, proof))
+        Ok((client_state, proof))
     }
 
     fn query_upgraded_consensus_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         crate::time!("query_upgraded_consensus_state");
 
         let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
@@ -1301,13 +1296,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let consensus_state = AnyConsensusState::decode_vec(&upgraded_consensus_state_raw)
             .map_err(Error::conversion_from_any)?;
 
-        let cs_client_type = consensus_state.client_type();
-        let tm_consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-            .ok_or_else(|| {
-                Error::consensus_state_type_mismatch(ClientType::Tendermint, cs_client_type)
-            })?;
-
-        Ok((tm_consensus_state, proof))
+        Ok((consensus_state, proof))
     }
 
     /// Performs a query to retrieve the identifiers of all connections.
@@ -1349,10 +1338,10 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<AnyConsensusState, Error> {
         crate::time!("query_consensus_state");
 
-        let consensus_state = self
-            .proven_client_consensus(&client_id, consensus_height, query_height)?
-            .0;
-        Ok(AnyConsensusState::Tendermint(consensus_state))
+        let (consensus_state, _proof) =
+            self.proven_client_consensus(&client_id, consensus_height, query_height)?;
+
+        Ok(consensus_state)
     }
 
     fn query_client_connections(
@@ -1902,15 +1891,12 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
         crate::time!("proven_client_state");
 
         let res = self.query(ClientStatePath(client_id.clone()), height, true)?;
 
         let client_state = AnyClientState::decode_vec(&res.value).map_err(Error::decode)?;
-
-        let client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_state_type(format!("{:?}", client_state)))?;
 
         Ok((
             client_state,
@@ -1923,7 +1909,7 @@ impl ChainEndpoint for CosmosSdkChain {
         client_id: &ClientId,
         consensus_height: ICSHeight,
         height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         crate::time!("proven_client_consensus");
 
         let res = self.query(
@@ -1938,14 +1924,16 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
 
-        let consensus_state =
-            downcast!(consensus_state.clone() => AnyConsensusState::Tendermint)
-                .ok_or_else(|| Error::client_state_type(format!("{:?}", consensus_state)))?;
+        if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
+            return Err(Error::consensus_state_type_mismatch(
+                ClientType::Tendermint,
+                consensus_state.client_type(),
+            ));
+        }
 
-        Ok((
-            consensus_state,
-            res.proof.ok_or_else(Error::empty_response_proof)?,
-        ))
+        let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+
+        Ok((consensus_state, proof))
     }
 
     fn proven_connection(

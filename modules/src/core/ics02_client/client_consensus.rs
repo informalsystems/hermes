@@ -34,9 +34,6 @@ pub trait ConsensusState: Clone + core::fmt::Debug + Send + Sync {
     /// Commitment root of the consensus state, which is used for key-value pair verification.
     fn root(&self) -> &CommitmentRoot;
 
-    /// Performs basic validation of the consensus state
-    fn validate_basic(&self) -> Result<(), Self::Error>;
-
     /// Wrap into an `AnyConsensusState`
     fn wrap_any(self) -> AnyConsensusState;
 }
@@ -162,15 +159,6 @@ impl ConsensusState for AnyConsensusState {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.root(),
-        }
-    }
-
-    fn validate_basic(&self) -> Result<(), Infallible> {
-        match self {
-            Self::Tendermint(cs_state) => cs_state.validate_basic(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => mock_state.validate_basic(),
         }
     }
 

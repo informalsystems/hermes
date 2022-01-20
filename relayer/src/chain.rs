@@ -169,7 +169,7 @@ pub trait ChainEndpoint: Sized {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<Self::ClientState, Error>;
+    ) -> Result<AnyClientState, Error>;
 
     fn query_consensus_states(
         &self,
@@ -188,12 +188,12 @@ pub trait ChainEndpoint: Sized {
     fn query_upgraded_client_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error>;
+    ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn query_upgraded_consensus_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
+    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_connections(
@@ -276,7 +276,7 @@ pub trait ChainEndpoint: Sized {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error>;
+    ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn proven_connection(
         &self,
@@ -289,7 +289,7 @@ pub trait ChainEndpoint: Sized {
         client_id: &ClientId,
         consensus_height: ICSHeight,
         height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
+    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     fn proven_channel(
         &self,
@@ -339,7 +339,7 @@ pub trait ChainEndpoint: Sized {
         connection_id: &ConnectionId,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<(Option<Self::ClientState>, Proofs), Error> {
+    ) -> Result<(Option<AnyClientState>, Proofs), Error> {
         let (connection_end, connection_proof) = self.proven_connection(connection_id, height)?;
 
         // Check that the connection state is compatible with the message
