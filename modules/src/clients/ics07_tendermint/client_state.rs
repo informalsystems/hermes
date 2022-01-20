@@ -139,18 +139,6 @@ impl ClientState {
         })
     }
 
-    /// Helper function to verify the upgrade client procedure.
-    /// Resets all fields except the blockchain-specific ones.
-    pub fn zero_custom_fields(mut client_state: Self) -> Self {
-        client_state.trusting_period = ZERO_DURATION;
-        client_state.trust_level = TrustThreshold::ZERO;
-        client_state.allow_update.after_expiry = false;
-        client_state.allow_update.after_misbehaviour = false;
-        client_state.frozen_height = None;
-        client_state.max_clock_drift = ZERO_DURATION;
-        client_state
-    }
-
     /// Get the refresh time to ensure the state does not expire
     pub fn refresh_time(&self) -> Option<Duration> {
         Some(2 * self.trusting_period / 3)
@@ -217,7 +205,14 @@ impl ClientState {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpgradeOptions {
+    pub unbonding_period: Duration,
+}
+
 impl crate::core::ics02_client::client_state::ClientState for ClientState {
+    type UpgradeOptions = UpgradeOptions;
+
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -232,6 +227,28 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
 
     fn frozen_height(&self) -> Option<Height> {
         self.frozen_height
+    }
+
+    fn upgrade(
+        mut self,
+        upgrade_height: Height,
+        upgrade_options: UpgradeOptions,
+        chain_id: ChainId,
+    ) -> Self {
+        // Reset custom fields to zero values
+        self.trusting_period = ZERO_DURATION;
+        self.trust_level = TrustThreshold::ZERO;
+        self.allow_update.after_expiry = false;
+        self.allow_update.after_misbehaviour = false;
+        self.frozen_height = None;
+        self.max_clock_drift = ZERO_DURATION;
+
+        // Upgrade the client state
+        self.latest_height = upgrade_height;
+        self.unbonding_period = upgrade_options.unbonding_period;
+        self.chain_id = chain_id;
+
+        self
     }
 
     fn wrap_any(self) -> AnyClientState {

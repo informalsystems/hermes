@@ -1,6 +1,7 @@
 use core::str::FromStr;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -11,30 +12,30 @@ use ibc_relayer::{
 use crate::application::app_config;
 use crate::conclude::Output;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct KeyRestoreCmd {
-    #[clap(required = true, about = "identifier of the chain")]
+    #[clap(required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
     #[clap(
         short = 'm',
         long,
         required = true,
-        about = "mnemonic to restore the key from"
+        help = "mnemonic to restore the key from"
     )]
     mnemonic: String,
 
     #[clap(
         short = 'n',
         long,
-        about = "name of the key (defaults to the `key_name` defined in the config)"
+        help = "name of the key (defaults to the `key_name` defined in the config)"
     )]
     name: Option<String>,
 
     #[clap(
         short = 'p',
         long,
-        about = "derivation path for this key",
+        help = "derivation path for this key",
         default_value = "m/44'/118'/0'/0/0"
     )]
     hd_path: String,

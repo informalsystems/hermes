@@ -1,4 +1,5 @@
-use abscissa_core::{config::Override, Clap, Command, FrameworkErrorKind, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
 
 use ibc::{
     core::{
@@ -20,23 +21,23 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxIcs20MsgTransferCmd {
-    #[clap(required = true, about = "identifier of the destination chain")]
+    #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the source chain")]
+    #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the source port")]
+    #[clap(required = true, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[clap(required = true, about = "identifier of the source channel")]
+    #[clap(required = true, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
 
     #[clap(
         required = true,
-        about = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
+        help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: Amount,
 
@@ -44,7 +45,7 @@ pub struct TxIcs20MsgTransferCmd {
         short = 'o',
         long,
         default_value = "0",
-        about = "timeout in number of blocks since current"
+        help = "timeout in number of blocks since current"
     )]
     timeout_height_offset: u64,
 
@@ -52,32 +53,32 @@ pub struct TxIcs20MsgTransferCmd {
         short = 't',
         long,
         default_value = "0",
-        about = "timeout in seconds since current"
+        help = "timeout in seconds since current"
     )]
     timeout_seconds: u64,
 
     #[clap(
         short = 'r',
         long,
-        about = "receiving account address on the destination chain"
+        help = "receiving account address on the destination chain"
     )]
     receiver: Option<String>,
 
     #[clap(
         short = 'd',
         long,
-        about = "denomination of the coins to send",
+        help = "denomination of the coins to send",
         default_value = "samoleans"
     )]
     denom: String,
 
-    #[clap(short = 'n', long, about = "number of messages to send")]
+    #[clap(short = 'n', long, help = "number of messages to send")]
     number_msgs: Option<usize>,
 
     #[clap(
         short = 'k',
         long,
-        about = "use the given signing key (default: `key_name` config)"
+        help = "use the given signing key (default: `key_name` config)"
     )]
     key: Option<String>,
 }

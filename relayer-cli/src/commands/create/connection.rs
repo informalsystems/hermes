@@ -1,6 +1,7 @@
 use core::time::Duration;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
@@ -13,32 +14,32 @@ use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct CreateConnectionCommand {
     #[clap(
         required = true,
-        about = "identifier of the side `a` chain for the new connection"
+        help = "identifier of the side `a` chain for the new connection"
     )]
     chain_a_id: ChainId,
 
-    #[clap(about = "identifier of the side `b` chain for the new connection")]
+    #[clap(help = "identifier of the side `b` chain for the new connection")]
     chain_b_id: Option<ChainId>,
 
     #[clap(
         long,
-        about = "identifier of client hosted on chain `a`; default: None (creates a new client)"
+        help = "identifier of client hosted on chain `a`; default: None (creates a new client)"
     )]
     client_a: Option<ClientId>,
 
     #[clap(
         long,
-        about = "identifier of client hosted on chain `b`; default: None (creates a new client)"
+        help = "identifier of client hosted on chain `b`; default: None (creates a new client)"
     )]
     client_b: Option<ClientId>,
 
     #[clap(
         long,
-        about = "delay period parameter for the new connection (seconds)",
+        help = "delay period parameter for the new connection (seconds)",
         default_value = "0"
     )]
     delay: u64,

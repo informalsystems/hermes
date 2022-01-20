@@ -1,7 +1,8 @@
 use alloc::sync::Arc;
 use core::str::FromStr;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
@@ -19,12 +20,12 @@ use crate::error::Error;
 use crate::prelude::app_config;
 
 /// Query the events emitted by transaction
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryTxEventsCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "transaction hash to query")]
+    #[clap(required = true, help = "transaction hash to query")]
     hash: String,
 }
 
