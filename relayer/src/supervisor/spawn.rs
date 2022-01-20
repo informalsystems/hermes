@@ -87,8 +87,13 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             client.clone(),
             connection_scan.connection,
         ) {
-            Ok(()) => debug!(
+            Ok(true) => debug!(
                 "done spawning workers for connection {} on chain {}",
+                connection_id,
+                chain.id(),
+            ),
+            Ok(false) => debug!(
+                "no workers were spawn for connection {} on chain {}",
                 connection_id,
                 chain.id(),
             ),
@@ -102,8 +107,13 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
 
         for (channel_id, channel_scan) in connection_scan.channels {
             match self.spawn_workers_for_channel(chain.clone(), client, channel_scan) {
-                Ok(()) => debug!(
+                Ok(true) => debug!(
                     "done spawning workers for chain {} and channel {}",
+                    chain.id(),
+                    channel_id,
+                ),
+                Ok(false) => debug!(
+                    "no workers spawn for chain {} and channel {}",
                     chain.id(),
                     channel_id,
                 ),
@@ -122,7 +132,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         chain: Chain,
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         let config_conn_enabled = self.config.mode.connections.enabled;
 
         let counterparty_chain = self
@@ -148,6 +158,8 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                 connection.connection_id,
                 chain.id()
             );
+
+            Ok(false)
         } else if config_conn_enabled
             && !conn_state_dst.is_open()
             && conn_state_dst.less_or_equal_progress(conn_state_src)
@@ -167,9 +179,11 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                         connection_object.short_name()
                     );
                 });
-        }
 
-        Ok(())
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     /// Spawns all the [`Worker`](crate::worker::Worker)s that will
@@ -179,7 +193,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         chain: Chain,
         client: &IdentifiedAnyClientState,
         channel_scan: ChannelScan,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         let mode = &self.config.mode;
 
         let counterparty_chain = self
@@ -259,6 +273,8 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                         .then(|| debug!("spawned Packet worker: {}", path_object.short_name()));
                 }
             }
+
+            Ok(mode.clients.enabled)
         } else if mode.channels.enabled
             && !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
@@ -274,9 +290,11 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             self.workers
                 .spawn(chain, counterparty_chain, &channel_object, self.config)
                 .then(|| debug!("spawned Channel worker: {}", channel_object.short_name()));
-        }
 
-        Ok(())
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     pub fn shutdown_workers_for_chain(&mut self, chain_id: &ChainId) {
