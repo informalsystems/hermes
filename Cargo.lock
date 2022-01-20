@@ -1350,7 +1350,6 @@ name = "ibc-proto"
 version = "0.14.0"
 dependencies = [
  "bytes",
- "getrandom 0.2.4",
  "prost",
  "prost-types",
  "serde",
