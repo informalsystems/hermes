@@ -233,6 +233,11 @@ FLAGS:
 <p>To restore a key from its mnemonic:</p>
 <pre><code class="language-shell">hermes -c config.toml keys restore [CHAIN_ID] -m &quot;[MNEMONIC]&quot;
 </code></pre>
+<p>or using an explicit <a href="https://github.com/satoshilabs/slips/blob/master/slip-0044.md">derivation path</a>, for example
+an Ethereum coin type (used for Evmos, Injective, Umee, Cronos, and
+possibly other networks):</p>
+<pre><code class="language-shell">hermes -c config.toml keys restore --mnemonic &lt;MNEMONIC&gt; --hd-path &quot;m/44'/60'/0'/0/0&quot; &lt;CHAIN_ID&gt;
+</code></pre>
 <p>If the command is successful a message similar to the one below will be displayed:</p>
 <pre><code class="language-json">Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 </code></pre>

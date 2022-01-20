@@ -1110,6 +1110,8 @@ websocket_addr = 'ws://127.0.0.1:26657/websocket'
 
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
+# Note: Hermes uses this parameter _only_ in `start` mode; for all other CLIs,
+# Hermes uses a large preconfigured timeout (on the order of minutes).
 rpc_timeout = '10s'
 
 # Specify the prefix used by the chain. Required
@@ -1126,11 +1128,11 @@ key_name = 'testkey'
 # 3) the message signing method.
 # The current configuration options are for Cosmos SDK and Ethermint.
 #
-# Example configuration for Ethermint:
+# Example configuration for chains based on Ethermint library:
 #
 # address_type = { derivation = 'ethermint', proto_type = { pk_type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
 #
-# Default: { derivation = 'cosmos' }, i.e. address derivation as in Cosmos SDK
+# Default: { derivation = 'cosmos' }, i.e. address derivation as in Cosmos SDK.
 # Warning: This is an advanced feature! Modify with caution.
 address_type = { derivation = 'cosmos' }
 
@@ -2247,6 +2249,11 @@ FLAGS:
 </code></pre>
 <p>To restore a key from its mnemonic:</p>
 <pre><code class="language-shell">hermes -c config.toml keys restore [CHAIN_ID] -m &quot;[MNEMONIC]&quot;
+</code></pre>
+<p>or using an explicit <a href="https://github.com/satoshilabs/slips/blob/master/slip-0044.md">derivation path</a>, for example
+an Ethereum coin type (used for Evmos, Injective, Umee, Cronos, and
+possibly other networks):</p>
+<pre><code class="language-shell">hermes -c config.toml keys restore --mnemonic &lt;MNEMONIC&gt; --hd-path &quot;m/44'/60'/0'/0/0&quot; &lt;CHAIN_ID&gt;
 </code></pre>
 <p>If the command is successful a message similar to the one below will be displayed:</p>
 <pre><code class="language-json">Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
