@@ -734,7 +734,7 @@ impl CosmosSdkChain {
         let (_key, pk_buf) = self.key_and_bytes()?;
         let pk_type = match &self.config.address_type {
             AddressType::Cosmos => "/cosmos.crypto.secp256k1.PubKey".to_string(),
-            AddressType::Evmos { pk_type } => pk_type.clone(),
+            AddressType::Ethermint { pk_type } => pk_type.clone(),
         };
         // Create a MsgSend proto Any message
         let pk_any = Any {

@@ -362,7 +362,7 @@ impl KeyRing {
 
         let private_key_bytes = key.private_key.private_key.to_bytes();
         match address_type {
-            AddressType::Evmos { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
+            AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
                 let hash = keccak256_hash(msg.as_slice());
                 let s = Secp256k1::signing_only();
                 // SAFETY: hash is 32 bytes, as expected in `Message::from_slice` -- see `keccak256_hash`, hence `unwrap`
@@ -372,7 +372,7 @@ impl KeyRing {
                 let (_, sig_bytes) = s.sign_recoverable(&sign_msg, &key).serialize_compact();
                 Ok(sig_bytes.to_vec())
             }
-            AddressType::Cosmos | AddressType::Evmos { .. } => {
+            AddressType::Cosmos | AddressType::Ethermint { .. } => {
                 let signing_key = SigningKey::from_bytes(private_key_bytes.as_slice())
                     .map_err(Error::invalid_key)?;
                 let signature: Signature = signing_key.sign(&msg);
@@ -409,7 +409,7 @@ fn private_key_from_mnemonic(
 /// Return an address from a Public Key
 fn get_address(pk: ExtendedPubKey, at: &AddressType) -> Vec<u8> {
     match at {
-        AddressType::Evmos { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
+        AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
             let public_key = pk.public_key.key.serialize_uncompressed();
             // 0x04 is [SECP256K1_TAG_PUBKEY_UNCOMPRESSED](https://github.com/bitcoin-core/secp256k1/blob/d7ec49a6893751f068275cc8ddf4993ef7f31756/include/secp256k1.h#L196)
             debug_assert_eq!(public_key[0], 0x04);
@@ -419,7 +419,7 @@ fn get_address(pk: ExtendedPubKey, at: &AddressType) -> Vec<u8> {
             // (see https://kobl.one/blog/create-full-ethereum-keypair-and-address/)
             output[12..].to_vec()
         }
-        AddressType::Cosmos | AddressType::Evmos { .. } => {
+        AddressType::Cosmos | AddressType::Ethermint { .. } => {
             let mut hasher = Sha256::new();
             hasher.update(pk.public_key.to_bytes().as_slice());
 

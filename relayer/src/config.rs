@@ -331,7 +331,7 @@ impl Default for RestConfig {
 }
 
 /// It defines the address generation method
-/// TODO: Evmos `pk_type` to be restricted
+/// TODO: Ethermint `pk_type` to be restricted
 /// after the Cosmos SDK release with ethsecp256k1
 /// <https://github.com/cosmos/cosmos-sdk/pull/9981>
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
@@ -343,7 +343,7 @@ impl Default for RestConfig {
 )]
 pub enum AddressType {
     Cosmos,
-    Evmos { pk_type: String },
+    Ethermint { pk_type: String },
 }
 
 impl Default for AddressType {
@@ -356,7 +356,7 @@ impl fmt::Display for AddressType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             AddressType::Cosmos => write!(f, "cosmos"),
-            AddressType::Evmos { .. } => write!(f, "evmos"),
+            AddressType::Ethermint { .. } => write!(f, "ethermint"),
         }
     }
 }

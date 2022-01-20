@@ -29,7 +29,7 @@ pub mod cosmos {
     pub mod auth {
         pub mod v1beta1 {
             include!("prost/cosmos.auth.v1beta1.rs");
-            /// EthAccount defines an Evmos account .
+            /// EthAccount defines an Ethermint account.
             /// TODO: remove when/if a canonical `EthAccount`
             /// lands in the next Cosmos SDK release
             /// (note https://github.com/cosmos/cosmos-sdk/pull/9981

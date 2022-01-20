@@ -63,7 +63,7 @@ impl FromStr for EncodedPubKey {
                     proto.tpe
                 );
 
-                // Evmos pubkey types:
+                // Ethermint pubkey types:
                 // e.g. "/ethermint.crypto.v1alpha1.ethsecp256k1.PubKey", "/injective.crypto.v1beta1.ethsecp256k1.PubKey"
                 // "/ethermint.crypto.v1beta1.ethsecp256k1.PubKey", "/ethermint.crypto.v1.ethsecp256k1.PubKey",
                 // "/cosmos.crypto.ethsecp256k1.PubKey"
