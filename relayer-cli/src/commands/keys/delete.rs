@@ -1,4 +1,5 @@
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -9,15 +10,15 @@ use ibc_relayer::{
 use crate::application::app_config;
 use crate::conclude::Output;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct KeysDeleteCmd {
-    #[clap(required = true, about = "identifier of the chain")]
+    #[clap(required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[clap(short = 'n', long, about = "name of the key")]
+    #[clap(short = 'n', long, help = "name of the key")]
     name: Option<String>,
 
-    #[clap(short = 'a', long, about = "delete all keys")]
+    #[clap(short = 'a', long, help = "delete all keys")]
     all: bool,
 }
 

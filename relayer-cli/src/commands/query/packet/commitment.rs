@@ -1,4 +1,5 @@
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
@@ -18,21 +19,21 @@ struct PacketSeqs {
     seqs: Vec<u64>,
 }
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryPacketCommitmentCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the port to query")]
+    #[clap(required = true, help = "identifier of the port to query")]
     port_id: PortId,
 
-    #[clap(required = true, about = "identifier of the channel to query")]
+    #[clap(required = true, help = "identifier of the channel to query")]
     channel_id: ChannelId,
 
-    #[clap(required = true, about = "sequence of packet to query")]
+    #[clap(required = true, help = "sequence of packet to query")]
     sequence: Sequence,
 
-    #[clap(short = 'H', long, about = "height of the state to query")]
+    #[clap(short = 'H', long, help = "height of the state to query")]
     height: Option<u64>,
 }
 

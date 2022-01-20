@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
@@ -20,15 +21,15 @@ use crate::application::app_config;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 
 /// Query client state command
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryClientStateCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the client to query")]
+    #[clap(required = true, help = "identifier of the client to query")]
     client_id: ClientId,
 
-    #[clap(short = 'H', long, about = "the chain height context for the query")]
+    #[clap(short = 'H', long, help = "the chain height context for the query")]
     height: Option<u64>,
 }
 
@@ -62,28 +63,28 @@ impl Runnable for QueryClientStateCmd {
 }
 
 /// Query client consensus command
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryClientConsensusCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the client to query")]
+    #[clap(required = true, help = "identifier of the client to query")]
     client_id: ClientId,
 
     #[clap(
         short = 'c',
         long,
-        about = "height of the client's consensus state to query"
+        help = "height of the client's consensus state to query"
     )]
     consensus_height: Option<u64>,
 
-    #[clap(short = 's', long, about = "show only consensus heights")]
+    #[clap(short = 's', long, help = "show only consensus heights")]
     heights_only: bool,
 
     #[clap(
         short = 'H',
         long,
-        about = "the chain height context to be used, applicable only to a specific height"
+        help = "the chain height context to be used, applicable only to a specific height"
     )]
     height: Option<u64>,
 }
@@ -157,18 +158,18 @@ impl Runnable for QueryClientConsensusCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryClientHeaderCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the client to query")]
+    #[clap(required = true, help = "identifier of the client to query")]
     client_id: ClientId,
 
-    #[clap(required = true, about = "height of header to query")]
+    #[clap(required = true, help = "height of header to query")]
     consensus_height: u64,
 
-    #[clap(short = 'H', long, about = "the chain height context for the query")]
+    #[clap(short = 'H', long, help = "the chain height context for the query")]
     height: Option<u64>,
 }
 
@@ -225,18 +226,18 @@ impl Runnable for QueryClientHeaderCmd {
 }
 
 /// Query client connections command
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryClientConnectionsCmd {
-    #[clap(required = true, about = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the client to query")]
+    #[clap(required = true, help = "identifier of the client to query")]
     client_id: ClientId,
 
     #[clap(
         short = 'H',
         long,
-        about = "the chain height which this query should reflect"
+        help = "the chain height which this query should reflect"
     )]
     height: Option<u64>,
 }

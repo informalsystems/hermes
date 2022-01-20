@@ -1,4 +1,5 @@
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
@@ -9,18 +10,18 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketRecvCmd {
-    #[clap(required = true, about = "identifier of the destination chain")]
+    #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the source chain")]
+    #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the source port")]
+    #[clap(required = true, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[clap(required = true, about = "identifier of the source channel")]
+    #[clap(required = true, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
 }
 
@@ -53,18 +54,18 @@ impl Runnable for TxRawPacketRecvCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketAckCmd {
-    #[clap(required = true, about = "identifier of the destination chain")]
+    #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the source chain")]
+    #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the source port")]
+    #[clap(required = true, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[clap(required = true, about = "identifier of the source channel")]
+    #[clap(required = true, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
 }
 

@@ -3,7 +3,6 @@ use core::ops::Add;
 use core::time::Duration;
 
 use crossbeam_channel as channel;
-use prost_types::Any;
 use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
@@ -21,7 +20,6 @@ use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics04_channel::Version;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::downcast;
 use ibc::events::IbcEvent;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
@@ -50,6 +48,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
+use super::tx::TrackedMsgs;
 use super::HealthCheck;
 
 /// The representation of a mocked chain as the relayer sees it.
@@ -129,17 +128,20 @@ impl ChainEndpoint for MockChain {
 
     fn send_messages_and_wait_commit(
         &mut self,
-        proto_msgs: Vec<Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        let events = self.context.send(proto_msgs).map_err(Error::ics18)?;
+        let events = self
+            .context
+            .send(tracked_msgs.into())
+            .map_err(Error::ics18)?;
 
         Ok(events)
     }
 
     fn send_messages_and_wait_check_tx(
         &mut self,
-        _proto_msgs: Vec<Any>,
+        _tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
         todo!()
     }
@@ -182,21 +184,20 @@ impl ChainEndpoint for MockChain {
         &self,
         client_id: &ClientId,
         _height: Height,
-    ) -> Result<Self::ClientState, Error> {
+    ) -> Result<AnyClientState, Error> {
         // TODO: unclear what are the scenarios where we need to take height into account.
-        let any_state = self
+        let client_state = self
             .context
             .query_client_full_state(client_id)
             .ok_or_else(Error::empty_response_value)?;
-        let client_state = downcast!(any_state.clone() => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_state_type(format!("{:?}", any_state)))?;
+
         Ok(client_state)
     }
 
     fn query_upgraded_client_state(
         &self,
         _height: Height,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
         unimplemented!()
     }
 
@@ -302,7 +303,7 @@ impl ChainEndpoint for MockChain {
         &self,
         _client_id: &ClientId,
         _height: Height,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
         unimplemented!()
     }
 
@@ -319,7 +320,7 @@ impl ChainEndpoint for MockChain {
         _client_id: &ClientId,
         _consensus_height: Height,
         _height: Height,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
 
@@ -416,7 +417,6 @@ impl ChainEndpoint for MockChain {
             .consensus_states(&request.client_id.parse().unwrap()))
     }
 
-    /// Performs a query to retrieve the identifiers of all connections.
     fn query_consensus_state(
         &self,
         client_id: ClientId,
@@ -434,7 +434,7 @@ impl ChainEndpoint for MockChain {
     fn query_upgraded_consensus_state(
         &self,
         _height: Height,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
 

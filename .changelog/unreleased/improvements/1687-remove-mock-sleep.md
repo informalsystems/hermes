@@ -1,0 +1,1 @@
+- Remove 1 second sleep in `generate_tm_block` during testing with mock context. [#1687](https://github.com/informalsystems/ibc-rs/issues/1687)

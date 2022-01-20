@@ -72,7 +72,6 @@ define_error! {
             | _ | { "the client state was not found" },
 
         EmptyPrefix
-            [ Ics23Error ]
             | _ | { "empty prefix" },
 
         UnknownConsensusStateType

@@ -43,10 +43,6 @@ impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusSt
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Infallible> {
-        unimplemented!()
-    }
-
     fn wrap_any(self) -> AnyConsensusState {
         AnyConsensusState::Tendermint(self)
     }

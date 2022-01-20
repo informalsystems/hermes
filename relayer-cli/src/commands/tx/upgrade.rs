@@ -1,7 +1,8 @@
 use alloc::sync::Arc;
 use core::time::Duration;
 
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
@@ -16,26 +17,26 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxIbcUpgradeChainCmd {
-    #[clap(required = true, about = "identifier of the chain to upgrade")]
+    #[clap(required = true, help = "identifier of the chain to upgrade")]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, about = "identifier of the source chain")]
+    #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
     #[clap(
         required = true,
-        about = "identifier of the client on source chain from which the plan is created"
+        help = "identifier of the client on source chain from which the plan is created"
     )]
     src_client_id: ClientId,
 
-    #[clap(required = true, about = "amount of stake")]
+    #[clap(required = true, help = "amount of stake")]
     amount: u64,
 
     #[clap(
         required = true,
-        about = "upgrade height offset in number of blocks since current"
+        help = "upgrade height offset in number of blocks since current"
     )]
     height_offset: u64,
 
@@ -43,7 +44,7 @@ pub struct TxIbcUpgradeChainCmd {
         short = 'c',
         long,
         value_name = "CHAIN-ID",
-        about = "new chain identifier to assign to the upgrading chain (optional)"
+        help = "new chain identifier to assign to the upgrading chain (optional)"
     )]
     new_chain_id: Option<ChainId>,
 
@@ -51,7 +52,7 @@ pub struct TxIbcUpgradeChainCmd {
         short = 'u',
         long,
         value_name = "PERIOD",
-        about = "new unbonding period to assign to the upgrading chain, in seconds (optional)"
+        help = "new unbonding period to assign to the upgrading chain, in seconds (optional)"
     )]
     new_unbonding: Option<u64>,
 
@@ -59,14 +60,21 @@ pub struct TxIbcUpgradeChainCmd {
         short = 'n',
         long,
         value_name = "NAME",
-        about = "a string to name the upgrade proposal plan (default: 'plan')"
+        help = "a string to name the upgrade proposal plan (default: 'plan')"
     )]
     upgrade_name: Option<String>,
 
     #[clap(
+        short = 'd',
+        long,
+        help = "denomination for the deposit (default: 'stake')"
+    )]
+    denom: Option<String>,
+
+    #[clap(
         short = 'l',
         long,
-        about = "use legacy upgrade proposal constructs (for chains built with Cosmos SDK < v0.43.0)"
+        help = "use legacy upgrade proposal constructs (for chains built with Cosmos SDK < v0.43.0)"
     )]
     legacy: bool,
 }
@@ -92,6 +100,7 @@ impl TxIbcUpgradeChainCmd {
             src_chain_config: src_chain_config.clone(),
             src_client_id: self.src_client_id.clone(),
             amount: self.amount,
+            denom: self.denom.as_deref().unwrap_or("stake").into(),
             height_offset: self.height_offset,
             upgraded_chain_id: self
                 .new_chain_id

@@ -67,7 +67,10 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
 
     fn try_from(raw_msg: RawMsgAcknowledgement) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_acked.into(),
+            raw_msg
+                .proof_acked
+                .try_into()
+                .map_err(Error::invalid_proof)?,
             None,
             None,
             None,

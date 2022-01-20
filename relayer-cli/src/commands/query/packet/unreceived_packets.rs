@@ -1,4 +1,5 @@
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use serde::Serialize;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
@@ -21,18 +22,18 @@ struct PacketSeqs {
 /// 1. queries the chain to get its counterparty chain, channel and port identifiers (needed in 2)
 /// 2. queries the counterparty chain for all packet commitments/ sequences for a given port and channel
 /// 3. queries the chain for the unreceived sequences out of the list obtained in 2.
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryUnreceivedPacketsCmd {
     #[clap(
         required = true,
-        about = "identifier of the chain for the unreceived sequences"
+        help = "identifier of the chain for the unreceived sequences"
     )]
     chain_id: ChainId,
 
-    #[clap(required = true, about = "port identifier")]
+    #[clap(required = true, help = "port identifier")]
     port_id: PortId,
 
-    #[clap(required = true, about = "channel identifier")]
+    #[clap(required = true, help = "channel identifier")]
     channel_id: ChannelId,
 }
 

@@ -9,7 +9,7 @@ readme       = "README.md"
 categories   = ["cryptography", "cryptography::cryptocurrencies", "database"]
 keywords     = ["blockchain", "cosmos", "tendermint", "ibc", "proto"]
 exclude      = ["definitions"]
-rust-version = "1.57"
+rust-version = "1.58"
 description  = """
     ibc-proto is a Rust implementation of the Cosmos SDK & IBC proto structs
 """

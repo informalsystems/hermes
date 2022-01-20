@@ -1,4 +1,5 @@
-use abscissa_core::{Clap, Command, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
@@ -13,17 +14,17 @@ use crate::conclude::Output;
 use crate::prelude::*;
 use ibc::core::ics02_client::client_state::ClientState;
 
-#[derive(Clone, Command, Debug, Clap)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct MisbehaviourCmd {
     #[clap(
         required = true,
-        about = "identifier of the chain where client updates are monitored for misbehaviour"
+        help = "identifier of the chain where client updates are monitored for misbehaviour"
     )]
     chain_id: ChainId,
 
     #[clap(
         required = true,
-        about = "identifier of the client to be monitored for misbehaviour"
+        help = "identifier of the client to be monitored for misbehaviour"
     )]
     client_id: ClientId,
 }
