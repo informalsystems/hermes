@@ -63,7 +63,7 @@ pub struct Connection {
 impl Connection {
     pub fn short_name(&self) -> String {
         format!(
-            "connection::{}:{} -> {}",
+            "connection::{}:{}->{}",
             self.src_connection_id, self.src_chain_id, self.dst_chain_id,
         )
     }
@@ -88,7 +88,7 @@ pub struct Channel {
 impl Channel {
     pub fn short_name(&self) -> String {
         format!(
-            "channel::{}/{}:{} -> {}",
+            "channel::{}/{}:{}->{}",
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
