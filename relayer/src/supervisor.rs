@@ -716,18 +716,18 @@ fn remove_chain<Chain: ChainHandle>(
     id: &ChainId,
 ) -> CmdEffect {
     if !config.has_chain(id) {
-        info!(chain.id=%id, "skipping removal of non-existing chain");
+        info!(chain = %id, "skipping removal of non-existing chain");
         return CmdEffect::Nothing;
     }
 
-    info!(chain.id=%id, "removing existing chain");
+    info!(chain = %id, "removing existing chain");
     config.chains.retain(|c| &c.id != id);
 
-    debug!(chain.id=%id, "shutting down workers");
+    debug!(chain = %id, "shutting down workers");
     let mut ctx = spawn_context(config, registry, workers);
     ctx.shutdown_workers_for_chain(id);
 
-    debug!(chain.id=%id, "shutting down chain runtime");
+    debug!(chain = %id, "shutting down chain runtime");
     registry.shutdown(id);
 
     CmdEffect::ConfigChanged
@@ -748,15 +748,15 @@ fn add_chain<Chain: ChainHandle>(
     let id = chain_config.id.clone();
 
     if config.has_chain(&id) {
-        info!(chain.id=%id, "skipping addition of already existing chain");
+        info!(chain = %id, "skipping addition of already existing chain");
         return CmdEffect::Nothing;
     }
 
-    info!(chain.id=%id, "adding new chain");
+    info!(chain = %id, "adding new chain");
 
     config.chains.push(chain_config.clone());
 
-    debug!(chain.id=%id, "spawning chain runtime");
+    debug!(chain = %id, "spawning chain runtime");
 
     if let Err(e) = registry.spawn(&id) {
         error!(
@@ -770,7 +770,7 @@ fn add_chain<Chain: ChainHandle>(
         return CmdEffect::Nothing;
     }
 
-    debug!(chain.id=%id, "scanning chain");
+    debug!(chain = %id, "scanning chain");
 
     let scan_result = chain_scanner(config, registry, client_state_filter, ScanMode::Auto)
         .scan_chain(&chain_config);
@@ -787,7 +787,7 @@ fn add_chain<Chain: ChainHandle>(
         }
     };
 
-    debug!(chain.id=%id, "spawning workers");
+    debug!(chain = %id, "spawning workers");
 
     let mut ctx = spawn_context(config, registry, workers);
     ctx.spawn_workers_for_chain(scan);
@@ -808,7 +808,7 @@ fn update_chain<Chain: ChainHandle>(
     client_state_filter: &mut FilterPolicy,
     chain_config: ChainConfig,
 ) -> CmdEffect {
-    info!(chain.id=%chain_config.id, "updating existing chain");
+    info!(chain = %chain_config.id, "updating existing chain");
 
     let removed = remove_chain(config, registry, workers, &chain_config.id);
 
