@@ -185,7 +185,7 @@ impl Default for TelemetryState {
                 .init(),
 
             queries: meter
-                .u64_counter("relayer_queries")
+                .u64_counter("queries")
                 .with_description(
                     "Number of queries emitted by the relayer, per chain and query type",
                 )
