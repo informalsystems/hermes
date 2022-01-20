@@ -271,7 +271,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     }
 
     pub fn scan_chain(&mut self, chain_config: &ChainConfig) -> Result<ChainScan, Error> {
-        let span = info_span!("scan.chain", chain = %chain_config.id, );
+        let span = info_span!("scan.chain", chain = %chain_config.id);
         let _guard = span.enter();
 
         info!("scanning chain...");
@@ -342,7 +342,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                         .entry(channel.channel_id.clone())
                         .or_insert_with(|| ChannelScan::new(channel, counterparty_channel));
                 }
-                Err(e) => error!("failed to scan channel '{}', reason: {}", channel_id, e),
+                Err(e) => error!(channel = %channel_id, "failed to scan channel, reason: {}", e),
             }
         }
 
@@ -387,8 +387,8 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         if !has_counterparty {
             debug!(
-                chain_id = %chain.id(),
-                counterparty_chain_id = %counterparty_chain_id,
+                chain = %chain.id(),
+                counterparty_chain = %counterparty_chain_id,
                 "skipping client because its counterparty is not present in the config",
             );
 
@@ -592,10 +592,10 @@ fn scan_allowed_channel<Chain: ChainHandle>(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ScannedChannel, Error> {
-    let span = info_span!("scan.channel", port_id = %port_id, channel_id = %channel_id);
+    let span = info_span!("scan.channel", port = %port_id, channel = %channel_id);
     let _guard = span.enter();
 
-    info!("querying channel '{}/{}'...", port_id, channel_id);
+    info!("querying channel...");
     let channel = query_channel(chain, port_id, channel_id)?;
 
     if channel
@@ -613,16 +613,17 @@ fn scan_allowed_channel<Chain: ChainHandle>(
     let client_id = connection.connection_end.client_id();
 
     info!(
-        "found connection {} and client {}",
-        connection.connection_id, client_id
+        connection = %connection.connection_id, client = %client_id,
+        "found connection and client",
     );
 
-    info!("querying client {}...", client_id);
+    info!(client = %client_id, "querying client...");
     let client = query_client(chain, client_id)?;
 
     info!(
-        "client lives on counterparty chain {}",
-        client.client_state.chain_id()
+        client = %client_id,
+        counterparty_chain = %client.client_state.chain_id(),
+        "found counterparty chain for client",
     );
 
     let counterparty_chain = registry
@@ -632,12 +633,14 @@ fn scan_allowed_channel<Chain: ChainHandle>(
     let counterparty_channel =
         channel_on_destination(&channel, &connection, &counterparty_chain).unwrap_or_default();
 
+    let counterparty_channel_name = counterparty_channel
+        .as_ref()
+        .map(|c| c.channel_id.to_string())
+        .unwrap_or_else(|| "<none>".to_string());
+
     info!(
-        "found counterparty channel: {}",
-        counterparty_channel
-            .as_ref()
-            .map(|c| c.channel_id.to_string())
-            .unwrap_or_else(|| "<none>".to_string())
+        counterparty_channel = %counterparty_channel_name,
+        "found counterparty channel"
     );
 
     let counterparty_connection_state =
@@ -645,12 +648,14 @@ fn scan_allowed_channel<Chain: ChainHandle>(
             .map(Some)
             .unwrap_or_default();
 
+    let counterparty_connection_name = counterparty_connection_state
+        .as_ref()
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "<none>".to_string());
+
     info!(
-        "found counterparty connection state: {}",
-        counterparty_connection_state
-            .as_ref()
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "<none>".to_string())
+        counterparty_connection_state = %counterparty_connection_name,
+        "found counterparty connection state"
     );
 
     Ok(ScannedChannel {
