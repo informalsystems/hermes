@@ -122,6 +122,15 @@ To restore a key from its mnemonic:
 hermes -c config.toml keys restore [CHAIN_ID] -m "[MNEMONIC]"
 ```
 
+or using an explicit [derivation path](https://github.com/satoshilabs/slips/blob/master/slip-0044.md), for example
+an Ethereum coin type (used for Evmos, Injective, Umee, Cronos, and
+possibly other networks):
+
+```shell
+hermes -c config.toml keys restore --mnemonic <MNEMONIC> --hd-path "m/44'/60'/0'/0/0" <CHAIN_ID>
+```
+
+
 If the command is successful a message similar to the one below will be displayed:
 
 ```json
