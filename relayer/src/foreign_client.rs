@@ -139,8 +139,20 @@ define_error! {
             }
             [ RelayerError ]
             |e| {
-                format_args!("failed while querying Tx for client {0} on chain id: {1}",
+                format_args!("failed while querying for client {0} on chain id {1}",
                     e.client_id, e.chain_id)
+            },
+
+        ClientConsensusQuery
+            {
+                client_id: ClientId,
+                chain_id: ChainId,
+                height: Height
+            }
+            [ RelayerError ]
+            |e| {
+                format_args!("failed while querying for client consensus state {0} on chain id {1} for height {2}",
+                    e.client_id, e.chain_id, e.height)
             },
 
         ClientUpgrade
@@ -1043,7 +1055,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .dst_chain
             .query_consensus_state(self.id.clone(), height, Height::zero())
             .map_err(|e| {
-                ForeignClientError::client_query(self.id.clone(), self.dst_chain.id(), e)
+                ForeignClientError::client_consensus_query(
+                    self.id.clone(),
+                    self.dst_chain.id(),
+                    height,
+                    e,
+                )
             })?;
 
         Ok(res)
