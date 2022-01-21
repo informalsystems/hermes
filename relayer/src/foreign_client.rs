@@ -1055,7 +1055,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .dst_chain
             .query_consensus_state(self.id.clone(), height, Height::zero())
             .map_err(|e| {
-                ForeignClientError::client_consensus_query(self.id.clone(), self.dst_chain.id(), height, e)
+                ForeignClientError::client_consensus_query(
+                    self.id.clone(),
+                    self.dst_chain.id(),
+                    height,
+                    e,
+                )
             })?;
 
         Ok(res)
