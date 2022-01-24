@@ -675,20 +675,6 @@ impl SendPacket {
     }
 }
 
-impl TryFrom<RawObject> for SendPacket {
-    type Error = EventError;
-
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let height = obj.height;
-        let data_str: String = extract_attribute(&obj, &format!("{}.packet_data", obj.action))?;
-
-        let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_str().as_bytes());
-
-        Ok(SendPacket { height, packet })
-    }
-}
-
 impl From<SendPacket> for IbcEvent {
     fn from(v: SendPacket) -> Self {
         IbcEvent::SendPacket(v)
@@ -953,6 +939,53 @@ impl core::fmt::Display for TimeoutOnClosePacket {
             "TimeoutOnClosePacket - h:{}, {}",
             self.height, self.packet
         )
+    }
+}
+
+macro_rules! impl_try_from_raw_obj_for_packet {
+    ($($packet:ty),+) => {
+        $(impl TryFrom<RawObject> for $packet {
+            type Error = EventError;
+
+            fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+                let height = obj.height;
+                let data_str: String = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
+
+                let mut packet = Packet::try_from(obj)?;
+                packet.data = Vec::from(data_str.as_str().as_bytes());
+
+                Ok(Self { height, packet })
+            }
+        })+
+    };
+}
+
+impl_try_from_raw_obj_for_packet!(
+    SendPacket,
+    ReceivePacket,
+    AcknowledgePacket,
+    TimeoutPacket,
+    TimeoutOnClosePacket
+);
+
+impl TryFrom<RawObject> for WriteAcknowledgement {
+    type Error = EventError;
+
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let height = obj.height;
+        let data_str: String =
+            extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
+        let ack = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_ACK_ATTRIBUTE_KEY))?
+            .into_bytes();
+
+        let mut packet = Packet::try_from(obj)?;
+        packet.data = Vec::from(data_str.as_str().as_bytes());
+
+        Ok(Self {
+            height,
+            packet,
+            ack,
+        })
     }
 }
 
