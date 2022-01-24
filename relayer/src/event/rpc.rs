@@ -35,7 +35,7 @@ pub fn get_all_events(
                     height,
                     action.0,
                     action.1 as usize,
-                    events.clone(),
+                    &events,
                 )) {
                     chan_events.push((height, event));
                 }
@@ -94,7 +94,7 @@ pub fn get_all_events(
     Ok(vals)
 }
 
-pub fn build_channel_event(mut object: RawObject) -> Result<IbcEvent, EventError> {
+pub fn build_channel_event(mut object: RawObject<'_>) -> Result<IbcEvent, EventError> {
     match object.action.as_str() {
         // Channel events
         "channel_open_init" | chan_msgs::chan_open_init::TYPE_URL => {

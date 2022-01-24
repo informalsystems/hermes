@@ -182,7 +182,7 @@ fn extract_packet_and_write_ack_from_tx(
     Ok((packet, write_ack))
 }
 
-fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, EventError> {
+fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attributes, EventError> {
     Ok(Attributes {
         height: object.height,
         port_id: extract_attribute(object, &format!("{}.port_id", namespace))?
@@ -629,10 +629,10 @@ impl_try_from_ev_to_abci_ev!(
 
 macro_rules! impl_try_from_raw_obj_for_event {
     ($($event:ty),+) => {
-        $(impl TryFrom<RawObject> for $event {
+        $(impl TryFrom<RawObject<'_>> for $event {
             type Error = EventError;
 
-            fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+            fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
                 Ok(Self(extract_attributes(&obj, Self::event_type().as_str())?))
             }
         })+
@@ -944,10 +944,10 @@ impl core::fmt::Display for TimeoutOnClosePacket {
 
 macro_rules! impl_try_from_raw_obj_for_packet {
     ($($packet:ty),+) => {
-        $(impl TryFrom<RawObject> for $packet {
+        $(impl TryFrom<RawObject<'_>> for $packet {
             type Error = EventError;
 
-            fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+            fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
                 let height = obj.height;
                 let data_str: String = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
 
@@ -968,10 +968,10 @@ impl_try_from_raw_obj_for_packet!(
     TimeoutOnClosePacket
 );
 
-impl TryFrom<RawObject> for WriteAcknowledgement {
+impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
     type Error = EventError;
 
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
         let height = obj.height;
         let data_str: String =
             extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
