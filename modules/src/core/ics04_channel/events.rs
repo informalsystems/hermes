@@ -603,7 +603,7 @@ impl EventType for CloseConfirm {
     }
 }
 
-macro_rules! impl_try_from_ev_to_abci_ev {
+macro_rules! impl_from_ibc_to_abci_event {
     ($($event:ty),+) => {
         $(impl From<$event> for AbciEvent {
             fn from(v: $event) -> Self {
@@ -618,7 +618,7 @@ macro_rules! impl_try_from_ev_to_abci_ev {
     };
 }
 
-impl_try_from_ev_to_abci_ev!(
+impl_from_ibc_to_abci_event!(
     OpenInit,
     OpenTry,
     OpenAck,
