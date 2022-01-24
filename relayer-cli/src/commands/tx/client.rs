@@ -9,7 +9,8 @@ use ibc::events::IbcEvent;
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
-use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::foreign_client::{CreateParams, ForeignClient};
+use tendermint_light_client_verifier::types::TrustThreshold;
 
 use crate::application::app_config;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
@@ -23,6 +24,18 @@ pub struct TxCreateClientCmd {
 
     #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
+
+    // FIXME: provide option doc
+    #[clap(short = 'd', long)]
+    clock_drift: Option<humantime::Duration>,
+
+    // FIXME: provide option doc
+    #[clap(short = 'p', long)]
+    trusting_period: Option<humantime::Duration>,
+
+    // FIXME: provide option doc
+    #[clap(short = 't', long, parse(try_from_str = parse_trust_threshold))]
+    trust_threshold: Option<TrustThreshold>,
 }
 
 /// Sample to run this tx:
@@ -42,9 +55,15 @@ impl Runnable for TxCreateClientCmd {
 
         let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
 
+        let params = CreateParams {
+            clock_drift: self.clock_drift.map(Into::into),
+            trusting_period: self.trusting_period.map(Into::into),
+            trust_threshold: self.trust_threshold,
+        };
+
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client
-            .build_create_client_and_send()
+            .build_create_client_and_send(&params)
             .map_err(Error::foreign_client);
 
         match res {
@@ -237,6 +256,22 @@ impl TxUpgradeClientsCmd {
         let client = ForeignClient::restore(client_id, dst_chain, src_chain);
         client.upgrade().map_err(Error::foreign_client)
     }
+}
+
+fn parse_trust_threshold(input: &str) -> Result<TrustThreshold, Error> {
+    let (num_part, denom_part) = input
+        .split_once('/')
+        .ok_or_else(|| Error::cli_arg("expected a fraction argument separated by '/'".into()))?;
+    let numerator = num_part
+        .trim()
+        .parse()
+        .map_err(|_| Error::cli_arg("invalid numerator for the fraction".into()))?;
+    let denominator = denom_part
+        .trim()
+        .parse()
+        .map_err(|_| Error::cli_arg("invalid denominator for the fraction".into()))?;
+    TrustThreshold::new(numerator, denominator)
+        .map_err(|e| Error::cli_arg(format!("invalid trust threshold fraction: {}", e)))
 }
 
 type UpgradeClientResult = Result<Vec<IbcEvent>, Error>;
