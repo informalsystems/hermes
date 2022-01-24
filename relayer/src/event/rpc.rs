@@ -60,7 +60,7 @@ pub fn get_all_events(
                         chan_event.set_height(height);
                         let _span = tracing::trace_span!("ibc_channel event").entered();
                         tracing::trace!("extracted {:?}", chan_event);
-                        if matches!(chan_event, IbcEvent::SendPacket(_)) {
+                        if let IbcEvent::SendPacket(sp_event) = &chan_event {
                             // Should be the same as the hash of tx_result.tx?
                             if let Some(hash) = result
                                 .events
@@ -68,7 +68,7 @@ pub fn get_all_events(
                                 .and_then(|events| events.get("tx.hash"))
                                 .and_then(|values| values.get(0))
                             {
-                                tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
+                                tracing::info!(event = "SendPacket", src_chain = %chain_id, packet = %sp_event.packet, "tx hash: {}", hash);
                             }
                         }
                         vals.push((height, chan_event));
