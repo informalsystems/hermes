@@ -28,17 +28,25 @@ pub fn get_all_events(
 
             vals.push((height, ClientEvents::NewBlock::new(height).into()));
 
+            let mut chan_events = vec![];
             let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
-                if let Ok(event) = build_event(RawObject::new(
+                if let Ok(event) = build_channel_event(RawObject::new(
                     height,
                     action.0,
                     action.1 as usize,
                     events.clone(),
                 )) {
-                    vals.push((height, event));
+                    chan_events.push((height, event));
                 }
             }
+            chan_events.sort_by(|a, b| {
+                let a = ChannelEventType::from(&a.1);
+                let b = ChannelEventType::from(&b.1);
+                a.cmp(&b)
+            });
+
+            vals.append(&mut chan_events);
         }
         RpcEventData::Tx { tx_result } => {
             let height = Height::new(
@@ -86,7 +94,7 @@ pub fn get_all_events(
     Ok(vals)
 }
 
-pub fn build_event(mut object: RawObject) -> Result<IbcEvent, EventError> {
+pub fn build_channel_event(mut object: RawObject) -> Result<IbcEvent, EventError> {
     match object.action.as_str() {
         // Channel events
         "channel_open_init" | chan_msgs::chan_open_init::TYPE_URL => {
@@ -248,4 +256,32 @@ fn extract_helper(events: &HashMap<String, Vec<String>>) -> Result<Vec<(String, 
     }
 
     Ok(result)
+}
+
+// A type that is used to derive the ordering for channel events.
+// Events are ordered in the following order -> `Open > Packet > Close`.
+#[derive(Eq, PartialEq, PartialOrd, Ord)]
+enum ChannelEventType {
+    Open,
+    Packet,
+    Close,
+}
+
+impl From<&IbcEvent> for ChannelEventType {
+    fn from(ev: &IbcEvent) -> Self {
+        match ev {
+            IbcEvent::OpenInitChannel(_)
+            | IbcEvent::OpenTryChannel(_)
+            | IbcEvent::OpenAckChannel(_)
+            | IbcEvent::OpenConfirmChannel(_) => Self::Open,
+            IbcEvent::CloseInitChannel(_) | IbcEvent::CloseConfirmChannel(_) => Self::Close,
+            IbcEvent::SendPacket(_)
+            | IbcEvent::ReceivePacket(_)
+            | IbcEvent::WriteAcknowledgement(_)
+            | IbcEvent::AcknowledgePacket(_)
+            | IbcEvent::TimeoutPacket(_)
+            | IbcEvent::TimeoutOnClosePacket(_) => Self::Packet,
+            _ => unreachable!(),
+        }
+    }
 }
