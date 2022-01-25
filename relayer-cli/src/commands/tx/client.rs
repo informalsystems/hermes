@@ -346,3 +346,23 @@ impl OutputBuffer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::parse_trust_threshold;
+
+    #[test]
+    fn test_parse_trust_threshold() {
+        let threshold = parse_trust_threshold("3/5").unwrap();
+        assert_eq!(threshold.numerator(), 3);
+        assert_eq!(threshold.denominator(), 5);
+
+        let threshold = parse_trust_threshold("3 / 5").unwrap();
+        assert_eq!(threshold.numerator(), 3);
+        assert_eq!(threshold.denominator(), 5);
+
+        let threshold = parse_trust_threshold("\t3 / 5  ").unwrap();
+        assert_eq!(threshold.numerator(), 3);
+        assert_eq!(threshold.denominator(), 5);
+    }
+}
