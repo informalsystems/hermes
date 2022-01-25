@@ -285,13 +285,19 @@ impl ClientDef for TendermintClient {
             channel_id: channel_id.clone(),
             sequence,
         };
+
+        let mut commitment_bytes = Vec::new();
+        commitment
+            .encode(&mut commitment_bytes)
+            .expect("buffer size too small");
+
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
             proof,
             root,
             commitment_path,
-            commitment.encode_to_vec(),
+            commitment_bytes,
         )
     }
 
@@ -341,6 +347,11 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
+        let mut seq_bytes = Vec::new();
+        u64::from(sequence)
+            .encode(&mut seq_bytes)
+            .expect("buffer size too small");
+
         let seq_path = SeqRecvsPath(port_id.clone(), channel_id.clone());
         verify_membership(
             client_state,
@@ -348,7 +359,7 @@ impl ClientDef for TendermintClient {
             proof,
             root,
             seq_path,
-            u64::from(sequence).encode_to_vec(),
+            seq_bytes,
         )
     }
 
