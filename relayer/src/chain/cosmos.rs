@@ -317,7 +317,7 @@ impl CosmosSdkChain {
         let estimated_gas = self.estimate_gas(simulate_tx)?;
 
         if estimated_gas > self.max_gas() {
-            warn!(estimated = ?estimated_gas, max = ?self.max_gas(), "send_tx: estimated gas is higher than max gas. dropping the tx.");
+            warn!(estimated = ?estimated_gas, max = ?self.max_gas(), "aborting send_tx: estimated gas is higher than max gas.");
 
             return Err(Error::tx_simulate_gas_estimate_exceeded(
                 self.id().clone(),

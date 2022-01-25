@@ -186,16 +186,16 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         .and_then(|_| link.a_to_b.execute_schedule());
 
     if let Err(e) = schedule_result {
-        if e.is_expired_or_frozen_error() {
+        return if e.is_expired_or_frozen_error() {
             error!("aborting due to expired or frozen client");
-            return RetryResult::Err(index);
+            RetryResult::Err(index)
         } else {
             error!(
                 retry_index = %index,
                 "will retry: schedule execution encountered error: {}",
                 e,
             );
-            return RetryResult::Retry(index);
+            RetryResult::Retry(index)
         }
     }
 
