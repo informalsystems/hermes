@@ -18,7 +18,6 @@ use prost_types::Any;
 use tendermint::abci::{Code, Event, Path as TendermintABCIPath};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
-use tendermint::consensus::Params;
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
@@ -281,17 +280,6 @@ impl CosmosSdkChain {
         &self.config
     }
 
-    /// Query the consensus parameters via an RPC query
-    /// Specific to the SDK and used only for Tendermint client create
-    pub fn query_consensus_params(&self) -> Result<Params, Error> {
-        crate::time!("query_consensus_params");
-
-        Ok(self
-            .block_on(self.rpc_client().genesis())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
-            .consensus_params)
-    }
-
     /// Run a future to completion on the Tokio runtime.
     fn block_on<F: Future>(&self, f: F) -> F::Output {
         crate::time!("block_on");
@@ -329,7 +317,7 @@ impl CosmosSdkChain {
         let estimated_gas = self.estimate_gas(simulate_tx)?;
 
         if estimated_gas > self.max_gas() {
-            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+            warn!(estimated = ?estimated_gas, max = ?self.max_gas(), "send_tx: estimated gas is higher than max gas. dropping the tx.");
 
             return Err(Error::tx_simulate_gas_estimate_exceeded(
                 self.id().clone(),
