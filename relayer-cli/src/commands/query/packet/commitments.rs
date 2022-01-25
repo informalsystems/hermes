@@ -27,6 +27,13 @@ pub struct QueryPacketCommitmentsCmd {
 
     #[clap(required = true, help = "identifier of the channel to query")]
     channel_id: ChannelId,
+
+    #[clap(
+        short = 'l',
+        long,
+        help = "limit the number of commitments to retrieve"
+    )]
+    limit: Option<u64>,
 }
 
 impl QueryPacketCommitmentsCmd {
@@ -37,12 +44,9 @@ impl QueryPacketCommitmentsCmd {
 
         let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
-        commitments_on_chain(&chain, &self.port_id, &self.channel_id, None)
+        commitments_on_chain(&chain, &self.port_id, &self.channel_id, self.limit)
             .map_err(Error::supervisor)
-            .map(|(seqs_vec, height)| PacketSeqs {
-                height,
-                seqs: seqs_vec,
-            })
+            .map(|(seqs, height)| PacketSeqs { height, seqs })
     }
 }
 
