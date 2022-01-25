@@ -1,4 +1,4 @@
-use tracing::{debug, error, trace};
+use tracing::{error, info};
 
 use ibc::core::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
@@ -87,12 +87,12 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             client.clone(),
             connection_scan.connection,
         ) {
-            Ok(true) => debug!(
+            Ok(true) => info!(
                 "done spawning workers for connection {} on chain {}",
                 connection_id,
                 chain.id(),
             ),
-            Ok(false) => debug!(
+            Ok(false) => info!(
                 "no workers were spawn for connection {} on chain {}",
                 connection_id,
                 chain.id(),
@@ -107,12 +107,12 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
 
         for (channel_id, channel_scan) in connection_scan.channels {
             match self.spawn_workers_for_channel(chain.clone(), client, channel_scan) {
-                Ok(true) => debug!(
+                Ok(true) => info!(
                     "done spawning workers for chain {} and channel {}",
                     chain.id(),
                     channel_id,
                 ),
-                Ok(false) => debug!(
+                Ok(false) => info!(
                     "no workers spawn for chain {} and channel {}",
                     chain.id(),
                     channel_id,
@@ -143,7 +143,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         let conn_state_src = connection.connection_end.state;
         let conn_state_dst = connection_state_on_destination(&connection, &counterparty_chain)?;
 
-        debug!(
+        info!(
             "connection {} on chain {} is: {:?}, state on dest. chain ({}) is: {:?}",
             connection.connection_id,
             chain.id(),
@@ -153,7 +153,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         );
 
         if conn_state_src.is_open() && conn_state_dst.is_open() {
-            trace!(
+            info!(
                 "connection {} on chain {} is already open, not spawning Connection worker",
                 connection.connection_id,
                 chain.id()
@@ -174,7 +174,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             self.workers
                 .spawn(chain, counterparty_chain, &connection_object, self.config)
                 .then(|| {
-                    debug!(
+                    info!(
                         "spawning Connection worker: {}",
                         connection_object.short_name()
                     );
@@ -207,7 +207,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             .as_ref()
             .map_or(ChannelState::Uninitialized, |c| c.channel_end.state);
 
-        debug!(
+        info!(
             "channel {} on chain {} is: {}; state on dest. chain ({}) is: {}",
             channel_scan.id(),
             chain.id(),
@@ -235,7 +235,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                         &client_object,
                         self.config,
                     )
-                    .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
+                    .then(|| info!("spawned Client worker: {}", client_object.short_name()));
             }
 
             if mode.packets.enabled {
@@ -270,7 +270,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                             &path_object,
                             self.config,
                         )
-                        .then(|| debug!("spawned Packet worker: {}", path_object.short_name()));
+                        .then(|| info!("spawned Packet worker: {}", path_object.short_name()));
                 }
             }
 
@@ -289,7 +289,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
 
             self.workers
                 .spawn(chain, counterparty_chain, &channel_object, self.config)
-                .then(|| debug!("spawned Channel worker: {}", channel_object.short_name()));
+                .then(|| info!("spawned Channel worker: {}", channel_object.short_name()));
 
             Ok(true)
         } else {
