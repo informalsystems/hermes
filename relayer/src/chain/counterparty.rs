@@ -515,27 +515,13 @@ pub fn unreceived_acknowledgements(
     Ok(sequences)
 }
 
-pub fn has_commitments_on_counterparty(
+pub fn has_commitments(
     chain: &impl ChainHandle,
-    counterparty_chain: &impl ChainHandle,
     channel: &IdentifiedChannelEnd,
 ) -> Result<bool, Error> {
-    let counterparty = channel.channel_end.counterparty();
+    // get the first commitment, if any
+    let (commitments, _) =
+        commitments_on_chain(chain, &channel.port_id, &channel.channel_id, Some(1))?;
 
-    let counterparty_channel_id = counterparty
-        .channel_id
-        .as_ref()
-        .ok_or_else(Error::missing_counterparty_channel_id)?;
-
-    let counterparty_port_id = &counterparty.port_id;
-
-    // get the first commitment, if any, on the counterparty chain
-    let (commitments_on_counterparty, _) = commitments_on_chain(
-        counterparty_chain,
-        counterparty_port_id,
-        counterparty_channel_id,
-        Some(1),
-    )?;
-
-    Ok(!commitments_on_counterparty.is_empty())
+    Ok(!commitments.is_empty())
 }

@@ -34,7 +34,7 @@ use crate::{
     worker::WorkerMap,
 };
 
-use crate::chain::counterparty::has_commitments_on_counterparty;
+use crate::chain::counterparty::has_commitments;
 
 use crate::error::Error as RelayerError;
 use crate::registry::SpawnError;
@@ -459,12 +459,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                     channel_on_destination(&channel, &scan.connection, &counterparty_chain)
                         .unwrap_or_default();
 
-                let has_commitments = if let Some(ref counterparty) = counterparty {
-                    has_commitments_on_counterparty(&counterparty_chain, chain, counterparty)
-                        .unwrap_or_default()
-                } else {
-                    false
-                };
+                let has_commitments = has_commitments(chain, &channel).unwrap_or_default();
 
                 let scan = ChannelScan::new(channel, counterparty, has_commitments);
 
@@ -652,12 +647,7 @@ fn scan_allowed_channel<Chain: ChainHandle>(
         "found counterparty connection state"
     );
 
-    let has_commitments = if let Some(ref counterparty_channel) = counterparty_channel {
-        has_commitments_on_counterparty(&counterparty_chain, chain, counterparty_channel)
-            .unwrap_or_default()
-    } else {
-        false
-    };
+    let has_commitments = has_commitments(chain, &channel).unwrap_or_default();
 
     Ok(ScannedChannel {
         channel,
