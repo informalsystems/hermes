@@ -305,12 +305,18 @@ pub fn commitments_on_chain(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
+    limit: Option<u64>,
 ) -> Result<(Vec<u64>, Height), Error> {
+    let pagination = match limit {
+        Some(limit) => ibc_proto::cosmos::base::query::pagination::first(limit),
+        None => ibc_proto::cosmos::base::query::pagination::all(),
+    };
+
     // get the packet commitments on the counterparty/ source chain
     let commitments_request = QueryPacketCommitmentsRequest {
         port_id: port_id.to_string(),
         channel_id: channel_id.to_string(),
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        pagination,
     };
 
     let (commitments, response_height) = chain
@@ -337,7 +343,9 @@ pub fn unreceived_packets_sequences(
         counterparty_chain,
         counterparty_port_id,
         counterparty_channel_id,
+        None,
     )?;
+
     if commitments_on_counterparty.is_empty() {
         return Ok((vec![], vec![], counterparty_height));
     }
@@ -373,6 +381,7 @@ pub fn packet_acknowledgedgments(
         counterparty_chain,
         counterparty_port_id,
         counterparty_channel_id,
+        None,
     )?;
 
     // get the packet acknowledgments on counterparty/source chain
@@ -439,9 +448,9 @@ pub fn unreceived_packets(
     counterparty_chain: &impl ChainHandle,
     channel: &IdentifiedChannelEnd,
 ) -> Result<Vec<u64>, Error> {
-    let counterparty_channel_id = channel
-        .channel_end
-        .counterparty()
+    let counterparty = channel.channel_end.counterparty();
+
+    let counterparty_channel_id = counterparty
         .channel_id
         .as_ref()
         .ok_or_else(Error::missing_counterparty_channel_id)?;
@@ -451,7 +460,7 @@ pub fn unreceived_packets(
         &channel.port_id,
         &channel.channel_id,
         counterparty_chain,
-        &channel.channel_end.counterparty().port_id,
+        &counterparty.port_id,
         counterparty_channel_id,
     )?;
 
@@ -463,9 +472,9 @@ pub fn acknowledgements_on_chain(
     counterparty_chain: &impl ChainHandle,
     channel: &IdentifiedChannelEnd,
 ) -> Result<(Vec<u64>, Height), Error> {
-    let counterparty_channel_id = channel
-        .channel_end
-        .counterparty()
+    let counterparty = channel.channel_end.counterparty();
+
+    let counterparty_channel_id = counterparty
         .channel_id
         .as_ref()
         .ok_or_else(Error::missing_counterparty_channel_id)?;
@@ -475,7 +484,7 @@ pub fn acknowledgements_on_chain(
         &channel.port_id,
         &channel.channel_id,
         counterparty_chain,
-        &channel.channel_end.counterparty().port_id,
+        &counterparty.port_id,
         counterparty_channel_id,
     )?;
 
@@ -487,9 +496,9 @@ pub fn unreceived_acknowledgements(
     counterparty_chain: &impl ChainHandle,
     channel: &IdentifiedChannelEnd,
 ) -> Result<Vec<u64>, Error> {
-    let counterparty_channel_id = channel
-        .channel_end
-        .counterparty()
+    let counterparty = channel.channel_end.counterparty();
+
+    let counterparty_channel_id = counterparty
         .channel_id
         .as_ref()
         .ok_or_else(Error::missing_counterparty_channel_id)?;
@@ -499,9 +508,34 @@ pub fn unreceived_acknowledgements(
         &channel.port_id,
         &channel.channel_id,
         counterparty_chain,
-        &channel.channel_end.counterparty().port_id,
+        &counterparty.port_id,
         counterparty_channel_id,
     )?;
 
     Ok(sequences)
+}
+
+pub fn has_commitments_on_counterparty(
+    chain: &impl ChainHandle,
+    counterparty_chain: &impl ChainHandle,
+    channel: &IdentifiedChannelEnd,
+) -> Result<bool, Error> {
+    let counterparty = channel.channel_end.counterparty();
+
+    let counterparty_channel_id = counterparty
+        .channel_id
+        .as_ref()
+        .ok_or_else(Error::missing_counterparty_channel_id)?;
+
+    let counterparty_port_id = &counterparty.port_id;
+
+    // get the first commitment, if any, on the counterparty chain
+    let (commitments_on_counterparty, _) = commitments_on_chain(
+        counterparty_chain,
+        counterparty_port_id,
+        counterparty_channel_id,
+        Some(1),
+    )?;
+
+    Ok(!commitments_on_counterparty.is_empty())
 }

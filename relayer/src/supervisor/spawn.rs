@@ -238,40 +238,24 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                     .then(|| info!("spawned Client worker: {}", client_object.short_name()));
             }
 
-            if mode.packets.enabled {
-                let has_packets = || {
-                    !channel_scan
-                        .unreceived_packets_on_counterparty(&chain, &counterparty_chain)
-                        .unwrap_or_default()
-                        .is_empty()
-                };
+            // If packet mdoe is enabled and there are any outstanding commitments for packets or acks to send, spawn the worker
+            if mode.packets.enabled && channel_scan.has_commitments {
+                // Create the Packet object and spawn worker
+                let path_object = Object::Packet(Packet {
+                    dst_chain_id: counterparty_chain.id(),
+                    src_chain_id: chain.id(),
+                    src_channel_id: channel_scan.id().clone(),
+                    src_port_id: channel_scan.channel.port_id.clone(),
+                });
 
-                let has_acks = || {
-                    !channel_scan
-                        .unreceived_acknowledgements_on_counterparty(&chain, &counterparty_chain)
-                        .unwrap_or_default()
-                        .is_empty()
-                };
-
-                // If there are any outstanding packets or acks to send, spawn the worker
-                if has_packets() || has_acks() {
-                    // Create the Packet object and spawn worker
-                    let path_object = Object::Packet(Packet {
-                        dst_chain_id: counterparty_chain.id(),
-                        src_chain_id: chain.id(),
-                        src_channel_id: channel_scan.id().clone(),
-                        src_port_id: channel_scan.channel.port_id.clone(),
-                    });
-
-                    self.workers
-                        .spawn(
-                            chain.clone(),
-                            counterparty_chain.clone(),
-                            &path_object,
-                            self.config,
-                        )
-                        .then(|| info!("spawned Packet worker: {}", path_object.short_name()));
-                }
+                self.workers
+                    .spawn(
+                        chain.clone(),
+                        counterparty_chain.clone(),
+                        &path_object,
+                        self.config,
+                    )
+                    .then(|| info!("spawned Packet worker: {}", path_object.short_name()));
             }
 
             Ok(mode.clients.enabled)

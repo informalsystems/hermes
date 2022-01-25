@@ -34,7 +34,7 @@ use crate::{
     worker::WorkerMap,
 };
 
-use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
+use crate::chain::counterparty::has_commitments_on_counterparty;
 
 use crate::error::Error as RelayerError;
 use crate::registry::SpawnError;
@@ -195,38 +195,24 @@ impl ConnectionScan {
 pub struct ChannelScan {
     pub channel: IdentifiedChannelEnd,
     pub counterparty: Option<IdentifiedChannelEnd>,
+    pub has_commitments: bool,
 }
 
 impl ChannelScan {
-    pub fn new(channel: IdentifiedChannelEnd, counterparty: Option<IdentifiedChannelEnd>) -> Self {
+    pub fn new(
+        channel: IdentifiedChannelEnd,
+        counterparty: Option<IdentifiedChannelEnd>,
+        has_commitments: bool,
+    ) -> Self {
         Self {
             channel,
             counterparty,
+            has_commitments,
         }
     }
 
     pub fn id(&self) -> &ChannelId {
         &self.channel.channel_id
-    }
-
-    pub fn unreceived_packets_on_counterparty(
-        &self,
-        chain: &impl ChainHandle,
-        counterparty_chain: &impl ChainHandle,
-    ) -> Option<Vec<u64>> {
-        self.counterparty.as_ref().map(|counterparty| {
-            unreceived_packets(counterparty_chain, chain, counterparty).unwrap_or_default()
-        })
-    }
-
-    pub fn unreceived_acknowledgements_on_counterparty(
-        &self,
-        chain: &impl ChainHandle,
-        counterparty_chain: &impl ChainHandle,
-    ) -> Option<Vec<u64>> {
-        self.counterparty.as_ref().map(|counterparty| {
-            unreceived_acknowledgements(counterparty_chain, chain, counterparty).unwrap_or_default()
-        })
     }
 }
 
@@ -324,6 +310,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                     connection,
                     counterparty_connection_state,
                     client,
+                    has_commitments,
                 }) => {
                     let client_scan = scan
                         .clients
@@ -340,7 +327,9 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                     connection_scan
                         .channels
                         .entry(channel.channel_id.clone())
-                        .or_insert_with(|| ChannelScan::new(channel, counterparty_channel));
+                        .or_insert_with(|| {
+                            ChannelScan::new(channel, counterparty_channel, has_commitments)
+                        });
                 }
                 Err(e) => error!(channel = %channel_id, "failed to scan channel, reason: {}", e),
             }
@@ -470,10 +459,14 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                     channel_on_destination(&channel, &scan.connection, &counterparty_chain)
                         .unwrap_or_default();
 
-                let scan = ChannelScan {
-                    channel,
-                    counterparty,
+                let has_commitments = if let Some(ref counterparty) = counterparty {
+                    has_commitments_on_counterparty(&counterparty_chain, chain, counterparty)
+                        .unwrap_or_default()
+                } else {
+                    false
                 };
+
+                let scan = ChannelScan::new(channel, counterparty, has_commitments);
 
                 (scan.id().clone(), scan)
             })
@@ -584,6 +577,7 @@ struct ScannedChannel {
     connection: IdentifiedConnectionEnd,
     counterparty_connection_state: Option<ConnectionState>,
     client: IdentifiedAnyClientState,
+    has_commitments: bool,
 }
 
 fn scan_allowed_channel<Chain: ChainHandle>(
@@ -658,12 +652,20 @@ fn scan_allowed_channel<Chain: ChainHandle>(
         "found counterparty connection state"
     );
 
+    let has_commitments = if let Some(ref counterparty_channel) = counterparty_channel {
+        has_commitments_on_counterparty(&counterparty_chain, chain, counterparty_channel)
+            .unwrap_or_default()
+    } else {
+        false
+    };
+
     Ok(ScannedChannel {
         channel,
         counterparty_channel,
         connection,
         counterparty_connection_state,
         client,
+        has_commitments,
     })
 }
 

@@ -86,6 +86,13 @@ pub mod cosmos {
                         ..Default::default()
                     })
                 }
+
+                pub fn first(limit: u64) -> Option<PageRequest> {
+                    Some(PageRequest {
+                        limit,
+                        ..Default::default()
+                    })
+                }
             }
         }
         pub mod reflection {
