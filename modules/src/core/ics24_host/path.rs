@@ -30,104 +30,104 @@ const UPGRADED_CLIENT_CONSENSUS_STATE: &str = "upgradedConsState";
 /// The Path enum abstracts out the different sub-paths.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, From, Display)]
 pub enum Path {
-    #[display(fmt = "clients/{}/clientType", "_0.0")]
     ClientType(ClientTypePath),
-    #[display(fmt = "clients/{}/clientState", "_0.0")]
     ClientState(ClientStatePath),
-    #[display(
-        fmt = "clients/{}/consensusStates/{}-{}",
-        "_0.client_id",
-        "_0.epoch",
-        "_0.height"
-    )]
     ClientConsensusState(ClientConsensusStatePath),
-    #[display(fmt = "clients/{}/connections", "_0.0")]
     ClientConnections(ClientConnectionsPath),
-    #[display(fmt = "connections/{}", "_0.0")]
     Connections(ConnectionsPath),
-    #[display(fmt = "ports/{}", "_0.0")]
     Ports(PortsPath),
-    #[display(fmt = "channelEnds/ports/{}/channels/{}", "_0.0", "_0.1")]
     ChannelEnds(ChannelEndsPath),
-    #[display(fmt = "nextSequenceSend/ports/{}/channels/{}", "_0.0", "_0.1")]
     SeqSends(SeqSendsPath),
-    #[display(fmt = "nextSequenceRecv/ports/{}/channels/{}", "_0.0", "_0.1")]
     SeqRecvs(SeqRecvsPath),
-    #[display(fmt = "nextSequenceAck/ports/{}/channels/{}", "_0.0", "_0.1")]
     SeqAcks(SeqAcksPath),
-    #[display(
-        fmt = "commitments/ports/{}/channels/{}/sequences/{}",
-        "_0.port_id",
-        "_0.channel_id",
-        "_0.sequence"
-    )]
     Commitments(CommitmentsPath),
-    #[display(
-        fmt = "acks/ports/{}/channels/{}/sequences/{}",
-        "_0.port_id",
-        "_0.channel_id",
-        "_0.sequence"
-    )]
     Acks(AcksPath),
-    #[display(
-        fmt = "receipts/ports/{}/channels/{}/sequences/{}",
-        "_0.port_id",
-        "_0.channel_id",
-        "_0.sequence"
-    )]
     Receipts(ReceiptsPath),
     Upgrade(ClientUpgradePath),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "clients/{}/clientType", _0)]
 pub struct ClientTypePath(pub ClientId);
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "clients/{}/clientState", _0)]
 pub struct ClientStatePath(pub ClientId);
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(
+    fmt = "clients/{}/consensusStates/{}-{}",
+    "client_id",
+    "epoch",
+    "height"
+)]
 pub struct ClientConsensusStatePath {
     pub client_id: ClientId,
     pub epoch: u64,
     pub height: u64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "clients/{}/connections", _0)]
 pub struct ClientConnectionsPath(pub ClientId);
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "connections/{}", _0)]
 pub struct ConnectionsPath(pub ConnectionId);
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "ports/{}", _0)]
 pub struct PortsPath(pub PortId);
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "channelEnds/ports/{}/channels/{}", _0, _1)]
 pub struct ChannelEndsPath(pub PortId, pub ChannelId);
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "nextSequenceSend/ports/{}/channels/{}", _0, _1)]
 pub struct SeqSendsPath(pub PortId, pub ChannelId);
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "nextSequenceRecv/ports/{}/channels/{}", _0, _1)]
 pub struct SeqRecvsPath(pub PortId, pub ChannelId);
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "nextSequenceAck/ports/{}/channels/{}", _0, _1)]
 pub struct SeqAcksPath(pub PortId, pub ChannelId);
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(
+    fmt = "commitments/ports/{}/channels/{}/sequences/{}",
+    "port_id",
+    "channel_id",
+    "sequence"
+)]
 pub struct CommitmentsPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: Sequence,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(
+    fmt = "acks/ports/{}/channels/{}/sequences/{}",
+    "port_id",
+    "channel_id",
+    "sequence"
+)]
 pub struct AcksPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: Sequence,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(
+    fmt = "receipts/ports/{}/channels/{}/sequences/{}",
+    "port_id",
+    "channel_id",
+    "sequence"
+)]
 pub struct ReceiptsPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
