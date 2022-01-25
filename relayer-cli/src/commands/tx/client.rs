@@ -259,9 +259,9 @@ impl TxUpgradeClientsCmd {
 }
 
 fn parse_trust_threshold(input: &str) -> Result<TrustThreshold, Error> {
-    let (num_part, denom_part) = input
-        .split_once('/')
-        .ok_or_else(|| Error::cli_arg("expected a fraction argument separated by '/'".into()))?;
+    let (num_part, denom_part) = input.split_once('/').ok_or_else(|| {
+        Error::cli_arg("expected a fractional argument, two numbers separated by '/'".into())
+    })?;
     let numerator = num_part
         .trim()
         .parse()
