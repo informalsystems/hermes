@@ -238,7 +238,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                     .then(|| info!("spawned Client worker: {}", client_object.short_name()));
             }
 
-            // If packet mdoe is enabled and there are any outstanding commitments for packets or acks to send, spawn the worker
+            // If packet mode is enabled and there are any outstanding commitments for packets or acks to send, spawn the worker
             if mode.packets.enabled && channel_scan.has_commitments {
                 // Create the Packet object and spawn worker
                 let path_object = Object::Packet(Packet {
@@ -249,12 +249,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                 });
 
                 self.workers
-                    .spawn(
-                        chain.clone(),
-                        counterparty_chain.clone(),
-                        &path_object,
-                        self.config,
-                    )
+                    .spawn(chain, counterparty_chain, &path_object, self.config)
                     .then(|| info!("spawned Packet worker: {}", path_object.short_name()));
             }
 
