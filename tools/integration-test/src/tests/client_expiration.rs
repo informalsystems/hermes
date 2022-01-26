@@ -2,7 +2,7 @@ use core::time::Duration;
 use ibc::core::ics03_connection::connection::State as ConnectionState;
 use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer::config::{self, Config, ModeConfig};
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
+use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
 use ibc_relayer::worker::client::spawn_refresh_client;
 use std::thread::sleep;
 
@@ -151,8 +151,15 @@ impl BinaryChainTest for ChannelExpirationTest {
 
         wait_for_client_expiry();
 
-        let _supervisor =
-            spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
+        let _supervisor = spawn_supervisor(
+            chains.config.clone(),
+            chains.registry.clone(),
+            None,
+            SupervisorOptions {
+                health_check: false,
+                force_full_scan: false,
+            },
+        )?;
 
         let port_a = tagged_transfer_port();
         let port_b = tagged_transfer_port();
@@ -297,8 +304,15 @@ impl BinaryChainTest for PacketExpirationTest {
 
         wait_for_client_expiry();
 
-        let _supervisor =
-            spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
+        let _supervisor = spawn_supervisor(
+            chains.config.clone(),
+            chains.registry.clone(),
+            None,
+            SupervisorOptions {
+                health_check: false,
+                force_full_scan: false,
+            },
+        )?;
 
         let denom_a = chains.node_a.denom();
         let balance_a = chains

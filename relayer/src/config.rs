@@ -5,9 +5,10 @@ mod proof_specs;
 pub mod reload;
 pub mod types;
 
-use alloc::collections::BTreeMap as HashMap;
-use alloc::collections::BTreeSet as HashSet;
+use alloc::collections::BTreeMap;
+use alloc::collections::BTreeSet;
 use core::{fmt, time::Duration};
+use itertools::Itertools;
 use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
@@ -75,11 +76,27 @@ impl PacketFilter {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
+pub struct ChannelsSpec(BTreeSet<(PortId, ChannelId)>);
 
 impl ChannelsSpec {
     pub fn contains(&self, channel_port: &(PortId, ChannelId)) -> bool {
         self.0.contains(channel_port)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &(PortId, ChannelId)> {
+        self.0.iter()
+    }
+}
+
+impl fmt::Display for ChannelsSpec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.iter()
+                .map(|(pid, cid)| format!("{}/{}", pid, cid))
+                .join(", ")
+        )
     }
 }
 
@@ -165,7 +182,7 @@ impl Config {
         }
     }
 
-    pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
+    pub fn chains_map(&self) -> BTreeMap<&ChainId, &ChainConfig> {
         self.chains.iter().map(|c| (&c.id, c)).collect()
     }
 }

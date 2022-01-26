@@ -15,17 +15,22 @@ use ibc::{
     Height,
 };
 
-use crate::util::lock::LockExt;
-use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::{
     chain::{handle::ChainHandle, HealthCheck},
     config::{ChainConfig, Config},
-    event,
-    event::monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+    event::{
+        self,
+        monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+    },
     object::Object,
     registry::{Registry, SharedRegistry},
     rest,
-    util::try_recv_multiple,
+    supervisor::scan::ScanMode,
+    util::{
+        lock::LockExt,
+        task::{spawn_background_task, Next, TaskError, TaskHandle},
+        try_recv_multiple,
+    },
     worker::WorkerMap,
 };
 
@@ -38,13 +43,13 @@ pub use error::{Error, ErrorDetail};
 pub mod dump_state;
 use dump_state::SupervisorState;
 
+pub mod scan;
 pub mod spawn;
-use spawn::SpawnContext;
 
 pub mod cmd;
 use cmd::{CmdEffect, ConfigUpdate, SupervisorCmd};
 
-use self::spawn::SpawnMode;
+use self::{scan::ChainScanner, spawn::SpawnContext};
 
 type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
@@ -60,6 +65,18 @@ pub struct SupervisorHandle {
     tasks: Vec<TaskHandle>,
 }
 
+/// Options for the supervisor
+#[derive(Debug)]
+pub struct SupervisorOptions {
+    /// Perform a health check of all chains we connect to
+    pub health_check: bool,
+
+    /// Force a full scan of the chains for clients, connections, and channels,
+    /// even when an allow list is configured for a chain and the full scan could
+    /// be omitted.
+    pub force_full_scan: bool,
+}
+
 /**
    Spawn a supervisor for testing purpose using the provided
    [`SharedConfig`] and [`SharedRegistry`]. Returns a
@@ -70,11 +87,11 @@ pub fn spawn_supervisor(
     config: Arc<RwLock<Config>>,
     registry: SharedRegistry<impl ChainHandle>,
     rest_rx: Option<rest::Receiver>,
-    do_health_check: bool,
+    options: SupervisorOptions,
 ) -> Result<SupervisorHandle, Error> {
     let (sender, receiver) = unbounded();
 
-    let tasks = spawn_supervisor_tasks(config, registry, rest_rx, receiver, do_health_check)?;
+    let tasks = spawn_supervisor_tasks(config, registry, rest_rx, receiver, options)?;
 
     Ok(SupervisorHandle { sender, tasks })
 }
@@ -108,23 +125,36 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     registry: SharedRegistry<Chain>,
     rest_rx: Option<rest::Receiver>,
     cmd_rx: Receiver<SupervisorCmd>,
-    do_health_check: bool,
+    options: SupervisorOptions,
 ) -> Result<Vec<TaskHandle>, Error> {
-    if do_health_check {
+    if options.health_check {
         health_check(&config.acquire_read(), &mut registry.write());
     }
 
     let workers = Arc::new(RwLock::new(WorkerMap::new()));
     let client_state_filter = Arc::new(RwLock::new(FilterPolicy::default()));
 
-    spawn_context(
+    let scan = chain_scanner(
         &config.acquire_read(),
         &mut registry.write(),
         &mut client_state_filter.acquire_write(),
-        &mut workers.acquire_write(),
-        SpawnMode::Startup,
+        if options.force_full_scan {
+            ScanMode::Full
+        } else {
+            ScanMode::Auto
+        },
     )
-    .spawn_workers();
+    .scan_chains();
+
+    info!("Scanned chains:");
+    info!("{}", scan);
+
+    spawn_context(
+        &config.acquire_read(),
+        &mut registry.write(),
+        &mut workers.acquire_write(),
+    )
+    .spawn_workers(scan);
 
     let subscriptions = Arc::new(RwLock::new(init_subscriptions(
         &config.acquire_read(),
@@ -450,11 +480,18 @@ fn collect_events(
 fn spawn_context<'a, Chain: ChainHandle>(
     config: &'a Config,
     registry: &'a mut Registry<Chain>,
-    client_state_filter: &'a mut FilterPolicy,
     workers: &'a mut WorkerMap,
-    mode: SpawnMode,
 ) -> SpawnContext<'a, Chain> {
-    SpawnContext::new(config, registry, client_state_filter, workers, mode)
+    SpawnContext::new(config, registry, workers)
+}
+
+fn chain_scanner<'a, Chain: ChainHandle>(
+    config: &'a Config,
+    registry: &'a mut Registry<Chain>,
+    client_state_filter: &'a mut FilterPolicy,
+    full_scan: ScanMode,
+) -> ChainScanner<'a, Chain> {
+    ChainScanner::new(config, registry, client_state_filter, full_scan)
 }
 
 /// Perform a health check on all connected chains
@@ -676,31 +713,21 @@ fn remove_chain<Chain: ChainHandle>(
     config: &mut Config,
     registry: &mut Registry<Chain>,
     workers: &mut WorkerMap,
-    client_state_filter: &mut FilterPolicy,
     id: &ChainId,
 ) -> CmdEffect {
     if !config.has_chain(id) {
-        info!(chain.id=%id, "skipping removal of non-existing chain");
+        info!(chain = %id, "skipping removal of non-existing chain");
         return CmdEffect::Nothing;
     }
 
-    info!(chain.id=%id, "removing existing chain");
-
+    info!(chain = %id, "removing existing chain");
     config.chains.retain(|c| &c.id != id);
 
-    debug!(chain.id=%id, "shutting down workers");
-
-    let mut ctx = spawn_context(
-        config,
-        registry,
-        client_state_filter,
-        workers,
-        SpawnMode::Reload,
-    );
-
+    debug!(chain = %id, "shutting down workers");
+    let mut ctx = spawn_context(config, registry, workers);
     ctx.shutdown_workers_for_chain(id);
 
-    debug!(chain.id=%id, "shutting down chain runtime");
+    debug!(chain = %id, "shutting down chain runtime");
     registry.shutdown(id);
 
     CmdEffect::ConfigChanged
@@ -721,15 +748,15 @@ fn add_chain<Chain: ChainHandle>(
     let id = chain_config.id.clone();
 
     if config.has_chain(&id) {
-        info!(chain.id=%id, "skipping addition of already existing chain");
+        info!(chain = %id, "skipping addition of already existing chain");
         return CmdEffect::Nothing;
     }
 
-    info!(chain.id=%id, "adding new chain");
+    info!(chain = %id, "adding new chain");
 
-    config.chains.push(chain_config);
+    config.chains.push(chain_config.clone());
 
-    debug!(chain.id=%id, "spawning chain runtime");
+    debug!(chain = %id, "spawning chain runtime");
 
     if let Err(e) = registry.spawn(&id) {
         error!(
@@ -743,17 +770,27 @@ fn add_chain<Chain: ChainHandle>(
         return CmdEffect::Nothing;
     }
 
-    debug!(chain.id=%id, "spawning workers");
+    debug!(chain = %id, "scanning chain");
 
-    let mut ctx = spawn_context(
-        config,
-        registry,
-        client_state_filter,
-        workers,
-        SpawnMode::Reload,
-    );
+    let scan_result = chain_scanner(config, registry, client_state_filter, ScanMode::Auto)
+        .scan_chain(&chain_config);
 
-    ctx.spawn_workers_for_chain(&id);
+    let scan = match scan_result {
+        Ok(scan) => scan,
+        Err(e) => {
+            error!("failed to scan chain {}: {}", id, e);
+
+            // Remove the newly added config
+            config.chains.retain(|c| c.id != id);
+
+            return CmdEffect::Nothing;
+        }
+    };
+
+    debug!(chain = %id, "spawning workers");
+
+    let mut ctx = spawn_context(config, registry, workers);
+    ctx.spawn_workers_for_chain(scan);
 
     CmdEffect::ConfigChanged
 }
@@ -771,15 +808,9 @@ fn update_chain<Chain: ChainHandle>(
     client_state_filter: &mut FilterPolicy,
     chain_config: ChainConfig,
 ) -> CmdEffect {
-    info!(chain.id=%chain_config.id, "updating existing chain");
+    info!(chain = %chain_config.id, "updating existing chain");
 
-    let removed = remove_chain(
-        config,
-        registry,
-        workers,
-        client_state_filter,
-        &chain_config.id,
-    );
+    let removed = remove_chain(config, registry, workers, &chain_config.id);
 
     let added = add_chain(config, registry, workers, client_state_filter, chain_config);
 
@@ -801,9 +832,7 @@ fn update_config<Chain: ChainHandle>(
         ConfigUpdate::Add(chain_config) => {
             add_chain(config, registry, workers, client_state_filter, chain_config)
         }
-        ConfigUpdate::Remove(id) => {
-            remove_chain(config, registry, workers, client_state_filter, &id)
-        }
+        ConfigUpdate::Remove(id) => remove_chain(config, registry, workers, &id),
         ConfigUpdate::Update(chain_config) => {
             update_chain(config, registry, workers, client_state_filter, chain_config)
         }

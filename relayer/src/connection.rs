@@ -618,7 +618,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             connection_id: connection_id.clone(),
         };
 
-        connection_state_on_destination(connection, &self.dst_chain())
+        connection_state_on_destination(&connection, &self.dst_chain())
             .map_err(ConnectionError::supervisor)
     }
 

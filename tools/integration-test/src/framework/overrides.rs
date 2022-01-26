@@ -7,6 +7,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
+use ibc_relayer::supervisor::SupervisorOptions;
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 
 use crate::error::Error;
@@ -75,7 +76,16 @@ pub trait TestOverrides {
         config: &SharedConfig,
         registry: &SharedRegistry<impl ChainHandle>,
     ) -> Result<Option<SupervisorHandle>, Error> {
-        let handle = spawn_supervisor(config.clone(), registry.clone(), None, false)?;
+        let handle = spawn_supervisor(
+            config.clone(),
+            registry.clone(),
+            None,
+            SupervisorOptions {
+                health_check: false,
+                force_full_scan: false,
+            },
+        )?;
+
         Ok(Some(handle))
     }
 
