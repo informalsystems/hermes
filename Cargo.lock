@@ -1898,15 +1898,17 @@ checksum = "28988d872ab76095a6e6ac88d99b54fd267702734fd7ffe610ca27f533ddb95a"
 
 [[package]]
 name = "opentelemetry"
-version = "0.15.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff27b33e30432e7b9854936693ca103d8591b0501f7ae9f633de48cda3bf2a67"
+checksum = "6105e89802af13fdf48c49d7646d3b533a70e536d818aae7e78ba0433d01acb8"
 dependencies = [
  "async-trait",
  "crossbeam-channel 0.5.2",
  "dashmap",
  "fnv",
- "futures",
+ "futures-channel",
+ "futures-executor",
+ "futures-util",
  "js-sys",
  "lazy_static",
  "percent-encoding",
@@ -1917,9 +1919,9 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-prometheus"
-version = "0.8.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e06ddda4790151e8b494f9bb32720fce23722d7f395f81383b9b2934bb6356a0"
+checksum = "9328977e479cebe12ce0d3fcecdaea4721d234895a9440c5b5dfd113f0594ac6"
 dependencies = [
  "opentelemetry",
  "prometheus",
@@ -2104,9 +2106,9 @@ dependencies = [
 
 [[package]]
 name = "prometheus"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5986aa8d62380092d2f50f8b1cdba9cb9b6731ffd4b25b51fd126b6c3e05b99c"
+checksum = "b7f64969ffd5dd8f39bd57a68ac53c163a095ed9d0fb707146da1b27025a3504"
 dependencies = [
  "cfg-if 1.0.0",
  "fnv",
