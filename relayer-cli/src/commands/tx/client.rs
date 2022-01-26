@@ -37,7 +37,7 @@ pub struct TxCreateClientCmd {
     /// Override the trusting period specified in the config.
     ///
     /// The trusting period specifies how long a validator set is trusted for
-    /// (must be shorter than the chain's unbonding period)
+    /// (must be shorter than the chain's unbonding period).
 
     #[clap(short = 'p', long)]
     trusting_period: Option<humantime::Duration>,
