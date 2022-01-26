@@ -499,7 +499,8 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     }
 
     fn filtering_enabled(&self) -> bool {
-        self.config.mode.packets.filter
+        // filtering is always enabled
+        true
     }
 
     fn use_allow_list<'b>(&self, chain_config: &'b ChainConfig) -> Option<&'b ChannelsSpec> {

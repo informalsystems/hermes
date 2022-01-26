@@ -50,18 +50,6 @@ clear_interval = 100
 # Whether or not to clear packets on start. [Default: false]
 clear_on_start = true
 
-# Enable or disable the filtering mechanism.
-# Valid options are 'true', 'false'.
-# Currently Hermes supports two filters:
-# 1. Packet filtering on a per-chain basis; see the chain-specific
-#   filter specification below in [chains.packet_filter].
-# 2. Filter for all activities based on client state trust threshold; this filter
-#   is parametrized with (numerator = 1, denominator = 3), so that clients with
-#   thresholds different than this will be ignored.
-# If set to 'true', both of the above filters will be enabled.
-# [Default: false]
-filter = false
-
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
