@@ -1,5 +1,65 @@
 # CHANGELOG
 
+## v0.11.0
+*January 27th, 2022*
+
+This release notably speeds up the startup time of Hermes,
+adds options to the `create client` command to customize the client parameters,
+makes the deposit denomination configurable in `tx raw upgrade-chain` via a new `--denom` flag,
+and adds a `completions` CLI command to generate shell auto-completion scripts.
+
+### BREAKING CHANGES
+
+- General
+  - Update MSRV to Rust 1.58 ([#1765](https://github.com/informalsystems/ibc-rs/issues/1765))
+  - Update tendermint-rs dependencies to 0.23.5 ([#1767](https://github.com/informalsystems/ibc-rs/issues/1767))
+- [Relayer Library](relayer)
+  - Added a `denom` member to `upgrade_chain::UpgradePlanOptions`
+    ([#1662](https://github.com/informalsystems/ibc-rs/issues/1662))
+- [IBC Modules](ibc)
+  - Hide `ibc::Timestamp::now()` behind `clock` feature flag ([#1612](https://github.com/informalsystems/ibc-rs/issues/1612))
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Verify the client consensus proof against the client's consensus state root and not the host's state root
+    [#1745](https://github.com/informalsystems/ibc-rs/issues/1745)
+  - Initialize consensus metadata on client creation
+    ([#1763](https://github.com/informalsystems/ibc-rs/issues/1763))
+
+### IMPROVEMENTS
+
+- General
+  - Improve startup time of the relayer ([#1705](https://github.com/informalsystems/ibc-rs/issues/1705))
+      * When scanning a chain with filtering enabled and an allow list, skip scanning all the clients and query the allowed channels directly. This results in much fewer queries and a faster start.
+      * Add a `--full-scan` option to `hermes start` to opt out of the fast start mechanism and do a full scan.
+  - Update `tendermint-rs` to v0.23.4 and harmonize the dependencies to use a single TLS stack.
+    A system installation of OpenSSL is no longer required to build Hermes.
+    ([#1641](https://github.com/informalsystems/ibc-rs/issues/1641))
+  - Remove 1 second sleep in `generate_tm_block` during testing with mock context.
+    ([#1687](https://github.com/informalsystems/ibc-rs/issues/1687))
+- [IBC Modules](modules)
+  - Extract all `ics24_host::Path` variants into their separate types
+    ([#1760](https://github.com/informalsystems/ibc-rs/issues/1760))
+  - Disallow empty `CommitmentPrefix` and `CommitmentProofBytes`
+    ([#1761](https://github.com/informalsystems/ibc-rs/issues/1761))
+- [Relayer Library](relayer)
+  - Allow `ChainEndpoint` implementations to fetch any types of clients
+    and consensus states ([#1481](https://github.com/informalsystems/ibc-rs/issues/1481))
+  - More structural logging in relayer, using tracing spans and key-value pairs.
+    ([#1491](https://github.com/informalsystems/ibc-rs/pull/1491))
+  - Improved documention w.r.t. keys for Ethermint-based chains
+    ([#1785](https://github.com/informalsystems/ibc-rs/issues/1785))
+- [Relayer CLI](relayer-cli)
+  - Add custom options to the `create client` command.
+    ([#836](https://github.com/informalsystems/ibc-rs/issues/836))
+  - Make the deposit denomination configurable in `tx raw upgrade-chain` via a new `--denom` flag.
+    ([#1662](https://github.com/informalsystems/ibc-rs/issues/1662))
+  - Update to abscissa_core 0.6.0-rc.0 and clap 3.x
+    ([#1777](https://github.com/informalsystems/ibc-rs/pull/1777))
+  - Add `completions` CLI command to generate shell auto-completion scripts.
+    ([#1789](https://github.com/informalsystems/ibc-rs/pull/1789))
+
 ## v0.10.0
 *January 13th, 2021*
 
