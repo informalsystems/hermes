@@ -400,18 +400,30 @@ pub struct ChainConfig {
     pub max_msg_num: MaxMsgNum,
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
+
+    /// A correction parameter dealing with only approximately synchronized clocks.
+    /// The local clock should always be ahead of timestamps from the blockchain; this
+    /// is the maximum amount that the local clock may drift behind a timestamp from the
+    /// blockchain.
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
+
     #[serde(default = "default::max_block_time", with = "humantime_serde")]
     pub max_block_time: Duration,
+
+    /// The trusting period specifies how long a validator set is trusted for
+    /// (must be shorter than the chain's unbonding period).
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
+
     #[serde(default)]
     pub memo_prefix: Memo,
     #[serde(default, with = "self::proof_specs")]
     pub proof_specs: ProofSpecs,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
+    /// The trust threshold defines what fraction of the total voting power of a known
+    /// and trusted validator set is sufficient for a commit to be accepted going forward.
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
     pub gas_price: GasPrice,
