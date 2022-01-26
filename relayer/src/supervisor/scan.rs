@@ -768,6 +768,7 @@ fn query_connection_channels<Chain: ChainHandle>(
     chain: &Chain,
     connection_id: &ConnectionId,
 ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+    // [FIXME?] Can we limit the number of results here?
     let chans_req = QueryConnectionChannelsRequest {
         connection: connection_id.to_string(),
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
