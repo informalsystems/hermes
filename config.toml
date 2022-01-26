@@ -195,9 +195,9 @@ trust_threshold = { numerator = '1', denominator = '3' }
 memo_prefix = ''
 
 # This section specifies the filters for policy based relaying.
-# Default: no policy/ filters
-# The section is ignored if the global 'filter' option is set to 'false'.
-# If the global 'filter' option is set to 'true' and this section is missing then no filtering is performed for this chain.
+#
+# Default: no policy / filters, allow all packets on all channels.
+#
 # Only packet filtering based on channel identifier can be specified.
 # A channel filter has two fields:
 # 1. `policy` - one of two types are supported:
