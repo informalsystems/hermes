@@ -25,15 +25,27 @@ pub struct TxCreateClientCmd {
     #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    // FIXME: provide option doc
+    /// Override the default clock drift specified in the configuration.
+    ///
+    /// The clock drift is a correction parameter dealing with only approximately synchronized clocks.
+    /// The local clock should always be ahead of timestamps from the blockchain; this
+    /// is the maximum amount that the local clock may drift behind a timestamp from the
+    /// blockchain.
     #[clap(short = 'd', long)]
     clock_drift: Option<humantime::Duration>,
 
-    // FIXME: provide option doc
+    /// Override the trusting period specified in the config.
+    ///
+    /// The trusting period specifies how long a validator set is trusted for
+    /// (must be shorter than the chain's unbonding period)
+
     #[clap(short = 'p', long)]
     trusting_period: Option<humantime::Duration>,
 
-    // FIXME: provide option doc
+    /// Override the trust threshold specified in the configuration.
+    ///
+    /// The trust threshold defines what fraction of the total voting power of a known
+    /// and trusted validator set is sufficient for a commit to be accepted going forward.
     #[clap(short = 't', long, parse(try_from_str = parse_trust_threshold))]
     trust_threshold: Option<TrustThreshold>,
 }
