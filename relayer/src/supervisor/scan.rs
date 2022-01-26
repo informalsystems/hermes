@@ -74,6 +74,19 @@ flex_error::define_error! {
                     e.port_id, e.channel_id, e.chain_id
                 )
             },
+
+        CounterpartyConnectionState
+            {
+                connection_id: ConnectionId,
+                counterparty_chain_id: ChainId,
+                reason: String,
+            }
+            |e| {
+                format_args!(
+                    "failed to query counterparty connection state of connection '{}' on counterparty chain '{}', reason: {}",
+                    e.connection_id, e.counterparty_chain_id, e.reason
+                )
+            }
     }
 }
 
@@ -494,8 +507,16 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
             .get_or_spawn(&client.client_state.chain_id())
             .map_err(Error::spawn)?;
 
-        // FIXME
-        Ok(connection_state_on_destination(connection, &counterparty_chain).unwrap())
+        let counterparty_state = connection_state_on_destination(connection, &counterparty_chain)
+            .map_err(|e| {
+            Error::counterparty_connection_state(
+                connection.connection_id.clone(),
+                client.client_state.chain_id(),
+                e.to_string(),
+            )
+        })?;
+
+        Ok(counterparty_state)
     }
 
     fn filtering_enabled(&self) -> bool {
