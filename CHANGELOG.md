@@ -48,7 +48,7 @@ Before running Hermes v0.11.0, make sure you remove the `mode.packets.filter` op
 - [Relayer Library](relayer)
   - Added a `denom` member to `upgrade_chain::UpgradePlanOptions`
     ([#1662](https://github.com/informalsystems/ibc-rs/issues/1662))
-- [IBC Modules](ibc)
+- [IBC Modules](modules)
   - Hide `ibc::Timestamp::now()` behind `clock` feature flag ([#1612](https://github.com/informalsystems/ibc-rs/issues/1612))
 
 ### BUG FIXES
