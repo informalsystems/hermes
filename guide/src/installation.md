@@ -180,7 +180,41 @@ It might be easier to create an alias for `hermes` so you can just run it by spe
 alias hermes='cargo run --release --bin hermes --'
 ```
 
-### Next Steps
+## Shell auto-completions
+
+The `completions` subcommand of Hermes can be used to output a completion script
+for a choice of widely used command-line shells.
+Refer to `hermes completions --help` for the list. Some shell-specific examples
+of setting up auto-completion with this command are provided below; check your
+shell configuration to decide on the suitable directory in which to install the script
+and any further necessary modifications to the shell's startup files.
+
+### Bash
+
+```sh
+hermes completions bash > ~/.local/share/bash-completion/completions/hermes
+```
+
+On a MacOS installation with Homebrew `bash-completion` formula installed, use 
+
+```sh
+hermes completions bash > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
+```
+
+### Zsh
+
+```sh
+hermes completions zsh > ~/.zfunc/_hermes
+```
+
+To make the shell load the script on initialization, add the directory to `fpath`
+in your `~/.zshrc` before `compinit`:
+
+```
+fpath+=~/.zfunc
+```
+
+## Next Steps
 
 Go to the [`Configuration`](./config.md) section to learn how to create a configuration file to be used by Hermes.
 
