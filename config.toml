@@ -50,18 +50,6 @@ clear_interval = 100
 # Whether or not to clear packets on start. [Default: false]
 clear_on_start = true
 
-# Enable or disable the filtering mechanism.
-# Valid options are 'true', 'false'.
-# Currently Hermes supports two filters:
-# 1. Packet filtering on a per-chain basis; see the chain-specific
-#   filter specification below in [chains.packet_filter].
-# 2. Filter for all activities based on client state trust threshold; this filter
-#   is parametrized with (numerator = 1, denominator = 3), so that clients with
-#   thresholds different than this will be ignored.
-# If set to 'true', both of the above filters will be enabled.
-# [Default: false]
-filter = false
-
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
@@ -207,9 +195,9 @@ trust_threshold = { numerator = '1', denominator = '3' }
 memo_prefix = ''
 
 # This section specifies the filters for policy based relaying.
-# Default: no policy/ filters
-# The section is ignored if the global 'filter' option is set to 'false'.
-# If the global 'filter' option is set to 'true' and this section is missing then no filtering is performed for this chain.
+#
+# Default: no policy / filters, allow all packets on all channels.
+#
 # Only packet filtering based on channel identifier can be specified.
 # A channel filter has two fields:
 # 1. `policy` - one of two types are supported:

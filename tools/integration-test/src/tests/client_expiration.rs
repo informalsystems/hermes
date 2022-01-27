@@ -114,7 +114,6 @@ impl TestOverrides for ExpirationTestOverrides {
                 enabled: true,
                 clear_interval: 10,
                 clear_on_start: true,
-                filter: false,
                 tx_confirmation: true,
             },
         };

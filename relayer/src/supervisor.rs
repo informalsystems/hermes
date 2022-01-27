@@ -285,16 +285,17 @@ pub fn spawn_rest_worker<Chain: ChainHandle>(
 /// Returns `true` if the relayer should filter based on
 /// client state attributes, e.g., trust threshold.
 /// Returns `false` otherwise.
-fn client_filter_enabled(config: &Config) -> bool {
-    // Currently just a wrapper over the global filter.
-    config.mode.packets.filter
+fn client_filter_enabled(_config: &Config) -> bool {
+    // we currently always enable the client filter
+    true
 }
 
 /// Returns `true` if the relayer should filter based on
 /// channel identifiers.
 /// Returns `false` otherwise.
-fn channel_filter_enabled(config: &Config) -> bool {
-    config.mode.packets.filter
+fn channel_filter_enabled(_config: &Config) -> bool {
+    // we currently always enable the channel filter
+    true
 }
 
 fn relay_packets_on_channel(
