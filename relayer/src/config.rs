@@ -108,10 +108,6 @@ pub mod default {
         true
     }
 
-    pub fn filter() -> bool {
-        false
-    }
-
     pub fn clear_packets_interval() -> u64 {
         100
     }
@@ -172,13 +168,9 @@ impl Config {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> bool {
-        if !self.mode.packets.filter {
-            return true;
-        }
-
         match self.find_chain(chain_id) {
-            None => false,
             Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
+            None => false,
         }
     }
 
@@ -219,7 +211,6 @@ impl Default for ModeConfig {
                 enabled: true,
                 clear_interval: default::clear_packets_interval(),
                 clear_on_start: true,
-                filter: false,
                 tx_confirmation: true,
             },
         }
@@ -256,8 +247,6 @@ pub struct Packets {
     pub clear_interval: u64,
     #[serde(default)]
     pub clear_on_start: bool,
-    #[serde(default = "default::filter")]
-    pub filter: bool,
     #[serde(default = "default::tx_confirmation")]
     pub tx_confirmation: bool,
 }
@@ -268,7 +257,6 @@ impl Default for Packets {
             enabled: false,
             clear_interval: default::clear_packets_interval(),
             clear_on_start: false,
-            filter: default::filter(),
             tx_confirmation: default::tx_confirmation(),
         }
     }
