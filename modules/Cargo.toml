@@ -18,7 +18,7 @@ all-features = true
 
 [features]
 default = ["std"]
-std = ["flex-error/std", "flex-error/eyre_tracer", "clock"]
+std = ["flex-error/std", "flex-error/eyre_tracer", "ibc-proto/std", "clock"]
 clock = ["tendermint/clock", "time/std"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
