@@ -34,4 +34,4 @@ default-features = false
 
 [features]
 default = ["std"]
-std = ["tonic"]
+std = ["tonic", "tonic/codegen", "tonic/transport", "tonic/prost"]
