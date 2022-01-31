@@ -389,10 +389,12 @@ pub struct ChainConfig {
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
 
-    /// A correction parameter dealing with only approximately synchronized clocks.
-    /// The local clock should always be ahead of timestamps from the blockchain; this
-    /// is the maximum amount that the local clock may drift behind a timestamp from the
-    /// blockchain.
+    /// A correction parameter that helps deal with clocks that are only approximately synchronized
+    /// between the source and destination chains for a client.
+    /// This parameter is used when deciding to accept or reject a new header
+    /// (originating from the source chain) for any client with the destination chain
+    /// that uses this configuration, unless it is overridden by the client-specific
+    /// clock drift option.
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
 
