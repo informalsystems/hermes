@@ -137,10 +137,29 @@ pub mod cosmos {
 }
 
 pub mod ibc {
+    #[deprecated(since = "0.16.0", note = "Use `ibc_proto::ibc::applications` instead")]
     pub mod apps {
+        pub use super::applications::*;
+    }
+    pub mod applications {
         pub mod transfer {
             pub mod v1 {
                 include_proto!("ibc.applications.transfer.v1.rs");
+            }
+        }
+        pub mod interchain_accounts {
+            pub mod v1 {
+                include_proto!("ibc.applications.interchain_accounts.v1.rs");
+            }
+            pub mod controller {
+                pub mod v1 {
+                    include_proto!("ibc.applications.interchain_accounts.controller.v1.rs");
+                }
+            }
+            pub mod host {
+                pub mod v1 {
+                    include_proto!("ibc.applications.interchain_accounts.host.v1.rs");
+                }
             }
         }
     }
@@ -168,11 +187,6 @@ pub mod ibc {
         pub mod types {
             pub mod v1 {
                 include_proto!("ibc.core.types.v1.rs");
-            }
-        }
-        pub mod port {
-            pub mod v1 {
-                include_proto!("ibc.core.port.v1.rs");
             }
         }
     }

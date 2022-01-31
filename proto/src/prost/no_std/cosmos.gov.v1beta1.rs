@@ -1,4 +1,6 @@
 /// WeightedVoteOption defines a unit of vote for vote split.
+///
+/// Since: cosmos-sdk 0.43
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WeightedVoteOption {
     #[prost(enumeration = "VoteOption", tag = "1")]
@@ -74,6 +76,7 @@ pub struct Vote {
     #[deprecated]
     #[prost(enumeration = "VoteOption", tag = "3")]
     pub option: i32,
+    /// Since: cosmos-sdk 0.43
     #[prost(message, repeated, tag = "4")]
     pub options: ::prost::alloc::vec::Vec<WeightedVoteOption>,
 }
@@ -147,6 +150,66 @@ pub enum ProposalStatus {
     /// failed.
     Failed = 5,
 }
+/// MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
+/// proposal Content.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitProposal {
+    #[prost(message, optional, tag = "1")]
+    pub content: ::core::option::Option<::prost_types::Any>,
+    #[prost(message, repeated, tag = "2")]
+    pub initial_deposit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+    #[prost(string, tag = "3")]
+    pub proposer: ::prost::alloc::string::String,
+}
+/// MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitProposalResponse {
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+/// MsgVote defines a message to cast a vote.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgVote {
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    #[prost(string, tag = "2")]
+    pub voter: ::prost::alloc::string::String,
+    #[prost(enumeration = "VoteOption", tag = "3")]
+    pub option: i32,
+}
+/// MsgVoteResponse defines the Msg/Vote response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgVoteResponse {}
+/// MsgVoteWeighted defines a message to cast a vote.
+///
+/// Since: cosmos-sdk 0.43
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgVoteWeighted {
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    #[prost(string, tag = "2")]
+    pub voter: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "3")]
+    pub options: ::prost::alloc::vec::Vec<WeightedVoteOption>,
+}
+/// MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
+///
+/// Since: cosmos-sdk 0.43
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgVoteWeightedResponse {}
+/// MsgDeposit defines a message to submit a deposit to an existing proposal.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgDeposit {
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    #[prost(string, tag = "2")]
+    pub depositor: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "3")]
+    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+}
+/// MsgDepositResponse defines the Msg/Deposit response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgDepositResponse {}
 /// QueryProposalRequest is the request type for the Query/Proposal RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryProposalRequest {
@@ -319,59 +382,3 @@ pub struct GenesisState {
     #[prost(message, optional, tag = "7")]
     pub tally_params: ::core::option::Option<TallyParams>,
 }
-/// MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
-/// proposal Content.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitProposal {
-    #[prost(message, optional, tag = "1")]
-    pub content: ::core::option::Option<::prost_types::Any>,
-    #[prost(message, repeated, tag = "2")]
-    pub initial_deposit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-    #[prost(string, tag = "3")]
-    pub proposer: ::prost::alloc::string::String,
-}
-/// MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitProposalResponse {
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-/// MsgVote defines a message to cast a vote.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgVote {
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    #[prost(string, tag = "2")]
-    pub voter: ::prost::alloc::string::String,
-    #[prost(enumeration = "VoteOption", tag = "3")]
-    pub option: i32,
-}
-/// MsgVoteResponse defines the Msg/Vote response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgVoteResponse {}
-/// MsgVoteWeighted defines a message to cast a vote.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgVoteWeighted {
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    #[prost(string, tag = "2")]
-    pub voter: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "3")]
-    pub options: ::prost::alloc::vec::Vec<WeightedVoteOption>,
-}
-/// MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgVoteWeightedResponse {}
-/// MsgDeposit defines a message to submit a deposit to an existing proposal.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgDeposit {
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    #[prost(string, tag = "2")]
-    pub depositor: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "3")]
-    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-}
-/// MsgDepositResponse defines the Msg/Deposit response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgDepositResponse {}
