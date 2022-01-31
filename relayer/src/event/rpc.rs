@@ -29,7 +29,7 @@ pub fn get_all_events(
             vals.push((height, ClientEvents::NewBlock::new(height).into()));
 
             let mut chan_events = vec![];
-            let actions_and_indices = extract_helper(&events)?;
+            let actions_and_indices = extract_helper(&events).unwrap_or_default();
             for action in actions_and_indices {
                 if let Ok(event) = build_channel_event(RawObject::new(
                     height,
