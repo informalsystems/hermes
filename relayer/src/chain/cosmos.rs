@@ -42,7 +42,6 @@ use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest,
 };
@@ -77,29 +76,24 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
-use ibc_proto::ibc::core::port::v1::QueryAppVersionRequest;
 
-use crate::event::monitor::{EventMonitor, EventReceiver};
+use crate::chain::{QueryResponse, StatusResponse};
+use crate::config::types::Memo;
+use crate::config::{AddressType, ChainConfig, GasPrice};
+use crate::error::Error;
+use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
-use crate::light_client::LightClient;
-use crate::light_client::Verified;
+use crate::light_client::{LightClient, Verified};
+use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::util::retry::{retry_with_index, RetryResult};
-use crate::{
-    chain::handle::requests::AppVersion, chain::QueryResponse, chain::StatusResponse,
-    event::monitor::TxMonitorCmd,
-};
-use crate::{config::types::Memo, error::Error};
-use crate::{
-    config::{AddressType, ChainConfig, GasPrice},
-    sdk_error::sdk_error_from_tx_sync_error_code,
-};
 
-use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
 use ibc::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
+
+use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
 
 mod compatibility;
 pub mod version;
@@ -2098,27 +2092,6 @@ impl ChainEndpoint for CosmosSdkChain {
             light_client.header_and_minimal_set(trusted_height, target_height, client_state)?;
 
         Ok((target, supporting))
-    }
-
-    fn query_app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error> {
-        crate::time!("query_app_version");
-        crate::telemetry!(query, self.id(), "query_app_version");
-
-        use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
-
-        let mut client = self
-            .block_on(QueryClient::connect(self.grpc_addr.clone()))
-            .map_err(Error::grpc_transport)?;
-
-        let tonic_req: QueryAppVersionRequest = request.into();
-        let response = self.block_on(client.app_version(tonic_req));
-        let resp_version = response
-            .map_err(Error::grpc_status)?
-            .into_inner()
-            .version
-            .into();
-
-        Ok(resp_version)
     }
 }
 

@@ -18,7 +18,6 @@ use ibc::{
             version::Version,
         },
         ics04_channel::{
-            self,
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
@@ -45,7 +44,6 @@ use ibc_proto::ibc::core::{
 pub use prod::ProdChainHandle;
 
 use crate::{
-    chain::handle::requests::AppVersion,
     chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -57,7 +55,6 @@ use crate::{
 use super::{tx::TrackedMsgs, HealthCheck};
 
 mod prod;
-pub mod requests;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
@@ -130,11 +127,6 @@ pub enum ChainRequest {
 
     GetKey {
         reply_to: ReplyTo<KeyEntry>,
-    },
-
-    AppVersion {
-        request: AppVersion,
-        reply_to: ReplyTo<ics04_channel::Version>,
     },
 
     AddKey {
@@ -367,8 +359,6 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn config(&self) -> Result<ChainConfig, Error>;
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
-
-    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
 
     fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
 
