@@ -716,12 +716,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
+        let version = version::default_by_port(self.dst_port_id())?;
+
         let channel = ChannelEnd::new(
             State::Init,
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            Version::empty(), // This field is deprecated and therefore ignored since IBC v3
+            version, // NOTE: This field is deprecated since IBC v3
         );
 
         // Build the domain type message
