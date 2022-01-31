@@ -27,10 +27,11 @@ pub struct TxCreateClientCmd {
 
     /// Override the default clock drift specified in the configuration.
     ///
-    /// The clock drift is a correction parameter dealing with only approximately synchronized clocks.
-    /// The local clock should always be ahead of timestamps from the blockchain; this
-    /// is the maximum amount that the local clock may drift behind a timestamp from the
-    /// blockchain.
+    /// The clock drift is a correction parameter. It helps deal with clocks
+    /// that are only approximately synchronized between the source and destination chains
+    /// of this client.
+    /// The destination chain for this client uses the clock drift parameter when deciding
+    /// to accept or reject a new header (originating from the source chain) for this client.
     #[clap(short = 'd', long)]
     clock_drift: Option<humantime::Duration>,
 
@@ -38,7 +39,6 @@ pub struct TxCreateClientCmd {
     ///
     /// The trusting period specifies how long a validator set is trusted for
     /// (must be shorter than the chain's unbonding period).
-
     #[clap(short = 'p', long)]
     trusting_period: Option<humantime::Duration>,
 
