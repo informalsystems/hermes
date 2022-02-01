@@ -16,6 +16,5 @@ pub trait Ics26Context:
     + ChannelReader
     + PortReader
     + Ics20Context
-    + Clone
 {
 }
