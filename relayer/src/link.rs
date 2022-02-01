@@ -163,7 +163,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     }
 
     /// Implements the `packet-recv` CLI
-    pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
+    pub fn build_and_send_recv_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
             "PacketRecvCmd",
             src_chain = %self.a_to_b.src_chain().id(),
@@ -189,7 +189,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     }
 
     /// Implements the `packet-ack` CLI
-    pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
+    pub fn build_and_send_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
             "PacketAckCmd",
             src_chain = %self.a_to_b.src_chain().id(),
