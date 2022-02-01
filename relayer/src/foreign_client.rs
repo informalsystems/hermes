@@ -1,3 +1,5 @@
+//! Queries and methods for interfacing with foreign clients.
+
 use core::{fmt, time::Duration};
 use std::thread;
 use std::time::Instant;
@@ -649,9 +651,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         self.build_update_client_with_trusted(target_height, Height::zero())
     }
 
-    // Returns a trusted height that is lower than the target height, so
-    // that the relayer can update the client to the target height based
-    // on the returned trusted height.
+    /// Returns a trusted height that is lower than the target height, so
+    /// that the relayer can update the client to the target height based
+    /// on the returned trusted height.
     fn solve_trusted_height(
         &self,
         target_height: Height,
@@ -696,8 +698,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    // Validate a non-zero trusted height to make sure that there is a corresponding
-    // consensus state at the given trusted height on the destination chain's client.
+    /// Validate a non-zero trusted height to make sure that there is a corresponding
+    /// consensus state at the given trusted height on the destination chain's client.
     fn validate_trusted_height(
         &self,
         target_height: Height,
