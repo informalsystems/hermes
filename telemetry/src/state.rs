@@ -50,6 +50,9 @@ pub struct TelemetryState {
 
     /// Number of timeout packets relayed, per channel
     timeout_packets: Counter<u64>,
+
+    /// Number of queries emitted by the relayer, per chain and query type
+    queries: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -132,6 +135,15 @@ impl TelemetryState {
 
         self.timeout_packets.add(count, labels);
     }
+
+    pub fn query(&self, chain_id: &ChainId, query_type: &'static str) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("query_type", query_type),
+        ];
+
+        self.queries.add(1, labels);
+    }
 }
 
 impl Default for TelemetryState {
@@ -170,6 +182,13 @@ impl Default for TelemetryState {
             timeout_packets: meter
                 .u64_counter("ibc_timeout_packets")
                 .with_description("Number of timeout packets relayed per channel")
+                .init(),
+
+            queries: meter
+                .u64_counter("queries")
+                .with_description(
+                    "Number of queries emitted by the relayer, per chain and query type",
+                )
                 .init(),
         }
     }

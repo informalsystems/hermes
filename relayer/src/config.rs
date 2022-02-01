@@ -5,9 +5,10 @@ mod proof_specs;
 pub mod reload;
 pub mod types;
 
-use alloc::collections::BTreeMap as HashMap;
-use alloc::collections::BTreeSet as HashSet;
+use alloc::collections::BTreeMap;
+use alloc::collections::BTreeSet;
 use core::{fmt, time::Duration};
+use itertools::Itertools;
 use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
@@ -75,11 +76,27 @@ impl PacketFilter {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
+pub struct ChannelsSpec(BTreeSet<(PortId, ChannelId)>);
 
 impl ChannelsSpec {
     pub fn contains(&self, channel_port: &(PortId, ChannelId)) -> bool {
         self.0.contains(channel_port)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &(PortId, ChannelId)> {
+        self.0.iter()
+    }
+}
+
+impl fmt::Display for ChannelsSpec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.iter()
+                .map(|(pid, cid)| format!("{}/{}", pid, cid))
+                .join(", ")
+        )
     }
 }
 
@@ -89,10 +106,6 @@ pub mod default {
 
     pub fn tx_confirmation() -> bool {
         true
-    }
-
-    pub fn filter() -> bool {
-        false
     }
 
     pub fn clear_packets_interval() -> u64 {
@@ -155,17 +168,13 @@ impl Config {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> bool {
-        if !self.mode.packets.filter {
-            return true;
-        }
-
         match self.find_chain(chain_id) {
-            None => false,
             Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
+            None => false,
         }
     }
 
-    pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
+    pub fn chains_map(&self) -> BTreeMap<&ChainId, &ChainConfig> {
         self.chains.iter().map(|c| (&c.id, c)).collect()
     }
 }
@@ -202,7 +211,6 @@ impl Default for ModeConfig {
                 enabled: true,
                 clear_interval: default::clear_packets_interval(),
                 clear_on_start: true,
-                filter: false,
                 tx_confirmation: true,
             },
         }
@@ -239,8 +247,6 @@ pub struct Packets {
     pub clear_interval: u64,
     #[serde(default)]
     pub clear_on_start: bool,
-    #[serde(default = "default::filter")]
-    pub filter: bool,
     #[serde(default = "default::tx_confirmation")]
     pub tx_confirmation: bool,
 }
@@ -251,7 +257,6 @@ impl Default for Packets {
             enabled: false,
             clear_interval: default::clear_packets_interval(),
             clear_on_start: false,
-            filter: default::filter(),
             tx_confirmation: default::tx_confirmation(),
         }
     }
@@ -383,18 +388,32 @@ pub struct ChainConfig {
     pub max_msg_num: MaxMsgNum,
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
+
+    /// A correction parameter that helps deal with clocks that are only approximately synchronized
+    /// between the source and destination chains for a client.
+    /// This parameter is used when deciding to accept or reject a new header
+    /// (originating from the source chain) for any client with the destination chain
+    /// that uses this configuration, unless it is overridden by the client-specific
+    /// clock drift option.
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
+
     #[serde(default = "default::max_block_time", with = "humantime_serde")]
     pub max_block_time: Duration,
+
+    /// The trusting period specifies how long a validator set is trusted for
+    /// (must be shorter than the chain's unbonding period).
     #[serde(default, with = "humantime_serde")]
     pub trusting_period: Option<Duration>,
+
     #[serde(default)]
     pub memo_prefix: Memo,
     #[serde(default, with = "self::proof_specs")]
     pub proof_specs: ProofSpecs,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
+    /// The trust threshold defines what fraction of the total voting power of a known
+    /// and trusted validator set is sufficient for a commit to be accepted going forward.
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
     pub gas_price: GasPrice,
