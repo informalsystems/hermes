@@ -11,6 +11,106 @@ use ibc::events::{IbcEvent, RawObject};
 
 use crate::event::monitor::queries;
 
+/// Extract IBC events from Tendermint RPC events
+///
+/// Events originate from the following ABCI methods ->
+/// 1. `DeliverTx` - these events are generated during the execution of transaction messages.
+/// 2. `BeginBlock`
+/// 3. `EndBlock`
+///
+/// Events originating from `DeliverTx` are currently extracted via the `RpcEvent::data` field as
+/// the `EventData::Tx` variant.
+/// Here's an example of what these events look like (i.e. `TxInfo::TxResult::events`) -
+/// ```ron
+/// [
+///     Event {
+///         type_str: "channel_open_init",
+///         attributes: [
+///             Tag {
+///                 key: Key(
+///                     "port_id",
+///                 ),
+///                 value: Value(
+///                     "transfer",
+///                 ),
+///             },
+///             Tag {
+///                 key: Key(
+///                     "channel_id",
+///                 ),
+///                 value: Value(
+///                     "channel-1",
+///                 ),
+///             },
+///             Tag {
+///                 key: Key(
+///                     "counterparty_port_id",
+///                 ),
+///                 value: Value(
+///                     "transfer",
+///                 ),
+///             },
+///             Tag {
+///                 key: Key(
+///                     "counterparty_channel_id",
+///                 ),
+///                 value: Value(
+///                     "",
+///                 ),
+///             },
+///             Tag {
+///                 key: Key(
+///                     "connection_id",
+///                 ),
+///                 value: Value(
+///                     "connection-1",
+///                 ),
+///             },
+///         ],
+///     },
+///     // ...
+/// ]
+/// ```
+///
+/// Events originating from `BeginBlock` and `EndBlock` methods are extracted via the
+/// `RpcEvent::events` field. Here's an example of what these events look like ->
+/// ```json
+/// {
+///     "channel_open_init.channel_id": [
+///         "channel-0",
+///     ],
+///     "channel_open_init.connection_id": [
+///         "connection-0",
+///     ],
+///     "channel_open_init.counterparty_channel_id": [
+///         "channel-0",
+///     ],
+///     "channel_open_init.counterparty_port_id": [
+///         "transfer",
+///     ],
+///     "channel_open_init.port_id": [
+///         "transfer",
+///     ],
+///     // ...
+/// }
+/// ```
+///
+/// Note: Historically, all events were extracted from the `RpcEvent::events` field. This was
+/// possible because these events had a `message.action` field that allowed us to infer the order in
+/// which these events were triggered ->
+/// ```json
+/// "message.action": [
+///     "update_client",
+///     "channel_open_ack",
+/// ],
+/// "message.module": [
+///     "ibc_client",
+///     "ibc_channel",
+/// ],
+/// ```
+/// {Begin,End}Block events however do not have any such `message.action` associated with them, so
+/// this doesn't work. For this reason, we extract block events in the following order ->
+/// OpenInit -> OpenTry -> OpenAck -> OpenConfirm -> SendPacket -> CloseInit -> CloseConfirm.
 pub fn get_all_events(
     chain_id: &ChainId,
     result: RpcEvent,
