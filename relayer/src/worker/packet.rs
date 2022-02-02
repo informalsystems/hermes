@@ -6,7 +6,7 @@ use tracing::{error, error_span, trace};
 
 use crate::chain::handle::ChainHandle;
 use crate::foreign_client::HasExpiredOrFrozenError;
-use crate::link::{error::LinkError, Link, RelaySummary};
+use crate::link::{error::LinkError, Link};
 use crate::object::Packet;
 use crate::telemetry;
 use crate::util::retry::{retry_with_index, RetryResult};

@@ -702,7 +702,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// consensus state at the given trusted height on the destination chain's client.
     fn validate_trusted_height(
         &self,
-        target_height: Height,
         trusted_height: Height,
         client_state: &AnyClientState,
     ) -> Result<(), ForeignClientError> {
@@ -828,7 +827,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let trusted_height = if trusted_height == Height::zero() {
             self.solve_trusted_height(target_height, &client_state)?
         } else {
-            self.validate_trusted_height(target_height, trusted_height, &client_state)?;
+            self.validate_trusted_height(trusted_height, &client_state)?;
             trusted_height
         };
 
