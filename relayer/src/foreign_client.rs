@@ -712,10 +712,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // from the command line when the trusted height is manually specified.
             // We should consider skipping the validation entirely and only validate
             // it from the command line itself.
-
-            warn!("[{}] validating that trusted height {} for target height {} is present in the full list of consensus state heights; this may take a while",
-                  self, trusted_height, target_height);
-
             self.consensus_state(trusted_height)?;
         }
 
@@ -1063,6 +1059,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// order.
     fn consensus_state_heights(&self) -> Result<Vec<Height>, ForeignClientError> {
         // [TODO] Utilize query that only fetches consensus state heights
+        // https:// github.com/cosmos/ibc-go/issues/798
         let consensus_state_heights: Vec<Height> = self
             .consensus_states()?
             .iter()
