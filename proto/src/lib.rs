@@ -36,7 +36,10 @@ macro_rules! include_proto {
 }
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
-pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
+pub const COSMOS_SDK_COMMIT: &str = include_str!("prost/COSMOS_SDK_COMMIT");
+
+/// The version (commit hash) of IBC Go used when generating this library.
+pub const IBC_GO_COMMIT: &str = include_str!("prost/IBC_GO_COMMIT");
 
 pub mod cosmos {
     pub mod auth {

@@ -43,7 +43,7 @@ impl CompileCmd {
             }
             Some(ibc_path) => {
                 let tmp_ibc = TempDir::new("ibc-proto-ibc-go").unwrap();
-                Self::output_version(ibc_path, tmp_ibc.as_ref(), "COSMOS_IBC_COMMIT");
+                Self::output_version(ibc_path, tmp_ibc.as_ref(), "IBC_GO_COMMIT");
                 Self::compile_ibc_protos(ibc_path, tmp_ibc.as_ref(), self.build_tonic);
 
                 // Merge the generated files into a single directory, taking care not to overwrite anything
