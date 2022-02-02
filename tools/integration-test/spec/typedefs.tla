@@ -30,15 +30,17 @@ TODO: Fix when to transfer back money to sink zone
     amount: Int
 ];
 
-@typeAlias: CHAIN = [
-    id : CHAIN_ID,
+@typeAlias: BANK = DENOM_ID -> Int;
 
-    ports : Set(PORT_ID),
-    channel : CHANNEL_ID -> CHANNEL,
+@typeAlias: CHAIN = [
+    id: CHAIN_ID,
+
+    ports: Set(PORT_ID),
+    channel: CHANNEL_ID -> CHANNEL,
     activeChannels: Set(CHANNEL_ID),
-    
-    bank : ACCOUNT_ID -> DENOM_ID -> Int,
-    supply : DENOM_ID -> Int,
+
+    bank: ACCOUNT_ID -> BANK,
+    supply: BANK,
 
     localPackets: [
         list: PACKET_ID -> PACKET,
@@ -48,7 +50,7 @@ TODO: Fix when to transfer back money to sink zone
     ],
 
     remotePackets: CHANNEL_ID -> PACKET_ID -> PACKET,
-    
+
     ics20: [
         portId: PORT_ID,
         escrow: CHANNEL_ID -> ACCOUNT_ID,
