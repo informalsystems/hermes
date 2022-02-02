@@ -1063,6 +1063,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// order.
     fn consensus_state_heights(&self) -> Result<Vec<Height>, ForeignClientError> {
         // [TODO] Utilize query that only fetches consensus state heights
+        // https://github.com/cosmos/ibc-go/issues/798
         let consensus_state_heights: Vec<Height> = self
             .consensus_states()?
             .iter()
