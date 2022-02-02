@@ -1210,7 +1210,7 @@ mod tests {
             // All tests should yield a valid context after initialization.
             assert!(
                 test.ctx.validate().is_ok(),
-                "Failed in test {} while validating context {:?}",
+                "failed in test {} while validating context {:?}",
                 test.name,
                 test.ctx
             );
@@ -1221,7 +1221,7 @@ mod tests {
             test.ctx.advance_host_chain_height();
             assert!(
                 test.ctx.validate().is_ok(),
-                "Failed in test {} while validating context {:?}",
+                "failed in test {} while validating context {:?}",
                 test.name,
                 test.ctx
             );
@@ -1229,14 +1229,14 @@ mod tests {
             let next_height = current_height.increment();
             assert_eq!(
                 test.ctx.latest_height, next_height,
-                "Failed while increasing height for context {:?}",
+                "failed while increasing height for context {:?}",
                 test.ctx
             );
             if current_height > Height::new(cv, 0) {
                 assert_eq!(
                     test.ctx.host_block(current_height).unwrap().height(),
                     current_height,
-                    "Failed while fetching height {:?} of context {:?}",
+                    "failed while fetching height {:?} of context {:?}",
                     current_height,
                     test.ctx
                 );

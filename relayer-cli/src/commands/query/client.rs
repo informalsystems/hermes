@@ -116,7 +116,7 @@ impl Runnable for QueryClientConsensusCmd {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
                 return Output::error(format!(
-                    "Failed while querying client '{}' on chain '{}' with error: {}",
+                    "failed while querying client '{}' on chain '{}' with error: {}",
                     self.client_id, self.chain_id, e
                 ))
                 .exit()
@@ -200,7 +200,7 @@ impl Runnable for QueryClientHeaderCmd {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
                 return Output::error(format!(
-                    "Failed while querying client '{}' on chain '{}' with error: {}",
+                    "failed while querying client '{}' on chain '{}' with error: {}",
                     self.client_id, self.chain_id, e
                 ))
                 .exit()
