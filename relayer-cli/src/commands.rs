@@ -65,7 +65,7 @@ pub enum CliCmd {
     #[clap(subcommand)]
     Upgrade(UpgradeCmds),
 
-    /// Clear entities (e.g. packets) on chains
+    /// Clear objects, such as outstanding packets on a channel.
     #[clap(subcommand)]
     Clear(ClearCmds),
 

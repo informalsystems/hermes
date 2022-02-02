@@ -12,7 +12,8 @@ use crate::error::Error;
 /// `clear` subcommands
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum ClearCmds {
-    /// Clears all packets on the identified path
+    /// Clear outstanding packets (i.e., packet-recv and packet-ack)
+    /// on a given channel in both directions.
     Packets(ClearPacketsCmd),
 }
 
