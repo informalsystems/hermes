@@ -713,7 +713,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // We should consider skipping the validation entirely and only validate
             // it from the command line itself.
 
-            warn!("[{}] validating that trusted height {} for target height {} is present in the full list of consensus state heights; this may take a while",
 
             self.consensus_state(trusted_height)?;
         }
