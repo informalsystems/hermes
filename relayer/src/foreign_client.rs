@@ -714,7 +714,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // it from the command line itself.
 
             warn!("[{}] validating that trusted height {} for target height {} is present in the full list of consensus state heights; this may take a while",
-                  self, trusted_height, target_height);
 
             self.consensus_state(trusted_height)?;
         }
