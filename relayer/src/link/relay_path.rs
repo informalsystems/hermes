@@ -1100,7 +1100,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let msg = MsgAcknowledgement::new(
             packet,
-            event.ack.clone(),
+            event.ack.clone().into(),
             proofs.clone(),
             self.dst_signer()?,
         );

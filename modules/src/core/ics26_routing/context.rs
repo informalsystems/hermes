@@ -6,6 +6,7 @@ use crate::core::ics03_connection::connection::Counterparty;
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics04_channel::channel::Order;
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
+use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::Capability;
@@ -52,7 +53,7 @@ pub trait Module {
         channel_cap: Capability,
         counterparty: Counterparty,
         counterparty_version: Version,
-    ) -> Result<String, Error>;
+    ) -> Result<Version, Error>;
 
     fn on_chan_open_ack(
         &mut self,
@@ -72,12 +73,13 @@ pub trait Module {
         channel_id: ChannelId,
     ) -> Result<(), Error>;
 
-    fn on_recv_packet(&mut self, packet: Packet, relayer: Signer) -> Result<Vec<u8>, Error>;
+    fn on_recv_packet(&mut self, packet: Packet, relayer: Signer)
+        -> Result<Acknowledgement, Error>;
 
     fn on_acknowledgement_packet(
         &mut self,
         packet: Packet,
-        acknowledgement: Vec<u8>,
+        acknowledgement: Acknowledgement,
         relayer: Signer,
     ) -> Result<(), Error>;
 
