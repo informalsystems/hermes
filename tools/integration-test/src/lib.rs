@@ -17,4 +17,8 @@ pub mod util;
 #[macro_use]
 pub mod tests;
 
+#[cfg(any(all(test, feature = "mbt"), doc))]
+#[macro_use]
+pub mod mbt;
+
 pub use util::suspend::suspend;

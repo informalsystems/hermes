@@ -41,12 +41,14 @@ prost = { version = "0.9", default-features = false }
 prost-types = { version = "0.9", default-features = false }
 semver = "1.0.5"
 flex-error = "0.4.4"
+modelator = { git = "https://github.com/informalsystems/modelator", optional = true }
 
 [features]
 default = []
 example = []
 manual = []
 experimental = []
+mbt = ["modelator"]
 
 [[bin]]
 name = "test_setup_with_binary_channel"
