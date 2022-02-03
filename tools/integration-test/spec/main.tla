@@ -2,11 +2,14 @@
 
 EXTENDS transfer
 
-CreateChannel == action.name = CreateChannelAction
-PacketAcknowledgedTest == action.name = IBCTransferAcknowledgePacketAction
-PacketTimeoutTest == action.name = IBCTransferAcknowledgePacketAction
+LocalTransferTest == action.name = LocalTransferAction
 
-Invariant ==
-    ~CreateChannel
+CreateChannelTest == action.name = CreateChannelAction
+ExpireChannelTest == action.name = ExpireChannelAction
+
+IBCTransferSendPacketTest == action.name = IBCTransferSendPacketAction
+IBCTransferReceivePacketTest == action.name = IBCTransferReceivePacketAction
+IBCTransferAcknowledgePacketTest == action.name = IBCTransferAcknowledgePacketAction
+IBCTransferTimeoutPacketTest == action.name = IBCTransferTimeoutPacketAction
 
 ====

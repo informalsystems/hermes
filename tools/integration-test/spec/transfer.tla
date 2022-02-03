@@ -25,6 +25,7 @@ ACCOUNT_IDS == 1..N_INITIAL_ACCOUNTS
 DummyAccount == -1
 Reserve == 0
 
+\* Actions
 NullAction == "Null"
 LocalTransferAction == "LocalTransfer"
 CreateChannelAction == "CreateChannel"
@@ -33,6 +34,8 @@ IBCTransferReceivePacketAction == "IBCTransferReceivePacket"
 IBCTransferAcknowledgePacketAction == "IBCTransferAcknowledgePacket"
 IBCTransferTimeoutPacketAction == "IBCTransferTimeoutPacket"
 ExpireChannelAction == "ExpireChannel"
+
+\* Outcomes
 SuccessOutcome == "Success"
 ErrorOutcome == "Error"
 
