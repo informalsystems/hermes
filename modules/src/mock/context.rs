@@ -3,7 +3,9 @@
 use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap;
+use alloc::sync::Arc;
 use core::cmp::min;
+use core::fmt::Debug;
 use core::ops::{Add, Sub};
 use core::time::Duration;
 
@@ -32,7 +34,7 @@ use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::Ics26Context;
+use crate::core::ics26_routing::context::{Ics26Context, Module, Router};
 use crate::core::ics26_routing::handler::{deliver, dispatch};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
 use crate::events::IbcEvent;
@@ -116,6 +118,9 @@ pub struct MockContext {
 
     /// Average time duration between blocks
     block_time: Duration,
+
+    /// ICS26 router impl
+    router: MockRouter,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -203,6 +208,7 @@ impl MockContext {
             connection_ids_counter: 0,
             channel_ids_counter: 0,
             block_time,
+            router: Default::default(),
         }
     }
 
@@ -550,7 +556,24 @@ impl MockContext {
     }
 }
 
-impl Ics26Context for MockContext {}
+#[derive(Clone, Debug, Default)]
+pub struct MockRouter(BTreeMap<String, Arc<dyn Module>>);
+
+impl Router for MockRouter {
+    type ModuleId = String;
+
+    fn get_route_mut(&mut self, module_id: &Self::ModuleId) -> Option<&mut (dyn Module + 'static)> {
+        self.0.get_mut(module_id).and_then(Arc::get_mut)
+    }
+}
+
+impl Ics26Context for MockContext {
+    type Router = MockRouter;
+
+    fn router(&mut self) -> &mut Self::Router {
+        &mut self.router
+    }
+}
 
 impl Ics20Context for MockContext {}
 

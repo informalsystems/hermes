@@ -14,6 +14,7 @@ use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::core::ics26_routing::error::Error;
 use crate::signer::Signer;
+use core::fmt::Debug;
 
 /// This trait captures all the functional dependencies (i.e., context) which the ICS26 module
 /// requires to be able to dispatch and process IBC messages. In other words, this is the
@@ -28,9 +29,12 @@ pub trait Ics26Context:
     + PortReader
     + Ics20Context
 {
+    type Router: Router;
+
+    fn router(&mut self) -> &mut Self::Router;
 }
 
-pub trait Module {
+pub trait Module: Debug + Send + Sync {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
         &mut self,
@@ -84,4 +88,10 @@ pub trait Module {
     ) -> Result<(), Error>;
 
     fn on_timeout_packet(&mut self, packet: Packet, relayer: Signer) -> Result<(), Error>;
+}
+
+pub trait Router {
+    type ModuleId;
+
+    fn get_route_mut(&mut self, module_id: &Self::ModuleId) -> Option<&mut (dyn Module + 'static)>;
 }
