@@ -192,10 +192,10 @@ define_error! {
                     e.event)
             },
 
-        InvalidPortId
+        UnknownPortId
             { port_id: PortId }
             | e | {
-                format_args!("could not resolve channel version because the port is invalid: {0}",
+                format_args!("could not resolve channel version because the port is not known: {0}",
                     e.port_id)
             },
 

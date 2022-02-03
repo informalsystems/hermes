@@ -716,7 +716,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
-        let version = version::default_by_port(self.dst_port_id())?;
+        // If the port is not know, use the default (empty) version
+        let version = version::default_by_port(self.dst_port_id()).unwrap_or_default();
 
         let channel = ChannelEnd::new(
             State::Init,
@@ -866,7 +867,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        let version = version::default_by_port(self.dst_port_id())?;
+        // Re-use the version that was either set on ChanOpenInit or overwritten by the application.
+        let version = src_channel.version().clone();
 
         let channel = ChannelEnd::new(
             State::TryOpen,
