@@ -20,13 +20,8 @@ impl Runnable for HealthCheckCmd {
             let rt = Arc::new(TokioRuntime::new().unwrap());
 
             let chain_config = match config.find_chain(&ch.id) {
-                None => {
-                    return Output::error(format!(
-                        "chain '{}' not found in configuration file",
-                        ch.id
-                    ))
-                    .exit()
-                }
+                None => Output::error(format!("chain '{}' not found in configuration file", ch.id))
+                    .exit(),
                 Some(chain_config) => chain_config,
             };
 

@@ -67,13 +67,13 @@ impl CreateConnectionCommand {
 
         // Validate the other options. Bail if the CLI was invoked with incompatible options.
         if self.client_a.is_some() {
-            return Output::error(
+            Output::error(
                 "Option `<chain-b-id>` is incompatible with `--client-a`".to_string(),
             )
             .exit();
         }
         if self.client_b.is_some() {
-            return Output::error(
+            Output::error(
                 "Option `<chain-b-id>` is incompatible with `--client-b`".to_string(),
             )
             .exit();
@@ -104,14 +104,14 @@ impl CreateConnectionCommand {
         // Validate & spawn runtime for chain_a.
         let chain_a = match spawn_chain_runtime(&config, &self.chain_a_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         // Unwrap the identifier of the client on chain_a.
         let client_a_id = match &self.client_a {
             Some(c) => c,
             None => {
-                return Output::error(
+                Output::error(
                     "Option `--client-a` is necessary when <chain-b-id> is missing".to_string(),
                 )
                 .exit()
@@ -123,7 +123,7 @@ impl CreateConnectionCommand {
         let chain_b_id = match chain_a.query_client_state(client_a_id, height) {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
-                return Output::error(format!(
+                Output::error(format!(
                     "Failed while querying client '{}' on chain '{}' with error: {}",
                     client_a_id, self.chain_a_id, e
                 ))
@@ -134,14 +134,14 @@ impl CreateConnectionCommand {
         // Validate & spawn runtime for chain_b.
         let chain_b = match spawn_chain_runtime(&config, &chain_b_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         // Unwrap the identifier of the client on chain_b.
         let client_b_id = match &self.client_b {
             Some(c) => c,
             None => {
-                return Output::error(
+                Output::error(
                     "Option `--client-b` is necessary when <chain-b-id> is missing".to_string(),
                 )
                 .exit()

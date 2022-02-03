@@ -41,7 +41,7 @@ impl Runnable for QueryClientStateCmd {
 
         let chain_config = match config.find_chain(&self.chain_id) {
             None => {
-                return Output::error(format!(
+                Output::error(format!(
                     "chain '{}' not found in configuration file",
                     self.chain_id
                 ))
@@ -97,7 +97,7 @@ impl Runnable for QueryClientConsensusCmd {
 
         let chain_config = match config.find_chain(&self.chain_id) {
             None => {
-                return Output::error(format!(
+                Output::error(format!(
                     "chain '{}' not found in configuration file",
                     self.chain_id
                 ))
@@ -115,7 +115,7 @@ impl Runnable for QueryClientConsensusCmd {
         let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
-                return Output::error(format!(
+                Output::error(format!(
                     "Failed while querying client '{}' on chain '{}' with error: {}",
                     self.client_id, self.chain_id, e
                 ))
@@ -181,7 +181,7 @@ impl Runnable for QueryClientHeaderCmd {
 
         let chain_config = match config.find_chain(&self.chain_id) {
             None => {
-                return Output::error(format!(
+                Output::error(format!(
                     "chain '{}' not found in configuration file",
                     self.chain_id
                 ))
@@ -199,7 +199,7 @@ impl Runnable for QueryClientHeaderCmd {
         let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
-                return Output::error(format!(
+                Output::error(format!(
                     "Failed while querying client '{}' on chain '{}' with error: {}",
                     self.client_id, self.chain_id, e
                 ))
@@ -249,7 +249,7 @@ impl Runnable for QueryClientConnectionsCmd {
 
         let chain_config = match config.find_chain(&self.chain_id) {
             None => {
-                return Output::error(format!(
+                Output::error(format!(
                     "chain '{}' not found in configuration file",
                     self.chain_id
                 ))

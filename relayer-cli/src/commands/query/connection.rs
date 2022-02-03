@@ -35,7 +35,7 @@ impl Runnable for QueryConnectionEndCmd {
 
         let chain_config = match config.find_chain(&self.chain_id) {
             None => {
-                return Output::error(format!(
+                Output::error(format!(
                     "chain '{}' not found in configuration file",
                     self.chain_id
                 ))
@@ -87,7 +87,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
         let chain_config = match config.find_chain(&self.chain_id) {
             None => {
-                return Output::error(format!(
+                Output::error(format!(
                     "chain '{}' not found in configuration file",
                     self.chain_id
                 ))
