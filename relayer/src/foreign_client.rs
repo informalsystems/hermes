@@ -1,4 +1,8 @@
 //! Queries and methods for interfacing with foreign clients.
+//!
+//! The term "foreign client" refers to IBC light clients that are running on-chain,
+//! i.e. they are *foreign* to the relayer. In contrast, the term "local client"
+//! refers to light clients running *locally* as part of the relayer.
 
 use core::{fmt, time::Duration};
 use std::thread;
