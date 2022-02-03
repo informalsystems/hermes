@@ -3,7 +3,7 @@
 (*
 @typeAlias: PORT_ID = Str;
 @typeAlias: CHANNEL_ID = Int;
-@typeAlias: ACCOUNT_ID = Str;
+@typeAlias: ACCOUNT_ID = Int;
 @typeAlias: CHAIN_ID = Str;
 @typeAlias: PACKET_ID = Int;
 
@@ -58,7 +58,8 @@ TODO: Fix when to transfer back money to sink zone
     ],
 
     nextChannelId: CHANNEL_ID,
-    nextPacketId: PACKET_ID
+    nextPacketId: PACKET_ID,
+    nextAccountId: ACCOUNT_ID
 ];
 *)
 typedefs == TRUE

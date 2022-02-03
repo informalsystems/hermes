@@ -2,10 +2,11 @@
 
 EXTENDS transfer
 
-OsmosisTest ==
-    /\ "ixo" \in DOMAIN chains["osmosis"].bank["akash"]
-    /\ chains["osmosis"].bank["akash"]["ixo"] = 2
+CreateChannel == action.name = CreateChannelAction
+PacketAcknowledgedTest == action.name = IBCTransferAcknowledgePacketAction
+PacketTimeoutTest == action.name = IBCTransferAcknowledgePacketAction
 
-Invariant == ~OsmosisTest
+Invariant ==
+    ~CreateChannel
 
 ====
