@@ -36,8 +36,7 @@ impl Runnable for StartCmd {
 
         let supervisor_handle = make_supervisor::<ProdChainHandle>(config.clone(), self.full_scan)
             .unwrap_or_else(|e| {
-                Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
-                unreachable!()
+                Output::error(format!("Hermes failed to start, last error: {}", e)).exit()
             });
 
         match crate::config::config_path() {
