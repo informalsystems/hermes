@@ -12,4 +12,6 @@ IBCTransferReceivePacketTest == action.name = IBCTransferReceivePacketAction
 IBCTransferAcknowledgePacketTest == action.name = IBCTransferAcknowledgePacketAction
 IBCTransferTimeoutPacketTest == action.name = IBCTransferTimeoutPacketAction
 
+Invariant == ~IBCTransferReceivePacketTest
+
 ====
