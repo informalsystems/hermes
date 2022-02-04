@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.11.0"
+version      = "0.11.1"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -21,9 +21,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.11.0", path = "../modules", features = ["std", "clock"] }
+ibc           = { version = "0.11.1", path = "../modules", features = ["std", "clock"] }
 ibc-proto     = { version = "0.15.0", path = "../proto", default-features = false, features = ["std", "tonic"] }
-ibc-telemetry = { version = "0.11.0", path = "../telemetry", optional = true }
+ibc-telemetry = { version = "0.11.1", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.0.0"
@@ -91,7 +91,7 @@ default-features = false
 version = "=0.23.5"
 
 [dev-dependencies]
-ibc = { version = "0.11.0", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.11.1", path = "../modules", features = ["mocks"] }
 serial_test = "0.5.0"
 env_logger = "0.9.0"
 tracing-subscriber = { version = "0.3.7", features = ["fmt", "env-filter", "json"] }
