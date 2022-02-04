@@ -1,5 +1,6 @@
-use serde::Deserialize;
-use std::collections::{HashMap as Map, HashSet as Set};
+use serde::{Deserialize, Serialize};
+
+use super::itf::{Map, Set};
 
 type ChainId = String;
 type PortId = String;
@@ -7,9 +8,8 @@ type DenomId = String;
 type ChannelId = isize;
 type AccountId = isize;
 type PacketId = isize;
-type Bank = Map<DenomId, isize>;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChannelEndpoint {
     pub chain_id: ChainId,
@@ -17,14 +17,14 @@ pub struct ChannelEndpoint {
     pub channel_id: ChannelId,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Channel {
     pub source: ChannelEndpoint,
     pub target: ChannelEndpoint,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Packet {
     pub id: PacketId,
@@ -35,7 +35,7 @@ pub struct Packet {
     pub amount: isize,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalPackets {
     pub list: Map<PacketId, Packet>,
@@ -44,7 +44,7 @@ pub struct LocalPackets {
     pub success: Set<PacketId>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Ics20 {
     pub port_id: PortId,
@@ -52,15 +52,15 @@ pub struct Ics20 {
     pub channel: Map<ChainId, ChannelId>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Chain {
     pub id: ChainId,
     pub ports: Set<PortId>,
     pub channel: Map<ChannelId, Channel>,
     pub active_channels: Set<ChannelId>,
-    pub bank: Map<AccountId, Bank>,
-    pub supply: Bank,
+    pub bank: Map<AccountId, Map<DenomId, isize>>,
+    pub supply: Map<DenomId, isize>,
     pub local_packets: LocalPackets,
     pub remote_packets: Map<ChannelId, Map<PacketId, Packet>>,
     pub ics20: Ics20,
@@ -69,7 +69,7 @@ pub struct Chain {
     pub next_account_id: AccountId,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Action {
     Null,
@@ -80,10 +80,10 @@ pub enum Action {
         amount: isize,
     },
     CreateChannel {
-        chains: (ChainId, ChainId),
+        chains: Set<ChainId>,
     },
     ExpireChannel {
-        chains: (ChainId, ChainId),
+        chains: Set<ChainId>,
     },
     IBCTransferSendPacket {
         packet: Packet,
@@ -99,14 +99,14 @@ pub enum Action {
     },
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Outcome {
     Success,
     Error,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct State {
     pub chains: Map<ChainId, Chain>,

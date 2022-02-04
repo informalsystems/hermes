@@ -1,24 +1,26 @@
+use super::itf::InformalTrace;
 use super::state::State;
 
 #[test]
-fn it_works() {
-    let tla_path = "spec/main.tla";
-    let cfg_path = "spec/main.cfg";
+fn parse_itf() {
+    let itf_path = "spec/run/counterexample.itf.json";
 
-    let runtime = modelator::ModelatorRuntime::default();
-    let traces = runtime.traces(tla_path, cfg_path).expect("error");
+    let itf_json = std::fs::read_to_string(itf_path).expect("itf file does not exist. did you run `apalache check --inv=Invariant --run-dir=run main.tla` inside `spec/`?");
 
-    for (test_name, result) in traces.iter() {
-        let trace: Vec<Result<State, _>> = result
-            .as_ref()
-            .unwrap()
-            .get(0)
-            .unwrap()
-            .clone()
-            .into_iter()
-            .map(serde_json::from_value)
-            .collect();
+    let t: InformalTrace<State> = serde_json::from_str(&itf_json).expect("deserialization error");
 
-        println!("{test_name}, {trace:?}",);
+    for state in t.states {
+        println!(
+            "action: {}",
+            serde_json::to_string_pretty(&state.action).unwrap()
+        );
+        println!(
+            "outcome: {}",
+            serde_json::to_string_pretty(&state.outcome).unwrap()
+        );
+        println!(
+            "chains: {}",
+            serde_json::to_string_pretty(&state.chains).unwrap()
+        );
     }
 }
