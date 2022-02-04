@@ -2,6 +2,8 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::events::IbcEvent;
+use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
 
 use crate::application::app_config;
@@ -41,31 +43,48 @@ impl Runnable for ClearPacketsCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
+        let mut ev_list = vec![];
+
+        // Clear packets in the src -> dst direction
+
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
+        let link = match Link::new_from_opts(chains.src.clone(), chains.dst.clone(), opts, false) {
             Ok(link) => link,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let mut ev = match link
-            .build_and_send_recv_packet_messages()
-            .map_err(Error::link)
-        {
-            Ok(ev) => ev,
+        run_and_collect_events(&mut ev_list, || link.build_and_send_recv_packet_messages());
+        run_and_collect_events(&mut ev_list, || link.build_and_send_ack_packet_messages());
+
+        // Clear packets in the dst -> src direction.
+        // Some of the checks in the Link constructor may be redundant;
+        // going slowly, but reliably.
+
+        let opts = LinkParameters {
+            src_port_id: link.a_to_b.dst_port_id().clone(),
+            src_channel_id: link.a_to_b.dst_channel_id().clone(),
+        };
+        let link = match Link::new_from_opts(chains.dst, chains.src, opts, false) {
+            Ok(link) => link,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        match link
-            .build_and_send_ack_packet_messages()
-            .map_err(Error::link)
-        {
-            Ok(mut ev1) => ev.append(&mut ev1),
-            Err(e) => return Output::error(format!("{}", e)).exit(),
-        };
+        run_and_collect_events(&mut ev_list, || link.build_and_send_recv_packet_messages());
+        run_and_collect_events(&mut ev_list, || link.build_and_send_ack_packet_messages());
 
-        Output::success(ev).exit()
+        Output::success(ev_list).exit()
     }
+}
+
+fn run_and_collect_events<F>(ev_list: &mut Vec<IbcEvent>, f: F)
+where
+    F: FnOnce() -> Result<Vec<IbcEvent>, LinkError>,
+{
+    match f() {
+        Ok(mut ev) => ev_list.append(&mut ev),
+        Err(e) => return Output::error(Error::link(e)).exit(),
+    };
 }
