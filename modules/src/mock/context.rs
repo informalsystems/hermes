@@ -1458,7 +1458,7 @@ mod tests {
                 _packet: Packet,
                 _relayer: Signer,
             ) -> Result<(), Error> {
-                todo!()
+                Ok(())
             }
         }
         let m = MockModule;
