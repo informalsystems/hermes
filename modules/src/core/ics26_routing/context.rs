@@ -92,6 +92,15 @@ pub trait Module: Debug + Send + Sync + 'static {
     fn on_timeout_packet(&mut self, packet: Packet, relayer: Signer) -> Result<(), Error>;
 }
 
+pub trait RouterBuilder {
+    type Router: Router;
+    type ModuleId;
+
+    fn add_route(&mut self, module_id: Self::ModuleId, module: impl Module) -> Result<(), String>;
+
+    fn build(self) -> Self::Router;
+}
+
 pub trait Router {
     type ModuleId: ?Sized;
 
