@@ -4,6 +4,7 @@ use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap;
 use core::cmp::min;
+use core::time::Duration;
 
 use tracing::debug;
 
@@ -29,6 +30,7 @@ use crate::core::ics04_channel::packet::{Receipt, Sequence};
 use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics05_port::context::{CapabilityReader, PortReader};
 use crate::core::ics05_port::error::Error as Ics05Error;
+use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::Ics26Context;
@@ -43,7 +45,6 @@ use crate::relayer::ics18_relayer::error::Error as Ics18Error;
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use core::time::Duration;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
@@ -110,7 +111,7 @@ pub struct MockContext {
     packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     /// Maps ports to their capabilities
-    port_capabilities: BTreeMap<PortId, Capability>,
+    port_capabilities: BTreeMap<PortId, (String, Capability)>,
 
     /// Constant-size commitments to packets data fields
     packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
@@ -330,7 +331,8 @@ impl MockContext {
     }
 
     pub fn with_port_capability(mut self, port_id: PortId) -> Self {
-        self.port_capabilities.insert(port_id, Capability::new());
+        self.port_capabilities
+            .insert(port_id, (String::default(), Capability::new()));
         self
     }
 
@@ -500,7 +502,8 @@ impl MockContext {
     }
 
     pub fn add_port(&mut self, port_id: PortId) {
-        self.port_capabilities.insert(port_id, Capability::new());
+        self.port_capabilities
+            .insert(port_id, (String::default(), Capability::new()));
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
@@ -549,9 +552,14 @@ impl CapabilityReader for MockContext {
 }
 
 impl PortReader for MockContext {
-    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<Capability, Ics05Error> {
+    type ModuleId = String;
+
+    fn lookup_module_by_port(
+        &self,
+        port_id: &PortId,
+    ) -> Result<(Self::ModuleId, Capability), Error> {
         match self.port_capabilities.get(port_id) {
-            Some(cap) => Ok(cap.clone()),
+            Some(mod_cap) => Ok(mod_cap.clone()),
             None => Err(Ics05Error::unknown_port(port_id.clone())),
         }
     }
@@ -598,7 +606,7 @@ impl ChannelReader for MockContext {
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics04Error> {
         match PortReader::lookup_module_by_port(self, port_id) {
-            Ok(key) => {
+            Ok((_, key)) => {
                 if !PortReader::authenticate(self, port_id.clone(), &key) {
                     Err(Ics04Error::invalid_port_capability())
                 } else {
