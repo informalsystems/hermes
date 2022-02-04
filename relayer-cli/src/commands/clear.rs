@@ -45,35 +45,43 @@ impl Runnable for ClearPacketsCmd {
 
         let mut ev_list = vec![];
 
-        // Clear packets in the src -> dst direction
-
+        // Construct links in both directions.
+        // Some of the checks in the two Link constructor calls may be redundant;
+        // going slowly, but reliably.
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let link = match Link::new_from_opts(chains.src.clone(), chains.dst.clone(), opts, false) {
-            Ok(link) => link,
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        };
-
-        run_and_collect_events(&mut ev_list, || link.build_and_send_recv_packet_messages());
-        run_and_collect_events(&mut ev_list, || link.build_and_send_ack_packet_messages());
-
-        // Clear packets in the dst -> src direction.
-        // Some of the checks in the Link constructor may be redundant;
-        // going slowly, but reliably.
-
+        let fwd_link =
+            match Link::new_from_opts(chains.src.clone(), chains.dst.clone(), opts, false) {
+                Ok(link) => link,
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            };
         let opts = LinkParameters {
-            src_port_id: link.a_to_b.dst_port_id().clone(),
-            src_channel_id: link.a_to_b.dst_channel_id().clone(),
+            src_port_id: fwd_link.a_to_b.dst_port_id().clone(),
+            src_channel_id: fwd_link.a_to_b.dst_channel_id().clone(),
         };
-        let link = match Link::new_from_opts(chains.dst, chains.src, opts, false) {
+        let rev_link = match Link::new_from_opts(chains.dst, chains.src, opts, false) {
             Ok(link) => link,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        run_and_collect_events(&mut ev_list, || link.build_and_send_recv_packet_messages());
-        run_and_collect_events(&mut ev_list, || link.build_and_send_ack_packet_messages());
+        // Schedule RecvPacket messages for pending packets in both directions.
+        // This may produce pending acks which will be processed in the next phase.
+        run_and_collect_events(&mut ev_list, || {
+            fwd_link.build_and_send_recv_packet_messages()
+        });
+        run_and_collect_events(&mut ev_list, || {
+            rev_link.build_and_send_recv_packet_messages()
+        });
+
+        // Schedule AckPacket messages in both directions.
+        run_and_collect_events(&mut ev_list, || {
+            fwd_link.build_and_send_ack_packet_messages()
+        });
+        run_and_collect_events(&mut ev_list, || {
+            rev_link.build_and_send_ack_packet_messages()
+        });
 
         Output::success(ev_list).exit()
     }
