@@ -724,7 +724,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            version, // NOTE: This field is deprecated since IBC v3
+            version,
         );
 
         // Build the domain type message
