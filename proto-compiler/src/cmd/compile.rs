@@ -27,13 +27,17 @@ pub struct CompileCmd {
     #[argh(option)]
     /// generate tonic client code
     build_tonic: bool,
-
 }
 
 impl CompileCmd {
     pub fn run(&self) {
         let tmp_sdk = TempDir::new("ibc-proto-sdk").unwrap();
-        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref(), self.ibc.clone(), self.build_tonic);
+        Self::compile_sdk_protos(
+            &self.sdk,
+            tmp_sdk.as_ref(),
+            self.ibc.clone(),
+            self.build_tonic,
+        );
 
         match &self.ibc {
             None => {
@@ -119,7 +123,12 @@ impl CompileCmd {
         }
     }
 
-    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>, build_tonic: bool) {
+    fn compile_sdk_protos(
+        sdk_dir: &Path,
+        out_dir: &Path,
+        ibc_dep: Option<PathBuf>,
+        build_tonic: bool,
+    ) {
         println!(
             "[info ] Compiling Cosmos-SDK .proto files to Rust into '{}'...",
             out_dir.display()

@@ -124,7 +124,7 @@ impl CreateConnectionCommand {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
                 return Output::error(format!(
-                    "Failed while querying client '{}' on chain '{}' with error: {}",
+                    "failed while querying client '{}' on chain '{}' with error: {}",
                     client_a_id, self.chain_a_id, e
                 ))
                 .exit()
