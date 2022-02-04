@@ -445,9 +445,15 @@ impl MockContext {
         }
     }
 
-    pub fn with_router_module(mut self, module_id: String, module: impl Module) -> Self {
-        self.router.0.insert(module_id, Arc::new(module));
-        self
+    pub fn with_router_module(
+        mut self,
+        module_id: String,
+        module: impl Module,
+    ) -> Result<Self, String> {
+        match self.router.0.insert(module_id, Arc::new(module)) {
+            None => Ok(self),
+            Some(_) => Err("Duplicate module_id".to_owned()),
+        }
     }
 
     /// Accessor for a block of the local (host) chain from this context.
@@ -1450,7 +1456,8 @@ mod tests {
             1,
             Height::new(1, 0),
         )
-        .with_router_module("mockmodule".to_owned(), m);
+        .with_router_module("mockmodule".to_owned(), m)
+        .unwrap();
 
         let m = ctx.router.get_route_mut("mockmodule");
         let _ = m
