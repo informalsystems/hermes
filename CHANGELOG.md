@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.11.1
+*February 4th, 2022*
+
+This release mainly adds support for channel events originating from Tendermint ABCI's `BeginBlock` and `EndBlock` methods.
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Do not require a config file to be present for the `completions` command.
+    ([#1822](https://github.com/informalsystems/ibc-rs/pull/1822))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Increased tx confirmation timeout to 300s to prevent aggressive tx
+    resubmission ([#1663](https://github.com/informalsystems/ibc-rs/issues/1663))
+  - Handle channel events originating from Tendermint ABCI's BeginBlock and EndBlock methods
+    ([#1793](https://github.com/informalsystems/ibc-rs/issues/1793))
+
+
 ## v0.11.0
 *January 27th, 2022*
 
