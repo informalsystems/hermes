@@ -866,7 +866,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        let version = version::default_by_port(self.dst_port_id()).unwrap_or_default();
+        let version = version::default_by_port(self.dst_port_id())?;
 
         let channel = ChannelEnd::new(
             State::TryOpen,
