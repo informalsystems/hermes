@@ -1194,12 +1194,23 @@ impl Ics18Context for MockContext {
 
 #[cfg(test)]
 mod tests {
+    use test_log::test;
+
+    use crate::core::ics03_connection::connection::Counterparty;
+    use crate::core::ics04_channel::channel::Order;
+    use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
+    use crate::core::ics04_channel::packet::Packet;
+    use crate::core::ics04_channel::Version;
+    use crate::core::ics05_port::capabilities::Capability;
     use crate::core::ics24_host::identifier::ChainId;
+    use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+    use crate::core::ics26_routing::context::{Module, Router};
+    use crate::core::ics26_routing::error::Error;
     use crate::mock::context::MockContext;
     use crate::mock::host::HostType;
     use crate::prelude::*;
+    use crate::signer::Signer;
     use crate::Height;
-    use test_log::test;
 
     #[test]
     fn test_history_manipulation() {
@@ -1339,5 +1350,111 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn test_router() {
+        #[derive(Debug)]
+        struct MockModule;
+
+        impl Module for MockModule {
+            fn on_chan_open_init(
+                &mut self,
+                _order: Order,
+                _connection_hops: &[ConnectionId],
+                _port_id: PortId,
+                _channel_id: ChannelId,
+                _channel_cap: Capability,
+                _counterparty: Counterparty,
+                _version: Version,
+            ) -> Result<(), Error> {
+                todo!()
+            }
+
+            fn on_chan_open_try(
+                &mut self,
+                _order: Order,
+                _connection_hops: &[ConnectionId],
+                _port_id: PortId,
+                _channel_id: ChannelId,
+                _channel_cap: Capability,
+                _counterparty: Counterparty,
+                _counterparty_version: Version,
+            ) -> Result<Version, Error> {
+                todo!()
+            }
+
+            fn on_chan_open_ack(
+                &mut self,
+                _port_id: PortId,
+                _channel_id: ChannelId,
+                _counterparty_version: Version,
+            ) -> Result<(), Error> {
+                todo!()
+            }
+
+            fn on_chan_open_confirm(
+                &mut self,
+                _port_id: PortId,
+                _channel_id: ChannelId,
+            ) -> Result<(), Error> {
+                todo!()
+            }
+
+            fn on_chan_close_init(
+                &mut self,
+                _port_id: PortId,
+                _channel_id: ChannelId,
+            ) -> Result<(), Error> {
+                todo!()
+            }
+
+            fn on_chan_close_confirm(
+                &mut self,
+                _port_id: PortId,
+                _channel_id: ChannelId,
+            ) -> Result<(), Error> {
+                todo!()
+            }
+
+            fn on_recv_packet(
+                &mut self,
+                _packet: Packet,
+                _relayer: Signer,
+            ) -> Result<Acknowledgement, Error> {
+                todo!()
+            }
+
+            fn on_acknowledgement_packet(
+                &mut self,
+                _packet: Packet,
+                _acknowledgement: Acknowledgement,
+                _relayer: Signer,
+            ) -> Result<(), Error> {
+                todo!()
+            }
+
+            fn on_timeout_packet(
+                &mut self,
+                _packet: Packet,
+                _relayer: Signer,
+            ) -> Result<(), Error> {
+                todo!()
+            }
+        }
+        let m = MockModule;
+
+        let mut ctx = MockContext::new(
+            ChainId::new("mockgaia".to_string(), 1),
+            HostType::Mock,
+            1,
+            Height::new(1, 0),
+        )
+        .with_router_module("mockmodule".to_owned(), m);
+
+        let m = ctx.router.get_route_mut("mockmodule");
+        let _ = m
+            .unwrap()
+            .on_timeout_packet(Packet::default(), Signer::new(""));
     }
 }
