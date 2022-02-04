@@ -4,6 +4,7 @@ use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap;
 use alloc::sync::Arc;
+use core::borrow::Borrow;
 use core::cmp::min;
 use core::fmt::Debug;
 use core::ops::{Add, Sub};
@@ -444,6 +445,11 @@ impl MockContext {
         }
     }
 
+    pub fn with_router_module(mut self, module_id: String, module: impl Module) -> Self {
+        self.router.0.insert(module_id, Arc::new(module));
+        self
+    }
+
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     pub fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
@@ -560,10 +566,10 @@ impl MockContext {
 pub struct MockRouter(BTreeMap<String, Arc<dyn Module>>);
 
 impl Router for MockRouter {
-    type ModuleId = String;
+    type ModuleId = str;
 
-    fn get_route_mut(&mut self, module_id: &Self::ModuleId) -> Option<&mut (dyn Module + 'static)> {
-        self.0.get_mut(module_id).and_then(Arc::get_mut)
+    fn get_route_mut(&mut self, module_id: impl Borrow<Self::ModuleId>) -> Option<&mut dyn Module> {
+        self.0.get_mut(module_id.borrow()).and_then(Arc::get_mut)
     }
 }
 
