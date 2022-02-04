@@ -1,5 +1,8 @@
 use crate::prelude::*;
 
+use core::borrow::Borrow;
+use core::fmt::Debug;
+
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::core::ics03_connection::connection::Counterparty;
@@ -14,7 +17,6 @@ use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::core::ics26_routing::error::Error;
 use crate::signer::Signer;
-use core::fmt::Debug;
 
 /// This trait captures all the functional dependencies (i.e., context) which the ICS26 module
 /// requires to be able to dispatch and process IBC messages. In other words, this is the
@@ -34,7 +36,7 @@ pub trait Ics26Context:
     fn router(&mut self) -> &mut Self::Router;
 }
 
-pub trait Module: Debug + Send + Sync {
+pub trait Module: Debug + Send + Sync + 'static {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
         &mut self,
@@ -91,7 +93,7 @@ pub trait Module: Debug + Send + Sync {
 }
 
 pub trait Router {
-    type ModuleId;
+    type ModuleId: ?Sized;
 
-    fn get_route_mut(&mut self, module_id: &Self::ModuleId) -> Option<&mut (dyn Module + 'static)>;
+    fn get_route_mut(&mut self, module_id: impl Borrow<Self::ModuleId>) -> Option<&mut dyn Module>;
 }
