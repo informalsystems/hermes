@@ -57,7 +57,7 @@ define_error! {
                 detail: SdkError,
                 tx: TxResult
             }
-            |e| { format!("CheckTX Commit returned an error: {0}, raw result: {1:?}", e.detail, e.tx) },
+            |e| { format!("CheckTx commit returned an error: {0}, raw result: {1:?}", e.detail, e.tx) },
 
         DeliverTx
             {
