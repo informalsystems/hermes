@@ -154,7 +154,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
+            Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
 
@@ -176,7 +176,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             )
             .unwrap_or_else(exit_with_unrecoverable_error);
         if !channel_end_src.is_open() {
-            return Output::error(format!(
+            Output::error(format!(
                 "the requested port/channel ('{}'/'{}') on chain id '{}' is in state '{}'; expected 'open' state",
                 opts.packet_src_port_id,
                 opts.packet_src_channel_id,
@@ -188,7 +188,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         let conn_id = match channel_end_src.connection_hops.first() {
             None => {
-                return Output::error(format!(
+                Output::error(format!(
                     "could not retrieve the connection hop underlying port/channel '{}'/'{}' on chain '{}'",
                     opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
                 ))
@@ -215,7 +215,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         );
 
         if src_chain_client_state.chain_id() != self.dst_chain_id {
-            return Output::error(
+            Output::error(
                 format!("the requested port/channel ('{}'/'{}') provides a path from chain '{}' to \
                  chain '{}' (not to the destination chain '{}'). Bailing due to mismatching arguments.",
                         opts.packet_src_port_id, opts.packet_src_channel_id,
