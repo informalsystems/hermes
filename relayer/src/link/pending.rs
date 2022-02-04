@@ -1,4 +1,3 @@
-use core::fmt;
 use core::iter::Iterator;
 use core::time::Duration;
 use std::time::Instant;
@@ -70,6 +69,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
     pub fn insert_new_pending_tx(&self, r: AsyncReply, od: OperationalData) {
         let mut tx_hashes = Vec::new();
         let mut error_events = Vec::new();
+        let relay_path = self.relay_path();
 
         for response in r.responses.into_iter() {
             if response.code.is_err() {
@@ -82,7 +82,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 // behavior of handling the OperationalData.
                 trace!(
                     "[{}] putting error response in error event queue: {:?} ",
-                    self,
+                    &relay_path,
                     response
                 );
 
@@ -124,12 +124,24 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         Ok(Some(all_events))
     }
 
-    // Try and process one pending transaction if available.
+    fn relay_path(&self) -> String {
+        format!(
+            "{}:{}/{} -> {}",
+            self.counterparty_chain_id,
+            self.port_id,
+            self.channel_id,
+            self.chain_id()
+        )
+    }
+
+    /// Try and process one pending transaction if available.
     pub fn process_pending(
         &self,
         timeout: Duration,
         resubmit: impl FnOnce(OperationalData) -> Result<AsyncReply, LinkError>,
     ) -> Result<Option<RelaySummary>, LinkError> {
+        let relay_path = self.relay_path();
+
         // We process pending transactions in a FIFO manner, so take from
         // the front of the queue.
         if let Some(pending) = self.pending_queue.pop_front() {
@@ -141,7 +153,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
             }
 
             // Process the given pending transaction.
-            trace!("[{}] trying to confirm {} ", self, tx_hashes);
+            trace!("[{}] trying to confirm {} ", &relay_path, tx_hashes);
 
             // Check for TX events for the given pending transaction hashes.
             let events_result = self.check_tx_events(tx_hashes);
@@ -152,7 +164,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                     trace!(
                         "[{}] transaction is not yet committed: {} ",
-                        self,
+                        &relay_path,
                         tx_hashes
                     );
 
@@ -160,7 +172,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         // The submission time for the transaction has exceeded the
                         // timeout threshold. Returning Outcome::Timeout for the
                         // relayer to resubmit the transaction to the chain again.
-                        error!("[{}] timed out while confirming {}", self, tx_hashes);
+                        error!("[{}] timed out while confirming {}", &relay_path, tx_hashes);
 
                         let resubmit_res = resubmit(pending.original_od.clone());
 
@@ -189,7 +201,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                     debug!(
                         "[{}] confirmed after {:#?}: {} ",
-                        self,
+                        &relay_path,
                         pending.submit_time.elapsed(),
                         tx_hashes
                     );
@@ -207,7 +219,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                     error!(
                         "[{}] error querying for tx hashes {}: {}. will retry again later",
-                        self, tx_hashes, e
+                        &relay_path, tx_hashes, e
                     );
 
                     // Push it to the back of the pending queue to process it
@@ -221,7 +233,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
             if !self.pending_queue.is_empty() {
                 trace!(
                     "[{}] total pending transactions left: {}",
-                    self,
+                    &relay_path,
                     self.pending_queue.len()
                 );
             }
@@ -230,18 +242,5 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         } else {
             Ok(None)
         }
-    }
-}
-
-impl<Chain: ChainHandle> fmt::Display for PendingTxs<Chain> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:{}/{} -> {}",
-            self.chain_id(),
-            self.port_id,
-            self.channel_id,
-            self.counterparty_chain_id
-        )
     }
 }
