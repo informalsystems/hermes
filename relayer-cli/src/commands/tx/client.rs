@@ -62,7 +62,7 @@ impl Runnable for TxCreateClientCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
@@ -109,14 +109,14 @@ impl Runnable for TxUpdateClientCmd {
 
         let dst_chain = match spawn_chain_runtime(&config, &self.dst_chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let src_chain_id =
             match dst_chain.query_client_state(&self.dst_client_id, ibc::Height::zero()) {
                 Ok(cs) => cs.chain_id(),
                 Err(e) => {
-                    return Output::error(format!(
+                    Output::error(format!(
                         "Query of client '{}' on chain '{}' failed with error: {}",
                         self.dst_client_id, self.dst_chain_id, e
                     ))
@@ -126,7 +126,7 @@ impl Runnable for TxUpdateClientCmd {
 
         let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let height = match self.target_height {
@@ -171,14 +171,14 @@ impl Runnable for TxUpgradeClientCmd {
 
         let dst_chain = match spawn_chain_runtime(&config, &self.chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let src_chain_id = match dst_chain.query_client_state(&self.client_id, ibc::Height::zero())
         {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
-                return Output::error(format!(
+                Output::error(format!(
                     "Query of client '{}' on chain '{}' failed with error: {}",
                     self.client_id, self.chain_id, e
                 ))
@@ -188,7 +188,7 @@ impl Runnable for TxUpgradeClientCmd {
 
         let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let client = ForeignClient::find(src_chain, dst_chain, &self.client_id)
@@ -217,7 +217,7 @@ impl Runnable for TxUpgradeClientsCmd {
         let config = app_config();
         let src_chain = match spawn_chain_runtime(&config, &self.src_chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let results = config

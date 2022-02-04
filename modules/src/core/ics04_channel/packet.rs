@@ -189,9 +189,9 @@ impl TryFrom<RawPacket> for Packet {
     }
 }
 
-impl TryFrom<RawObject> for Packet {
+impl TryFrom<RawObject<'_>> for Packet {
     type Error = EventError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
         Ok(Packet {
             sequence: extract_attribute(&obj, &format!("{}.packet_sequence", obj.action))?
                 .parse()

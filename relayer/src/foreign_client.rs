@@ -1,3 +1,9 @@
+//! Queries and methods for interfacing with foreign clients.
+//!
+//! The term "foreign client" refers to IBC light clients that are running on-chain,
+//! i.e. they are *foreign* to the relayer. In contrast, the term "local client"
+//! refers to light clients running *locally* as part of the relayer.
+
 use core::{fmt, time::Duration};
 use std::thread;
 use std::time::Instant;
@@ -676,9 +682,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         self.build_update_client_with_trusted(target_height, Height::zero())
     }
 
-    // Returns a trusted height that is lower than the target height, so
-    // that the relayer can update the client to the target height based
-    // on the returned trusted height.
+    /// Returns a trusted height that is lower than the target height, so
+    /// that the relayer can update the client to the target height based
+    /// on the returned trusted height.
     fn solve_trusted_height(
         &self,
         target_height: Height,
@@ -723,37 +729,23 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    // Validate a non-zero trusted height to make sure that there is a corresponding
-    // consensus state at the given trusted height on the destination chain's client.
+    /// Validate a non-zero trusted height to make sure that there is a corresponding
+    /// consensus state at the given trusted height on the destination chain's client.
     fn validate_trusted_height(
         &self,
-        target_height: Height,
         trusted_height: Height,
         client_state: &AnyClientState,
     ) -> Result<(), ForeignClientError> {
-        if client_state.latest_height() == trusted_height {
-            Ok(())
-        } else {
+        if client_state.latest_height() != trusted_height {
             // There should be no need to validate a trusted height in production,
             // Since it is always fetched from some client state. The only use is
             // from the command line when the trusted height is manually specified.
             // We should consider skipping the validation entirely and only validate
             // it from the command line itself.
-
-            warn!("[{}] validating that trusted height {} for target height {} is present in the full list of consensus state heights; this may take a while",
-                self, trusted_height, target_height);
-
-            let cs_heights = self.consensus_state_heights()?;
-
-            cs_heights
-                .into_iter()
-                .find(|h| h == &trusted_height)
-                .ok_or_else(|| {
-                    ForeignClientError::missing_trusted_height(self.dst_chain().id(), target_height)
-                })?;
-
-            Ok(())
+            self.consensus_state(trusted_height)?;
         }
+
+        Ok(())
     }
 
     /// Given a client state and header it adds, if required, a delay such that the header will
@@ -866,7 +858,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let trusted_height = if trusted_height == Height::zero() {
             self.solve_trusted_height(target_height, &client_state)?
         } else {
-            self.validate_trusted_height(target_height, trusted_height, &client_state)?;
+            self.validate_trusted_height(trusted_height, &client_state)?;
             trusted_height
         };
 
@@ -1096,6 +1088,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Retrieves all consensus heights for this client sorted in descending
     /// order.
     fn consensus_state_heights(&self) -> Result<Vec<Height>, ForeignClientError> {
+        // [TODO] Utilize query that only fetches consensus state heights
+        // https://github.com/cosmos/ibc-go/issues/798
         let consensus_state_heights: Vec<Height> = self
             .consensus_states()?
             .iter()

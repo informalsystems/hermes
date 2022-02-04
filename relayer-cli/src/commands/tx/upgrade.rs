@@ -123,7 +123,7 @@ impl Runnable for TxIbcUpgradeChainCmd {
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
+            Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Message {:?}", opts);
@@ -134,14 +134,14 @@ impl Runnable for TxIbcUpgradeChainCmd {
             .map_err(Error::relayer);
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let dst_chain_res =
             CosmosSdkChain::bootstrap(opts.dst_chain_config.clone(), rt).map_err(Error::relayer);
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IbcEvent>, Error> =
