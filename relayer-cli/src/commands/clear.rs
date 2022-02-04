@@ -40,7 +40,7 @@ impl Runnable for ClearPacketsCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let mut ev_list = vec![];
@@ -53,7 +53,7 @@ impl Runnable for ClearPacketsCmd {
         };
         let link = match Link::new_from_opts(chains.src.clone(), chains.dst.clone(), opts, false) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         run_and_collect_events(&mut ev_list, || link.build_and_send_recv_packet_messages());
@@ -69,7 +69,7 @@ impl Runnable for ClearPacketsCmd {
         };
         let link = match Link::new_from_opts(chains.dst, chains.src, opts, false) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         run_and_collect_events(&mut ev_list, || link.build_and_send_recv_packet_messages());
@@ -85,6 +85,6 @@ where
 {
     match f() {
         Ok(mut ev) => ev_list.append(&mut ev),
-        Err(e) => return Output::error(Error::link(e)).exit(),
+        Err(e) => Output::error(Error::link(e)).exit(),
     };
 }
