@@ -54,7 +54,7 @@ impl fmt::Display for WorkerId {
     }
 }
 
-pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
+pub(crate) fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: ChainHandlePair<ChainA, ChainB>,
     id: WorkerId,
     object: Object,

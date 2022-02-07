@@ -1,7 +1,7 @@
+#![allow(dead_code)]
 use alloc::collections::BTreeMap as HashMap;
 use core::cmp::Ord;
 use core::hash::Hash;
-
 /// A change between two dictionaries.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Change<K> {

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use core::time::Duration;
 
 pub use retry::{

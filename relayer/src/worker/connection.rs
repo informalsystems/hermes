@@ -14,7 +14,7 @@ use crate::{
 use super::error::RunError;
 use super::WorkerCmd;
 
-pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
+pub(crate) fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     connection: Connection,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
@@ -24,7 +25,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 use super::handle::ChainHandle;
 
-pub fn counterparty_chain_from_connection(
+pub(crate) fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
     src_connection_id: &ConnectionId,
 ) -> Result<ChainId, Error> {
@@ -72,7 +73,7 @@ fn connection_on_destination(
     Ok(None)
 }
 
-pub fn connection_state_on_destination(
+pub(crate) fn connection_state_on_destination(
     connection: &IdentifiedConnectionEnd,
     counterparty_chain: &impl ChainHandle,
 ) -> Result<ConnectionState, Error> {
@@ -169,7 +170,7 @@ pub fn channel_connection_client(
     Ok(ChannelConnectionClient::new(channel, connection, client))
 }
 
-pub fn counterparty_chain_from_channel(
+pub(crate) fn counterparty_chain_from_channel(
     src_chain: &impl ChainHandle,
     src_channel_id: &ChannelId,
     src_port_id: &PortId,
@@ -204,7 +205,7 @@ fn fetch_channel_on_destination(
     Ok(None)
 }
 
-pub fn channel_state_on_destination(
+pub(crate) fn channel_state_on_destination(
     channel: &IdentifiedChannelEnd,
     connection: &IdentifiedConnectionEnd,
     counterparty_chain: &impl ChainHandle,
@@ -216,7 +217,7 @@ pub fn channel_state_on_destination(
     ))
 }
 
-pub fn channel_on_destination(
+pub(crate) fn channel_on_destination(
     channel: &IdentifiedChannelEnd,
     connection: &IdentifiedConnectionEnd,
     counterparty_chain: &impl ChainHandle,
@@ -252,7 +253,7 @@ pub fn channel_on_destination(
 /// that the counterparty field on that channel end matches an
 /// expected counterparty.
 /// Returns `Ok` if the counterparty matches, and `Err` otherwise.
-pub fn check_channel_counterparty(
+pub(crate) fn check_channel_counterparty(
     target_chain: impl ChainHandle,
     target_pchan: &PortChannelId,
     expected: &PortChannelId,
@@ -324,7 +325,7 @@ pub fn commitments_on_chain(
 
 /// Returns the sequences of the packets that were sent on the counterparty chain but for which
 /// `MsgRecvPacket`-s have not been received on a given chain and channel (port_id + channel_id)
-pub fn unreceived_packets_sequences(
+pub(crate) fn unreceived_packets_sequences(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
@@ -361,7 +362,7 @@ pub fn unreceived_packets_sequences(
 
 /// Returns the sequences of the written acknowledgments on a given chain and channel (port_id + channel_id), out of
 /// the commitments still present on the counterparty chain.
-pub fn packet_acknowledgedgments(
+pub(crate) fn packet_acknowledgedgments(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
@@ -397,7 +398,7 @@ pub fn packet_acknowledgedgments(
 /// Returns the sequences of the packets that were sent on the chain and for which:
 ///  - `MsgRecvPacket`-s have been received on the counterparty chain but
 ///  - `MsgAcknowledgement`-s have NOT been received by the chain
-pub fn unreceived_acknowledgements_sequences(
+pub(crate) fn unreceived_acknowledgements_sequences(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,

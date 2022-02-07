@@ -1,3 +1,3 @@
-pub mod bus;
+pub(crate) mod bus;
 pub mod monitor;
-pub mod rpc;
+pub(crate) mod rpc;

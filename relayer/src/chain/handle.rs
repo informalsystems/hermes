@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use alloc::sync::Arc;
 use core::fmt::{self, Debug};
 
@@ -61,7 +62,7 @@ pub mod requests;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
-pub struct ChainHandlePair<ChainA: ChainHandle, ChainB: ChainHandle> {
+pub(crate) struct ChainHandlePair<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub a: ChainA,
     pub b: ChainB,
 }

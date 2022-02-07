@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use alloc::collections::VecDeque;
 use std::sync::{Arc, RwLock};
 

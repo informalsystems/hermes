@@ -1,5 +1,5 @@
 //! Utility function to execute a future synchronously
-
+#![allow(dead_code)]
 use futures::Future;
 
 /// Spawns a new tokio runtime and use it to block on the given future.
