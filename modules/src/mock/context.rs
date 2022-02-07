@@ -679,11 +679,20 @@ impl ChannelReader for MockContext {
     }
 
     fn host_height(&self) -> Height {
-        self.latest_height
+        self.latest_height()
+    }
+
+    fn host_timestamp(&self) -> Timestamp {
+        ClientReader::host_timestamp(self)
     }
 
     fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
         ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
+    }
+
+    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics04Error> {
+        ClientReader::pending_host_consensus_state(self)
+            .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
     fn client_update_time(
