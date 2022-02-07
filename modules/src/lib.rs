@@ -46,6 +46,8 @@
 //! [relayer-repo]: https://github.com/informalsystems/ibc-rs/tree/master/relayer
 
 extern crate alloc;
+
+#[cfg(feature = "std")]
 extern crate std;
 
 mod prelude;

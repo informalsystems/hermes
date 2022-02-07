@@ -23,14 +23,13 @@ clock = ["tendermint/clock", "time/std"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = ["tendermint-testgen", "clock"]
+mocks = ["tendermint-testgen", "clock", "std"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.15.0", path = "../proto", default-features = false }
 ics23 = { version = "0.6.7", default-features = false }
 time = { version = "0.3", default-features = false }
-thiserror = { version = "1.0.30", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1", default-features = false }
@@ -42,6 +41,7 @@ safe-regex = { version = "0.2.4", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 sha2 = { version = "0.10.1", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
+num-traits = { version = "0.2.14", default-features = false }
 derive_more = { version = "0.99.17", default-features = false, features = ["from", "display"] }
 
 [dependencies.tendermint]
