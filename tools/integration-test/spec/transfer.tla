@@ -451,7 +451,7 @@ IBCTransferAcknowledgePacket(packet) ==
     ]
 
 \* Checks if the packet is already processed by the targetChain
-\* @type: (PACKET_ID, CHAIN) => Bool;
+\* @type: (PACKET, CHAIN) => Bool;
 IBCTransferAcknowledgePacketCondition(packet, targetChain) ==
     packet.id \in DOMAIN targetChain.remotePackets[packet.channel.source.channelId]
 
