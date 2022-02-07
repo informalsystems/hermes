@@ -20,7 +20,7 @@ pub struct AckPacketResult {
     pub seq_number: Option<Sequence>,
 }
 
-pub fn process(
+pub(crate) fn process(
     ctx: &dyn ChannelReader,
     msg: MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {

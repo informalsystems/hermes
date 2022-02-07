@@ -22,7 +22,7 @@ pub struct SendPacketResult {
     pub data: Vec<u8>,
 }
 
-pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
+pub(crate) fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let source_channel_end =

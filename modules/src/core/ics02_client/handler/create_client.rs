@@ -29,7 +29,7 @@ pub struct Result {
     pub processed_height: Height,
 }
 
-pub fn process(
+pub(crate) fn process(
     now: Time,
     ctx: &dyn ClientReader,
     msg: MsgCreateAnyClient,

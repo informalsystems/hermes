@@ -7,10 +7,10 @@ use crate::core::ics03_connection::msgs::ConnectionMsg;
 use crate::core::ics24_host::identifier::ConnectionId;
 use crate::handler::HandlerOutput;
 
-pub mod conn_open_ack;
-pub mod conn_open_confirm;
-pub mod conn_open_init;
-pub mod conn_open_try;
+mod conn_open_ack;
+mod conn_open_confirm;
+mod conn_open_init;
+mod conn_open_try;
 
 pub mod verify;
 

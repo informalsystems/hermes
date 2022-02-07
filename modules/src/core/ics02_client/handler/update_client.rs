@@ -28,7 +28,7 @@ pub struct Result {
     pub consensus_state: AnyConsensusState,
 }
 
-pub fn process(
+pub(crate) fn process(
     now: Time,
     ctx: &dyn ClientReader,
     msg: MsgUpdateAnyClient,

@@ -22,7 +22,7 @@ pub struct Result {
     pub consensus_state: AnyConsensusState,
 }
 
-pub fn process(
+pub(crate) fn process(
     ctx: &dyn ClientReader,
     msg: MsgUpgradeAnyClient,
 ) -> HandlerResult<ClientResult, Error> {

@@ -14,7 +14,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub fn process(
+pub(crate) fn process(
     ctx: &dyn ChannelReader,
     msg: MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {

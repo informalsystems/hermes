@@ -84,7 +84,7 @@ fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
     Ok(attr)
 }
 
-pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, Error> {
+fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, Error> {
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
