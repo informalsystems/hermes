@@ -93,7 +93,8 @@ pub trait ChannelReader {
             return 0;
         }
 
-        FloatCore::ceil(delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64()) as u64
+        FloatCore::ceil(delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64())
+            as u64
     }
 }
 

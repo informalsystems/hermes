@@ -472,8 +472,7 @@ fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState, Ics
 
 // A copy of `prost::Message::encode_to_vec`, as it is currently
 // feature gated behind `std`, even though it could be used with `alloc`.
-fn encode_to_vec(message: &impl Message) -> Vec<u8>
-{
+fn encode_to_vec(message: &impl Message) -> Vec<u8> {
     let mut buf = Vec::with_capacity(message.encoded_len());
     message.encode_raw(&mut buf);
     buf
