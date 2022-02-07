@@ -58,9 +58,6 @@ pub struct MockContext {
     /// Maximum size for the history of the host chain. Any block older than this is pruned.
     max_history_size: usize,
 
-    /// Highest height (i.e., most recent) of the blocks in the history.
-    latest_height: Height,
-
     /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
     /// blocks, ascending order by their height (latest block is on the last position).
     history: Vec<HostBlock>,
@@ -152,7 +149,12 @@ impl MockContext {
             "The chain must have a non-zero max_history_size"
         );
 
-        // Compute the number of blocks to store. If latest_height is 0, nothing is stored.
+        assert_ne!(
+            latest_height.revision_height, 0,
+            "The chain must have a non-zero max_history_size"
+        );
+
+        // Compute the number of blocks to store.
         let n = min(max_history_size as u64, latest_height.revision_height);
 
         assert_eq!(
@@ -167,7 +169,6 @@ impl MockContext {
             host_chain_type: host_type,
             host_chain_id: host_id.clone(),
             max_history_size,
-            latest_height,
             history: (0..n)
                 .rev()
                 .map(|i| {
@@ -401,16 +402,17 @@ impl MockContext {
     }
 
     pub fn with_height(self, target_height: Height) -> Self {
-        if target_height.revision_number > self.latest_height.revision_number {
+        let latest_height = self.latest_height();
+        if target_height.revision_number > latest_height.revision_number {
             unimplemented!()
-        } else if target_height.revision_number < self.latest_height.revision_number {
+        } else if target_height.revision_number < latest_height.revision_number {
             panic!("Cannot rewind history of the chain to a smaller revision number!")
-        } else if target_height.revision_height < self.latest_height.revision_height {
+        } else if target_height.revision_height < latest_height.revision_height {
             panic!("Cannot rewind history of the chain to a smaller revision height!")
-        } else if target_height.revision_height > self.latest_height.revision_height {
+        } else if target_height.revision_height > latest_height.revision_height {
             // Repeatedly advance the host chain height till we hit the desired height
             let mut ctx = MockContext { ..self };
-            while ctx.latest_height.revision_height < target_height.revision_height {
+            while ctx.latest_height().revision_height < target_height.revision_height {
                 ctx.advance_host_chain_height()
             }
             ctx
@@ -439,7 +441,7 @@ impl MockContext {
     /// Returns `None` if the block at the requested height does not exist.
     pub fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
         let target = target_height.revision_height as usize;
-        let latest = self.latest_height.revision_height as usize;
+        let latest = self.latest_height().revision_height as usize;
 
         // Check that the block is not too advanced, nor has it been pruned.
         if (target > latest) || (target <= latest - self.history.len()) {
@@ -468,8 +470,6 @@ impl MockContext {
             // History is not full yet.
             self.history.push(new_block);
         }
-
-        self.latest_height = self.latest_height.increment();
     }
 
     /// A datagram passes from the relayer to the IBC module (on host chain).
@@ -494,7 +494,7 @@ impl MockContext {
             // Get the highest block.
             let lh = &self.history[self.history.len() - 1];
             // Check latest is properly updated with highest header height.
-            if lh.height() != self.latest_height {
+            if lh.height() != self.latest_height() {
                 return Err("latest height is not updated".to_string());
             }
         }
@@ -538,6 +538,14 @@ impl MockContext {
             .consensus_states
             .get(height)
             .unwrap()
+    }
+
+    #[inline]
+    fn latest_height(&self) -> Height {
+        self.history
+            .last()
+            .expect("history cannot be empty")
+            .height()
     }
 }
 
@@ -855,7 +863,7 @@ impl ConnectionReader for MockContext {
     }
 
     fn host_current_height(&self) -> Height {
-        self.latest_height
+        self.latest_height()
     }
 
     fn host_oldest_height(&self) -> Height {
@@ -1005,7 +1013,7 @@ impl ClientReader for MockContext {
     }
 
     fn host_height(&self) -> Height {
-        self.latest_height
+        self.latest_height()
     }
 
     fn host_timestamp(&self) -> Timestamp {
@@ -1162,8 +1170,8 @@ mod tests {
                 ctx: MockContext::new(
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
-                    1,
-                    Height::new(cv, 0),
+                    2,
+                    Height::new(cv, 1),
                 ),
             },
             Test {
@@ -1171,8 +1179,8 @@ mod tests {
                 ctx: MockContext::new(
                     ChainId::new("mocksgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
-                    1,
-                    Height::new(cv, 0),
+                    2,
+                    Height::new(cv, 1),
                 ),
             },
             Test {
@@ -1258,7 +1266,7 @@ mod tests {
                 test.ctx
             );
 
-            let current_height = test.ctx.latest_height;
+            let current_height = test.ctx.latest_height();
 
             // After advancing the chain's height, the context should still be valid.
             test.ctx.advance_host_chain_height();
@@ -1271,7 +1279,8 @@ mod tests {
 
             let next_height = current_height.increment();
             assert_eq!(
-                test.ctx.latest_height, next_height,
+                test.ctx.latest_height(),
+                next_height,
                 "Failed while increasing height for context {:?}",
                 test.ctx
             );
