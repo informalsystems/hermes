@@ -1,0 +1,1645 @@
+{
+  "#meta": {
+    "format": "ITF",
+    "format-description": "https://apalache.informal.systems/docs/adr/015adr-trace.html",
+    "description": "Created by Apalache on Tue Feb 08 15:39:17 CET 2022"
+  },
+  "vars": [
+    "outcome",
+    "chains",
+    "action"
+  ],
+  "states": [
+    {
+      "#meta": {
+        "index": 0
+      },
+      "action": {
+        "name": "Null"
+      },
+      "chains": {
+        "#map": [
+          [
+            "cosmoshub",
+            {
+              "activeChannels": {
+                "#set": [
+                  
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          5
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "cosmoshub",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 3,
+              "nextChannelId": 0,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "cosmoshub",
+                    5
+                  ]
+                ]
+              }
+            }
+          ],
+          [
+            "juno",
+            {
+              "activeChannels": {
+                "#set": [
+                  
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          5
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "juno",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 3,
+              "nextChannelId": 0,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "juno",
+                    5
+                  ]
+                ]
+              }
+            }
+          ],
+          [
+            "osmosis",
+            {
+              "activeChannels": {
+                "#set": [
+                  
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          5
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "osmosis",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 3,
+              "nextChannelId": 0,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "osmosis",
+                    5
+                  ]
+                ]
+              }
+            }
+          ]
+        ]
+      },
+      "outcome": {
+        "name": "Success"
+      }
+    },
+    {
+      "#meta": {
+        "index": 1
+      },
+      "action": {
+        "chains": {
+          "#set": [
+            "cosmoshub",
+            "osmosis"
+          ]
+        },
+        "name": "CreateChannel"
+      },
+      "chains": {
+        "#map": [
+          [
+            "cosmoshub",
+            {
+              "activeChannels": {
+                "#set": [
+                  0
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    3,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          5
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "source": {
+                        "chainId": "cosmoshub",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      },
+                      "target": {
+                        "chainId": "osmosis",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      }
+                    }
+                  ]
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    [
+                      "osmosis",
+                      0
+                    ]
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    [
+                      0,
+                      3
+                    ]
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "cosmoshub",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 4,
+              "nextChannelId": 1,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "cosmoshub",
+                    5
+                  ]
+                ]
+              }
+            }
+          ],
+          [
+            "juno",
+            {
+              "activeChannels": {
+                "#set": [
+                  
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          5
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "juno",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 3,
+              "nextChannelId": 0,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "juno",
+                    5
+                  ]
+                ]
+              }
+            }
+          ],
+          [
+            "osmosis",
+            {
+              "activeChannels": {
+                "#set": [
+                  0
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    3,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          5
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "source": {
+                        "chainId": "osmosis",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      },
+                      "target": {
+                        "chainId": "cosmoshub",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      }
+                    }
+                  ]
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    [
+                      "cosmoshub",
+                      0
+                    ]
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    [
+                      0,
+                      3
+                    ]
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "osmosis",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 4,
+              "nextChannelId": 1,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "osmosis",
+                    5
+                  ]
+                ]
+              }
+            }
+          ]
+        ]
+      },
+      "outcome": {
+        "name": "Success"
+      }
+    },
+    {
+      "#meta": {
+        "index": 2
+      },
+      "action": {
+        "amount": 3,
+        "denom": "osmosis",
+        "name": "LocalTransfer",
+        "source": 0,
+        "target": 1
+      },
+      "chains": {
+        "#map": [
+          [
+            "cosmoshub",
+            {
+              "activeChannels": {
+                "#set": [
+                  0
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    3,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          5
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "source": {
+                        "chainId": "cosmoshub",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      },
+                      "target": {
+                        "chainId": "osmosis",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      }
+                    }
+                  ]
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    [
+                      "osmosis",
+                      0
+                    ]
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    [
+                      0,
+                      3
+                    ]
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "cosmoshub",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 4,
+              "nextChannelId": 1,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "cosmoshub",
+                    5
+                  ]
+                ]
+              }
+            }
+          ],
+          [
+            "juno",
+            {
+              "activeChannels": {
+                "#set": [
+                  
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          5
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "juno",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 3,
+              "nextChannelId": 0,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "juno",
+                    5
+                  ]
+                ]
+              }
+            }
+          ],
+          [
+            "osmosis",
+            {
+              "activeChannels": {
+                "#set": [
+                  0
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    3,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          3
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          2
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "source": {
+                        "chainId": "osmosis",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      },
+                      "target": {
+                        "chainId": "cosmoshub",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      }
+                    }
+                  ]
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    [
+                      "cosmoshub",
+                      0
+                    ]
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    [
+                      0,
+                      3
+                    ]
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "osmosis",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 4,
+              "nextChannelId": 1,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "osmosis",
+                    5
+                  ]
+                ]
+              }
+            }
+          ]
+        ]
+      },
+      "outcome": {
+        "name": "Success"
+      }
+    },
+    {
+      "#meta": {
+        "index": 3
+      },
+      "action": {
+        "name": "IBCTransferSendPacket",
+        "packet": {
+          "amount": 3,
+          "channel": {
+            "source": {
+              "chainId": "osmosis",
+              "channelId": 0,
+              "portId": "transfer"
+            },
+            "target": {
+              "chainId": "cosmoshub",
+              "channelId": 0,
+              "portId": "transfer"
+            }
+          },
+          "denom": "osmosis",
+          "from": 1,
+          "id": 0,
+          "to": 1
+        }
+      },
+      "chains": {
+        "#map": [
+          [
+            "cosmoshub",
+            {
+              "activeChannels": {
+                "#set": [
+                  0
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    3,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "cosmoshub",
+                          5
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "source": {
+                        "chainId": "cosmoshub",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      },
+                      "target": {
+                        "chainId": "osmosis",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      }
+                    }
+                  ]
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    [
+                      "osmosis",
+                      0
+                    ]
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    [
+                      0,
+                      3
+                    ]
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "cosmoshub",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 4,
+              "nextChannelId": 1,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "cosmoshub",
+                    5
+                  ]
+                ]
+              }
+            }
+          ],
+          [
+            "juno",
+            {
+              "activeChannels": {
+                "#set": [
+                  
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          5
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "juno",
+                          0
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "juno",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 3,
+              "nextChannelId": 0,
+              "nextPacketId": 0,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "juno",
+                    5
+                  ]
+                ]
+              }
+            }
+          ],
+          [
+            "osmosis",
+            {
+              "activeChannels": {
+                "#set": [
+                  0
+                ]
+              },
+              "bank": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          2
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    3,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          3
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    2,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "#map": [
+                        [
+                          "osmosis",
+                          0
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "channel": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "source": {
+                        "chainId": "osmosis",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      },
+                      "target": {
+                        "chainId": "cosmoshub",
+                        "channelId": 0,
+                        "portId": "transfer"
+                      }
+                    }
+                  ]
+                ]
+              },
+              "ics20": {
+                "channel": {
+                  "#map": [
+                    [
+                      "cosmoshub",
+                      0
+                    ]
+                  ]
+                },
+                "escrow": {
+                  "#map": [
+                    [
+                      0,
+                      3
+                    ]
+                  ]
+                },
+                "portId": "transfer"
+              },
+              "id": "osmosis",
+              "localPackets": {
+                "expired": {
+                  "#set": [
+                    
+                  ]
+                },
+                "list": {
+                  "#map": [
+                    [
+                      0,
+                      {
+                        "amount": 3,
+                        "channel": {
+                          "source": {
+                            "chainId": "osmosis",
+                            "channelId": 0,
+                            "portId": "transfer"
+                          },
+                          "target": {
+                            "chainId": "cosmoshub",
+                            "channelId": 0,
+                            "portId": "transfer"
+                          }
+                        },
+                        "denom": "osmosis",
+                        "from": 1,
+                        "id": 0,
+                        "to": 1
+                      }
+                    ]
+                  ]
+                },
+                "pending": {
+                  "#set": [
+                    0
+                  ]
+                },
+                "success": {
+                  "#set": [
+                    
+                  ]
+                }
+              },
+              "nextAccountId": 4,
+              "nextChannelId": 1,
+              "nextPacketId": 1,
+              "ports": {
+                "#set": [
+                  "transfer"
+                ]
+              },
+              "remotePackets": {
+                "#map": [
+                  [
+                    0,
+                    {
+                      "#map": [
+                        
+                      ]
+                    }
+                  ]
+                ]
+              },
+              "supply": {
+                "#map": [
+                  [
+                    "osmosis",
+                    5
+                  ]
+                ]
+              }
+            }
+          ]
+        ]
+      },
+      "outcome": {
+        "name": "Success"
+      }
+    }
+  ]
+}
