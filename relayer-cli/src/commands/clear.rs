@@ -22,26 +22,27 @@ pub enum ClearCmds {
 #[derive(Debug, Parser)]
 pub struct ClearPacketsCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
-    dst_chain_id: ChainId,
+    counterparty_chain_id: ChainId,
 
     #[clap(required = true, help = "identifier of the source chain")]
-    src_chain_id: ChainId,
+    chain_id: ChainId,
 
     #[clap(required = true, help = "identifier of the source port")]
-    src_port_id: PortId,
+    port_id: PortId,
 
     #[clap(required = true, help = "identifier of the source channel")]
-    src_channel_id: ChannelId,
+    channel_id: ChannelId,
 }
 
 impl Runnable for ClearPacketsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
-            Ok(chains) => chains,
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        };
+        let chains =
+            match ChainHandlePair::spawn(&config, &self.chain_id, &self.counterparty_chain_id) {
+                Ok(chains) => chains,
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            };
 
         let mut ev_list = vec![];
 
@@ -49,8 +50,8 @@ impl Runnable for ClearPacketsCmd {
         // Some of the checks in the two Link constructor calls may be redundant;
         // going slowly, but reliably.
         let opts = LinkParameters {
-            src_port_id: self.src_port_id.clone(),
-            src_channel_id: self.src_channel_id.clone(),
+            src_port_id: self.port_id.clone(),
+            src_channel_id: self.channel_id.clone(),
         };
         let fwd_link =
             match Link::new_from_opts(chains.src.clone(), chains.dst.clone(), opts, false) {
