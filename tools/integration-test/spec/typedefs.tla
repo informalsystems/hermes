@@ -4,7 +4,7 @@
     @typeAlias: PORT_ID = Str;
     @typeAlias: CHANNEL_ID = Int;
     @typeAlias: ACCOUNT_ID = Int;
-    @typeAlias: CHAIN_ID = Str;
+    @typeAlias: CHAIN_ID = Int;
     @typeAlias: PACKET_ID = Int;
 
     TODO: Fix when to transfer back money to sink zone

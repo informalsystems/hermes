@@ -1,5 +1,5 @@
 ---- MODULE transfer ----
-EXTENDS TLC, Sequences, typedefs, Integers
+EXTENDS TLC, Sequences, Integers, typedefs
 
 CONSTANTS
     \* Set of blockchain names
@@ -11,9 +11,9 @@ CONSTANTS
     \* Port ID used for ICS20
     \* @type: PORT_ID;
     ICS20_PORT,
-    \* Total supply of native token per chain
+    \* Genesis balance per account
     \* @type: Int;
-    TOTAL_SUPPLY
+    GENESIS_AMOUNT
 
 VARIABLES
     \* Interchain state
@@ -29,8 +29,6 @@ VARIABLES
 \* Account IDs starts from 1
 \* @type: () => Set(ACCOUNT_ID);
 ACCOUNT_IDS == 1..N_INITIAL_ACCOUNTS
-
-Reserve == 0
 
 \* Actions
 NullAction == "Null"
@@ -48,11 +46,11 @@ ErrorOutcome == "Error"
 
 \* Dummy operators for empty types
 
-DummyAccount == -1
+DummyAccount == 0
 
 \* @type: () => CHANNEL_ENDPOINT;
 DummyEndpoint == [
-    chainId |-> "dummyChain",
+    chainId |-> 0,
     portId |-> "dummyPort",
     channelId |-> 0
 ]
@@ -84,9 +82,9 @@ Genesis(chainId) ==
     \* Bank data for this chain
     \* To support different cross-chain(ibc) denoms, it is a 2D map.
     \* `accountId` has `bank[accountId][denomId]` many `denomId`.
-    bank |-> [accountId \in ACCOUNT_IDS \union {Reserve} |-> [denom \in {nativeDenom} |-> IF accountId = Reserve THEN TOTAL_SUPPLY ELSE 0]],
+    bank |-> [accountId \in ACCOUNT_IDS |-> [denom \in {nativeDenom} |-> GENESIS_AMOUNT]],
     \* Record of circulating native and cross-chain(ibc) token sourced at this chain
-    supply |-> [denom \in {nativeDenom} |-> TOTAL_SUPPLY],
+    supply |-> [denom \in {nativeDenom} |-> GENESIS_AMOUNT * N_INITIAL_ACCOUNTS ],
 
     \* Record of packets originated from this chain
     localPackets |-> [
@@ -139,7 +137,7 @@ AddOrUpdateEntry(func, key, value) ==
 (*
 We will model TokenTransfer using following actions.
 
-LocalTransfer                : direct (created to airdrop into other accounts from Reserve)
+LocalTransfer                : on-chain transfer
 
 CreateChannel                : create a channel
 ExpireChannel                : a channel can expire
@@ -173,7 +171,7 @@ LocalTransfer(chain, source, target, denom, amount) ==
 \* @type: () => Bool;
 LocalTransferNext ==
     \E chainId \in CHAIN_IDS:
-        \E source, target \in ACCOUNT_IDS \union {Reserve}:
+        \E source, target \in ACCOUNT_IDS:
             source /= target /\
             \E amount \in 1..10:
                 LET
@@ -186,6 +184,7 @@ LocalTransferNext ==
                     ]
                 /\ action' = [
                         name |-> LocalTransferAction,
+                        chain |-> chainId,
                         source |-> source,
                         target |-> target,
                         denom |-> denom,
@@ -219,6 +218,7 @@ AddICS20Channel(sourceChain, targetChain) ==
     sourceEndPoint == [chainId |-> sourceChain.id, portId |-> sourceChain.ics20.portId, channelId |-> sourceChannelId]
     targetEndPoint == [chainId |-> targetChain.id, portId |-> targetChain.ics20.portId, channelId |-> targetChannelId]
     escrowAccount == sourceChain.nextAccountId
+    sourceChainDenom == sourceChain.id
     IN
     [
         sourceChain EXCEPT
@@ -233,7 +233,7 @@ AddICS20Channel(sourceChain, targetChain) ==
             !.escrow = AddOrUpdateEntry(@, sourceChannelId, escrowAccount),
             !.channel = AddOrUpdateEntry(@, targetChain.id, sourceChannelId)
         ],
-        !.bank = AddOrUpdateEntry(@, escrowAccount, [d \in {} |-> 0]),
+        !.bank = AddOrUpdateEntry(@, escrowAccount, [d \in {sourceChainDenom} |-> 0]),
         !.nextChannelId = @ + 1,
         !.nextAccountId = @ + 1
     ]
@@ -261,7 +261,7 @@ CreateChannelNext ==
 ExpireChannel(sourceChain, targetChain) ==
     [
         sourceChain EXCEPT
-        !.activeChannels = @ \ {sourceChain.ics20.channels[targetChain.id]}
+        !.activeChannels = @ \ {sourceChain.ics20.channel[targetChain.id]}
     ]
 
 \* Expires the channel between a pair of chains
@@ -370,7 +370,7 @@ IBCTransferReceivePacket(packet) ==
 \* Checks if the packet is not processed by the targetChain
 \* @type: (PACKET, CHAIN) => Bool;
 IBCTransferReceiveOrTimeoutPacketCondition(packet, targetChain) ==
-    packet.id \notin DOMAIN targetChain.remotePackets[packet.channel.source.channelId]
+    packet.id \notin DOMAIN targetChain.remotePackets[packet.channel.target.channelId]
 
 \* Next operator for IBCTransferReceivePacket
 IBCTransferReceivePacketNext ==
@@ -425,7 +425,7 @@ IBCTransferTimeoutPacketNext ==
             LET
             packet == chains[chainId].localPackets.list[packetId]
             sourceChain == chains[packet.channel.source.chainId]
-            targetChain == chains[packet.channel.source.chainId]
+            targetChain == chains[packet.channel.target.chainId]
             IN
             /\ IBCTransferReceiveOrTimeoutPacketCondition(packet, targetChain)
             /\ chains' = [chains EXCEPT
@@ -453,7 +453,7 @@ IBCTransferAcknowledgePacket(packet) ==
 \* Checks if the packet is already processed by the targetChain
 \* @type: (PACKET, CHAIN) => Bool;
 IBCTransferAcknowledgePacketCondition(packet, targetChain) ==
-    packet.id \in DOMAIN targetChain.remotePackets[packet.channel.source.channelId]
+    packet.id \in DOMAIN targetChain.remotePackets[packet.channel.target.channelId]
 
 \* Next operator for IBCTransferAcknowledgePacket
 IBCTransferAcknowledgePacketNext ==
@@ -461,11 +461,12 @@ IBCTransferAcknowledgePacketNext ==
         \E packetId \in chains[chainId].localPackets.pending:
             LET
             packet == chains[chainId].localPackets.list[packetId]
+            sourceChain == chains[packet.channel.source.chainId]
             targetChain == chains[packet.channel.target.chainId]
             IN
             /\ IBCTransferAcknowledgePacketCondition(packet, targetChain)
             /\ chains' = [chains EXCEPT
-                    ![packet.channel.source.chainId] = IBCTransferAcknowledgePacket(packet)
+                    ![sourceChain.id] = IBCTransferAcknowledgePacket(packet)
                 ]
             /\ action' = [
                     name |-> IBCTransferAcknowledgePacketAction,
