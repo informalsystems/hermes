@@ -1,7 +1,5 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
-use tendermint::Time;
-
 use crate::prelude::*;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
@@ -17,6 +15,7 @@ use crate::core::ics24_host::identifier::ClientId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Timestamp;
+
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -30,7 +29,6 @@ pub struct Result {
 }
 
 pub fn process(
-    now: Time,
     ctx: &dyn ClientReader,
     msg: MsgCreateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
@@ -52,7 +50,7 @@ pub fn process(
         client_type: msg.client_state().client_type(),
         client_state: msg.client_state(),
         consensus_state: msg.consensus_state(),
-        processed_time: now.into(),
+        processed_time: ctx.host_timestamp(),
         processed_height: ctx.host_height(),
     });
 
@@ -70,7 +68,6 @@ mod tests {
     use crate::prelude::*;
 
     use core::time::Duration;
-    use tendermint::Time;
     use test_log::test;
 
     use crate::clients::ics07_tendermint::client_state::{
@@ -107,7 +104,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(Time::now(), &ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -198,7 +195,7 @@ mod tests {
         let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
 
         for msg in create_client_msgs {
-            let output = dispatch(Time::now(), &ctx, ClientMsg::CreateClient(msg.clone()));
+            let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
             match output {
                 Ok(HandlerOutput {
@@ -260,7 +257,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(Time::now(), &ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
