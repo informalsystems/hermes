@@ -2,6 +2,7 @@
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //!
 use core::time::Duration;
+use num_traits::float::FloatCore;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -103,7 +104,8 @@ pub trait ChannelReader {
             return 0;
         }
 
-        (delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64()).ceil() as u64
+        FloatCore::ceil(delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64())
+            as u64
     }
 }
 

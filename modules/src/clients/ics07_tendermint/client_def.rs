@@ -292,7 +292,7 @@ impl ClientDef for TendermintClient {
             proof,
             root,
             commitment_path,
-            commitment.encode_to_vec(),
+            encode_to_vec(&commitment),
         )
     }
 
@@ -349,7 +349,7 @@ impl ClientDef for TendermintClient {
             proof,
             root,
             seq_path,
-            u64::from(sequence).encode_to_vec(),
+            encode_to_vec(&u64::from(sequence)),
         )
     }
 
@@ -469,4 +469,12 @@ fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState, Ics
         cs => AnyConsensusState::Tendermint
     )
     .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
+}
+
+// A copy of `prost::Message::encode_to_vec`, as it is currently
+// feature gated behind `std`, even though it could be used with `alloc`.
+fn encode_to_vec(message: &impl Message) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(message.encoded_len());
+    message.encode_raw(&mut buf);
+    buf
 }
