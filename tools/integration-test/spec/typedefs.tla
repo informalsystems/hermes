@@ -8,7 +8,7 @@
     @typeAlias: PACKET_ID = Int;
 
     TODO: Fix when to transfer back money to sink zone
-    @typeAlias: DENOM_ID = Str;
+    @typeAlias: DENOM_ID = CHAIN_ID;
 
     @typeAlias: CHANNEL_ENDPOINT = [
         chainId: CHAIN_ID,

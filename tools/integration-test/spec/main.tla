@@ -20,6 +20,11 @@ IBCTransferAcknowledgePacketTest == action.name = IBCTransferAcknowledgePacketAc
 IBCTransferTimeoutPacketTest == action.name = IBCTransferTimeoutPacketAction
 
 \* Negate the trace predicate to find counter-example
-Invariant == ~IBCTransferReceivePacketTest
-
+LocalTransferInv == ~LocalTransferTest
+CreateChannelInv == ~CreateChannelTest
+ExpireChannelInv == ~ExpireChannelTest
+IBCTransferSendPacketInv == ~IBCTransferSendPacketTest
+IBCTransferReceivePacketInv == ~IBCTransferReceivePacketTest
+IBCTransferAcknowledgePacketInv == ~IBCTransferAcknowledgePacketTest
+IBCTransferTimeoutPacketInv == ~IBCTransferTimeoutPacketTest
 ====
