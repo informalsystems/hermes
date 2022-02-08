@@ -123,8 +123,8 @@ pub fn get_all_events(
     } = result;
     let events = events.ok_or("missing events")?;
 
-    match (data, query.as_str()) {
-        (RpcEventData::NewBlock { block, .. }, "tm.event = 'NewBlock'") => {
+    match data {
+        RpcEventData::NewBlock { block, .. } if query == queries::new_block().to_string() => {
             let height = Height::new(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
@@ -133,7 +133,7 @@ pub fn get_all_events(
             vals.push((height, ClientEvents::NewBlock::new(height).into()));
             vals.append(&mut extract_block_events(height, &events));
         }
-        (RpcEventData::Tx { tx_result }, _) => {
+        RpcEventData::Tx { tx_result } => {
             let height = Height::new(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 tx_result.height as u64,
@@ -147,14 +147,14 @@ pub fn get_all_events(
                         vals.push((height, client_event));
                     }
                 }
-                if *query == queries::ibc_connection().to_string() {
+                if query == queries::ibc_connection().to_string() {
                     if let Some(mut conn_event) = ConnectionEvents::try_from_tx(abci_event) {
                         conn_event.set_height(height);
                         tracing::trace!("extracted ibc_connection event {:?}", conn_event);
                         vals.push((height, conn_event));
                     }
                 }
-                if *query == queries::ibc_channel().to_string() {
+                if query == queries::ibc_channel().to_string() {
                     if let Some(mut chan_event) = ChannelEvents::try_from_tx(abci_event) {
                         chan_event.set_height(height);
                         let _span = tracing::trace_span!("ibc_channel event").entered();
