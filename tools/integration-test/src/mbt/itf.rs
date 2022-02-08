@@ -29,21 +29,12 @@ where
         D: Deserializer<'de>,
     {
         #[derive(Debug, Deserialize)]
-        #[serde(untagged)]
-        enum CustVec<K, V> {
-            One((K, V)),
-            Multi(Vec<(K, V)>),
-        }
-        #[derive(Debug, Deserialize)]
         struct Meta<K, V> {
             #[serde(rename = "#map")]
-            map: CustVec<K, V>,
+            map: Vec<(K, V)>,
         }
         let s: Meta<_, _> = Deserialize::deserialize(deserializer)?;
-        Ok(match s.map {
-            CustVec::Multi(v) => Self(v),
-            CustVec::One(e) => Self(vec![e]),
-        })
+        Ok(Self(s.map))
     }
 }
 
@@ -70,6 +61,14 @@ where
 
 mod test {
     use super::{Map, Set};
+
+    #[test]
+    fn test_empty_set() {
+        let itf = r##"{ "#set": [] }"##;
+        let s: Set<isize> = serde_json::from_str(itf).unwrap();
+        assert!(s.0.is_empty());
+    }
+
     #[test]
     fn test_set() {
         let itf = r##"{ "#set": [1,2,3] }"##;
@@ -81,10 +80,11 @@ mod test {
     fn test_empty_map() {
         let itf = r##"{ "#map": [ ] }"##;
         let m: Map<isize, isize> = serde_json::from_str(itf).unwrap();
-        assert_eq!(m.0, vec![]);
+        assert!(m.0.is_empty());
     }
 
     #[test]
+    #[should_panic]
     fn test_singleton_map() {
         let itf = r##"{ "#map": [1, 11] }"##;
         let m: Map<isize, isize> = serde_json::from_str(itf).unwrap();
@@ -96,5 +96,36 @@ mod test {
         let itf = r##"{ "#map": [[1, 11], [2, 22]] }"##;
         let m: Map<isize, isize> = serde_json::from_str(itf).unwrap();
         assert_eq!(m.0, vec![(1, 11), (2, 22)]);
+    }
+
+    #[test]
+    fn parse_itf() {
+        use super::super::itf::InformalTrace;
+        use super::super::state::State;
+
+        let itf_path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/spec/example/counterexample.itf.json"
+        );
+
+        let itf_json = std::fs::read_to_string(itf_path).expect("itf file does not exist");
+
+        let t: InformalTrace<State> =
+            serde_json::from_str(&itf_json).expect("deserialization error");
+
+        for state in t.states {
+            println!(
+                "action: {}",
+                serde_json::to_string_pretty(&state.action).unwrap()
+            );
+            println!(
+                "outcome: {}",
+                serde_json::to_string_pretty(&state.outcome).unwrap()
+            );
+            println!(
+                "chains: {}",
+                serde_json::to_string_pretty(&state.chains).unwrap()
+            );
+        }
     }
 }
