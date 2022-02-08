@@ -38,27 +38,33 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
         Ok(IbcEventType::OpenInitChannel) => extract_attributes_from_tx(event)
             .map(OpenInit::try_from)
             .map(|res| res.ok().map(IbcEvent::OpenInitChannel))
-            .ok().flatten(),
+            .ok()
+            .flatten(),
         Ok(IbcEventType::OpenTryChannel) => extract_attributes_from_tx(event)
             .map(OpenTry::try_from)
             .map(|res| res.ok().map(IbcEvent::OpenTryChannel))
-            .ok().flatten(),
+            .ok()
+            .flatten(),
         Ok(IbcEventType::OpenAckChannel) => extract_attributes_from_tx(event)
             .map(OpenAck::try_from)
             .map(|res| res.ok().map(IbcEvent::OpenAckChannel))
-            .ok().flatten(),
+            .ok()
+            .flatten(),
         Ok(IbcEventType::OpenConfirmChannel) => extract_attributes_from_tx(event)
             .map(OpenConfirm::try_from)
             .map(|res| res.ok().map(IbcEvent::OpenConfirmChannel))
-            .ok().flatten(),
+            .ok()
+            .flatten(),
         Ok(IbcEventType::CloseInitChannel) => extract_attributes_from_tx(event)
             .map(CloseInit::try_from)
             .map(|res| res.ok().map(IbcEvent::CloseInitChannel))
-            .ok().flatten(),
+            .ok()
+            .flatten(),
         Ok(IbcEventType::CloseConfirmChannel) => extract_attributes_from_tx(event)
             .map(CloseConfirm::try_from)
             .map(|res| res.ok().map(IbcEvent::CloseConfirmChannel))
-            .ok().flatten(),
+            .ok()
+            .flatten(),
         Ok(IbcEventType::SendPacket) => {
             extract_packet_and_write_ack_from_tx(event)
                 .map(|(packet, write_ack)| {
@@ -348,7 +354,7 @@ trait EventType {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenInit{
+pub struct OpenInit {
     height: Height,
     port_id: PortId,
     channel_id: Option<ChannelId>,
@@ -408,7 +414,7 @@ impl EventType for OpenInit {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenTry{
+pub struct OpenTry {
     height: Height,
     port_id: PortId,
     channel_id: Option<ChannelId>,
@@ -468,7 +474,7 @@ impl EventType for OpenTry {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenAck{
+pub struct OpenAck {
     height: Height,
     port_id: PortId,
     channel_id: Option<ChannelId>,
@@ -532,7 +538,7 @@ impl EventType for OpenAck {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenConfirm{
+pub struct OpenConfirm {
     height: Height,
     port_id: PortId,
     channel_id: Option<ChannelId>,
@@ -592,7 +598,7 @@ impl EventType for OpenConfirm {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct CloseInit{
+pub struct CloseInit {
     height: Height,
     port_id: PortId,
     channel_id: ChannelId,
@@ -649,8 +655,7 @@ impl TryFrom<Attributes> for CloseInit {
                 counterparty_port_id: attrs.counterparty_port_id.clone(),
                 counterparty_channel_id: attrs.counterparty_channel_id.clone(),
             })
-        }
-        else {
+        } else {
             Err(EventError::channel(Error::missing_channel_id()))
         }
     }
@@ -681,7 +686,7 @@ impl EventType for CloseInit {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct CloseConfirm{
+pub struct CloseConfirm {
     height: Height,
     channel_id: Option<ChannelId>,
     pub port_id: PortId,
@@ -714,7 +719,7 @@ impl CloseConfirm {
 
 // impl From<Attributes> for CloseConfirm {
 //     fn from(attrs: Attributes) -> Self {
-//         CloseConfirm{ 
+//         CloseConfirm{
 //             height: attrs.height,
 //             port_id: attrs.port_id,
 //             channel_id: attrs.channel_id,
@@ -756,13 +761,7 @@ macro_rules! impl_try_from_attribute_for_event {
     };
 }
 
-impl_try_from_attribute_for_event!(
-    OpenInit,
-    OpenTry,
-    OpenAck,
-    OpenConfirm,
-    CloseConfirm
-);
+impl_try_from_attribute_for_event!(OpenInit, OpenTry, OpenAck, OpenConfirm, CloseConfirm);
 
 macro_rules! impl_from_ibc_to_abci_event {
     ($($event:ty),+) => {
@@ -1183,12 +1182,24 @@ mod tests {
         for event in abci_events {
             match try_from_tx(&event) {
                 Some(e) => match e {
-                    IbcEvent::OpenInitChannel(e) => assert_eq!(e.attributes(), open_init.attributes()),
-                    IbcEvent::OpenTryChannel(e) => assert_eq!(e.attributes(), open_try.attributes()),
-                    IbcEvent::OpenAckChannel(e) => assert_eq!(e.attributes(), open_ack.attributes()),
-                    IbcEvent::OpenConfirmChannel(e) => assert_eq!(e.attributes(), open_confirm.attributes()),
-                    IbcEvent::CloseInitChannel(e) => assert_eq!(e.attributes(), close_init.attributes()),
-                    IbcEvent::CloseConfirmChannel(e) => assert_eq!(e.attributes(), close_confirm.attributes()),
+                    IbcEvent::OpenInitChannel(e) => {
+                        assert_eq!(e.attributes(), open_init.attributes())
+                    }
+                    IbcEvent::OpenTryChannel(e) => {
+                        assert_eq!(e.attributes(), open_try.attributes())
+                    }
+                    IbcEvent::OpenAckChannel(e) => {
+                        assert_eq!(e.attributes(), open_ack.attributes())
+                    }
+                    IbcEvent::OpenConfirmChannel(e) => {
+                        assert_eq!(e.attributes(), open_confirm.attributes())
+                    }
+                    IbcEvent::CloseInitChannel(e) => {
+                        assert_eq!(e.attributes(), close_init.attributes())
+                    }
+                    IbcEvent::CloseConfirmChannel(e) => {
+                        assert_eq!(e.attributes(), close_confirm.attributes())
+                    }
                     _ => panic!("unexpected event type"),
                 },
                 None => panic!("converted event was wrong"),
