@@ -37,7 +37,7 @@ serde_json = { version = "1" }
 bytes = "1.1.0"
 prost = { version = "0.9" }
 prost-types = { version = "0.9" }
-futures = "0.3.19"
+futures = "0.3.21"
 crossbeam-channel = "0.5.2"
 k256 = { version = "0.10.2", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
@@ -94,7 +94,7 @@ version = "=0.23.5"
 ibc = { version = "0.11.1", path = "../modules", features = ["mocks"] }
 serial_test = "0.5.0"
 env_logger = "0.9.0"
-tracing-subscriber = { version = "0.3.7", features = ["fmt", "env-filter", "json"] }
+tracing-subscriber = { version = "0.3.8", features = ["fmt", "env-filter", "json"] }
 test-log = { version = "0.2.8", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
