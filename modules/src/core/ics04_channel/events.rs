@@ -36,29 +36,29 @@ const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.parse() {
         Ok(IbcEventType::OpenInitChannel) => extract_attributes_from_tx(event)
-            .map(OpenInit::from)
-            .map(IbcEvent::OpenInitChannel)
-            .ok(),
+            .map(OpenInit::try_from)
+            .map(|res| res.ok().map(IbcEvent::OpenInitChannel))
+            .ok().flatten(),
         Ok(IbcEventType::OpenTryChannel) => extract_attributes_from_tx(event)
-            .map(OpenTry::from)
-            .map(IbcEvent::OpenTryChannel)
-            .ok(),
+            .map(OpenTry::try_from)
+            .map(|res| res.ok().map(IbcEvent::OpenTryChannel))
+            .ok().flatten(),
         Ok(IbcEventType::OpenAckChannel) => extract_attributes_from_tx(event)
-            .map(OpenAck::from)
-            .map(IbcEvent::OpenAckChannel)
-            .ok(),
+            .map(OpenAck::try_from)
+            .map(|res| res.ok().map(IbcEvent::OpenAckChannel))
+            .ok().flatten(),
         Ok(IbcEventType::OpenConfirmChannel) => extract_attributes_from_tx(event)
-            .map(OpenConfirm::from)
-            .map(IbcEvent::OpenConfirmChannel)
-            .ok(),
+            .map(OpenConfirm::try_from)
+            .map(|res| res.ok().map(IbcEvent::OpenConfirmChannel))
+            .ok().flatten(),
         Ok(IbcEventType::CloseInitChannel) => extract_attributes_from_tx(event)
-            .map(CloseInit::from)
-            .map(IbcEvent::CloseInitChannel)
-            .ok(),
+            .map(CloseInit::try_from)
+            .map(|res| res.ok().map(IbcEvent::CloseInitChannel))
+            .ok().flatten(),
         Ok(IbcEventType::CloseConfirmChannel) => extract_attributes_from_tx(event)
-            .map(CloseConfirm::from)
-            .map(IbcEvent::CloseConfirmChannel)
-            .ok(),
+            .map(CloseConfirm::try_from)
+            .map(|res| res.ok().map(IbcEvent::CloseConfirmChannel))
+            .ok().flatten(),
         Ok(IbcEventType::SendPacket) => {
             extract_packet_and_write_ack_from_tx(event)
                 .map(|(packet, write_ack)| {
@@ -348,31 +348,52 @@ trait EventType {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenInit(pub Attributes);
+pub struct OpenInit{
+    height: Height,
+    port_id: PortId,
+    channel_id: Option<ChannelId>,
+    pub connection_id: ConnectionId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: Option<ChannelId>,
+}
 
 impl OpenInit {
-    pub fn attributes(&self) -> &Attributes {
-        &self.0
+    pub fn attributes(&self) -> Attributes {
+        Attributes {
+            height: self.height.clone(),
+            port_id: self.port_id.clone(),
+            channel_id: self.channel_id.clone(),
+            connection_id: self.connection_id.clone(),
+            counterparty_port_id: self.counterparty_port_id.clone(),
+            counterparty_channel_id: self.counterparty_channel_id.clone(),
+        }
     }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.0.channel_id.as_ref()
+        self.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
-        &self.0.port_id
+        &self.port_id
     }
     pub fn height(&self) -> Height {
-        self.0.height
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
+        self.height = height;
     }
 }
 
-impl From<Attributes> for OpenInit {
-    fn from(attrs: Attributes) -> Self {
-        OpenInit(attrs)
-    }
-}
+// impl From<Attributes> for OpenInit {
+//     fn from(attrs: Attributes) -> Self {
+//         OpenInit{
+//             height: attrs.height,
+//             port_id: attrs.port_id,
+//             channel_id: attrs.channel_id,
+//             connection_id: attrs.connection_id,
+//             counterparty_port_id: attrs.counterparty_port_id,
+//             counterparty_channel_id: attrs.counterparty_channel_id,
+//         }
+//     }
+// }
 
 impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
@@ -387,31 +408,52 @@ impl EventType for OpenInit {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenTry(pub Attributes);
+pub struct OpenTry{
+    height: Height,
+    port_id: PortId,
+    channel_id: Option<ChannelId>,
+    pub connection_id: ConnectionId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: Option<ChannelId>,
+}
 
 impl OpenTry {
-    pub fn attributes(&self) -> &Attributes {
-        &self.0
+    pub fn attributes(&self) -> Attributes {
+        Attributes {
+            height: self.height.clone(),
+            port_id: self.port_id.clone(),
+            channel_id: self.channel_id.clone(),
+            connection_id: self.connection_id.clone(),
+            counterparty_port_id: self.counterparty_port_id.clone(),
+            counterparty_channel_id: self.counterparty_channel_id.clone(),
+        }
     }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.0.channel_id.as_ref()
+        self.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
-        &self.0.port_id
+        &self.port_id
     }
     pub fn height(&self) -> Height {
-        self.0.height
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
+        self.height = height;
     }
 }
 
-impl From<Attributes> for OpenTry {
-    fn from(attrs: Attributes) -> Self {
-        OpenTry(attrs)
-    }
-}
+// impl From<Attributes> for OpenTry {
+//     fn from(attrs: Attributes) -> Self {
+//         OpenTry{
+//             height: attrs.height,
+//             port_id: attrs.port_id,
+//             channel_id: attrs.channel_id,
+//             connection_id: attrs.connection_id,
+//             counterparty_port_id: attrs.counterparty_port_id,
+//             counterparty_channel_id: attrs.counterparty_channel_id,
+//         }
+//     }
+// }
 
 impl From<OpenTry> for IbcEvent {
     fn from(v: OpenTry) -> Self {
@@ -426,35 +468,56 @@ impl EventType for OpenTry {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenAck(pub Attributes);
+pub struct OpenAck{
+    height: Height,
+    port_id: PortId,
+    channel_id: Option<ChannelId>,
+    counterparty_channel_id: Option<ChannelId>,
+    pub connection_id: ConnectionId,
+    pub counterparty_port_id: PortId,
+}
 
 impl OpenAck {
-    pub fn attributes(&self) -> &Attributes {
-        &self.0
+    pub fn attributes(&self) -> Attributes {
+        Attributes {
+            height: self.height.clone(),
+            port_id: self.port_id.clone(),
+            channel_id: self.channel_id.clone(),
+            connection_id: self.connection_id.clone(),
+            counterparty_port_id: self.counterparty_port_id.clone(),
+            counterparty_channel_id: self.counterparty_channel_id.clone(),
+        }
     }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.0.channel_id.as_ref()
+        self.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
-        &self.0.port_id
+        &self.port_id
     }
     pub fn height(&self) -> Height {
-        self.0.height
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
+        self.height = height;
     }
 
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
-        self.0.counterparty_channel_id.as_ref()
+        self.counterparty_channel_id.as_ref()
     }
 }
 
-impl From<Attributes> for OpenAck {
-    fn from(attrs: Attributes) -> Self {
-        OpenAck(attrs)
-    }
-}
+// impl From<Attributes> for OpenAck {
+//     fn from(attrs: Attributes) -> Self {
+//         OpenAck {
+//             height: attrs.height,
+//             port_id: attrs.port_id,
+//             channel_id: attrs.channel_id,
+//             connection_id: attrs.connection_id,
+//             counterparty_port_id: attrs.counterparty_port_id,
+//             counterparty_channel_id: attrs.counterparty_channel_id,
+//         }
+//     }
+// }
 
 impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
@@ -469,31 +532,52 @@ impl EventType for OpenAck {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenConfirm(pub Attributes);
+pub struct OpenConfirm{
+    height: Height,
+    port_id: PortId,
+    channel_id: Option<ChannelId>,
+    pub connection_id: ConnectionId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: Option<ChannelId>,
+}
 
 impl OpenConfirm {
-    pub fn attributes(&self) -> &Attributes {
-        &self.0
+    pub fn attributes(&self) -> Attributes {
+        Attributes {
+            height: self.height.clone(),
+            port_id: self.port_id.clone(),
+            channel_id: self.channel_id.clone(),
+            connection_id: self.connection_id.clone(),
+            counterparty_port_id: self.counterparty_port_id.clone(),
+            counterparty_channel_id: self.counterparty_channel_id.clone(),
+        }
     }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.0.channel_id.as_ref()
+        self.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
-        &self.0.port_id
+        &self.port_id
     }
     pub fn height(&self) -> Height {
-        self.0.height
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
+        self.height = height;
     }
 }
 
-impl From<Attributes> for OpenConfirm {
-    fn from(attrs: Attributes) -> Self {
-        OpenConfirm(attrs)
-    }
-}
+// impl From<Attributes> for OpenConfirm {
+//     fn from(attrs: Attributes) -> Self {
+//         OpenConfirm{
+//             height: attrs.height,
+//             port_id: attrs.port_id,
+//             channel_id: attrs.channel_id,
+//             connection_id: attrs.connection_id,
+//             counterparty_port_id: attrs.counterparty_port_id,
+//             counterparty_channel_id: attrs.counterparty_channel_id,
+//         }
+//     }
+// }
 
 impl From<OpenConfirm> for IbcEvent {
     fn from(v: OpenConfirm) -> Self {
@@ -508,41 +592,67 @@ impl EventType for OpenConfirm {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct CloseInit(pub Attributes);
+pub struct CloseInit{
+    height: Height,
+    port_id: PortId,
+    channel_id: ChannelId,
+    pub connection_id: ConnectionId,
+    counterparty_port_id: PortId,
+    counterparty_channel_id: Option<ChannelId>,
+}
 
 impl CloseInit {
+    pub fn attributes(&self) -> Attributes {
+        Attributes {
+            height: self.height.clone(),
+            port_id: self.port_id.clone(),
+            channel_id: Some(self.channel_id.clone()),
+            connection_id: self.connection_id.clone(),
+            counterparty_port_id: self.counterparty_port_id.clone(),
+            counterparty_channel_id: self.counterparty_channel_id.clone(),
+        }
+    }
     pub fn port_id(&self) -> &PortId {
-        &self.0.port_id
+        &self.port_id
     }
 
     pub fn channel_id(&self) -> &ChannelId {
-        // FIXME(romac): Rework encoding of IbcEvents which use `Attributes`
-        self.0
-            .channel_id
-            .as_ref()
-            .expect("CloseInit should always have a channel_id")
+        &self.channel_id
     }
 
     pub fn counterparty_port_id(&self) -> &PortId {
-        &self.0.counterparty_port_id
+        &self.counterparty_port_id
     }
 
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
-        self.0.counterparty_channel_id.as_ref()
+        self.counterparty_channel_id.as_ref()
     }
 
     pub fn height(&self) -> Height {
-        self.0.height
+        self.height
     }
 
     pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
+        self.height = height;
     }
 }
 
-impl From<Attributes> for CloseInit {
-    fn from(attrs: Attributes) -> Self {
-        CloseInit(attrs)
+impl TryFrom<Attributes> for CloseInit {
+    type Error = EventError;
+    fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
+        if let Some(channel_id) = attrs.channel_id() {
+            Ok(CloseInit {
+                height: attrs.height,
+                port_id: attrs.port_id.clone(),
+                channel_id: channel_id.clone(),
+                connection_id: attrs.connection_id.clone(),
+                counterparty_port_id: attrs.counterparty_port_id.clone(),
+                counterparty_channel_id: attrs.counterparty_channel_id.clone(),
+            })
+        }
+        else {
+            Err(EventError::channel(Error::missing_channel_id()))
+        }
     }
 }
 
@@ -559,7 +669,7 @@ impl core::fmt::Display for CloseInit {
             "{} {} {:?}",
             self.height(),
             IbcEventType::CloseInitChannel.as_str(),
-            self.0
+            self.attributes()
         )
     }
 }
@@ -571,25 +681,49 @@ impl EventType for CloseInit {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct CloseConfirm(pub Attributes);
+pub struct CloseConfirm{
+    height: Height,
+    channel_id: Option<ChannelId>,
+    pub port_id: PortId,
+    pub connection_id: ConnectionId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: Option<ChannelId>,
+}
 
 impl CloseConfirm {
+    pub fn attributes(&self) -> Attributes {
+        Attributes {
+            height: self.height.clone(),
+            port_id: self.port_id.clone(),
+            channel_id: self.channel_id.clone(),
+            connection_id: self.connection_id.clone(),
+            counterparty_port_id: self.counterparty_port_id.clone(),
+            counterparty_channel_id: self.counterparty_channel_id.clone(),
+        }
+    }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.0.channel_id.as_ref()
+        self.channel_id.as_ref()
     }
     pub fn height(&self) -> Height {
-        self.0.height
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
+        self.height = height;
     }
 }
 
-impl From<Attributes> for CloseConfirm {
-    fn from(attrs: Attributes) -> Self {
-        CloseConfirm(attrs)
-    }
-}
+// impl From<Attributes> for CloseConfirm {
+//     fn from(attrs: Attributes) -> Self {
+//         CloseConfirm{ 
+//             height: attrs.height,
+//             port_id: attrs.port_id,
+//             channel_id: attrs.channel_id,
+//             connection_id: attrs.connection_id,
+//             counterparty_port_id: attrs.counterparty_port_id,
+//             counterparty_channel_id: attrs.counterparty_channel_id,
+//         }
+//     }
+// }
 
 impl From<CloseConfirm> for IbcEvent {
     fn from(v: CloseConfirm) -> Self {
@@ -603,11 +737,38 @@ impl EventType for CloseConfirm {
     }
 }
 
+macro_rules! impl_try_from_attribute_for_event {
+    ($($event:ty),+) => {
+        $(impl TryFrom<Attributes> for $event {
+            type Error = EventError;
+
+            fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
+                Ok(Self {
+                    height: attrs.height,
+                    port_id: attrs.port_id.clone(),
+                    channel_id: attrs.channel_id.clone(),
+                    connection_id: attrs.connection_id.clone(),
+                    counterparty_port_id: attrs.counterparty_port_id.clone(),
+                    counterparty_channel_id: attrs.counterparty_channel_id.clone(),
+                })
+            }
+        })+
+    };
+}
+
+impl_try_from_attribute_for_event!(
+    OpenInit,
+    OpenTry,
+    OpenAck,
+    OpenConfirm,
+    CloseConfirm
+);
+
 macro_rules! impl_from_ibc_to_abci_event {
     ($($event:ty),+) => {
         $(impl From<$event> for AbciEvent {
             fn from(v: $event) -> Self {
-                let attributes = Vec::<Tag>::from(v.0);
+                let attributes = Vec::<Tag>::from(v.attributes());
                 let type_str = <$event>::event_type().as_str().to_string();
                 AbciEvent {
                     type_str,
@@ -633,7 +794,7 @@ macro_rules! impl_try_from_raw_obj_for_event {
             type Error = EventError;
 
             fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-                Ok(Self(extract_attributes(&obj, Self::event_type().as_str())?))
+                Ok(extract_attributes(&obj, Self::event_type().as_str())?.try_into()?)
             }
         })+
     };
@@ -1006,28 +1167,28 @@ mod tests {
             counterparty_channel_id: Some("counterparty_test_channel".parse().unwrap()),
         };
         let mut abci_events = vec![];
-        let open_init = OpenInit::from(attributes.clone());
+        let open_init = OpenInit::try_from(attributes.clone()).unwrap();
         abci_events.push(AbciEvent::from(open_init.clone()));
-        let open_try = OpenTry::from(attributes.clone());
+        let open_try = OpenTry::try_from(attributes.clone()).unwrap();
         abci_events.push(AbciEvent::from(open_try.clone()));
-        let open_ack = OpenAck::from(attributes.clone());
+        let open_ack = OpenAck::try_from(attributes.clone()).unwrap();
         abci_events.push(AbciEvent::from(open_ack.clone()));
-        let open_confirm = OpenConfirm::from(attributes.clone());
+        let open_confirm = OpenConfirm::try_from(attributes.clone()).unwrap();
         abci_events.push(AbciEvent::from(open_confirm.clone()));
-        let close_init = CloseInit::from(attributes.clone());
+        let close_init = CloseInit::try_from(attributes.clone()).unwrap();
         abci_events.push(AbciEvent::from(close_init.clone()));
-        let close_confirm = CloseConfirm::from(attributes);
+        let close_confirm = CloseConfirm::try_from(attributes).unwrap();
         abci_events.push(AbciEvent::from(close_confirm.clone()));
 
         for event in abci_events {
             match try_from_tx(&event) {
                 Some(e) => match e {
-                    IbcEvent::OpenInitChannel(e) => assert_eq!(e.0, open_init.0),
-                    IbcEvent::OpenTryChannel(e) => assert_eq!(e.0, open_try.0),
-                    IbcEvent::OpenAckChannel(e) => assert_eq!(e.0, open_ack.0),
-                    IbcEvent::OpenConfirmChannel(e) => assert_eq!(e.0, open_confirm.0),
-                    IbcEvent::CloseInitChannel(e) => assert_eq!(e.0, close_init.0),
-                    IbcEvent::CloseConfirmChannel(e) => assert_eq!(e.0, close_confirm.0),
+                    IbcEvent::OpenInitChannel(e) => assert_eq!(e.attributes(), open_init.attributes()),
+                    IbcEvent::OpenTryChannel(e) => assert_eq!(e.attributes(), open_try.attributes()),
+                    IbcEvent::OpenAckChannel(e) => assert_eq!(e.attributes(), open_ack.attributes()),
+                    IbcEvent::OpenConfirmChannel(e) => assert_eq!(e.attributes(), open_confirm.attributes()),
+                    IbcEvent::CloseInitChannel(e) => assert_eq!(e.attributes(), close_init.attributes()),
+                    IbcEvent::CloseConfirmChannel(e) => assert_eq!(e.attributes(), close_confirm.attributes()),
                     _ => panic!("unexpected event type"),
                 },
                 None => panic!("converted event was wrong"),
