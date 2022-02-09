@@ -1055,7 +1055,7 @@ impl ChainEndpoint for CosmosSdkChain {
     /// Exits early if any health check fails, without doing any
     /// further checks.
     fn health_check(&self) -> Result<HealthCheck, Error> {
-        if let Err(e) = self.block_on(do_health_check(self)) {
+        if let Err(e) = do_health_check(self) {
             warn!("Health checkup for chain '{}' failed", self.id());
             warn!("    Reason: {}", e.detail());
             warn!("    Some Hermes features may not work in this mode!");
@@ -2462,13 +2462,13 @@ pub fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, V
     Ok((body, body_buf))
 }
 
-async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
+fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let chain_id = chain.id();
     let grpc_address = chain.grpc_addr.to_string();
     let rpc_address = chain.config.rpc_addr.to_string();
 
     // Checkup on the self-reported health endpoint
-    chain.rpc_client.health().await.map_err(|e| {
+    chain.block_on(chain.rpc_client.health()).map_err(|e| {
         Error::health_check_json_rpc(
             chain_id.clone(),
             rpc_address.clone(),
@@ -2491,13 +2491,13 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         return Err(Error::tx_indexing_disabled(chain_id.clone()));
     }
 
-    let version_specs = fetch_version_specs(&chain.config.id, &chain.grpc_addr).await?;
+    let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
 
     // Checkup on the underlying SDK & IBC-go versions
     if let Err(diagnostic) = compatibility::run_diagnostic(&version_specs) {
         return Err(Error::sdk_module_version(
             chain_id.clone(),
-            grpc_address.clone(),
+            grpc_address,
             diagnostic.to_string(),
         ));
     }
