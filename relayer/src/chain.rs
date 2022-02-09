@@ -3,7 +3,6 @@ use core::convert::TryFrom;
 
 use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::debug_span;
 
 pub use cosmos::CosmosSdkChain;
 
@@ -436,12 +435,6 @@ pub trait ChainEndpoint: Sized {
         sequence: Sequence,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, Proofs), Error> {
-        debug_span!(
-            "packet_proofs",
-            port = %port_id,
-            channel = %channel_id,
-            sequence = %sequence,
-        );
         let channel_proof = if packet_type == PacketMsgType::TimeoutOnClose {
             Some(
                 CommitmentProofBytes::try_from(
