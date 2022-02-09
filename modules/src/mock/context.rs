@@ -26,9 +26,10 @@ use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error as Ics04Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
-use crate::core::ics05_port::capabilities::Capability;
-use crate::core::ics05_port::context::PortReader;
+use crate::core::ics05_port::capabilities::{Capability, CapabilityName};
+use crate::core::ics05_port::context::{CapabilityReader, PortReader};
 use crate::core::ics05_port::error::Error as Ics05Error;
+use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::Ics26Context;
@@ -553,16 +554,31 @@ impl Ics26Context for MockContext {}
 
 impl Ics20Context for MockContext {}
 
-impl PortReader for MockContext {
-    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<Capability, Ics05Error> {
-        match self.port_capabilities.get(port_id) {
-            Some(cap) => Ok(cap.clone()),
-            None => Err(Ics05Error::unknown_port(port_id.clone())),
-        }
+impl CapabilityReader for MockContext {
+    fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, Ics05Error> {
+        todo!()
     }
 
-    fn authenticate(&self, _cap: &Capability, _port_id: &PortId) -> bool {
-        true
+    fn authenticate_capability(
+        &self,
+        _name: &CapabilityName,
+        _capability: &Capability,
+    ) -> Result<(), Ics05Error> {
+        Ok(())
+    }
+}
+
+impl PortReader for MockContext {
+    type ModuleId = ();
+
+    fn lookup_module_by_port(
+        &self,
+        port_id: &PortId,
+    ) -> Result<(Self::ModuleId, Capability), Error> {
+        match self.port_capabilities.get(port_id) {
+            Some(mod_cap) => Ok(((), mod_cap.clone())),
+            None => Err(Ics05Error::unknown_port(port_id.clone())),
+        }
     }
 }
 
@@ -607,8 +623,8 @@ impl ChannelReader for MockContext {
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics04Error> {
         match PortReader::lookup_module_by_port(self, port_id) {
-            Ok(key) => {
-                if !PortReader::authenticate(self, &key, port_id) {
+            Ok((_, key)) => {
+                if !PortReader::authenticate(self, port_id.clone(), &key) {
                     Err(Ics04Error::invalid_port_capability())
                 } else {
                     Ok(key)

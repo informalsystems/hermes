@@ -21,9 +21,6 @@ pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, 
 where
     Ctx: Ics26Context,
 {
-    // Create a clone, which will store each intermediary stage of applying txs.
-    let mut ctx_interim = ctx.clone();
-
     // A buffer for all the events, to be used as return value.
     let mut res: Vec<IbcEvent> = Vec::new();
 
@@ -32,13 +29,12 @@ where
         let envelope = decode(any_msg)?;
 
         // Process the envelope, and accumulate any events that were generated.
-        let mut output = dispatch(&mut ctx_interim, envelope)?;
+        let mut output = dispatch(ctx, envelope)?;
+
         // TODO: output.log and output.result are discarded
         res.append(&mut output.events);
     }
 
-    // No error has surfaced, so we now apply the changes permanently to the original context.
-    *ctx = ctx_interim;
     Ok(res)
 }
 
