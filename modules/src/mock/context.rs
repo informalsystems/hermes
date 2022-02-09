@@ -106,7 +106,7 @@ pub struct MockContext {
     packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     /// Maps ports to their capabilities
-    port_capabilities: BTreeMap<PortId, (String, Capability)>,
+    port_capabilities: BTreeMap<PortId, Capability>,
 
     /// Constant-size commitments to packets data fields
     packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
@@ -344,8 +344,7 @@ impl MockContext {
     }
 
     pub fn with_port_capability(mut self, port_id: PortId) -> Self {
-        self.port_capabilities
-            .insert(port_id, (String::default(), Capability::new()));
+        self.port_capabilities.insert(port_id, Capability::new());
         self
     }
 
@@ -513,8 +512,7 @@ impl MockContext {
     }
 
     pub fn add_port(&mut self, port_id: PortId) {
-        self.port_capabilities
-            .insert(port_id, (String::default(), Capability::new()));
+        self.port_capabilities.insert(port_id, Capability::new());
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
@@ -571,14 +569,14 @@ impl CapabilityReader for MockContext {
 }
 
 impl PortReader for MockContext {
-    type ModuleId = String;
+    type ModuleId = ();
 
     fn lookup_module_by_port(
         &self,
         port_id: &PortId,
     ) -> Result<(Self::ModuleId, Capability), Error> {
         match self.port_capabilities.get(port_id) {
-            Some(mod_cap) => Ok(mod_cap.clone()),
+            Some(mod_cap) => Ok(((), mod_cap.clone())),
             None => Err(Ics05Error::unknown_port(port_id.clone())),
         }
     }
