@@ -1,9 +1,8 @@
-use alloc::format;
-
 use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics05_port::error::Error;
 use crate::core::ics24_host::identifier::PortId;
 use crate::core::ics24_host::path::PortsPath;
+use crate::prelude::*;
 
 /// A context supplying all the necessary read-only dependencies for processing any information regarding a port.
 pub trait PortReader: CapabilityReader {
@@ -18,8 +17,7 @@ pub trait PortReader: CapabilityReader {
 
     /// Check if the specified port_id is already bounded
     fn is_bound(&self, port_id: PortId) -> bool {
-        self.get_capability(format!("{}", PortsPath(port_id)))
-            .is_ok()
+        self.get_capability(PortsPath(port_id).to_string()).is_ok()
     }
 
     /// Authenticate a capability key against a port_id by checking if the capability was previously
@@ -36,7 +34,7 @@ pub trait PortKeeper: CapabilityKeeper + PortReader {
         if self.is_bound(port_id.clone()) {
             Err(Error::port_already_bound(port_id))
         } else {
-            self.new_capability(format!("{}", PortsPath(port_id)))
+            self.new_capability(PortsPath(port_id).to_string())
         }
     }
 }
