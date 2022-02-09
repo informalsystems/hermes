@@ -24,15 +24,15 @@ pub(crate) fn process(
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
     // Unwrap the old connection end (if any) and its identifier.
-    let (mut new_connection_end, conn_id) = match msg.previous_connection_id() {
+    let (mut new_connection_end, conn_id) = match &msg.previous_connection_id {
         // A connection with this id should already exist. Search & validate.
         Some(prev_id) => {
             let old_connection_end = ctx.connection_end(prev_id)?;
 
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_connection_end.state_matches(&State::Init)
-                && old_connection_end.counterparty_matches(&msg.counterparty())
-                && old_connection_end.client_id_matches(msg.client_id())
+                && old_connection_end.counterparty_matches(&msg.counterparty)
+                && old_connection_end.client_id_matches(&msg.client_id)
                 && old_connection_end.delay_period() == msg.delay_period
             {
                 // A ConnectionEnd already exists and all validation passed.
@@ -51,9 +51,9 @@ pub(crate) fn process(
             // Build a new connection end as well as an identifier.
             let conn_end = ConnectionEnd::new(
                 State::Init,
-                msg.client_id().clone(),
-                msg.counterparty(),
-                msg.counterparty_versions(),
+                msg.client_id.clone(),
+                msg.counterparty.clone(),
+                msg.counterparty_versions.clone(),
                 msg.delay_period,
             );
             let id_counter = ctx.connection_counter()?;
@@ -71,28 +71,30 @@ pub(crate) fn process(
     // 1. Setup: build the ConnectionEnd as we expect to find it on the other party.
     let expected_conn = ConnectionEnd::new(
         State::Init,
-        msg.counterparty().client_id().clone(),
-        Counterparty::new(msg.client_id().clone(), None, ctx.commitment_prefix()),
-        msg.counterparty_versions(),
+        msg.counterparty.client_id().clone(),
+        Counterparty::new(msg.client_id.clone(), None, ctx.commitment_prefix()),
+        msg.counterparty_versions.clone(),
         msg.delay_period,
     );
 
     // 2. Pass the details to the verification function.
     verify_proofs(
         ctx,
-        msg.client_state(),
-        msg.proofs().height(),
+        msg.client_state.clone(),
+        msg.proofs.height(),
         &new_connection_end,
         &expected_conn,
-        msg.proofs(),
+        &msg.proofs,
     )?;
 
     // Transition the connection end to the new state & pick a version.
     new_connection_end.set_state(State::TryOpen);
 
     // Pick the version.
-    new_connection_end
-        .set_version(ctx.pick_version(ctx.get_compatible_versions(), msg.counterparty_versions())?);
+    new_connection_end.set_version(ctx.pick_version(
+        ctx.get_compatible_versions(),
+        msg.counterparty_versions.clone(),
+    )?);
 
     assert_eq!(new_connection_end.versions().len(), 1);
 
@@ -205,19 +207,19 @@ mod tests {
             },
             Test {
                 name: "Processing fails because the client misses the consensus state targeted by the proof".to_string(),
-                ctx: context.clone().with_client(msg_proof_height_missing.client_id(), Height::new(0, client_consensus_state_height)),
+                ctx: context.clone().with_client(&msg_proof_height_missing.client_id, Height::new(0, client_consensus_state_height)),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_proof_height_missing)),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters but has previous_connection_id".to_string(),
-                ctx: context.clone().with_client(msg_conn_try.client_id(), Height::new(0, client_consensus_state_height)),
+                ctx: context.clone().with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height)),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(msg_conn_try.client_id(), Height::new(0, client_consensus_state_height)),
+                ctx: context.with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height)),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.with_previous_connection_id(None))),
                 want_pass: true,
             },

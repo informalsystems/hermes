@@ -153,11 +153,11 @@ mod tests {
 
         let conn_end = ConnectionEnd::new(
             ConnectionState::Open,
-            msg_conn_init.client_id().clone(),
+            msg_conn_init.client_id.clone(),
             ConnectionCounterparty::new(
-                msg_conn_init.counterparty().client_id().clone(),
+                msg_conn_init.counterparty.client_id().clone(),
                 Some(ConnectionId::from_str("defaultConnection-1").unwrap()),
-                msg_conn_init.counterparty().prefix().clone(),
+                msg_conn_init.counterparty.prefix().clone(),
             ),
             get_compatible_versions(),
             msg_conn_init.delay_period,
@@ -224,7 +224,7 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_client(
-                        msg_conn_try.client_id(),
+                        &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
                     .with_port_capability(msg_chan_ack.port_id().clone())
@@ -242,7 +242,7 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_client(
-                        msg_conn_try.client_id(),
+                        &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid.clone(), conn_end.clone())
@@ -259,7 +259,7 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_client(
-                        msg_conn_try.client_id(),
+                        &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
                     .with_port_capability(msg_chan_ack.port_id().clone())
@@ -289,7 +289,7 @@ mod tests {
                 name: "Good parameters".to_string(),
                 ctx: context //  .clone()
                     .with_client(
-                        msg_conn_try.client_id(),
+                        &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid, conn_end)

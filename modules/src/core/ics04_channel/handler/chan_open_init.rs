@@ -115,8 +115,8 @@ mod tests {
 
         let init_conn_end = ConnectionEnd::new(
             ConnectionState::Init,
-            msg_conn_init.client_id().clone(),
-            msg_conn_init.counterparty().clone(),
+            msg_conn_init.client_id.clone(),
+            msg_conn_init.counterparty.clone(),
             get_compatible_versions(),
             msg_conn_init.delay_period,
         );

@@ -22,18 +22,6 @@ pub struct MsgConnectionOpenConfirm {
     pub signer: Signer,
 }
 
-impl MsgConnectionOpenConfirm {
-    /// Getter for accessing the connection identifier of this message.
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
-    }
-
-    /// Getter for accessing (borrow) the proofs in this message.
-    pub fn proofs(&self) -> &Proofs {
-        &self.proofs
-    }
-}
-
 impl Msg for MsgConnectionOpenConfirm {
     type ValidationError = Error;
     type Raw = RawMsgConnectionOpenConfirm;
