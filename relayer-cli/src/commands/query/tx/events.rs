@@ -40,7 +40,7 @@ impl Runnable for QueryTxEventsCmd {
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))
         {
-            Err(err) => return Output::error(err).exit(),
+            Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
 

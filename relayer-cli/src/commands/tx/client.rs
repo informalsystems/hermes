@@ -9,7 +9,8 @@ use ibc::events::IbcEvent;
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
-use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::foreign_client::{CreateParams, ForeignClient};
+use tendermint_light_client_verifier::types::TrustThreshold;
 
 use crate::application::app_config;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
@@ -23,6 +24,30 @@ pub struct TxCreateClientCmd {
 
     #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
+
+    /// Override the default clock drift specified in the configuration.
+    ///
+    /// The clock drift is a correction parameter. It helps deal with clocks
+    /// that are only approximately synchronized between the source and destination chains
+    /// of this client.
+    /// The destination chain for this client uses the clock drift parameter when deciding
+    /// to accept or reject a new header (originating from the source chain) for this client.
+    #[clap(short = 'd', long)]
+    clock_drift: Option<humantime::Duration>,
+
+    /// Override the trusting period specified in the config.
+    ///
+    /// The trusting period specifies how long a validator set is trusted for
+    /// (must be shorter than the chain's unbonding period).
+    #[clap(short = 'p', long)]
+    trusting_period: Option<humantime::Duration>,
+
+    /// Override the trust threshold specified in the configuration.
+    ///
+    /// The trust threshold defines what fraction of the total voting power of a known
+    /// and trusted validator set is sufficient for a commit to be accepted going forward.
+    #[clap(short = 't', long, parse(try_from_str = parse_trust_threshold))]
+    trust_threshold: Option<TrustThreshold>,
 }
 
 /// Sample to run this tx:
@@ -37,14 +62,20 @@ impl Runnable for TxCreateClientCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
 
+        let params = CreateParams {
+            clock_drift: self.clock_drift.map(Into::into),
+            trusting_period: self.trusting_period.map(Into::into),
+            trust_threshold: self.trust_threshold,
+        };
+
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client
-            .build_create_client_and_send()
+            .build_create_client_and_send(&params)
             .map_err(Error::foreign_client);
 
         match res {
@@ -78,14 +109,14 @@ impl Runnable for TxUpdateClientCmd {
 
         let dst_chain = match spawn_chain_runtime(&config, &self.dst_chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let src_chain_id =
             match dst_chain.query_client_state(&self.dst_client_id, ibc::Height::zero()) {
                 Ok(cs) => cs.chain_id(),
                 Err(e) => {
-                    return Output::error(format!(
+                    Output::error(format!(
                         "Query of client '{}' on chain '{}' failed with error: {}",
                         self.dst_client_id, self.dst_chain_id, e
                     ))
@@ -95,7 +126,7 @@ impl Runnable for TxUpdateClientCmd {
 
         let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let height = match self.target_height {
@@ -140,14 +171,14 @@ impl Runnable for TxUpgradeClientCmd {
 
         let dst_chain = match spawn_chain_runtime(&config, &self.chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let src_chain_id = match dst_chain.query_client_state(&self.client_id, ibc::Height::zero())
         {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
-                return Output::error(format!(
+                Output::error(format!(
                     "Query of client '{}' on chain '{}' failed with error: {}",
                     self.client_id, self.chain_id, e
                 ))
@@ -157,7 +188,7 @@ impl Runnable for TxUpgradeClientCmd {
 
         let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let client = ForeignClient::find(src_chain, dst_chain, &self.client_id)
@@ -186,7 +217,7 @@ impl Runnable for TxUpgradeClientsCmd {
         let config = app_config();
         let src_chain = match spawn_chain_runtime(&config, &self.src_chain_id) {
             Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let results = config
@@ -237,6 +268,22 @@ impl TxUpgradeClientsCmd {
         let client = ForeignClient::restore(client_id, dst_chain, src_chain);
         client.upgrade().map_err(Error::foreign_client)
     }
+}
+
+fn parse_trust_threshold(input: &str) -> Result<TrustThreshold, Error> {
+    let (num_part, denom_part) = input.split_once('/').ok_or_else(|| {
+        Error::cli_arg("expected a fractional argument, two numbers separated by '/'".into())
+    })?;
+    let numerator = num_part
+        .trim()
+        .parse()
+        .map_err(|_| Error::cli_arg("invalid numerator for the fraction".into()))?;
+    let denominator = denom_part
+        .trim()
+        .parse()
+        .map_err(|_| Error::cli_arg("invalid denominator for the fraction".into()))?;
+    TrustThreshold::new(numerator, denominator)
+        .map_err(|e| Error::cli_arg(format!("invalid trust threshold fraction: {}", e)))
 }
 
 type UpgradeClientResult = Result<Vec<IbcEvent>, Error>;
@@ -309,5 +356,25 @@ impl OutputBuffer {
         } else {
             Ok(all_events)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_trust_threshold;
+
+    #[test]
+    fn test_parse_trust_threshold() {
+        let threshold = parse_trust_threshold("3/5").unwrap();
+        assert_eq!(threshold.numerator(), 3);
+        assert_eq!(threshold.denominator(), 5);
+
+        let threshold = parse_trust_threshold("3 / 5").unwrap();
+        assert_eq!(threshold.numerator(), 3);
+        assert_eq!(threshold.denominator(), 5);
+
+        let threshold = parse_trust_threshold("\t3 / 5  ").unwrap();
+        assert_eq!(threshold.numerator(), 3);
+        assert_eq!(threshold.denominator(), 5);
     }
 }

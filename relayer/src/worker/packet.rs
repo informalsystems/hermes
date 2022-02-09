@@ -6,7 +6,7 @@ use tracing::{error, error_span, trace};
 
 use crate::chain::handle::ChainHandle;
 use crate::foreign_client::HasExpiredOrFrozenError;
-use crate::link::{error::LinkError, Link, RelaySummary};
+use crate::link::{error::LinkError, Link};
 use crate::object::Packet;
 use crate::telemetry;
 use crate::util::retry::{retry_with_index, RetryResult};
@@ -57,6 +57,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             dst_chain = %relay_path.dst_chain().id(),
         )
     };
+
     spawn_background_task(span, Some(Duration::from_millis(1000)), move || {
         let relay_path = &link.lock().unwrap().a_to_b;
 
@@ -75,6 +76,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
 
         telemetry!(packet_metrics(&path, &summary));
+        let _path = &path; // avoid unused variable warning when telemetry is disabled
 
         Ok(Next::Continue)
     })
@@ -209,6 +211,9 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     RetryResult::Ok(())
 }
+
+#[cfg(feature = "telemetry")]
+use crate::link::RelaySummary;
 
 #[cfg(feature = "telemetry")]
 fn packet_metrics(path: &Packet, summary: &RelaySummary) {

@@ -32,13 +32,11 @@ impl Runnable for QueryChannelEndCmd {
         let config = app_config();
 
         let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
+            None => Output::error(format!(
+                "chain '{}' not found in configuration file",
+                self.chain_id
+            ))
+            .exit(),
             Some(chain_config) => chain_config,
         };
 

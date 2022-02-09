@@ -173,8 +173,6 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
 
         Output::success(res).exit();
     }
-
-    Ok(())
 }
 
 impl Runnable for QueryChannelEndsCmd {

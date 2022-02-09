@@ -21,7 +21,7 @@ macro_rules! tx_chan_cmd {
         let chains = match ChainHandlePair::spawn(&config, &$self.src_chain_id, &$self.dst_chain_id)
         {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         // Retrieve the connection
@@ -30,7 +30,7 @@ macro_rules! tx_chan_cmd {
             .query_connection(&$self.dst_conn_id, Height::default())
         {
             Ok(connection) => connection,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let channel = $chan(chains, dst_connection);
@@ -78,7 +78,7 @@ impl Runnable for TxRawChanOpenInitCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         // Retrieve the connection
@@ -87,7 +87,7 @@ impl Runnable for TxRawChanOpenInitCmd {
             .query_connection(&self.dst_conn_id, Height::default())
         {
             Ok(connection) => connection,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let channel = Channel {

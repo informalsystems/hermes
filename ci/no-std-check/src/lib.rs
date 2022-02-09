@@ -2,13 +2,15 @@
 #![no_std]
 #![allow(unused_imports)]
 
+extern crate alloc;
+
 // Import the crates that we want to check if they are fully no-std compliance
 
-// #[cfg(feature = "ibc")]
-// use ibc;
-
-// #[cfg(feature = "ibc_proto")]
-// use ibc_proto;
+use ibc;
+use ibc_proto;
+use tendermint;
+use tendermint_proto;
+use tendermint_light_client_verifier;
 
 #[cfg(feature = "sp-core")]
 use sp_core;
@@ -21,71 +23,6 @@ use sp_runtime;
 
 #[cfg(feature = "sp-std")]
 use sp_std;
-
-// Supported Imports
-
-use bytes;
-use contracts;
-use crossbeam_channel;
-use ed25519;
-use ed25519_dalek;
-use flex_error;
-use futures;
-use impl_serde;
-use k256;
-use num_derive;
-use num_traits;
-use once_cell;
-use prost;
-use prost_types;
-use ripemd160;
-use ryu;
-use serde;
-use serde_bytes;
-use serde_derive;
-use serde_json;
-use serde_json_core;
-use serde_repr;
-use sha2;
-use signature;
-use static_assertions;
-use subtle;
-use subtle_encoding;
-use time;
-use tracing;
-use zeroize;
-
-// Unsupported Imports
-
-#[cfg(feature = "tonic")]
-use tonic;
-
-#[cfg(feature = "socket2")]
-use socket2;
-
-#[cfg(feature = "ics23")]
-use ics23;
-
-#[cfg(feature = "getrandom")]
-use getrandom;
-
-#[cfg(feature = "thiserror")]
-use thiserror;
-
-#[cfg(feature = "regex")]
-use regex;
-
-#[cfg(feature = "sled")]
-use sled;
-
-#[cfg(feature = "tokio")]
-use tokio;
-
-#[cfg(feature = "toml")]
-use toml;
-
-#[cfg(feature = "url")]
-use url;
 
 use core::panic::PanicInfo;
 
@@ -107,7 +44,7 @@ error[E0152]: found duplicate lang item `panic_impl`
 ```
 
  */
-#[cfg(not(feature = "use-substrate"))]
+#[cfg(feature="panic-handler")]
 #[panic_handler]
 #[no_mangle]
 fn panic(_info: &PanicInfo) -> ! {
