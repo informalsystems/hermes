@@ -5,7 +5,7 @@ use crate::prelude::*;
 use crate::types::tagged::mono::Tagged;
 
 use super::itf::InformalTrace;
-use super::state::{Action, State};
+use super::state::{Action, ChainId, DenomId, State};
 
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
@@ -54,7 +54,7 @@ fn get_wallet<'a, ChainC>(
 
 fn get_denom<'a, ChainC>(
     chain: &'a Tagged<ChainC, &FullNode>,
-    denom: u64,
+    denom: DenomId,
 ) -> Tagged<ChainC, &'a Denom> {
     match denom {
         1 => chain.denom(),
@@ -65,7 +65,7 @@ fn get_denom<'a, ChainC>(
 
 fn get_port_channel_id<ChainA, ChainB, ChainC, ChainD>(
     channel: &ConnectedChannel<ChainA, ChainB>,
-    chain_id: u64,
+    chain_id: ChainId,
 ) -> (
     DualTagged<ChainC, ChainD, &PortId>,
     DualTagged<ChainC, ChainD, &ChannelId>,
@@ -106,10 +106,10 @@ impl BinaryChannelTest for IbcTransferMBT {
 
         let itf_json = std::fs::read_to_string(itf_path).expect("itf file does not exist. did you run `apalache check --inv=Invariant --run-dir=run main.tla` first?");
 
-        let t: InformalTrace<State> =
+        let trace: InformalTrace<State> =
             serde_json::from_str(&itf_json).expect("deserialization error");
 
-        for state in t.states {
+        for state in trace.states {
             match state.action {
                 Action::Null => {
                     info!("[Init] Initial State");
@@ -158,6 +158,10 @@ impl BinaryChannelTest for IbcTransferMBT {
                     let (port_source, channel_id_source) =
                         get_port_channel_id(&channel, packet.channel.source.chain_id);
 
+                    let balance_source = node_source
+                        .chain_driver()
+                        .query_balance(&wallet_source.address(), &denom_source)?;
+
                     info!(
                         "[IBCTransferSendPacket] Sending IBC transfer from chain {} to chain {} with amount of {} {}",
                         node_source.chain_id(),
@@ -172,6 +176,12 @@ impl BinaryChannelTest for IbcTransferMBT {
                         &wallet_source.address(),
                         &wallet_target.address(),
                         amount_source_to_target,
+                        &denom_source,
+                    )?;
+
+                    node_source.chain_driver().assert_eventual_wallet_amount(
+                        &wallet_source,
+                        balance_source - amount_source_to_target,
                         &denom_source,
                     )?;
                 }
@@ -210,26 +220,13 @@ impl BinaryChannelTest for IbcTransferMBT {
                     let node_target: Tagged<ChainB, _> =
                         get_chain(&chains, packet.channel.target.chain_id);
 
-                    let wallets_source = node_source.wallets();
-
-                    let wallet_source = get_wallet(&wallets_source, packet.from);
                     let denom_source = get_denom(&node_source, packet.denom);
                     let amount_source_to_target = packet.amount;
-
-                    let balance_source = node_source
-                        .chain_driver()
-                        .query_balance(&wallet_source.address(), &denom_source)?;
 
                     info!(
                         "[IBCTransferAcknowledgePacket] Waiting for user on chain {} to confirm IBC transferred amount of {} {}",
                         node_source.chain_id(), amount_source_to_target, denom_source
                     );
-
-                    node_source.chain_driver().assert_eventual_wallet_amount(
-                        &wallet_source,
-                        balance_source - amount_source_to_target,
-                        &denom_source,
-                    )?;
 
                     info!(
                         "[IBCTransferAcknowledgePacket] Successfully performed IBC transfer from chain {} to chain {}",
