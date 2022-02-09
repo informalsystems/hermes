@@ -498,11 +498,21 @@ define_error! {
             { chain_id: ChainId }
             |e| {
                 format_args!(
-                    "staking module of chain '{}' does not maintain any historical entries \
+                    "staking module for chain '{}' does not maintain any historical entries \
                     (`historical_entries` staking params is set to 0)",
                     e.chain_id
                 )
-            }
+            },
+
+
+        TxIndexingDisabled
+            { chain_id: ChainId }
+            |e| {
+                format_args!(
+                    "transaction indexing for chain '{}' is disabled (`node_info.other.tx_index` is off)",
+                    e.chain_id
+                )
+            },
     }
 }
 

@@ -15,14 +15,17 @@ use bitcoin::hashes::hex::ToHex;
 use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
-use tendermint::abci::{Code, Event, Path as TendermintABCIPath};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params as ConsensusParams;
+use tendermint::{
+    abci::{Code, Event, Path as TendermintABCIPath},
+    node::info::TxIndexStatus,
+};
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
-use tendermint_rpc::query::{EventType, Query};
+use tendermint_rpc::query::Query;
 use tendermint_rpc::Url;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
@@ -2478,28 +2481,15 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     // local header information is stored in the IBC state and therefore client
     // proofs that are part of the connection handshake messages can be verified.
     if chain.historical_entries()? == 0 {
-        return Err(Error::no_historical_entries(chain.id().clone()));
+        return Err(Error::no_historical_entries(chain_id.clone()));
     }
 
-    // Checkup on transaction indexing
-    chain
-        .rpc_client
-        .tx_search(
-            Query::from(EventType::NewBlock),
-            false,
-            1,
-            1,
-            Order::Ascending,
-        )
-        .await
-        .map_err(|e| {
-            Error::health_check_json_rpc(
-                chain_id.clone(),
-                rpc_address.clone(),
-                "/tx_search".to_string(),
-                e,
-            )
-        })?;
+    let status = chain.status()?;
+
+    // Check that transaction indexing is enabled
+    if status.node_info.other.tx_index != TxIndexStatus::On {
+        return Err(Error::tx_indexing_disabled(chain_id.clone()));
+    }
 
     let version_specs = fetch_version_specs(&chain.config.id, &chain.grpc_addr).await?;
 
