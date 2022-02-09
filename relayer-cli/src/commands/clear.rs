@@ -16,26 +16,26 @@ use crate::error::Error;
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum ClearCmds {
     /// Clear outstanding packets (i.e., packet-recv and packet-ack)
-    /// on a given channel in both directions.
+    /// on a given channel in both directions. The channel is identified
+    /// by the chain, port, and channel IDs at one of its ends.
     Packets(ClearPacketsCmd),
 }
 
 #[derive(Debug, Parser)]
 pub struct ClearPacketsCmd {
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(required = true, help = "identifier of the port")]
     port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source channel")]
+    #[clap(required = true, help = "identifier of the channel")]
     channel_id: ChannelId,
 }
 
 impl Runnable for ClearPacketsCmd {
     fn run(&self) {
         let config = app_config();
-
 
         let chains = match spawn_chain_counterparty::<ProdChainHandle>(
             &config,
