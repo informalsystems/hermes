@@ -2026,13 +2026,29 @@ impl ChainEndpoint for CosmosSdkChain {
                 sequence,
             }
             .into(),
-            PacketMsgType::TimeoutUnordered => ReceiptsPath {
-                port_id,
-                channel_id,
-                sequence,
-            }
-            .into(),
-            PacketMsgType::TimeoutOrdered => SeqRecvsPath(port_id, channel_id).into(),
+            PacketMsgType::TimeoutUnordered => {
+                debug!(
+                    "XXXX getting UNORDERED timout proof with SeqRecvsPath {}, {}, {}",
+                    port_id,
+                    channel_id,
+                    sequence
+                );
+                ReceiptsPath {
+                    port_id,
+                    channel_id,
+                    sequence,
+                }
+                    .into()
+            },
+            PacketMsgType::TimeoutOrdered => {
+                debug!(
+                    "XXXX getting ORDRED timout proof with SeqRecvsPath {}, {}",
+                    port_id,
+                    channel_id,
+                );
+
+                SeqRecvsPath(port_id, channel_id).into()
+            },
             PacketMsgType::TimeoutOnClose => ReceiptsPath {
                 port_id,
                 channel_id,

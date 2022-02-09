@@ -1121,6 +1121,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<Option<Any>, LinkError> {
         let dst_channel_id = self.dst_channel_id();
 
+        debug!("build timeout for channel")
         let (packet_type, next_sequence_received) = if self.ordered_channel() {
             let next_seq = self
                 .dst_chain()

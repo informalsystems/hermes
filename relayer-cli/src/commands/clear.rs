@@ -3,11 +3,12 @@ use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
+use ibc_relayer::chain::handle::ProdChainHandle;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
 
 use crate::application::app_config;
-use crate::cli_utils::ChainHandlePair;
+use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
 use crate::error::Error;
 
@@ -21,9 +22,6 @@ pub enum ClearCmds {
 
 #[derive(Debug, Parser)]
 pub struct ClearPacketsCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
-    counterparty_chain_id: ChainId,
-
     #[clap(required = true, help = "identifier of the source chain")]
     chain_id: ChainId,
 
@@ -38,11 +36,16 @@ impl Runnable for ClearPacketsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains =
-            match ChainHandlePair::spawn(&config, &self.chain_id, &self.counterparty_chain_id) {
-                Ok(chains) => chains,
-                Err(e) => Output::error(format!("{}", e)).exit(),
-            };
+
+        let chains = match spawn_chain_counterparty::<ProdChainHandle>(
+            &config,
+            &self.chain_id,
+            &self.port_id,
+            &self.channel_id,
+        ) {
+            Ok((chains, _)) => chains,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
 
         let mut ev_list = vec![];
 
