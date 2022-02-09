@@ -366,7 +366,7 @@ pub struct OpenInit {
 impl OpenInit {
     pub fn attributes(&self) -> Attributes {
         Attributes {
-            height: self.height.clone(),
+            height: self.height,
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
             connection_id: self.connection_id.clone(),
@@ -413,7 +413,7 @@ pub struct OpenTry {
 impl OpenTry {
     pub fn attributes(&self) -> Attributes {
         Attributes {
-            height: self.height.clone(),
+            height: self.height,
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
             connection_id: self.connection_id.clone(),
@@ -460,7 +460,7 @@ pub struct OpenAck {
 impl OpenAck {
     pub fn attributes(&self) -> Attributes {
         Attributes {
-            height: self.height.clone(),
+            height: self.height,
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
             connection_id: self.connection_id.clone(),
@@ -511,7 +511,7 @@ pub struct OpenConfirm {
 impl OpenConfirm {
     pub fn attributes(&self) -> Attributes {
         Attributes {
-            height: self.height.clone(),
+            height: self.height,
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
             connection_id: self.connection_id.clone(),
@@ -558,7 +558,7 @@ pub struct CloseInit {
 impl CloseInit {
     pub fn attributes(&self) -> Attributes {
         Attributes {
-            height: self.height.clone(),
+            height: self.height,
             port_id: self.port_id.clone(),
             channel_id: Some(self.channel_id.clone()),
             connection_id: self.connection_id.clone(),
@@ -646,7 +646,7 @@ pub struct CloseConfirm {
 impl CloseConfirm {
     pub fn attributes(&self) -> Attributes {
         Attributes {
-            height: self.height.clone(),
+            height: self.height,
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
             connection_id: self.connection_id.clone(),
@@ -728,7 +728,7 @@ macro_rules! impl_try_from_raw_obj_for_event {
             type Error = EventError;
 
             fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-                Ok(extract_attributes(&obj, Self::event_type().as_str())?.try_into()?)
+                extract_attributes(&obj, Self::event_type().as_str())?.try_into()
             }
         })+
     };
