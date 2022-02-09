@@ -39,7 +39,7 @@ pub struct CapabilityName(String);
 impl CapabilityName {
     pub fn new(s: impl AsRef<str>) -> Result<Self, InvalidCapabilityName> {
         let s = s.as_ref().trim();
-        if s.is_empty() {
+        if !s.is_empty() {
             Ok(Self(s.to_owned()))
         } else {
             Err(InvalidCapabilityName)
