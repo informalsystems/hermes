@@ -492,7 +492,17 @@ define_error! {
 
         EmptyQueryAccount
             { address: String }
-            |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) }
+            |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) },
+
+        NoHistoricalEntries
+            { chain_id: ChainId }
+            |e| {
+                format_args!(
+                    "staking module of chain '{}' does not maintain any historical entries \
+                    (`historical_entries` staking params is set to 0)",
+                    e.chain_id
+                )
+            }
     }
 }
 

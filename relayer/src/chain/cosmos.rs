@@ -151,6 +151,11 @@ pub struct CosmosSdkChain {
 }
 
 impl CosmosSdkChain {
+    /// Get a reference to the configuration for this chain.
+    pub fn config(&self) -> &ChainConfig {
+        &self.config
+    }
+
     /// Performs validation of chain-specific configuration
     /// parameters against the chain's genesis configuration.
     ///
@@ -273,10 +278,6 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    fn rpc_client(&self) -> &HttpClient {
-        &self.rpc_client
-    }
-
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
@@ -289,10 +290,6 @@ impl CosmosSdkChain {
             unbonding_time.seconds as u64,
             unbonding_time.nanos as u32,
         ))
-    }
-
-    pub fn config(&self) -> &ChainConfig {
-        &self.config
     }
 
     /// The number of historical entries kept by this chain
@@ -309,7 +306,7 @@ impl CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_consensus_params");
 
         Ok(self
-            .block_on(self.rpc_client().genesis())
+            .block_on(self.rpc_client.genesis())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
             .consensus_params)
     }
@@ -388,7 +385,7 @@ impl CosmosSdkChain {
             .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
         self.block_on(broadcast_tx_sync(
-            self.rpc_client(),
+            &self.rpc_client,
             &self.config.rpc_addr,
             tx_bytes,
         ))
@@ -916,10 +913,13 @@ impl CosmosSdkChain {
         &self.config.memo_prefix
     }
 
-    /// Query the chain status via an RPC query
+    /// Query the chain status via an RPC query.
+    ///
+    /// Returns an error if the node is still syncing and has not caught up,
+    /// ie. if `sync_info.catching_up` is `true`.
     fn status(&self) -> Result<status::Response, Error> {
         let status = self
-            .block_on(self.rpc_client().status())
+            .block_on(self.rpc_client.status())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         if status.sync_info.catching_up {
@@ -938,6 +938,7 @@ impl CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_latest_height");
 
         let status = self.status()?;
+
         Ok(ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
             revision_height: u64::from(status.sync_info.latest_block_height),
@@ -2317,7 +2318,7 @@ async fn abci_query(
 
     // Use the Tendermint-rs RPC client to do the query.
     let response = chain
-        .rpc_client()
+        .rpc_client
         .abci_query(Some(path), data.into_bytes(), height, prove)
         .await
         .map_err(|e| Error::rpc(chain.config.rpc_addr.clone(), e))?;
@@ -2472,6 +2473,13 @@ async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             e,
         )
     })?;
+
+    // Check that the staking module maintains some historical entries, meaning that
+    // local header information is stored in the IBC state and therefore client
+    // proofs that are part of the connection handshake messages can be verified.
+    if chain.historical_entries()? == 0 {
+        return Err(Error::no_historical_entries(chain.id().clone()));
+    }
 
     // Checkup on transaction indexing
     chain
