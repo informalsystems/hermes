@@ -25,7 +25,7 @@ pub trait PortReader: CapabilityReader {
     /// Authenticate a capability key against a port_id by checking if the capability was previously
     /// generated and bound to the specified port
     fn authenticate(&self, port_id: PortId, capability: &Capability) -> bool {
-        self.authenticate_capability(format!("{}", PortsPath(port_id)), capability)
+        self.authenticate_capability(PortsPath(port_id).to_string(), capability)
             .is_ok()
     }
 }
