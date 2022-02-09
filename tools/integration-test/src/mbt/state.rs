@@ -2,12 +2,13 @@ use serde::{Deserialize, Serialize};
 
 use super::itf::{Map, Set};
 
-type ChainId = String;
+type ChainId = u64;
 type PortId = String;
-type DenomId = String;
-type ChannelId = isize;
-type AccountId = isize;
-type PacketId = isize;
+type DenomId = ChainId;
+type ChannelId = u64;
+type AccountId = u64;
+type PacketId = u64;
+type Balance = u64;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,7 +33,7 @@ pub struct Packet {
     pub from: AccountId,
     pub to: AccountId,
     pub denom: DenomId,
-    pub amount: isize,
+    pub amount: Balance,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -59,8 +60,8 @@ pub struct Chain {
     pub ports: Set<PortId>,
     pub channel: Map<ChannelId, Channel>,
     pub active_channels: Set<ChannelId>,
-    pub bank: Map<AccountId, Map<DenomId, isize>>,
-    pub supply: Map<DenomId, isize>,
+    pub bank: Map<AccountId, Map<DenomId, Balance>>,
+    pub supply: Map<DenomId, Balance>,
     pub local_packets: LocalPackets,
     pub remote_packets: Map<ChannelId, Map<PacketId, Packet>>,
     pub ics20: Ics20,
@@ -74,10 +75,11 @@ pub struct Chain {
 pub enum Action {
     Null,
     LocalTransfer {
+        chain_id: ChainId,
         source: AccountId,
         target: AccountId,
         denom: DenomId,
-        amount: isize,
+        amount: Balance,
     },
     CreateChannel {
         chains: Set<ChainId>,
