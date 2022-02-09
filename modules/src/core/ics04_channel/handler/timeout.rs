@@ -99,11 +99,11 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
         }
         verify_next_sequence_recv(
             ctx,
-            msg.proofs().height(),
+            msg.proofs.height(),
             &connection_end,
             packet.clone(),
             msg.next_sequence_recv,
-            &msg.proofs.clone(),
+            &msg.proofs,
         )?;
 
         source_channel_end.state = State::Closed;
@@ -116,10 +116,10 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
     } else {
         verify_packet_receipt_absence(
             ctx,
-            msg.proofs().height(),
+            msg.proofs.height(),
             &connection_end,
             packet.clone(),
-            &msg.proofs().clone(),
+            &msg.proofs,
         )?;
 
         PacketResult::Timeout(TimeoutPacketResult {

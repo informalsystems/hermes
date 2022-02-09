@@ -28,16 +28,6 @@ impl MsgChannelOpenInit {
             signer,
         }
     }
-
-    /// Getter: borrow the `port_id` from this message.
-    pub fn port_id(&self) -> &PortId {
-        &self.port_id
-    }
-
-    /// Getter: borrow the `channelEnd` from this message.
-    pub fn channel(&self) -> &ChannelEnd {
-        &self.channel
-    }
 }
 
 impl Msg for MsgChannelOpenInit {
