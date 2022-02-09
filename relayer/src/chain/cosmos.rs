@@ -18,7 +18,7 @@ use prost_types::Any;
 use tendermint::abci::{Code, Event, Path as TendermintABCIPath};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
-use tendermint::consensus::Params;
+use tendermint::consensus::Params as ConsensusParams;
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
@@ -61,6 +61,7 @@ use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequ
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
 use ibc_proto::cosmos::base::v1beta1::Coin;
+use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{
     AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, SimulateResponse, Tx, TxBody,
@@ -244,9 +245,10 @@ impl CosmosSdkChain {
         Ok(())
     }
 
-    /// The unbonding period of this chain
-    pub fn unbonding_period(&self) -> Result<Duration, Error> {
-        crate::time!("unbonding_period");
+    /// Query the chain staking parameters
+    pub fn query_staking_params(&self) -> Result<StakingParams, Error> {
+        crate::time!("query_staking_params");
+        crate::telemetry!(query, self.id(), "query_staking_params");
 
         let mut client = self
             .block_on(
@@ -263,27 +265,46 @@ impl CosmosSdkChain {
             .block_on(client.params(request))
             .map_err(Error::grpc_status)?;
 
-        let res = response
+        let params = response
             .into_inner()
             .params
-            .ok_or_else(|| Error::grpc_response_param("none staking params".to_string()))?
-            .unbonding_time
-            .ok_or_else(|| Error::grpc_response_param("none unbonding time".to_string()))?;
+            .ok_or_else(|| Error::grpc_response_param("no staking params".to_string()))?;
 
-        Ok(Duration::new(res.seconds as u64, res.nanos as u32))
+        Ok(params)
     }
 
     fn rpc_client(&self) -> &HttpClient {
         &self.rpc_client
     }
 
+    /// The unbonding period of this chain
+    pub fn unbonding_period(&self) -> Result<Duration, Error> {
+        crate::time!("unbonding_period");
+
+        let unbonding_time = self.query_staking_params()?.unbonding_time.ok_or_else(|| {
+            Error::grpc_response_param("no unbonding time in staking params".to_string())
+        })?;
+
+        Ok(Duration::new(
+            unbonding_time.seconds as u64,
+            unbonding_time.nanos as u32,
+        ))
+    }
+
     pub fn config(&self) -> &ChainConfig {
         &self.config
     }
 
+    /// The number of historical entries kept by this chain
+    pub fn historical_entries(&self) -> Result<u32, Error> {
+        crate::time!("historical_entries");
+
+        self.query_staking_params().map(|p| p.historical_entries)
+    }
+
     /// Query the consensus parameters via an RPC query
     /// Specific to the SDK and used only for Tendermint client create
-    pub fn query_consensus_params(&self) -> Result<Params, Error> {
+    pub fn query_consensus_params(&self) -> Result<ConsensusParams, Error> {
         crate::time!("query_consensus_params");
         crate::telemetry!(query, self.id(), "query_consensus_params");
 
