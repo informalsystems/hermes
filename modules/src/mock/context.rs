@@ -158,7 +158,7 @@ impl MockContext {
 
         assert_ne!(
             latest_height.revision_height, 0,
-            "The chain must have a non-zero max_history_size"
+            "The chain must have a non-zero revision_height"
         );
 
         // Compute the number of blocks to store.
@@ -1469,7 +1469,7 @@ mod tests {
             ChainId::new("mockgaia".to_string(), 1),
             HostType::Mock,
             1,
-            Height::new(1, 0),
+            Height::new(1, 1),
         )
         .with_router(r.build());
 
