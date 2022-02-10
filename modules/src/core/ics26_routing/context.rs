@@ -105,4 +105,7 @@ pub trait Router {
     type ModuleId: ?Sized;
 
     fn get_route_mut(&mut self, module_id: impl Borrow<Self::ModuleId>) -> Option<&mut dyn Module>;
+
+    /// Returns true if the `Router` has a `Module` registered against the specified `ModuleId`
+    fn has_route(&self, module_id: impl Borrow<Self::ModuleId>) -> bool;
 }

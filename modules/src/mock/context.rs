@@ -589,6 +589,10 @@ impl Router for MockRouter {
     fn get_route_mut(&mut self, module_id: impl Borrow<Self::ModuleId>) -> Option<&mut dyn Module> {
         self.0.get_mut(module_id.borrow()).and_then(Arc::get_mut)
     }
+
+    fn has_route(&self, module_id: impl Borrow<Self::ModuleId>) -> bool {
+        self.0.get(module_id.borrow()).is_some()
+    }
 }
 
 impl Ics26Context for MockContext {
