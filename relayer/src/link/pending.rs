@@ -2,7 +2,7 @@ use core::iter::Iterator;
 use core::time::Duration;
 use std::time::Instant;
 
-use tracing::{debug, error, trace};
+use tracing::{debug, error, trace, trace_span};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
@@ -69,7 +69,6 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
     pub fn insert_new_pending_tx(&self, r: AsyncReply, od: OperationalData) {
         let mut tx_hashes = Vec::new();
         let mut error_events = Vec::new();
-        let relay_path = self.relay_path();
 
         for response in r.responses.into_iter() {
             if response.code.is_err() {
@@ -80,9 +79,19 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 // transactions have been confirmed.
                 // This is not ideal, but is just to follow the previous synchronous
                 // behavior of handling the OperationalData.
+
+                let span = trace_span!(
+                    "inserting new pending txs",
+                    chain = %self.chain_id(),
+                    counterparty_chain = %self.counterparty_chain_id,
+                    port = %self.port_id,
+                    channel = %self.channel_id,
+                );
+
+                let _guard = span.enter();
+
                 trace!(
-                    "[{}] putting error response in error event queue: {:?} ",
-                    &relay_path,
+                    "putting error response in error event queue: {:?} ",
                     response
                 );
 
@@ -124,24 +133,12 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         Ok(Some(all_events))
     }
 
-    fn relay_path(&self) -> String {
-        format!(
-            "{}:{}/{} -> {}",
-            self.counterparty_chain_id,
-            self.port_id,
-            self.channel_id,
-            self.chain_id()
-        )
-    }
-
     /// Try and process one pending transaction if available.
     pub fn process_pending(
         &self,
         timeout: Duration,
         resubmit: impl FnOnce(OperationalData) -> Result<AsyncReply, LinkError>,
     ) -> Result<Option<RelaySummary>, LinkError> {
-        let relay_path = self.relay_path();
-
         // We process pending transactions in a FIFO manner, so take from
         // the front of the queue.
         if let Some(pending) = self.pending_queue.pop_front() {
@@ -152,8 +149,18 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 return Ok(Some(RelaySummary::from_events(pending.error_events)));
             }
 
+            let span = trace_span!(
+                "processing pending tx",
+                chain = %self.chain_id(),
+                counterparty_chain = %self.counterparty_chain_id,
+                port = %self.port_id,
+                channel = %self.channel_id,
+            );
+
+            let _guard = span.enter();
+
             // Process the given pending transaction.
-            trace!("[{}] trying to confirm {} ", &relay_path, tx_hashes);
+            trace!("trying to confirm {} ", tx_hashes);
 
             // Check for TX events for the given pending transaction hashes.
             let events_result = self.check_tx_events(tx_hashes);
@@ -162,17 +169,13 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                     // There is no events for the associated transactions.
                     // This means the transaction has not yet been committed.
 
-                    trace!(
-                        "[{}] transaction is not yet committed: {} ",
-                        &relay_path,
-                        tx_hashes
-                    );
+                    trace!("transaction is not yet committed: {} ", tx_hashes);
 
                     if submit_time.elapsed() > timeout {
                         // The submission time for the transaction has exceeded the
                         // timeout threshold. Returning Outcome::Timeout for the
                         // relayer to resubmit the transaction to the chain again.
-                        error!("[{}] timed out while confirming {}", &relay_path, tx_hashes);
+                        error!("timed out while confirming {}", tx_hashes);
 
                         let resubmit_res = resubmit(pending.original_od.clone());
 
@@ -200,8 +203,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                     // to the chain.
 
                     debug!(
-                        "[{}] confirmed after {:#?}: {} ",
-                        &relay_path,
+                        "confirmed after {:#?}: {} ",
                         pending.submit_time.elapsed(),
                         tx_hashes
                     );
@@ -218,8 +220,8 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                     // with the chain endpoint.
 
                     error!(
-                        "[{}] error querying for tx hashes {}: {}. will retry again later",
-                        &relay_path, tx_hashes, e
+                        "error querying for tx hashes {}: {}. will retry again later",
+                        tx_hashes, e
                     );
 
                     // Push it to the back of the pending queue to process it
@@ -232,8 +234,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
             if !self.pending_queue.is_empty() {
                 trace!(
-                    "[{}] total pending transactions left: {}",
-                    &relay_path,
+                    "total pending transactions left: {}",
                     self.pending_queue.len()
                 );
             }
