@@ -96,6 +96,7 @@ define_error! {
             },
         MissingChannelId
             | _ | { "missing channel id" },
+
         MissingCounterparty
             | _ | { "missing counterparty" },
 
