@@ -569,7 +569,7 @@ impl RouterBuilder for MockRouterBuilder {
     type ModuleId = String;
 
     fn add_route(mut self, module_id: Self::ModuleId, module: impl Module) -> Result<Self, String> {
-        match self.0 .0.insert(MockModuleId(module_id), Arc::new(module)) {
+        match self.0 .0.insert(module_id, Arc::new(module)) {
             None => Ok(self),
             Some(_) => Err("Duplicate module_id".to_owned()),
         }
@@ -1461,9 +1461,11 @@ mod tests {
                 Ok(())
             }
         }
-        let m = MockModule;
-        let mut r = MockRouterBuilder::default();
-        r.add_route("mockmodule".to_owned(), m).unwrap();
+
+        let r = MockRouterBuilder::default()
+            .add_route("mockmodule".to_owned(), MockModule)
+            .unwrap()
+            .build();
 
         let mut ctx = MockContext::new(
             ChainId::new("mockgaia".to_string(), 1),
@@ -1471,7 +1473,7 @@ mod tests {
             1,
             Height::new(1, 1),
         )
-        .with_router(r.build());
+        .with_router(r);
 
         let m = ctx.router.get_route_mut("mockmodule");
         let _ = m
