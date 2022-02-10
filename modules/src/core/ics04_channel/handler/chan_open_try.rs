@@ -88,7 +88,7 @@ pub(crate) fn process(
     }
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id.clone())?;
+    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
 
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.

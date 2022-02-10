@@ -49,7 +49,7 @@ pub fn process(
         client_id: client_id.clone(),
         client_type: msg.client_state.client_type(),
         client_state: msg.client_state.clone(),
-        consensus_state: msg.consensus_state.clone(),
+        consensus_state: msg.consensus_state,
         processed_time: ctx.host_timestamp(),
         processed_height: ctx.host_height(),
     });

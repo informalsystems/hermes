@@ -22,7 +22,7 @@ pub(crate) fn process(
     // A connection end must be in TryOpen state; otherwise return error.
     if !conn_end.state_matches(&State::TryOpen) {
         // Old connection end is in incorrect state, propagate the error.
-        return Err(Error::connection_mismatch(msg.connection_id.clone()));
+        return Err(Error::connection_mismatch(msg.connection_id));
     }
 
     // Verify proofs. Assemble the connection end as we expect to find it on the counterparty.
@@ -55,7 +55,7 @@ pub(crate) fn process(
     conn_end.set_state(State::Open);
 
     let result = ConnectionResult {
-        connection_id: msg.connection_id.clone(),
+        connection_id: msg.connection_id,
         connection_id_state: ConnectionIdState::Reused,
         connection_end: conn_end,
     };

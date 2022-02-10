@@ -32,7 +32,7 @@ pub(crate) fn process(
 
     if !state_is_consistent {
         // Old connection end is in incorrect state, propagate the error.
-        return Err(Error::connection_mismatch(msg.connection_id.clone()));
+        return Err(Error::connection_mismatch(msg.connection_id));
     }
 
     // Set the connection ID of the counterparty
@@ -75,7 +75,7 @@ pub(crate) fn process(
     output.log("success: connection verification passed");
 
     let result = ConnectionResult {
-        connection_id: msg.connection_id.clone(),
+        connection_id: msg.connection_id,
         connection_id_state: ConnectionIdState::Reused,
         connection_end: conn_end,
     };

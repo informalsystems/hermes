@@ -23,7 +23,7 @@ pub(crate) fn process(
     // Validate that the channel end is in a state where it can be ack.
     if !channel_end.state_matches(&State::Init) && !channel_end.state_matches(&State::TryOpen) {
         return Err(Error::invalid_channel_state(
-            msg.channel_id.clone(),
+            msg.channel_id,
             channel_end.state,
         ));
     }
@@ -97,7 +97,7 @@ pub(crate) fn process(
     };
 
     let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id.clone()),
+        channel_id: Some(msg.channel_id),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenAckChannel(event_attributes.into()));

@@ -60,7 +60,7 @@ pub(crate) fn process(
     output.log("success: no channel found");
 
     let result = ChannelResult {
-        port_id: msg.port_id.clone(),
+        port_id: msg.port_id,
         channel_id: chan_id.clone(),
         channel_end: new_channel_end,
         channel_id_state: ChannelIdState::Generated,
