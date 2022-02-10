@@ -451,7 +451,9 @@ fn verify_delay_passed(
         .map_err(|_| Error::processed_height_not_found(client_id.clone(), height))?;
 
     let delay_period_time = connection_end.delay_period();
-    let delay_period_height = ctx.block_delay(delay_period_time);
+    let delay_period_height = ctx
+        .block_delay(delay_period_time)
+        .map_err(|_| Error::delay_height_error())?;
 
     ClientState::verify_delay_passed(
         current_timestamp,

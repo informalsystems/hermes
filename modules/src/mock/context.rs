@@ -741,8 +741,8 @@ impl ChannelReader for MockContext {
         Ok(self.channel_ids_counter)
     }
 
-    fn max_expected_time_per_block(&self) -> Duration {
-        self.block_time
+    fn max_expected_time_per_block(&self) -> Result<Duration, Ics04Error> {
+        Ok(self.block_time)
     }
 }
 

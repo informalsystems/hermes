@@ -245,6 +245,9 @@ define_error! {
                     e.client_id, e.height)
             },
 
+        DelayHeightError
+            |_| { "getting the delay height failed" },
+
         Ics23Error
             [ Ics23Error ]
             | _ | { "ics23 commitment error" },

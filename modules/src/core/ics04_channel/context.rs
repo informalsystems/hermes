@@ -96,16 +96,18 @@ pub trait ChannelReader {
     fn channel_counter(&self) -> Result<u64, Error>;
 
     /// Returns the maximum expected time per block
-    fn max_expected_time_per_block(&self) -> Duration;
+    fn max_expected_time_per_block(&self) -> Result<Duration, Error>;
 
-    fn block_delay(&self, delay_period_time: Duration) -> u64 {
-        let expected_time_per_block = self.max_expected_time_per_block();
+    fn block_delay(&self, delay_period_time: Duration) -> Result<u64, Error> {
+        let expected_time_per_block = self.max_expected_time_per_block()?;
         if expected_time_per_block.is_zero() {
-            return 0;
+            return Ok(0);
         }
 
-        FloatCore::ceil(delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64())
-            as u64
+        Ok(
+            FloatCore::ceil(delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64())
+                as u64,
+        )
     }
 }
 
