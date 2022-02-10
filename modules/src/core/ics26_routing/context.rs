@@ -93,17 +93,25 @@ pub trait Module: Debug + Send + Sync + 'static {
 }
 
 pub trait RouterBuilder: Sized {
+    /// The `Router` type that the builder must build
     type Router: Router;
+
+    /// The `ModuleId` type used as the key for the `ModuleId` => `Module` mapping
     type ModuleId;
 
+    /// Registers `Module` against the specified `ModuleId` in the `Router`'s internal map
+    ///
+    /// Returns an error if a `Module` has already been registered against the specified `ModuleId`
     fn add_route(self, module_id: Self::ModuleId, module: impl Module) -> Result<Self, String>;
 
+    /// Consumes the `RouterBuilder` and returns a `Router` as configured
     fn build(self) -> Self::Router;
 }
 
 pub trait Router {
     type ModuleId: ?Sized;
 
+    /// Returns a mutable reference to a `Module` registered against the specified `ModuleId`
     fn get_route_mut(&mut self, module_id: impl Borrow<Self::ModuleId>) -> Option<&mut dyn Module>;
 
     /// Returns true if the `Router` has a `Module` registered against the specified `ModuleId`
