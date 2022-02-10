@@ -116,11 +116,15 @@ pub fn get_all_events(
     result: RpcEvent,
 ) -> Result<Vec<(Height, IbcEvent)>, String> {
     let mut vals: Vec<(Height, IbcEvent)> = vec![];
-    let RpcEvent { data, events, .. } = result;
+    let RpcEvent {
+        data,
+        events,
+        query,
+    } = result;
     let events = events.ok_or("missing events")?;
 
     match data {
-        RpcEventData::NewBlock { block, .. } => {
+        RpcEventData::NewBlock { block, .. } if query == queries::new_block().to_string() => {
             let height = Height::new(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
@@ -136,22 +140,21 @@ pub fn get_all_events(
             );
 
             for abci_event in &tx_result.result.events {
-                let query = &result.query;
-                if *query == queries::ibc_client().to_string() {
+                if query == queries::ibc_client().to_string() {
                     if let Some(mut client_event) = ClientEvents::try_from_tx(abci_event) {
                         client_event.set_height(height);
                         tracing::trace!("extracted ibc_client event {:?}", client_event);
                         vals.push((height, client_event));
                     }
                 }
-                if *query == queries::ibc_connection().to_string() {
+                if query == queries::ibc_connection().to_string() {
                     if let Some(mut conn_event) = ConnectionEvents::try_from_tx(abci_event) {
                         conn_event.set_height(height);
                         tracing::trace!("extracted ibc_connection event {:?}", conn_event);
                         vals.push((height, conn_event));
                     }
                 }
-                if *query == queries::ibc_channel().to_string() {
+                if query == queries::ibc_channel().to_string() {
                     if let Some(mut chan_event) = ChannelEvents::try_from_tx(abci_event) {
                         chan_event.set_height(height);
                         let _span = tracing::trace_span!("ibc_channel event").entered();
