@@ -568,9 +568,9 @@ impl RouterBuilder for MockRouterBuilder {
     type Router = MockRouter;
     type ModuleId = String;
 
-    fn add_route(&mut self, module_id: Self::ModuleId, module: impl Module) -> Result<(), String> {
-        match self.0 .0.insert(module_id, Arc::new(module)) {
-            None => Ok(()),
+    fn add_route(mut self, module_id: Self::ModuleId, module: impl Module) -> Result<Self, String> {
+        match self.0 .0.insert(MockModuleId(module_id), Arc::new(module)) {
+            None => Ok(self),
             Some(_) => Err("Duplicate module_id".to_owned()),
         }
     }
