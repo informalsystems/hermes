@@ -40,11 +40,7 @@ pub trait Acknowledgement: AsRef<[u8]> {
     fn success(&self) -> bool;
 }
 
-pub trait OnRecvPacketResult {
-    fn acknowledgement(&self) -> &dyn Acknowledgement;
-
-    fn write_result(&mut self, module: &mut dyn Any);
-}
+pub type OnRecvPacketResult = (Box<dyn Acknowledgement>, Box<dyn FnOnce(&mut dyn Any)>);
 
 pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
@@ -110,7 +106,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         &self,
         _packet: Packet,
         _relayer: Signer,
-    ) -> Result<Box<dyn OnRecvPacketResult>, Error>;
+    ) -> Result<OnRecvPacketResult, Error>;
 
     fn on_acknowledgement_packet(
         &mut self,
