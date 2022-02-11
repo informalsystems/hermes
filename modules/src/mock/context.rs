@@ -1408,9 +1408,9 @@ mod tests {
                 _channel_id: ChannelId,
                 _channel_cap: Capability,
                 _counterparty: Counterparty,
-                _counterparty_version: Version,
+                counterparty_version: Version,
             ) -> Result<Version, Error> {
-                todo!()
+                Ok(counterparty_version)
             }
 
             fn on_recv_packet(
