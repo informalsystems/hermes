@@ -1400,19 +1400,6 @@ mod tests {
         }
 
         impl Module for MockModule {
-            fn on_chan_open_init(
-                &mut self,
-                _order: Order,
-                _connection_hops: &[ConnectionId],
-                _port_id: PortId,
-                _channel_id: ChannelId,
-                _channel_cap: Capability,
-                _counterparty: Counterparty,
-                _version: Version,
-            ) -> Result<(), Error> {
-                todo!()
-            }
-
             fn on_chan_open_try(
                 &mut self,
                 _order: Order,
@@ -1426,62 +1413,14 @@ mod tests {
                 todo!()
             }
 
-            fn on_chan_open_ack(
-                &mut self,
-                _port_id: PortId,
-                _channel_id: ChannelId,
-                _counterparty_version: Version,
-            ) -> Result<(), Error> {
-                todo!()
-            }
-
-            fn on_chan_open_confirm(
-                &mut self,
-                _port_id: PortId,
-                _channel_id: ChannelId,
-            ) -> Result<(), Error> {
-                todo!()
-            }
-
-            fn on_chan_close_init(
-                &mut self,
-                _port_id: PortId,
-                _channel_id: ChannelId,
-            ) -> Result<(), Error> {
-                todo!()
-            }
-
-            fn on_chan_close_confirm(
-                &mut self,
-                _port_id: PortId,
-                _channel_id: ChannelId,
-            ) -> Result<(), Error> {
-                todo!()
-            }
-
             fn on_recv_packet(
                 &self,
                 _packet: Packet,
                 _relayer: Signer,
             ) -> Result<Box<dyn OnRecvPacketResult>, Error> {
-                todo!()
-            }
-
-            fn on_acknowledgement_packet(
-                &mut self,
-                _packet: Packet,
-                _acknowledgement: Acknowledgement,
-                _relayer: Signer,
-            ) -> Result<(), Error> {
-                todo!()
-            }
-
-            fn on_timeout_packet(
-                &mut self,
-                _packet: Packet,
-                _relayer: Signer,
-            ) -> Result<(), Error> {
-                Ok(())
+                Ok(Box::new(MockOnRecvPacketResult {
+                    ack: Vec::new().into(),
+                }))
             }
         }
 
