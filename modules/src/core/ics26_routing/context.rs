@@ -10,7 +10,6 @@ use crate::core::ics03_connection::connection::Counterparty;
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics04_channel::channel::Order;
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
-use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::Capability;
@@ -37,8 +36,12 @@ pub trait Ics26Context:
     fn router(&mut self) -> &mut Self::Router;
 }
 
+pub trait Acknowledgement: AsRef<[u8]> {
+    fn success(&self) -> bool;
+}
+
 pub trait OnRecvPacketResult {
-    fn acknowledgement(&self) -> Acknowledgement;
+    fn acknowledgement(&self) -> &dyn Acknowledgement;
 
     fn write_result(&mut self, module: &mut dyn Any);
 }
@@ -112,7 +115,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     fn on_acknowledgement_packet(
         &mut self,
         _packet: Packet,
-        _acknowledgement: Acknowledgement,
+        _acknowledgement: &dyn Acknowledgement,
         _relayer: Signer,
     ) -> Result<(), Error> {
         Ok(())
