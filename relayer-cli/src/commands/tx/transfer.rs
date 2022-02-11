@@ -1,4 +1,5 @@
-use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
 
 use ibc::{
     core::{
@@ -20,52 +21,64 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxIcs20MsgTransferCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source port")]
+    #[clap(required = true, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, required, help = "identifier of the source channel")]
+    #[clap(required = true, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
 
-    #[options(
-        free,
-        required,
+    #[clap(
+        required = true,
         help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: Amount,
 
-    #[options(help = "timeout in number of blocks since current", short = "o")]
+    #[clap(
+        short = 'o',
+        long,
+        default_value = "0",
+        help = "timeout in number of blocks since current"
+    )]
     timeout_height_offset: u64,
 
-    #[options(help = "timeout in seconds since current", short = "t")]
+    #[clap(
+        short = 't',
+        long,
+        default_value = "0",
+        help = "timeout in seconds since current"
+    )]
     timeout_seconds: u64,
 
-    #[options(
-        help = "receiving account address on the destination chain",
-        short = "r"
+    #[clap(
+        short = 'r',
+        long,
+        help = "receiving account address on the destination chain"
     )]
     receiver: Option<String>,
 
-    #[options(
+    #[clap(
+        short = 'd',
+        long,
         help = "denomination of the coins to send",
-        short = "d",
-        default = "samoleans"
+        default_value = "samoleans"
     )]
     denom: String,
 
-    #[options(help = "number of messages to send", short = "n")]
+    #[clap(short = 'n', long, help = "number of messages to send")]
     number_msgs: Option<usize>,
 
-    #[options(
-        help = "use the given signing key (default: `key_name` config)",
-        short = "k"
+    #[clap(
+        short = 'k',
+        long,
+        help = "use the given signing key (default: `key_name` config)"
     )]
     key: Option<String>,
 }
@@ -115,7 +128,9 @@ impl TxIcs20MsgTransferCmd {
 
         if self.timeout_height_offset == 0 && self.timeout_seconds == 0 {
             return Err(
-                "packet timeout height and packet timeout timestamp cannot both be 0".into(),
+                "packet timeout height and packet timeout timestamp cannot both be 0, \
+                please specify either --timeout-height-offset or --timeout-seconds"
+                    .into(),
             );
         }
 
@@ -139,7 +154,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
+            Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
 
@@ -161,7 +176,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             )
             .unwrap_or_else(exit_with_unrecoverable_error);
         if !channel_end_src.is_open() {
-            return Output::error(format!(
+            Output::error(format!(
                 "the requested port/channel ('{}'/'{}') on chain id '{}' is in state '{}'; expected 'open' state",
                 opts.packet_src_port_id,
                 opts.packet_src_channel_id,
@@ -173,7 +188,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         let conn_id = match channel_end_src.connection_hops.first() {
             None => {
-                return Output::error(format!(
+                Output::error(format!(
                     "could not retrieve the connection hop underlying port/channel '{}'/'{}' on chain '{}'",
                     opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
                 ))
@@ -200,7 +215,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         );
 
         if src_chain_client_state.chain_id() != self.dst_chain_id {
-            return Output::error(
+            Output::error(
                 format!("the requested port/channel ('{}'/'{}') provides a path from chain '{}' to \
                  chain '{}' (not to the destination chain '{}'). Bailing due to mismatching arguments.",
                         opts.packet_src_port_id, opts.packet_src_channel_id,

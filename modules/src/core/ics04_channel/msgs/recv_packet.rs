@@ -30,6 +30,10 @@ impl MsgRecvPacket {
             signer,
         }
     }
+
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
 }
 
 impl Msg for MsgRecvPacket {
@@ -52,7 +56,10 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
 
     fn try_from(raw_msg: RawMsgRecvPacket) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_commitment.into(),
+            raw_msg
+                .proof_commitment
+                .try_into()
+                .map_err(Error::invalid_proof)?,
             None,
             None,
             None,
@@ -92,12 +99,19 @@ pub mod test_util {
 
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+    use crate::timestamp::Timestamp;
+    use core::ops::Add;
+    use core::time::Duration;
 
     /// Returns a dummy `RawMsgRecvPacket`, for testing only! The `height` parametrizes both the
     /// proof height as well as the timeout height.
     pub fn get_dummy_raw_msg_recv_packet(height: u64) -> RawMsgRecvPacket {
+        let timestamp = Timestamp::now().add(Duration::from_secs(9));
         RawMsgRecvPacket {
-            packet: Some(get_dummy_raw_packet(height, 9)),
+            packet: Some(get_dummy_raw_packet(
+                height,
+                timestamp.unwrap().nanoseconds(),
+            )),
             proof_commitment: get_dummy_proof(),
             proof_height: Some(RawHeight {
                 revision_number: 0,
@@ -112,7 +126,7 @@ pub mod test_util {
 mod test {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 

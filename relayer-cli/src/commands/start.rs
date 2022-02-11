@@ -1,39 +1,49 @@
 use alloc::sync::Arc;
+use ibc_relayer::supervisor::SupervisorOptions;
 use std::error::Error;
 use std::io;
 use std::sync::RwLock;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use crossbeam_channel::Sender;
 
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
+use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::rest;
-use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
+use ibc_relayer::supervisor::{cmd::SupervisorCmd, spawn_supervisor, SupervisorHandle};
 
 use crate::conclude::json;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
-pub struct StartCmd {}
+#[derive(Clone, Command, Debug, Parser)]
+pub struct StartCmd {
+    #[clap(
+        short = 'f',
+        long = "full-scan",
+        help = "Force a full scan of the chains for clients, connections and channels"
+    )]
+    full_scan: bool,
+}
 
 impl Runnable for StartCmd {
     fn run(&self) {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let (mut supervisor, tx_cmd) = make_supervisor::<ProdChainHandle>(config.clone())
+        let supervisor_handle = make_supervisor::<ProdChainHandle>(config.clone(), self.full_scan)
             .unwrap_or_else(|e| {
-                Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
-                unreachable!()
+                Output::error(format!("Hermes failed to start, last error: {}", e)).exit()
             });
 
         match crate::config::config_path() {
             Some(config_path) => {
-                let reload = ConfigReload::new(config_path, config, tx_cmd.clone());
-                register_signals(reload, tx_cmd).unwrap_or_else(|e| {
+                let reload =
+                    ConfigReload::new(config_path, config, supervisor_handle.sender.clone());
+                register_signals(reload, supervisor_handle.sender.clone()).unwrap_or_else(|e| {
                     warn!("failed to install signal handler: {}", e);
                 });
             }
@@ -43,10 +53,8 @@ impl Runnable for StartCmd {
         };
 
         info!("Hermes has started");
-        match supervisor.run() {
-            Ok(()) => Output::success_msg("done").exit(),
-            Err(e) => Output::error(format!("Hermes failed to start, last error: {}", e)).exit(),
-        }
+
+        supervisor_handle.wait();
     }
 }
 
@@ -173,12 +181,22 @@ fn spawn_telemetry_server(
     Ok(())
 }
 
-fn make_supervisor<Chain: ChainHandle + 'static>(
+fn make_supervisor<Chain: ChainHandle>(
     config: Arc<RwLock<Config>>,
-) -> Result<(Supervisor<Chain>, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
+    force_full_scan: bool,
+) -> Result<SupervisorHandle, Box<dyn Error + Send + Sync>> {
+    let registry = SharedRegistry::<Chain>::new(config.clone());
     spawn_telemetry_server(&config)?;
 
     let rest = spawn_rest_server(&config);
 
-    Ok(Supervisor::new(config, rest))
+    Ok(spawn_supervisor(
+        config,
+        registry,
+        rest,
+        SupervisorOptions {
+            health_check: true,
+            force_full_scan,
+        },
+    )?)
 }

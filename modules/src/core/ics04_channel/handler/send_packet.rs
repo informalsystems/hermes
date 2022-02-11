@@ -111,9 +111,10 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use core::ops::Add;
+    use core::time::Duration;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -124,13 +125,13 @@ mod tests {
     use crate::core::ics04_channel::handler::send_packet::send_packet;
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::core::ics04_channel::packet::Packet;
+    use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
+    use crate::prelude::*;
     use crate::timestamp::Timestamp;
     use crate::timestamp::ZERO_DURATION;
-    use std::ops::Add;
-    use std::time::Duration;
 
     #[test]
     fn send_packet_processing() {
@@ -145,7 +146,7 @@ mod tests {
 
         let timestamp = Timestamp::now().add(Duration::from_secs(10));
         //CD:TODO remove unwrap
-        let mut packet: Packet = get_dummy_raw_packet(1, timestamp.unwrap().as_nanoseconds())
+        let mut packet: Packet = get_dummy_raw_packet(1, timestamp.unwrap().nanoseconds())
             .try_into()
             .unwrap();
         packet.sequence = 1.into();
@@ -156,7 +157,7 @@ mod tests {
             Order::default(),
             Counterparty::new(PortId::default(), Some(ChannelId::default())),
             vec![ConnectionId::default()],
-            "ics20".to_string(),
+            Version::ics20(),
         );
 
         let connection_end = ConnectionEnd::new(

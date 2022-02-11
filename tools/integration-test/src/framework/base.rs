@@ -20,7 +20,12 @@ pub fn run_test<Test: PrimitiveTest>(test: &Test) -> Result<(), Error> {
 /**
    Runs a basic test case implementing [`BasicTest`].
 */
-pub fn run_basic_test<Test: BasicTest>(test: &Test) -> Result<(), Error> {
+pub fn run_basic_test<Test, Overrides>(test: &Test) -> Result<(), Error>
+where
+    Test: BasicTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: TestConfigOverride,
+{
     run_test(&RunBasicTest { test })
 }
 
@@ -64,6 +69,10 @@ pub trait BasicTest {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error>;
 }
 
+pub trait TestConfigOverride {
+    fn modify_test_config(&self, config: &mut TestConfig);
+}
+
 /**
    A wrapper type that lifts a test case that implements [`BasicTest`]
    into a test case that implements [`PrimitiveTest`].
@@ -73,9 +82,15 @@ pub struct RunBasicTest<'a, Test> {
     pub test: &'a Test,
 }
 
-impl<'a, Test: BasicTest> PrimitiveTest for RunBasicTest<'a, Test> {
+impl<'a, Test, Overrides> PrimitiveTest for RunBasicTest<'a, Test>
+where
+    Test: BasicTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: TestConfigOverride,
+{
     fn run(&self) -> Result<(), Error> {
-        let config = init_test()?;
+        let mut config = init_test()?;
+        self.test.get_overrides().modify_test_config(&mut config);
 
         info!("starting test with test config: {:?}", config);
 

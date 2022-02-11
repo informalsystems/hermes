@@ -4,14 +4,16 @@
 
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::config::Config;
+use ibc_relayer::supervisor::SupervisorHandle;
 
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
+use crate::framework::base::TestConfigOverride;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::PortsOverride;
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::relayer::driver::RelayerDriver;
-use crate::relayer::supervisor::SupervisorHandle;
+use crate::types::config::TestConfig;
 
 /**
    This trait should be implemented for all test cases to allow overriding
@@ -30,6 +32,8 @@ use crate::relayer::supervisor::SupervisorHandle;
    also be defined inside this trait with a default method body.
 */
 pub trait TestOverrides {
+    fn modify_test_config(&self, _config: &mut TestConfig) {}
+
     /**
         Modify the full node config before the chain gets initialized.
 
@@ -64,9 +68,9 @@ pub trait TestOverrides {
 
        Implemented for [`SupervisorOverride`].
     */
-    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Option<SupervisorHandle> {
-        let handle = relayer.spawn_supervisor();
-        Some(handle)
+    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Result<Option<SupervisorHandle>, Error> {
+        let handle = relayer.spawn_supervisor()?;
+        Ok(Some(handle))
     }
 
     /**
@@ -76,7 +80,7 @@ pub trait TestOverrides {
        Implemented for [`PortsOverride`].
     */
     fn channel_port_a(&self) -> PortId {
-        PortId::unsafe_new("transfer")
+        PortId::transfer()
     }
 
     /**
@@ -86,7 +90,7 @@ pub trait TestOverrides {
        Implemented for [`PortsOverride`].
     */
     fn channel_port_b(&self) -> PortId {
-        PortId::unsafe_new("transfer")
+        PortId::transfer()
     }
 }
 
@@ -95,6 +99,12 @@ impl<Test: TestOverrides> HasOverrides for Test {
 
     fn get_overrides(&self) -> &Self {
         self
+    }
+}
+
+impl<Test: TestOverrides> TestConfigOverride for Test {
+    fn modify_test_config(&self, config: &mut TestConfig) {
+        TestOverrides::modify_test_config(self, config)
     }
 }
 
@@ -111,7 +121,7 @@ impl<Test: TestOverrides> RelayerConfigOverride for Test {
 }
 
 impl<Test: TestOverrides> SupervisorOverride for Test {
-    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Option<SupervisorHandle> {
+    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Result<Option<SupervisorHandle>, Error> {
         TestOverrides::spawn_supervisor(self, relayer)
     }
 }

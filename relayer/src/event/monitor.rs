@@ -2,7 +2,6 @@ use alloc::sync::Arc;
 use core::cmp::Ordering;
 
 use crossbeam_channel as channel;
-use flex_error::{define_error, TraceError};
 use futures::{
     pin_mut,
     stream::{self, select_all, StreamExt},
@@ -26,6 +25,11 @@ use crate::util::{
     stream::try_group_while,
 };
 
+mod error;
+pub use error::*;
+
+pub type Result<T> = core::result::Result<T, Error>;
+
 mod retry_strategy {
     use crate::util::retry::clamp_total;
     use core::time::Duration;
@@ -40,65 +44,6 @@ mod retry_strategy {
         clamp_total(Fibonacci::from(INITIAL_DELAY), MAX_DELAY, MAX_TOTAL_DELAY)
     }
 }
-
-define_error! {
-    #[derive(Debug, Clone)]
-    Error {
-        WebSocketDriver
-            [ TraceError<RpcError> ]
-            |_| { "WebSocket driver failed" },
-
-        ClientCreationFailed
-            { chain_id: ChainId, address: Url }
-            |e| { format!("failed to create WebSocket driver for chain {0} with address {1}", e.chain_id, e.address) },
-
-        ClientTerminationFailed
-            [ TraceError<tokio::task::JoinError> ]
-            |_| { "failed to terminate previous WebSocket driver" },
-
-        ClientCompletionFailed
-            [ TraceError<RpcError> ]
-            |_| { "failed to run previous WebSocket driver to completion" },
-
-        ClientSubscriptionFailed
-            [ TraceError<RpcError> ]
-            |_| { "failed to run previous WebSocket driver to completion" },
-
-        NextEventBatchFailed
-            [ TraceError<RpcError> ]
-            |_| { "failed to collect events over WebSocket subscription" },
-
-        CollectEventsFailed
-            { reason: String }
-            |e| { format!("failed to extract IBC events: {0}", e.reason) },
-
-        ChannelSendFailed
-            |_| { "failed to send event batch through channel" },
-
-        SubscriptionCancelled
-            [ TraceError<RpcError> ]
-            |_| { "subscription cancelled" },
-
-        Rpc
-            [ TraceError<RpcError> ]
-            |_| { "RPC error" },
-    }
-}
-
-impl Error {
-    fn canceled_or_generic(e: RpcError) -> Self {
-        use tendermint_rpc::error::ErrorDetail;
-
-        match e.detail() {
-            ErrorDetail::Server(detail) if detail.reason.contains("subscription was cancelled") => {
-                Self::subscription_cancelled(e)
-            }
-            _ => Self::rpc(e),
-        }
-    }
-}
-
-pub type Result<T> = core::result::Result<T, Error>;
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -220,6 +165,11 @@ impl EventMonitor {
         };
 
         Ok((monitor, rx_batch, tx_cmd))
+    }
+
+    /// The list of [`Query`] that this event monitor is subscribing for.
+    pub fn queries(&self) -> &[Query] {
+        &self.event_queries
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
@@ -438,7 +388,7 @@ impl EventMonitor {
     /// The main use case for propagating RPC errors is for the [`Supervisor`]
     /// to notice that the WebSocket connection or subscription has been closed,
     /// and to trigger a clearing of packets, as this typically means that we have
-    /// missed a bunch of events which were emitted after the subscrption was closed.
+    /// missed a bunch of events which were emitted after the subscription was closed.
     /// In that case, this error will be handled in [`Supervisor::handle_batch`].
     fn propagate_error(&self, error: Error) -> Result<()> {
         self.tx_batch

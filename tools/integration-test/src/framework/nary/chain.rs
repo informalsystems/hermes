@@ -4,7 +4,7 @@ use super::node::{run_nary_node_test, NaryNodeTest};
 
 use crate::bootstrap::nary::chain::boostrap_chains_with_nodes;
 use crate::error::Error;
-use crate::framework::base::HasOverrides;
+use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::relayer::driver::RelayerDriver;
@@ -17,7 +17,7 @@ pub fn run_nary_chain_test<Test, Overrides, const SIZE: usize>(test: &Test) -> R
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(test))
 }

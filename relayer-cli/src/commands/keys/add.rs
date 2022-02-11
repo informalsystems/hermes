@@ -4,7 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -15,24 +16,26 @@ use ibc_relayer::{
 use crate::application::app_config;
 use crate::conclude::Output;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct KeysAddCmd {
-    #[options(free, required, help = "identifier of the chain")]
+    #[clap(required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[options(short = "f", required, help = "path to the key file")]
+    #[clap(short = 'f', long, required = true, help = "path to the key file")]
     file: PathBuf,
 
-    #[options(
-        short = "n",
+    #[clap(
+        short = 'n',
+        long,
         help = "name of the key (defaults to the `key_name` defined in the config)"
     )]
     name: Option<String>,
 
-    #[options(
-        short = "p",
+    #[clap(
+        short = 'p',
+        long,
         help = "derivation path for this key",
-        default = "m/44'/118'/0'/0/0"
+        default_value = "m/44'/118'/0'/0/0"
     )]
     hd_path: String,
 }
@@ -73,7 +76,7 @@ impl Runnable for KeysAddCmd {
         let config = app_config();
 
         let opts = match self.options(&config) {
-            Err(err) => return Output::error(err).exit(),
+            Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
 

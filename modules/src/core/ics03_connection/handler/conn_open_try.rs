@@ -81,6 +81,7 @@ pub(crate) fn process(
     verify_proofs(
         ctx,
         msg.client_state(),
+        msg.proofs().height(),
         &new_connection_end,
         &expected_conn,
         msg.proofs(),
@@ -120,7 +121,7 @@ pub(crate) fn process(
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics03_connection::connection::State;
     use crate::core::ics03_connection::handler::{dispatch, ConnectionResult};

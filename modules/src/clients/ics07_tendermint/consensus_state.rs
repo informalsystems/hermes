@@ -2,9 +2,9 @@ use crate::prelude::*;
 
 use core::convert::Infallible;
 
-use chrono::{TimeZone, Utc};
 use serde::Serialize;
 use tendermint::{hash::Algorithm, time::Time, Hash};
+use tendermint_proto::google::protobuf as tpb;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
@@ -43,10 +43,6 @@ impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusSt
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Infallible> {
-        unimplemented!()
-    }
-
     fn wrap_any(self) -> AnyConsensusState {
         AnyConsensusState::Tendermint(self)
     }
@@ -58,9 +54,15 @@ impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
 
     fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
-        let proto_timestamp = raw
+        let prost_types::Timestamp { seconds, nanos } = raw
             .timestamp
             .ok_or_else(|| Error::invalid_raw_consensus_state("missing timestamp".into()))?;
+        // FIXME: shunts like this are necessary due to
+        // https://github.com/informalsystems/tendermint-rs/issues/1053
+        let proto_timestamp = tpb::Timestamp { seconds, nanos };
+        let timestamp = proto_timestamp
+            .try_into()
+            .map_err(|e| Error::invalid_raw_consensus_state(format!("invalid timestamp: {}", e)))?;
 
         Ok(Self {
             root: raw
@@ -70,9 +72,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
                 })?
                 .hash
                 .into(),
-            timestamp: Utc
-                .timestamp(proto_timestamp.seconds, proto_timestamp.nanos as u32)
-                .into(),
+            timestamp,
             next_validators_hash: Hash::from_bytes(Algorithm::Sha256, &raw.next_validators_hash)
                 .map_err(|e| Error::invalid_raw_consensus_state(e.to_string()))?,
         })
@@ -81,10 +81,10 @@ impl TryFrom<RawConsensusState> for ConsensusState {
 
 impl From<ConsensusState> for RawConsensusState {
     fn from(value: ConsensusState) -> Self {
-        let timestamp = prost_types::Timestamp {
-            seconds: value.timestamp.0.timestamp(),
-            nanos: value.timestamp.0.timestamp_subsec_nanos() as i32,
-        };
+        // FIXME: shunts like this are necessary due to
+        // https://github.com/informalsystems/tendermint-rs/issues/1053
+        let tpb::Timestamp { seconds, nanos } = value.timestamp.into();
+        let timestamp = prost_types::Timestamp { seconds, nanos };
 
         RawConsensusState {
             timestamp: Some(timestamp),
@@ -114,9 +114,8 @@ impl From<Header> for ConsensusState {
 
 #[cfg(test)]
 mod tests {
-    use std::println;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::test::test_serialization_roundtrip;
 
@@ -124,7 +123,6 @@ mod tests {
     fn serialization_roundtrip_no_proof() {
         let json_data =
             include_str!("../../../tests/support/query/serialization/consensus_state.json");
-        println!("json_data: {:?}", json_data);
         test_serialization_roundtrip::<AbciQuery>(json_data);
     }
 
@@ -132,7 +130,6 @@ mod tests {
     fn serialization_roundtrip_with_proof() {
         let json_data =
             include_str!("../../../tests/support/query/serialization/consensus_state_proof.json");
-        println!("json_data: {:?}", json_data);
         test_serialization_roundtrip::<AbciQuery>(json_data);
     }
 }

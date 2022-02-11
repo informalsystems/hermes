@@ -13,7 +13,7 @@ use super::connection::{run_binary_connection_test, BinaryConnectionTest};
 use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
 use crate::error::Error;
-use crate::framework::base::HasOverrides;
+use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
@@ -31,7 +31,11 @@ pub fn run_two_way_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
+    Overrides: NodeConfigOverride
+        + RelayerConfigOverride
+        + SupervisorOverride
+        + PortsOverride
+        + TestConfigOverride,
 {
     run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
@@ -43,7 +47,11 @@ pub fn run_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + PortsOverride,
+    Overrides: NodeConfigOverride
+        + RelayerConfigOverride
+        + SupervisorOverride
+        + PortsOverride
+        + TestConfigOverride,
 {
     run_binary_connection_test(&RunBinaryChannelTest::new(test))
 }
@@ -152,6 +160,7 @@ where
             connection,
             &DualTagged::new(port_a).as_ref(),
             &DualTagged::new(port_b).as_ref(),
+            true,
         )?;
 
         let env_path = config.chain_store_dir.join("binary-channels.env");

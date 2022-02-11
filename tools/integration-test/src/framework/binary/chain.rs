@@ -5,6 +5,7 @@
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
+use ibc_relayer::supervisor::SupervisorHandle;
 use tracing::info;
 
 use super::node::{run_binary_node_test, BinaryNodeTest, NodeConfigOverride};
@@ -14,9 +15,8 @@ use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
-use crate::framework::base::{run_basic_test, BasicTest};
+use crate::framework::base::{run_basic_test, BasicTest, TestConfigOverride};
 use crate::relayer::driver::RelayerDriver;
-use crate::relayer::supervisor::SupervisorHandle;
 use crate::types::binary::chains::{ConnectedChains, DropChainHandle};
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
@@ -31,7 +31,7 @@ pub fn run_two_way_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(),
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + TestConfigOverride,
 {
     run_binary_chain_test(&RunTwoWayBinaryChainTest::new(test))
 }
@@ -43,7 +43,7 @@ pub fn run_binary_chain_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + TestConfigOverride,
 {
     run_binary_node_test(&RunBinaryChainTest::new(test))
 }
@@ -57,7 +57,7 @@ pub fn run_self_connected_binary_chain_test<Test, Overrides>(test: &Test) -> Res
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + TestConfigOverride,
 {
     run_basic_test(&RunSelfConnectedBinaryChainTest::new(test))
 }
@@ -112,7 +112,7 @@ pub trait RelayerConfigOverride {
 */
 pub trait SupervisorOverride {
     /// Optionally spawn the supervisor
-    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Option<SupervisorHandle>;
+    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Result<Option<SupervisorHandle>, Error>;
 }
 
 /**
@@ -195,14 +195,16 @@ where
 
         info!("written chains environment to {}", env_path.display());
 
-        let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer);
-
         let _drop_handle_a = DropChainHandle(chains.handle_a.clone());
         let _drop_handle_b = DropChainHandle(chains.handle_b.clone());
 
-        self.test
-            .run(config, relayer, chains)
-            .map_err(config.hang_on_error())?;
+        {
+            let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer);
+
+            self.test
+                .run(config, relayer, chains)
+                .map_err(config.hang_on_error())?;
+        }
 
         Ok(())
     }

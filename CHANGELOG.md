@@ -1,5 +1,307 @@
 # CHANGELOG
 
+## v0.11.1
+*February 4th, 2022*
+
+This release mainly adds support for channel events originating from Tendermint ABCI's `BeginBlock` and `EndBlock` methods.
+
+### BUG FIXES
+
+- [Relayer CLI](relayer-cli)
+  - Do not require a config file to be present for the `completions` command.
+    ([#1822](https://github.com/informalsystems/ibc-rs/pull/1822))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Increased tx confirmation timeout to 300s to prevent aggressive tx
+    resubmission ([#1663](https://github.com/informalsystems/ibc-rs/issues/1663))
+  - Handle channel events originating from Tendermint ABCI's BeginBlock and EndBlock methods
+    ([#1793](https://github.com/informalsystems/ibc-rs/issues/1793))
+
+
+## v0.11.0
+*January 27th, 2022*
+
+This release notably speeds up the startup time of Hermes,
+adds options to the `create client` command to customize the client parameters,
+makes the deposit denomination configurable in `tx raw upgrade-chain` via a new `--denom` flag,
+and adds a `completions` CLI command to generate shell auto-completion scripts.
+
+### Note for operators
+
+This release includes a breaking change, which requires the configuration file to be edited.
+The `mode.packets.filter` configuration option has been removed and is now enabled by default.
+
+Before running Hermes v0.11.0, make sure you remove the `mode.packets.filter` option from the configuration file.
+
+```diff
+--- a/config.toml
++++ b/config.toml
+@@ -50,18 +50,6 @@ clear_interval = 100
+ # Whether or not to clear packets on start. [Default: false]
+ clear_on_start = true
+
+-# Enable or disable the filtering mechanism.
+-# Valid options are 'true', 'false'.
+-# Currently Hermes supports two filters:
+-# 1. Packet filtering on a per-chain basis; see the chain-specific
+-#   filter specification below in [chains.packet_filter].
+-# 2. Filter for all activities based on client state trust threshold; this filter
+-#   is parametrized with (numerator = 1, denominator = 3), so that clients with
+-#   thresholds different than this will be ignored.
+-# If set to 'true', both of the above filters will be enabled.
+-# [Default: false]
+-filter = false
+-
+ # Toggle the transaction confirmation mechanism.
+ # The tx confirmation mechanism periodically queries the `/tx_search` RPC
+ # endpoint to check that previously-submitted transactions
+```
+
+
+### BREAKING CHANGES
+
+- General
+  - Update MSRV to Rust 1.58 ([#1765](https://github.com/informalsystems/ibc-rs/issues/1765))
+  - Update tendermint-rs dependencies to 0.23.5 ([#1767](https://github.com/informalsystems/ibc-rs/issues/1767))
+- [Relayer Library](relayer)
+  - Added a `denom` member to `upgrade_chain::UpgradePlanOptions`
+    ([#1662](https://github.com/informalsystems/ibc-rs/issues/1662))
+- [IBC Modules](modules)
+  - Hide `ibc::Timestamp::now()` behind `clock` feature flag ([#1612](https://github.com/informalsystems/ibc-rs/issues/1612))
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Verify the client consensus proof against the client's consensus state root and not the host's state root
+    [#1745](https://github.com/informalsystems/ibc-rs/issues/1745)
+  - Initialize consensus metadata on client creation
+    ([#1763](https://github.com/informalsystems/ibc-rs/issues/1763))
+
+### IMPROVEMENTS
+
+- General
+  - Improve startup time of the relayer ([#1705](https://github.com/informalsystems/ibc-rs/issues/1705))
+      * When scanning a chain with filtering enabled and an allow list, skip scanning all the clients and query the allowed channels directly. This results in much fewer queries and a faster start.
+      * Add a `--full-scan` option to `hermes start` to opt out of the fast start mechanism and do a full scan.
+  - Update `tendermint-rs` to v0.23.4 and harmonize the dependencies to use a single TLS stack.
+    A system installation of OpenSSL is no longer required to build Hermes.
+    ([#1641](https://github.com/informalsystems/ibc-rs/issues/1641))
+  - Remove 1 second sleep in `generate_tm_block` during testing with mock context.
+    ([#1687](https://github.com/informalsystems/ibc-rs/issues/1687))
+- [IBC Modules](modules)
+  - Extract all `ics24_host::Path` variants into their separate types
+    ([#1760](https://github.com/informalsystems/ibc-rs/issues/1760))
+  - Disallow empty `CommitmentPrefix` and `CommitmentProofBytes`
+    ([#1761](https://github.com/informalsystems/ibc-rs/issues/1761))
+- [Relayer Library](relayer)
+  - Allow `ChainEndpoint` implementations to fetch any types of clients
+    and consensus states ([#1481](https://github.com/informalsystems/ibc-rs/issues/1481))
+  - More structural logging in relayer, using tracing spans and key-value pairs.
+    ([#1491](https://github.com/informalsystems/ibc-rs/pull/1491))
+  - Improved documention w.r.t. keys for Ethermint-based chains
+    ([#1785](https://github.com/informalsystems/ibc-rs/issues/1785))
+- [Relayer CLI](relayer-cli)
+  - Add custom options to the `create client` command.
+    ([#836](https://github.com/informalsystems/ibc-rs/issues/836))
+  - Make the deposit denomination configurable in `tx raw upgrade-chain` via a new `--denom` flag.
+    ([#1662](https://github.com/informalsystems/ibc-rs/issues/1662))
+  - Update to abscissa_core 0.6.0-rc.0 and clap 3.x
+    ([#1777](https://github.com/informalsystems/ibc-rs/pull/1777))
+  - Add `completions` CLI command to generate shell auto-completion scripts.
+    ([#1789](https://github.com/informalsystems/ibc-rs/pull/1789))
+
+## v0.10.0
+*January 13th, 2021*
+
+This release notably updates the underlying CLI framework (`abscissa`) to version 0.6.0-beta.1,
+which now uses `clap` for parsing command line arguments. This substantially improves the UX of the CLI,
+by adding support for `--help` flags in subcommands and improving help and usage printouts.
+
+The `--version` option of the `create channel` subcommand has been renamed
+to `--channel-version`, with the old name still supported as an alias.
+Additionally, the `-h` short flag on many commands is now `-H` to avoid
+clashes with the clap-provided short flag for help.
+
+This release also improves the handling of account sequence mismatch errors,
+with a recovery mechanism to automatically retry or drop tx upon such errors.
+
+The relayer now also supports dynamic versions in channel open handshake (which is needed by Interchain Accounts), and enables full support for IBC v2.
+
+### BREAKING CHANGES
+
+- General
+  - Update MSRV to Rust 1.57
+    ([#1660](https://github.com/informalsystems/ibc-rs/issues/1660))
+  - Pin tendermint-rs dependencies to =0.23.2
+    ([#1665](https://github.com/informalsystems/ibc-rs/pull/1665))
+- [IBC Modules](modules)
+  - Add the `frozen_height()` method to the `ClientState` trait (includes breaking changes to the Tendermint `ClientState` API).
+    ([#1618](https://github.com/informalsystems/ibc-rs/issues/1618))
+  - Remove `Timestamp` API that depended on the `chrono` crate:
+    ([#1665](https://github.com/informalsystems/ibc-rs/pull/1665)):
+    - `Timestamp::from_datetime`; use `From<tendermint::Time>`
+    - `Timestamp::as_datetime`, superseded by `Timestamp::into_datetime`
+- [Relayer Library](relayer)
+  - Improve spawning of supervisor worker tasks ([#1656](https://github.com/informalsystems/ibc-rs/issues/1656))
+    - The `Supervisor` struct is removed.
+    - Supervisor is now spawned using the `spawn_supervisor` function.
+- [Relayer CLI](relayer-cli)
+  - Update to abscissa framework version 0.6.0-beta.1, adding support for
+    `--help` flags in subcommands and improving help and usage printouts.
+    The `--version` option of the `create channel` subcommand has been renamed
+    to `--channel-version`, with the old name still supported as an alias.
+    Additionally, the `-h` short flag on many commands is now `-H` to avoid
+    clashes with the clap-provided short flag for help.
+    ([#1576](https://github.com/informalsystems/ibc-rs/pull/1576),
+    [#1743](https://github.com/informalsystems/ibc-rs/pull/1743))
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Delete packet commitment instead of acknowledgement in acknowledgePacket
+    [#1573](https://github.com/informalsystems/ibc-rs/issues/1573)
+  - Set the `counterparty_channel_id` correctly to fix ICS04 [`chanOpenAck` handler verification](https://github.com/informalsystems/ibc-rs/blob/master/modules/src/core/ics04_channel/handler/chan_open_ack.rs)
+    ([#1649](https://github.com/informalsystems/ibc-rs/issues/1649))
+  - Add missing assertion for non-zero trust-level in Tendermint client initialization.
+    ([#1697](https://github.com/informalsystems/ibc-rs/issues/1697))
+  - Fix conversion to Protocol Buffers of `ClientState`'s `frozen_height` field.
+    ([#1710](https://github.com/informalsystems/ibc-rs/issues/1710))
+- [Relayer Library](relayer)
+  - Handle expired client errors in workers ([#1543](https://github.com/informalsystems/ibc-rs/issues/1543))
+  - Perform `execute_schedule` after handling packet commands in packet worker ([#1715](https://github.com/informalsystems/ibc-rs/issues/1715))
+  - Do not spawn detect misbehavior task if it is disabled in config [#1750](https://github.com/informalsystems/ibc-rs/issues/1750)
+
+### FEATURES
+
+- General
+  - Extend CI test suite to include E2E tests using Gaia v6.0.0 [#1550](https://github.com/informalsystems/ibc-rs/issues/1550)
+  - Added the `extra_wallets` parameter to `gm` to create additional funded wallets.
+  - Added the possibility of JSON output to `gm` by setting the environment variable `OUTPUT=json`.
+  - Added support for fee granters through config file
+    ([#1633](https://github.com/informalsystems/ibc-rs/issues/1633))
+- [IBC Modules](modules)
+  - Implement proof verification for Tendermint client (ICS07).
+    ([#1583](https://github.com/informalsystems/ibc-rs/pull/1583))
+- [Relayer Library](relayer)
+  - Added a recovery mechanism to automatically retry or drop tx upon account
+    sequence mismatch errors ([#1264](https://github.com/informalsystems/ibc-rs/issues/1264))
+  - Support dynamic versions in channel open handshake & enable full support for
+    ibc-go v2 ([#1410](https://github.com/informalsystems/ibc-rs/issues/1410))
+  - Allow custom proof-specs in chain config
+    ([#1561](https://github.com/informalsystems/ibc-rs/issues/1561))
+
+### IMPROVEMENTS
+
+- General
+  - Update `CONTRIBUTING.md` for latest version of unclog
+    ([#1634](https://github.com/informalsystems/ibc-rs/issues/1634))
+- [IBC Modules](modules)
+  - More conventional ad-hoc conversion methods on `Timestamp`
+    ([#1665](https://github.com/informalsystems/ibc-rs/pull/1665)):
+  - `Timestamp::nanoseconds` replaces `Timestamp::as_nanoseconds`
+  - `Timestamp::into_datetime` substitutes `Timestamp::as_datetime`
+- [Relayer CLI](relayer-cli)
+  - Improve performance of standalone commands by starting the event monitor on-demand
+    ([#1063](https://github.com/informalsystems/ibc-rs/issues/1063))
+  - Increase the default for `max_gas` from `300_000` to `400_000`
+    ([#1636](https://github.com/informalsystems/ibc-rs/pull/1636))
+
+## v0.9.0, the “Zamfir” release
+*November 23rd, 2021*
+
+> This release honors Anca Zamfir, who has lead ibc-rs from its inception and through its first two years of life.
+> The whole team is grateful for her dedication and the nurturing environment she created.
+> To many more achievements, Anca!! 🥂
+
+#### Notice for operators
+
+This release requires operators to update their Hermes configuration.
+The `mode` configuration section now replaces the `strategy` option.
+
+##### `strategy = 'packets'`
+
+If Hermes was configured with `strategy = 'packets'`, then the configuration needs to be changed in the following way:
+
+```diff
+ [global]
+-strategy = 'packets'
+ log_level = 'trace'
+-clear_packets_interval = 100
+-tx_confirmation = true
++
++[mode]
++
++[mode.clients]
++enabled = true
++refresh = true
++misbehaviour = true
++
++[mode.connections]
++enabled = false
++
++[mode.channels]
++enabled = false
++
++[mode.packets]
++enabled = true
++clear_interval = 100
++clear_on_start = true
++filter = false
++tx_confirmation = true
+```
+
+##### `strategy = 'all'`
+
+If Hermes was configured to complete connection and channel handshakes as well, ie. with `strategy = 'all'`,
+then on top of the changes above, `mode.connections.enabled` and `mode.channels.enabled` must be set to `true`.
+
+[See the relevant section][config-mode-toml] of the documented `config.toml` file in the repository for more details.
+
+[config-mode-toml]: https://github.com/informalsystems/ibc-rs/blob/v0.9.0/config.toml#L9-L59
+
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Set the connection counterparty in the ICS 003 [`connOpenAck` handler][conn-open-ack-handler]
+    ([#1532](https://github.com/informalsystems/ibc-rs/issues/1532))
+
+[conn-open-ack-handler]: https://github.com/informalsystems/ibc-rs/blob/master/modules/src/core/ics03_connection/handler/conn_open_ack.rs
+
+### FEATURES
+
+- General
+  - Support for compatibility with gaia Vega upgrade (protos matching ibc-go v1.2.2 and SDK v0.44.3)
+    ([#1408](https://github.com/informalsystems/ibc-rs/issues/1408))
+  - Optimize the WS client to subscribe to IBC events only (instead of all Tx
+    events) ([#1534](https://github.com/informalsystems/ibc-rs/issues/1534))
+- [Relayer Library](relayer)
+  - Allow for more granular control of relaying modes. The `mode` configuration section replaces the `strategy` option.
+    ([#1518](https://github.com/informalsystems/ibc-rs/issues/1518))
+
+### IMPROVEMENTS
+
+- General
+  - Upgrade IBC-rs TLA+ MBT models to modern Apalache type annotations
+    ([#1544](https://github.com/informalsystems/ibc-rs/issues/1544))
+  - Add `architecture.md` doc that gives a high-level overview of the structure of the codebase
+  - Add some module-level documentation ([#1556](https://github.com/informalsystems/ibc-rs/pulls/1556))
+- [IBC Modules](modules)
+  - Derive `PartialEq` and `Eq` on `IbcEvent` and inner types
+    ([#1546](https://github.com/informalsystems/ibc-rs/issues/1546))
+- [Relayer Library](relayer)
+  - The relayer will now avoid submitting a tx after the simulation failed
+    (in all but one special case) to avoid wasting fees unnecessarily
+    ([#1479](https://github.com/informalsystems/ibc-rs/issues/1479))
+- [Relayer CLI](relayer-cli)
+  - Output errors on a single line if ANSI output is disabled
+    ([#1529](https://github.com/informalsystems/ibc-rs/issues/1529))
+  - Compute fee amount using big integers to prevent overflow
+    when using denominations with high decimal places
+    ([#1555](https://github.com/informalsystems/ibc-rs/issues/1555))
+
 ## v0.8.0
 *October 29th, 2021*
 

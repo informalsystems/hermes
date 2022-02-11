@@ -3,6 +3,7 @@
 */
 
 pub mod array;
+pub mod assert;
 pub mod file;
 pub mod random;
 pub mod retry;

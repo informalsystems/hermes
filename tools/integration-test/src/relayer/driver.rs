@@ -1,9 +1,10 @@
 use ibc_relayer::chain::handle::ProdChainHandle;
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
+use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
 use std::path::PathBuf;
 
-use crate::relayer::supervisor::{spawn_supervisor, SupervisorHandle};
+use crate::error::Error;
 use crate::types::env::{EnvWriter, ExportEnv};
 
 #[derive(Clone)]
@@ -37,8 +38,17 @@ pub struct RelayerDriver {
 }
 
 impl RelayerDriver {
-    pub fn spawn_supervisor(&self) -> SupervisorHandle {
-        spawn_supervisor(self.config.clone(), self.registry.clone())
+    pub fn spawn_supervisor(&self) -> Result<SupervisorHandle, Error> {
+        spawn_supervisor(
+            self.config.clone(),
+            self.registry.clone(),
+            None,
+            SupervisorOptions {
+                health_check: false,
+                force_full_scan: false,
+            },
+        )
+        .map_err(Error::supervisor)
     }
 }
 

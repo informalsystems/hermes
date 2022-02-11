@@ -21,9 +21,6 @@ pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, 
 where
     Ctx: Ics26Context,
 {
-    // Create a clone, which will store each intermediary stage of applying txs.
-    let mut ctx_interim = ctx.clone();
-
     // A buffer for all the events, to be used as return value.
     let mut res: Vec<IbcEvent> = Vec::new();
 
@@ -32,13 +29,12 @@ where
         let envelope = decode(any_msg)?;
 
         // Process the envelope, and accumulate any events that were generated.
-        let mut output = dispatch(&mut ctx_interim, envelope)?;
+        let mut output = dispatch(ctx, envelope)?;
+
         // TODO: output.log and output.result are discarded
         res.append(&mut output.events);
     }
 
-    // No error has surfaced, so we now apply the changes permanently to the original context.
-    *ctx = ctx_interim;
     Ok(res)
 }
 
@@ -129,7 +125,7 @@ where
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
@@ -200,7 +196,7 @@ mod tests {
         let mut ctx = MockContext::default();
 
         let create_client_msg = MsgCreateAnyClient::new(
-            AnyClientState::from(MockClientState(MockHeader::new(start_client_height))),
+            AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
             AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
                 start_client_height,
             ))),
@@ -435,7 +431,9 @@ mod tests {
                 name: "Client upgrade successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
                     client_id.clone(),
-                    AnyClientState::Mock(MockClientState(MockHeader::new(upgrade_client_height))),
+                    AnyClientState::Mock(MockClientState::new(MockHeader::new(
+                        upgrade_client_height,
+                    ))),
                     AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
                         upgrade_client_height,
                     ))),
@@ -449,7 +447,7 @@ mod tests {
                 name: "Client upgrade un-successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
                     client_id,
-                    AnyClientState::Mock(MockClientState(MockHeader::new(
+                    AnyClientState::Mock(MockClientState::new(MockHeader::new(
                         upgrade_client_height_second,
                     ))),
                     AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(

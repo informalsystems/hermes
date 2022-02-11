@@ -1,13 +1,13 @@
 use core::time::Duration;
 
 use crate::chain::counterparty::connection_state_on_destination;
+use crate::chain::tx::TrackedMsgs;
 use crate::util::retry::RetryResult;
 use flex_error::define_error;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use prost_types::Any;
 use serde::Serialize;
-use tracing::debug;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::{
@@ -24,9 +24,10 @@ use ibc::tx_msg::Msg;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::Error as RelayerError;
-use crate::foreign_client::{ForeignClient, ForeignClientError};
+use crate::foreign_client::{ForeignClient, ForeignClientError, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
 use crate::supervisor::Error as SupervisorError;
+use crate::util::task::Next;
 
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
@@ -187,6 +188,21 @@ define_error! {
                 format!("connection {} already exist in an incompatible state", e.connection_id)
             },
 
+    }
+}
+
+impl HasExpiredOrFrozenError for ConnectionErrorDetail {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        match self {
+            Self::ClientOperation(e) => e.source.is_expired_or_frozen_error(),
+            _ => false,
+        }
+    }
+}
+
+impl HasExpiredOrFrozenError for ConnectionError {
+    fn is_expired_or_frozen_error(&self) -> bool {
+        self.detail().is_expired_or_frozen_error()
     }
 }
 
@@ -602,37 +618,58 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             connection_id: connection_id.clone(),
         };
 
-        connection_state_on_destination(connection, &self.dst_chain())
+        connection_state_on_destination(&connection, &self.dst_chain())
             .map_err(ConnectionError::supervisor)
     }
 
-    pub fn handshake_step(&mut self, state: State) -> Result<Vec<IbcEvent>, ConnectionError> {
-        match (state, self.counterparty_state()?) {
-            (State::Init, State::Uninitialized) => Ok(vec![self.build_conn_try_and_send()?]),
-            (State::Init, State::Init) => Ok(vec![self.build_conn_try_and_send()?]),
-            (State::TryOpen, State::Init) => Ok(vec![self.build_conn_ack_and_send()?]),
-            (State::TryOpen, State::TryOpen) => Ok(vec![self.build_conn_ack_and_send()?]),
-            (State::Open, State::TryOpen) => Ok(vec![self.build_conn_confirm_and_send()?]),
-            _ => Ok(vec![]),
-        }
+    pub fn handshake_step(
+        &mut self,
+        state: State,
+    ) -> Result<(Option<IbcEvent>, Next), ConnectionError> {
+        let event = match (state, self.counterparty_state()?) {
+            (State::Init, State::Uninitialized) => Some(self.build_conn_try_and_send()?),
+            (State::Init, State::Init) => Some(self.build_conn_try_and_send()?),
+            (State::TryOpen, State::Init) => Some(self.build_conn_ack_and_send()?),
+            (State::TryOpen, State::TryOpen) => Some(self.build_conn_ack_and_send()?),
+            (State::Open, State::TryOpen) => Some(self.build_conn_confirm_and_send()?),
+            (State::Open, State::Open) => return Ok((None, Next::Abort)),
+
+            // If the counterparty state is already Open but current state is TryOpen,
+            // return anyway as the final step is to be done by the counterparty worker.
+            (State::TryOpen, State::Open) => return Ok((None, Next::Abort)),
+
+            _ => None,
+        };
+
+        Ok((event, Next::Continue))
     }
 
-    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<(), u64> {
-        let done = '🥳';
-
+    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<Next, u64> {
         match self.handshake_step(state) {
             Err(e) => {
-                error!("failed {:?} with error {}", state, e);
-                RetryResult::Retry(index)
+                if e.is_expired_or_frozen_error() {
+                    error!(
+                        "failed to establish connection handshake on frozen client: {}",
+                        e
+                    );
+                    RetryResult::Err(index)
+                } else {
+                    error!("failed {:?} with error {}", state, e);
+                    RetryResult::Retry(index)
+                }
             }
-            Ok(ev) => {
-                debug!("{} => {:#?}\n", done, ev);
-                RetryResult::Ok(())
+            Ok((Some(ev), handshake_completed)) => {
+                info!(
+                    "connection handshake step completed with events: {:#?}\n",
+                    ev
+                );
+                RetryResult::Ok(handshake_completed)
             }
+            Ok((None, handshake_completed)) => RetryResult::Ok(handshake_completed),
         }
     }
 
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<(), u64> {
+    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<Next, u64> {
         let state = match event {
             IbcEvent::OpenInitConnection(_) => State::Init,
             IbcEvent::OpenTryConnection(_) => State::TryOpen,
@@ -767,9 +804,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_init_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_init()?;
 
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenInit");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(dst_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection init
@@ -824,8 +863,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
+
+        let tm = TrackedMsgs::new(client_msgs, "update client on source for ConnectionOpenTry");
         self.src_chain()
-            .send_messages_and_wait_commit(client_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.src_chain().id(), e))?;
 
         let query_height = self
@@ -894,9 +935,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_try_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_try()?;
 
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenTry");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(dst_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection try transaction
@@ -941,8 +984,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
+
+        let tm = TrackedMsgs::new(client_msgs, "update client on source for ConnectionOpenAck");
+
         self.src_chain()
-            .send_messages_and_wait_commit(client_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.src_chain().id(), e))?;
 
         let query_height = self
@@ -985,9 +1031,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_ack_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_ack()?;
 
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenAck");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(dst_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection ack
@@ -1062,9 +1110,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn build_conn_confirm_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_confirm()?;
 
+        let tm = TrackedMsgs::new(dst_msgs, "ConnectionOpenConfirm");
+
         let events = self
             .dst_chain()
-            .send_messages_and_wait_commit(dst_msgs)
+            .send_messages_and_wait_commit(tm)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection confirm
@@ -1112,7 +1162,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     }
 }
 
-fn extract_connection_id(event: &IbcEvent) -> Result<&ConnectionId, ConnectionError> {
+pub fn extract_connection_id(event: &IbcEvent) -> Result<&ConnectionId, ConnectionError> {
     match event {
         IbcEvent::OpenInitConnection(ev) => ev.connection_id().as_ref(),
         IbcEvent::OpenTryConnection(ev) => ev.connection_id().as_ref(),

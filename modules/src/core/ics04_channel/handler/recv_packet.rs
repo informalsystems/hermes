@@ -60,8 +60,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
     }
 
-    let client_id = connection_end.client_id().clone();
-
     // Check if packet height is newer than the height of the local host chain
     let latest_height = ctx.host_height();
     if (!packet.timeout_height.is_zero()) && (packet.timeout_height <= latest_height) {
@@ -77,7 +75,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         return Err(Error::low_packet_timestamp());
     }
 
-    verify_packet_recv_proofs(ctx, packet, client_id, &msg.proofs)?;
+    verify_packet_recv_proofs(
+        ctx,
+        msg.proofs().height(),
+        packet,
+        &connection_end,
+        &msg.proofs,
+    )?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx
@@ -134,7 +138,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -144,6 +148,7 @@ mod tests {
     use crate::core::ics04_channel::handler::recv_packet::process;
     use crate::core::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
     use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+    use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::relayer::ics18_relayer::context::Ics18Context;
@@ -195,7 +200,7 @@ mod tests {
                 Some(packet.source_channel.clone()),
             ),
             vec![ConnectionId::default()],
-            "ics20".to_string(),
+            Version::ics20(),
         );
 
         let connection_end = ConnectionEnd::new(
@@ -246,7 +251,6 @@ mod tests {
                         1.into(),
                     )
                     .with_height(host_height)
-                    .with_timestamp(Timestamp::from_nanoseconds(1).unwrap())
                     // This `with_recv_sequence` is required for ordered channels
                     .with_recv_sequence(
                         packet.destination_port.clone(),
@@ -264,8 +268,7 @@ mod tests {
                     .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into())
-                    .with_height(host_height)
-                    .with_timestamp(Timestamp::from_nanoseconds(3).unwrap()),
+                    .with_height(host_height),
                 msg: msg_packet_old,
                 want_pass: false,
             },

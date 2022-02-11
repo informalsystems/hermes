@@ -1,4 +1,5 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
@@ -9,18 +10,18 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketRecvCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source port")]
+    #[clap(required = true, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, required, help = "identifier of the source channel")]
+    #[clap(required = true, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
 }
 
@@ -30,7 +31,7 @@ impl Runnable for TxRawPacketRecvCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let opts = LinkParameters {
@@ -39,7 +40,7 @@ impl Runnable for TxRawPacketRecvCmd {
         };
         let mut link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IbcEvent>, Error> = link
@@ -53,18 +54,18 @@ impl Runnable for TxRawPacketRecvCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketAckCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
+    #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source port")]
+    #[clap(required = true, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, required, help = "identifier of the source channel")]
+    #[clap(required = true, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
 }
 
@@ -74,7 +75,7 @@ impl Runnable for TxRawPacketAckCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let opts = LinkParameters {
@@ -83,7 +84,7 @@ impl Runnable for TxRawPacketAckCmd {
         };
         let mut link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IbcEvent>, Error> = link

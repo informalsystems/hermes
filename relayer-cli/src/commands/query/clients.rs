@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use serde::Serialize;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -14,21 +15,20 @@ use crate::error::Error;
 use crate::prelude::*;
 
 /// Query clients command
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryAllClientsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(
+    #[clap(
+        short,
+        long,
         help = "filter for clients which target a specific chain id (implies '-o')",
-        meta = "ID"
+        value_name = "ID"
     )]
     src_chain_id: Option<ChainId>,
 
-    #[options(
-        help = "omit printing the source chain for each client",
-        default = "false"
-    )]
+    #[clap(short, long, help = "omit printing the source chain for each client")]
     omit_chain_ids: bool,
 }
 
@@ -45,13 +45,11 @@ impl Runnable for QueryAllClientsCmd {
         let config = app_config();
 
         let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
+            None => Output::error(format!(
+                "chain '{}' not found in configuration file",
+                self.chain_id
+            ))
+            .exit(),
             Some(chain_config) => chain_config,
         };
 

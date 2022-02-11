@@ -1,5 +1,6 @@
-use crate::core::ics04_channel::channel::{validate_version, ChannelEnd};
+use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::error::Error as ChannelError;
+use crate::core::ics04_channel::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
@@ -22,7 +23,7 @@ pub struct MsgChannelOpenTry {
     pub port_id: PortId,
     pub previous_channel_id: Option<ChannelId>,
     pub channel: ChannelEnd,
-    pub counterparty_version: String, // TODO(romac): newtype this
+    pub counterparty_version: Version,
     pub proofs: Proofs,
     pub signer: Signer,
 }
@@ -32,7 +33,7 @@ impl MsgChannelOpenTry {
         port_id: PortId,
         previous_channel_id: Option<ChannelId>,
         channel: ChannelEnd,
-        counterparty_version: String,
+        counterparty_version: Version,
         proofs: Proofs,
         signer: Signer,
     ) -> Self {
@@ -53,7 +54,7 @@ impl MsgChannelOpenTry {
     pub fn previous_channel_id(&self) -> &Option<ChannelId> {
         &self.previous_channel_id
     }
-    pub fn counterparty_version(&self) -> &String {
+    pub fn counterparty_version(&self) -> &Version {
         &self.counterparty_version
     }
     pub fn channel(&self) -> &ChannelEnd {
@@ -90,7 +91,10 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
 
     fn try_from(raw_msg: RawMsgChannelOpenTry) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_init.into(),
+            raw_msg
+                .proof_init
+                .try_into()
+                .map_err(ChannelError::invalid_proof)?,
             None,
             None,
             None,
@@ -114,7 +118,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
                 .channel
                 .ok_or_else(ChannelError::missing_channel)?
                 .try_into()?,
-            counterparty_version: validate_version(raw_msg.counterparty_version)?,
+            counterparty_version: raw_msg.counterparty_version.into(),
             proofs,
             signer: raw_msg.signer.into(),
         };
@@ -134,7 +138,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
                 .previous_channel_id
                 .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             channel: Some(domain_msg.channel.into()),
-            counterparty_version: domain_msg.counterparty_version,
+            counterparty_version: domain_msg.counterparty_version.into(),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: domain_msg.signer.to_string(),
@@ -177,7 +181,7 @@ mod tests {
 
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
     use ibc_proto::ibc::core::client::v1::Height;
-    use test_env_log::test;
+    use test_log::test;
 
     #[test]
     fn channel_open_try_from_raw() {

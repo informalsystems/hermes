@@ -1,5 +1,5 @@
-use crate::core::ics04_channel::channel::validate_version;
 use crate::core::ics04_channel::error::Error;
+use crate::core::ics04_channel::Version;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 use crate::proofs::Proofs;
@@ -19,7 +19,7 @@ pub struct MsgChannelOpenAck {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub counterparty_channel_id: ChannelId,
-    pub counterparty_version: String, // FIXME(romac): Introduce newtype for versions
+    pub counterparty_version: Version,
     pub proofs: Proofs,
     pub signer: Signer,
 }
@@ -29,7 +29,7 @@ impl MsgChannelOpenAck {
         port_id: PortId,
         channel_id: ChannelId,
         counterparty_channel_id: ChannelId,
-        counterparty_version: String,
+        counterparty_version: Version,
         proofs: Proofs,
         signer: Signer,
     ) -> Self {
@@ -55,7 +55,7 @@ impl MsgChannelOpenAck {
         &self.counterparty_channel_id
     }
 
-    pub fn counterparty_version(&self) -> &String {
+    pub fn counterparty_version(&self) -> &Version {
         &self.counterparty_version
     }
 
@@ -84,7 +84,7 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
 
     fn try_from(raw_msg: RawMsgChannelOpenAck) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_try.into(),
+            raw_msg.proof_try.try_into().map_err(Error::invalid_proof)?,
             None,
             None,
             None,
@@ -102,7 +102,7 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
                 .counterparty_channel_id
                 .parse()
                 .map_err(Error::identifier)?,
-            counterparty_version: validate_version(raw_msg.counterparty_version)?,
+            counterparty_version: raw_msg.counterparty_version.into(),
             proofs,
             signer: raw_msg.signer.into(),
         })
@@ -115,7 +115,7 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
             counterparty_channel_id: domain_msg.counterparty_channel_id.to_string(),
-            counterparty_version: domain_msg.counterparty_version.to_string(),
+            counterparty_version: domain_msg.counterparty_version.into(),
             proof_try: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: domain_msg.signer.to_string(),
@@ -153,7 +153,7 @@ pub mod test_util {
 mod tests {
     use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
     use crate::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;

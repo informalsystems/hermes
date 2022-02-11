@@ -68,9 +68,14 @@ pub(crate) fn process(
         expected_connection_hops,
         msg.counterparty_version().clone(),
     );
+
+    // set the counterparty channel id to verify against it
+    channel_end.set_counterparty_channel_id(msg.counterparty_channel_id.clone());
+
     //2. Verify proofs
     verify_channel_proofs(
         ctx,
+        msg.proofs().height(),
         &channel_end,
         &conn,
         &expected_channel_end,
@@ -82,7 +87,6 @@ pub(crate) fn process(
     // Transition the channel end to the new state & pick a version.
     channel_end.set_state(State::Open);
     channel_end.set_version(msg.counterparty_version().clone());
-    channel_end.set_counterparty_channel_id(msg.counterparty_channel_id.clone());
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
@@ -103,10 +107,9 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
-
     use core::str::FromStr;
-    use test_env_log::test;
+
+    use test_log::test;
 
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -126,6 +129,7 @@ mod tests {
     use crate::core::ics24_host::identifier::ConnectionId;
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
+    use crate::prelude::*;
     use crate::Height;
 
     // TODO: The tests here are very fragile and complex.
@@ -194,7 +198,7 @@ mod tests {
                 Some(msg_chan_ack.channel_id().clone()),
             ),
             connection_vec0.clone(),
-            msg_chan_try.channel.version(),
+            msg_chan_try.channel.version().clone(),
         );
 
         let failed_chan_end = ChannelEnd::new(
@@ -205,7 +209,7 @@ mod tests {
                 Some(msg_chan_ack.channel_id().clone()),
             ),
             connection_vec0,
-            msg_chan_try.channel.version(),
+            msg_chan_try.channel.version().clone(),
         );
 
         let tests: Vec<Test> = vec![

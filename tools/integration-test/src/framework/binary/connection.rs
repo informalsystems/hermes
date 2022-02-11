@@ -14,6 +14,7 @@ use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
+use crate::framework::base::TestConfigOverride;
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::connection::ConnectedConnection;
@@ -29,7 +30,7 @@ pub fn run_two_way_binary_connection_test<Test, Overrides>(test: &Test) -> Resul
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + TestConfigOverride,
 {
     run_binary_connection_test(&RunTwoWayBinaryConnectionTest::new(test))
 }
@@ -41,7 +42,7 @@ pub fn run_binary_connection_test<Test, Overrides>(test: &Test) -> Result<(), Er
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + TestConfigOverride,
 {
     run_binary_chain_test(&RunBinaryConnectionTest::new(test))
 }
@@ -115,7 +116,11 @@ where
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let connection = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b)?;
+        let connection = bootstrap_connection(
+            &chains.client_b_to_a,
+            &chains.client_a_to_b,
+            config.bootstrap_with_random_ids,
+        )?;
 
         let env_path = config.chain_store_dir.join("binary-connections.env");
 

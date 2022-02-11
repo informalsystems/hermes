@@ -10,7 +10,7 @@ use crate::bootstrap::binary::chain::{
     add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client, new_registry,
     save_relayer_config,
 };
-use crate::error::Error;
+use crate::error::{handle_generic_error, Error};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::{ConnectedChains, DynamicConnectedChains};
@@ -88,7 +88,9 @@ pub fn spawn_chain_handle<Handle: ChainHandle>(
     node: &FullNode,
 ) -> Result<Handle, Error> {
     let chain_id = &node.chain_driver.chain_id;
-    let handle = registry.get_or_spawn(chain_id)?;
+    let handle = registry
+        .get_or_spawn(chain_id)
+        .map_err(handle_generic_error)?;
 
     add_keys_to_chain_handle(&handle, &node.wallets)?;
 

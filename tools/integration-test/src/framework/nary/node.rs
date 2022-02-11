@@ -2,7 +2,7 @@ use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
-use crate::framework::base::{run_basic_test, BasicTest};
+use crate::framework::base::{run_basic_test, BasicTest, TestConfigOverride};
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
@@ -12,7 +12,7 @@ pub fn run_nary_node_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Re
 where
     Test: NaryNodeTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride,
+    Overrides: NodeConfigOverride + TestConfigOverride,
 {
     run_basic_test(&RunNaryNodeTest { test })
 }

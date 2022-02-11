@@ -11,45 +11,45 @@ log_level = 'info'
 
 # Specify the client mode.
 [mode.clients]
+
 # Whether or not to enable the client workers. [Required]
-enabled = false
-# Whether or not to enable periodic refresh of clients. [Default: false]
+enabled = true
+
+# Whether or not to enable periodic refresh of clients. [Default: true]
+# Note: Even if this is disabled, clients will be refreshed automatically if
+#      there is activity on a connection or channel they are involved with.
 refresh = true
+
 # Whether or not to enable misbehaviour detection for clients. [Default: false]
 misbehaviour = true
 
 # Specify the connections mode.
 [mode.connections]
-# Whether or not to enable the connection workers. [Required]
+
+# Whether or not to enable the connection workers for handshake completion. [Required]
 enabled = false
 
 # Specify the channels mode.
 [mode.channels]
-# Whether or not to enable the channel workers. [Required]
+
+# Whether or not to enable the channel workers for handshake completion. [Required]
 enabled = false
 
 # Specify the packets mode.
 [mode.packets]
+
 # Whether or not to enable the packet workers. [Required]
-enabled = false
+enabled = true
+
 # Parametrize the periodic packet clearing feature.
 # Interval (in number of blocks) at which pending packets
 # should be eagerly cleared. A value of '0' will disable
 # periodic packet clearing. [Default: 100]
 clear_interval = 100
+
 # Whether or not to clear packets on start. [Default: false]
 clear_on_start = true
-# Enable or disable the filtering mechanism.
-# Valid options are 'true', 'false'.
-# Currently Hermes supports two filters:
-# 1. Packet filtering on a per-chain basis; see the chain-specific
-#   filter specification below in [chains.packet_filter].
-# 2. Filter for all activities based on client state trust threshold; this filter
-#   is parametrized with (numerator = 1, denominator = 3), so that clients with
-#   thresholds different than this will be ignored.
-# If set to 'true', both of the above filters will be enabled.
-# [Default: false]
-filter = false
+
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
@@ -109,6 +109,8 @@ websocket_addr = 'ws://127.0.0.1:26657/websocket'
 
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
+# Note: Hermes uses this parameter _only_ in `start` mode; for all other CLIs,
+# Hermes uses a large preconfigured timeout (on the order of minutes).
 rpc_timeout = '10s'
 
 # Specify the prefix used by the chain. Required
@@ -125,11 +127,11 @@ key_name = 'testkey'
 # 3) the message signing method.
 # The current configuration options are for Cosmos SDK and Ethermint.
 #
-# Example configuration for Ethermint:
+# Example configuration for chains based on Ethermint library:
 #
 # address_type = { derivation = 'ethermint', proto_type = { pk_type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
 #
-# Default: { derivation = 'cosmos' }, i.e. address derivation as in Cosmos SDK
+# Default: { derivation = 'cosmos' }, i.e. address derivation as in Cosmos SDK.
 # Warning: This is an advanced feature! Modify with caution.
 address_type = { derivation = 'cosmos' }
 
@@ -143,8 +145,8 @@ store_prefix = 'ibc'
 default_gas = 100000
 
 # Specify the maximum amount of gas to be used as the gas limit for a transaction.
-# Default: 300 000
-max_gas = 300000
+# Default: 400 000
+max_gas = 400000
 
 # Specify the price per gas used of the fee to submit a transaction and
 # the denomination of the fee. Required
@@ -193,9 +195,9 @@ trust_threshold = { numerator = '1', denominator = '3' }
 memo_prefix = ''
 
 # This section specifies the filters for policy based relaying.
-# Default: no policy/ filters
-# The section is ignored if the global 'filter' option is set to 'false'.
-# If the global 'filter' option is set to 'true' and this section is missing then no filtering is performed for this chain.
+#
+# Default: no policy / filters, allow all packets on all channels.
+#
 # Only packet filtering based on channel identifier can be specified.
 # A channel filter has two fields:
 # 1. `policy` - one of two types are supported:
@@ -211,6 +213,11 @@ memo_prefix = ''
 #   ['transfer', 'channel-0'],
 # ]
 
+# Specify that the transaction fees should be payed from this fee granter's account.
+# Optional. If unspecified (the default behavior), then no fee granter is used, and
+# the account specified in `key_name` will pay the tx fees for all transactions
+# submitted to this chain.
+# fee_granter = ''
 
 [[chains]]
 id = 'ibc-1'
@@ -222,7 +229,7 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 default_gas = 100000
-max_gas = 3000000
+max_gas = 400000
 gas_price = { price = 0.001, denom = 'stake' }
 gas_adjustment = 0.1
 max_msg_num = 30

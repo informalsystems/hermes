@@ -30,11 +30,11 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> 
         &self,
     ) -> Result<TaggedConnectedConnection<Handle, FIRST, SECOND>, Error> {
         if FIRST >= SIZE || SECOND >= SIZE {
-            Err(eyre!(
+            Err(Error::generic(eyre!(
                 "cannot get connection beyond position {}/{}",
                 FIRST,
                 SECOND
-            ))
+            )))
         } else {
             let raw_connection = self.connections[FIRST][SECOND].clone();
 

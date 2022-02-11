@@ -40,7 +40,14 @@ pub(crate) fn process(
     );
 
     // 2. Pass the details to the verification function.
-    verify_proofs(ctx, None, &conn_end, &expected_conn, msg.proofs())?;
+    verify_proofs(
+        ctx,
+        None,
+        msg.proofs().height(),
+        &conn_end,
+        &expected_conn,
+        msg.proofs(),
+    )?;
 
     output.log("success: connection verification passed");
 
@@ -67,7 +74,7 @@ mod tests {
     use crate::prelude::*;
 
     use core::str::FromStr;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::core::ics03_connection::context::ConnectionReader;
@@ -97,7 +104,7 @@ mod tests {
         let counterparty = Counterparty::new(
             client_id.clone(),
             Some(msg_confirm.connection_id().clone()),
-            CommitmentPrefix::from(Vec::new()),
+            CommitmentPrefix::try_from(b"ibc".to_vec()).unwrap(),
         );
 
         let context = MockContext::default();

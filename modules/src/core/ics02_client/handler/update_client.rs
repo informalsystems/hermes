@@ -10,6 +10,7 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
 use crate::core::ics02_client::header::Header;
+use crate::core::ics02_client::height::Height;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::IbcEvent;
@@ -24,6 +25,8 @@ pub struct Result {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
     pub consensus_state: AnyConsensusState,
+    pub processed_time: Timestamp,
+    pub processed_height: Height,
 }
 
 pub fn process(
@@ -59,13 +62,11 @@ pub fn process(
 
     debug!("latest consensus state: {:?}", latest_consensus_state);
 
-    let duration = Timestamp::now()
+    let now = ctx.host_timestamp();
+    let duration = now
         .duration_since(&latest_consensus_state.timestamp())
         .ok_or_else(|| {
-            Error::invalid_consensus_state_timestamp(
-                latest_consensus_state.timestamp(),
-                header.timestamp(),
-            )
+            Error::invalid_consensus_state_timestamp(latest_consensus_state.timestamp(), now)
         })?;
 
     if client_state.expired(duration) {
@@ -86,6 +87,8 @@ pub fn process(
         client_id: client_id.clone(),
         client_state: new_client_state,
         consensus_state: new_consensus_state,
+        processed_time: ctx.host_timestamp(),
+        processed_height: ctx.host_height(),
     });
 
     let event_attributes = Attributes {
@@ -100,7 +103,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use core::str::FromStr;
-    use test_env_log::test;
+    use test_log::test;
 
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
@@ -159,7 +162,7 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState(
+                            AnyClientState::Mock(MockClientState::new(
                                 MockHeader::new(msg.header.height()).with_timestamp(timestamp)
                             ))
                         )

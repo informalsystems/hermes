@@ -5,16 +5,19 @@ use core::time::Duration;
 
 use bytes::BufMut;
 use flex_error::define_error;
+use ibc::clients::ics07_tendermint::client_state::UpgradeOptions;
+use ibc::downcast;
 use prost_types::Any;
 
-use ibc::core::ics02_client::client_state::AnyClientState;
+use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc::{clients::ics07_tendermint::client_state::ClientState, events::IbcEvent};
+use ibc::events::IbcEvent;
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::{Plan, SoftwareUpgradeProposal};
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
+use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -33,17 +36,17 @@ define_error! {
             { chain_id: ChainId }
             [ Error ]
             |e| {
-                format!("failed while submitting the Transfer message to chain {0}",
-                    e.chain_id)
+                format!("failed while submitting the Transfer message to chain {0}", e.chain_id)
             },
 
         TxResponse
             { event: String }
             |e| {
-                format!("tx response event consists of an error: {}",
-                    e.event)
+                format!("tx response event consists of an error: {}", e.event)
             },
 
+        TendermintOnly
+            |_| { "only Tendermint clients can be upgraded" }
     }
 }
 
@@ -53,6 +56,7 @@ pub struct UpgradePlanOptions {
     pub dst_chain_config: ChainConfig,
     pub src_client_id: ClientId,
     pub amount: u64,
+    pub denom: String,
     pub height_offset: u64,
     pub upgraded_chain_id: ChainId,
     pub upgraded_unbonding_period: Option<Duration>,
@@ -74,21 +78,26 @@ pub fn build_and_send_ibc_upgrade_proposal(
         .query_client_state(&opts.src_client_id, Height::zero())
         .map_err(UpgradeChainError::query)?;
 
+    let client_state = downcast!(client_state => AnyClientState::Tendermint)
+        .ok_or_else(UpgradeChainError::tendermint_only)?;
+
     // Retain the old unbonding period in case the user did not specify a new one
-    let upgraded_unbonding_period = opts
-        .upgraded_unbonding_period
-        .unwrap_or(client_state.unbonding_period);
+    let upgrade_options = UpgradeOptions {
+        unbonding_period: opts
+            .upgraded_unbonding_period
+            .unwrap_or(client_state.unbonding_period),
+    };
 
-    let mut upgraded_client_state = ClientState::zero_custom_fields(client_state);
-    upgraded_client_state.latest_height = upgrade_height.increment();
-    upgraded_client_state.unbonding_period = upgraded_unbonding_period;
-    upgraded_client_state.chain_id = opts.upgraded_chain_id.clone();
+    let upgraded_client_state = client_state.upgrade(
+        upgrade_height.increment(),
+        upgrade_options,
+        opts.upgraded_chain_id.clone(),
+    );
 
-    let raw_client_state = AnyClientState::Tendermint(upgraded_client_state);
     let proposal = UpgradeProposal {
         title: "proposal 0".to_string(),
         description: "upgrade the chain software and unbonding period".to_string(),
-        upgraded_client_state: Some(Any::from(raw_client_state)),
+        upgraded_client_state: Some(Any::from(upgraded_client_state.wrap_any())),
         plan: Some(Plan {
             name: opts.upgrade_plan_name.clone(),
             height: upgrade_height.revision_height as i64,
@@ -114,7 +123,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     let proposer = dst_chain.get_signer().map_err(UpgradeChainError::key)?;
 
     let coins = ibc_proto::cosmos::base::v1beta1::Coin {
-        denom: "stake".to_string(),
+        denom: opts.denom.clone(),
         amount: opts.amount.to_string(),
     };
 
@@ -132,7 +141,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     };
 
     let events = dst_chain
-        .send_messages_and_wait_commit(vec![any_msg])
+        .send_messages_and_wait_commit(TrackedMsgs::new_single(any_msg, "upgrade"))
         .map_err(|e| UpgradeChainError::submit(dst_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction

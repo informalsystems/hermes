@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain, HealthCheck::*};
@@ -8,7 +9,7 @@ use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain, HealthCheck::*};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct HealthCheckCmd {}
 
 impl Runnable for HealthCheckCmd {
@@ -19,13 +20,8 @@ impl Runnable for HealthCheckCmd {
             let rt = Arc::new(TokioRuntime::new().unwrap());
 
             let chain_config = match config.find_chain(&ch.id) {
-                None => {
-                    return Output::error(format!(
-                        "chain '{}' not found in configuration file",
-                        ch.id
-                    ))
-                    .exit()
-                }
+                None => Output::error(format!("chain '{}' not found in configuration file", ch.id))
+                    .exit(),
                 Some(chain_config) => chain_config,
             };
 

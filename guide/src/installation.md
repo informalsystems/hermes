@@ -14,11 +14,11 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- MacOS: `hermes-v0.8.0-pre.1-x86_64-apple-darwin.tar.gz` (or .zip),
-- Linux: `hermes-v0.8.0-pre.1-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+- MacOS: `hermes-v0.11.1-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-v0.11.1-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
- 
+
 1. Make the directory where we'll place the binary:
    ```shell
    mkdir -p $HOME/.hermes/bin
@@ -47,7 +47,7 @@ hermes version
 ```
 
 ```
-hermes 0.8.0
+hermes 0.11.1
 ```
 
 ## Install via Cargo
@@ -62,7 +62,7 @@ To install the latest release of Hermes, run the following command in a terminal
 cargo install ibc-relayer-cli --bin hermes --locked
 ```
 
-This will download and build the crate `ibc-relayer-cli`, and install the 
+This will download and build the crate `ibc-relayer-cli`, and install the
 `hermes` binary in `$HOME/.cargo/bin`.
 
 > If you have not installed Rust and Cargo via [rustup.rs](https://rustup.rs), you may need to
@@ -81,7 +81,7 @@ hermes version
 ```
 
 ```
-hermes 0.8.0
+hermes 0.11.1
 ```
 
 ## Build from source
@@ -103,10 +103,10 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `v0.8.0-pre.1` then execute the command:
+Then checkout the release, for example if the most recent release is `v0.11.1` then execute the command:
 
 ```shell
-git checkout v0.8.0-pre.1
+git checkout v0.11.1
 ```
 
 ### Building with `cargo build`
@@ -151,7 +151,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-hermes 0.8.0
+hermes 0.11.1
 Informal Systems <hello@informal.systems>
 
 USAGE:
@@ -180,7 +180,41 @@ It might be easier to create an alias for `hermes` so you can just run it by spe
 alias hermes='cargo run --release --bin hermes --'
 ```
 
-### Next Steps
+## Shell auto-completions
+
+The `completions` subcommand of Hermes can be used to output a completion script
+for a choice of widely used command-line shells.
+Refer to `hermes completions --help` for the list. Some shell-specific examples
+of setting up auto-completion with this command are provided below; check your
+shell configuration to decide on the suitable directory in which to install the script
+and any further necessary modifications to the shell's startup files.
+
+### Bash
+
+```sh
+hermes completions bash > ~/.local/share/bash-completion/completions/hermes
+```
+
+On a MacOS installation with Homebrew `bash-completion` formula installed, use 
+
+```sh
+hermes completions bash > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
+```
+
+### Zsh
+
+```sh
+hermes completions zsh > ~/.zfunc/_hermes
+```
+
+To make the shell load the script on initialization, add the directory to `fpath`
+in your `~/.zshrc` before `compinit`:
+
+```
+fpath+=~/.zfunc
+```
+
+## Next Steps
 
 Go to the [`Configuration`](./config.md) section to learn how to create a configuration file to be used by Hermes.
 

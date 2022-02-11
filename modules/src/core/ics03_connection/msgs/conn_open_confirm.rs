@@ -63,8 +63,14 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
                 .connection_id
                 .parse()
                 .map_err(Error::invalid_identifier)?,
-            proofs: Proofs::new(msg.proof_ack.into(), None, None, None, proof_height)
-                .map_err(Error::invalid_proof)?,
+            proofs: Proofs::new(
+                msg.proof_ack.try_into().map_err(Error::invalid_proof)?,
+                None,
+                None,
+                None,
+                proof_height,
+            )
+            .map_err(Error::invalid_proof)?,
             signer: msg.signer.into(),
         })
     }
@@ -106,7 +112,7 @@ pub mod test_util {
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;

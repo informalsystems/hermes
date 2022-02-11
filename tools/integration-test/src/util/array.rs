@@ -5,7 +5,7 @@ use crate::error::Error;
 
 pub fn try_into_array<T, const SIZE: usize>(list: Vec<T>) -> Result<[T; SIZE], Error> {
     list.try_into()
-        .map_err(|_| eyre!("vector is not of length {}", SIZE))
+        .map_err(|_| Error::generic(eyre!("vector is not of length {}", SIZE)))
 }
 
 pub fn try_into_nested_array<T, const SIZE: usize>(
@@ -42,20 +42,20 @@ pub fn map_nested_array<T, R, const SIZE: usize>(
 
 pub fn assert_same_dimension<T>(size: usize, list: &[Vec<T>]) -> Result<(), Error> {
     if list.len() != size {
-        return Err(eyre!(
+        return Err(Error::generic(eyre!(
             "expect nested vector to have the dimension {} x {}",
             size,
             size
-        ));
+        )));
     }
 
     for list_b in list.iter() {
         if list_b.len() != size {
-            return Err(eyre!(
+            return Err(Error::generic(eyre!(
                 "expect nested vector to have the dimension {} x {}",
                 size,
                 size
-            ));
+            )));
         }
     }
 

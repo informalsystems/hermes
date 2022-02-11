@@ -8,7 +8,10 @@ use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::events::{extract_attribute, Error as EventError, IbcEvent, IbcEventType, RawObject};
+use crate::events::{
+    extract_attribute, maybe_extract_attribute, Error as EventError, IbcEvent, IbcEventType,
+    RawObject,
+};
 use crate::prelude::*;
 
 /// Channel event attribute keys
@@ -28,7 +31,6 @@ const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
 const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
 const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
-
 const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
@@ -180,7 +182,32 @@ fn extract_packet_and_write_ack_from_tx(
     Ok((packet, write_ack))
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attributes, EventError> {
+    Ok(Attributes {
+        height: object.height,
+        port_id: extract_attribute(object, &format!("{}.port_id", namespace))?
+            .parse()
+            .map_err(EventError::parse)?,
+        channel_id: maybe_extract_attribute(object, &format!("{}.channel_id", namespace))
+            .and_then(|v| v.parse().ok()),
+        connection_id: extract_attribute(object, &format!("{}.connection_id", namespace))?
+            .parse()
+            .map_err(EventError::parse)?,
+        counterparty_port_id: extract_attribute(
+            object,
+            &format!("{}.counterparty_port_id", namespace),
+        )?
+        .parse()
+        .map_err(EventError::parse)?,
+        counterparty_channel_id: maybe_extract_attribute(
+            object,
+            &format!("{}.counterparty_channel_id", namespace),
+        )
+        .and_then(|v| v.parse().ok()),
+    })
+}
+
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
     pub height: Height,
     pub port_id: PortId,
@@ -196,19 +223,6 @@ impl Attributes {
     }
     pub fn channel_id(&self) -> Option<&ChannelId> {
         self.channel_id.as_ref()
-    }
-}
-
-impl Default for Attributes {
-    fn default() -> Self {
-        Attributes {
-            height: Default::default(),
-            port_id: Default::default(),
-            channel_id: Default::default(),
-            connection_id: Default::default(),
-            counterparty_port_id: Default::default(),
-            counterparty_channel_id: Default::default(),
-        }
     }
 }
 
@@ -307,7 +321,7 @@ impl TryFrom<Packet> for Vec<Tag> {
             key: PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY.parse().unwrap(),
             value: p
                 .timeout_timestamp
-                .as_nanoseconds()
+                .nanoseconds()
                 .to_string()
                 .parse()
                 .unwrap(),
@@ -327,6 +341,10 @@ impl TryFrom<Packet> for Vec<Tag> {
         attributes.push(ack);
         Ok(attributes)
     }
+}
+
+trait EventType {
+    fn event_type() -> IbcEventType;
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
@@ -362,13 +380,9 @@ impl From<OpenInit> for IbcEvent {
     }
 }
 
-impl From<OpenInit> for AbciEvent {
-    fn from(v: OpenInit) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::OpenInitChannel.as_str().to_string(),
-            attributes,
-        }
+impl EventType for OpenInit {
+    fn event_type() -> IbcEventType {
+        IbcEventType::OpenInitChannel
     }
 }
 
@@ -405,13 +419,9 @@ impl From<OpenTry> for IbcEvent {
     }
 }
 
-impl From<OpenTry> for AbciEvent {
-    fn from(v: OpenTry) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::OpenTryChannel.as_str().to_string(),
-            attributes,
-        }
+impl EventType for OpenTry {
+    fn event_type() -> IbcEventType {
+        IbcEventType::OpenTryChannel
     }
 }
 
@@ -452,13 +462,9 @@ impl From<OpenAck> for IbcEvent {
     }
 }
 
-impl From<OpenAck> for AbciEvent {
-    fn from(v: OpenAck) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::OpenAckChannel.as_str().to_string(),
-            attributes,
-        }
+impl EventType for OpenAck {
+    fn event_type() -> IbcEventType {
+        IbcEventType::OpenAckChannel
     }
 }
 
@@ -495,13 +501,9 @@ impl From<OpenConfirm> for IbcEvent {
     }
 }
 
-impl From<OpenConfirm> for AbciEvent {
-    fn from(v: OpenConfirm) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::OpenConfirmChannel.as_str().to_string(),
-            attributes,
-        }
+impl EventType for OpenConfirm {
+    fn event_type() -> IbcEventType {
+        IbcEventType::OpenConfirmChannel
     }
 }
 
@@ -550,16 +552,6 @@ impl From<CloseInit> for IbcEvent {
     }
 }
 
-impl From<CloseInit> for AbciEvent {
-    fn from(v: CloseInit) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::CloseInitChannel.as_str().to_string(),
-            attributes,
-        }
-    }
-}
-
 impl core::fmt::Display for CloseInit {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
@@ -569,6 +561,12 @@ impl core::fmt::Display for CloseInit {
             IbcEventType::CloseInitChannel.as_str(),
             self.0
         )
+    }
+}
+
+impl EventType for CloseInit {
+    fn event_type() -> IbcEventType {
+        IbcEventType::CloseInitChannel
     }
 }
 
@@ -599,15 +597,56 @@ impl From<CloseConfirm> for IbcEvent {
     }
 }
 
-impl From<CloseConfirm> for AbciEvent {
-    fn from(v: CloseConfirm) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::CloseConfirmChannel.as_str().to_string(),
-            attributes,
-        }
+impl EventType for CloseConfirm {
+    fn event_type() -> IbcEventType {
+        IbcEventType::CloseConfirmChannel
     }
 }
+
+macro_rules! impl_from_ibc_to_abci_event {
+    ($($event:ty),+) => {
+        $(impl From<$event> for AbciEvent {
+            fn from(v: $event) -> Self {
+                let attributes = Vec::<Tag>::from(v.0);
+                let type_str = <$event>::event_type().as_str().to_string();
+                AbciEvent {
+                    type_str,
+                    attributes,
+                }
+            }
+        })+
+    };
+}
+
+impl_from_ibc_to_abci_event!(
+    OpenInit,
+    OpenTry,
+    OpenAck,
+    OpenConfirm,
+    CloseInit,
+    CloseConfirm
+);
+
+macro_rules! impl_try_from_raw_obj_for_event {
+    ($($event:ty),+) => {
+        $(impl TryFrom<RawObject<'_>> for $event {
+            type Error = EventError;
+
+            fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
+                Ok(Self(extract_attributes(&obj, Self::event_type().as_str())?))
+            }
+        })+
+    };
+}
+
+impl_try_from_raw_obj_for_event!(
+    OpenInit,
+    OpenTry,
+    OpenAck,
+    OpenConfirm,
+    CloseInit,
+    CloseConfirm
+);
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct SendPacket {
@@ -633,20 +672,6 @@ impl SendPacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
-    }
-}
-
-impl TryFrom<RawObject> for SendPacket {
-    type Error = EventError;
-
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let height = obj.height;
-        let data_str: String = extract_attribute(&obj, &format!("{}.packet_data", obj.action))?;
-
-        let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_str().as_bytes());
-
-        Ok(SendPacket { height, packet })
     }
 }
 
@@ -917,6 +942,53 @@ impl core::fmt::Display for TimeoutOnClosePacket {
     }
 }
 
+macro_rules! impl_try_from_raw_obj_for_packet {
+    ($($packet:ty),+) => {
+        $(impl TryFrom<RawObject<'_>> for $packet {
+            type Error = EventError;
+
+            fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
+                let height = obj.height;
+                let data_str: String = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
+
+                let mut packet = Packet::try_from(obj)?;
+                packet.data = Vec::from(data_str.as_str().as_bytes());
+
+                Ok(Self { height, packet })
+            }
+        })+
+    };
+}
+
+impl_try_from_raw_obj_for_packet!(
+    SendPacket,
+    ReceivePacket,
+    AcknowledgePacket,
+    TimeoutPacket,
+    TimeoutOnClosePacket
+);
+
+impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
+    type Error = EventError;
+
+    fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
+        let height = obj.height;
+        let data_str: String =
+            extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
+        let ack = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_ACK_ATTRIBUTE_KEY))?
+            .into_bytes();
+
+        let mut packet = Packet::try_from(obj)?;
+        packet.data = Vec::from(data_str.as_str().as_bytes());
+
+        Ok(Self {
+            height,
+            packet,
+            ack,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -973,7 +1045,7 @@ mod tests {
             destination_channel: "b_test_channel".parse().unwrap(),
             data: "test_data".as_bytes().to_vec(),
             timeout_height: Height::new(1, 10),
-            timeout_timestamp: Timestamp::from_datetime(chrono::offset::Utc::now()),
+            timeout_timestamp: Timestamp::now(),
         };
         let mut abci_events = vec![];
         let send_packet = SendPacket {

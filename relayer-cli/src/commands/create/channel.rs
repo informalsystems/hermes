@@ -1,4 +1,6 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
+use clap::AppSettings;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
@@ -15,44 +17,53 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
+#[clap(setting(AppSettings::DisableVersionFlag))]
 pub struct CreateChannelCommand {
-    #[options(
-        free,
-        required,
+    #[clap(
+        required = true,
         help = "identifier of the side `a` chain for the new channel"
     )]
     chain_a_id: ChainId,
 
-    #[options(
-        free,
-        help = "identifier of the side `b` chain for the new channel (optional)"
-    )]
+    #[clap(help = "identifier of the side `b` chain for the new channel (optional)")]
     chain_b_id: Option<ChainId>,
 
-    #[options(
+    #[clap(
+        short,
+        long,
         help = "identifier of the connection on chain `a` to use in creating the new channel"
     )]
     connection_a: Option<ConnectionId>,
 
-    #[options(
-        no_short,
-        required,
+    #[clap(
+        long,
+        required = true,
         help = "identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
 
-    #[options(
-        no_short,
-        required,
+    #[clap(
+        long,
+        required = true,
         help = "identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
 
-    #[options(help = "the channel ordering, valid options 'unordered' (default) and 'ordered'")]
+    #[clap(
+        short,
+        long,
+        help = "the channel ordering, valid options 'unordered' (default) and 'ordered'",
+        default_value_t
+    )]
     order: Order,
 
-    #[options(help = "the version for the new channel")]
+    #[clap(
+        short,
+        long = "channel-version",
+        alias = "version",
+        help = "the version for the new channel"
+    )]
     version: Option<String>,
 }
 
@@ -72,7 +83,7 @@ impl CreateChannelCommand {
 
         // Bail with an explicit error. The user might be expecting to use this connection.
         if self.connection_a.is_some() {
-            return Output::error(
+            Output::error(
                 "Option `<connection-a>` is incompatible with `<chain-b-id>`".to_string(),
             )
             .exit();
@@ -119,15 +130,14 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Unwrap the identifier of the connection on side a.
-        let connection_a_id =
-            match &self.connection_a {
-                Some(c) => c,
-                None => return Output::error(
-                    "Option `--connection-a` is necessary when <chain-b-id> argument is missing"
-                        .to_string(),
-                )
-                .exit(),
-            };
+        let connection_a_id = match &self.connection_a {
+            Some(c) => c,
+            None => Output::error(
+                "Option `--connection-a` is necessary when <chain-b-id> argument is missing"
+                    .to_string(),
+            )
+            .exit(),
+        };
 
         // Query the connection end.
         let height = Height::new(chain_a.id().version(), 0);

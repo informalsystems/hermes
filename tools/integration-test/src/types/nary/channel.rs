@@ -37,11 +37,11 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
         &self,
     ) -> Result<TaggedConnectedChannel<Handle, FIRST, SECOND>, Error> {
         if FIRST >= SIZE || SECOND >= SIZE {
-            Err(eyre!(
+            Err(Error::generic(eyre!(
                 "cannot get channel beyond position {}/{}",
                 FIRST,
                 SECOND
-            ))
+            )))
         } else {
             let raw_channel = self.channels[FIRST][SECOND].clone();
 

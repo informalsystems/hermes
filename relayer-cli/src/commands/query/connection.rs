@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::{
@@ -15,15 +16,15 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryConnectionEndCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the connection to query")]
+    #[clap(required = true, help = "identifier of the connection to query")]
     connection_id: ConnectionId,
 
-    #[options(help = "height of the state to query", short = "h")]
+    #[clap(short = 'H', long, help = "height of the state to query")]
     height: Option<u64>,
 }
 
@@ -33,13 +34,11 @@ impl Runnable for QueryConnectionEndCmd {
         let config = app_config();
 
         let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
+            None => Output::error(format!(
+                "chain '{}' not found in configuration file",
+                self.chain_id
+            ))
+            .exit(),
             Some(chain_config) => chain_config,
         };
 
@@ -71,12 +70,12 @@ impl Runnable for QueryConnectionEndCmd {
 /// Command for querying the channel identifiers associated with a connection.
 /// Sample invocation:
 /// `cargo run --bin hermes -- query connection channels ibc-0 connection-0`
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryConnectionChannelsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the connection to query")]
+    #[clap(required = true, help = "identifier of the connection to query")]
     connection_id: ConnectionId,
 }
 
@@ -85,13 +84,11 @@ impl Runnable for QueryConnectionChannelsCmd {
         let config = app_config();
 
         let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
+            None => Output::error(format!(
+                "chain '{}' not found in configuration file",
+                self.chain_id
+            ))
+            .exit(),
             Some(chain_config) => chain_config,
         };
 

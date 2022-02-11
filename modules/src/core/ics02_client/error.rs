@@ -72,7 +72,6 @@ define_error! {
             | _ | { "the client state was not found" },
 
         EmptyPrefix
-            { source: crate::core::ics23_commitment::merkle::EmptyPrefixError }
             | _ | { "empty prefix" },
 
         UnknownConsensusStateType
@@ -83,7 +82,7 @@ define_error! {
             },
 
         EmptyConsensusStateResponse
-            | _ | { "the client state was not found" },
+            | _ | { "the client consensus state was not found" },
 
         UnknownHeaderType
             { header_type: String }
@@ -173,6 +172,10 @@ define_error! {
             [ Ics23Error ]
             | _ | { "invalid proof for the upgraded consensus state" },
 
+        InvalidCommitmentProof
+            [ Ics23Error ]
+            | _ | { "invalid commitment proof bytes" },
+
         Tendermint
             [ Ics07Error ]
             | _ | { "tendermint error" },
@@ -245,6 +248,10 @@ define_error! {
         TendermintHandlerError
             [ Ics07Error ]
             | _ | { format_args!("Tendermint-specific handler error") },
+
+        MissingLocalConsensusState
+            { height: Height }
+            | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
 
     }
 }

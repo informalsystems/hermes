@@ -1,9 +1,9 @@
 use core::convert::TryInto;
-use eyre::Report as Error;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::bootstrap::binary::connection::bootstrap_connection;
+use crate::error::Error;
 use crate::types::binary::connection::ConnectedConnection;
 use crate::types::nary::connection::{ConnectedConnections, DynamicConnectedConnections};
 use crate::util::array::{assert_same_dimension, into_nested_vec};
@@ -24,7 +24,8 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
             if i <= j {
                 let counter_foreign_client = &foreign_clients[j][i];
 
-                let connection = bootstrap_connection(counter_foreign_client, foreign_client)?;
+                let connection =
+                    bootstrap_connection(counter_foreign_client, foreign_client, true)?;
 
                 connections_b.push(connection);
             } else {

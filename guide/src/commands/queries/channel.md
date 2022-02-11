@@ -79,7 +79,7 @@ POSITIONAL ARGUMENTS:
     channel_id                identifier of the channel to query
 
 FLAGS:
-    -h, --height HEIGHT       height of the state to query
+    -H, --height HEIGHT       height of the state to query
 ```
 
 __Example__
@@ -131,7 +131,7 @@ POSITIONAL ARGUMENTS:
     channel_id                identifier of the channel to query
 
 FLAGS:
-    -h, --height HEIGHT       height of the state to query
+    -H, --height HEIGHT       height of the state to query
     -v, --verbose             enable verbose output, displaying all details of channels, connections & clients
 ```
 

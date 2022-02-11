@@ -1,6 +1,5 @@
 //! Host chain types and methods, used by context mock.
 
-use tendermint::time::Time;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
 
@@ -45,32 +44,42 @@ impl HostBlock {
         }
     }
 
-    /// Generates a new block at `height` for the given chain identifier and chain type.
-    pub fn generate_block(chain_id: ChainId, chain_type: HostType, height: u64) -> HostBlock {
-        match chain_type {
-            HostType::Mock => HostBlock::Mock(MockHeader {
-                height: Height::new(chain_id.version(), height),
-                timestamp: Timestamp::now(),
-            }),
-            HostType::SyntheticTendermint => {
-                HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))
+    /// Returns the timestamp of a block.
+    pub fn timestamp(&self) -> Timestamp {
+        match self {
+            HostBlock::Mock(header) => header.timestamp,
+            HostBlock::SyntheticTendermint(light_block) => {
+                light_block.signed_header.header.time.into()
             }
         }
     }
 
-    pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
-        // Sleep is required otherwise the generator produces blocks with the
-        // same timestamp as two block can be generated per second.
-        let ten_millis = core::time::Duration::from_millis(1000);
-        std::thread::sleep(ten_millis);
-        let time = Time(chrono::Utc::now())
-            .duration_since(Time::unix_epoch())
-            .unwrap()
-            .as_secs();
+    /// Generates a new block at `height` for the given chain identifier and chain type.
+    pub fn generate_block(
+        chain_id: ChainId,
+        chain_type: HostType,
+        height: u64,
+        timestamp: Timestamp,
+    ) -> HostBlock {
+        match chain_type {
+            HostType::Mock => HostBlock::Mock(MockHeader {
+                height: Height::new(chain_id.version(), height),
+                timestamp,
+            }),
+            HostType::SyntheticTendermint => HostBlock::SyntheticTendermint(Box::new(
+                Self::generate_tm_block(chain_id, height, timestamp),
+            )),
+        }
+    }
 
-        TestgenLightBlock::new_default_with_time_and_chain_id(chain_id.to_string(), time, height)
-            .generate()
-            .unwrap()
+    pub fn generate_tm_block(chain_id: ChainId, height: u64, timestamp: Timestamp) -> TmLightBlock {
+        TestgenLightBlock::new_default_with_time_and_chain_id(
+            chain_id.to_string(),
+            timestamp.into_tm_time().unwrap(),
+            height,
+        )
+        .generate()
+        .unwrap()
     }
 }
 

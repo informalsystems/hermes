@@ -40,11 +40,11 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
         &self,
     ) -> Result<TaggedConnectedChains<Handle, FIRST, SECOND>, Error> {
         if FIRST >= SIZE || SECOND >= SIZE {
-            Err(eyre!(
+            Err(Error::generic(eyre!(
                 "cannot get chains beyond position {}/{}",
                 FIRST,
                 SECOND
-            ))
+            )))
         } else {
             let node_a = self.full_nodes[FIRST].clone();
             let node_b = self.full_nodes[SECOND].clone();
@@ -68,7 +68,10 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
 
     pub fn full_node_at<const POS: usize>(&self) -> Result<TaggedFullNode<Handle, POS>, Error> {
         if POS >= SIZE {
-            Err(eyre!("cannot get full_node beyond position {}", POS))
+            Err(Error::generic(eyre!(
+                "cannot get full_node beyond position {}",
+                POS
+            )))
         } else {
             let full_node: FullNode = self.full_nodes[POS].clone();
             Ok(MonoTagged::new(full_node))
@@ -77,7 +80,10 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
 
     pub fn chain_handle_at<const POS: usize>(&self) -> Result<TaggedHandle<Handle, POS>, Error> {
         if POS >= SIZE {
-            Err(eyre!("cannot get full_node beyond position {}", POS))
+            Err(Error::generic(eyre!(
+                "cannot get full_node beyond position {}",
+                POS
+            )))
         } else {
             let handle = self.chain_handles[POS].clone();
             Ok(MonoTagged::new(handle))
@@ -88,11 +94,11 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
         &self,
     ) -> Result<TaggedForeignClient<Handle, SECOND, FIRST>, Error> {
         if FIRST >= SIZE || SECOND >= SIZE {
-            Err(eyre!(
+            Err(Error::generic(eyre!(
                 "cannot get foreign client beyond position {}/{}",
                 FIRST,
                 SECOND
-            ))
+            )))
         } else {
             let client = self.foreign_clients[FIRST][SECOND]
                 .clone()

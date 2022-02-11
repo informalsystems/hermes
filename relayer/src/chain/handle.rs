@@ -18,6 +18,7 @@ use ibc::{
             version::Version,
         },
         ics04_channel::{
+            self,
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
@@ -44,6 +45,7 @@ use ibc_proto::ibc::core::{
 pub use prod::ProdChainHandle;
 
 use crate::{
+    chain::handle::requests::AppVersion,
     chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -52,9 +54,10 @@ use crate::{
     keyring::KeyEntry,
 };
 
-use super::HealthCheck;
+use super::{tx::TrackedMsgs, HealthCheck};
 
 mod prod;
+pub mod requests;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
@@ -108,12 +111,12 @@ pub enum ChainRequest {
     },
 
     SendMessagesAndWaitCommit {
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
         reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 
     SendMessagesAndWaitCheckTx {
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
         reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
     },
 
@@ -129,15 +132,15 @@ pub enum ChainRequest {
         reply_to: ReplyTo<KeyEntry>,
     },
 
+    AppVersion {
+        request: AppVersion,
+        reply_to: ReplyTo<ics04_channel::Version>,
+    },
+
     AddKey {
         key_name: String,
         key: KeyEntry,
         reply_to: ReplyTo<()>,
-    },
-
-    ModuleVersion {
-        port_id: PortId,
-        reply_to: ReplyTo<String>,
     },
 
     QueryStatus {
@@ -328,7 +331,7 @@ pub enum ChainRequest {
     },
 }
 
-pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
+pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self;
 
     /// Get the [`ChainId`] of this chain.
@@ -347,7 +350,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     /// and return the list of events emitted by the chain after the transaction was committed.
     fn send_messages_and_wait_commit(
         &self,
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error>;
 
     /// Submit messages asynchronously.
@@ -356,7 +359,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     /// returns a set of transaction hashes.
     fn send_messages_and_wait_check_tx(
         &self,
-        proto_msgs: Vec<prost_types::Any>,
+        tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error>;
 
     fn get_signer(&self) -> Result<Signer, Error>;
@@ -365,9 +368,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
-    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
+    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
 
-    fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
+    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
 
     fn query_status(&self) -> Result<StatusResponse, Error>;
 

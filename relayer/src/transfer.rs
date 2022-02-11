@@ -2,7 +2,6 @@ use core::fmt::{Display, Formatter};
 use core::str::FromStr;
 use core::time::Duration;
 
-use chrono::Utc;
 use flex_error::{define_error, DetailOnly};
 use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
@@ -13,6 +12,7 @@ use ibc::Height;
 use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::tx::TrackedMsgs;
 use crate::error::Error;
 use crate::util::bigint::U256;
 
@@ -98,8 +98,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
         Timestamp::none()
     } else {
-        (Timestamp::from_datetime(Utc::now()) + opts.timeout_seconds)
-            .map_err(PacketError::timestamp_overflow)?
+        (Timestamp::now() + opts.timeout_seconds).map_err(PacketError::timestamp_overflow)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {
@@ -128,7 +127,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     let msgs = vec![raw_msg; opts.number_msgs];
 
     let events = packet_src_chain
-        .send_messages_and_wait_commit(msgs)
+        .send_messages_and_wait_commit(TrackedMsgs::new(msgs, "ft-transfer"))
         .map_err(|e| PacketError::submit(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction

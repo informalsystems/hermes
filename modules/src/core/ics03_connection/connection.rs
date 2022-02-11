@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use core::str::FromStr;
 use core::time::Duration;
-use core::u64;
+use core::{fmt, u64};
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
@@ -12,6 +12,7 @@ use ibc_proto::ibc::core::connection::v1::{
     IdentifiedConnection as RawIdentifiedConnection,
 };
 
+use crate::core::ics02_client::error::Error as ClientError;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::version::Version;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
@@ -235,21 +236,11 @@ impl ConnectionEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
     pub connection_id: Option<ConnectionId>,
     prefix: CommitmentPrefix,
-}
-
-impl Default for Counterparty {
-    fn default() -> Self {
-        Counterparty {
-            client_id: Default::default(),
-            connection_id: None,
-            prefix: Default::default(),
-        }
-    }
 }
 
 impl Protobuf<RawCounterparty> for Counterparty {}
@@ -272,7 +263,8 @@ impl TryFrom<RawCounterparty> for Counterparty {
                 .prefix
                 .ok_or_else(Error::missing_counterparty)?
                 .key_prefix
-                .into(),
+                .try_into()
+                .map_err(|_| Error::ics02_client(ClientError::empty_prefix()))?,
         ))
     }
 }
@@ -333,7 +325,7 @@ pub enum State {
 
 impl State {
     /// Yields the State as a string.
-    pub fn as_string(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
@@ -341,7 +333,8 @@ impl State {
             Self::Open => "OPEN",
         }
     }
-    // Parses the State out from a i32.
+
+    /// Parses the State out from a i32.
     pub fn from_i32(s: i32) -> Result<Self, Error> {
         match s {
             0 => Ok(Self::Uninitialized),
@@ -368,6 +361,12 @@ impl State {
     /// ```
     pub fn less_or_equal_progress(self, other: Self) -> bool {
         self as u32 <= other as u32
+    }
+}
+
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }
 

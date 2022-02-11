@@ -1,7 +1,8 @@
 use alloc::sync::Arc;
 use core::str::FromStr;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
@@ -19,12 +20,12 @@ use crate::error::Error;
 use crate::prelude::app_config;
 
 /// Query the events emitted by transaction
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct QueryTxEventsCmd {
-    #[options(free, required, help = "identifier of the chain to query")]
+    #[clap(required = true, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
-    #[options(free, required, help = "transaction hash to query")]
+    #[clap(required = true, help = "transaction hash to query")]
     hash: String,
 }
 
@@ -39,7 +40,7 @@ impl Runnable for QueryTxEventsCmd {
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))
         {
-            Err(err) => return Output::error(err).exit(),
+            Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
 

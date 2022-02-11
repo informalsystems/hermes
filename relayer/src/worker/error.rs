@@ -1,4 +1,5 @@
-use flex_error::define_error;
+use crossbeam_channel::RecvError;
+use flex_error::{define_error, DisplayOnly};
 
 use crate::channel::ChannelError;
 use crate::connection::ConnectionError;
@@ -9,42 +10,29 @@ define_error! {
     RunError {
         Ics02
             [ Ics02Error ]
-            | _ | { "client errror" },
+            | _ | { "client error" },
 
         Connection
             [ ConnectionError ]
-            | _ | { "connection errror" },
+            | _ | { "connection error" },
 
         Channel
             [ ChannelError ]
-            | _ | { "channel errror" },
+            | _ | { "channel error" },
 
         Link
             [ LinkError ]
-            | _ | { "link errror" },
+            | _ | { "link error" },
 
         Retry
             { retries: retry::Error<u64> }
             | e | {
-                format_args!("Packet worker failed after {} retries",
+                format_args!("Worker failed after {} retries",
                     e.retries)
-            }
-    }
-}
-
-define_error! {
-    WorkerError {
-        ChannelSend
-            { reason: String }
-            |e| {
-                format_args!("error sending through crossbeam channel: {}",
-                    e.reason)
             },
-    }
-}
 
-impl WorkerError {
-    pub fn send<T>(e: crossbeam_channel::SendError<T>) -> WorkerError {
-        WorkerError::channel_send(format!("{}", e))
+        Recv
+            [ DisplayOnly<RecvError> ]
+            | _ | { "error receiving from channel: sender end has been closed" }
     }
 }

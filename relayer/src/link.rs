@@ -7,6 +7,7 @@ use ibc::{
     events::IbcEvent,
     Height,
 };
+use tracing::error_span;
 
 use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::handle::ChainHandle;
@@ -145,6 +146,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection_id,
                 opts.src_port_id.clone(),
                 Some(opts.src_channel_id.clone()),
+                None,
             ),
             b_side: ChannelSide::new(
                 b_chain,
@@ -152,9 +154,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection.counterparty().connection_id().unwrap().clone(),
                 a_channel.counterparty().port_id.clone(),
                 Some(b_channel_id),
+                None,
             ),
             connection_delay: a_connection.delay_period(),
-            version: None,
         };
 
         Link::new(channel, with_tx_confirmation)
@@ -162,6 +164,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
     /// Implements the `packet-recv` CLI
     pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
+        let _span = error_span!(
+            "PacketRecvCmd",
+            src_chain = %self.a_to_b.src_chain().id(),
+            src_port = %self.a_to_b.src_port_id(),
+            src_channel = %self.a_to_b.src_channel_id(),
+            dst_chain = %self.a_to_b.dst_chain().id(),
+        )
+        .entered();
+
         self.a_to_b.build_recv_packet_and_timeout_msgs(None)?;
 
         let mut results = vec![];
@@ -179,6 +190,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
     /// Implements the `packet-ack` CLI
     pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
+        let _span = error_span!(
+            "PacketAckCmd",
+            src_chain = %self.a_to_b.src_chain().id(),
+            src_port = %self.a_to_b.src_port_id(),
+            src_channel = %self.a_to_b.src_channel_id(),
+            dst_chain = %self.a_to_b.dst_chain().id(),
+        )
+        .entered();
+
         self.a_to_b.build_packet_ack_msgs(None)?;
 
         let mut results = vec![];

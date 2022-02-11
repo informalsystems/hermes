@@ -73,7 +73,7 @@ fn connection_on_destination(
 }
 
 pub fn connection_state_on_destination(
-    connection: IdentifiedConnectionEnd,
+    connection: &IdentifiedConnectionEnd,
     counterparty_chain: &impl ChainHandle,
 ) -> Result<ConnectionState, Error> {
     if let Some(remote_connection_id) = connection.connection_end.counterparty().connection_id() {

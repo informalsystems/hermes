@@ -1,10 +1,10 @@
 use core::convert::TryInto;
-use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
 use crate::bootstrap::nary::connection::bootstrap_connections_dynamic;
+use crate::error::{handle_generic_error, Error};
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::nary::chains::{ConnectedChains, DynamicConnectedChains};
 use crate::types::nary::channel::{ConnectedChannels, DynamicConnectedChannels};
@@ -41,6 +41,7 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
                     connection,
                     &DualTagged::new(port_a),
                     &DualTagged::new(port_b),
+                    true,
                 )?;
 
                 channels_b.push(channel);
@@ -69,7 +70,7 @@ pub fn bootstrap_channels_with_connections<Handle: ChainHandle, const SIZE: usiz
         &into_nested_vec(ports),
     )?;
 
-    channels.try_into()
+    channels.try_into().map_err(handle_generic_error)
 }
 
 pub fn bootstrap_channels_dynamic<Handle: ChainHandle>(

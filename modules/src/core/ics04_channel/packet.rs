@@ -54,14 +54,10 @@ impl core::fmt::Display for PacketMsgType {
 }
 
 /// The sequence number of a packet enforces ordering among packets from the same source.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, PartialOrd, Ord)]
+#[derive(
+    Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Deserialize, Serialize,
+)]
 pub struct Sequence(u64);
-
-impl Default for Sequence {
-    fn default() -> Self {
-        Sequence(0)
-    }
-}
 
 impl FromStr for Sequence {
     type Err = Error;
@@ -193,9 +189,9 @@ impl TryFrom<RawPacket> for Packet {
     }
 }
 
-impl TryFrom<RawObject> for Packet {
+impl TryFrom<RawObject<'_>> for Packet {
     type Error = EventError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
         Ok(Packet {
             sequence: extract_attribute(&obj, &format!("{}.packet_sequence", obj.action))?
                 .parse()
@@ -242,7 +238,7 @@ impl From<Packet> for RawPacket {
             destination_channel: packet.destination_channel.to_string(),
             data: packet.data,
             timeout_height: Some(packet.timeout_height.into()),
-            timeout_timestamp: packet.timeout_timestamp.as_nanoseconds(),
+            timeout_timestamp: packet.timeout_timestamp.nanoseconds(),
         }
     }
 }
@@ -277,7 +273,7 @@ pub mod test_utils {
 mod tests {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 

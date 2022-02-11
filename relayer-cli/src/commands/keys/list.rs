@@ -1,6 +1,7 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -11,9 +12,9 @@ use ibc_relayer::{
 use crate::conclude::Output;
 use crate::{application::app_config, conclude::json};
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct KeysListCmd {
-    #[options(free, required, help = "identifier of the chain")]
+    #[clap(required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 }
 
@@ -34,7 +35,7 @@ impl Runnable for KeysListCmd {
         let config = app_config();
 
         let opts = match self.options(&config) {
-            Err(err) => return Output::error(err).exit(),
+            Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
 

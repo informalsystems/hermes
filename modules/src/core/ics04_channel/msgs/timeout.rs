@@ -37,6 +37,10 @@ impl MsgTimeout {
             signer,
         }
     }
+
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
 }
 
 impl Msg for MsgTimeout {
@@ -59,7 +63,10 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
 
     fn try_from(raw_msg: RawMsgTimeout) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_unreceived.into(),
+            raw_msg
+                .proof_unreceived
+                .try_into()
+                .map_err(Error::invalid_proof)?,
             None,
             None,
             None,
@@ -124,7 +131,7 @@ pub mod test_util {
 mod test {
     use crate::prelude::*;
 
-    use test_env_log::test;
+    use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
 

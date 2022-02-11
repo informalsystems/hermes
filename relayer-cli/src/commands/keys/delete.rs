@@ -1,4 +1,5 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::clap::Parser;
+use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -9,15 +10,15 @@ use ibc_relayer::{
 use crate::application::app_config;
 use crate::conclude::Output;
 
-#[derive(Clone, Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct KeysDeleteCmd {
-    #[options(free, required, help = "identifier of the chain")]
+    #[clap(required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[options(short = "n", help = "name of the key")]
+    #[clap(short = 'n', long, help = "name of the key")]
     name: Option<String>,
 
-    #[options(short = "a", help = "delete all keys")]
+    #[clap(short = 'a', long, help = "delete all keys")]
     all: bool,
 }
 
@@ -67,7 +68,7 @@ impl Runnable for KeysDeleteCmd {
         let config = app_config();
 
         let opts = match self.options(&config) {
-            Err(err) => return Output::error(err).exit(),
+            Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
 

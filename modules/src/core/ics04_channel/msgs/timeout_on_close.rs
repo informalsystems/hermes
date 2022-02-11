@@ -36,6 +36,10 @@ impl MsgTimeoutOnClose {
             signer,
         }
     }
+
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
 }
 
 impl Msg for MsgTimeoutOnClose {
@@ -58,7 +62,10 @@ impl TryFrom<RawMsgTimeoutOnClose> for MsgTimeoutOnClose {
 
     fn try_from(raw_msg: RawMsgTimeoutOnClose) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
-            raw_msg.proof_unreceived.into(),
+            raw_msg
+                .proof_unreceived
+                .try_into()
+                .map_err(Error::invalid_proof)?,
             None,
             None,
             None,
