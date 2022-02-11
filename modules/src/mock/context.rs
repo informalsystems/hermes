@@ -1222,13 +1222,14 @@ mod tests {
 
     use crate::core::ics03_connection::connection::Counterparty;
     use crate::core::ics04_channel::channel::Order;
-    use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
     use crate::core::ics04_channel::packet::Packet;
     use crate::core::ics04_channel::Version;
     use crate::core::ics05_port::capabilities::Capability;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-    use crate::core::ics26_routing::context::{Module, OnRecvPacketResult, Router, RouterBuilder};
+    use crate::core::ics26_routing::context::{
+        Acknowledgement, Module, OnRecvPacketResult, Router, RouterBuilder,
+    };
     use crate::core::ics26_routing::error::Error;
     use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
@@ -1384,13 +1385,27 @@ mod tests {
             counter: usize,
         }
 
-        struct MockOnRecvPacketResult {
-            ack: Acknowledgement,
+        #[derive(Default)]
+        struct MockAck(Vec<u8>);
+
+        impl AsRef<[u8]> for MockAck {
+            fn as_ref(&self) -> &[u8] {
+                self.0.as_slice()
+            }
         }
 
+        impl Acknowledgement for MockAck {
+            fn success(&self) -> bool {
+                true
+            }
+        }
+
+        #[derive(Default)]
+        struct MockOnRecvPacketResult(MockAck);
+
         impl OnRecvPacketResult for MockOnRecvPacketResult {
-            fn acknowledgement(&self) -> Acknowledgement {
-                self.ack.clone()
+            fn acknowledgement(&self) -> &dyn Acknowledgement {
+                &self.0
             }
 
             fn write_result(&mut self, module: &mut dyn Any) {
@@ -1418,9 +1433,7 @@ mod tests {
                 _packet: Packet,
                 _relayer: Signer,
             ) -> Result<Box<dyn OnRecvPacketResult>, Error> {
-                Ok(Box::new(MockOnRecvPacketResult {
-                    ack: Vec::new().into(),
-                }))
+                Ok(Box::new(MockOnRecvPacketResult::default()))
             }
         }
 
