@@ -1,5 +1,6 @@
 use crate::prelude::*;
 
+use core::any::Any;
 use core::borrow::Borrow;
 use core::fmt::Debug;
 
@@ -36,7 +37,13 @@ pub trait Ics26Context:
     fn router(&mut self) -> &mut Self::Router;
 }
 
-pub trait Module: Debug + Send + Sync + 'static {
+pub trait OnRecvPacketResult {
+    fn acknowledgement(&self) -> Acknowledgement;
+
+    fn write_result(&mut self, module: &mut dyn Any);
+}
+
+pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
         &mut self,
@@ -79,8 +86,11 @@ pub trait Module: Debug + Send + Sync + 'static {
         channel_id: ChannelId,
     ) -> Result<(), Error>;
 
-    fn on_recv_packet(&mut self, packet: Packet, relayer: Signer)
-        -> Result<Acknowledgement, Error>;
+    fn on_recv_packet(
+        &self,
+        packet: Packet,
+        relayer: Signer,
+    ) -> Result<Box<dyn OnRecvPacketResult>, Error>;
 
     fn on_acknowledgement_packet(
         &mut self,
@@ -108,6 +118,19 @@ pub trait RouterBuilder: Sized {
     fn build(self) -> Self::Router;
 }
 
+pub trait AsAnyMut: Any {
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
+impl<M: Any + Module> AsAnyMut for M {
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
+/// A router maintains a mapping of `ModuleId`s against `Modules`. Implementations must not publicly
+/// expose APIs to add new routes once constructed. Routes may only be added at the time of
+/// instantiation using the `RouterBuilder`.
 pub trait Router {
     type ModuleId: ?Sized;
 
