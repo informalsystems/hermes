@@ -47,59 +47,80 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
         &mut self,
-        order: Order,
-        connection_hops: &[ConnectionId],
-        port_id: PortId,
-        channel_id: ChannelId,
-        channel_cap: Capability,
-        counterparty: Counterparty,
-        version: Version,
-    ) -> Result<(), Error>;
+        _order: Order,
+        _connection_hops: &[ConnectionId],
+        _port_id: PortId,
+        _channel_id: ChannelId,
+        _channel_cap: Capability,
+        _counterparty: Counterparty,
+        _version: Version,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
 
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_try(
         &mut self,
-        order: Order,
-        connection_hops: &[ConnectionId],
-        port_id: PortId,
-        channel_id: ChannelId,
-        channel_cap: Capability,
-        counterparty: Counterparty,
-        counterparty_version: Version,
+        _order: Order,
+        _connection_hops: &[ConnectionId],
+        _port_id: PortId,
+        _channel_id: ChannelId,
+        _channel_cap: Capability,
+        _counterparty: Counterparty,
+        _counterparty_version: Version,
     ) -> Result<Version, Error>;
 
     fn on_chan_open_ack(
         &mut self,
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_version: Version,
-    ) -> Result<(), Error>;
+        _port_id: PortId,
+        _channel_id: ChannelId,
+        _counterparty_version: Version,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
 
-    fn on_chan_open_confirm(&mut self, port_id: PortId, channel_id: ChannelId)
-        -> Result<(), Error>;
+    fn on_chan_open_confirm(
+        &mut self,
+        _port_id: PortId,
+        _channel_id: ChannelId,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
 
-    fn on_chan_close_init(&mut self, port_id: PortId, channel_id: ChannelId) -> Result<(), Error>;
+    fn on_chan_close_init(
+        &mut self,
+        _port_id: PortId,
+        _channel_id: ChannelId,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
 
     fn on_chan_close_confirm(
         &mut self,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> Result<(), Error>;
+        _port_id: PortId,
+        _channel_id: ChannelId,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
 
     fn on_recv_packet(
         &self,
-        packet: Packet,
-        relayer: Signer,
+        _packet: Packet,
+        _relayer: Signer,
     ) -> Result<Box<dyn OnRecvPacketResult>, Error>;
 
     fn on_acknowledgement_packet(
         &mut self,
-        packet: Packet,
-        acknowledgement: Acknowledgement,
-        relayer: Signer,
-    ) -> Result<(), Error>;
+        _packet: Packet,
+        _acknowledgement: Acknowledgement,
+        _relayer: Signer,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
 
-    fn on_timeout_packet(&mut self, packet: Packet, relayer: Signer) -> Result<(), Error>;
+    fn on_timeout_packet(&mut self, _packet: Packet, _relayer: Signer) -> Result<(), Error> {
+        Ok(())
+    }
 }
 
 pub trait RouterBuilder: Sized {
