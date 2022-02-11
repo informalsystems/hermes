@@ -1218,8 +1218,6 @@ impl Ics18Context for MockContext {
 mod tests {
     use test_log::test;
 
-    use core::any::Any;
-
     use crate::core::ics03_connection::connection::Counterparty;
     use crate::core::ics04_channel::channel::Order;
     use crate::core::ics04_channel::packet::Packet;
@@ -1400,20 +1398,6 @@ mod tests {
             }
         }
 
-        #[derive(Default)]
-        struct FooOnRecvPacketResult(MockAck);
-
-        impl OnRecvPacketResult for FooOnRecvPacketResult {
-            fn acknowledgement(&self) -> &dyn Acknowledgement {
-                &self.0
-            }
-
-            fn write_result(&mut self, module: &mut dyn Any) {
-                let module = module.downcast_mut::<FooModule>().unwrap();
-                module.counter += 1;
-            }
-        }
-
         impl Module for FooModule {
             fn on_chan_open_try(
                 &mut self,
@@ -1432,24 +1416,19 @@ mod tests {
                 &self,
                 _packet: Packet,
                 _relayer: Signer,
-            ) -> Result<Box<dyn OnRecvPacketResult>, Error> {
-                Ok(Box::new(FooOnRecvPacketResult::default()))
+            ) -> Result<OnRecvPacketResult, Error> {
+                Ok((
+                    Box::new(MockAck::default()),
+                    Box::new(|module| {
+                        let module = module.downcast_mut::<FooModule>().unwrap();
+                        module.counter += 1;
+                    }),
+                ))
             }
         }
 
         #[derive(Debug, Default)]
         struct BarModule;
-
-        #[derive(Default)]
-        struct BarOnRecvPacketResult(MockAck);
-
-        impl OnRecvPacketResult for BarOnRecvPacketResult {
-            fn acknowledgement(&self) -> &dyn Acknowledgement {
-                &self.0
-            }
-
-            fn write_result(&mut self, _module: &mut dyn Any) {}
-        }
 
         impl Module for BarModule {
             fn on_chan_open_try(
@@ -1469,8 +1448,8 @@ mod tests {
                 &self,
                 _packet: Packet,
                 _relayer: Signer,
-            ) -> Result<Box<dyn OnRecvPacketResult>, Error> {
-                Ok(Box::new(BarOnRecvPacketResult::default()))
+            ) -> Result<OnRecvPacketResult, Error> {
+                Ok((Box::new(MockAck::default()), Box::new(|_| {})))
             }
         }
 
@@ -1497,12 +1476,14 @@ mod tests {
             (module_id, result)
         };
 
-        let mut results = vec![];
-        results.push(on_recv_packet_result("foomodule"));
-        results.push(on_recv_packet_result("barmodule"));
-
-        results.into_iter().for_each(|(mid, mut r)| {
-            r.write_result(ctx.router.get_route_mut(mid).unwrap().as_any_mut())
+        let results = vec![
+            on_recv_packet_result("foomodule"),
+            on_recv_packet_result("barmodule"),
+        ];
+        results.into_iter().for_each(|(mid, (ack, write_fn))| {
+            if ack.success() {
+                write_fn(ctx.router.get_route_mut(mid).unwrap().as_any_mut())
+            }
         });
     }
 }
