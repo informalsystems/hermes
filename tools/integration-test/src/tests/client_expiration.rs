@@ -339,16 +339,22 @@ impl BinaryChainTest for PacketExpirationTest {
 
             sleep(Duration::from_secs(10));
 
-            let balance_a_2 = chains
-                .node_a
-                .chain_driver()
-                .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
+            // The following code is disabled, because
+            // on Gaia v6 the transaction would just fail on expired client,
+            // and the fund is not deducted from the user wallet.
+            // But on Gaia v4 and v5 the fund will still be deducted
+            // even though the IBC transfer will fail.
 
-            assert_eq(
-                "balance on wallet A should decrease",
-                &balance_a_2,
-                &(balance_a - 100),
-            )?;
+            // let balance_a_2 = chains
+            //     .node_a
+            //     .chain_driver()
+            //     .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
+
+            // assert_eq(
+            //     "balance on wallet A should decrease",
+            //     &balance_a_2,
+            //     &(balance_a - 100),
+            // )?;
 
             let balance_b = chains.node_b.chain_driver().query_balance(
                 &chains.node_b.wallets().user1().address(),
@@ -371,17 +377,6 @@ impl BinaryChainTest for PacketExpirationTest {
             )?;
 
             sleep(Duration::from_secs(10));
-
-            let balance_a_2 = chains
-                .node_a
-                .chain_driver()
-                .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
-
-            assert_eq(
-                "balance on wallet A should decrease",
-                &balance_a_2,
-                &(balance_a - 200),
-            )?;
 
             let balance_b = chains.node_b.chain_driver().query_balance(
                 &chains.node_b.wallets().user1().address(),
