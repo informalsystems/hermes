@@ -2,6 +2,7 @@
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //!
 use core::time::Duration;
+use num_traits::float::FloatCore;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -70,7 +71,18 @@ pub trait ChannelReader {
     fn host_height(&self) -> Height;
 
     /// Returns the current timestamp of the local chain.
-    fn host_timestamp(&self) -> Timestamp;
+    fn host_timestamp(&self) -> Timestamp {
+        let pending_consensus_state = self
+            .pending_host_consensus_state()
+            .expect("host must have pending consensus state");
+        pending_consensus_state.timestamp()
+    }
+
+    /// Returns the `ConsensusState` of the host (local) chain at a specific height.
+    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+
+    /// Returns the pending `ConsensusState` of the host (local) chain.
+    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Error>;
 
     /// Returns the time when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
     fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, Error>;
@@ -92,7 +104,8 @@ pub trait ChannelReader {
             return 0;
         }
 
-        (delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64()).ceil() as u64
+        FloatCore::ceil(delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64())
+            as u64
     }
 }
 

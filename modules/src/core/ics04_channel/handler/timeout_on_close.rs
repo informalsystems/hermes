@@ -79,11 +79,11 @@ pub fn process(
 
     verify_channel_proofs(
         ctx,
-        msg.proofs().height(),
+        msg.proofs.height(),
         &source_channel_end,
         &connection_end,
         &expected_channel_end,
-        &msg.proofs.clone(),
+        &msg.proofs,
     )?;
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
@@ -95,11 +95,11 @@ pub fn process(
         }
         verify_next_sequence_recv(
             ctx,
-            msg.proofs().height(),
+            msg.proofs.height(),
             &connection_end,
             packet.clone(),
             msg.next_sequence_recv,
-            &msg.proofs.clone(),
+            &msg.proofs,
         )?;
 
         PacketResult::Timeout(TimeoutPacketResult {
@@ -111,10 +111,10 @@ pub fn process(
     } else {
         verify_packet_receipt_absence(
             ctx,
-            msg.proofs().height(),
+            msg.proofs.height(),
             &connection_end,
             packet.clone(),
-            &msg.proofs.clone(),
+            &msg.proofs,
         )?;
 
         PacketResult::Timeout(TimeoutPacketResult {

@@ -37,14 +37,6 @@ impl MsgAcknowledgement {
             signer,
         }
     }
-
-    pub fn acknowledgement(&self) -> &Vec<u8> {
-        &self.acknowledgement
-    }
-
-    pub fn proofs(&self) -> &Proofs {
-        &self.proofs
-    }
 }
 
 impl Msg for MsgAcknowledgement {

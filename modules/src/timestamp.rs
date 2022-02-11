@@ -134,6 +134,11 @@ impl Timestamp {
         self.time.map(Into::into)
     }
 
+    /// Convert a `Timestamp` to an optional [`Tendermint::Time`]
+    pub fn into_tm_time(self) -> Option<Time> {
+        self.time
+    }
+
     /// Checks whether the timestamp has expired when compared to the
     /// `other` timestamp. Returns an [`Expiry`] result.
     pub fn check_expiry(&self, other: &Timestamp) -> Expiry {

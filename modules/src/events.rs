@@ -463,21 +463,21 @@ impl IbcEvent {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct RawObject {
+#[derive(Debug, Clone, Serialize)]
+pub struct RawObject<'a> {
     pub height: Height,
     pub action: String,
     pub idx: usize,
-    pub events: HashMap<String, Vec<String>>,
+    pub events: &'a HashMap<String, Vec<String>>,
 }
 
-impl RawObject {
+impl<'a> RawObject<'a> {
     pub fn new(
         height: Height,
         action: String,
         idx: usize,
-        events: HashMap<String, Vec<String>>,
-    ) -> RawObject {
+        events: &'a HashMap<String, Vec<String>>,
+    ) -> RawObject<'a> {
         RawObject {
             height,
             action,
@@ -500,7 +500,7 @@ pub fn extract_events(
     Err(Error::incorrect_event_type(action_string.to_string()))
 }
 
-pub fn extract_attribute(object: &RawObject, key: &str) -> Result<String, Error> {
+pub fn extract_attribute(object: &RawObject<'_>, key: &str) -> Result<String, Error> {
     let value = object
         .events
         .get(key)
@@ -510,6 +510,6 @@ pub fn extract_attribute(object: &RawObject, key: &str) -> Result<String, Error>
     Ok(value)
 }
 
-pub fn maybe_extract_attribute(object: &RawObject, key: &str) -> Option<String> {
+pub fn maybe_extract_attribute(object: &RawObject<'_>, key: &str) -> Option<String> {
     object.events.get(key).map(|tags| tags[object.idx].clone())
 }

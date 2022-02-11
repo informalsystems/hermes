@@ -40,13 +40,11 @@ impl Runnable for QueryClientStateCmd {
         let config = app_config();
 
         let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
+            None => Output::error(format!(
+                "chain '{}' not found in configuration file",
+                self.chain_id
+            ))
+            .exit(),
             Some(chain_config) => chain_config,
         };
 
@@ -96,13 +94,11 @@ impl Runnable for QueryClientConsensusCmd {
         let config = app_config();
 
         let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
+            None => Output::error(format!(
+                "chain '{}' not found in configuration file",
+                self.chain_id
+            ))
+            .exit(),
             Some(chain_config) => chain_config,
         };
 
@@ -114,13 +110,11 @@ impl Runnable for QueryClientConsensusCmd {
 
         let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
             Ok(cs) => cs.chain_id(),
-            Err(e) => {
-                return Output::error(format!(
-                    "failed while querying client '{}' on chain '{}' with error: {}",
-                    self.client_id, self.chain_id, e
-                ))
-                .exit()
-            }
+            Err(e) => Output::error(format!(
+                "failed while querying client '{}' on chain '{}' with error: {}",
+                self.client_id, self.chain_id, e
+            ))
+            .exit(),
         };
 
         match self.consensus_height {
@@ -180,13 +174,11 @@ impl Runnable for QueryClientHeaderCmd {
         let config = app_config();
 
         let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
+            None => Output::error(format!(
+                "chain '{}' not found in configuration file",
+                self.chain_id
+            ))
+            .exit(),
             Some(chain_config) => chain_config,
         };
 
@@ -198,13 +190,11 @@ impl Runnable for QueryClientHeaderCmd {
 
         let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
             Ok(cs) => cs.chain_id(),
-            Err(e) => {
-                return Output::error(format!(
-                    "failed while querying client '{}' on chain '{}' with error: {}",
-                    self.client_id, self.chain_id, e
-                ))
-                .exit()
-            }
+            Err(e) => Output::error(format!(
+                "failed while querying client '{}' on chain '{}' with error: {}",
+                self.client_id, self.chain_id, e
+            ))
+            .exit(),
         };
 
         let consensus_height =
@@ -248,13 +238,11 @@ impl Runnable for QueryClientConnectionsCmd {
         let config = app_config();
 
         let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
+            None => Output::error(format!(
+                "chain '{}' not found in configuration file",
+                self.chain_id
+            ))
+            .exit(),
             Some(chain_config) => chain_config,
         };
 

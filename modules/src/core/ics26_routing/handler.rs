@@ -1,7 +1,6 @@
 use crate::prelude::*;
 
 use prost_types::Any;
-use tendermint::Time;
 
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
@@ -18,13 +17,10 @@ use crate::{events::IbcEvent, handler::HandlerOutput};
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
 /// Returns a vector of all events that got generated as a byproduct of processing `messages`.
-pub fn deliver<Ctx>(now: Time, ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error>
+pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error>
 where
     Ctx: Ics26Context,
 {
-    // Create a clone, which will store each intermediary stage of applying txs.
-    let mut ctx_interim = ctx.clone();
-
     // A buffer for all the events, to be used as return value.
     let mut res: Vec<IbcEvent> = Vec::new();
 
@@ -33,13 +29,12 @@ where
         let envelope = decode(any_msg)?;
 
         // Process the envelope, and accumulate any events that were generated.
-        let mut output = dispatch(now, &mut ctx_interim, envelope)?;
+        let mut output = dispatch(ctx, envelope)?;
+
         // TODO: output.log and output.result are discarded
         res.append(&mut output.events);
     }
 
-    // No error has surfaced, so we now apply the changes permanently to the original context.
-    *ctx = ctx_interim;
     Ok(res)
 }
 
@@ -51,17 +46,13 @@ pub fn decode(message: Any) -> Result<Ics26Envelope, Error> {
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.
 /// Returns a handler output with empty result of type `HandlerOutput<()>` which contains the log
 /// and events produced after processing the input `msg`.
-pub fn dispatch<Ctx>(
-    now: Time,
-    ctx: &mut Ctx,
-    msg: Ics26Envelope,
-) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, Error>
 where
     Ctx: Ics26Context,
 {
     let output = match msg {
         Ics2Msg(msg) => {
-            let handler_output = ics2_msg_dispatcher(now, ctx, msg).map_err(Error::ics02_client)?;
+            let handler_output = ics2_msg_dispatcher(ctx, msg).map_err(Error::ics02_client)?;
             // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
                 .map_err(Error::ics02_client)?;
@@ -134,7 +125,6 @@ where
 mod tests {
     use crate::prelude::*;
 
-    use tendermint::Time;
     use test_log::test;
 
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
@@ -274,7 +264,6 @@ mod tests {
 
         // First, create a client..
         let res = dispatch(
-            Time::now(),
             &mut ctx,
             Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(create_client_msg.clone())),
         );
@@ -286,7 +275,7 @@ mod tests {
             res
         );
 
-        ctx.add_port(msg_chan_init.port_id().clone());
+        ctx.add_port(msg_chan_init.port_id.clone());
 
         // Figure out the ID of the client that was just created.
         let mut events = res.unwrap().events;
@@ -475,7 +464,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = dispatch(Time::now(), &mut ctx, test.msg.clone());
+            let res = dispatch(&mut ctx, test.msg.clone());
 
             assert_eq!(
                 test.want_pass,

@@ -6,7 +6,11 @@ define_error! {
     Error {
         UnknownPort
             { port_id: PortId }
-            | e | { format_args!("Port {0} is unknown", e.port_id) },
+            | e | { format_args!("port '{0}' is unknown", e.port_id) },
+
+        PortAlreadyBound
+            { port_id: PortId }
+            | e | { format_args!("port '{0}' is already bound", e.port_id) },
 
         ImplementationSpecific
             | _ | { "implementation specific error" },

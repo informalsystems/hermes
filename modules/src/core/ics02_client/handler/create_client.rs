@@ -1,7 +1,5 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
-use tendermint::Time;
-
 use crate::prelude::*;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
@@ -17,6 +15,7 @@ use crate::core::ics24_host::identifier::ClientId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Timestamp;
+
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -30,7 +29,6 @@ pub struct Result {
 }
 
 pub fn process(
-    now: Time,
     ctx: &dyn ClientReader,
     msg: MsgCreateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
@@ -38,8 +36,8 @@ pub fn process(
 
     // Construct this client's identifier
     let id_counter = ctx.client_counter()?;
-    let client_id = ClientId::new(msg.client_state().client_type(), id_counter).map_err(|e| {
-        Error::client_identifier_constructor(msg.client_state().client_type(), id_counter, e)
+    let client_id = ClientId::new(msg.client_state.client_type(), id_counter).map_err(|e| {
+        Error::client_identifier_constructor(msg.client_state.client_type(), id_counter, e)
     })?;
 
     output.log(format!(
@@ -49,10 +47,10 @@ pub fn process(
 
     let result = ClientResult::Create(Result {
         client_id: client_id.clone(),
-        client_type: msg.client_state().client_type(),
-        client_state: msg.client_state(),
-        consensus_state: msg.consensus_state(),
-        processed_time: now.into(),
+        client_type: msg.client_state.client_type(),
+        client_state: msg.client_state.clone(),
+        consensus_state: msg.consensus_state,
+        processed_time: ctx.host_timestamp(),
         processed_height: ctx.host_height(),
     });
 
@@ -70,7 +68,6 @@ mod tests {
     use crate::prelude::*;
 
     use core::time::Duration;
-    use tendermint::Time;
     use test_log::test;
 
     use crate::clients::ics07_tendermint::client_state::{
@@ -107,7 +104,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(Time::now(), &ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -123,8 +120,8 @@ mod tests {
                     ClientResult::Create(create_result) => {
                         assert_eq!(create_result.client_type, ClientType::Mock);
                         assert_eq!(create_result.client_id, expected_client_id);
-                        assert_eq!(create_result.client_state, msg.client_state());
-                        assert_eq!(create_result.consensus_state, msg.consensus_state());
+                        assert_eq!(create_result.client_state, msg.client_state);
+                        assert_eq!(create_result.consensus_state, msg.consensus_state);
                     }
                     _ => {
                         panic!("unexpected result type: expected ClientResult::CreateResult!");
@@ -198,7 +195,7 @@ mod tests {
         let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
 
         for msg in create_client_msgs {
-            let output = dispatch(Time::now(), &ctx, ClientMsg::CreateClient(msg.clone()));
+            let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
             match output {
                 Ok(HandlerOutput {
@@ -211,10 +208,10 @@ mod tests {
                     );
                     match result {
                         ClientResult::Create(create_res) => {
-                            assert_eq!(create_res.client_type, msg.client_state().client_type());
+                            assert_eq!(create_res.client_type, msg.client_state.client_type());
                             assert_eq!(create_res.client_id, expected_client_id);
-                            assert_eq!(create_res.client_state, msg.client_state());
-                            assert_eq!(create_res.consensus_state, msg.consensus_state());
+                            assert_eq!(create_res.client_state, msg.client_state);
+                            assert_eq!(create_res.consensus_state, msg.consensus_state);
                         }
                         _ => {
                             panic!("expected result of type ClientResult::CreateResult");
@@ -260,7 +257,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(Time::now(), &ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -276,8 +273,8 @@ mod tests {
                     ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, ClientType::Tendermint);
                         assert_eq!(create_res.client_id, expected_client_id);
-                        assert_eq!(create_res.client_state, msg.client_state());
-                        assert_eq!(create_res.consensus_state, msg.consensus_state());
+                        assert_eq!(create_res.client_state, msg.client_state);
+                        assert_eq!(create_res.consensus_state, msg.consensus_state);
                     }
                     _ => {
                         panic!("expected result of type ClientResult::CreateResult");

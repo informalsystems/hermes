@@ -18,12 +18,12 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // An IBC client running on the local (host) chain should exist.
-    ctx.client_state(msg.client_id())?;
+    ctx.client_state(&msg.client_id)?;
 
     let new_connection_end = ConnectionEnd::new(
         State::Init,
-        msg.client_id().clone(),
-        msg.counterparty().clone(),
+        msg.client_id.clone(),
+        msg.counterparty.clone(),
         ctx.get_compatible_versions(),
         msg.delay_period,
     );
@@ -89,7 +89,7 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(msg_conn_init.client_id(), Height::new(0, 10)),
+                ctx: context.with_client(&msg_conn_init.client_id, Height::new(0, 10)),
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init.clone()),
                 want_pass: true,
             },

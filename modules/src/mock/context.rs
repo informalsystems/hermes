@@ -4,12 +4,12 @@ use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap;
 use core::cmp::min;
-
-use tracing::debug;
+use core::ops::{Add, Sub};
+use core::time::Duration;
 
 use prost_types::Any;
 use sha2::Digest;
-use tendermint::Time;
+use tracing::debug;
 
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
@@ -26,9 +26,10 @@ use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error as Ics04Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
-use crate::core::ics05_port::capabilities::Capability;
-use crate::core::ics05_port::context::PortReader;
+use crate::core::ics05_port::capabilities::{Capability, CapabilityName};
+use crate::core::ics05_port::context::{CapabilityReader, PortReader};
 use crate::core::ics05_port::error::Error as Ics05Error;
+use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::Ics26Context;
@@ -43,7 +44,8 @@ use crate::relayer::ics18_relayer::error::Error as Ics18Error;
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use core::time::Duration;
+
+pub const DEFAULT_BLOCK_TIME_SECS: u64 = 3;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
@@ -56,12 +58,6 @@ pub struct MockContext {
 
     /// Maximum size for the history of the host chain. Any block older than this is pruned.
     max_history_size: usize,
-
-    /// Highest height (i.e., most recent) of the blocks in the history.
-    latest_height: Height,
-
-    /// Highest timestamp, i.e., of the most recent block in the history.
-    timestamp: Timestamp,
 
     /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
     /// blocks, ascending order by their height (latest block is on the last position).
@@ -117,6 +113,9 @@ pub struct MockContext {
 
     // Used by unordered channel
     packet_receipt: BTreeMap<(PortId, ChannelId, Sequence), Receipt>,
+
+    /// Average time duration between blocks
+    block_time: Duration,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -151,7 +150,12 @@ impl MockContext {
             "The chain must have a non-zero max_history_size"
         );
 
-        // Compute the number of blocks to store. If latest_height is 0, nothing is stored.
+        assert_ne!(
+            latest_height.revision_height, 0,
+            "The chain must have a non-zero max_history_size"
+        );
+
+        // Compute the number of blocks to store.
         let n = min(max_history_size as u64, latest_height.revision_height);
 
         assert_eq!(
@@ -160,19 +164,24 @@ impl MockContext {
             "The version in the chain identifier must match the version in the latest height"
         );
 
+        let block_time = Duration::from_secs(DEFAULT_BLOCK_TIME_SECS);
+        let next_block_timestamp = Timestamp::now().add(block_time).unwrap();
         MockContext {
             host_chain_type: host_type,
             host_chain_id: host_id.clone(),
             max_history_size,
-            latest_height,
-            timestamp: Default::default(),
             history: (0..n)
                 .rev()
                 .map(|i| {
+                    // generate blocks with timestamps -> N, N - BT, N - 2BT, ...
+                    // where N = now(), BT = block_time
                     HostBlock::generate_block(
                         host_id.clone(),
                         host_type,
                         latest_height.sub(i).unwrap().revision_height,
+                        next_block_timestamp
+                            .sub(Duration::from_secs(DEFAULT_BLOCK_TIME_SECS * (i + 1)))
+                            .unwrap(),
                     )
                 })
                 .collect(),
@@ -193,6 +202,7 @@ impl MockContext {
             packet_acknowledgement: Default::default(),
             connection_ids_counter: 0,
             channel_ids_counter: 0,
+            block_time,
         }
     }
 
@@ -230,6 +240,7 @@ impl MockContext {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
                     cs_height.revision_height,
+                    Timestamp::now(),
                 );
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());
@@ -264,6 +275,7 @@ impl MockContext {
         let prev_cs_height = cs_height.clone().sub(1).unwrap_or(client_state_height);
 
         let client_type = client_type.unwrap_or(ClientType::Mock);
+        let now = Timestamp::now();
 
         let (client_state, consensus_state) = match client_type {
             // If it's a mock client, create the corresponding mock states.
@@ -276,6 +288,7 @@ impl MockContext {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
                     cs_height.revision_height,
+                    now,
                 );
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());
@@ -295,6 +308,7 @@ impl MockContext {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
                     prev_cs_height.revision_height,
+                    now.sub(self.block_time).unwrap(),
                 );
                 AnyConsensusState::from(light_block)
             }
@@ -388,21 +402,18 @@ impl MockContext {
         }
     }
 
-    pub fn with_timestamp(self, timestamp: Timestamp) -> Self {
-        Self { timestamp, ..self }
-    }
-
     pub fn with_height(self, target_height: Height) -> Self {
-        if target_height.revision_number > self.latest_height.revision_number {
+        let latest_height = self.latest_height();
+        if target_height.revision_number > latest_height.revision_number {
             unimplemented!()
-        } else if target_height.revision_number < self.latest_height.revision_number {
+        } else if target_height.revision_number < latest_height.revision_number {
             panic!("Cannot rewind history of the chain to a smaller revision number!")
-        } else if target_height.revision_height < self.latest_height.revision_height {
+        } else if target_height.revision_height < latest_height.revision_height {
             panic!("Cannot rewind history of the chain to a smaller revision height!")
-        } else if target_height.revision_height > self.latest_height.revision_height {
+        } else if target_height.revision_height > latest_height.revision_height {
             // Repeatedly advance the host chain height till we hit the desired height
             let mut ctx = MockContext { ..self };
-            while ctx.latest_height.revision_height < target_height.revision_height {
+            while ctx.latest_height().revision_height < target_height.revision_height {
                 ctx.advance_host_chain_height()
             }
             ctx
@@ -431,7 +442,7 @@ impl MockContext {
     /// Returns `None` if the block at the requested height does not exist.
     pub fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
         let target = target_height.revision_height as usize;
-        let latest = self.latest_height.revision_height as usize;
+        let latest = self.latest_height().revision_height as usize;
 
         // Check that the block is not too advanced, nor has it been pruned.
         if (target > latest) || (target <= latest - self.history.len()) {
@@ -443,10 +454,12 @@ impl MockContext {
 
     /// Triggers the advancing of the host chain, by extending the history of blocks (or headers).
     pub fn advance_host_chain_height(&mut self) {
+        let latest_block = self.history.last().expect("history cannot be empty");
         let new_block = HostBlock::generate_block(
             self.host_chain_id.clone(),
             self.host_chain_type,
-            self.latest_height.increment().revision_height,
+            latest_block.height().increment().revision_height,
+            latest_block.timestamp().add(self.block_time).unwrap(),
         );
 
         // Append the new header at the tip of the history.
@@ -458,14 +471,13 @@ impl MockContext {
             // History is not full yet.
             self.history.push(new_block);
         }
-        self.latest_height = self.latest_height.increment();
     }
 
     /// A datagram passes from the relayer to the IBC module (on host chain).
     /// Alternative method to `Ics18Context::send` that does not exercise any serialization.
     /// Used in testing the Ics18 algorithms, hence this may return a Ics18Error.
     pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), Ics18Error> {
-        dispatch(Time::now(), self, msg).map_err(Ics18Error::transaction_failed)?;
+        dispatch(self, msg).map_err(Ics18Error::transaction_failed)?;
         // Create a new block.
         self.advance_host_chain_height();
         Ok(())
@@ -483,7 +495,7 @@ impl MockContext {
             // Get the highest block.
             let lh = &self.history[self.history.len() - 1];
             // Check latest is properly updated with highest header height.
-            if lh.height() != self.latest_height {
+            if lh.height() != self.latest_height() {
                 return Err("latest height is not updated".to_string());
             }
         }
@@ -528,22 +540,45 @@ impl MockContext {
             .get(height)
             .unwrap()
     }
+
+    #[inline]
+    fn latest_height(&self) -> Height {
+        self.history
+            .last()
+            .expect("history cannot be empty")
+            .height()
+    }
 }
 
 impl Ics26Context for MockContext {}
 
 impl Ics20Context for MockContext {}
 
-impl PortReader for MockContext {
-    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<Capability, Ics05Error> {
-        match self.port_capabilities.get(port_id) {
-            Some(cap) => Ok(cap.clone()),
-            None => Err(Ics05Error::unknown_port(port_id.clone())),
-        }
+impl CapabilityReader for MockContext {
+    fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, Ics05Error> {
+        todo!()
     }
 
-    fn authenticate(&self, _cap: &Capability, _port_id: &PortId) -> bool {
-        true
+    fn authenticate_capability(
+        &self,
+        _name: &CapabilityName,
+        _capability: &Capability,
+    ) -> Result<(), Ics05Error> {
+        Ok(())
+    }
+}
+
+impl PortReader for MockContext {
+    type ModuleId = ();
+
+    fn lookup_module_by_port(
+        &self,
+        port_id: &PortId,
+    ) -> Result<(Self::ModuleId, Capability), Error> {
+        match self.port_capabilities.get(port_id) {
+            Some(mod_cap) => Ok(((), mod_cap.clone())),
+            None => Err(Ics05Error::unknown_port(port_id.clone())),
+        }
     }
 }
 
@@ -588,8 +623,8 @@ impl ChannelReader for MockContext {
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics04Error> {
         match PortReader::lookup_module_by_port(self, port_id) {
-            Ok(key) => {
-                if !PortReader::authenticate(self, &key, port_id) {
+            Ok((_, key)) => {
+                if !PortReader::authenticate(self, port_id.clone(), &key) {
                     Err(Ics04Error::invalid_port_capability())
                 } else {
                     Ok(key)
@@ -668,11 +703,20 @@ impl ChannelReader for MockContext {
     }
 
     fn host_height(&self) -> Height {
-        self.latest_height
+        self.latest_height()
     }
 
     fn host_timestamp(&self) -> Timestamp {
-        self.timestamp
+        ClientReader::host_timestamp(self)
+    }
+
+    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
+        ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
+    }
+
+    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics04Error> {
+        ClientReader::pending_host_consensus_state(self)
+            .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
     fn client_update_time(
@@ -714,7 +758,7 @@ impl ChannelReader for MockContext {
     }
 
     fn max_expected_time_per_block(&self) -> Duration {
-        Duration::from_secs(10)
+        self.block_time
     }
 }
 
@@ -835,7 +879,7 @@ impl ConnectionReader for MockContext {
     }
 
     fn host_current_height(&self) -> Height {
-        self.latest_height
+        self.latest_height()
     }
 
     fn host_oldest_height(&self) -> Height {
@@ -858,10 +902,7 @@ impl ConnectionReader for MockContext {
     }
 
     fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics03Error> {
-        match self.host_block(height) {
-            Some(block_ref) => Ok(block_ref.clone().into()),
-            None => Err(Ics03Error::missing_local_consensus_state(height)),
-        }
+        ClientReader::host_consensus_state(self, height).map_err(Ics03Error::ics02_client)
     }
 
     fn connection_counter(&self) -> Result<u64, Ics03Error> {
@@ -988,7 +1029,27 @@ impl ClientReader for MockContext {
     }
 
     fn host_height(&self) -> Height {
-        self.latest_height
+        self.latest_height()
+    }
+
+    fn host_timestamp(&self) -> Timestamp {
+        self.history
+            .last()
+            .expect("history cannot be empty")
+            .timestamp()
+            .add(self.block_time)
+            .unwrap()
+    }
+
+    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics02Error> {
+        match self.host_block(height) {
+            Some(block_ref) => Ok(block_ref.clone().into()),
+            None => Err(Ics02Error::missing_local_consensus_state(height)),
+        }
+    }
+
+    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics02Error> {
+        Err(Ics02Error::missing_local_consensus_state(Height::zero()))
     }
 
     fn client_counter(&self) -> Result<u64, Ics02Error> {
@@ -1049,10 +1110,15 @@ impl ClientKeeper for MockContext {
         self.client_ids_counter += 1
     }
 
-    fn store_update_time(&mut self, client_id: ClientId, height: Height) -> Result<(), Ics02Error> {
+    fn store_update_time(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+        timestamp: Timestamp,
+    ) -> Result<(), Ics02Error> {
         let _ = self
             .client_processed_times
-            .insert((client_id, height), ChannelReader::host_timestamp(self));
+            .insert((client_id, height), timestamp);
         Ok(())
     }
 
@@ -1060,10 +1126,11 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         height: Height,
+        host_height: Height,
     ) -> Result<(), Ics02Error> {
         let _ = self
             .client_processed_heights
-            .insert((client_id, height), ClientReader::host_height(self));
+            .insert((client_id, height), host_height);
         Ok(())
     }
 }
@@ -1085,7 +1152,7 @@ impl Ics18Context for MockContext {
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Ics18Error> {
         // Forward call to Ics26 delivery method.
-        let events = deliver(Time::now(), self, msgs).map_err(Ics18Error::transaction_failed)?;
+        let events = deliver(self, msgs).map_err(Ics18Error::transaction_failed)?;
 
         self.advance_host_chain_height(); // Advance chain height
         Ok(events)
@@ -1119,8 +1186,8 @@ mod tests {
                 ctx: MockContext::new(
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
-                    1,
-                    Height::new(cv, 0),
+                    2,
+                    Height::new(cv, 1),
                 ),
             },
             Test {
@@ -1128,8 +1195,8 @@ mod tests {
                 ctx: MockContext::new(
                     ChainId::new("mocksgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
-                    1,
-                    Height::new(cv, 0),
+                    2,
+                    Height::new(cv, 1),
                 ),
             },
             Test {
@@ -1215,7 +1282,7 @@ mod tests {
                 test.ctx
             );
 
-            let current_height = test.ctx.latest_height;
+            let current_height = test.ctx.latest_height();
 
             // After advancing the chain's height, the context should still be valid.
             test.ctx.advance_host_chain_height();
@@ -1228,7 +1295,8 @@ mod tests {
 
             let next_height = current_height.increment();
             assert_eq!(
-                test.ctx.latest_height, next_height,
+                test.ctx.latest_height(),
+                next_height,
                 "failed while increasing height for context {:?}",
                 test.ctx
             );

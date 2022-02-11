@@ -17,7 +17,7 @@ use crate::{
     link::{operational_data::OperationalData, relay_sender::AsyncReply, RelaySummary, TxHashes},
 };
 
-pub const TIMEOUT: Duration = Duration::from_secs(100);
+pub const TIMEOUT: Duration = Duration::from_secs(300);
 
 /// A wrapper over an [`OperationalData`] that is pending.
 /// Additionally holds all the necessary information
