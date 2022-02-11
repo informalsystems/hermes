@@ -716,6 +716,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
+        // If the port is not know, use the default (empty) version
         let version = version::default_by_port(self.dst_port_id()).unwrap_or_default();
 
         let channel = ChannelEnd::new(
@@ -723,7 +724,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            version, // NOTE: This field is deprecated since IBC v3
+            version,
         );
 
         // Build the domain type message
@@ -866,7 +867,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        let version = version::default_by_port(self.dst_port_id())?;
+        // Re-use the version that was either set on ChanOpenInit or overwritten by the application.
+        let version = src_channel.version().clone();
 
         let channel = ChannelEnd::new(
             State::TryOpen,
