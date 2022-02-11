@@ -1226,7 +1226,7 @@ mod tests {
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
-        Acknowledgement, Module, OnRecvPacketResult, Router, RouterBuilder,
+        Acknowledgement, DeferredWriteResult, Module, Router, RouterBuilder,
     };
     use crate::core::ics26_routing::error::Error;
     use crate::mock::context::MockContext;
@@ -1378,11 +1378,6 @@ mod tests {
 
     #[test]
     fn test_router() {
-        #[derive(Debug, Default)]
-        struct FooModule {
-            counter: usize,
-        }
-
         #[derive(Default)]
         struct MockAck(Vec<u8>);
 
@@ -1396,6 +1391,11 @@ mod tests {
             fn success(&self) -> bool {
                 true
             }
+        }
+
+        #[derive(Debug, Default)]
+        struct FooModule {
+            counter: usize,
         }
 
         impl Module for FooModule {
@@ -1416,13 +1416,13 @@ mod tests {
                 &self,
                 _packet: Packet,
                 _relayer: Signer,
-            ) -> Result<OnRecvPacketResult, Error> {
+            ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
                 Ok((
                     Box::new(MockAck::default()),
-                    Box::new(|module| {
+                    Some(Box::new(|module| {
                         let module = module.downcast_mut::<FooModule>().unwrap();
                         module.counter += 1;
-                    }),
+                    })),
                 ))
             }
         }
@@ -1448,8 +1448,8 @@ mod tests {
                 &self,
                 _packet: Packet,
                 _relayer: Signer,
-            ) -> Result<OnRecvPacketResult, Error> {
-                Ok((Box::new(MockAck::default()), Box::new(|_| {})))
+            ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
+                Ok((Box::new(MockAck::default()), None))
             }
         }
 
@@ -1482,7 +1482,9 @@ mod tests {
         ];
         results.into_iter().for_each(|(mid, (ack, write_fn))| {
             if ack.success() {
-                write_fn(ctx.router.get_route_mut(mid).unwrap().as_any_mut())
+                if let Some(write_fn) = write_fn {
+                    write_fn(ctx.router.get_route_mut(mid).unwrap().as_any_mut());
+                }
             }
         });
     }
