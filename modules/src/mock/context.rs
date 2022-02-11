@@ -1218,6 +1218,8 @@ impl Ics18Context for MockContext {
 mod tests {
     use test_log::test;
 
+    use core::any::Any;
+
     use crate::core::ics03_connection::connection::Counterparty;
     use crate::core::ics04_channel::channel::Order;
     use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
@@ -1226,7 +1228,7 @@ mod tests {
     use crate::core::ics05_port::capabilities::Capability;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-    use crate::core::ics26_routing::context::{Module, Router, RouterBuilder};
+    use crate::core::ics26_routing::context::{Module, OnRecvPacketResult, Router, RouterBuilder};
     use crate::core::ics26_routing::error::Error;
     use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
@@ -1377,8 +1379,25 @@ mod tests {
 
     #[test]
     fn test_router() {
-        #[derive(Debug)]
-        struct MockModule;
+        #[derive(Debug, Default)]
+        struct MockModule {
+            counter: usize,
+        }
+
+        struct MockOnRecvPacketResult {
+            ack: Acknowledgement,
+        }
+
+        impl OnRecvPacketResult for MockOnRecvPacketResult {
+            fn acknowledgement(&self) -> Acknowledgement {
+                self.ack.clone()
+            }
+
+            fn write_result(&mut self, module: &mut dyn Any) {
+                let module = module.downcast_mut::<MockModule>().unwrap();
+                module.counter += 1;
+            }
+        }
 
         impl Module for MockModule {
             fn on_chan_open_init(
@@ -1441,10 +1460,10 @@ mod tests {
             }
 
             fn on_recv_packet(
-                &mut self,
+                &self,
                 _packet: Packet,
                 _relayer: Signer,
-            ) -> Result<Acknowledgement, Error> {
+            ) -> Result<Box<dyn OnRecvPacketResult>, Error> {
                 todo!()
             }
 
@@ -1467,7 +1486,7 @@ mod tests {
         }
 
         let r = MockRouterBuilder::default()
-            .add_route("mockmodule".to_owned(), MockModule)
+            .add_route("mockmodule".to_owned(), MockModule::default())
             .unwrap()
             .build();
 
@@ -1479,9 +1498,10 @@ mod tests {
         )
         .with_router(r);
 
-        let m = ctx.router.get_route_mut("mockmodule");
-        let _ = m
-            .unwrap()
-            .on_timeout_packet(Packet::default(), Signer::new(""));
+        let m = ctx.router.get_route_mut("mockmodule").unwrap();
+        let mut result = m
+            .on_recv_packet(Packet::default(), Signer::new(""))
+            .unwrap();
+        result.write_result(m.as_any_mut());
     }
 }
