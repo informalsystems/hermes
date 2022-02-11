@@ -141,7 +141,7 @@ mod tests {
                 ctx: context
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_confirm.connection_id.clone(), correct_conn_end),
-                msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm.clone()),
+                msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm),
                 want_pass: true,
             },
         ]
