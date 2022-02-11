@@ -1381,7 +1381,7 @@ mod tests {
     #[test]
     fn test_router() {
         #[derive(Debug, Default)]
-        struct MockModule {
+        struct FooModule {
             counter: usize,
         }
 
@@ -1401,20 +1401,20 @@ mod tests {
         }
 
         #[derive(Default)]
-        struct MockOnRecvPacketResult(MockAck);
+        struct FooOnRecvPacketResult(MockAck);
 
-        impl OnRecvPacketResult for MockOnRecvPacketResult {
+        impl OnRecvPacketResult for FooOnRecvPacketResult {
             fn acknowledgement(&self) -> &dyn Acknowledgement {
                 &self.0
             }
 
             fn write_result(&mut self, module: &mut dyn Any) {
-                let module = module.downcast_mut::<MockModule>().unwrap();
+                let module = module.downcast_mut::<FooModule>().unwrap();
                 module.counter += 1;
             }
         }
 
-        impl Module for MockModule {
+        impl Module for FooModule {
             fn on_chan_open_try(
                 &mut self,
                 _order: Order,
@@ -1433,12 +1433,51 @@ mod tests {
                 _packet: Packet,
                 _relayer: Signer,
             ) -> Result<Box<dyn OnRecvPacketResult>, Error> {
-                Ok(Box::new(MockOnRecvPacketResult::default()))
+                Ok(Box::new(FooOnRecvPacketResult::default()))
+            }
+        }
+
+        #[derive(Debug, Default)]
+        struct BarModule;
+
+        #[derive(Default)]
+        struct BarOnRecvPacketResult(MockAck);
+
+        impl OnRecvPacketResult for BarOnRecvPacketResult {
+            fn acknowledgement(&self) -> &dyn Acknowledgement {
+                &self.0
+            }
+
+            fn write_result(&mut self, _module: &mut dyn Any) {}
+        }
+
+        impl Module for BarModule {
+            fn on_chan_open_try(
+                &mut self,
+                _order: Order,
+                _connection_hops: &[ConnectionId],
+                _port_id: PortId,
+                _channel_id: ChannelId,
+                _channel_cap: Capability,
+                _counterparty: Counterparty,
+                counterparty_version: Version,
+            ) -> Result<Version, Error> {
+                Ok(counterparty_version)
+            }
+
+            fn on_recv_packet(
+                &self,
+                _packet: Packet,
+                _relayer: Signer,
+            ) -> Result<Box<dyn OnRecvPacketResult>, Error> {
+                Ok(Box::new(BarOnRecvPacketResult::default()))
             }
         }
 
         let r = MockRouterBuilder::default()
-            .add_route("mockmodule".to_owned(), MockModule::default())
+            .add_route("foomodule".to_owned(), FooModule::default())
+            .unwrap()
+            .add_route("barmodule".to_owned(), BarModule::default())
             .unwrap()
             .build();
 
@@ -1450,10 +1489,20 @@ mod tests {
         )
         .with_router(r);
 
-        let m = ctx.router.get_route_mut("mockmodule").unwrap();
-        let mut result = m
-            .on_recv_packet(Packet::default(), Signer::new(""))
-            .unwrap();
-        result.write_result(m.as_any_mut());
+        let mut on_recv_packet_result = |module_id: &'static str| {
+            let m = ctx.router.get_route_mut(module_id).unwrap();
+            let result = m
+                .on_recv_packet(Packet::default(), Signer::new(""))
+                .unwrap();
+            (module_id, result)
+        };
+
+        let mut results = vec![];
+        results.push(on_recv_packet_result("foomodule"));
+        results.push(on_recv_packet_result("barmodule"));
+
+        results.into_iter().for_each(|(mid, mut r)| {
+            r.write_result(ctx.router.get_route_mut(mid).unwrap().as_any_mut())
+        });
     }
 }
