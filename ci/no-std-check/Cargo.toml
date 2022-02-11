@@ -35,8 +35,3 @@ substrate-std = [
 tendermint                        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 tendermint-proto                  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 tendermint-light-client-verifier  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "no-std" }
-safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "no-std" }
-safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", branch = "no-std" }
-safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "no-std" }
-safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "no-std" }

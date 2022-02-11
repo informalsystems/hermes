@@ -2486,9 +2486,9 @@ dependencies = [
 
 [[package]]
 name = "safe-regex"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "954950893b0d83c719cb5325bf3941bae7b1c6590d923c70f78bdfed101179b5"
+checksum = "a15289bf322e0673d52756a18194167f2378ec1a15fe884af6e2d2cb934822b0"
 dependencies = [
  "safe-regex-macro",
 ]
