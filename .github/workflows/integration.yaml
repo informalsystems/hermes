@@ -2,7 +2,7 @@ name: Rust
 on:
   pull_request:
     paths:
-      - .github/workflows/rust.yml
+      - .github/workflows/integration.yaml
       - Cargo.toml
       - Cargo.lock
       - ci/**
@@ -16,7 +16,7 @@ on:
   push:
     branches: master
     paths:
-      - .github/workflows/rust.yml
+      - .github/workflows/integration.yaml
       - Cargo.toml
       - Cargo.lock
       - ci/**
@@ -44,6 +44,7 @@ jobs:
         gaiad:
           - gaia4
           - gaia5
+          - gaia6
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
