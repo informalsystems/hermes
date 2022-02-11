@@ -59,7 +59,7 @@ impl Runnable for ClearPacketsCmd {
                 Ok(link) => link,
                 Err(e) => Output::error(format!("{}", e)).exit(),
             };
-        let rev_link = match fwd_link.reverse() {
+        let rev_link = match fwd_link.reverse(false) {
             Ok(link) => link,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
