@@ -16,6 +16,7 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
     connections: DynamicConnectedConnections<Handle>,
     chains: &[Handle],
     ports: &[Vec<PortId>],
+    bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedChannels<Handle>, Error> {
     let size = chains.len();
 
@@ -41,7 +42,7 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
                     connection,
                     &DualTagged::new(port_a),
                     &DualTagged::new(port_b),
-                    true,
+                    bootstrap_with_random_ids,
                 )?;
 
                 channels_b.push(channel);
@@ -63,11 +64,13 @@ pub fn bootstrap_channels_with_connections<Handle: ChainHandle, const SIZE: usiz
     connections: ConnectedConnections<Handle, SIZE>,
     chains: &[Handle; SIZE],
     ports: [[PortId; SIZE]; SIZE],
+    bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannels<Handle, SIZE>, Error> {
     let channels = bootstrap_channels_with_connections_dynamic(
         connections.into(),
         chains,
         &into_nested_vec(ports),
+        bootstrap_with_random_ids,
     )?;
 
     channels.try_into().map_err(handle_generic_error)
@@ -76,17 +79,29 @@ pub fn bootstrap_channels_with_connections<Handle: ChainHandle, const SIZE: usiz
 pub fn bootstrap_channels_dynamic<Handle: ChainHandle>(
     chains: &DynamicConnectedChains<Handle>,
     ports: &[Vec<PortId>],
+    bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedChannels<Handle>, Error> {
-    let connections = bootstrap_connections_dynamic(&chains.foreign_clients)?;
+    let connections =
+        bootstrap_connections_dynamic(&chains.foreign_clients, bootstrap_with_random_ids)?;
 
-    bootstrap_channels_with_connections_dynamic(connections, &chains.chain_handles, ports)
+    bootstrap_channels_with_connections_dynamic(
+        connections,
+        &chains.chain_handles,
+        ports,
+        bootstrap_with_random_ids,
+    )
 }
 
 pub fn bootstrap_channels<Handle: ChainHandle, const SIZE: usize>(
     chains: &ConnectedChains<Handle, SIZE>,
     ports: [[PortId; SIZE]; SIZE],
+    bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannels<Handle, SIZE>, Error> {
-    let channels = bootstrap_channels_dynamic(&chains.clone().into(), &into_nested_vec(ports))?;
+    let channels = bootstrap_channels_dynamic(
+        &chains.clone().into(),
+        &into_nested_vec(ports),
+        bootstrap_with_random_ids,
+    )?;
 
     channels.try_into()
 }

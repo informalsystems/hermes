@@ -48,7 +48,7 @@ where
             self.test.get_overrides().modify_relayer_config(config);
         })?;
 
-        let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer);
+        let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer)?;
 
         let _drop_handles = chains
             .chain_handles

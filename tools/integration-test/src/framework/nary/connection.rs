@@ -73,7 +73,10 @@ where
         relayer: RelayerDriver,
         chains: ConnectedChains<Handle, SIZE>,
     ) -> Result<(), Error> {
-        let connections = bootstrap_connections(chains.foreign_clients.clone())?;
+        let connections = bootstrap_connections(
+            chains.foreign_clients.clone(),
+            config.bootstrap_with_random_ids,
+        )?;
 
         self.test.run(config, relayer, chains, connections)?;
 

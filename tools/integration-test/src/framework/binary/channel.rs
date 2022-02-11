@@ -160,7 +160,7 @@ where
             connection,
             &DualTagged::new(port_a).as_ref(),
             &DualTagged::new(port_b).as_ref(),
-            true,
+            config.bootstrap_with_random_ids,
         )?;
 
         let env_path = config.chain_store_dir.join("binary-channels.env");

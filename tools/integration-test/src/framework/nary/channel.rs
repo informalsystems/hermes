@@ -86,8 +86,12 @@ where
         connections: ConnectedConnections<Handle, SIZE>,
     ) -> Result<(), Error> {
         let port_ids = self.test.get_overrides().channel_ports();
-        let channels =
-            bootstrap_channels_with_connections(connections, &chains.chain_handles, port_ids)?;
+        let channels = bootstrap_channels_with_connections(
+            connections,
+            &chains.chain_handles,
+            port_ids,
+            config.bootstrap_with_random_ids,
+        )?;
 
         self.test.run(config, relayer, chains, channels)?;
 

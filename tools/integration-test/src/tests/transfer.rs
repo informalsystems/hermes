@@ -37,7 +37,11 @@ fn test_nary_ibc_transfer() -> Result<(), Error> {
 
 pub struct IbcTransferTest;
 
-impl TestOverrides for IbcTransferTest {}
+impl TestOverrides for IbcTransferTest {
+    fn modify_test_config(&self, config: &mut TestConfig) {
+        config.bootstrap_with_random_ids = false;
+    }
+}
 
 impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(

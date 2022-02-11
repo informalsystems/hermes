@@ -10,6 +10,7 @@ use crate::util::array::{assert_same_dimension, into_nested_vec};
 
 pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
     foreign_clients: &[Vec<ForeignClient<Handle, Handle>>],
+    bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedConnections<Handle>, Error> {
     let size = foreign_clients.len();
 
@@ -24,8 +25,11 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
             if i <= j {
                 let counter_foreign_client = &foreign_clients[j][i];
 
-                let connection =
-                    bootstrap_connection(counter_foreign_client, foreign_client, true)?;
+                let connection = bootstrap_connection(
+                    counter_foreign_client,
+                    foreign_client,
+                    bootstrap_with_random_ids,
+                )?;
 
                 connections_b.push(connection);
             } else {
@@ -44,8 +48,12 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
 
 pub fn bootstrap_connections<Handle: ChainHandle, const SIZE: usize>(
     foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
+    bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedConnections<Handle, SIZE>, Error> {
-    let connections = bootstrap_connections_dynamic(&into_nested_vec(foreign_clients))?;
+    let connections = bootstrap_connections_dynamic(
+        &into_nested_vec(foreign_clients),
+        bootstrap_with_random_ids,
+    )?;
 
     connections.try_into()
 }
