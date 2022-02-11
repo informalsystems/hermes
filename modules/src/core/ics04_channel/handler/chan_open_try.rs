@@ -20,9 +20,9 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end (if any) and validate it against the message.
-    let (mut new_channel_end, channel_id) = match msg.previous_channel_id() {
+    let (mut new_channel_end, channel_id) = match &msg.previous_channel_id {
         Some(prev_id) => {
-            let old_channel_end = ctx.channel_end(&(msg.port_id().clone(), prev_id.clone()))?;
+            let old_channel_end = ctx.channel_end(&(msg.port_id.clone(), prev_id.clone()))?;
 
             // Validate that existing channel end matches with the one we're trying to establish.
             if old_channel_end.state_matches(&State::Init)
@@ -45,7 +45,7 @@ pub(crate) fn process(
                 *msg.channel.ordering(),
                 msg.channel.counterparty().clone(),
                 msg.channel.connection_hops().clone(),
-                msg.counterparty_version().clone(),
+                msg.counterparty_version.clone(),
             );
 
             // Channel identifier construction.
@@ -69,7 +69,7 @@ pub(crate) fn process(
         ));
     }
 
-    let conn = ctx.connection_end(&msg.channel().connection_hops()[0])?;
+    let conn = ctx.connection_end(&msg.channel.connection_hops()[0])?;
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
             msg.channel.connection_hops()[0].clone(),
@@ -82,22 +82,22 @@ pub(crate) fn process(
         _ => return Err(Error::invalid_version_length_connection()),
     };
 
-    let channel_feature = msg.channel().ordering().to_string();
+    let channel_feature = msg.channel.ordering().to_string();
     if !version.is_supported_feature(channel_feature) {
         return Err(Error::channel_feature_not_suported_by_connection());
     }
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
+    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
 
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.
     //      the port should be identical with the port we're using; the channel id should not be set
     //      since the counterparty cannot know yet which ID did we choose.
-    let expected_counterparty = Counterparty::new(msg.port_id().clone(), None);
+    let expected_counterparty = Counterparty::new(msg.port_id.clone(), None);
     let counterparty = conn.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
-        Error::undefined_connection_counterparty(msg.channel().connection_hops()[0].clone())
+        Error::undefined_connection_counterparty(msg.channel.connection_hops()[0].clone())
     })?;
     let expected_connection_hops = vec![ccid.clone()];
 
@@ -107,17 +107,17 @@ pub(crate) fn process(
         *msg.channel.ordering(),
         expected_counterparty,
         expected_connection_hops,
-        msg.counterparty_version().clone(),
+        msg.counterparty_version.clone(),
     );
 
     // 2. Actual proofs are verified now.
     verify_channel_proofs(
         ctx,
-        msg.proofs().height(),
+        msg.proofs.height(),
         &new_channel_end,
         &conn,
         &expected_channel_end,
-        msg.proofs(),
+        &msg.proofs,
     )?;
 
     output.log("success: channel open try ");
@@ -126,7 +126,7 @@ pub(crate) fn process(
     new_channel_end.set_state(State::TryOpen);
 
     let result = ChannelResult {
-        port_id: msg.port_id().clone(),
+        port_id: msg.port_id.clone(),
         channel_cap,
         channel_id_state: if matches!(msg.previous_channel_id, None) {
             ChannelIdState::Generated
@@ -272,7 +272,7 @@ mod tests {
                 msg: ChannelMsg::ChannelOpenTry(msg_vanilla.clone()),
                 want_pass: false,
                 match_error: {
-                    let connection_id = msg.channel().connection_hops()[0].clone();
+                    let connection_id = msg.channel.connection_hops()[0].clone();
                     Box::new(move |e| match e {
                         error::ErrorDetail::Ics03Connection(e) => {
                             assert_eq!(

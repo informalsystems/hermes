@@ -29,14 +29,6 @@ impl MsgChannelCloseInit {
             signer,
         }
     }
-
-    /// Getter: borrow the `port_id` from this message.
-    pub fn port_id(&self) -> &PortId {
-        &self.port_id
-    }
-    pub fn channel_id(&self) -> &ChannelId {
-        &self.channel_id
-    }
 }
 
 impl Msg for MsgChannelCloseInit {

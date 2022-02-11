@@ -275,7 +275,7 @@ mod tests {
             res
         );
 
-        ctx.add_port(msg_chan_init.port_id().clone());
+        ctx.add_port(msg_chan_init.port_id.clone());
 
         // Figure out the ID of the client that was just created.
         let mut events = res.unwrap().events;

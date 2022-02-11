@@ -18,18 +18,18 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end and validate it against the message.
-    let mut channel_end = ctx.channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))?;
+    let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id.clone()))?;
 
     // Validate that the channel end is in a state where it can be ack.
     if !channel_end.state_matches(&State::Init) && !channel_end.state_matches(&State::TryOpen) {
         return Err(Error::invalid_channel_state(
-            msg.channel_id().clone(),
+            msg.channel_id,
             channel_end.state,
         ));
     }
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
+    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
 
     // An OPEN IBC connection running on the local (host) chain should exist.
 
@@ -52,7 +52,7 @@ pub(crate) fn process(
     // 1. Setup: build the Channel as we expect to find it on the other party.
 
     let expected_counterparty =
-        Counterparty::new(msg.port_id().clone(), Some(msg.channel_id().clone()));
+        Counterparty::new(msg.port_id.clone(), Some(msg.channel_id.clone()));
 
     let counterparty = conn.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
@@ -66,7 +66,7 @@ pub(crate) fn process(
         *channel_end.ordering(),
         expected_counterparty,
         expected_connection_hops,
-        msg.counterparty_version().clone(),
+        msg.counterparty_version.clone(),
     );
 
     // set the counterparty channel id to verify against it
@@ -75,29 +75,29 @@ pub(crate) fn process(
     //2. Verify proofs
     verify_channel_proofs(
         ctx,
-        msg.proofs().height(),
+        msg.proofs.height(),
         &channel_end,
         &conn,
         &expected_channel_end,
-        msg.proofs(),
+        &msg.proofs,
     )?;
 
     output.log("success: channel open ack ");
 
     // Transition the channel end to the new state & pick a version.
     channel_end.set_state(State::Open);
-    channel_end.set_version(msg.counterparty_version().clone());
+    channel_end.set_version(msg.counterparty_version.clone());
 
     let result = ChannelResult {
-        port_id: msg.port_id().clone(),
-        channel_id: msg.channel_id().clone(),
+        port_id: msg.port_id.clone(),
+        channel_id: msg.channel_id.clone(),
         channel_id_state: ChannelIdState::Reused,
         channel_cap,
         channel_end,
     };
 
     let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id().clone()),
+        channel_id: Some(msg.channel_id),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenAckChannel(event_attributes.into()));
@@ -153,11 +153,11 @@ mod tests {
 
         let conn_end = ConnectionEnd::new(
             ConnectionState::Open,
-            msg_conn_init.client_id().clone(),
+            msg_conn_init.client_id.clone(),
             ConnectionCounterparty::new(
-                msg_conn_init.counterparty().client_id().clone(),
+                msg_conn_init.counterparty.client_id().clone(),
                 Some(ConnectionId::from_str("defaultConnection-1").unwrap()),
-                msg_conn_init.counterparty().prefix().clone(),
+                msg_conn_init.counterparty.prefix().clone(),
             ),
             get_compatible_versions(),
             msg_conn_init.delay_period,
@@ -194,8 +194,8 @@ mod tests {
             State::Init,
             *msg_chan_try.channel.ordering(),
             Counterparty::new(
-                msg_chan_ack.port_id().clone(),
-                Some(msg_chan_ack.channel_id().clone()),
+                msg_chan_ack.port_id.clone(),
+                Some(msg_chan_ack.channel_id.clone()),
             ),
             connection_vec0.clone(),
             msg_chan_try.channel.version().clone(),
@@ -205,8 +205,8 @@ mod tests {
             State::Open,
             *msg_chan_try.channel.ordering(),
             Counterparty::new(
-                msg_chan_ack.port_id().clone(),
-                Some(msg_chan_ack.channel_id().clone()),
+                msg_chan_ack.port_id.clone(),
+                Some(msg_chan_ack.channel_id.clone()),
             ),
             connection_vec0,
             msg_chan_try.channel.version().clone(),
@@ -224,13 +224,13 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_client(
-                        msg_conn_try.client_id(),
+                        &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
-                    .with_port_capability(msg_chan_ack.port_id().clone())
+                    .with_port_capability(msg_chan_ack.port_id.clone())
                     .with_channel(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
+                        msg_chan_ack.port_id.clone(),
+                        msg_chan_ack.channel_id.clone(),
                         failed_chan_end,
                     ),
                 msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
@@ -242,13 +242,13 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_client(
-                        msg_conn_try.client_id(),
+                        &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid.clone(), conn_end.clone())
                     .with_channel(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
+                        msg_chan_ack.port_id.clone(),
+                        msg_chan_ack.channel_id.clone(),
                         chan_end.clone(),
                     ),
                 msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
@@ -259,13 +259,13 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_client(
-                        msg_conn_try.client_id(),
+                        &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
-                    .with_port_capability(msg_chan_ack.port_id().clone())
+                    .with_port_capability(msg_chan_ack.port_id.clone())
                     .with_channel(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
+                        msg_chan_ack.port_id.clone(),
+                        msg_chan_ack.channel_id.clone(),
                         chan_end.clone(),
                     ),
                 msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
@@ -276,10 +276,10 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(cid.clone(), conn_end.clone())
-                    .with_port_capability(msg_chan_ack.port_id().clone())
+                    .with_port_capability(msg_chan_ack.port_id.clone())
                     .with_channel(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
+                        msg_chan_ack.port_id.clone(),
+                        msg_chan_ack.channel_id.clone(),
                         chan_end.clone(),
                     ),
                 msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
@@ -289,14 +289,14 @@ mod tests {
                 name: "Good parameters".to_string(),
                 ctx: context //  .clone()
                     .with_client(
-                        msg_conn_try.client_id(),
+                        &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid, conn_end)
-                    .with_port_capability(msg_chan_ack.port_id().clone())
+                    .with_port_capability(msg_chan_ack.port_id.clone())
                     .with_channel(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
+                        msg_chan_ack.port_id.clone(),
+                        msg_chan_ack.channel_id.clone(),
                         chan_end,
                     ),
                 msg: ChannelMsg::ChannelOpenAck(msg_chan_ack),

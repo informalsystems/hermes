@@ -16,18 +16,18 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end and validate it against the message.
-    let mut channel_end = ctx.channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))?;
+    let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id.clone()))?;
 
     // Validate that the channel end is in a state where it can be closed.
     if channel_end.state_matches(&State::Closed) {
         return Err(Error::invalid_channel_state(
-            msg.channel_id().clone(),
+            msg.channel_id,
             channel_end.state,
         ));
     }
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
+    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
     // An OPEN IBC connection running on the local (host) chain should exist.
 
     if channel_end.connection_hops().len() != 1 {
@@ -51,15 +51,15 @@ pub(crate) fn process(
     channel_end.set_state(State::Closed);
 
     let result = ChannelResult {
-        port_id: msg.port_id().clone(),
-        channel_id: msg.channel_id().clone(),
+        port_id: msg.port_id.clone(),
+        channel_id: msg.channel_id.clone(),
         channel_id_state: ChannelIdState::Reused,
         channel_cap,
         channel_end,
     };
 
     let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id().clone()),
+        channel_id: Some(msg.channel_id),
         ..Default::default()
     };
     output.emit(IbcEvent::CloseInitChannel(event_attributes.into()));

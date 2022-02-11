@@ -18,15 +18,15 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Retrieve the old channel end and validate it against the message.
-    let mut channel_end = ctx.channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))?;
+    let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id.clone()))?;
 
     // Validate that the channel end is in a state where it can be closed.
     if channel_end.state_matches(&State::Closed) {
-        return Err(Error::channel_closed(msg.channel_id().clone()));
+        return Err(Error::channel_closed(msg.channel_id));
     }
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
+    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
 
     // An OPEN IBC connection running on the local (host) chain should exist.
     if channel_end.connection_hops().len() != 1 {
@@ -48,7 +48,7 @@ pub(crate) fn process(
     // 1. Setup: build the Channel as we expect to find it on the other party.
 
     let expected_counterparty =
-        Counterparty::new(msg.port_id().clone(), Some(msg.channel_id().clone()));
+        Counterparty::new(msg.port_id.clone(), Some(msg.channel_id.clone()));
 
     let counterparty = conn.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
@@ -67,11 +67,11 @@ pub(crate) fn process(
 
     verify_channel_proofs(
         ctx,
-        msg.proofs().height(),
+        msg.proofs.height(),
         &channel_end,
         &conn,
         &expected_channel_end,
-        msg.proofs(),
+        &msg.proofs,
     )?;
 
     output.log("success: channel close confirm ");
@@ -80,15 +80,15 @@ pub(crate) fn process(
     channel_end.set_state(State::Closed);
 
     let result = ChannelResult {
-        port_id: msg.port_id().clone(),
-        channel_id: msg.channel_id().clone(),
+        port_id: msg.port_id.clone(),
+        channel_id: msg.channel_id.clone(),
         channel_id_state: ChannelIdState::Reused,
         channel_cap,
         channel_end,
     };
 
     let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id().clone()),
+        channel_id: Some(msg.channel_id),
         ..Default::default()
     };
     output.emit(IbcEvent::CloseConfirmChannel(event_attributes.into()));
