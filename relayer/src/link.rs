@@ -162,6 +162,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         Link::new(channel, with_tx_confirmation)
     }
 
+    /// Constructs a link around the channel that is reverse to the channel
+    /// in this link.
+    pub fn reverse(&self) -> Result<Link<ChainB, ChainA>, LinkError> {
+        let opts = LinkParameters {
+            src_port_id: self.a_to_b.dst_port_id().clone(),
+            src_channel_id: self.a_to_b.dst_channel_id().clone(),
+        };
+        let chain_b = self.a_to_b.dst_chain().clone();
+        let chain_a = self.a_to_b.src_chain().clone();
+
+        // Some of the checks and initializations may be redundant;
+        // going slowly, but reliably.
+        Link::new_from_opts(chain_b, chain_a, opts, false)
+    }
+
     /// Implements the `packet-recv` CLI
     pub fn build_and_send_recv_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(

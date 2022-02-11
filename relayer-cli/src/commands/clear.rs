@@ -50,8 +50,6 @@ impl Runnable for ClearPacketsCmd {
         let mut ev_list = vec![];
 
         // Construct links in both directions.
-        // Some of the checks in the two Link constructor calls may be redundant;
-        // going slowly, but reliably.
         let opts = LinkParameters {
             src_port_id: self.port_id.clone(),
             src_channel_id: self.channel_id.clone(),
@@ -61,11 +59,7 @@ impl Runnable for ClearPacketsCmd {
                 Ok(link) => link,
                 Err(e) => Output::error(format!("{}", e)).exit(),
             };
-        let opts = LinkParameters {
-            src_port_id: fwd_link.a_to_b.dst_port_id().clone(),
-            src_channel_id: fwd_link.a_to_b.dst_channel_id().clone(),
-        };
-        let rev_link = match Link::new_from_opts(chains.dst, chains.src, opts, false) {
+        let rev_link = match fwd_link.reverse() {
             Ok(link) => link,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
