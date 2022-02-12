@@ -1,6 +1,7 @@
 //! Capabilities: this is a placeholder.
 
 use crate::prelude::*;
+use alloc::borrow::Cow;
 use core::{fmt, str::FromStr};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -33,14 +34,13 @@ impl From<u64> for Capability {
 #[derive(Debug, PartialEq)]
 pub struct InvalidCapabilityName;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CapabilityName(String);
 
 impl CapabilityName {
-    pub fn new(s: impl AsRef<str>) -> Result<Self, InvalidCapabilityName> {
-        let s = s.as_ref().trim();
-        if !s.is_empty() {
-            Ok(Self(s.to_owned()))
+    pub fn new(s: Cow<'_, str>) -> Result<Self, InvalidCapabilityName> {
+        if !s.trim().is_empty() {
+            Ok(Self(s.into_owned()))
         } else {
             Err(InvalidCapabilityName)
         }
@@ -57,6 +57,6 @@ impl FromStr for CapabilityName {
     type Err = InvalidCapabilityName;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s)
+        Self::new(Cow::Borrowed(s))
     }
 }
