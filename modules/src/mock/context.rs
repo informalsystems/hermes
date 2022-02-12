@@ -35,7 +35,7 @@ use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::{Ics26Context, Module, Router, RouterBuilder};
+  use crate::core::ics26_routing::context::{Ics26Context, Module, ModuleId, Router, RouterBuilder};
 use crate::core::ics26_routing::handler::{deliver, dispatch};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
 use crate::events::IbcEvent;
@@ -566,9 +566,8 @@ pub struct MockRouterBuilder(MockRouter);
 
 impl RouterBuilder for MockRouterBuilder {
     type Router = MockRouter;
-    type ModuleId = String;
 
-    fn add_route(mut self, module_id: Self::ModuleId, module: impl Module) -> Result<Self, String> {
+    fn add_route(mut self, module_id: ModuleId, module: impl Module) -> Result<Self, String> {
         match self.0 .0.insert(module_id, Arc::new(module)) {
             None => Ok(self),
             Some(_) => Err("Duplicate module_id".to_owned()),
@@ -581,16 +580,14 @@ impl RouterBuilder for MockRouterBuilder {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct MockRouter(BTreeMap<String, Arc<dyn Module>>);
+pub struct MockRouter(BTreeMap<ModuleId, Arc<dyn Module>>);
 
 impl Router for MockRouter {
-    type ModuleId = str;
-
-    fn get_route_mut(&mut self, module_id: impl Borrow<Self::ModuleId>) -> Option<&mut dyn Module> {
+    fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module> {
         self.0.get_mut(module_id.borrow()).and_then(Arc::get_mut)
     }
 
-    fn has_route(&self, module_id: impl Borrow<Self::ModuleId>) -> bool {
+    fn has_route(&self, module_id: &impl Borrow<ModuleId>) -> bool {
         self.0.get(module_id.borrow()).is_some()
     }
 }
@@ -620,14 +617,9 @@ impl CapabilityReader for MockContext {
 }
 
 impl PortReader for MockContext {
-    type ModuleId = ();
-
-    fn lookup_module_by_port(
-        &self,
-        port_id: &PortId,
-    ) -> Result<(Self::ModuleId, Capability), Error> {
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, Capability), Error> {
         match self.port_capabilities.get(port_id) {
-            Some(mod_cap) => Ok(((), mod_cap.clone())),
+            Some(mod_cap) => Ok((ModuleId::new("foomodule".into()).unwrap(), mod_cap.clone())),
             None => Err(Ics05Error::unknown_port(port_id.clone())),
         }
     }
@@ -1218,17 +1210,18 @@ impl Ics18Context for MockContext {
 mod tests {
     use test_log::test;
 
-    use crate::core::ics03_connection::connection::Counterparty;
-    use crate::core::ics04_channel::channel::Order;
+    use alloc::str::FromStr;
+
+    use crate::core::ics04_channel::channel::{Counterparty, Order};
+    use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::packet::Packet;
     use crate::core::ics04_channel::Version;
     use crate::core::ics05_port::capabilities::Capability;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
-        Acknowledgement, DeferredWriteResult, Module, Router, RouterBuilder,
+        Acknowledgement, DeferredWriteResult, Module, ModuleId, Router, RouterBuilder,
     };
-    use crate::core::ics26_routing::error::Error;
     use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
     use crate::mock::host::HostType;
@@ -1454,9 +1447,9 @@ mod tests {
         }
 
         let r = MockRouterBuilder::default()
-            .add_route("foomodule".to_owned(), FooModule::default())
+            .add_route("foomodule".parse().unwrap(), FooModule::default())
             .unwrap()
-            .add_route("barmodule".to_owned(), BarModule::default())
+            .add_route("barmodule".parse().unwrap(), BarModule::default())
             .unwrap()
             .build();
 
@@ -1469,7 +1462,8 @@ mod tests {
         .with_router(r);
 
         let mut on_recv_packet_result = |module_id: &'static str| {
-            let m = ctx.router.get_route_mut(module_id).unwrap();
+            let module_id = ModuleId::from_str(module_id).unwrap();
+            let m = ctx.router.get_route_mut(&module_id).unwrap();
             let result = m
                 .on_recv_packet(Packet::default(), Signer::new(""))
                 .unwrap();
@@ -1483,7 +1477,7 @@ mod tests {
         results.into_iter().for_each(|(mid, (ack, write_fn))| {
             if ack.success() {
                 if let Some(write_fn) = write_fn {
-                    write_fn(ctx.router.get_route_mut(mid).unwrap().as_any_mut());
+                    write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut());
                 }
             }
         });
