@@ -35,7 +35,7 @@ use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-  use crate::core::ics26_routing::context::{Ics26Context, Module, ModuleId, Router, RouterBuilder};
+use crate::core::ics26_routing::context::{Ics26Context, Module, ModuleId, Router, RouterBuilder};
 use crate::core::ics26_routing::handler::{deliver, dispatch};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
 use crate::events::IbcEvent;
@@ -1396,19 +1396,19 @@ mod tests {
                 &mut self,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
-                _port_id: PortId,
-                _channel_id: ChannelId,
-                _channel_cap: Capability,
-                _counterparty: Counterparty,
-                counterparty_version: Version,
+                _port_id: &PortId,
+                _channel_id: &ChannelId,
+                _channel_cap: &Capability,
+                _counterparty: &Counterparty,
+                counterparty_version: &Version,
             ) -> Result<Version, Error> {
-                Ok(counterparty_version)
+                Ok(counterparty_version.clone())
             }
 
             fn on_recv_packet(
                 &self,
-                _packet: Packet,
-                _relayer: Signer,
+                _packet: &Packet,
+                _relayer: &Signer,
             ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
                 Ok((
                     Box::new(MockAck::default()),
@@ -1428,19 +1428,19 @@ mod tests {
                 &mut self,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
-                _port_id: PortId,
-                _channel_id: ChannelId,
-                _channel_cap: Capability,
-                _counterparty: Counterparty,
-                counterparty_version: Version,
+                _port_id: &PortId,
+                _channel_id: &ChannelId,
+                _channel_cap: &Capability,
+                _counterparty: &Counterparty,
+                counterparty_version: &Version,
             ) -> Result<Version, Error> {
-                Ok(counterparty_version)
+                Ok(counterparty_version.clone())
             }
 
             fn on_recv_packet(
                 &self,
-                _packet: Packet,
-                _relayer: Signer,
+                _packet: &Packet,
+                _relayer: &Signer,
             ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
                 Ok((Box::new(MockAck::default()), None))
             }
@@ -1465,7 +1465,7 @@ mod tests {
             let module_id = ModuleId::from_str(module_id).unwrap();
             let m = ctx.router.get_route_mut(&module_id).unwrap();
             let result = m
-                .on_recv_packet(Packet::default(), Signer::new(""))
+                .on_recv_packet(&Packet::default(), &Signer::new(""))
                 .unwrap();
             (module_id, result)
         };
