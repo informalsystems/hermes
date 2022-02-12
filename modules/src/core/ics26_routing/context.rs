@@ -86,11 +86,11 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         &mut self,
         _order: Order,
         _connection_hops: &[ConnectionId],
-        _port_id: PortId,
-        _channel_id: ChannelId,
-        _channel_cap: Capability,
-        _counterparty: Counterparty,
-        _version: Version,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _channel_cap: &Capability,
+        _counterparty: &Counterparty,
+        _version: &Version,
     ) -> Result<(), Error> {
         Ok(())
     }
@@ -100,62 +100,62 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         &mut self,
         _order: Order,
         _connection_hops: &[ConnectionId],
-        _port_id: PortId,
-        _channel_id: ChannelId,
-        _channel_cap: Capability,
-        _counterparty: Counterparty,
-        _counterparty_version: Version,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _channel_cap: &Capability,
+        _counterparty: &Counterparty,
+        _counterparty_version: &Version,
     ) -> Result<Version, Error>;
 
     fn on_chan_open_ack(
         &mut self,
-        _port_id: PortId,
-        _channel_id: ChannelId,
-        _counterparty_version: Version,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _counterparty_version: &Version,
     ) -> Result<(), Error> {
         Ok(())
     }
 
     fn on_chan_open_confirm(
         &mut self,
-        _port_id: PortId,
-        _channel_id: ChannelId,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
     ) -> Result<(), Error> {
         Ok(())
     }
 
     fn on_chan_close_init(
         &mut self,
-        _port_id: PortId,
-        _channel_id: ChannelId,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
     ) -> Result<(), Error> {
         Ok(())
     }
 
     fn on_chan_close_confirm(
         &mut self,
-        _port_id: PortId,
-        _channel_id: ChannelId,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
     ) -> Result<(), Error> {
         Ok(())
     }
 
     fn on_recv_packet(
         &self,
-        _packet: Packet,
-        _relayer: Signer,
+        _packet: &Packet,
+        _relayer: &Signer,
     ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error>;
 
     fn on_acknowledgement_packet(
         &mut self,
-        _packet: Packet,
+        _packet: &Packet,
         _acknowledgement: &dyn Acknowledgement,
-        _relayer: Signer,
+        _relayer: &Signer,
     ) -> Result<(), Error> {
         Ok(())
     }
 
-    fn on_timeout_packet(&mut self, _packet: Packet, _relayer: Signer) -> Result<(), Error> {
+    fn on_timeout_packet(&mut self, _packet: &Packet, _relayer: &Signer) -> Result<(), Error> {
         Ok(())
     }
 }
