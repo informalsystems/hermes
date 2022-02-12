@@ -44,7 +44,7 @@ pub struct ModuleId(String);
 
 impl ModuleId {
     pub fn new(s: Cow<'_, str>) -> Result<Self, InvalidModuleId> {
-        if !s.chars().all(char::is_alphanumeric) {
+        if !s.trim().is_empty() && s.chars().all(char::is_alphanumeric) {
             Ok(Self(s.into_owned()))
         } else {
             Err(InvalidModuleId)
