@@ -2,18 +2,13 @@ use crate::core::ics05_port::capabilities::{Capability, CapabilityName};
 use crate::core::ics05_port::error::Error;
 use crate::core::ics24_host::identifier::PortId;
 use crate::core::ics24_host::path::PortsPath;
+use crate::core::ics26_routing::context::ModuleId;
 use crate::prelude::*;
 
 /// A context supplying all the necessary read-only dependencies for processing any information regarding a port.
 pub trait PortReader: CapabilityReader {
-    /// Module Id type that can be mapped to an ICS26 router callback module
-    type ModuleId;
-
     /// Return the module_id along with the capability associated with a given port_id
-    fn lookup_module_by_port(
-        &self,
-        port_id: &PortId,
-    ) -> Result<(Self::ModuleId, Capability), Error>;
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, Capability), Error>;
 
     /// Check if the specified port_id is already bounded
     fn is_bound(&self, port_id: PortId) -> bool {

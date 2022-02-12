@@ -1,21 +1,21 @@
 use crate::prelude::*;
 
+use alloc::borrow::{Borrow, Cow};
 use core::any::Any;
-use core::borrow::Borrow;
 use core::fmt::Debug;
+use core::{fmt, str::FromStr};
 
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
-use crate::core::ics03_connection::connection::Counterparty;
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
-use crate::core::ics04_channel::channel::Order;
+use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
+use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::core::ics26_routing::error::Error;
 use crate::signer::Signer;
 
 /// This trait captures all the functional dependencies (i.e., context) which the ICS26 module
@@ -164,13 +164,10 @@ pub trait RouterBuilder: Sized {
     /// The `Router` type that the builder must build
     type Router: Router;
 
-    /// The `ModuleId` type used as the key for the `ModuleId` => `Module` mapping
-    type ModuleId;
-
     /// Registers `Module` against the specified `ModuleId` in the `Router`'s internal map
     ///
     /// Returns an error if a `Module` has already been registered against the specified `ModuleId`
-    fn add_route(self, module_id: Self::ModuleId, module: impl Module) -> Result<Self, String>;
+    fn add_route(self, module_id: ModuleId, module: impl Module) -> Result<Self, String>;
 
     /// Consumes the `RouterBuilder` and returns a `Router` as configured
     fn build(self) -> Self::Router;
@@ -190,11 +187,9 @@ impl<M: Any + Module> AsAnyMut for M {
 /// expose APIs to add new routes once constructed. Routes may only be added at the time of
 /// instantiation using the `RouterBuilder`.
 pub trait Router {
-    type ModuleId: ?Sized;
-
     /// Returns a mutable reference to a `Module` registered against the specified `ModuleId`
-    fn get_route_mut(&mut self, module_id: impl Borrow<Self::ModuleId>) -> Option<&mut dyn Module>;
+    fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module>;
 
     /// Returns true if the `Router` has a `Module` registered against the specified `ModuleId`
-    fn has_route(&self, module_id: impl Borrow<Self::ModuleId>) -> bool;
+    fn has_route(&self, module_id: &impl Borrow<ModuleId>) -> bool;
 }
