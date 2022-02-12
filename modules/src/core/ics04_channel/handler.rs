@@ -7,6 +7,7 @@ use crate::core::ics04_channel::msgs::ChannelMsg;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::core::ics26_routing::context::{Ics26Context, Router};
 use crate::handler::HandlerOutput;
 
 pub mod acknowledgement;
@@ -60,6 +61,42 @@ where
         ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg),
         ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process(ctx, msg),
     }
+}
+
+pub fn channel_callback<Ctx>(
+    ctx: &mut Ctx,
+    msg: ChannelMsg,
+    handler_output: &HandlerOutput<ChannelResult>,
+) -> Result<(), Error>
+where
+    Ctx: Ics26Context,
+{
+    match msg {
+        ChannelMsg::ChannelOpenInit(msg) => {
+            let (module_id, _) = ctx
+                .lookup_module_by_port(msg.port_id())
+                .map_err(Error::ics05_port)?;
+            let cb = ctx
+                .router()
+                .get_route_mut(&module_id)
+                .ok_or_else(Error::route_not_found)?;
+            cb.on_chan_open_init(
+                msg.channel.ordering,
+                &msg.channel.connection_hops,
+                &msg.port_id,
+                &handler_output.result.channel_id,
+                &handler_output.result.channel_cap,
+                msg.channel.counterparty(),
+                &msg.channel.version,
+            )?;
+        }
+        ChannelMsg::ChannelOpenTry(_) => {}
+        ChannelMsg::ChannelOpenAck(_) => {}
+        ChannelMsg::ChannelOpenConfirm(_) => {}
+        ChannelMsg::ChannelCloseInit(_) => {}
+        ChannelMsg::ChannelCloseConfirm(_) => {}
+    }
+    Ok(())
 }
 
 /// Dispatcher for processing any type of message related to the ICS4 packet protocols.
