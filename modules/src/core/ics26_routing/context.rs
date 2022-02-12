@@ -36,6 +36,42 @@ pub trait Ics26Context:
     fn router(&mut self) -> &mut Self::Router;
 }
 
+#[derive(Debug, PartialEq)]
+pub struct InvalidModuleId;
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ModuleId(String);
+
+impl ModuleId {
+    pub fn new(s: Cow<'_, str>) -> Result<Self, InvalidModuleId> {
+        if !s.chars().all(char::is_alphanumeric) {
+            Ok(Self(s.into_owned()))
+        } else {
+            Err(InvalidModuleId)
+        }
+    }
+}
+
+impl fmt::Display for ModuleId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for ModuleId {
+    type Err = InvalidModuleId;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(Cow::Borrowed(s))
+    }
+}
+
+impl Borrow<str> for ModuleId {
+    fn borrow(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
 pub trait Acknowledgement: AsRef<[u8]> {
     fn success(&self) -> bool;
 }
