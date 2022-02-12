@@ -5,8 +5,10 @@ use ibc_proto::google::protobuf::Any;
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
-use crate::core::ics04_channel::handler::channel_dispatch as ics4_msg_dispatcher;
 use crate::core::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
+use crate::core::ics04_channel::handler::{
+    channel_callback as ics4_callback, channel_dispatch as ics4_msg_dispatcher,
+};
 use crate::core::ics26_routing::context::Ics26Context;
 use crate::core::ics26_routing::error::Error;
 use crate::core::ics26_routing::msgs::Ics26Envelope::{
@@ -78,7 +80,10 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
-            let handler_output = ics4_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
+            let handler_output =
+                ics4_msg_dispatcher(ctx, msg.clone()).map_err(Error::ics04_channel)?;
+
+            ics4_callback(ctx, msg, &handler_output).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_channel_result(handler_output.result)
