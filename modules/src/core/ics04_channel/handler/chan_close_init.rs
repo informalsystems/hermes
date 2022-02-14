@@ -11,7 +11,7 @@ use crate::handler::{HandlerOutput, HandlerResult};
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
-    msg: MsgChannelCloseInit,
+    msg: &MsgChannelCloseInit,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 

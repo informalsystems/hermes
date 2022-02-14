@@ -13,7 +13,7 @@ use crate::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
-    msg: MsgChannelCloseConfirm,
+    msg: &MsgChannelCloseConfirm,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 

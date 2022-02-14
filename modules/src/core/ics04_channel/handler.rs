@@ -44,7 +44,7 @@ pub struct ChannelResult {
     pub channel_end: ChannelEnd,
 }
 
-pub fn channel_validate<Ctx>(ctx: &Ctx, msg: ChannelMsg) -> Result<ModuleId, Error>
+pub fn channel_validate<Ctx>(ctx: &Ctx, msg: &ChannelMsg) -> Result<ModuleId, Error>
 where
     Ctx: Ics26Context,
 {
@@ -67,7 +67,7 @@ where
 /// channel close handshake protocols.
 pub fn channel_dispatch<Ctx>(
     ctx: &Ctx,
-    msg: ChannelMsg,
+    msg: &ChannelMsg,
 ) -> Result<HandlerOutput<ChannelResult>, Error>
 where
     Ctx: ChannelReader,
@@ -85,7 +85,7 @@ where
 pub fn channel_callback<Ctx>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
-    msg: ChannelMsg,
+    msg: &ChannelMsg,
     handler_output: &HandlerOutput<ChannelResult>,
 ) -> Result<(), Error>
 where
