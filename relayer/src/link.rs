@@ -55,7 +55,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .src_chain()
             .query_channel(self.a_to_b.src_port_id(), a_channel_id, Height::default())
             .map_err(|e| {
-                LinkError::channel_not_found(a_channel_id.clone(), self.a_to_b.src_chain().id(), e)
+                LinkError::channel_not_found(
+                    self.a_to_b.src_port_id().clone(),
+                    a_channel_id.clone(),
+                    self.a_to_b.src_chain().id(),
+                    e,
+                )
             })?;
 
         let b_channel_id = self.a_to_b.dst_channel_id();
@@ -65,7 +70,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .dst_chain()
             .query_channel(self.a_to_b.dst_port_id(), b_channel_id, Height::default())
             .map_err(|e| {
-                LinkError::channel_not_found(b_channel_id.clone(), self.a_to_b.dst_chain().id(), e)
+                LinkError::channel_not_found(
+                    self.a_to_b.dst_port_id().clone(),
+                    b_channel_id.clone(),
+                    self.a_to_b.dst_chain().id(),
+                    e,
+                )
             })?;
 
         if a_channel.state_matches(&ChannelState::Closed)
@@ -85,9 +95,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     ) -> Result<Link<ChainA, ChainB>, LinkError> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
+        let a_port_id = &opts.src_port_id;
         let a_channel = a_chain
-            .query_channel(&opts.src_port_id, a_channel_id, Height::default())
-            .map_err(|e| LinkError::channel_not_found(a_channel_id.clone(), a_chain.id(), e))?;
+            .query_channel(a_port_id, a_channel_id, Height::default())
+            .map_err(|e| {
+                LinkError::channel_not_found(
+                    a_port_id.clone(),
+                    a_channel_id.clone(),
+                    a_chain.id(),
+                    e,
+                )
+            })?;
 
         if !a_channel.state_matches(&ChannelState::Open)
             && !a_channel.state_matches(&ChannelState::Closed)

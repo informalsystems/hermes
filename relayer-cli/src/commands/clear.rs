@@ -54,11 +54,10 @@ impl Runnable for ClearPacketsCmd {
             src_port_id: self.port_id.clone(),
             src_channel_id: self.channel_id.clone(),
         };
-        let fwd_link =
-            match Link::new_from_opts(chains.src.clone(), chains.dst.clone(), opts, false) {
-                Ok(link) => link,
-                Err(e) => Output::error(format!("{}", e)).exit(),
-            };
+        let fwd_link = match Link::new_from_opts(chains.src.clone(), chains.dst, opts, false) {
+            Ok(link) => link,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
         let rev_link = match fwd_link.reverse(false) {
             Ok(link) => link,
             Err(e) => Output::error(format!("{}", e)).exit(),

@@ -16,8 +16,8 @@ define_error! {
                 chain_id: ChainId,
             }
             |e| {
-                format_args!("channel {0} on chain {1} is not open",
-                    e.channel_id, e.chain_id)
+                format_args!("channel {0}/{1} on chain {2} is not open",
+                    e.port_id, e.channel_id, e.chain_id)
             },
 
         ChannelConnectionUninitialized
