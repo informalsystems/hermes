@@ -6,7 +6,9 @@ use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
+use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
 use ibc_relayer::foreign_client::{extract_client_id, ForeignClient};
+use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
 use ibc_relayer::registry::SharedRegistry;
 use std::fs;
 use std::path::Path;
@@ -113,40 +115,42 @@ pub fn boostrap_self_connected_chain(
     ),
     Error,
 > {
-    let mut config = Config::default();
+    boostrap_chain_pair_with_nodes(test_config, node.clone(), node, config_modifier)
 
-    add_chain_config(&mut config, &node)?;
+    // let mut config = Config::default();
 
-    config_modifier(&mut config);
+    // add_chain_config(&mut config, &node)?;
 
-    let config_path = test_config.chain_store_dir.join("relayer-config.toml");
+    // config_modifier(&mut config);
 
-    save_relayer_config(&config, &config_path)?;
+    // let config_path = test_config.chain_store_dir.join("relayer-config.toml");
 
-    let config = Arc::new(RwLock::new(config));
+    // save_relayer_config(&config, &config_path)?;
 
-    let registry = new_registry(config.clone());
+    // let config = Arc::new(RwLock::new(config));
 
-    let handle = spawn_chain_handle(|| {}, &registry, &node)?;
+    // let registry = new_registry(config.clone());
 
-    let foreign_client = bootstrap_foreign_client(&handle, &handle)?;
+    // let handle = spawn_chain_handle(|| {}, &registry, &node)?;
 
-    let relayer = RelayerDriver {
-        config_path,
-        config,
-        registry,
-    };
+    // let foreign_client = bootstrap_foreign_client(&handle, &handle)?;
 
-    let chains = ConnectedChains::new(
-        handle.clone(),
-        handle,
-        MonoTagged::new(node.clone()),
-        MonoTagged::new(node),
-        foreign_client.clone(),
-        foreign_client,
-    );
+    // let relayer = RelayerDriver {
+    //     config_path,
+    //     config,
+    //     registry,
+    // };
 
-    Ok((relayer, chains))
+    // let chains = ConnectedChains::new(
+    //     handle.clone(),
+    //     handle,
+    //     MonoTagged::new(node.clone()),
+    //     MonoTagged::new(node),
+    //     foreign_client.clone(),
+    //     foreign_client,
+    // );
+
+    // Ok((relayer, chains))
 }
 
 pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -249,9 +253,19 @@ pub fn add_key_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallet: &Wallet,
 ) -> Result<(), Error> {
-    chain.add_key(wallet.id.0.clone(), wallet.key.clone())?;
+    let res = chain.add_key(wallet.id.0.clone(), wallet.key.clone());
 
-    Ok(())
+    // Ignore error if chain handle already have the given key
+    match res {
+        Err(e) => match e.detail() {
+            RelayerErrorDetail::KeyBase(e2) => match e2.source {
+                KeyringErrorDetail::KeyAlreadyExist(_) => Ok(()),
+                _ => Err(e.into()),
+            },
+            _ => Err(e.into()),
+        },
+        Ok(()) => Ok(()),
+    }
 }
 
 /**

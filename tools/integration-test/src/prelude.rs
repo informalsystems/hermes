@@ -16,15 +16,29 @@ pub use crate::chain::driver::{tagged::TaggedChainDriverExt, ChainDriver};
 pub use crate::error::{handle_generic_error, Error};
 pub use crate::framework::base::HasOverrides;
 pub use crate::framework::binary::chain::{
-    run_binary_chain_test, run_two_way_binary_chain_test, BinaryChainTest,
+    run_binary_chain_test, run_self_connected_binary_chain_test, run_two_way_binary_chain_test,
+    BinaryChainTest, RunBinaryChainTest, RunSelfConnectedBinaryChainTest,
 };
 pub use crate::framework::binary::channel::{
     run_binary_channel_test, run_two_way_binary_channel_test, BinaryChannelTest,
+    RunBinaryChannelTest,
 };
 pub use crate::framework::binary::connection::{
     run_binary_connection_test, run_two_way_binary_connection_test, BinaryConnectionTest,
+    RunBinaryConnectionTest,
 };
-pub use crate::framework::binary::node::{run_binary_node_test, BinaryNodeTest};
+pub use crate::framework::binary::node::{run_binary_node_test, BinaryNodeTest, RunBinaryNodeTest};
+pub use crate::framework::nary::chain::{
+    run_nary_chain_test, run_self_connected_nary_chain_test, NaryChainTest, RunNaryChainTest,
+    RunSelfConnectedNaryChainTest,
+};
+pub use crate::framework::nary::channel::{
+    run_nary_channel_test, NaryChannelTest, RunBinaryAsNaryChannelTest, RunNaryChannelTest,
+};
+pub use crate::framework::nary::connection::{
+    run_nary_connection_test, NaryConnectionTest, RunNaryConnectionTest,
+};
+pub use crate::framework::nary::node::{run_nary_node_test, NaryNodeTest, RunNaryNodeTest};
 pub use crate::framework::overrides::TestOverrides;
 pub use crate::relayer::channel::TaggedChannelEndExt;
 pub use crate::relayer::connection::{TaggedConnectionEndExt, TaggedConnectionExt};

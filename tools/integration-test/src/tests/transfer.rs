@@ -1,6 +1,3 @@
-use crate::framework::binary::chain::run_self_connected_binary_chain_test;
-use crate::framework::binary::channel::RunBinaryChannelTest;
-use crate::framework::binary::connection::RunBinaryConnectionTest;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::prelude::*;
 use crate::util::random::random_u64_range;
@@ -30,9 +27,14 @@ fn test_self_connected_ibc_transfer() -> Result<(), Error> {
 */
 #[test]
 fn test_nary_ibc_transfer() -> Result<(), Error> {
-    use crate::framework::nary::channel::{run_nary_channel_test, RunBinaryAsNaryChannelTest};
-
     run_nary_channel_test(&RunBinaryAsNaryChannelTest::new(&IbcTransferTest))
+}
+
+#[test]
+fn test_self_connected_nary_ibc_transfer() -> Result<(), Error> {
+    run_self_connected_nary_chain_test(&RunNaryConnectionTest::new(&RunNaryChannelTest::new(
+        &RunBinaryAsNaryChannelTest::new(&IbcTransferTest),
+    )))
 }
 
 pub struct IbcTransferTest;

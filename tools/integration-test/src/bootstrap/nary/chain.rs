@@ -27,6 +27,18 @@ pub fn boostrap_chains_with_nodes<const SIZE: usize>(
     Ok((relayer, chains.try_into()?))
 }
 
+pub fn boostrap_chains_with_self_connected_node<const SIZE: usize>(
+    test_config: &TestConfig,
+    full_node: FullNode,
+    config_modifier: impl FnOnce(&mut Config),
+) -> Result<(RelayerDriver, ConnectedChains<impl ChainHandle, SIZE>), Error> {
+    let full_nodes = vec![full_node; SIZE];
+    let (relayer, chains) =
+        boostrap_chains_with_any_nodes(test_config, full_nodes, config_modifier)?;
+
+    Ok((relayer, chains.try_into()?))
+}
+
 pub fn boostrap_chains_with_any_nodes(
     test_config: &TestConfig,
     full_nodes: Vec<FullNode>,
