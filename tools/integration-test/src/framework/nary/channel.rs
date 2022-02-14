@@ -88,7 +88,7 @@ where
         let port_ids = self.test.get_overrides().channel_ports();
         let channels = bootstrap_channels_with_connections(
             connections,
-            &chains.chain_handles,
+            chains.chain_handles().clone(),
             port_ids,
             config.bootstrap_with_random_ids,
         )?;

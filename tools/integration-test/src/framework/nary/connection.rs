@@ -74,7 +74,7 @@ where
         chains: ConnectedChains<Handle, SIZE>,
     ) -> Result<(), Error> {
         let connections = bootstrap_connections(
-            chains.foreign_clients.clone(),
+            chains.foreign_clients().clone(),
             config.bootstrap_with_random_ids,
         )?;
 

@@ -1,3 +1,7 @@
+/*!
+   Constructs for N-ary connected channels.
+*/
+
 use core::convert::TryFrom;
 use eyre::eyre;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
@@ -10,29 +14,59 @@ use crate::types::binary::channel::ConnectedChannel;
 use crate::types::tagged::*;
 use crate::util::array::try_into_nested_array;
 
+/**
+   A fixed-size N-ary connected channels as specified by `SIZE`.
+
+   Contains `SIZE`x`SIZE` number of binary [`ConnectedChannel`]s.
+*/
 #[derive(Debug, Clone)]
 pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
     pub channels: [[ConnectedChannel<Handle, Handle>; SIZE]; SIZE],
 }
 
+/**
+   A dynamic-sized N-ary connected channels, consist of a nested
+   vector of binary [`ConnectedChannel`]s which must be of the
+   same length.
+*/
 #[derive(Debug, Clone)]
 pub struct DynamicConnectedChannels<Handle: ChainHandle> {
     pub channels: Vec<Vec<ConnectedChannel<Handle, Handle>>>,
 }
 
+/**
+   A tagged [`ConnectedChannel`] that is connected between the chains
+   at position `FIRST` and `SECOND`.
+*/
 pub type TaggedConnectedChannel<Handle, const FIRST: usize, const SECOND: usize> =
     ConnectedChannel<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>>;
 
+/**
+   A tagged [`Channel`] with the A side at `FIRST` position and B side at
+   the `SECOND` position.
+*/
 pub type TaggedChannel<Handle, const FIRST: usize, const SECOND: usize> =
     Channel<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>>;
 
+/**
+   A tagged [`ChannelId`] for the chain at position `FIRST` that is correspond
+   to the counterparty chain at position `SECOND`
+*/
 pub type TaggedChannelId<Handle, const FIRST: usize, const SECOND: usize> =
     DualTagged<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>, ChannelId>;
 
+/**
+   A tagged [`PortId`] for the chain at position `FIRST` that is correspond
+   to the counterparty chain at position `SECOND`
+*/
 pub type TaggedPortId<Handle, const FIRST: usize, const SECOND: usize> =
     DualTagged<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>, PortId>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
+    /**
+       Get the binary [`ConnectedChannel`] at position `FIRST` and `SECOND`,
+       which must be less than `SIZE`.
+    */
     pub fn channel_at<const FIRST: usize, const SECOND: usize>(
         &self,
     ) -> Result<TaggedConnectedChannel<Handle, FIRST, SECOND>, Error> {

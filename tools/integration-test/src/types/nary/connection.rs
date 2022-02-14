@@ -1,3 +1,7 @@
+/*!
+   Constructs for N-ary connected connections.
+*/
+
 use core::convert::TryFrom;
 use eyre::eyre;
 use ibc::core::ics24_host::identifier::ConnectionId;
@@ -9,23 +13,45 @@ use crate::types::binary::connection::ConnectedConnection;
 use crate::types::tagged::*;
 use crate::util::array::{into_nested_vec, try_into_nested_array};
 
+/**
+   A fixed-size N-ary connected connections as specified by `SIZE`.
+
+   Contains `SIZE`x`SIZE` number of binary [`ConnectedConnection`]s.
+*/
 #[derive(Debug, Clone)]
 pub struct ConnectedConnections<Handle: ChainHandle, const SIZE: usize> {
-    pub connections: [[ConnectedConnection<Handle, Handle>; SIZE]; SIZE],
+    connections: [[ConnectedConnection<Handle, Handle>; SIZE]; SIZE],
 }
 
+/**
+   A dynamic-sized N-ary connected connections, made of a
+   nested vector of binary [`ConnectedConnection`] which must be
+   in the same dimension.
+*/
 #[derive(Debug, Clone)]
 pub struct DynamicConnectedConnections<Handle: ChainHandle> {
-    pub connections: Vec<Vec<ConnectedConnection<Handle, Handle>>>,
+    connections: Vec<Vec<ConnectedConnection<Handle, Handle>>>,
 }
 
+/**
+   A tagged binary [`ConnectedConnection`] that is connected between the chains at
+   position `FIRST` and `SECOND`.
+*/
 pub type TaggedConnectedConnection<Handle, const FIRST: usize, const SECOND: usize> =
     ConnectedConnection<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>>;
 
+/**
+   The connection ID on the chain at position `FIRST` that corresponds to
+   the counterparty chain at position `SECOND`.
+*/
 pub type TaggedConnectionId<Handle, const FIRST: usize, const SECOND: usize> =
     DualTagged<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>, ConnectionId>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> {
+    /**
+       Get the connection pair for chains at position `FIRST` and `SECOND`,
+       which must be less then `SIZE`.
+    */
     pub fn connection_at<const FIRST: usize, const SECOND: usize>(
         &self,
     ) -> Result<TaggedConnectedConnection<Handle, FIRST, SECOND>, Error> {
@@ -42,6 +68,20 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> 
 
             Ok(channel)
         }
+    }
+
+    pub fn connections(&self) -> &[[ConnectedConnection<Handle, Handle>; SIZE]; SIZE] {
+        &self.connections
+    }
+}
+
+impl<Handle: ChainHandle> DynamicConnectedConnections<Handle> {
+    pub fn new(connections: Vec<Vec<ConnectedConnection<Handle, Handle>>>) -> Self {
+        Self { connections }
+    }
+
+    pub fn connections(&self) -> &Vec<Vec<ConnectedConnection<Handle, Handle>>> {
+        &self.connections
     }
 }
 

@@ -69,7 +69,7 @@ where
         let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer)?;
 
         let _drop_handles = chains
-            .chain_handles
+            .chain_handles()
             .iter()
             .map(|handle| DropChainHandle(handle.clone()))
             .collect::<Vec<_>>();
@@ -96,7 +96,7 @@ where
         let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer)?;
 
         let _drop_handles = chains
-            .chain_handles
+            .chain_handles()
             .iter()
             .map(|handle| DropChainHandle(handle.clone()))
             .collect::<Vec<_>>();

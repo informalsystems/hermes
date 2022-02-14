@@ -1,3 +1,7 @@
+/*!
+   Functions for bootstrapping N-ary number of connections.
+*/
+
 use core::convert::TryInto;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -8,8 +12,12 @@ use crate::types::binary::connection::ConnectedConnection;
 use crate::types::nary::connection::{ConnectedConnections, DynamicConnectedConnections};
 use crate::util::array::{assert_same_dimension, into_nested_vec};
 
+/**
+   Bootstrap a dynamic number of connections based on the
+   given foreign client NxN matrix.
+*/
 pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
-    foreign_clients: &[Vec<ForeignClient<Handle, Handle>>],
+    foreign_clients: &Vec<Vec<ForeignClient<Handle, Handle>>>,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedConnections<Handle>, Error> {
     let size = foreign_clients.len();
@@ -43,7 +51,7 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
         connections.push(connections_b);
     }
 
-    Ok(DynamicConnectedConnections { connections })
+    Ok(DynamicConnectedConnections::new(connections))
 }
 
 pub fn bootstrap_connections<Handle: ChainHandle, const SIZE: usize>(

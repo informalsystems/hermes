@@ -1,3 +1,7 @@
+/*!
+   Functions for bootstrapping N-ary number of chains.
+*/
+
 use core::convert::TryInto;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
@@ -16,6 +20,9 @@ use crate::types::config::TestConfig;
 use crate::types::nary::chains::{ConnectedChains, DynamicConnectedChains};
 use crate::types::single::node::FullNode;
 
+/**
+  Bootstrap a fixed number of chains specified by `SIZE`.
+*/
 pub fn boostrap_chains_with_nodes<const SIZE: usize>(
     test_config: &TestConfig,
     full_nodes: [FullNode; SIZE],
@@ -27,6 +34,10 @@ pub fn boostrap_chains_with_nodes<const SIZE: usize>(
     Ok((relayer, chains.try_into()?))
 }
 
+/**
+   Bootstrap a fixed number of chains that are actually
+   backed by the same underlying full node.
+*/
 pub fn boostrap_chains_with_self_connected_node<const SIZE: usize>(
     test_config: &TestConfig,
     full_node: FullNode,
@@ -39,6 +50,10 @@ pub fn boostrap_chains_with_self_connected_node<const SIZE: usize>(
     Ok((relayer, chains.try_into()?))
 }
 
+/**
+   Bootstrap a dynamic number of chains, according to the number of full nodes
+   in the `Vec<FullNode>`.
+*/
 pub fn boostrap_chains_with_any_nodes(
     test_config: &TestConfig,
     full_nodes: Vec<FullNode>,
@@ -86,16 +101,12 @@ pub fn boostrap_chains_with_any_nodes(
         registry,
     };
 
-    let connected_chains = DynamicConnectedChains {
-        chain_handles,
-        full_nodes,
-        foreign_clients,
-    };
+    let connected_chains = DynamicConnectedChains::new(chain_handles, full_nodes, foreign_clients);
 
     Ok((relayer, connected_chains))
 }
 
-pub fn spawn_chain_handle<Handle: ChainHandle>(
+fn spawn_chain_handle<Handle: ChainHandle>(
     registry: &SharedRegistry<Handle>,
     node: &FullNode,
 ) -> Result<Handle, Error> {
