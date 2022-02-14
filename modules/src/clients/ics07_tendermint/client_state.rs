@@ -592,13 +592,13 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Invalid (too large) insufficient client height".to_string(),
+                name: "Invalid (too large)  client height".to_string(),
                 height: Height::new(1, 12),
                 setup: None,
                 want_pass: false,
             },
             Test {
-                name: "Invalid client is frozen at this height".to_string(),
+                name: "Invalid, client is frozen below current height".to_string(),
                 height: Height::new(1, 6),
                 setup: Some(Box::new(|client_state| {
                     client_state.with_frozen_height(Height::new(1, 5)).unwrap()
@@ -630,7 +630,7 @@ mod tests {
             assert_eq!(
                 test.want_pass,
                 res.is_ok(),
-                "ClientState::verify_delay_passed() failed for test {}, \nmsg{:?} with error {:?}",
+                "ClientState::verify_delay_height() failed for test {}, \nmsg{:?} with error {:?}",
                 test.name,
                 test.height,
                 res.err(),
