@@ -683,7 +683,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
     /// Retrieves the connection from destination and compares against the expected connection
     /// built from the message type (`msg_type`) and options (`opts`).
-    /// If the expected and the destination connections are compatible, it returns the expected connection
+    /// If the expected and the destination connections are compatible, it returns the expected connection.
     fn validated_expected_connection(
         &self,
         msg_type: ConnectionMsgType,
@@ -891,7 +891,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 .query_compatible_versions()
                 .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?
         } else {
-            src_connection.versions()
+            src_connection.versions().to_vec()
         };
 
         // Get signer
@@ -1181,6 +1181,7 @@ pub enum ConnectionMsgType {
     OpenConfirm,
 }
 
+/// Verify that the destination connection exhibits the expected state.
 fn check_destination_connection_state(
     connection_id: ConnectionId,
     existing_connection: ConnectionEnd,
@@ -1204,7 +1205,7 @@ fn check_destination_connection_state(
     if good_state
         && good_client_ids
         && good_connection_ids
-        && &&good_version
+        && good_version
         && good_counterparty_prefix
     {
         Ok(())
