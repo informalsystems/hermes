@@ -142,7 +142,7 @@ impl TaskHandle {
 
        Note that because the background tasks are meant to run forever,
        this would likely never return unless errors occurred or if
-       the step runner returns [`TaskError::Abort`] to abort prematurely.
+       the step runner returns [`Next::Abort`] to abort prematurely.
     */
     pub fn join(mut self) {
         if let Some(handle) = mem::take(&mut self.join_handle.0) {

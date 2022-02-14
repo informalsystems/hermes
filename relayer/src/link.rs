@@ -16,7 +16,7 @@ use crate::link::error::LinkError;
 use crate::link::relay_path::RelayPath;
 
 pub mod error;
-mod operational_data;
+pub mod operational_data;
 mod pending;
 mod relay_path;
 mod relay_sender;

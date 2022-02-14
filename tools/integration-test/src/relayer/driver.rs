@@ -22,17 +22,16 @@ pub struct RelayerDriver {
        with the [`Registry`](ibc_relayer::registry::Registry).
 
        Use this shared config when spawning new supervisor using
-       [`spawn_supervisor`](crate::relayer::supervisor::spawn_supervisor).
+       [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
     */
     pub config: SharedConfig,
 
     /**
        The relayer chain [`Registry`](ibc_relayer::registry::Registry)
-       that is shared with any running
-       [`Supervisor`](ibc_relayer::supervisor::Supervisor).
+       that is shared with any running supervisor.
 
        Use this shared registry when spawning new supervisor using
-       [`spawn_supervisor`](crate::relayer::supervisor::spawn_supervisor).
+       [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
     */
     pub registry: SharedRegistry<ProdChainHandle>,
 }
