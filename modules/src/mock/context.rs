@@ -812,6 +812,14 @@ impl ChannelReader for MockContext {
     fn max_expected_time_per_block(&self) -> Duration {
         self.block_time
     }
+
+    fn lookup_module_by_channel(
+        &self,
+        _channel_id: &ChannelId,
+        _port_id: &PortId,
+    ) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
+        todo!()
+    }
 }
 
 impl ChannelKeeper for MockContext {

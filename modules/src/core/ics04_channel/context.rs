@@ -11,7 +11,9 @@ use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::{error::Error, packet::Receipt};
 use crate::core::ics05_port::capabilities::ChannelCapability;
+use crate::core::ics05_port::context::CapabilityReader;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics26_routing::context::ModuleId;
 use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
@@ -19,7 +21,7 @@ use crate::Height;
 use super::packet::{PacketResult, Sequence};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
-pub trait ChannelReader {
+pub trait ChannelReader: CapabilityReader {
     /// Returns the ChannelEnd for the given `port_id` and `chan_id`.
     fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Error>;
 
@@ -98,6 +100,8 @@ pub trait ChannelReader {
     /// Returns the maximum expected time per block
     fn max_expected_time_per_block(&self) -> Duration;
 
+    /// Calculates the block delay period using the connection's delay period and the maximum
+    /// expected time per block.
     fn block_delay(&self, delay_period_time: Duration) -> u64 {
         let expected_time_per_block = self.max_expected_time_per_block();
         if expected_time_per_block.is_zero() {
@@ -107,6 +111,13 @@ pub trait ChannelReader {
         FloatCore::ceil(delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64())
             as u64
     }
+
+    /// Return the module_id along with the capability associated with a given (channel-id, port_id)
+    fn lookup_module_by_channel(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+    ) -> Result<(ModuleId, ChannelCapability), Error>;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
