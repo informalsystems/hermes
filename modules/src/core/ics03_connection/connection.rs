@@ -191,7 +191,7 @@ impl ConnectionEnd {
         self.counterparty.eq(other)
     }
 
-    /// Helper function to compare the client id of this end with another client identifier.
+    /// Helper function to compare the client id of this end with another client identifier
     pub fn client_id_matches(&self, other: &ClientId) -> bool {
         self.client_id.eq(other)
     }

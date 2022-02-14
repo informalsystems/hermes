@@ -1196,10 +1196,17 @@ fn check_destination_connection_state(
         || existing_connection.counterparty().connection_id()
             == expected_connection.counterparty().connection_id();
 
-    // TODO check versions and store prefix
-    // https://github.com/informalsystems/ibc-rs/issues/1389
+    let good_version = existing_connection.versions() == expected_connection.versions();
 
-    if good_state && good_client_ids && good_connection_ids {
+    let good_counterparty_prefix =
+        existing_connection.counterparty().prefix() == expected_connection.counterparty().prefix();
+
+    if good_state
+        && good_client_ids
+        && good_connection_ids
+        && &&good_version
+        && good_counterparty_prefix
+    {
         Ok(())
     } else {
         Err(ConnectionError::connection_already_exist(connection_id))
