@@ -33,7 +33,9 @@ pub trait Ics26Context:
 {
     type Router: Router;
 
-    fn router(&mut self) -> &mut Self::Router;
+    fn router(&self) -> &Self::Router;
+
+    fn router_mut(&mut self) -> &mut Self::Router;
 }
 
 #[derive(Debug, PartialEq)]
