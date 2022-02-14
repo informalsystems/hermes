@@ -48,18 +48,39 @@ pub fn channel_validate<Ctx>(ctx: &Ctx, msg: &ChannelMsg) -> Result<ModuleId, Er
 where
     Ctx: Ics26Context,
 {
-    match msg {
+    let module_id = match msg {
         ChannelMsg::ChannelOpenInit(msg) => {
-            let (module_id, _) = ctx
-                .lookup_module_by_port(msg.port_id())
-                .map_err(Error::ics05_port)?;
-            if ctx.router().has_route(&module_id) {
-                Ok(module_id)
-            } else {
-                Err(Error::route_not_found())
-            }
+            ctx.lookup_module_by_port(msg.port_id())
+                .map_err(Error::ics05_port)?
+                .0
         }
-        _ => unimplemented!(),
+        ChannelMsg::ChannelOpenTry(msg) => {
+            ctx.lookup_module_by_port(msg.port_id())
+                .map_err(Error::ics05_port)?
+                .0
+        }
+        ChannelMsg::ChannelOpenAck(msg) => {
+            ctx.lookup_module_by_channel(msg.channel_id(), msg.port_id())?
+                .0
+        }
+        ChannelMsg::ChannelOpenConfirm(msg) => {
+            ctx.lookup_module_by_channel(msg.channel_id(), msg.port_id())?
+                .0
+        }
+        ChannelMsg::ChannelCloseInit(msg) => {
+            ctx.lookup_module_by_channel(msg.channel_id(), msg.port_id())?
+                .0
+        }
+        ChannelMsg::ChannelCloseConfirm(msg) => {
+            ctx.lookup_module_by_channel(msg.channel_id(), msg.port_id())?
+                .0
+        }
+    };
+
+    if ctx.router().has_route(&module_id) {
+        Ok(module_id)
+    } else {
+        Err(Error::route_not_found())
     }
 }
 
@@ -91,23 +112,47 @@ pub fn channel_callback<Ctx>(
 where
     Ctx: Ics26Context,
 {
+    let cb = ctx
+        .router_mut()
+        .get_route_mut(module_id)
+        .ok_or_else(Error::route_not_found)?;
+
     match msg {
-        ChannelMsg::ChannelOpenInit(msg) => {
-            let cb = ctx
-                .router_mut()
-                .get_route_mut(module_id)
-                .ok_or_else(Error::route_not_found)?;
-            cb.on_chan_open_init(
+        ChannelMsg::ChannelOpenInit(msg) => cb.on_chan_open_init(
+            msg.channel.ordering,
+            &msg.channel.connection_hops,
+            &msg.port_id,
+            &handler_output.result.channel_id,
+            &handler_output.result.channel_cap,
+            msg.channel.counterparty(),
+            &msg.channel.version,
+        )?,
+        ChannelMsg::ChannelOpenTry(msg) => {
+            // FIXME(hu55a1n1): Return selected version so it can be stored
+            let _ = cb.on_chan_open_try(
                 msg.channel.ordering,
                 &msg.channel.connection_hops,
                 &msg.port_id,
                 &handler_output.result.channel_id,
                 &handler_output.result.channel_cap,
                 msg.channel.counterparty(),
-                &msg.channel.version,
+                &msg.counterparty_version,
             )?;
         }
-        _ => unimplemented!(),
+        ChannelMsg::ChannelOpenAck(msg) => cb.on_chan_open_ack(
+            &msg.port_id,
+            &handler_output.result.channel_id,
+            &msg.counterparty_version,
+        )?,
+        ChannelMsg::ChannelOpenConfirm(msg) => {
+            cb.on_chan_open_confirm(&msg.port_id, &handler_output.result.channel_id)?
+        }
+        ChannelMsg::ChannelCloseInit(msg) => {
+            cb.on_chan_close_init(&msg.port_id, &handler_output.result.channel_id)?
+        }
+        ChannelMsg::ChannelCloseConfirm(msg) => {
+            cb.on_chan_close_confirm(&msg.port_id, &handler_output.result.channel_id)?
+        }
     }
     Ok(())
 }
