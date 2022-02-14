@@ -891,7 +891,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 .query_compatible_versions()
                 .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?
         } else {
-            src_connection.versions().to_vec()
+            src_connection.versions()
         };
 
         // Get signer
