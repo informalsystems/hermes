@@ -8,6 +8,7 @@ use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::core::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
     channel_callback as ics4_callback, channel_dispatch as ics4_msg_dispatcher,
+    channel_validate as ics4_validate,
 };
 use crate::core::ics26_routing::context::Ics26Context;
 use crate::core::ics26_routing::error::Error;
@@ -80,10 +81,12 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
+            let module_id = ics4_validate(ctx, msg.clone()).map_err(Error::ics04_channel)?;
+
             let handler_output =
                 ics4_msg_dispatcher(ctx, msg.clone()).map_err(Error::ics04_channel)?;
 
-            ics4_callback(ctx, msg, &handler_output).map_err(Error::ics04_channel)?;
+            ics4_callback(ctx, &module_id, msg, &handler_output).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_channel_result(handler_output.result)

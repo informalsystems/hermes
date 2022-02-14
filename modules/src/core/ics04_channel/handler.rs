@@ -7,7 +7,7 @@ use crate::core::ics04_channel::msgs::ChannelMsg;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::core::ics26_routing::context::{Ics26Context, Router};
+use crate::core::ics26_routing::context::{Ics26Context, ModuleId, Router};
 use crate::handler::HandlerOutput;
 
 pub mod acknowledgement;
@@ -44,6 +44,25 @@ pub struct ChannelResult {
     pub channel_end: ChannelEnd,
 }
 
+pub fn channel_validate<Ctx>(ctx: &Ctx, msg: ChannelMsg) -> Result<ModuleId, Error>
+where
+    Ctx: Ics26Context,
+{
+    match msg {
+        ChannelMsg::ChannelOpenInit(msg) => {
+            let (module_id, _) = ctx
+                .lookup_module_by_port(msg.port_id())
+                .map_err(Error::ics05_port)?;
+            if ctx.router().has_route(&module_id) {
+                Ok(module_id)
+            } else {
+                Err(Error::route_not_found())
+            }
+        }
+        _ => unimplemented!(),
+    }
+}
+
 /// General entry point for processing any type of message related to the ICS4 channel open and
 /// channel close handshake protocols.
 pub fn channel_dispatch<Ctx>(
@@ -65,6 +84,7 @@ where
 
 pub fn channel_callback<Ctx>(
     ctx: &mut Ctx,
+    module_id: &ModuleId,
     msg: ChannelMsg,
     handler_output: &HandlerOutput<ChannelResult>,
 ) -> Result<(), Error>
@@ -73,12 +93,9 @@ where
 {
     match msg {
         ChannelMsg::ChannelOpenInit(msg) => {
-            let (module_id, _) = ctx
-                .lookup_module_by_port(msg.port_id())
-                .map_err(Error::ics05_port)?;
             let cb = ctx
-                .router()
-                .get_route_mut(&module_id)
+                .router_mut()
+                .get_route_mut(module_id)
                 .ok_or_else(Error::route_not_found)?;
             cb.on_chan_open_init(
                 msg.channel.ordering,
@@ -90,11 +107,7 @@ where
                 &msg.channel.version,
             )?;
         }
-        ChannelMsg::ChannelOpenTry(_) => {}
-        ChannelMsg::ChannelOpenAck(_) => {}
-        ChannelMsg::ChannelOpenConfirm(_) => {}
-        ChannelMsg::ChannelCloseInit(_) => {}
-        ChannelMsg::ChannelCloseConfirm(_) => {}
+        _ => unimplemented!(),
     }
     Ok(())
 }
