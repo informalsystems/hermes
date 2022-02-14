@@ -29,7 +29,9 @@ use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error as Ics04Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
-use crate::core::ics05_port::capabilities::{Capability, CapabilityName};
+use crate::core::ics05_port::capabilities::{
+    Capability, CapabilityName, ChannelCapability, PortCapability,
+};
 use crate::core::ics05_port::context::{CapabilityReader, PortReader};
 use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics05_port::error::Error;
@@ -109,7 +111,7 @@ pub struct MockContext {
     packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     /// Maps ports to their capabilities
-    port_capabilities: BTreeMap<PortId, Capability>,
+    port_capabilities: BTreeMap<PortId, PortCapability>,
 
     /// Constant-size commitments to packets data fields
     packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
@@ -351,7 +353,8 @@ impl MockContext {
     }
 
     pub fn with_port_capability(mut self, port_id: PortId) -> Self {
-        self.port_capabilities.insert(port_id, Capability::new());
+        self.port_capabilities
+            .insert(port_id, Capability::new().into());
         self
     }
 
@@ -523,7 +526,8 @@ impl MockContext {
     }
 
     pub fn add_port(&mut self, port_id: PortId) {
-        self.port_capabilities.insert(port_id, Capability::new());
+        self.port_capabilities
+            .insert(port_id, Capability::new().into());
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
@@ -617,7 +621,7 @@ impl CapabilityReader for MockContext {
 }
 
 impl PortReader for MockContext {
-    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, Capability), Error> {
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, PortCapability), Error> {
         match self.port_capabilities.get(port_id) {
             Some(mod_cap) => Ok((ModuleId::new("foomodule".into()).unwrap(), mod_cap.clone())),
             None => Err(Ics05Error::unknown_port(port_id.clone())),
@@ -664,13 +668,14 @@ impl ChannelReader for MockContext {
             .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics04Error> {
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
         match PortReader::lookup_module_by_port(self, port_id) {
             Ok((_, key)) => {
                 if !PortReader::authenticate(self, port_id.clone(), &key) {
                     Err(Ics04Error::invalid_port_capability())
                 } else {
-                    Ok(key)
+                    // FIXME(hu55a1n1): implement using separate field (e.g. `channel_capabilities`)
+                    Ok(Capability::from(key).into())
                 }
             }
             Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
@@ -1216,7 +1221,7 @@ mod tests {
     use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::packet::Packet;
     use crate::core::ics04_channel::Version;
-    use crate::core::ics05_port::capabilities::Capability;
+    use crate::core::ics05_port::capabilities::ChannelCapability;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
@@ -1398,7 +1403,7 @@ mod tests {
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
                 _channel_id: &ChannelId,
-                _channel_cap: &Capability,
+                _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
             ) -> Result<Version, Error> {
@@ -1430,7 +1435,7 @@ mod tests {
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
                 _channel_id: &ChannelId,
-                _channel_cap: &Capability,
+                _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
             ) -> Result<Version, Error> {

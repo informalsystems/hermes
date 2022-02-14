@@ -1,4 +1,4 @@
-use crate::core::ics05_port::capabilities::{Capability, CapabilityName};
+use crate::core::ics05_port::capabilities::{Capability, CapabilityName, PortCapability};
 use crate::core::ics05_port::error::Error;
 use crate::core::ics24_host::identifier::PortId;
 use crate::core::ics24_host::path::PortsPath;
@@ -8,7 +8,7 @@ use crate::prelude::*;
 /// A context supplying all the necessary read-only dependencies for processing any information regarding a port.
 pub trait PortReader: CapabilityReader {
     /// Return the module_id along with the capability associated with a given port_id
-    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, Capability), Error>;
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, PortCapability), Error>;
 
     /// Check if the specified port_id is already bounded
     fn is_bound(&self, port_id: PortId) -> bool {
@@ -18,7 +18,7 @@ pub trait PortReader: CapabilityReader {
 
     /// Authenticate a capability key against a port_id by checking if the capability was previously
     /// generated and bound to the specified port
-    fn authenticate(&self, port_id: PortId, capability: &Capability) -> bool {
+    fn authenticate(&self, port_id: PortId, capability: &PortCapability) -> bool {
         self.authenticate_capability(&Self::port_capability_name(port_id), capability)
             .is_ok()
     }
@@ -33,11 +33,12 @@ pub trait PortReader: CapabilityReader {
 
 pub trait PortKeeper: CapabilityKeeper + PortReader {
     /// Binds to a port and returns the associated capability
-    fn bind_port(&mut self, port_id: PortId) -> Result<Capability, Error> {
+    fn bind_port(&mut self, port_id: PortId) -> Result<PortCapability, Error> {
         if self.is_bound(port_id.clone()) {
             Err(Error::port_already_bound(port_id))
         } else {
             self.new_capability(Self::port_capability_name(port_id))
+                .map(Into::into)
         }
     }
 }

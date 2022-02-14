@@ -45,6 +45,12 @@ impl<T: CapabilityMarker> From<TypedCapability<T>> for Capability {
     }
 }
 
+impl<T: CapabilityMarker> From<Capability> for TypedCapability<T> {
+    fn from(cap: Capability) -> Self {
+        TypedCapability(cap, PhantomData)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Capability {
     index: u64,

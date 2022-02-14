@@ -10,7 +10,7 @@ use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::{error::Error, packet::Receipt};
-use crate::core::ics05_port::capabilities::Capability;
+use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::prelude::*;
 use crate::timestamp::Timestamp;
@@ -38,7 +38,7 @@ pub trait ChannelReader {
         height: Height,
     ) -> Result<AnyConsensusState, Error>;
 
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error>;
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Error>;
 
     fn get_next_sequence_send(
         &self,

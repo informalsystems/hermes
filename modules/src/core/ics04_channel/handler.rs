@@ -5,7 +5,7 @@ use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::ChannelMsg;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
-use crate::core::ics05_port::capabilities::Capability;
+use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::{Ics26Context, Router};
 use crate::handler::HandlerOutput;
@@ -40,7 +40,7 @@ pub struct ChannelResult {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub channel_id_state: ChannelIdState,
-    pub channel_cap: Capability,
+    pub channel_cap: ChannelCapability,
     pub channel_end: ChannelEnd,
 }
 
