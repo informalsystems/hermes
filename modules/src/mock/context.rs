@@ -599,7 +599,11 @@ impl Router for MockRouter {
 impl Ics26Context for MockContext {
     type Router = MockRouter;
 
-    fn router(&mut self) -> &mut Self::Router {
+    fn router(&self) -> &Self::Router {
+        &self.router
+    }
+
+    fn router_mut(&mut self) -> &mut Self::Router {
         &mut self.router
     }
 }
