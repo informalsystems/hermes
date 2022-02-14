@@ -40,14 +40,6 @@ impl MsgCreateAnyClient {
             signer,
         })
     }
-
-    pub fn client_state(&self) -> AnyClientState {
-        self.client_state.clone()
-    }
-
-    pub fn consensus_state(&self) -> AnyConsensusState {
-        self.consensus_state.clone()
-    }
 }
 
 impl Msg for MsgCreateAnyClient {

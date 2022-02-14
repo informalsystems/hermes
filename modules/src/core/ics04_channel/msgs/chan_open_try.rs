@@ -46,24 +46,8 @@ impl MsgChannelOpenTry {
             signer,
         }
     }
-
-    /// Getter: borrow the `port_id` from this message.
-    pub fn port_id(&self) -> &PortId {
-        &self.port_id
-    }
-    pub fn previous_channel_id(&self) -> &Option<ChannelId> {
-        &self.previous_channel_id
-    }
-    pub fn counterparty_version(&self) -> &Version {
-        &self.counterparty_version
-    }
-    pub fn channel(&self) -> &ChannelEnd {
-        &self.channel
-    }
-    pub fn proofs(&self) -> &Proofs {
-        &self.proofs
-    }
 }
+
 impl Msg for MsgChannelOpenTry {
     type ValidationError = ChannelError;
     type Raw = RawMsgChannelOpenTry;
@@ -77,7 +61,7 @@ impl Msg for MsgChannelOpenTry {
     }
 
     fn validate_basic(&self) -> Result<(), ValidationError> {
-        match self.channel().counterparty().channel_id() {
+        match self.channel.counterparty().channel_id() {
             None => Err(ValidationError::invalid_counterparty_channel_id()),
             Some(_c) => Ok(()),
         }

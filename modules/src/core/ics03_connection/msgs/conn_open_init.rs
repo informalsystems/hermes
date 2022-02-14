@@ -26,18 +26,6 @@ pub struct MsgConnectionOpenInit {
     pub signer: Signer,
 }
 
-impl MsgConnectionOpenInit {
-    /// Getter: borrow the `client_id` from this message.
-    pub fn client_id(&self) -> &ClientId {
-        &self.client_id
-    }
-
-    /// Getter: borrow the `counterparty` from this message.
-    pub fn counterparty(&self) -> &Counterparty {
-        &self.counterparty
-    }
-}
-
 impl Msg for MsgConnectionOpenInit {
     type ValidationError = Error;
     type Raw = RawMsgConnectionOpenInit;

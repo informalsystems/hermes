@@ -36,8 +36,8 @@ pub fn process(
 
     // Construct this client's identifier
     let id_counter = ctx.client_counter()?;
-    let client_id = ClientId::new(msg.client_state().client_type(), id_counter).map_err(|e| {
-        Error::client_identifier_constructor(msg.client_state().client_type(), id_counter, e)
+    let client_id = ClientId::new(msg.client_state.client_type(), id_counter).map_err(|e| {
+        Error::client_identifier_constructor(msg.client_state.client_type(), id_counter, e)
     })?;
 
     output.log(format!(
@@ -47,9 +47,9 @@ pub fn process(
 
     let result = ClientResult::Create(Result {
         client_id: client_id.clone(),
-        client_type: msg.client_state().client_type(),
-        client_state: msg.client_state(),
-        consensus_state: msg.consensus_state(),
+        client_type: msg.client_state.client_type(),
+        client_state: msg.client_state.clone(),
+        consensus_state: msg.consensus_state,
         processed_time: ctx.host_timestamp(),
         processed_height: ctx.host_height(),
     });
@@ -120,8 +120,8 @@ mod tests {
                     ClientResult::Create(create_result) => {
                         assert_eq!(create_result.client_type, ClientType::Mock);
                         assert_eq!(create_result.client_id, expected_client_id);
-                        assert_eq!(create_result.client_state, msg.client_state());
-                        assert_eq!(create_result.consensus_state, msg.consensus_state());
+                        assert_eq!(create_result.client_state, msg.client_state);
+                        assert_eq!(create_result.consensus_state, msg.consensus_state);
                     }
                     _ => {
                         panic!("unexpected result type: expected ClientResult::CreateResult!");
@@ -208,10 +208,10 @@ mod tests {
                     );
                     match result {
                         ClientResult::Create(create_res) => {
-                            assert_eq!(create_res.client_type, msg.client_state().client_type());
+                            assert_eq!(create_res.client_type, msg.client_state.client_type());
                             assert_eq!(create_res.client_id, expected_client_id);
-                            assert_eq!(create_res.client_state, msg.client_state());
-                            assert_eq!(create_res.consensus_state, msg.consensus_state());
+                            assert_eq!(create_res.client_state, msg.client_state);
+                            assert_eq!(create_res.consensus_state, msg.consensus_state);
                         }
                         _ => {
                             panic!("expected result of type ClientResult::CreateResult");
@@ -273,8 +273,8 @@ mod tests {
                     ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, ClientType::Tendermint);
                         assert_eq!(create_res.client_id, expected_client_id);
-                        assert_eq!(create_res.client_state, msg.client_state());
-                        assert_eq!(create_res.consensus_state, msg.consensus_state());
+                        assert_eq!(create_res.client_state, msg.client_state);
+                        assert_eq!(create_res.consensus_state, msg.consensus_state);
                     }
                     _ => {
                         panic!("expected result of type ClientResult::CreateResult");

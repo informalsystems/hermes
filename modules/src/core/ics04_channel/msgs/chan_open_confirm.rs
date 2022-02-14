@@ -33,19 +33,6 @@ impl MsgChannelOpenConfirm {
     }
 }
 
-impl MsgChannelOpenConfirm {
-    /// Getter: borrow the `port_id` from this message.
-    pub fn port_id(&self) -> &PortId {
-        &self.port_id
-    }
-    pub fn channel_id(&self) -> &ChannelId {
-        &self.channel_id
-    }
-    pub fn proofs(&self) -> &Proofs {
-        &self.proofs
-    }
-}
-
 impl Msg for MsgChannelOpenConfirm {
     type ValidationError = Error;
     type Raw = RawMsgChannelOpenConfirm;
