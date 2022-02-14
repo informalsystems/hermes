@@ -13,7 +13,7 @@ use crate::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
-    msg: MsgChannelOpenInit,
+    msg: &MsgChannelOpenInit,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -156,7 +156,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = channel_dispatch(&test.ctx, test.msg.clone());
+            let res = channel_dispatch(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
@@ -164,7 +164,7 @@ mod tests {
                         test.want_pass,
                         "chan_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
-                        test.msg.clone(),
+                        test.msg,
                         test.ctx.clone()
                     );
 
@@ -173,7 +173,7 @@ mod tests {
                     // The object in the output is a ChannelEnd, should have init state.
                     let res: ChannelResult = proto_output.result;
                     assert_eq!(res.channel_end.state().clone(), State::Init);
-                    let msg_init = test.msg.clone();
+                    let msg_init = test.msg;
 
                     if let ChannelMsg::ChannelOpenInit(msg_init) = msg_init {
                         assert_eq!(res.port_id.clone(), msg_init.port_id.clone());
