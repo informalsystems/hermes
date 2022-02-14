@@ -151,7 +151,7 @@ impl ClientState {
     }
 
     /// Helper method to produce a
-    /// [`Options`] struct for use in
+    /// [`tendermint_light_client_verifier::options::Options`] struct for use in
     /// Tendermint-specific light client verification.
     pub fn as_light_client_options(&self) -> Result<Options, Error> {
         Ok(Options {

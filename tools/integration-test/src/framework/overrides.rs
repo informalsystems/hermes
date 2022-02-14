@@ -64,7 +64,7 @@ pub trait TestOverrides {
     /**
        Optionally spawns the relayer supervisor after the relayer chain
        handles and foreign clients are initialized. Default behavior
-       is to spawn the supervisor using [`spawn_supervisor`].
+       is to spawn the supervisor using [`RelayerDriver::spawn_supervisor`].
 
        Test writers can disable the spawning of supervisor by overriding
        this method and making it do nothing and return `None`.

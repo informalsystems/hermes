@@ -21,7 +21,7 @@ use super::{
     Error,
 };
 
-/// A context for spawning workers within the [`crate::supervisor::Supervisor`].
+/// A context for spawning workers within the supervisor.
 pub struct SpawnContext<'a, Chain: ChainHandle> {
     config: &'a Config,
     registry: &'a mut Registry<Chain>,
@@ -186,7 +186,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         }
     }
 
-    /// Spawns all the [`Worker`](crate::worker::Worker)s that will
+    /// Spawns all the [`WorkerHandle`](crate::worker::WorkerHandle)s that will
     /// handle a given channel for a given source chain.
     pub fn spawn_workers_for_channel(
         &mut self,
