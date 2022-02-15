@@ -1,3 +1,8 @@
+/*!
+   Constructs for running test cases with more than two full nodes,
+   running without setting up the relayer.
+*/
+
 use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
 use crate::error::Error;

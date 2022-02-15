@@ -1,3 +1,9 @@
+/*!
+   Constructs for running test cases with more than two chains,
+   together with the relayer setup with chain handles and foreign clients,
+   as well as connected IBC channels with completed handshakes.
+*/
+
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 

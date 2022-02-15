@@ -1,5 +1,5 @@
 /*!
-   Constructs for running test cases with two full nodes
+   Constructs for running test cases with two chains,
    together with the relayer setup with chain handles and foreign clients.
 */
 

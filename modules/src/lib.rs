@@ -6,7 +6,6 @@
 #![allow(clippy::large_enum_variant)]
 #![deny(
     warnings,
-    // missing_docs,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,

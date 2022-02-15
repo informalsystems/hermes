@@ -1,3 +1,8 @@
+/*!
+   Constructs for running test cases with more than two chains,
+   together with the relayer setup with chain handles and foreign clients.
+*/
+
 use ibc_relayer::chain::handle::ChainHandle;
 
 use super::node::{run_nary_node_test, NaryNodeTest};

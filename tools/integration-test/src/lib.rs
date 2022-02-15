@@ -1,6 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
 #![allow(clippy::ptr_arg)]
+#![deny(warnings)]
 #![doc = include_str!("../README.md")]
 
 pub mod bootstrap;

@@ -1,3 +1,9 @@
+/*!
+   Constructs for running test cases with more than two chains,
+   together with the relayer setup with chain handles and foreign clients,
+   as well as connected IBC connections with completed handshakes.
+*/
+
 use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::bootstrap::nary::connection::bootstrap_connections;

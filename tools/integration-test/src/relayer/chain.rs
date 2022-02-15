@@ -65,6 +65,11 @@ use ibc_relayer::{connection::ConnectionMsgType, keyring::KeyEntry};
 
 use crate::types::tagged::*;
 
+/**
+   Implement `ChainHandle` for any existential type `Handle: ChainHandle`.
+   This allows us to tag values for chains that are tagged by position
+   in [N-ary chains](crate::types::nary).
+*/
 impl<Tag, Handle> ChainHandle for MonoTagged<Tag, Handle>
 where
     Tag: Send + Sync + 'static,
