@@ -117,41 +117,6 @@ pub fn boostrap_self_connected_chain(
     Error,
 > {
     boostrap_chain_pair_with_nodes(test_config, node.clone(), node, config_modifier)
-
-    // let mut config = Config::default();
-
-    // add_chain_config(&mut config, &node)?;
-
-    // config_modifier(&mut config);
-
-    // let config_path = test_config.chain_store_dir.join("relayer-config.toml");
-
-    // save_relayer_config(&config, &config_path)?;
-
-    // let config = Arc::new(RwLock::new(config));
-
-    // let registry = new_registry(config.clone());
-
-    // let handle = spawn_chain_handle(|| {}, &registry, &node)?;
-
-    // let foreign_client = bootstrap_foreign_client(&handle, &handle)?;
-
-    // let relayer = RelayerDriver {
-    //     config_path,
-    //     config,
-    //     registry,
-    // };
-
-    // let chains = ConnectedChains::new(
-    //     handle.clone(),
-    //     handle,
-    //     MonoTagged::new(node.clone()),
-    //     MonoTagged::new(node),
-    //     foreign_client.clone(),
-    //     foreign_client,
-    // );
-
-    // Ok((relayer, chains))
 }
 
 pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
