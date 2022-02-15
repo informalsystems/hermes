@@ -27,7 +27,7 @@ fn test_self_connected_ibc_transfer() -> Result<(), Error> {
 */
 #[test]
 fn test_nary_ibc_transfer() -> Result<(), Error> {
-    run_nary_channel_test(&RunBinaryAsNaryChannelTest::new(&IbcTransferTest))
+    run_binary_as_nary_channel_test(&IbcTransferTest)
 }
 
 #[test]

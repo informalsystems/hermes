@@ -24,6 +24,13 @@ where
     run_nary_chain_test(&RunNaryConnectionTest::new(test))
 }
 
+/**
+   This trait is implemented for test cases that need to have more than
+   two chains running with connected connections.
+
+  Test writers can use this to implement test cases that only
+  need the connections without channel handshake.
+*/
 pub trait NaryConnectionTest<const SIZE: usize> {
     /// Test runner
     fn run<Handle: ChainHandle>(
@@ -35,6 +42,10 @@ pub trait NaryConnectionTest<const SIZE: usize> {
     ) -> Result<(), Error>;
 }
 
+/**
+   A wrapper type that lifts a test case that implements [`NaryConnectionTest`]
+   into a test case the implements [`NaryChainTest`].
+*/
 pub struct RunNaryConnectionTest<'a, Test, const SIZE: usize> {
     /// Inner test
     pub test: &'a Test,

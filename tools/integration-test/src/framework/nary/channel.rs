@@ -8,7 +8,6 @@ use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride}
 use crate::framework::binary::channel::BinaryChannelTest;
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::framework::nary::connection::{run_nary_connection_test, NaryConnectionTest};
-use crate::framework::overrides::TestOverrides;
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::ConnectedChains;
@@ -28,6 +27,36 @@ where
     run_nary_connection_test(&RunNaryChannelTest::new(test))
 }
 
+pub fn run_binary_as_nary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
+where
+    Test: BinaryChannelTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
+        + RelayerConfigOverride
+        + SupervisorOverride
+        + PortsOverride<2>,
+{
+    run_nary_channel_test(&RunBinaryAsNaryChannelTest::new(test))
+}
+
+/**
+   Returns a `SIZE`x`SIZE` number of transfer ports.
+
+   This can be used by N-ary channel test cases to have a default
+   implementation of `PortsOverride`, with `"transfer"` used for
+   all port IDs.
+*/
+pub fn transfer_port_overrides<const SIZE: usize>() -> [[PortId; SIZE]; SIZE] {
+    let port = PortId::transfer();
+    let ports_ref = [[&port; SIZE]; SIZE];
+    ports_ref.map(|inner_ports| inner_ports.map(Clone::clone))
+}
+
+/**
+    This trait is implemented for test cases that need to have more than
+    two chains running with connected channels.
+*/
 pub trait NaryChannelTest<const SIZE: usize> {
     /// Test runner
     fn run<Handle: ChainHandle>(
@@ -39,15 +68,49 @@ pub trait NaryChannelTest<const SIZE: usize> {
     ) -> Result<(), Error>;
 }
 
+/**
+    An internal trait that can be implemented by test cases to override
+    the port IDs used when creating N-ary channels.
+
+    When called, the implementer returns a `SIZE`x`SIZE` matrix
+    of [`PortId`]s to indicate which port ID for the chain at
+    the first position when connected to the chain at the second
+    position.
+
+    This is called by [`RunNaryChannelTest`] before creating
+    the IBC channels.
+
+    Note that this trait is not automatically implemented
+    for test cases via
+    [`TestOverrides`](crate::framework::overrides::TestOverrides),
+    except for the binary case `PortsOverride<2>`.
+    So each N-ary channel test must also implement this trait manually.
+
+    It is possible to implement this with an empty body, in which case
+    the port ID matrix will all be populated with `"transfer"` ports.
+*/
 pub trait PortsOverride<const SIZE: usize> {
-    fn channel_ports(&self) -> [[PortId; SIZE]; SIZE];
+    fn channel_ports(&self) -> [[PortId; SIZE]; SIZE] {
+        transfer_port_overrides()
+    }
 }
 
+/**
+    A wrapper type that lifts a test case that implements [`NaryChannelTest`]
+    into a test case the implements [`NaryConnectionTest`].
+*/
 pub struct RunNaryChannelTest<'a, Test, const SIZE: usize> {
     /// Inner test
     pub test: &'a Test,
 }
 
+/**
+    A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
+    into a test case the implements [`NaryChannelTest`].
+
+    This can be used to test the implementation of the N-ary test framework,
+    by running binary channel tests as N-ary channel tests.
+*/
 pub struct RunBinaryAsNaryChannelTest<'a, Test> {
     /// Inner test
     pub test: &'a Test,
@@ -134,14 +197,5 @@ where
 
     fn get_overrides(&self) -> &Self::Overrides {
         self.test.get_overrides()
-    }
-}
-
-impl<Test: TestOverrides> PortsOverride<2> for Test {
-    fn channel_ports(&self) -> [[PortId; 2]; 2] {
-        let port_a = self.channel_port_a();
-        let port_b = self.channel_port_b();
-
-        [[port_a.clone(), port_b.clone()], [port_b, port_a]]
     }
 }

@@ -32,7 +32,7 @@
     trait so that the test framework sets up the relayer with two chains
     running together with connected channels.
 
-    Inside our test, we simply call the [`suspend`](crate::suspend) function to
+    Inside our test, we simply call the [`suspend`] function to
     suspend the test indefinitely. While this means that the test would never
     pass, we can use this as a starting point to do _manual testing_ with the
     chains that have been setup by the test, and figure out how to continue

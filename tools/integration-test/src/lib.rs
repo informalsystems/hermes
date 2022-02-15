@@ -16,5 +16,3 @@ pub mod util;
 #[cfg(any(test, doc))]
 #[macro_use]
 pub mod tests;
-
-pub use util::suspend::suspend;

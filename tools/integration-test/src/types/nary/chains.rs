@@ -52,7 +52,7 @@ pub struct DynamicConnectedChains<Handle: ChainHandle> {
    `MonoTagged<Size<1>, String>` is a `String` that is
    tagged by the const generic `1`.
 */
-pub struct Size<const TAG: usize>;
+pub enum Size<const TAG: usize> {}
 
 /**
    Tag a `Handle: ChainHandle` type with a const generic `TAG: usize`.

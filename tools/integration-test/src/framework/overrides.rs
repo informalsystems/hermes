@@ -12,6 +12,7 @@ use crate::framework::base::TestConfigOverride;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
 use crate::framework::binary::channel::PortsOverride;
 use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 
@@ -133,5 +134,14 @@ impl<Test: TestOverrides> PortsOverride for Test {
 
     fn channel_port_b(&self) -> PortId {
         TestOverrides::channel_port_b(self)
+    }
+}
+
+impl<Test: TestOverrides> NaryPortsOverride<2> for Test {
+    fn channel_ports(&self) -> [[PortId; 2]; 2] {
+        let port_a = self.channel_port_a();
+        let port_b = self.channel_port_b();
+
+        [[port_a.clone(), port_b.clone()], [port_b, port_a]]
     }
 }

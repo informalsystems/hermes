@@ -48,14 +48,13 @@ where
 }
 
 /**
-   An owned version of [`BinaryConnectionTest`], which the test case is given
-   owned [`ConnectedChains`] and [`ConnectedConnection`] values instead of just references.
+   This trait is implemented for test cases that need to have two
+   full nodes running together with the relayer setup with chain
+   handles and foreign clients, together with connected IBC connections
+   with completed handshakes.
 
-   Since the test case is given full ownership, the running full node will
-   and relayer will be stopped at the end of the test case.
-   The test framework cannot use functions such as
-   [`hang_on_error`](TestConfig::hang_on_error) to suspend
-   the termination of the full nodes if the test case return errors.
+   Test writers can use this to implement test cases that only
+   need the connection setup without the channel handshake.
 */
 pub trait BinaryConnectionTest {
     /// Test runner

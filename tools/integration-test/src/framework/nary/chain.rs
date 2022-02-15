@@ -15,6 +15,23 @@ use crate::types::config::TestConfig;
 use crate::types::nary::chains::ConnectedChains;
 use crate::types::single::node::FullNode;
 
+/**
+   Runs a test case that implements [`NaryChainTest`] with a `SIZE` number of
+   chains bootstrapped.
+
+   Note that the test may take more time as the number of chains increase,
+   as the required connections would increase exponentially. For each
+   new chain added, a self-connected foreign client is also created.
+
+   Following shows a quick idea of how many connections are needed for each
+   new chain added:
+
+   1. 0-0
+   2. 0-0, 0-1, 1-1
+   3. 0-0, 0-1, 0-2, 1-1, 1-2, 2-2
+   4. 0-0, 0-1, 0-2, 0-3, 1-1, 1-2, 1-3, 2-2, 2-3, 3-3
+   5. ...
+*/
 pub fn run_nary_chain_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Result<(), Error>
 where
     Test: NaryChainTest<SIZE>,
@@ -24,6 +41,20 @@ where
     run_nary_node_test(&RunNaryChainTest::new(test))
 }
 
+/**
+    Runs a test case that implements [`NaryChainTest`], with one self-connected chain used
+    to emulate many connnections.
+
+    This works because IBC allows a chain to connect back to itself without the chain
+    knowing it. Using this, we can emulate N-ary chain tests using only one chain
+    and save the performance overhead of spawning many chains.
+
+    Note that with this, there is still performance overhead of establishing
+    new connections and channels for each position, as otherwise the transferred
+    IBC denoms will get mixed up. Some test cases also may not able to make
+    use of self connected chains, e.g. if they need to start and stop individual
+    chains.
+*/
 pub fn run_self_connected_nary_chain_test<Test, Overrides, const SIZE: usize>(
     test: &Test,
 ) -> Result<(), Error>
@@ -35,6 +66,14 @@ where
     run_nary_node_test(&RunSelfConnectedNaryChainTest::new(test))
 }
 
+/**
+    This trait is implemented for test cases that need to have more than
+    two chains running.
+
+    Test writers can use this to implement test cases that only
+    need the chains and relayers setup without the connection or
+    channel handshake.
+*/
 pub trait NaryChainTest<const SIZE: usize> {
     /// Test runner
     fn run<Handle: ChainHandle>(
@@ -45,11 +84,20 @@ pub trait NaryChainTest<const SIZE: usize> {
     ) -> Result<(), Error>;
 }
 
+/**
+    A wrapper type that lifts a test case that implements [`RunNaryChainTest`]
+    into a test case the implements [`NaryNodeTest`].
+*/
 pub struct RunNaryChainTest<'a, Test, const SIZE: usize> {
     /// Inner test
     pub test: &'a Test,
 }
 
+/**
+    A wrapper type that lifts a test case that implements [`RunNaryChainTest`]
+    into a test case the implements [`NaryNodeTest<1>`]. i.e. only one underlying
+    full node is spawned to emulate all chains.
+*/
 pub struct RunSelfConnectedNaryChainTest<'a, Test, const SIZE: usize> {
     /// Inner test
     pub test: &'a Test,

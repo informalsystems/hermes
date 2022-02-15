@@ -54,6 +54,6 @@ impl BinaryChannelTest for SimulationTest {
             MAX_MSGS,
         )?;
 
-        crate::suspend()
+        suspend()
     }
 }

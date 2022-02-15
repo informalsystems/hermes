@@ -17,10 +17,25 @@ where
     run_basic_test(&RunNaryNodeTest { test })
 }
 
+/**
+   This trait is implemented for test cases that need to have more than two
+   full nodes running without the relayer being setup.
+
+   The test case is given `SIZE` number of [`FullNode`]s which represents
+   the running full nodes.
+
+   Test writers can use this to implement more advanced test cases which
+   require manual setup of the relayer, so that the relayer can be started
+   and stopped at a suitable time within the test.
+*/
 pub trait NaryNodeTest<const SIZE: usize> {
     fn run(&self, config: &TestConfig, nodes: [FullNode; SIZE]) -> Result<(), Error>;
 }
 
+/**
+   A wrapper type that lifts a test case that implements [`NaryNodeTest`]
+   into a test case the implements [`BasicTest`].
+*/
 pub struct RunNaryNodeTest<'a, Test, const SIZE: usize> {
     pub test: &'a Test,
 }

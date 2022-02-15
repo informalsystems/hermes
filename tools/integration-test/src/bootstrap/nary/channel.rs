@@ -65,7 +65,7 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
         channels.push(channels_b);
     }
 
-    Ok(DynamicConnectedChannels { channels })
+    Ok(DynamicConnectedChannels::new(channels))
 }
 
 /**

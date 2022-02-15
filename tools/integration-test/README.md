@@ -17,7 +17,7 @@ cargo doc -p ibc-integration-test --open
 Other than Rust, the test suite assumes the `gaiad` binary is present in `$PATH`. You can install Gaia by either [building from source](https://github.com/cosmos/gaia), or load it using [Cosmos.nix](https://github.com/informalsystems/cosmos.nix/):
 
 ```text
-nix shell github:informalsystems/cosmos.nix#gaia4
+nix shell github:informalsystems/cosmos.nix#gaia5
 ```
 
 ## Quick Start

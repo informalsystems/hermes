@@ -33,7 +33,8 @@ pub use crate::framework::nary::chain::{
     RunSelfConnectedNaryChainTest,
 };
 pub use crate::framework::nary::channel::{
-    run_nary_channel_test, NaryChannelTest, RunBinaryAsNaryChannelTest, RunNaryChannelTest,
+    run_binary_as_nary_channel_test, run_nary_channel_test, NaryChannelTest,
+    RunBinaryAsNaryChannelTest, RunNaryChannelTest,
 };
 pub use crate::framework::nary::connection::{
     run_nary_connection_test, NaryConnectionTest, RunNaryConnectionTest,

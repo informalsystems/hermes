@@ -21,7 +21,7 @@ use crate::util::array::try_into_nested_array;
 */
 #[derive(Debug, Clone)]
 pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
-    pub channels: [[ConnectedChannel<Handle, Handle>; SIZE]; SIZE],
+    channels: [[ConnectedChannel<Handle, Handle>; SIZE]; SIZE],
 }
 
 /**
@@ -31,7 +31,7 @@ pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
 */
 #[derive(Debug, Clone)]
 pub struct DynamicConnectedChannels<Handle: ChainHandle> {
-    pub channels: Vec<Vec<ConnectedChannel<Handle, Handle>>>,
+    channels: Vec<Vec<ConnectedChannel<Handle, Handle>>>,
 }
 
 /**
@@ -83,6 +83,20 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
 
             Ok(channel)
         }
+    }
+
+    pub fn channels(&self) -> &[[ConnectedChannel<Handle, Handle>; SIZE]; SIZE] {
+        &self.channels
+    }
+}
+
+impl<Handle: ChainHandle> DynamicConnectedChannels<Handle> {
+    pub fn new(channels: Vec<Vec<ConnectedChannel<Handle, Handle>>>) -> Self {
+        Self { channels }
+    }
+
+    pub fn channels(&self) -> &Vec<Vec<ConnectedChannel<Handle, Handle>>> {
+        &self.channels
     }
 }
 
