@@ -4,16 +4,16 @@ version = 3
 
 [[package]]
 name = "abscissa_core"
-version = "0.6.0-rc.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b712631ff1ac499314dc75b3e66e47fd92ab0358a1463f13f55a2bdec641c4ed"
+checksum = "6750843603bf31a83accd3c8177f9dbf53a7d64275688fc7371e0a4d9f8628b5"
 dependencies = [
  "abscissa_derive",
  "arc-swap",
  "backtrace",
  "canonical-path",
  "clap",
- "color-eyre 0.5.11",
+ "color-eyre",
  "fs-err",
  "once_cell",
  "regex",
@@ -30,9 +30,9 @@ dependencies = [
 
 [[package]]
 name = "abscissa_derive"
-version = "0.6.0-rc.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb2d60b964b6d4891893e78ec0bb4ce9fc933dc9e3fe2dba0ddb1ce164cacae6"
+checksum = "1a3473aa652e90865a06b723102aaa4a54a7d9f2092dbf4582497a61d0537d3f"
 dependencies = [
  "ident_case",
  "proc-macro2",
@@ -401,19 +401,6 @@ dependencies = [
 
 [[package]]
 name = "color-eyre"
-version = "0.5.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f1885697ee8a177096d42f158922251a41973117f6d8a234cee94b9509157b7"
-dependencies = [
- "backtrace",
- "eyre",
- "indenter",
- "once_cell",
- "owo-colors 1.3.0",
-]
-
-[[package]]
-name = "color-eyre"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d6ec7641ff3474b7593009c809db602c414cd97c7d47a78ed004162b74ff96c"
@@ -423,7 +410,7 @@ dependencies = [
  "eyre",
  "indenter",
  "once_cell",
- "owo-colors 3.2.0",
+ "owo-colors",
  "tracing-error",
 ]
 
@@ -434,7 +421,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ba75b3d9449ecdccb27ecbc479fdc0b87fa2dd43d2f8298f9bf0e59aacc8dce"
 dependencies = [
  "once_cell",
- "owo-colors 3.2.0",
+ "owo-colors",
  "tracing-core",
  "tracing-error",
 ]
@@ -1317,7 +1304,7 @@ dependencies = [
 name = "ibc-integration-test"
 version = "0.11.1"
 dependencies = [
- "color-eyre 0.6.0",
+ "color-eyre",
  "crossbeam-channel 0.5.2",
  "env_logger",
  "eyre",
@@ -1422,7 +1409,7 @@ dependencies = [
  "atty",
  "clap",
  "clap_complete",
- "color-eyre 0.6.0",
+ "color-eyre",
  "crossbeam-channel 0.5.2",
  "dirs-next",
  "eyre",
@@ -1946,12 +1933,6 @@ checksum = "8e22443d1643a904602595ba1cd8f7d896afe56d26712531c5ff73a15b2fbf64"
 dependencies = [
  "memchr",
 ]
-
-[[package]]
-name = "owo-colors"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2386b4ebe91c2f7f51082d4cefa145d030e33a1842a96b12e4885cc3c01f7a55"
 
 [[package]]
 name = "owo-colors"
