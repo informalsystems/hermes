@@ -1,4 +1,4 @@
-name: GitHub Pages
+name: Publish Cargo Doc
 
 on:
   push:
@@ -19,6 +19,7 @@ jobs:
       - run: cargo doc
 
       - name: Deploy
+        if: ${{ github.ref == 'ref/head/master' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.IBC_RS_DOC_PRIVATE_KEY }}
