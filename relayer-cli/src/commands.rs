@@ -5,6 +5,7 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
+mod clear;
 mod completions;
 mod config;
 mod create;
@@ -20,9 +21,10 @@ mod upgrade;
 mod version;
 
 use self::{
-    completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds, health::HealthCheckCmd,
-    keys::KeysCmd, listen::ListenCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd,
-    start::StartCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
+    clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
+    health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd, misbehaviour::MisbehaviourCmd,
+    query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds,
+    version::VersionCmd,
 };
 
 use core::time::Duration;
@@ -62,6 +64,10 @@ pub enum CliCmd {
     /// Upgrade objects (clients) after chain upgrade
     #[clap(subcommand)]
     Upgrade(UpgradeCmds),
+
+    /// Clear objects, such as outstanding packets on a channel.
+    #[clap(subcommand)]
+    Clear(ClearCmds),
 
     /// Start the relayer in multi-chain mode.
     ///

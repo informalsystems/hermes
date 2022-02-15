@@ -1,6 +1,6 @@
 use flex_error::define_error;
 use ibc::core::ics02_client::error::Error as Ics02Error;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::Height;
 
@@ -45,13 +45,14 @@ define_error! {
 
         ChannelNotFound
             {
+                port_id: PortId,
                 channel_id: ChannelId,
                 chain_id: ChainId,
             }
             [ Error ]
             |e| {
-                format!("channel {} does not exist on chain {}",
-                    e.channel_id, e.chain_id)
+                format!("channel {}/{} does not exist on chain {}",
+                    e.port_id, e.channel_id, e.chain_id)
             },
 
         Connection
