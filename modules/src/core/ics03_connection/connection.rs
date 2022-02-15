@@ -196,10 +196,12 @@ impl ConnectionEnd {
         self.client_id.eq(other)
     }
 
+    /// Helper function to determine whether the connection is open.
     pub fn is_open(&self) -> bool {
         self.state_matches(&State::Open)
     }
 
+    /// Helper function to determine whether the connection is uninitialized.
     pub fn is_uninitialized(&self) -> bool {
         self.state_matches(&State::Uninitialized)
     }

@@ -38,7 +38,7 @@ impl Runnable for TxRawPacketRecvCmd {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let mut link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
+        let link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
             Ok(link) => link,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
@@ -82,7 +82,7 @@ impl Runnable for TxRawPacketAckCmd {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let mut link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
+        let link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
             Ok(link) => link,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
