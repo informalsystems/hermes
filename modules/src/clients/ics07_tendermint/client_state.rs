@@ -482,7 +482,6 @@ mod tests {
 
     #[test]
     fn client_state_verify_delay_passed() {
-        use std::time::Duration;
         #[derive(Debug, Clone)]
         struct Params {
             current_time: Timestamp,
