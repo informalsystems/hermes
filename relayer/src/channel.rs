@@ -33,7 +33,7 @@ use crate::util::retry::{retry_count, RetryResult};
 use crate::util::task::Next;
 
 pub mod error;
-mod version;
+pub mod version;
 
 mod retry_strategy {
     use core::time::Duration;

@@ -143,6 +143,10 @@ pub enum ChainRequest {
         reply_to: ReplyTo<()>,
     },
 
+    IbcVersion {
+        reply_to: ReplyTo<Option<semver::Version>>,
+    },
+
     QueryStatus {
         reply_to: ReplyTo<StatusResponse>,
     },
@@ -371,6 +375,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
 
     fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
+
+    /// Return the version of the IBC protocol that this chain is running, if known.
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
     fn query_status(&self) -> Result<StatusResponse, Error>;
 

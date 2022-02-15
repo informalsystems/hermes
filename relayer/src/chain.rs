@@ -126,7 +126,7 @@ pub trait ChainEndpoint: Sized {
     fn keybase_mut(&mut self) -> &mut KeyRing;
 
     /// Sends one or more transactions with `msgs` to chain and
-    // synchronously wait for it to be committed.
+    /// synchronously wait for it to be committed.
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
@@ -146,6 +146,9 @@ pub trait ChainEndpoint: Sized {
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
     fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
+
+    /// Return the version of the IBC protocol that this chain is running, if known.
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
     // Queries
 

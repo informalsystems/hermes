@@ -141,6 +141,10 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::AppVersion { request, reply_to })
     }
 
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+        self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
+    }
+
     fn query_status(&self) -> Result<StatusResponse, Error> {
         self.send(|reply_to| ChainRequest::QueryStatus { reply_to })
     }

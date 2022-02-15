@@ -8,6 +8,7 @@ use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::channel::version::default_by_port;
 use ibc_relayer::channel::Channel;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -92,7 +93,20 @@ impl CreateChannelCommand {
         let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        // let version = self.chain_a_id.version();
+        let ibc_version_a = chains
+            .src
+            .ibc_version()
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        check_channel_version(&self.chain_a_id, &self.port_a, ibc_version_a, &self.version)
+            .or_exit();
+
+        let ibc_version_b = chains
+            .dst
+            .ibc_version()
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        check_channel_version(chain_b_id, &self.port_b, ibc_version_b, &self.version).or_exit();
 
         info!(
             "Creating new clients, new connection, and a new channel with order {}",
@@ -139,6 +153,13 @@ impl CreateChannelCommand {
             .exit(),
         };
 
+        let ibc_version_a = chain_a
+            .ibc_version()
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        check_channel_version(&self.chain_a_id, &self.port_a, ibc_version_a, &self.version)
+            .or_exit();
+
         // Query the connection end.
         let height = Height::new(chain_a.id().version(), 0);
         let conn_end = chain_a
@@ -154,6 +175,12 @@ impl CreateChannelCommand {
         // Spawn the runtime for side b.
         let chain_b =
             spawn_chain_runtime(&config, &chain_b_id).unwrap_or_else(exit_with_unrecoverable_error);
+
+        let ibc_version_b = chain_b
+            .ibc_version()
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        check_channel_version(&chain_b_id, &self.port_b, ibc_version_b, &self.version).or_exit();
 
         // Create the foreign client handles.
         let client_a = ForeignClient::find(chain_b.clone(), chain_a.clone(), conn_end.client_id())
@@ -176,5 +203,55 @@ impl CreateChannelCommand {
         .unwrap_or_else(exit_with_unrecoverable_error);
 
         Output::success(channel).exit();
+    }
+}
+
+enum Next {
+    Continue,
+    Abort,
+}
+
+impl Next {
+    fn or_exit(self) {
+        if let Self::Abort = self {
+            exit_with_unrecoverable_error("channel version check failed")
+        }
+    }
+}
+
+fn check_channel_version(
+    chain_id: &ChainId,
+    port_id: &PortId,
+    ibc_version: Option<semver::Version>,
+    channel_version: &Option<String>,
+) -> Next {
+    const IBC_V3: semver::Version = semver::Version::new(3, 0, 0);
+
+    match (ibc_version, channel_version, default_by_port(port_id)) {
+        (None, _, _) => {
+            warn!(
+                "could not fetch IBC version for chain '{}', channel handshake might fail",
+                chain_id
+            );
+
+            Next::Continue
+        }
+        (Some(ibc_version), None, None) if ibc_version < IBC_V3 => {
+            error!(
+                "cannot infer version for port '{}' on chain '{}', please supply a version with --channel-version",
+                port_id, chain_id
+            );
+
+            Next::Abort
+        }
+        (_, Some(version), Some(default)) if version != &default.to_string() => {
+            warn!(
+                "supplied version '{}' for port '{}' on chain '{}' does not match expected version '{}'",
+                version, port_id, chain_id, default
+            );
+
+            Next::Continue
+        }
+        _ => Next::Continue,
     }
 }

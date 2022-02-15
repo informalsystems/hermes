@@ -89,6 +89,10 @@ define_error! {
             [ Error ]
             |e| { format_args!("failed during a query for the app version to chain id {0}", e.chain_id) },
 
+        AppVersionQueryUnsupported
+            { chain_id: ChainId }
+            |e| { format_args!("chain '{}' does not expose the AppVersion gRPC endpoint", e.chain_id) },
+
         QueryChannel
             { channel_id: ChannelId }
             [ SupervisorError ]

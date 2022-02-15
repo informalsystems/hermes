@@ -1428,6 +1428,7 @@ dependencies = [
  "prost",
  "prost-types",
  "regex",
+ "semver",
  "serde",
  "serde_derive",
  "serde_json",
