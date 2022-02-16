@@ -22,7 +22,7 @@ pub(crate) fn process(
 
     // Validate that the channel end is in a state where it can be closed.
     if channel_end.state_matches(&State::Closed) {
-        return Err(Error::channel_closed(msg.channel_id));
+        return Err(Error::channel_closed(msg.channel_id.clone()));
     }
 
     // Channel capabilities
@@ -88,7 +88,7 @@ pub(crate) fn process(
     };
 
     let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id),
+        channel_id: Some(msg.channel_id.clone()),
         ..Default::default()
     };
     output.emit(IbcEvent::CloseConfirmChannel(event_attributes.into()));
