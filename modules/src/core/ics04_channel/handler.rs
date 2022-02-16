@@ -157,6 +157,39 @@ where
     Ok(())
 }
 
+pub fn packet_validate<Ctx>(ctx: &Ctx, msg: &PacketMsg) -> Result<ModuleId, Error>
+where
+    Ctx: Ics26Context,
+{
+    let module_id = match msg {
+        PacketMsg::RecvPacket(msg) => {
+            ctx.lookup_module_by_channel(
+                &msg.packet.destination_channel,
+                &msg.packet.destination_port,
+            )?
+            .0
+        }
+        PacketMsg::AckPacket(msg) => {
+            ctx.lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)?
+                .0
+        }
+        PacketMsg::ToPacket(msg) => {
+            ctx.lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)?
+                .0
+        }
+        PacketMsg::ToClosePacket(msg) => {
+            ctx.lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)?
+                .0
+        }
+    };
+
+    if ctx.router().has_route(&module_id) {
+        Ok(module_id)
+    } else {
+        Err(Error::route_not_found())
+    }
+}
+
 /// Dispatcher for processing any type of message related to the ICS4 packet protocols.
 pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: PacketMsg) -> Result<HandlerOutput<PacketResult>, Error>
 where
