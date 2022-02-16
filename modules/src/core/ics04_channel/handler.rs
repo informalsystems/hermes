@@ -191,7 +191,10 @@ where
 }
 
 /// Dispatcher for processing any type of message related to the ICS4 packet protocols.
-pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: PacketMsg) -> Result<HandlerOutput<PacketResult>, Error>
+pub fn packet_dispatch<Ctx>(
+    ctx: &Ctx,
+    msg: &PacketMsg,
+) -> Result<HandlerOutput<PacketResult>, Error>
 where
     Ctx: ChannelReader,
 {
