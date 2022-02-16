@@ -108,7 +108,7 @@ impl BinaryChannelTest for OrderedChannelTest {
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.as_ref(),
-            amount1 + amount2,
+            amount2,
             &denom_b.as_ref(),
         )?;
 
