@@ -99,7 +99,7 @@ pub trait PortsOverride {
 
 /**
    A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
-   into a test case the implements [`BinaryConnectionTest`].
+   into a test case the implements [`BinaryChainTest`].
 */
 pub struct RunBinaryChannelTest<'a, Test> {
     /// Inner test
