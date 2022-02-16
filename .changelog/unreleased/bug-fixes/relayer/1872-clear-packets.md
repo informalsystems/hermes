@@ -1,0 +1,1 @@
+- Fixed clear_on_start bug ([#1872](https://github.com/informalsystems/ibc-rs/issues/1872))
