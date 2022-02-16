@@ -17,6 +17,7 @@ use crate::core::ics26_routing::context::ModuleId;
 use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
+use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
 
 use super::packet::{PacketResult, Sequence};
 
@@ -172,6 +173,10 @@ pub trait ChannelKeeper {
                 )?;
             }
             PacketResult::Recv(res) => {
+                let res = match res {
+                    RecvPacketResult::Success(res) => res,
+                    RecvPacketResult::NoOp => unreachable!(),
+                };
                 match res.receipt {
                     None => {
                         // Ordered channel

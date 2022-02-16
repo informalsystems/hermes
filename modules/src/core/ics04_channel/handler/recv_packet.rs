@@ -13,12 +13,18 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
-pub struct RecvPacketResult {
+pub struct RecvPacketSuccess {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub seq: Sequence,
     pub seq_number: Sequence,
     pub receipt: Option<Receipt>,
+}
+
+#[derive(Clone, Debug)]
+pub enum RecvPacketResult {
+    Success(RecvPacketSuccess),
+    NoOp,
 }
 
 pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
@@ -92,7 +98,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
                 height: Height::zero(),
                 packet: msg.packet.clone(),
             }));
-            return Err(Error::packet_already_received(packet.sequence));
+            return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
         } else if packet.sequence != next_seq_recv {
             return Err(Error::invalid_packet_sequence(
                 packet.sequence,
@@ -100,13 +106,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
             ));
         }
 
-        PacketResult::Recv(RecvPacketResult {
+        PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
             port_id: packet.source_port.clone(),
             channel_id: packet.source_channel.clone(),
             seq: packet.sequence,
             seq_number: next_seq_recv.increment(),
             receipt: None,
-        })
+        }))
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
             packet.source_port.clone(),
@@ -120,17 +126,17 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
                     height: Height::zero(),
                     packet: msg.packet.clone(),
                 }));
-                return Err(Error::packet_already_received(packet.sequence));
+                return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
             }
             Err(e) if e.detail() == Error::packet_receipt_not_found(packet.sequence).detail() => {
                 // store a receipt that does not contain any data
-                PacketResult::Recv(RecvPacketResult {
+                PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
                     port_id: packet.source_port.clone(),
                     channel_id: packet.source_channel.clone(),
                     seq: packet.sequence,
                     seq_number: 1.into(),
                     receipt: Some(Receipt::Ok),
-                })
+                }))
             }
             Err(_) => return Err(Error::implementation_specific()),
         }
