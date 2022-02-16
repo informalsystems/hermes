@@ -119,7 +119,7 @@ where
             let ctx_ro: &Ctx = ctx;
             let _module_id = ics4_packet_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
             let handler_output =
-                ics4_packet_msg_dispatcher(ctx_ro, msg).map_err(Error::ics04_channel)?;
+                ics4_packet_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
