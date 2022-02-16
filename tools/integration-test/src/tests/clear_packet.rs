@@ -5,21 +5,20 @@ use crate::prelude::*;
 use crate::util::random::random_u64_range;
 
 #[test]
-fn test_ordered_channel() -> Result<(), Error> {
-    run_binary_channel_test(&OrderedChannelTest)
+fn test_clear_packet() -> Result<(), Error> {
+    run_binary_channel_test(&ClearPacketTest)
 }
-pub struct OrderedChannelTest;
+pub struct ClearPacketTest;
 
-impl TestOverrides for OrderedChannelTest {
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
+impl TestOverrides for ClearPacketTest {
     fn modify_relayer_config(&self, config: &mut Config) {
+        // Disabling clear_on_start should make the relayer not
+        // relay any packet it missed before starting.
         config.mode.packets.clear_on_start = false;
         config.mode.packets.clear_interval = 0;
     }
 
+    // Do not start supervisor at the beginning of test
     fn spawn_supervisor(
         &self,
         _config: &SharedConfig,
@@ -29,7 +28,7 @@ impl TestOverrides for OrderedChannelTest {
     }
 }
 
-impl BinaryChannelTest for OrderedChannelTest {
+impl BinaryChannelTest for ClearPacketTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
@@ -62,8 +61,9 @@ impl BinaryChannelTest for OrderedChannelTest {
             &denom_a,
         )?;
 
-        sleep(Duration::from_secs(2));
+        sleep(Duration::from_secs(1));
 
+        // Spawn the supervisor only after the first IBC trasnfer
         let _supervisor = spawn_supervisor(
             chains.config.clone(),
             chains.registry.clone(),
@@ -74,7 +74,7 @@ impl BinaryChannelTest for OrderedChannelTest {
             },
         )?;
 
-        sleep(Duration::from_secs(2));
+        sleep(Duration::from_secs(1));
 
         let amount2 = random_u64_range(1000, 5000);
 
@@ -92,7 +92,7 @@ impl BinaryChannelTest for OrderedChannelTest {
             &denom_a,
         )?;
 
-        sleep(Duration::from_secs(2));
+        sleep(Duration::from_secs(1));
 
         let denom_b = derive_ibc_denom(
             &channel.port_b.as_ref(),
@@ -100,12 +100,14 @@ impl BinaryChannelTest for OrderedChannelTest {
             &denom_a,
         )?;
 
+        // Wallet on chain A should have both amount deducted.
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a.as_ref(),
             balance_a - amount1 - amount2,
             &denom_a,
         )?;
 
+        // Wallet on chain B should only receive the second IBC transfer
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.as_ref(),
             amount2,
