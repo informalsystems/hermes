@@ -7,13 +7,14 @@ use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
     channel_callback as ics4_callback, channel_dispatch as ics4_msg_dispatcher,
-    channel_validate as ics4_validate,
+    channel_validate as ics4_validate, recv_packet::RecvPacketResult,
 };
 use crate::core::ics04_channel::handler::{
     packet_dispatch as ics4_packet_msg_dispatcher, packet_validate as ics4_packet_validate,
 };
 use crate::core::ics26_routing::context::Ics26Context;
 use crate::core::ics26_routing::error::Error;
+use crate::core::ics04_channel::packet::PacketResult;
 use crate::core::ics26_routing::msgs::Ics26Envelope::{
     self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4ChannelMsg, Ics4PacketMsg,
 };
@@ -120,6 +121,13 @@ where
             let _module_id = ics4_packet_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
             let handler_output =
                 ics4_packet_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
+
+            if matches!(handler_output.result, PacketResult::Recv(RecvPacketResult::NoOp)) {
+                return Ok(HandlerOutput::builder()
+                    .with_log(handler_output.log)
+                    .with_events(handler_output.events)
+                    .with_result(()));
+            }
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
