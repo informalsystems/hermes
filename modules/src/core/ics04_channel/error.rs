@@ -92,13 +92,6 @@ define_error! {
         MissingPacket
             | _ | { "there is no packet in this message" },
 
-        PacketAlreadyReceived
-            { sequence: Sequence }
-            | e | {
-                format_args!(
-                    "Packet with the sequence number {0} has been already received",
-                    e.sequence)
-            },
         MissingChannelId
             | _ | { "missing channel id" },
 
