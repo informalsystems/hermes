@@ -24,7 +24,6 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
-use crate::channel::version::ResolveContext;
 use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
@@ -718,9 +717,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
         let version = match self.dst_version() {
-            Some(version) => Ok(version.clone()),
-            None => version::resolve(ResolveContext::ChanOpenInit, self),
-        }?;
+            // If the user supplied a version, use that
+            Some(version) => version.clone(),
+            // Otherwise, either use the version defined for the given port if ICS 20 or 27,
+            // or an empty version if the port is non-standard
+            None => version::default_by_port(self.dst_port_id()).unwrap_or_default(),
+        };
 
         let channel = ChannelEnd::new(
             State::Init,
@@ -871,8 +873,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
         // Negotiate the version or fallback on the source channel version
-        let version = version::resolve(ResolveContext::ChanOpenTry, self)
-            .unwrap_or_else(|_| src_channel.version.clone());
+        let version = version::resolve(self).unwrap_or_else(|_| src_channel.version.clone());
 
         let channel = ChannelEnd::new(
             State::TryOpen,

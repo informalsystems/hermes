@@ -20,76 +20,49 @@ use crate::{
     error::Error,
 };
 
-/// Defines the context in which to resolve a channel version.
-///
-/// This context distinguishes between different steps of
-/// the channel open handshake protocol. Currently, we only
-/// need to distinguish between the OpenInit & Open Try steps.
-#[derive(Debug)]
-pub enum ResolveContext {
-    ChanOpenInit,
-    ChanOpenTry,
-}
-
-/// Resolves the [`Version`] to use during a channel
-/// open handshake.
-///
-/// The channel version depends on the exact channel
-/// handshake step [`ResolveContext`], as well as
-/// on the current state of the channel.
+/// Resolves the [`Version`] to use during a channel open try step of the handshake.
 pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
-    ctx: ResolveContext,
     channel: &Channel<ChainA, ChainB>,
 ) -> Result<Version, ChannelError> {
     let port_id = channel.dst_port_id();
 
-    match ctx {
-        ResolveContext::ChanOpenInit => {
-            // When the channel is uninitialized, the relayer will use the
-            // default channel version, depending on the port id.
-            default_by_port(port_id)
-        }
-        ResolveContext::ChanOpenTry => {
-            // Resolve the version by querying the application version on destination chain
-            let dst_chain_id = channel.dst_chain().id();
+    // Resolve the version by querying the application version on destination chain
+    let dst_chain_id = channel.dst_chain().id();
 
-            debug!(
-                chain = %dst_chain_id,
-                port = %port_id,
-                ctx = ?ctx,
-                "resolving channel version by retrieving destination chain app version"
-            );
+    debug!(
+        chain = %dst_chain_id,
+        port = %port_id,
+        "resolving channel version by retrieving destination chain app version"
+    );
 
-            // Note the compatibility logic below:
-            // The destination chain may or may not implement `QueryAppVersionRequest`,
-            // which is only available from ibc-go v2.0.0 or newer versions.
-            // We detect if it is implemented by calling `is_unimplemented_port_query`.
-            // If unimplemented, we can recover by simply using the default version.
-            // This ensures compatibility with ibc-go v2.0.0+ and pre-v2.0.0.
-            match dst_app_version(channel) {
-                Ok(v) => Ok(v),
-                Err(e) => {
-                    if let ErrorDetail::GrpcStatus(s) = e.detail() {
-                        if s.is_unimplemented_port_query() {
-                            // Ensure compatibility & recover from the error, by using either the source version.
-                            debug!(
-                                chain = %dst_chain_id,
-                                "resorting to source version because destination chain does not expose the AppVersion gRPC endpoint"
-                            );
+    // Note the compatibility logic below:
+    // The destination chain may or may not implement `QueryAppVersionRequest`,
+    // which is only available from ibc-go v2.0.0 or newer versions.
+    // We detect if it is implemented by calling `is_unimplemented_port_query`.
+    // If unimplemented, we can recover by simply using the default version.
+    // This ensures compatibility with ibc-go v2.0.0+ and pre-v2.0.0.
+    match dst_app_version(channel) {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            if let ErrorDetail::GrpcStatus(s) = e.detail() {
+                if s.is_unimplemented_port_query() {
+                    // Ensure compatibility & recover from the error, by using either the source version.
+                    debug!(
+                        chain = %dst_chain_id,
+                        "resorting to source version because destination chain does not expose the AppVersion gRPC endpoint"
+                    );
 
-                            return channel.src_version().cloned().ok_or_else(|| {
-                                ChannelError::missing_source_version(
-                                    channel.src_chain().id(),
-                                    channel.src_channel_id().cloned(),
-                                )
-                            });
-                        }
-                    }
-
-                    // Propagate the error, this is not a recoverable problem.
-                    Err(ChannelError::query_app_version(channel.dst_chain().id(), e))
+                    return channel.src_version().cloned().ok_or_else(|| {
+                        ChannelError::missing_source_version(
+                            channel.src_chain().id(),
+                            channel.src_channel_id().cloned(),
+                        )
+                    });
                 }
             }
+
+            // Propagate the error, this is not a recoverable problem.
+            Err(ChannelError::query_app_version(channel.dst_chain().id(), e))
         }
     }
 }
