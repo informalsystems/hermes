@@ -167,7 +167,7 @@ mod tests {
     };
 
     use crate::core::ics24_host::identifier::ConnectionId;
-    use crate::core::ics26_routing::context::{RouterBuilder, ModuleId};
+    use crate::core::ics26_routing::context::{ModuleId, RouterBuilder};
     use crate::core::ics26_routing::handler::dispatch;
     use crate::core::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
