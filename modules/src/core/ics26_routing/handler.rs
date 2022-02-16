@@ -83,9 +83,9 @@ where
         Ics4ChannelMsg(msg) => {
             let ctx_ro: &Ctx = ctx;
             let module_id = ics4_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
-            let handler_output = ics4_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
+            let mut handler_output = ics4_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
 
-            ics4_callback(ctx, &module_id, &msg, &handler_output).map_err(Error::ics04_channel)?;
+            ics4_callback(ctx, &module_id, &msg, &mut handler_output).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_channel_result(handler_output.result)
