@@ -42,26 +42,6 @@ impl MsgChannelOpenAck {
             signer,
         }
     }
-
-    /// Getter: borrow the `port_id` from this message.
-    pub fn port_id(&self) -> &PortId {
-        &self.port_id
-    }
-    pub fn channel_id(&self) -> &ChannelId {
-        &self.channel_id
-    }
-
-    pub fn counterparty_channel_id(&self) -> &ChannelId {
-        &self.counterparty_channel_id
-    }
-
-    pub fn counterparty_version(&self) -> &Version {
-        &self.counterparty_version
-    }
-
-    pub fn proofs(&self) -> &Proofs {
-        &self.proofs
-    }
 }
 
 impl Msg for MsgChannelOpenAck {

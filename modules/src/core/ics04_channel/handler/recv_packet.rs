@@ -77,7 +77,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     verify_packet_recv_proofs(
         ctx,
-        msg.proofs().height(),
+        msg.proofs.height(),
         packet,
         &connection_end,
         &msg.proofs,

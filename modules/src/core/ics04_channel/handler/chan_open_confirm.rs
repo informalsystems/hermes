@@ -18,18 +18,18 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end and validate it against the message.
-    let mut channel_end = ctx.channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))?;
+    let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id.clone()))?;
 
     // Validate that the channel end is in a state where it can be confirmed.
     if !channel_end.state_matches(&State::TryOpen) {
         return Err(Error::invalid_channel_state(
-            msg.channel_id().clone(),
+            msg.channel_id,
             channel_end.state,
         ));
     }
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
+    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
 
     // An OPEN IBC connection running on the local (host) chain should exist.
     if channel_end.connection_hops().len() != 1 {
@@ -51,7 +51,7 @@ pub(crate) fn process(
     // 1. Setup: build the Channel as we expect to find it on the other party.
 
     let expected_counterparty =
-        Counterparty::new(msg.port_id().clone(), Some(msg.channel_id().clone()));
+        Counterparty::new(msg.port_id.clone(), Some(msg.channel_id.clone()));
 
     let connection_counterparty = conn.counterparty();
     let ccid = connection_counterparty.connection_id().ok_or_else(|| {
@@ -70,11 +70,11 @@ pub(crate) fn process(
     //2. Verify proofs
     verify_channel_proofs(
         ctx,
-        msg.proofs().height(),
+        msg.proofs.height(),
         &channel_end,
         &conn,
         &expected_channel_end,
-        msg.proofs(),
+        &msg.proofs,
     )
     .map_err(Error::chan_open_confirm_proof_verification)?;
 
@@ -84,15 +84,15 @@ pub(crate) fn process(
     channel_end.set_state(State::Open);
 
     let result = ChannelResult {
-        port_id: msg.port_id().clone(),
-        channel_id: msg.channel_id().clone(),
+        port_id: msg.port_id.clone(),
+        channel_id: msg.channel_id.clone(),
         channel_id_state: ChannelIdState::Reused,
         channel_cap,
         channel_end,
     };
 
     let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id().clone()),
+        channel_id: Some(msg.channel_id),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenConfirmChannel(event_attributes.into()));
@@ -157,8 +157,8 @@ mod tests {
             State::TryOpen,
             Order::default(),
             Counterparty::new(
-                msg_chan_confirm.port_id().clone(),
-                Some(msg_chan_confirm.channel_id().clone()),
+                msg_chan_confirm.port_id.clone(),
+                Some(msg_chan_confirm.channel_id.clone()),
             ),
             vec![conn_id.clone()],
             Version::default(),
@@ -169,10 +169,10 @@ mod tests {
             ctx: context
                 .with_client(&client_id, Height::new(0, client_consensus_state_height))
                 .with_connection(conn_id, conn_end)
-                .with_port_capability(msg_chan_confirm.port_id().clone())
+                .with_port_capability(msg_chan_confirm.port_id.clone())
                 .with_channel(
-                    msg_chan_confirm.port_id().clone(),
-                    msg_chan_confirm.channel_id().clone(),
+                    msg_chan_confirm.port_id.clone(),
+                    msg_chan_confirm.channel_id.clone(),
                     chan_end,
                 ),
             msg: ChannelMsg::ChannelOpenConfirm(msg_chan_confirm),

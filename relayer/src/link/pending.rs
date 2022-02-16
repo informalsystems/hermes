@@ -1,9 +1,8 @@
-use core::fmt;
 use core::iter::Iterator;
 use core::time::Duration;
 use std::time::Instant;
 
-use tracing::{debug, error, trace};
+use tracing::{debug, error, trace, trace_span};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
@@ -80,9 +79,19 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 // transactions have been confirmed.
                 // This is not ideal, but is just to follow the previous synchronous
                 // behavior of handling the OperationalData.
+
+                let span = trace_span!(
+                    "inserting new pending txs",
+                    chain = %self.chain_id(),
+                    counterparty_chain = %self.counterparty_chain_id,
+                    port = %self.port_id,
+                    channel = %self.channel_id,
+                );
+
+                let _guard = span.enter();
+
                 trace!(
-                    "[{}] putting error response in error event queue: {:?} ",
-                    self,
+                    "putting error response in error event queue: {:?} ",
                     response
                 );
 
@@ -124,7 +133,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         Ok(Some(all_events))
     }
 
-    // Try and process one pending transaction if available.
+    /// Try and process one pending transaction if available.
     pub fn process_pending(
         &self,
         timeout: Duration,
@@ -140,8 +149,18 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 return Ok(Some(RelaySummary::from_events(pending.error_events)));
             }
 
+            let span = trace_span!(
+                "processing pending tx",
+                chain = %self.chain_id(),
+                counterparty_chain = %self.counterparty_chain_id,
+                port = %self.port_id,
+                channel = %self.channel_id,
+            );
+
+            let _guard = span.enter();
+
             // Process the given pending transaction.
-            trace!("[{}] trying to confirm {} ", self, tx_hashes);
+            trace!("trying to confirm {} ", tx_hashes);
 
             // Check for TX events for the given pending transaction hashes.
             let events_result = self.check_tx_events(tx_hashes);
@@ -150,17 +169,13 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                     // There is no events for the associated transactions.
                     // This means the transaction has not yet been committed.
 
-                    trace!(
-                        "[{}] transaction is not yet committed: {} ",
-                        self,
-                        tx_hashes
-                    );
+                    trace!("transaction is not yet committed: {} ", tx_hashes);
 
                     if submit_time.elapsed() > timeout {
                         // The submission time for the transaction has exceeded the
                         // timeout threshold. Returning Outcome::Timeout for the
                         // relayer to resubmit the transaction to the chain again.
-                        error!("[{}] timed out while confirming {}", self, tx_hashes);
+                        error!("timed out while confirming {}", tx_hashes);
 
                         let resubmit_res = resubmit(pending.original_od.clone());
 
@@ -188,8 +203,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                     // to the chain.
 
                     debug!(
-                        "[{}] confirmed after {:#?}: {} ",
-                        self,
+                        "confirmed after {:#?}: {} ",
                         pending.submit_time.elapsed(),
                         tx_hashes
                     );
@@ -206,8 +220,8 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                     // with the chain endpoint.
 
                     error!(
-                        "[{}] error querying for tx hashes {}: {}. will retry again later",
-                        self, tx_hashes, e
+                        "error querying for tx hashes {}: {}. will retry again later",
+                        tx_hashes, e
                     );
 
                     // Push it to the back of the pending queue to process it
@@ -220,8 +234,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
             if !self.pending_queue.is_empty() {
                 trace!(
-                    "[{}] total pending transactions left: {}",
-                    self,
+                    "total pending transactions left: {}",
                     self.pending_queue.len()
                 );
             }
@@ -230,18 +243,5 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         } else {
             Ok(None)
         }
-    }
-}
-
-impl<Chain: ChainHandle> fmt::Display for PendingTxs<Chain> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:{}/{} -> {}",
-            self.chain_id(),
-            self.port_id,
-            self.channel_id,
-            self.counterparty_chain_id
-        )
     }
 }
