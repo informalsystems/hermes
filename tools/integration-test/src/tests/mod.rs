@@ -7,6 +7,7 @@
 
 pub mod client_expiration;
 pub mod memo;
+pub mod ordered_channel;
 pub mod supervisor;
 pub mod transfer;
 
