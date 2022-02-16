@@ -5,10 +5,12 @@ use prost_types::Any;
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
-use crate::core::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
     channel_callback as ics4_callback, channel_dispatch as ics4_msg_dispatcher,
     channel_validate as ics4_validate,
+};
+use crate::core::ics04_channel::handler::{
+    packet_dispatch as ics4_packet_msg_dispatcher, packet_validate as ics4_packet_validate,
 };
 use crate::core::ics26_routing::context::Ics26Context;
 use crate::core::ics26_routing::error::Error;
@@ -83,9 +85,11 @@ where
         Ics4ChannelMsg(msg) => {
             let ctx_ro: &Ctx = ctx;
             let module_id = ics4_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
-            let mut handler_output = ics4_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
+            let mut handler_output =
+                ics4_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
 
-            ics4_callback(ctx, &module_id, &msg, &mut handler_output).map_err(Error::ics04_channel)?;
+            ics4_callback(ctx, &module_id, &msg, &mut handler_output)
+                .map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_channel_result(handler_output.result)
@@ -112,8 +116,10 @@ where
         }
 
         Ics4PacketMsg(msg) => {
+            let ctx_ro: &Ctx = ctx;
+            let _module_id = ics4_packet_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
             let handler_output =
-                ics04_packet_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
+                ics4_packet_msg_dispatcher(ctx_ro, msg).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
