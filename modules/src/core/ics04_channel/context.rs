@@ -8,6 +8,7 @@ use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::{error::Error, packet::Receipt};
 use crate::core::ics05_port::capabilities::ChannelCapability;
@@ -17,7 +18,6 @@ use crate::core::ics26_routing::context::ModuleId;
 use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
 
 use super::packet::{PacketResult, Sequence};
 
