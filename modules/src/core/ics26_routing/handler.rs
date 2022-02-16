@@ -81,9 +81,9 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
-            let module_id = ics4_validate(ctx, &msg).map_err(Error::ics04_channel)?;
-
-            let handler_output = ics4_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
+            let ctx_ro: &Ctx = ctx;
+            let module_id = ics4_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
+            let handler_output = ics4_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
 
             ics4_callback(ctx, &module_id, &msg, &handler_output).map_err(Error::ics04_channel)?;
 
@@ -167,12 +167,13 @@ mod tests {
     };
 
     use crate::core::ics24_host::identifier::ConnectionId;
+    use crate::core::ics26_routing::context::{RouterBuilder, ModuleId};
     use crate::core::ics26_routing::handler::dispatch;
     use crate::core::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
-    use crate::mock::context::MockContext;
+    use crate::mock::context::{MockContext, MockRouterBuilder};
     use crate::mock::header::MockHeader;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::{get_dummy_account_id, DummyModule};
     use crate::timestamp::Timestamp;
     use crate::Height;
 
@@ -200,8 +201,16 @@ mod tests {
 
         let upgrade_client_height_second = Height::new(1, 1);
 
+        let module = DummyModule::default();
+        let module_id: ModuleId = "dummymodule".parse().unwrap();
+
+        let router = MockRouterBuilder::default()
+            .add_route(module_id.clone(), module)
+            .unwrap()
+            .build();
+
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
-        let mut ctx = MockContext::default();
+        let mut ctx = MockContext::default().with_router(router);
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
@@ -283,7 +292,7 @@ mod tests {
             res
         );
 
-        ctx.add_port(msg_chan_init.port_id.clone());
+        ctx.scope_port_to_module(msg_chan_init.port_id.clone(), module_id);
 
         // Figure out the ID of the client that was just created.
         let mut events = res.unwrap().events;

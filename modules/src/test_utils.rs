@@ -3,6 +3,13 @@
 use crate::prelude::*;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
+use crate::core::ics04_channel::channel::{Counterparty, Order};
+use crate::core::ics04_channel::error::Error;
+use crate::core::ics04_channel::packet::Packet;
+use crate::core::ics04_channel::Version;
+use crate::core::ics05_port::capabilities::ChannelCapability;
+use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::core::ics26_routing::context::{Acknowledgement, DeferredWriteResult, Module};
 use crate::signer::Signer;
 
 // Needed in mocks.
@@ -37,4 +44,45 @@ pub fn get_dummy_account_id() -> Signer {
 
 pub fn get_dummy_bech32_account() -> String {
     "cosmos1wxeyh7zgn4tctjzs0vtqpc6p5cxq5t2muzl7ng".to_string()
+}
+
+#[derive(Default)]
+struct DummyAck(Vec<u8>);
+
+impl AsRef<[u8]> for DummyAck {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_slice()
+    }
+}
+
+impl Acknowledgement for DummyAck {
+    fn success(&self) -> bool {
+        true
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct DummyModule;
+
+impl Module for DummyModule {
+    fn on_chan_open_try(
+        &mut self,
+        _order: Order,
+        _connection_hops: &[ConnectionId],
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _channel_cap: &ChannelCapability,
+        _counterparty: &Counterparty,
+        counterparty_version: &Version,
+    ) -> Result<Version, Error> {
+        Ok(counterparty_version.clone())
+    }
+
+    fn on_recv_packet(
+        &self,
+        _packet: &Packet,
+        _relayer: &Signer,
+    ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
+        Ok((Box::new(DummyAck::default()), None))
+    }
 }
