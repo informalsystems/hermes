@@ -111,7 +111,7 @@ pub struct MockContext {
     packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     /// Maps ports to their capabilities
-    port_capabilities: BTreeMap<PortId, PortCapability>,
+    port_capabilities: BTreeMap<PortId, (ModuleId, PortCapability)>,
 
     /// Constant-size commitments to packets data fields
     packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
@@ -353,8 +353,7 @@ impl MockContext {
     }
 
     pub fn with_port_capability(mut self, port_id: PortId) -> Self {
-        self.port_capabilities
-            .insert(port_id, Capability::new().into());
+        self.add_port(port_id);
         self
     }
 
@@ -526,8 +525,14 @@ impl MockContext {
     }
 
     pub fn add_port(&mut self, port_id: PortId) {
+        let module_id = ModuleId::new(format!("module{}", port_id).into()).unwrap();
         self.port_capabilities
-            .insert(port_id, Capability::new().into());
+            .insert(port_id, (module_id, Capability::new().into()));
+    }
+
+    pub fn scope_port_to_module(&mut self, port_id: PortId, module_id: ModuleId) {
+        self.port_capabilities
+            .insert(port_id, (module_id, Capability::new().into()));
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
@@ -627,7 +632,7 @@ impl CapabilityReader for MockContext {
 impl PortReader for MockContext {
     fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, PortCapability), Error> {
         match self.port_capabilities.get(port_id) {
-            Some(mod_cap) => Ok((ModuleId::new("foomodule".into()).unwrap(), mod_cap.clone())),
+            Some((mod_id, mod_cap)) => Ok((mod_id.clone(), mod_cap.clone())),
             None => Err(Ics05Error::unknown_port(port_id.clone())),
         }
     }
@@ -816,9 +821,12 @@ impl ChannelReader for MockContext {
     fn lookup_module_by_channel(
         &self,
         _channel_id: &ChannelId,
-        _port_id: &PortId,
+        port_id: &PortId,
     ) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-        todo!()
+        // FIXME(hu55a1n1): add separate map for channel capabilities
+        self.lookup_module_by_port(port_id)
+            .map(|(mid, pcap)| (mid, ChannelCapability::from(Capability::from(pcap))))
+            .map_err(Ics04Error::ics05_port)
     }
 }
 
