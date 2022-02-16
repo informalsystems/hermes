@@ -52,7 +52,13 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
         ResolveContext::ChanOpenTry => {
             // Resolve the version by querying the application version on destination chain
             let dst_chain_id = channel.dst_chain().id();
-            debug!(chain_id = %dst_chain_id, port_id = %port_id, ctx = ?ctx, "resolving channel version by retrieving destination chain app version");
+
+            debug!(
+                chain = %dst_chain_id,
+                port = %port_id,
+                ctx = ?ctx,
+                "resolving channel version by retrieving destination chain app version"
+            );
 
             // Note the compatibility logic below:
             // The destination chain may or may not implement `QueryAppVersionRequest`,
@@ -65,14 +71,23 @@ pub fn resolve<ChainA: ChainHandle, ChainB: ChainHandle>(
                 Err(e) => {
                     if let ErrorDetail::GrpcStatus(s) = e.detail() {
                         if s.is_unimplemented_port_query() {
-                            // Ensure compatibility & recover from the error,
-                            // by using the default version.
-                            debug!(chain_id = %dst_chain_id, "resorting to default version because destination chain does not expose app version gRPC endpoint");
-                            return default_by_port(port_id);
+                            // Ensure compatibility & recover from the error, by using either the source version.
+                            debug!(
+                                chain = %dst_chain_id,
+                                "resorting to source version because destination chain does not expose the AppVersion gRPC endpoint"
+                            );
+
+                            return channel.src_version().cloned().ok_or_else(|| {
+                                ChannelError::missing_source_version(
+                                    channel.src_chain().id(),
+                                    channel.src_channel_id().cloned(),
+                                )
+                            });
                         }
                     }
+
                     // Propagate the error, this is not a recoverable problem.
-                    Err(e).map_err(|e| ChannelError::query_app_version(channel.dst_chain().id(), e))
+                    Err(ChannelError::query_app_version(channel.dst_chain().id(), e))
                 }
             }
         }

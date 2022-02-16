@@ -49,6 +49,16 @@ define_error! {
         MissingChannelOnDestination
             |_| { "missing channel on destination chain" },
 
+        MissingSourceVersion
+            {
+                src_chain_id: ChainId,
+                src_channel_id: Option<ChannelId>,
+            }
+            |e| {
+                format_args!("missing source version for channel {:?} on chain '{}'",
+                    e.src_channel_id, e.src_chain_id)
+            },
+
         ChannelProof
             [ Error ]
             |_| { "failed to build channel proofs" },
