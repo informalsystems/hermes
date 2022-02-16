@@ -1,15 +1,22 @@
+use ibc_relayer::config::{
+    Channels as ConfigChannels, Clients as ConfigClients, Connections as ConfigConnections,
+    ModeConfig, Packets as ConfigPackets,
+};
+use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
+use ibc_relayer::worker::client::spawn_refresh_client;
+
+use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::framework::binary::chain::run_self_connected_binary_chain_test;
-use crate::framework::binary::channel::RunBinaryChannelTest;
-use crate::ibc::denom::{derive_ibc_denom, Denom};
 use crate::prelude::*;
 use crate::types::tagged::mono::Tagged;
 
-use super::itf::InformalTrace;
-use super::state::{Action, ChainId, DenomId, State};
+use super::state::Action;
+
+use super::utils::{get_chain, parse_itf_from_json, wait_for_client_expiry, CLIENT_EXPIRY};
 
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
-    run_binary_channel_test(&IbcTransferMBT)
+    run_binary_chain_test(&IbcTransferMBT)
 }
 
 /**
@@ -18,98 +25,88 @@ fn test_ibc_transfer() -> Result<(), Error> {
 */
 #[test]
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
-    run_self_connected_binary_chain_test(&RunBinaryChannelTest::new(&IbcTransferMBT))
+    run_self_connected_binary_chain_test(&IbcTransferMBT)
 }
 
 pub struct IbcTransferMBT;
 
-impl TestOverrides for IbcTransferMBT {}
+impl TestOverrides for IbcTransferMBT {
+    fn modify_test_config(&self, config: &mut TestConfig) {
+        config.bootstrap_with_random_ids = false;
+    }
 
-fn get_chain<ChainA, ChainB, ChainC>(
-    chains: &ConnectedChains<ChainA, ChainB>,
-    chain_id: u64,
-) -> Tagged<ChainC, &FullNode>
-where
-    ChainA: ChainHandle,
-    ChainB: ChainHandle,
-    ChainC: ChainHandle,
-{
-    Tagged::new(match chain_id {
-        1 => chains.node_a.value(),
-        2 => chains.node_b.value(),
-        _ => unreachable!(),
-    })
-}
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode = ModeConfig {
+            clients: ConfigClients {
+                enabled: true,
+                refresh: true,
+                misbehaviour: true,
+            },
+            connections: ConfigConnections { enabled: true },
+            channels: ConfigChannels { enabled: true },
+            packets: ConfigPackets {
+                enabled: true,
+                clear_interval: 10,
+                clear_on_start: true,
+                tx_confirmation: true,
+            },
+        };
 
-fn get_wallet<'a, ChainC>(
-    wallets: &'a Tagged<ChainC, &TestWallets>,
-    user: u64,
-) -> Tagged<ChainC, &'a Wallet> {
-    match user {
-        1 => wallets.user1(),
-        2 => wallets.user2(),
-        _ => unreachable!(),
+        for mut chain_config in config.chains.iter_mut() {
+            chain_config.trusting_period = Some(CLIENT_EXPIRY);
+        }
+    }
+
+    fn spawn_supervisor(
+        &self,
+        _config: &SharedConfig,
+        _registry: &SharedRegistry<impl ChainHandle>,
+    ) -> Result<Option<SupervisorHandle>, Error> {
+        Ok(None)
     }
 }
 
-fn get_denom<'a, ChainC>(
-    chain: &'a Tagged<ChainC, &FullNode>,
-    denom: DenomId,
-) -> Tagged<ChainC, &'a Denom> {
-    match denom {
-        1 => chain.denom(),
-        2 => chain.denom(),
-        _ => unreachable!(),
-    }
-}
-
-fn get_port_channel_id<ChainA, ChainB, ChainC, ChainD>(
-    channel: &ConnectedChannel<ChainA, ChainB>,
-    chain_id: ChainId,
-) -> (
-    DualTagged<ChainC, ChainD, &PortId>,
-    DualTagged<ChainC, ChainD, &ChannelId>,
-)
-where
-    ChainA: ChainHandle,
-    ChainB: ChainHandle,
-    ChainC: ChainHandle,
-    ChainD: ChainHandle,
-{
-    let (port_id, channel_id) = match chain_id {
-        1 => {
-            let port_id = channel.port_a.value();
-            let channel_id = channel.channel_id_a.value();
-            (port_id, channel_id)
-        }
-        2 => {
-            let port_id = channel.port_b.value();
-            let channel_id = channel.channel_id_b.value();
-            (port_id, channel_id)
-        }
-        _ => unreachable!(),
-    };
-    (DualTagged::new(port_id), DualTagged::new(channel_id))
-}
-
-impl BinaryChannelTest for IbcTransferMBT {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+impl BinaryChainTest for IbcTransferMBT {
+    fn run<Chain1: ChainHandle, Chain2: ChainHandle>(
         &self,
         _config: &TestConfig,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
+        chains: ConnectedChains<Chain1, Chain2>,
     ) -> Result<(), Error> {
         let itf_path = concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/spec/example/counterexample.itf.json"
         );
 
-        let itf_json = std::fs::read_to_string(itf_path).expect("itf file does not exist. did you run `apalache check --inv=Invariant --run-dir=run main.tla` first?");
+        // bootstrapping connection before relayer is spawned
+        {
+            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        let trace: InformalTrace<State> =
-            serde_json::from_str(&itf_json).expect("deserialization error");
+            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        for state in trace.states {
+            bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?;
+        };
+
+        wait_for_client_expiry();
+
+        let mut channels = None;
+        let mut refresh_task_a = None;
+        let mut refresh_task_b = None;
+        // no connections and channel is created at this point
+
+        // relayer is spawned
+        let _supervisor = spawn_supervisor(
+            chains.config.clone(),
+            chains.registry.clone(),
+            None,
+            SupervisorOptions {
+                health_check: false,
+                force_full_scan: false,
+            },
+        )?;
+
+        for state in parse_itf_from_json(itf_path) {
             match state.action {
                 Action::Null => {
                     info!("[Init] Initial State");
@@ -121,120 +118,78 @@ impl BinaryChannelTest for IbcTransferMBT {
                     denom,
                     amount,
                 } => {
-                    let node: Tagged<ChainA, _> = get_chain(&chains, chain_id);
-                    let wallets = node.wallets();
+                    let node: Tagged<Chain1, _> = get_chain(&chains, chain_id);
+                    super::handlers::local_transfer_handler(node, source, target, denom, amount)?;
+                }
+                Action::CreateChannel { chains: chain_pair } => {
+                    assert_eq!(chain_pair.0.len(), 2);
+                    assert!(chain_pair.0.contains(&1));
+                    assert!(chain_pair.0.contains(&2));
 
-                    let source_wallet = get_wallet(&wallets, source);
-                    let target_wallet = get_wallet(&wallets, target);
-                    let denom = get_denom(&node, denom);
+                    let chain_handle_a = &chains.handle_a;
+                    let chain_handle_b = &chains.handle_b;
 
-                    node.chain_driver().local_transfer_token(
-                        &source_wallet.address(),
-                        &target_wallet.address(),
-                        amount,
-                        &denom,
+                    super::handlers::create_channel(
+                        chain_handle_a,
+                        chain_handle_b,
+                        &mut channels,
+                        &mut refresh_task_a,
+                        &mut refresh_task_b,
                     )?;
                 }
-                Action::CreateChannel { .. } => {
-                    info!("[CreateChannel] Channel is created beforehand")
-                }
-                Action::ExpireChannel { .. } => {
-                    info!("[ExpireChannel] Channel expiring is not supported")
+                Action::ExpireChannel { chains: chain_pair } => {
+                    assert_eq!(chain_pair.0.len(), 2);
+                    assert!(chain_pair.0.contains(&1));
+                    assert!(chain_pair.0.contains(&2));
+
+                    super::handlers::expire_channel(
+                        &mut channels,
+                        &mut refresh_task_a,
+                        &mut refresh_task_b,
+                    )?;
                 }
                 Action::IBCTransferSendPacket { packet } => {
-                    let node_source: Tagged<ChainA, _> =
+                    let node_source: Tagged<Chain1, _> =
                         get_chain(&chains, packet.channel.source.chain_id);
-                    let node_target: Tagged<ChainB, _> =
+                    let node_target: Tagged<Chain2, _> =
                         get_chain(&chains, packet.channel.target.chain_id);
 
-                    let wallets_source = node_source.wallets();
-                    let wallets_target = node_target.wallets();
-
-                    let wallet_source = get_wallet(&wallets_source, packet.from);
-                    let wallet_target = get_wallet(&wallets_target, packet.to);
-                    let denom_source = get_denom(&node_source, packet.denom);
-                    let amount_source_to_target = packet.amount;
-
-                    let (port_source, channel_id_source) =
-                        get_port_channel_id(&channel, packet.channel.source.chain_id);
-
-                    let balance_source = node_source
-                        .chain_driver()
-                        .query_balance(&wallet_source.address(), &denom_source)?;
-
-                    info!(
-                        "[IBCTransferSendPacket] Sending IBC transfer from chain {} to chain {} with amount of {} {}",
-                        node_source.chain_id(),
-                        node_target.chain_id(),
-                        amount_source_to_target,
-                        denom_source,
-                    );
-
-                    node_source.chain_driver().transfer_token(
-                        &port_source,
-                        &channel_id_source,
-                        &wallet_source.address(),
-                        &wallet_target.address(),
-                        amount_source_to_target,
-                        &denom_source,
-                    )?;
-
-                    node_source.chain_driver().assert_eventual_wallet_amount(
-                        &wallet_source,
-                        balance_source - amount_source_to_target,
-                        &denom_source,
+                    super::handlers::ibc_transfer_send_packet(
+                        node_source,
+                        node_target,
+                        &channels,
+                        &packet,
                     )?;
                 }
                 Action::IBCTransferReceivePacket { packet } => {
-                    let node_source: Tagged<ChainA, _> =
+                    let node_source: Tagged<Chain1, _> =
                         get_chain(&chains, packet.channel.source.chain_id);
-                    let node_target: Tagged<ChainB, _> =
+                    let node_target: Tagged<Chain2, _> =
                         get_chain(&chains, packet.channel.target.chain_id);
 
-                    let wallets_target = node_target.wallets();
-
-                    let wallet_target = get_wallet(&wallets_target, packet.to);
-                    let denom_source = get_denom(&node_source, packet.denom);
-                    let amount_source_to_target = packet.amount;
-
-                    let (port_target, channel_id_target) =
-                        get_port_channel_id(&channel, packet.channel.target.chain_id);
-
-                    let denom_target =
-                        derive_ibc_denom(&port_target, &channel_id_target, &denom_source)?;
-
-                    info!(
-                        "[IBCTransferReceivePacket] Waiting for user on chain {} to receive IBC transferred amount of {} {} (chain {}/{})",
-                        node_target.chain_id(), amount_source_to_target, denom_target, node_source.chain_id(), denom_source
-                    );
-
-                    node_target.chain_driver().assert_eventual_wallet_amount(
-                        &wallet_target,
-                        amount_source_to_target,
-                        &denom_target.as_ref(),
+                    super::handlers::ibc_transfer_receive_packet(
+                        node_source,
+                        node_target,
+                        &channels,
+                        &packet,
                     )?;
                 }
                 Action::IBCTransferAcknowledgePacket { packet } => {
-                    let node_source: Tagged<ChainA, _> =
+                    let node_source: Tagged<Chain1, _> =
                         get_chain(&chains, packet.channel.source.chain_id);
-                    let node_target: Tagged<ChainB, _> =
+                    let node_target: Tagged<Chain2, _> =
                         get_chain(&chains, packet.channel.target.chain_id);
 
-                    let denom_source = get_denom(&node_source, packet.denom);
-                    let amount_source_to_target = packet.amount;
-
-                    info!(
-                        "[IBCTransferAcknowledgePacket] Waiting for user on chain {} to confirm IBC transferred amount of {} {}",
-                        node_source.chain_id(), amount_source_to_target, denom_source
-                    );
-
-                    info!(
-                        "[IBCTransferAcknowledgePacket] Successfully performed IBC transfer from chain {} to chain {}",
-                        node_source.chain_id(),
-                        node_target.chain_id(),
-                    );
+                    super::handlers::ibc_transfer_acknowledge_packet(
+                        node_source,
+                        node_target,
+                        &channels,
+                        &packet,
+                    )?;
                 }
                 Action::IBCTransferTimeoutPacket { .. } => {
+                    // TODO: make sure channel is expired before sending the packet
+                    // TODO: the source account blance will be refunded
                     info!("[IBCTransferTimeoutPacket] Packet timeout is not supported")
                 }
             }

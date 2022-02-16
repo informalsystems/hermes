@@ -17,7 +17,7 @@ pub struct InformalTrace<S> {
 }
 
 #[derive(Debug, Serialize)]
-pub struct Map<K, V>(Vec<(K, V)>);
+pub struct Map<K, V>(pub Vec<(K, V)>);
 
 impl<'de, K, V> Deserialize<'de> for Map<K, V>
 where
@@ -39,7 +39,7 @@ where
 }
 
 #[derive(Debug, Serialize)]
-pub struct Set<E>(Vec<E>);
+pub struct Set<E>(pub Vec<E>);
 
 impl<'de, E> Deserialize<'de> for Set<E>
 where
