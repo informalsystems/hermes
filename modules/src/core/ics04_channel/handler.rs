@@ -50,29 +50,29 @@ where
 {
     let module_id = match msg {
         ChannelMsg::ChannelOpenInit(msg) => {
-            ctx.lookup_module_by_port(msg.port_id())
+            ctx.lookup_module_by_port(&msg.port_id)
                 .map_err(Error::ics05_port)?
                 .0
         }
         ChannelMsg::ChannelOpenTry(msg) => {
-            ctx.lookup_module_by_port(msg.port_id())
+            ctx.lookup_module_by_port(&msg.port_id)
                 .map_err(Error::ics05_port)?
                 .0
         }
         ChannelMsg::ChannelOpenAck(msg) => {
-            ctx.lookup_module_by_channel(msg.channel_id(), msg.port_id())?
+            ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
                 .0
         }
         ChannelMsg::ChannelOpenConfirm(msg) => {
-            ctx.lookup_module_by_channel(msg.channel_id(), msg.port_id())?
+            ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
                 .0
         }
         ChannelMsg::ChannelCloseInit(msg) => {
-            ctx.lookup_module_by_channel(msg.channel_id(), msg.port_id())?
+            ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
                 .0
         }
         ChannelMsg::ChannelCloseConfirm(msg) => {
-            ctx.lookup_module_by_channel(msg.channel_id(), msg.port_id())?
+            ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
                 .0
         }
     };
