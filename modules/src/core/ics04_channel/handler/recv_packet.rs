@@ -87,7 +87,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         let next_seq_recv = ctx
             .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
-        if packet.sequence != next_seq_recv {
+        if packet.sequence < next_seq_recv {
+            output.emit(IbcEvent::ReceivePacket(ReceivePacket {
+                height: Height::zero(),
+                packet: msg.packet.clone(),
+            }));
+            return Err(Error::packet_already_received(packet.sequence));
+        } else if packet.sequence != next_seq_recv {
             return Err(Error::invalid_packet_sequence(
                 packet.sequence,
                 next_seq_recv,
@@ -109,7 +115,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
 
         match packet_rec {
-            Ok(_receipt) => return Err(Error::packet_already_received(packet.sequence)),
+            Ok(_receipt) => {
+                output.emit(IbcEvent::ReceivePacket(ReceivePacket {
+                    height: Height::zero(),
+                    packet: msg.packet.clone(),
+                }));
+                return Err(Error::packet_already_received(packet.sequence));
+            }
             Err(e) if e.detail() == Error::packet_receipt_not_found(packet.sequence).detail() => {
                 // store a receipt that does not contain any data
                 PacketResult::Recv(RecvPacketResult {
