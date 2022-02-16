@@ -107,7 +107,7 @@ pub fn channel_callback<Ctx>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
     msg: &ChannelMsg,
-    handler_output: &HandlerOutput<ChannelResult>,
+    handler_output: &mut HandlerOutput<ChannelResult>,
 ) -> Result<(), Error>
 where
     Ctx: Ics26Context,
@@ -128,8 +128,7 @@ where
             &msg.channel.version,
         )?,
         ChannelMsg::ChannelOpenTry(msg) => {
-            // FIXME(hu55a1n1): Return selected version so it can be stored
-            let _ = cb.on_chan_open_try(
+            let version = cb.on_chan_open_try(
                 msg.channel.ordering,
                 &msg.channel.connection_hops,
                 &msg.port_id,
@@ -138,6 +137,7 @@ where
                 msg.channel.counterparty(),
                 &msg.counterparty_version,
             )?;
+            handler_output.result.channel_end.version = version;
         }
         ChannelMsg::ChannelOpenAck(msg) => cb.on_chan_open_ack(
             &msg.port_id,
