@@ -13,6 +13,7 @@ use crate::chain::ChainEndpoint;
 use crate::error::Error;
 
 use super::Verified;
+use ibc::timestamp::Timestamp;
 
 /// A light client serving a mock chain.
 pub struct LightClient {
@@ -28,7 +29,7 @@ impl LightClient {
 
     /// Returns a LightBlock at the requested height `h`.
     fn light_block(&self, h: Height) -> TmLightBlock {
-        HostBlock::generate_tm_block(self.chain_id.clone(), h.revision_height)
+        HostBlock::generate_tm_block(self.chain_id.clone(), h.revision_height, Timestamp::now())
     }
 }
 

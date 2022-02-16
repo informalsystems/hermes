@@ -137,7 +137,7 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     for i in 0..random_u64_range(1, 6) {
         debug!("creating new client id {} on chain {}", i + 1, chain_b.id());
-        foreign_client.build_create_client_and_send()?;
+        foreign_client.build_create_client_and_send(&Default::default())?;
     }
 
     Ok(())
@@ -159,7 +159,7 @@ pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     let foreign_client =
         ForeignClient::restore(ClientId::default(), chain_b.clone(), chain_a.clone());
 
-    let event = foreign_client.build_create_client_and_send()?;
+    let event = foreign_client.build_create_client_and_send(&Default::default())?;
     let client_id = extract_client_id(&event)?.clone();
 
     info!(

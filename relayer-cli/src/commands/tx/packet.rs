@@ -31,16 +31,16 @@ impl Runnable for TxRawPacketRecvCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let mut link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
+        let link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IbcEvent>, Error> = link
@@ -75,16 +75,16 @@ impl Runnable for TxRawPacketAckCmd {
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let mut link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
+        let link = match Link::new_from_opts(chains.src, chains.dst, opts, false) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IbcEvent>, Error> = link

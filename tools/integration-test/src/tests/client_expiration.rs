@@ -2,7 +2,7 @@ use core::time::Duration;
 use ibc::core::ics03_connection::connection::State as ConnectionState;
 use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer::config::{self, Config, ModeConfig};
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
+use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
 use ibc_relayer::worker::client::spawn_refresh_client;
 use std::thread::sleep;
 
@@ -114,7 +114,6 @@ impl TestOverrides for ExpirationTestOverrides {
                 enabled: true,
                 clear_interval: 10,
                 clear_on_start: true,
-                filter: false,
                 tx_confirmation: true,
             },
         };
@@ -151,8 +150,15 @@ impl BinaryChainTest for ChannelExpirationTest {
 
         wait_for_client_expiry();
 
-        let _supervisor =
-            spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
+        let _supervisor = spawn_supervisor(
+            chains.config.clone(),
+            chains.registry.clone(),
+            None,
+            SupervisorOptions {
+                health_check: false,
+                force_full_scan: false,
+            },
+        )?;
 
         let port_a = tagged_transfer_port();
         let port_b = tagged_transfer_port();
@@ -297,14 +303,17 @@ impl BinaryChainTest for PacketExpirationTest {
 
         wait_for_client_expiry();
 
-        let _supervisor =
-            spawn_supervisor(chains.config.clone(), chains.registry.clone(), None, false)?;
+        let _supervisor = spawn_supervisor(
+            chains.config.clone(),
+            chains.registry.clone(),
+            None,
+            SupervisorOptions {
+                health_check: false,
+                force_full_scan: false,
+            },
+        )?;
 
         let denom_a = chains.node_a.denom();
-        let balance_a = chains
-            .node_a
-            .chain_driver()
-            .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
 
         let denom_b = derive_ibc_denom(
             &channels.port_b.as_ref(),
@@ -326,16 +335,11 @@ impl BinaryChainTest for PacketExpirationTest {
 
             sleep(Duration::from_secs(10));
 
-            let balance_a_2 = chains
-                .node_a
-                .chain_driver()
-                .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
-
-            assert_eq(
-                "balance on wallet A should decrease",
-                &balance_a_2,
-                &(balance_a - 100),
-            )?;
+            // We cannot check for the sender's balance, because
+            // on Gaia v6 the transaction would just fail on expired client,
+            // and the fund is not deducted from the user wallet.
+            // But on Gaia v4 and v5 the fund will still be deducted
+            // even though the IBC transfer will fail.
 
             let balance_b = chains.node_b.chain_driver().query_balance(
                 &chains.node_b.wallets().user1().address(),
@@ -358,17 +362,6 @@ impl BinaryChainTest for PacketExpirationTest {
             )?;
 
             sleep(Duration::from_secs(10));
-
-            let balance_a_2 = chains
-                .node_a
-                .chain_driver()
-                .query_balance(&chains.node_a.wallets().user1().address(), &denom_a)?;
-
-            assert_eq(
-                "balance on wallet A should decrease",
-                &balance_a_2,
-                &(balance_a - 200),
-            )?;
 
             let balance_b = chains.node_b.chain_driver().query_balance(
                 &chains.node_b.wallets().user1().address(),

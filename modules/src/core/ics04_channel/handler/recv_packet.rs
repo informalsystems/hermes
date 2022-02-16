@@ -77,7 +77,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     verify_packet_recv_proofs(
         ctx,
-        msg.proofs().height(),
+        msg.proofs.height(),
         packet,
         &connection_end,
         &msg.proofs,
@@ -251,7 +251,6 @@ mod tests {
                         1.into(),
                     )
                     .with_height(host_height)
-                    .with_timestamp(Timestamp::from_nanoseconds(1).unwrap())
                     // This `with_recv_sequence` is required for ordered channels
                     .with_recv_sequence(
                         packet.destination_port.clone(),
@@ -269,8 +268,7 @@ mod tests {
                     .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into())
-                    .with_height(host_height)
-                    .with_timestamp(Timestamp::from_nanoseconds(3).unwrap()),
+                    .with_height(host_height),
                 msg: msg_packet_old,
                 want_pass: false,
             },

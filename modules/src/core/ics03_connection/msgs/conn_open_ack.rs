@@ -27,31 +27,6 @@ pub struct MsgConnectionOpenAck {
 }
 
 impl MsgConnectionOpenAck {
-    /// Getter for accessing the connection identifier of this message.
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
-    }
-
-    /// Getter for accessing the counterparty's connection identifier from this message.
-    pub fn counterparty_connection_id(&self) -> &ConnectionId {
-        &self.counterparty_connection_id
-    }
-
-    /// Getter for accessing the client state.
-    pub fn client_state(&self) -> Option<AnyClientState> {
-        self.client_state.clone()
-    }
-
-    /// Getter for accessing (borrow) the proofs in this message.
-    pub fn proofs(&self) -> &Proofs {
-        &self.proofs
-    }
-
-    /// Getter for the version field.
-    pub fn version(&self) -> &Version {
-        &self.version
-    }
-
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
     /// value `Height(0)` if this field is not set.
     pub fn consensus_height(&self) -> Height {

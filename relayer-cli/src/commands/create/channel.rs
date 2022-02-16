@@ -83,7 +83,7 @@ impl CreateChannelCommand {
 
         // Bail with an explicit error. The user might be expecting to use this connection.
         if self.connection_a.is_some() {
-            return Output::error(
+            Output::error(
                 "Option `<connection-a>` is incompatible with `<chain-b-id>`".to_string(),
             )
             .exit();
@@ -130,15 +130,14 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Unwrap the identifier of the connection on side a.
-        let connection_a_id =
-            match &self.connection_a {
-                Some(c) => c,
-                None => return Output::error(
-                    "Option `--connection-a` is necessary when <chain-b-id> argument is missing"
-                        .to_string(),
-                )
-                .exit(),
-            };
+        let connection_a_id = match &self.connection_a {
+            Some(c) => c,
+            None => Output::error(
+                "Option `--connection-a` is necessary when <chain-b-id> argument is missing"
+                    .to_string(),
+            )
+            .exit(),
+        };
 
         // Query the connection end.
         let height = Height::new(chain_a.id().version(), 0);

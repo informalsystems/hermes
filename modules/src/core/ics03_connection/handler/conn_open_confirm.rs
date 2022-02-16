@@ -18,11 +18,11 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Validate the connection end.
-    let mut conn_end = ctx.connection_end(msg.connection_id())?;
+    let mut conn_end = ctx.connection_end(&msg.connection_id)?;
     // A connection end must be in TryOpen state; otherwise return error.
     if !conn_end.state_matches(&State::TryOpen) {
         // Old connection end is in incorrect state, propagate the error.
-        return Err(Error::connection_mismatch(msg.connection_id().clone()));
+        return Err(Error::connection_mismatch(msg.connection_id));
     }
 
     // Verify proofs. Assemble the connection end as we expect to find it on the counterparty.
@@ -32,7 +32,7 @@ pub(crate) fn process(
         Counterparty::new(
             // The counterparty is the local chain.
             conn_end.client_id().clone(), // The local client identifier.
-            Some(msg.connection_id().clone()), // Local connection id.
+            Some(msg.connection_id.clone()), // Local connection id.
             ctx.commitment_prefix(),      // Local commitment prefix.
         ),
         conn_end.versions(),
@@ -43,10 +43,10 @@ pub(crate) fn process(
     verify_proofs(
         ctx,
         None,
-        msg.proofs().height(),
+        msg.proofs.height(),
         &conn_end,
         &expected_conn,
-        msg.proofs(),
+        &msg.proofs,
     )?;
 
     output.log("success: connection verification passed");
@@ -55,7 +55,7 @@ pub(crate) fn process(
     conn_end.set_state(State::Open);
 
     let result = ConnectionResult {
-        connection_id: msg.connection_id().clone(),
+        connection_id: msg.connection_id,
         connection_id_state: ConnectionIdState::Reused,
         connection_end: conn_end,
     };
@@ -103,7 +103,7 @@ mod tests {
             MsgConnectionOpenConfirm::try_from(get_dummy_raw_msg_conn_open_confirm()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
-            Some(msg_confirm.connection_id().clone()),
+            Some(msg_confirm.connection_id.clone()),
             CommitmentPrefix::try_from(b"ibc".to_vec()).unwrap(),
         );
 
@@ -132,10 +132,7 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_client(&client_id, Height::new(0, 10))
-                    .with_connection(
-                        msg_confirm.connection_id().clone(),
-                        incorrect_conn_end_state,
-                    ),
+                    .with_connection(msg_confirm.connection_id.clone(), incorrect_conn_end_state),
                 msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm.clone()),
                 want_pass: false,
             },
@@ -143,8 +140,8 @@ mod tests {
                 name: "Processing successful".to_string(),
                 ctx: context
                     .with_client(&client_id, Height::new(0, 10))
-                    .with_connection(msg_confirm.connection_id().clone(), correct_conn_end),
-                msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm.clone()),
+                    .with_connection(msg_confirm.connection_id.clone(), correct_conn_end),
+                msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm),
                 want_pass: true,
             },
         ]

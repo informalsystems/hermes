@@ -5,22 +5,8 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
-use core::time::Duration;
-use std::path::PathBuf;
-
-use abscissa_core::clap::Parser;
-use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Runnable};
-use tracing::{error, info};
-
-use crate::DEFAULT_CONFIG_PATH;
-use ibc_relayer::config::Config;
-
-use self::{
-    config::ConfigCmd, create::CreateCmds, health::HealthCheckCmd, keys::KeysCmd,
-    listen::ListenCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
-    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
-};
-
+mod clear;
+mod completions;
 mod config;
 mod create;
 mod health;
@@ -33,6 +19,23 @@ mod tx;
 mod update;
 mod upgrade;
 mod version;
+
+use self::{
+    clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
+    health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd, misbehaviour::MisbehaviourCmd,
+    query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds,
+    version::VersionCmd,
+};
+
+use core::time::Duration;
+use std::path::PathBuf;
+
+use abscissa_core::clap::Parser;
+use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Runnable};
+use tracing::{error, info};
+
+use crate::DEFAULT_CONFIG_PATH;
+use ibc_relayer::config::Config;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
@@ -62,6 +65,10 @@ pub enum CliCmd {
     #[clap(subcommand)]
     Upgrade(UpgradeCmds),
 
+    /// Clear objects, such as outstanding packets on a channel.
+    #[clap(subcommand)]
+    Clear(ClearCmds),
+
     /// Start the relayer in multi-chain mode.
     ///
     /// Relays packets and open handshake messages between all chains in the config.
@@ -86,6 +93,10 @@ pub enum CliCmd {
 
     /// Performs a health check of all chains in the the config
     HealthCheck(HealthCheckCmd),
+
+    /// Generate auto-complete scripts for different shells.
+    #[clap(display_order = 1000)]
+    Completions(CompletionsCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.

@@ -65,6 +65,13 @@ pub struct TxIbcUpgradeChainCmd {
     upgrade_name: Option<String>,
 
     #[clap(
+        short = 'd',
+        long,
+        help = "denomination for the deposit (default: 'stake')"
+    )]
+    denom: Option<String>,
+
+    #[clap(
         short = 'l',
         long,
         help = "use legacy upgrade proposal constructs (for chains built with Cosmos SDK < v0.43.0)"
@@ -93,6 +100,7 @@ impl TxIbcUpgradeChainCmd {
             src_chain_config: src_chain_config.clone(),
             src_client_id: self.src_client_id.clone(),
             amount: self.amount,
+            denom: self.denom.as_deref().unwrap_or("stake").into(),
             height_offset: self.height_offset,
             upgraded_chain_id: self
                 .new_chain_id
@@ -115,7 +123,7 @@ impl Runnable for TxIbcUpgradeChainCmd {
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
+            Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Message {:?}", opts);
@@ -126,14 +134,14 @@ impl Runnable for TxIbcUpgradeChainCmd {
             .map_err(Error::relayer);
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let dst_chain_res =
             CosmosSdkChain::bootstrap(opts.dst_chain_config.clone(), rt).map_err(Error::relayer);
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IbcEvent>, Error> =

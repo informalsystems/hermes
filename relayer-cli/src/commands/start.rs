@@ -1,4 +1,5 @@
 use alloc::sync::Arc;
+use ibc_relayer::supervisor::SupervisorOptions;
 use std::error::Error;
 use std::io;
 use std::sync::RwLock;
@@ -19,17 +20,23 @@ use crate::conclude::Output;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct StartCmd {}
+pub struct StartCmd {
+    #[clap(
+        short = 'f',
+        long = "full-scan",
+        help = "Force a full scan of the chains for clients, connections and channels"
+    )]
+    full_scan: bool,
+}
 
 impl Runnable for StartCmd {
     fn run(&self) {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let supervisor_handle =
-            make_supervisor::<ProdChainHandle>(config.clone()).unwrap_or_else(|e| {
-                Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
-                unreachable!()
+        let supervisor_handle = make_supervisor::<ProdChainHandle>(config.clone(), self.full_scan)
+            .unwrap_or_else(|e| {
+                Output::error(format!("Hermes failed to start, last error: {}", e)).exit()
             });
 
         match crate::config::config_path() {
@@ -176,11 +183,20 @@ fn spawn_telemetry_server(
 
 fn make_supervisor<Chain: ChainHandle>(
     config: Arc<RwLock<Config>>,
+    force_full_scan: bool,
 ) -> Result<SupervisorHandle, Box<dyn Error + Send + Sync>> {
     let registry = SharedRegistry::<Chain>::new(config.clone());
     spawn_telemetry_server(&config)?;
 
     let rest = spawn_rest_server(&config);
 
-    Ok(spawn_supervisor(config, registry, rest, true)?)
+    Ok(spawn_supervisor(
+        config,
+        registry,
+        rest,
+        SupervisorOptions {
+            health_check: true,
+            force_full_scan,
+        },
+    )?)
 }

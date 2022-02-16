@@ -37,10 +37,6 @@ impl MsgTimeout {
             signer,
         }
     }
-
-    pub fn proofs(&self) -> &Proofs {
-        &self.proofs
-    }
 }
 
 impl Msg for MsgTimeout {

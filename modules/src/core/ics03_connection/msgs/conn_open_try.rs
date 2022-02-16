@@ -38,36 +38,6 @@ pub struct MsgConnectionOpenTry {
 }
 
 impl MsgConnectionOpenTry {
-    /// Getter for accessing the previous connection identifier of this message.
-    pub fn previous_connection_id(&self) -> &Option<ConnectionId> {
-        &self.previous_connection_id
-    }
-
-    /// Getter for accessing the client identifier from this message.
-    pub fn client_id(&self) -> &ClientId {
-        &self.client_id
-    }
-
-    /// Getter for accessing the client state.
-    pub fn client_state(&self) -> Option<AnyClientState> {
-        self.client_state.clone()
-    }
-
-    /// Getter for accesing the whole counterparty of this message. Returns a `clone()`.
-    pub fn counterparty(&self) -> Counterparty {
-        self.counterparty.clone()
-    }
-
-    /// Getter for accessing the versions from this message. Returns a `clone()`.
-    pub fn counterparty_versions(&self) -> Vec<Version> {
-        self.counterparty_versions.clone()
-    }
-
-    /// Getter for accessing the proofs in this message.
-    pub fn proofs(&self) -> &Proofs {
-        &self.proofs
-    }
-
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {

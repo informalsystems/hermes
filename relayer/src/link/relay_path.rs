@@ -1,6 +1,5 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
-use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Instant;
 
@@ -51,7 +50,6 @@ use crate::link::pending::PendingTxs;
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
 use crate::link::{pending, relay_sender};
-use crate::util::lock::LockExt;
 use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
@@ -64,11 +62,6 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
 
     dst_channel_id: ChannelId,
     dst_port_id: PortId,
-
-    // Marks whether this path has already cleared pending packets.
-    // Packets should be cleared once (at startup), then this
-    // flag turns to `false`.
-    clear_packets: Arc<RwLock<bool>>,
 
     // Operational data, targeting both the source and destination chain.
     // These vectors of operational data are ordered decreasingly by
@@ -122,7 +115,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_channel_id: dst_channel_id.clone(),
             dst_port_id: dst_port_id.clone(),
 
-            clear_packets: Arc::new(RwLock::new(true)),
             src_operational_data: Queue::new(),
             dst_operational_data: Queue::new(),
 
@@ -309,34 +301,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Err(LinkError::old_packet_clearing_failed())
     }
 
-    fn should_clear_packets(&self) -> bool {
-        *self.clear_packets.acquire_read()
-    }
+    /// Clears any packets that were sent before `height`.
+    pub fn schedule_packet_clearing(&self, height: Option<Height>) -> Result<(), LinkError> {
+        let span = span!(Level::DEBUG, "clear");
+        let _enter = span.enter();
 
-    /// Clears any packets that were sent before `height`, either if the `clear_packets` flag
-    /// is set or if clearing is forced by the caller.
-    pub fn schedule_packet_clearing(
-        &self,
-        height: Option<Height>,
-        force: bool,
-    ) -> Result<(), LinkError> {
-        if self.should_clear_packets() || force {
-            let span = span!(Level::DEBUG, "clear", f = ?force);
-            let _enter = span.enter();
+        let clear_height = height
+            .map(|h| h.decrement().map_err(|e| LinkError::decrement_height(h, e)))
+            .transpose()?;
 
-            // Disable further clearing of old packets by default.
-            // Clearing may still happen: upon new blocks, when `force = true`.
-            *self.clear_packets.acquire_write() = false;
+        self.relay_pending_packets(clear_height)?;
 
-            let clear_height = height
-                .map(|h| h.decrement().map_err(|e| LinkError::decrement_height(h, e)))
-                .transpose()?;
-
-            self.relay_pending_packets(clear_height)?;
-
-            debug!(height = ?clear_height, "done scheduling");
-        }
-
+        debug!(height = ?clear_height, "done scheduling");
         Ok(())
     }
 
@@ -1121,6 +1097,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<Option<Any>, LinkError> {
         let dst_channel_id = self.dst_channel_id();
 
+        debug!("build timeout for channel");
         let (packet_type, next_sequence_received) = if self.ordered_channel() {
             let next_seq = self
                 .dst_chain()

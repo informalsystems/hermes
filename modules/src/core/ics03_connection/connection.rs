@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use core::str::FromStr;
 use core::time::Duration;
-use core::u64;
+use core::{fmt, u64};
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
@@ -196,10 +196,12 @@ impl ConnectionEnd {
         self.client_id.eq(other)
     }
 
+    /// Helper function to determine whether the connection is open.
     pub fn is_open(&self) -> bool {
         self.state_matches(&State::Open)
     }
 
+    /// Helper function to determine whether the connection is uninitialized.
     pub fn is_uninitialized(&self) -> bool {
         self.state_matches(&State::Uninitialized)
     }
@@ -325,7 +327,7 @@ pub enum State {
 
 impl State {
     /// Yields the State as a string.
-    pub fn as_string(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
@@ -333,7 +335,8 @@ impl State {
             Self::Open => "OPEN",
         }
     }
-    // Parses the State out from a i32.
+
+    /// Parses the State out from a i32.
     pub fn from_i32(s: i32) -> Result<Self, Error> {
         match s {
             0 => Ok(Self::Uninitialized),
@@ -360,6 +363,12 @@ impl State {
     /// ```
     pub fn less_or_equal_progress(self, other: Self) -> bool {
         self as u32 <= other as u32
+    }
+}
+
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }
 

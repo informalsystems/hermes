@@ -618,7 +618,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             connection_id: connection_id.clone(),
         };
 
-        connection_state_on_destination(connection, &self.dst_chain())
+        connection_state_on_destination(&connection, &self.dst_chain())
             .map_err(ConnectionError::supervisor)
     }
 
@@ -683,7 +683,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
     /// Retrieves the connection from destination and compares against the expected connection
     /// built from the message type (`msg_type`) and options (`opts`).
-    /// If the expected and the destination connections are compatible, it returns the expected connection
+    /// If the expected and the destination connections are compatible, it returns the expected connection.
     fn validated_expected_connection(
         &self,
         msg_type: ConnectionMsgType,
@@ -1181,6 +1181,7 @@ pub enum ConnectionMsgType {
     OpenConfirm,
 }
 
+/// Verify that the destination connection exhibits the expected state.
 fn check_destination_connection_state(
     connection_id: ConnectionId,
     existing_connection: ConnectionEnd,
@@ -1196,10 +1197,17 @@ fn check_destination_connection_state(
         || existing_connection.counterparty().connection_id()
             == expected_connection.counterparty().connection_id();
 
-    // TODO check versions and store prefix
-    // https://github.com/informalsystems/ibc-rs/issues/1389
+    let good_version = existing_connection.versions() == expected_connection.versions();
 
-    if good_state && good_client_ids && good_connection_ids {
+    let good_counterparty_prefix =
+        existing_connection.counterparty().prefix() == expected_connection.counterparty().prefix();
+
+    if good_state
+        && good_client_ids
+        && good_connection_ids
+        && good_version
+        && good_counterparty_prefix
+    {
         Ok(())
     } else {
         Err(ConnectionError::connection_already_exist(connection_id))

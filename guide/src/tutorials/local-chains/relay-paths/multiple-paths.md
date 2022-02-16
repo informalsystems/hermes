@@ -9,25 +9,24 @@ Follow the steps below to connect three chains together and relay packets betwee
     ```toml
     [global]
     log_level = 'info'
-   
+
     [mode]
-    
+
     [mode.clients]
     enabled = true
     refresh = true
     misbehaviour = true
-    
+
     [mode.connections]
     enabled = false
-    
+
     [mode.channels]
     enabled = false
-    
+
     [mode.packets]
     enabled = true
     clear_interval = 100
     clear_on_start = true
-    filter = false
     tx_confirmation = true
 
     [[chains]]

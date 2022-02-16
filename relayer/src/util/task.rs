@@ -4,7 +4,7 @@ use core::time::Duration;
 use crossbeam_channel::{bounded, Sender};
 use std::sync::{Arc, RwLock};
 use std::thread;
-use tracing::{error, info, warn};
+use tracing::{debug, error, warn};
 
 use crate::util::lock::LockExt;
 
@@ -90,7 +90,7 @@ pub fn spawn_background_task<E: Display>(
     interval_pause: Option<Duration>,
     mut step_runner: impl FnMut() -> Result<Next, TaskError<E>> + Send + Sync + 'static,
 ) -> TaskHandle {
-    info!(parent: &span, "spawning");
+    debug!(parent: &span, "spawning task");
 
     let stopped = Arc::new(RwLock::new(false));
     let write_stopped = stopped.clone();
@@ -107,14 +107,14 @@ pub fn spawn_background_task<E: Display>(
                 _ => match step_runner() {
                     Ok(Next::Continue) => {}
                     Ok(Next::Abort) => {
-                        info!("aborting");
+                        debug!("aborting task");
                         break;
                     }
                     Err(TaskError::Ignore(e)) => {
-                        warn!("encountered ignorable error: {}", e);
+                        warn!("task encountered ignorable error: {}", e);
                     }
                     Err(TaskError::Fatal(e)) => {
-                        error!("aborting after encountering fatal error: {}", e);
+                        error!("task aborting after encountering fatal error: {}", e);
                         break;
                     }
                 },
@@ -125,7 +125,8 @@ pub fn spawn_background_task<E: Display>(
         }
 
         *write_stopped.acquire_write() = true;
-        info!("terminated");
+
+        debug!("task terminated");
     });
 
     TaskHandle {

@@ -53,10 +53,10 @@ use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::events::{from_tx_response_event, IbcEvent};
+use ibc::query::QueryBlockRequest;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-use ibc::{downcast, query::QueryBlockRequest};
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
@@ -285,6 +285,7 @@ impl CosmosSdkChain {
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
         crate::time!("query_consensus_params");
+        crate::telemetry!(query, self.id(), "query_consensus_params");
 
         Ok(self
             .block_on(self.rpc_client().genesis())
@@ -329,7 +330,10 @@ impl CosmosSdkChain {
         let estimated_gas = self.estimate_gas(simulate_tx)?;
 
         if estimated_gas > self.max_gas() {
-            debug!(estimated = ?estimated_gas, max = ?self.max_gas(), "[{}] send_tx: estimated gas is higher than max gas", self.id());
+            debug!(
+                id = %self.id(), estimated = ?estimated_gas, max = ?self.max_gas(),
+                "send_tx: estimated gas is higher than max gas"
+            );
 
             return Err(Error::tx_simulate_gas_estimate_exceeded(
                 self.id().clone(),
@@ -341,7 +345,8 @@ impl CosmosSdkChain {
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         debug!(
-            "using {} gas, fee {}",
+            id = %self.id(),
+            "send_tx: using {} gas, fee {}",
             estimated_gas,
             PrettyFee(&adjusted_fee)
         );
@@ -817,8 +822,8 @@ impl CosmosSdkChain {
             .join(", ");
 
         info!(
-            "[{}] waiting for commit of tx hashes(s) {}",
-            self.id(),
+            id = %self.id(),
+            "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
             hashes
         );
 
@@ -831,8 +836,8 @@ impl CosmosSdkChain {
             |index| {
                 if all_tx_results_found(&tx_sync_results) {
                     trace!(
-                        "[{}] wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
-                        self.id(),
+                        id = %self.id(),
+                        "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
                         tx_sync_results.len(),
                         index,
                         start.elapsed().as_millis()
@@ -908,6 +913,9 @@ impl CosmosSdkChain {
 
     /// Query the chain's latest height
     pub fn query_latest_height(&self) -> Result<ICSHeight, Error> {
+        crate::time!("query_latest_height");
+        crate::telemetry!(query, self.id(), "query_latest_height");
+
         let status = self.status()?;
         Ok(ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
@@ -1190,6 +1198,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         crate::time!("query_commitment_prefix");
+        crate::telemetry!(query, self.id(), "query_commitment_prefix");
 
         // TODO - do a real chain query
         CommitmentPrefix::try_from(self.config().store_prefix.as_bytes().to_vec())
@@ -1199,6 +1208,8 @@ impl ChainEndpoint for CosmosSdkChain {
     /// Query the chain status
     fn query_status(&self) -> Result<StatusResponse, Error> {
         crate::time!("query_status");
+        crate::telemetry!(query, self.id(), "query_status");
+
         let status = self.status()?;
 
         let time = status.sync_info.latest_block_time;
@@ -1218,6 +1229,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
         crate::time!("query_clients");
+        crate::telemetry!(query, self.id(), "query_clients");
 
         let mut client = self
             .block_on(
@@ -1250,22 +1262,23 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<Self::ClientState, Error> {
+    ) -> Result<AnyClientState, Error> {
         crate::time!("query_client_state");
+        crate::telemetry!(query, self.id(), "query_client_state");
 
         let client_state = self
             .query(ClientStatePath(client_id.clone()), height, false)
             .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
-        let client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_state_type(format!("{:?}", client_state)))?;
+
         Ok(client_state)
     }
 
     fn query_upgraded_client_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
+        crate::telemetry!(query, self.id(), "query_upgraded_client_state");
 
         // Query for the value and the proof.
         let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
@@ -1277,18 +1290,15 @@ impl ChainEndpoint for CosmosSdkChain {
         let client_state = AnyClientState::decode_vec(&upgraded_client_state_raw)
             .map_err(Error::conversion_from_any)?;
 
-        let client_type = client_state.client_type();
-        let tm_client_state = downcast!(client_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_type_mismatch(ClientType::Tendermint, client_type))?;
-
-        Ok((tm_client_state, proof))
+        Ok((client_state, proof))
     }
 
     fn query_upgraded_consensus_state(
         &self,
         height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         crate::time!("query_upgraded_consensus_state");
+        crate::telemetry!(query, self.id(), "query_upgraded_consensus_state");
 
         let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
@@ -1301,13 +1311,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let consensus_state = AnyConsensusState::decode_vec(&upgraded_consensus_state_raw)
             .map_err(Error::conversion_from_any)?;
 
-        let cs_client_type = consensus_state.client_type();
-        let tm_consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-            .ok_or_else(|| {
-                Error::consensus_state_type_mismatch(ClientType::Tendermint, cs_client_type)
-            })?;
-
-        Ok((tm_consensus_state, proof))
+        Ok((consensus_state, proof))
     }
 
     /// Performs a query to retrieve the identifiers of all connections.
@@ -1316,6 +1320,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
         crate::time!("query_consensus_states");
+        crate::telemetry!(query, self.id(), "query_consensus_states");
 
         let mut client = self
             .block_on(
@@ -1348,18 +1353,20 @@ impl ChainEndpoint for CosmosSdkChain {
         query_height: ICSHeight,
     ) -> Result<AnyConsensusState, Error> {
         crate::time!("query_consensus_state");
+        crate::telemetry!(query, self.id(), "query_consensus_state");
 
-        let consensus_state = self
-            .proven_client_consensus(&client_id, consensus_height, query_height)?
-            .0;
-        Ok(AnyConsensusState::Tendermint(consensus_state))
+        let (consensus_state, _proof) =
+            self.proven_client_consensus(&client_id, consensus_height, query_height)?;
+
+        Ok(consensus_state)
     }
 
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error> {
-        crate::time!("query_connections");
+        crate::time!("query_client_connections");
+        crate::telemetry!(query, self.id(), "query_client_connections");
 
         let mut client = self
             .block_on(
@@ -1394,6 +1401,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         crate::time!("query_connections");
+        crate::telemetry!(query, self.id(), "query_connections");
 
         let mut client = self
             .block_on(
@@ -1427,6 +1435,9 @@ impl ChainEndpoint for CosmosSdkChain {
         connection_id: &ConnectionId,
         height: ICSHeight,
     ) -> Result<ConnectionEnd, Error> {
+        crate::time!("query_connection");
+        crate::telemetry!(query, self.id(), "query_connection");
+
         async fn do_query_connection(
             chain: &CosmosSdkChain,
             connection_id: &ConnectionId,
@@ -1484,6 +1495,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         crate::time!("query_connection_channels");
+        crate::telemetry!(query, self.id(), "query_connection_channels");
 
         let mut client = self
             .block_on(
@@ -1515,7 +1527,8 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        crate::time!("query_connections");
+        crate::time!("query_channels");
+        crate::telemetry!(query, self.id(), "query_channels");
 
         let mut client = self
             .block_on(
@@ -1546,6 +1559,9 @@ impl ChainEndpoint for CosmosSdkChain {
         channel_id: &ChannelId,
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error> {
+        crate::time!("query_channel");
+        crate::telemetry!(query, self.id(), "query_channel");
+
         let res = self.query(
             ChannelEndsPath(port_id.clone(), channel_id.clone()),
             height,
@@ -1561,6 +1577,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         crate::time!("query_channel_client_state");
+        crate::telemetry!(query, self.id(), "query_channel_client_state");
 
         let mut client = self
             .block_on(
@@ -1590,6 +1607,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
         crate::time!("query_packet_commitments");
+        crate::telemetry!(query, self.id(), "query_packet_commitments");
 
         let mut client = self
             .block_on(
@@ -1623,6 +1641,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error> {
         crate::time!("query_unreceived_packets");
+        crate::telemetry!(query, self.id(), "query_unreceived_packets");
 
         let mut client = self
             .block_on(
@@ -1649,6 +1668,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
         crate::time!("query_packet_acknowledgements");
+        crate::telemetry!(query, self.id(), "query_packet_acknowledgements");
 
         let mut client = self
             .block_on(
@@ -1681,6 +1701,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error> {
         crate::time!("query_unreceived_acknowledgements");
+        crate::telemetry!(query, self.id(), "query_unreceived_acknowledgements");
 
         let mut client = self
             .block_on(
@@ -1706,6 +1727,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error> {
         crate::time!("query_next_sequence_receive");
+        crate::telemetry!(query, self.id(), "query_next_sequence_receive");
 
         let mut client = self
             .block_on(
@@ -1738,6 +1760,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ///    packets ever sent.
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("query_txs");
+        crate::telemetry!(query, self.id(), "query_txs");
 
         match request {
             QueryTxRequest::Packet(request) => {
@@ -1839,6 +1862,7 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
         crate::time!("query_blocks");
+        crate::telemetry!(query, self.id(), "query_blocks");
 
         match request {
             QueryBlockRequest::Packet(request) => {
@@ -1902,15 +1926,12 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
         crate::time!("proven_client_state");
 
         let res = self.query(ClientStatePath(client_id.clone()), height, true)?;
 
         let client_state = AnyClientState::decode_vec(&res.value).map_err(Error::decode)?;
-
-        let client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_state_type(format!("{:?}", client_state)))?;
 
         Ok((
             client_state,
@@ -1923,7 +1944,7 @@ impl ChainEndpoint for CosmosSdkChain {
         client_id: &ClientId,
         consensus_height: ICSHeight,
         height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         crate::time!("proven_client_consensus");
 
         let res = self.query(
@@ -1938,14 +1959,16 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
 
-        let consensus_state =
-            downcast!(consensus_state.clone() => AnyConsensusState::Tendermint)
-                .ok_or_else(|| Error::client_state_type(format!("{:?}", consensus_state)))?;
+        if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
+            return Err(Error::consensus_state_type_mismatch(
+                ClientType::Tendermint,
+                consensus_state.client_type(),
+            ));
+        }
 
-        Ok((
-            consensus_state,
-            res.proof.ok_or_else(Error::empty_response_proof)?,
-        ))
+        let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+
+        Ok((consensus_state, proof))
     }
 
     fn proven_connection(
@@ -2078,6 +2101,9 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn query_app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error> {
+        crate::time!("query_app_version");
+        crate::telemetry!(query, self.id(), "query_app_version");
+
         use ibc_proto::ibc::core::port::v1::query_client::QueryClient;
 
         let mut client = self
@@ -2316,6 +2342,8 @@ pub async fn broadcast_tx_sync(
 
 /// Uses the GRPC client to retrieve the account sequence
 async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAccount, Error> {
+    crate::telemetry!(query, chain.id(), "query_account");
+
     let mut client = ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(
         chain.grpc_addr.clone(),
     )

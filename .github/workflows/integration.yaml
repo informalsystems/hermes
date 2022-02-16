@@ -2,7 +2,7 @@ name: Rust
 on:
   pull_request:
     paths:
-      - .github/workflows/rust.yml
+      - .github/workflows/integration.yaml
       - Cargo.toml
       - Cargo.lock
       - ci/**
@@ -13,10 +13,11 @@ on:
       - relayer-cli/**
       - relayer-rest/**
       - telemetry/**
+      - tools/**
   push:
     branches: master
     paths:
-      - .github/workflows/rust.yml
+      - .github/workflows/integration.yaml
       - Cargo.toml
       - Cargo.lock
       - ci/**
@@ -27,6 +28,7 @@ on:
       - relayer-cli/**
       - relayer-rest/**
       - telemetry/**
+      - tools/**
 
 env:
   CARGO_INCREMENTAL: 0
@@ -44,6 +46,7 @@ jobs:
         gaiad:
           - gaia4
           - gaia5
+          - gaia6
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15

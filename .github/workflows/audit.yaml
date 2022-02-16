@@ -1,10 +1,5 @@
 name: Security Audit
 on:
-  pull_request:
-    paths: Cargo.lock
-  push:
-    branches: master
-    paths: Cargo.lock
   schedule:
     - cron: '0 0 * * *'
 

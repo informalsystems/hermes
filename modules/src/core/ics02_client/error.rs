@@ -82,7 +82,7 @@ define_error! {
             },
 
         EmptyConsensusStateResponse
-            | _ | { "the client state was not found" },
+            | _ | { "the client consensus state was not found" },
 
         UnknownHeaderType
             { header_type: String }
@@ -248,6 +248,10 @@ define_error! {
         TendermintHandlerError
             [ Ics07Error ]
             | _ | { format_args!("Tendermint-specific handler error") },
+
+        MissingLocalConsensusState
+            { height: Height }
+            | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
 
     }
 }

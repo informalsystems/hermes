@@ -78,9 +78,9 @@ pub fn process(
         ctx,
         msg.proofs.height(),
         packet,
-        msg.acknowledgement().clone(),
+        msg.acknowledgement.clone(),
         &connection_end,
-        msg.proofs(),
+        &msg.proofs,
     )?;
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {

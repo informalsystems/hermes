@@ -23,34 +23,34 @@ pub(crate) fn process(
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
     // Validate the connection end.
-    let mut conn_end = ctx.connection_end(msg.connection_id())?;
+    let mut conn_end = ctx.connection_end(&msg.connection_id)?;
     // A connection end must be Init or TryOpen; otherwise we return an error.
     let state_is_consistent = conn_end.state_matches(&State::Init)
-        && conn_end.versions().contains(msg.version())
+        && conn_end.versions().contains(&msg.version)
         || conn_end.state_matches(&State::TryOpen)
-            && conn_end.versions().get(0).eq(&Some(msg.version()));
+            && conn_end.versions().get(0).eq(&Some(&msg.version));
 
     if !state_is_consistent {
         // Old connection end is in incorrect state, propagate the error.
-        return Err(Error::connection_mismatch(msg.connection_id().clone()));
+        return Err(Error::connection_mismatch(msg.connection_id));
     }
 
     // Set the connection ID of the counterparty
     let prev_counterparty = conn_end.counterparty();
     let counterparty = Counterparty::new(
         prev_counterparty.client_id().clone(),
-        Some(msg.connection_id().clone()),
+        Some(msg.connection_id.clone()),
         prev_counterparty.prefix().clone(),
     );
     conn_end.set_state(State::Open);
-    conn_end.set_version(msg.version().clone());
+    conn_end.set_version(msg.version.clone());
     conn_end.set_counterparty(counterparty);
 
     // The counterparty is the local chain.
     let counterparty = Counterparty::new(
         conn_end.client_id().clone(), // The local client identifier.
-        Some(msg.counterparty_connection_id().clone()), // This chain's connection id as known on counterparty.
-        ctx.commitment_prefix(),                        // Local commitment prefix.
+        Some(msg.counterparty_connection_id.clone()), // This chain's connection id as known on counterparty.
+        ctx.commitment_prefix(),                      // Local commitment prefix.
     );
 
     // Proof verification.
@@ -58,24 +58,24 @@ pub(crate) fn process(
         State::TryOpen,
         conn_end.counterparty().client_id().clone(),
         counterparty,
-        vec![msg.version().clone()],
+        vec![msg.version.clone()],
         conn_end.delay_period(),
     );
 
     // 2. Pass the details to the verification function.
     verify_proofs(
         ctx,
-        msg.client_state(),
-        msg.proofs().height(),
+        msg.client_state.clone(),
+        msg.proofs.height(),
         &conn_end,
         &expected_conn,
-        msg.proofs(),
+        &msg.proofs,
     )?;
 
     output.log("success: connection verification passed");
 
     let result = ConnectionResult {
-        connection_id: msg.connection_id().clone(),
+        connection_id: msg.connection_id,
         connection_id_state: ConnectionIdState::Reused,
         connection_end: conn_end,
     };
@@ -144,10 +144,10 @@ mod tests {
             client_id.clone(),
             Counterparty::new(
                 client_id.clone(),
-                Some(msg_ack.counterparty_connection_id().clone()),
+                Some(msg_ack.counterparty_connection_id.clone()),
                 CommitmentPrefix::try_from(b"ibc".to_vec()).unwrap(),
             ),
-            vec![msg_ack.version().clone()],
+            vec![msg_ack.version.clone()],
             ZERO_DURATION,
         );
 

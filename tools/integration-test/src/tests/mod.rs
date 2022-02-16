@@ -5,6 +5,7 @@
    will pick up the definition by default.
 */
 
+pub mod clear_packet;
 pub mod client_expiration;
 pub mod memo;
 pub mod supervisor;

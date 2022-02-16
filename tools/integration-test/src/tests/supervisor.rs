@@ -26,7 +26,6 @@ impl TestOverrides for SupervisorTest {
                 enabled: true,
                 clear_interval: 10,
                 clear_on_start: true,
-                filter: false,
                 tx_confirmation: true,
             },
         };
