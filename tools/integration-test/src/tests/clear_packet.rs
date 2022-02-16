@@ -17,11 +17,8 @@ impl TestOverrides for ClearPacketTest {
     }
 
     // Do not start supervisor at the beginning of test
-    fn spawn_supervisor(
-        &self,
-        _relayer: &RelayerDriver,
-    ) -> Result<Option<SupervisorHandle>, Error> {
-        Ok(None)
+    fn should_spawn_supervisor(&self) -> bool {
+        false
     }
 }
 

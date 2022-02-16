@@ -122,11 +122,8 @@ impl TestOverrides for ExpirationTestOverrides {
         }
     }
 
-    fn spawn_supervisor(
-        &self,
-        _relayer: &RelayerDriver,
-    ) -> Result<Option<SupervisorHandle>, Error> {
-        Ok(None)
+    fn should_spawn_supervisor(&self) -> bool {
+        false
     }
 }
 

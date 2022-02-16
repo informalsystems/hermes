@@ -60,18 +60,30 @@ pub trait TestOverrides {
     }
 
     /**
+       Indicates whether the test framework should spawn
+       the relayer before running the test. This is used by
+       [`Self::spawn_supervisor`] if it is not overridden.
+    */
+    fn should_spawn_supervisor(&self) -> bool {
+        true
+    }
+
+    /**
        Optionally spawns the relayer supervisor after the relayer chain
        handles and foreign clients are initialized. Default behavior
-       is to spawn the supervisor using [`RelayerDriver::spawn_supervisor`].
-
-       Test writers can disable the spawning of supervisor by overriding
-       this method and making it do nothing and return `None`.
+       is to spawn the supervisor using [`RelayerDriver::spawn_supervisor`],
+       if [`self.should_spawn_supervisor()`](Self::should_spawn_supervisor)
+       is returns true.
 
        Implemented for [`SupervisorOverride`].
     */
     fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Result<Option<SupervisorHandle>, Error> {
-        let handle = relayer.spawn_supervisor()?;
-        Ok(Some(handle))
+        if self.should_spawn_supervisor() {
+            let handle = relayer.spawn_supervisor()?;
+            Ok(Some(handle))
+        } else {
+            Ok(None)
+        }
     }
 
     /**
