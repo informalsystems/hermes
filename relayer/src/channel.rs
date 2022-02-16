@@ -870,7 +870,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        let version = version::resolve(ResolveContext::ChanOpenTry, self)?;
+        // Negotiate the version or fallback on the source channel version
+        let version = version::resolve(ResolveContext::ChanOpenTry, self)
+            .unwrap_or_else(|_| src_channel.version.clone());
 
         let channel = ChannelEnd::new(
             State::TryOpen,
