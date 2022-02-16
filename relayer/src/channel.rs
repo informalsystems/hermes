@@ -717,7 +717,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
-        let version = version::resolve(ResolveContext::ChanOpenInit, self)?;
+        let version = match self.dst_version() {
+            Some(version) => Ok(version.clone()),
+            None => version::resolve(ResolveContext::ChanOpenInit, self),
+        }?;
 
         let channel = ChannelEnd::new(
             State::Init,
