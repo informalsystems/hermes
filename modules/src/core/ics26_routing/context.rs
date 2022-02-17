@@ -80,7 +80,7 @@ pub trait Acknowledgement: AsRef<[u8]> {
 
 pub type WriteFn = dyn FnOnce(&mut dyn Any);
 
-pub type DeferredWriteResult<T> = (Box<T>, Option<Box<WriteFn>>);
+pub type DeferredWriteResult<T> = (Option<Box<T>>, Option<Box<WriteFn>>);
 
 pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
@@ -146,7 +146,9 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         &self,
         _packet: &Packet,
         _relayer: &Signer,
-    ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error>;
+    ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
+        Ok((None, None))
+    }
 
     fn on_acknowledgement_packet(
         &mut self,
