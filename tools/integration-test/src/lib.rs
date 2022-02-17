@@ -1,3 +1,4 @@
+#![deny(warnings)]
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
 #![allow(clippy::ptr_arg)]
