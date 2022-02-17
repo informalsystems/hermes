@@ -1245,7 +1245,7 @@ mod tests {
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
-        Acknowledgement, DeferredWriteResult, Module, ModuleId, Router, RouterBuilder,
+        Acknowledgement, DeferredWriteResult, Module, ModuleId, ModuleOutput, Router, RouterBuilder,
     };
     use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
@@ -1419,6 +1419,7 @@ mod tests {
         impl Module for FooModule {
             fn on_chan_open_try(
                 &mut self,
+                _output: &mut ModuleOutput,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
@@ -1432,6 +1433,7 @@ mod tests {
 
             fn on_recv_packet(
                 &self,
+                _output: &mut ModuleOutput,
                 _packet: &Packet,
                 _relayer: &Signer,
             ) -> DeferredWriteResult<dyn Acknowledgement> {
@@ -1451,6 +1453,7 @@ mod tests {
         impl Module for BarModule {
             fn on_chan_open_try(
                 &mut self,
+                _output: &mut ModuleOutput,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
@@ -1481,7 +1484,11 @@ mod tests {
         let mut on_recv_packet_result = |module_id: &'static str| {
             let module_id = ModuleId::from_str(module_id).unwrap();
             let m = ctx.router.get_route_mut(&module_id).unwrap();
-            let result = m.on_recv_packet(&Packet::default(), &Signer::new(""));
+            let result = m.on_recv_packet(
+                &mut ModuleOutput::builder().with_result(()),
+                &Packet::default(),
+                &Signer::new(""),
+            );
             (module_id, result)
         };
 

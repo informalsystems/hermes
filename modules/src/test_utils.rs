@@ -8,7 +8,7 @@ use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::Module;
+use crate::core::ics26_routing::context::{Module, ModuleOutput};
 use crate::signer::Signer;
 
 // Needed in mocks.
@@ -51,6 +51,7 @@ pub struct DummyModule;
 impl Module for DummyModule {
     fn on_chan_open_try(
         &mut self,
+        _output: &mut ModuleOutput,
         _order: Order,
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
