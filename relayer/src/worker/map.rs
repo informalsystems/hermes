@@ -15,7 +15,7 @@ use crate::{
 
 use super::{spawn_worker_tasks, WorkerHandle, WorkerId};
 
-/// Manage the lifecycle of [`Worker`]s associated with [`Object`]s.
+/// Manage the lifecycle of [`WorkerHandle`]s associated with [`Object`]s.
 #[derive(Debug)]
 pub struct WorkerMap {
     workers: HashMap<Object, WorkerHandle>,
@@ -34,17 +34,17 @@ impl Default for WorkerMap {
 impl WorkerMap {
     /// Create a new worker map, which will spawn workers with
     /// the given channel for sending messages back to the
-    /// [`Supervisor`](crate::supervisor::Supervisor).
+    /// [supervisor](crate::supervisor::SupervisorHandle).
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Returns `true` if there is a spawned [`Worker`] associated with the given [`Object`].
+    /// Returns `true` if there is a spawned [`WorkerHandle`] associated with the given [`Object`].
     pub fn contains(&self, object: &Object) -> bool {
         self.workers.contains_key(object)
     }
 
-    /// Remove the [`Worker`] associated with the given [`Object`] from
+    /// Remove the [`WorkerHandle`] associated with the given [`Object`] from
     /// the map and wait for its thread to terminate.
     pub fn remove_stopped(&mut self, id: WorkerId, object: Object) -> bool {
         match self.workers.remove(&object) {
@@ -89,7 +89,7 @@ impl WorkerMap {
         }
     }
 
-    /// Returns all the [`Worker`] which are interested in new block events originating
+    /// Returns all the [`WorkerHandle`] which are interested in new block events originating
     /// from the chain with the given [`ChainId`].
     /// See: [`Object::notify_new_block`]
     pub fn to_notify<'a>(
@@ -116,7 +116,7 @@ impl WorkerMap {
     /// Get a handle to the worker in charge of handling events associated
     /// with the given [`Object`].
     ///
-    /// This function will spawn a new [`Worker`] if one does not exists already.
+    /// This function will spawn a new [`WorkerHandle`] if one does not exists already.
     pub fn get_or_spawn<Chain: ChainHandle>(
         &mut self,
         object: Object,
@@ -132,7 +132,7 @@ impl WorkerMap {
         }
     }
 
-    /// Spawn a new [`Worker`], only if one does not exists already.
+    /// Spawn a new [`WorkerHandle`], only if one does not exists already.
     ///
     /// Returns whether or not the worker was actually spawned.
     pub fn spawn<Chain: ChainHandle>(

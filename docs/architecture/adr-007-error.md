@@ -7,8 +7,8 @@
 ## Context
 
 This document describes the reason behind the switch from using
-[`anomaly`](https://lib.rs/crates/anomaly) for error handling to
-the [`flex-error`](https://lib.rs/crates/flex-error/) crate that is developed in-house.
+`anomaly` for error handling to
+the [`flex-error`](https://docs.rs/flex-error/) crate that is developed in-house.
 
 ## Decision
 
