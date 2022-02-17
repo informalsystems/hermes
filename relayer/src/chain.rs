@@ -15,7 +15,6 @@ use ibc::core::ics02_client::client_state::{
 use ibc::core::ics02_client::header::Header;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
@@ -39,7 +38,6 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
-use crate::chain::handle::requests::AppVersion;
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
 use crate::event::monitor::TxMonitorCmd;
@@ -126,7 +124,7 @@ pub trait ChainEndpoint: Sized {
     fn keybase_mut(&mut self) -> &mut KeyRing;
 
     /// Sends one or more transactions with `msgs` to chain and
-    // synchronously wait for it to be committed.
+    /// synchronously wait for it to be committed.
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
@@ -146,6 +144,9 @@ pub trait ChainEndpoint: Sized {
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
     fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
+
+    /// Return the version of the IBC protocol that this chain is running, if known.
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
     // Queries
 
@@ -231,8 +232,6 @@ pub trait ChainEndpoint: Sized {
         channel_id: &ChannelId,
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error>;
-
-    fn query_app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
 
     fn query_channel_client_state(
         &self,

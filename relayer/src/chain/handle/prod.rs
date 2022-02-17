@@ -12,7 +12,6 @@ use ibc::{
         ics02_client::misbehaviour::MisbehaviourEvidence,
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics03_connection::version::Version,
-        ics04_channel,
         ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
         ics04_channel::packet::{PacketMsgType, Sequence},
         ics23_commitment::commitment::CommitmentPrefix,
@@ -37,10 +36,12 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
-use crate::chain::tx::TrackedMsgs;
 use crate::{
-    chain::handle::requests::AppVersion, chain::StatusResponse, config::ChainConfig,
-    connection::ConnectionMsgType, error::Error, keyring::KeyEntry,
+    chain::{tx::TrackedMsgs, StatusResponse},
+    config::ChainConfig,
+    connection::ConnectionMsgType,
+    error::Error,
+    keyring::KeyEntry,
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
@@ -137,8 +138,8 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error> {
-        self.send(|reply_to| ChainRequest::AppVersion { request, reply_to })
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+        self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
     }
 
     fn query_status(&self) -> Result<StatusResponse, Error> {

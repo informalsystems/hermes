@@ -92,8 +92,6 @@ impl CreateChannelCommand {
         let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        // let version = self.chain_a_id.version();
-
         info!(
             "Creating new clients, new connection, and a new channel with order {}",
             self.order
