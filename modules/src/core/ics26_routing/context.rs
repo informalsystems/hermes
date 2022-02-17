@@ -11,6 +11,7 @@ use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader}
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error;
+use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
@@ -82,6 +83,7 @@ pub type WriteFn = dyn FnOnce(&mut dyn Any);
 
 pub type DeferredWriteResult<T> = (Option<Box<T>>, Option<Box<WriteFn>>);
 
+// TODO(hu55a1n1): callbacks must have access to logs
 pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
@@ -146,14 +148,14 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         &self,
         _packet: &Packet,
         _relayer: &Signer,
-    ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
-        Ok((None, None))
+    ) -> DeferredWriteResult<dyn Acknowledgement> {
+        (None, None)
     }
 
     fn on_acknowledgement_packet(
         &mut self,
         _packet: &Packet,
-        _acknowledgement: &dyn Acknowledgement,
+        _acknowledgement: &GenericAcknowledgement,
         _relayer: &Signer,
     ) -> Result<(), Error> {
         Ok(())
