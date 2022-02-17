@@ -19,7 +19,6 @@ use ibc::{
             version::Version,
         },
         ics04_channel::{
-            self,
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
@@ -45,7 +44,6 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    chain::handle::requests::AppVersion,
     chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -272,10 +270,6 @@ where
                             self.get_key(reply_to)?
                         }
 
-                        Ok(ChainRequest::AppVersion { request, reply_to }) => {
-                            self.app_version(request, reply_to)?
-                        }
-
                         Ok(ChainRequest::AddKey { key_name, key, reply_to }) => {
                             self.add_key(key_name, key, reply_to)?
                         }
@@ -484,15 +478,6 @@ where
 
     fn get_key(&mut self, reply_to: ReplyTo<KeyEntry>) -> Result<(), Error> {
         let result = self.chain.get_key();
-        reply_to.send(result).map_err(Error::send)
-    }
-
-    fn app_version(
-        &self,
-        request: AppVersion,
-        reply_to: ReplyTo<ics04_channel::Version>,
-    ) -> Result<(), Error> {
-        let result = self.chain.query_app_version(request);
         reply_to.send(result).map_err(Error::send)
     }
 
