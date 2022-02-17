@@ -1434,14 +1434,14 @@ mod tests {
                 &self,
                 _packet: &Packet,
                 _relayer: &Signer,
-            ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
-                Ok((
+            ) -> DeferredWriteResult<dyn Acknowledgement> {
+                (
                     Some(Box::new(MockAck::default())),
                     Some(Box::new(|module| {
                         let module = module.downcast_mut::<FooModule>().unwrap();
                         module.counter += 1;
                     })),
-                ))
+                )
             }
         }
 
@@ -1481,9 +1481,7 @@ mod tests {
         let mut on_recv_packet_result = |module_id: &'static str| {
             let module_id = ModuleId::from_str(module_id).unwrap();
             let m = ctx.router.get_route_mut(&module_id).unwrap();
-            let result = m
-                .on_recv_packet(&Packet::default(), &Signer::new(""))
-                .unwrap();
+            let result = m.on_recv_packet(&Packet::default(), &Signer::new(""));
             (module_id, result)
         };
 
