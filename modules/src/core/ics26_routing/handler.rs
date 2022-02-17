@@ -438,7 +438,7 @@ mod tests {
             Test {
                 name: "Re-Receive packet".to_string(),
                 msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Packet send".to_string(),
