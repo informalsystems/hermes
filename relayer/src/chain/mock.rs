@@ -161,6 +161,10 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+        Ok(Some(semver::Version::new(3, 0, 0)))
+    }
+
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         unimplemented!()
     }

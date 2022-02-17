@@ -118,6 +118,10 @@ where
         self.value().add_key(key_name, key)
     }
 
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+        self.value().ibc_version()
+    }
+
     fn query_status(&self) -> Result<StatusResponse, Error> {
         self.value().query_status()
     }

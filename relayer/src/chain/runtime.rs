@@ -274,6 +274,10 @@ where
                             self.add_key(key_name, key, reply_to)?
                         }
 
+                        Ok(ChainRequest::IbcVersion { reply_to }) => {
+                            self.ibc_version(reply_to)?
+                        }
+
 
                         Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
@@ -484,6 +488,11 @@ where
         reply_to: ReplyTo<()>,
     ) -> Result<(), Error> {
         let result = self.chain.add_key(&key_name, key);
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn ibc_version(&mut self, reply_to: ReplyTo<Option<semver::Version>>) -> Result<(), Error> {
+        let result = self.chain.ibc_version();
         reply_to.send(result).map_err(Error::send)
     }
 
