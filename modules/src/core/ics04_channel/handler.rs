@@ -7,7 +7,7 @@ use crate::core::ics04_channel::msgs::ChannelMsg;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::core::ics26_routing::context::{Ics26Context, ModuleId, Router};
+use crate::core::ics26_routing::context::{Ics26Context, ModuleId, ModuleOutput, Router};
 use crate::handler::HandlerOutput;
 
 pub mod acknowledgement;
@@ -107,7 +107,8 @@ pub fn channel_callback<Ctx>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
     msg: &ChannelMsg,
-    handler_output: &mut HandlerOutput<ChannelResult>,
+    result: &mut ChannelResult,
+    module_output: &mut ModuleOutput,
 ) -> Result<(), Error>
 where
     Ctx: Ics26Context,
@@ -119,39 +120,42 @@ where
 
     match msg {
         ChannelMsg::ChannelOpenInit(msg) => cb.on_chan_open_init(
+            module_output,
             msg.channel.ordering,
             &msg.channel.connection_hops,
             &msg.port_id,
-            &handler_output.result.channel_id,
-            &handler_output.result.channel_cap,
+            &result.channel_id,
+            &result.channel_cap,
             msg.channel.counterparty(),
             &msg.channel.version,
         )?,
         ChannelMsg::ChannelOpenTry(msg) => {
             let version = cb.on_chan_open_try(
+                module_output,
                 msg.channel.ordering,
                 &msg.channel.connection_hops,
                 &msg.port_id,
-                &handler_output.result.channel_id,
-                &handler_output.result.channel_cap,
+                &result.channel_id,
+                &result.channel_cap,
                 msg.channel.counterparty(),
                 &msg.counterparty_version,
             )?;
-            handler_output.result.channel_end.version = version;
+            result.channel_end.version = version;
         }
         ChannelMsg::ChannelOpenAck(msg) => cb.on_chan_open_ack(
+            module_output,
             &msg.port_id,
-            &handler_output.result.channel_id,
+            &result.channel_id,
             &msg.counterparty_version,
         )?,
         ChannelMsg::ChannelOpenConfirm(msg) => {
-            cb.on_chan_open_confirm(&msg.port_id, &handler_output.result.channel_id)?
+            cb.on_chan_open_confirm(module_output, &msg.port_id, &result.channel_id)?
         }
         ChannelMsg::ChannelCloseInit(msg) => {
-            cb.on_chan_close_init(&msg.port_id, &handler_output.result.channel_id)?
+            cb.on_chan_close_init(module_output, &msg.port_id, &result.channel_id)?
         }
         ChannelMsg::ChannelCloseConfirm(msg) => {
-            cb.on_chan_close_confirm(&msg.port_id, &handler_output.result.channel_id)?
+            cb.on_chan_close_confirm(module_output, &msg.port_id, &result.channel_id)?
         }
     }
     Ok(())
@@ -210,7 +214,7 @@ pub fn packet_callback<Ctx>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
     msg: &PacketMsg,
-    _handler_output: &mut HandlerOutput<PacketResult>,
+    module_output: &mut ModuleOutput,
 ) -> Result<(), Error>
 where
     Ctx: Ics26Context,
@@ -222,7 +226,7 @@ where
 
     match msg {
         PacketMsg::RecvPacket(msg) => {
-            let (ack, write_fn) = cb.on_recv_packet(&msg.packet, &msg.signer);
+            let (ack, write_fn) = cb.on_recv_packet(module_output, &msg.packet, &msg.signer);
             match ack {
                 None => {}
                 Some(ack) => {
@@ -236,11 +240,18 @@ where
                 }
             }
         }
-        PacketMsg::AckPacket(msg) => {
-            cb.on_acknowledgement_packet(&msg.packet, &msg.acknowledgement, &msg.signer)?
+        PacketMsg::AckPacket(msg) => cb.on_acknowledgement_packet(
+            module_output,
+            &msg.packet,
+            &msg.acknowledgement,
+            &msg.signer,
+        )?,
+        PacketMsg::ToPacket(msg) => {
+            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)?
         }
-        PacketMsg::ToPacket(msg) => cb.on_timeout_packet(&msg.packet, &msg.signer)?,
-        PacketMsg::ToClosePacket(msg) => cb.on_timeout_packet(&msg.packet, &msg.signer)?,
+        PacketMsg::ToClosePacket(msg) => {
+            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)?
+        }
     }
     Ok(())
 }
