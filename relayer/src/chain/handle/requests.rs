@@ -1,7 +1,8 @@
 //! Domain-type definitions for requests that a
-//! [`ChainHandle`] can accept. These types trickle
-//! down to the [`ChainEndpoint`] trait. Any chain
-//! that the ibc-relayer library supports will have
+//! [`ChainHandle`](crate::chain::handle::ChainHandle) can accept.
+//! These types trickle down to the
+//! [`ChainEndpoint`](crate::chain::ChainEndpoint) trait.
+//! Any chain that the ibc-relayer library supports will have
 //! to implement these requests.
 
 use ibc::core::{

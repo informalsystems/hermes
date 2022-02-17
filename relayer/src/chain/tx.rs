@@ -4,7 +4,8 @@ use prost_types::Any;
 /// (`Vec<Any>`), which has an associated tracking
 /// number.
 ///
-/// A [`TrackedMsgs`] correlates with a [`TrackedEvents`]
+/// A [`TrackedMsgs`] correlates with a
+/// [`TrackedEvents`](crate::link::operational_data::TrackedEvents)
 /// by sharing the same `tracking_id`.
 #[derive(Debug, Clone)]
 pub struct TrackedMsgs {

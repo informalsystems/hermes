@@ -134,8 +134,8 @@ impl Packet {
 /// An object determines the amount of parallelism that can
 /// be exercised when processing [`IbcEvent`](ibc::events::IbcEvent)
 /// between two chains. For each [`Object`], a corresponding
-/// [`Worker`](crate::worker::Worker) is spawned and all [`IbcEvent`](ibc::events::IbcEvent)s mapped
-/// to an [`Object`] are sent to the associated [`Worker`](crate::worker::Worker)
+/// [`WorkerHandle`](crate::worker::WorkerHandle) is spawned and all [`IbcEvent`](ibc::events::IbcEvent)s mapped
+/// to an [`Object`] are sent to the associated [`WorkerHandle`](crate::worker::WorkerHandle)
 /// for processing.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -187,7 +187,7 @@ define_error! {
 }
 
 impl Object {
-    /// Returns `true` if this [`Object`] is for a [`Worker`](crate::worker::Worker)
+    /// Returns `true` if this [`Object`] is for a [`WorkerHandle`](crate::worker::WorkerHandle)
     /// which is interested in new block events originating from the chain with
     /// the given [`ChainId`]. Returns `false` otherwise.
     pub fn notify_new_block(&self, src_chain_id: &ChainId) -> bool {
