@@ -20,7 +20,11 @@ fn test_self_connected_ibc_transfer() -> Result<(), Error> {
 
 pub struct IbcTransferTest;
 
-impl TestOverrides for IbcTransferTest {}
+impl TestOverrides for IbcTransferTest {
+    fn channel_order(&self) -> Order {
+        Order::Ordered
+    }
+}
 
 impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(

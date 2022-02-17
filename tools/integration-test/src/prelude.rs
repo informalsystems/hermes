@@ -13,6 +13,7 @@ pub use ibc_relayer::registry::SharedRegistry;
 pub use ibc_relayer::supervisor::SupervisorHandle;
 pub use std::thread::sleep;
 pub use tracing::{debug, error, info, warn};
+pub use ibc::core::ics04_channel::channel::Order;
 
 pub use crate::chain::driver::{tagged::TaggedChainDriverExt, ChainDriver};
 pub use crate::error::{handle_generic_error, Error};

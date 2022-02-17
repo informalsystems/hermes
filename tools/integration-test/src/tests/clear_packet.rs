@@ -26,6 +26,10 @@ impl TestOverrides for ClearPacketTest {
     ) -> Result<Option<SupervisorHandle>, Error> {
         Ok(None)
     }
+
+    fn channel_order(&self) -> Order {
+        Order::Ordered
+    }
 }
 
 impl BinaryChannelTest for ClearPacketTest {
