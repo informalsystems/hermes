@@ -56,7 +56,6 @@ itertools = "0.10.3"
 atty = "0.2.14"
 flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
 signal-hook = "0.3.13"
-semver = "1.0.5"
 
 [dependencies.tendermint-proto]
 version = "=0.23.5"
