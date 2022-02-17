@@ -35,7 +35,7 @@ pub(crate) fn process(
             Some(msg.connection_id.clone()), // Local connection id.
             ctx.commitment_prefix(),      // Local commitment prefix.
         ),
-        conn_end.versions(),
+        conn_end.versions().to_vec(),
         conn_end.delay_period(),
     );
 
