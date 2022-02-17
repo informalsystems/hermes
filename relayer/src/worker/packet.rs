@@ -148,16 +148,17 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
             height,
             new_block: _,
         } => {
-            let do_clear_packet =
-                should_clear_packets(is_first_run, clear_on_start, clear_interval, height);
-
-            // Schedule the clearing of pending packets. This may happen once at start,
-            // and may be _forced_ at predefined block intervals.
-            link.a_to_b
-                .schedule_packet_clearing(Some(height), do_clear_packet)
+            // Decide if packet clearing should be scheduled.
+            // Packet clearing may happen once at start,
+            // and then at predefined block intervals.
+            if should_clear_packets(is_first_run, clear_on_start, clear_interval, height) {
+                link.a_to_b.schedule_packet_clearing(Some(height))
+            } else {
+                Ok(())
+            }
         }
 
-        WorkerCmd::ClearPendingPackets => link.a_to_b.schedule_packet_clearing(None, true),
+        WorkerCmd::ClearPendingPackets => link.a_to_b.schedule_packet_clearing(None),
     };
 
     if let Err(e) = result {

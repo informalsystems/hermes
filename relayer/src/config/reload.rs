@@ -43,7 +43,7 @@ impl ConfigReload {
     /// the path to the configuration file to reload,
     /// the current configuration and a channel through which
     /// to send the computed [`ConfigUpdate`]s to the
-    /// [`crate::supervisor::Supervisor`].
+    /// supervisor.
     pub fn new(
         path: impl Into<PathBuf>,
         current: Arc<RwLock<Config>>,
@@ -60,7 +60,7 @@ impl ConfigReload {
     /// This method will read and parse the configuration from the
     /// file, then perform a diff between the current configuration
     /// and the newly parsed one, and finally send the computed
-    /// [`ConfigUpdate`]s to the [`crate::supervisor::Supervisor`].
+    /// [`ConfigUpdate`]s to the supervisor.
     ///
     /// See also: [`ConfigReload::update_config`]
     pub fn reload(&self) -> Result<bool, Error> {
@@ -69,7 +69,7 @@ impl ConfigReload {
     }
 
     /// Compute a diff between the current configuration and the given one,
-    /// and send the computed [`ConfigUpdate`]s to the [`crate::supervisor::Supervisor`].
+    /// and send the computed [`ConfigUpdate`]s to the supervisor.
     pub fn update_config(&self, new: Config) -> Result<bool, Error> {
         let updates = self.compute_updates(&new)?;
 

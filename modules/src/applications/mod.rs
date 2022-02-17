@@ -9,7 +9,7 @@ pub mod ics27_interchain_accounts {
     /// of the full port identifier, which has a
     /// complex structure.
     ///
-    /// https://github.com/cosmos/ibc/tree/master/spec/app/ics-027-interchain-accounts#registering--controlling-flows
+    /// <https://github.com/cosmos/ibc/tree/master/spec/app/ics-027-interchain-accounts#registering--controlling-flows>
     pub const PORT_ID_PREFIX: &str = "ics27-1.";
 
     /// ICS27 application current version.

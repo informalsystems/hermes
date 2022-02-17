@@ -192,7 +192,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChains<Cha
    Newtype wrapper for [`ChainHandle`] to stop the chain handle when
    this value is dropped.
 
-   Note that we cannot stop the chain on drop for [`ProdChainHandle`]
+   Note that we cannot stop the chain on drop for
+   [`ProdChainHandle`](ibc_relayer::chain::handle::ProdChainHandle)
    itself, as the chain handles can be cloned. But for testing purposes,
    we alway stop the chain handle when this "canonical" chain handle
    is dropped.
