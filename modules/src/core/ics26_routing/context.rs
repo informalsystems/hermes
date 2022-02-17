@@ -90,7 +90,6 @@ pub type ModuleEvent = IbcEvent;
 
 pub type ModuleOutput = HandlerOutput<(), ModuleEvent>;
 
-// TODO(hu55a1n1): callbacks must have access to logs
 pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
