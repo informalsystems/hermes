@@ -716,13 +716,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
-        let version = match self.dst_version() {
-            // If the user supplied a version, use that
-            Some(version) => version.clone(),
-            // Otherwise, either use the version defined for the given port if ICS 20 or 27,
-            // or an empty version if the port is non-standard
-            None => version::default_by_port(self.dst_port_id()).unwrap_or_default(),
-        };
+        // If the user supplied a version, use that.
+        // Otherwise, either use the version defined for the `transfer`
+        // or an empty version if the port is non-standard.
+        let version = self
+            .dst_version()
+            .cloned()
+            .or_else(|| version::default_by_port(self.dst_port_id()))
+            .unwrap_or_else(|| {
+                warn!(
+                    chain = %self.dst_chain().id(),
+                    channel = ?self.dst_channel_id(),
+                    port = %self.dst_port_id(),
+                    "no version specified for the channel, falling back on empty version"
+                );
+
+                Version::empty()
+            });
 
         let channel = ChannelEnd::new(
             State::Init,
@@ -872,8 +882,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        // Negotiate the version or fallback on the source channel version
-        let version = version::resolve(self).unwrap_or_else(|_| src_channel.version.clone());
+        // Use the source channel version
+        let version = src_channel.version.clone();
 
         let channel = ChannelEnd::new(
             State::TryOpen,
