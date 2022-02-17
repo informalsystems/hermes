@@ -10,7 +10,8 @@ use crate::core::ics04_channel::handler::{
     channel_validate as ics4_validate, recv_packet::RecvPacketResult,
 };
 use crate::core::ics04_channel::handler::{
-    packet_dispatch as ics4_packet_msg_dispatcher, packet_validate as ics4_packet_validate,
+    packet_callback as ics4_packet_callback, packet_dispatch as ics4_packet_msg_dispatcher,
+    packet_validate as ics4_packet_validate,
 };
 use crate::core::ics04_channel::packet::PacketResult;
 use crate::core::ics26_routing::context::Ics26Context;
@@ -118,8 +119,8 @@ where
 
         Ics4PacketMsg(msg) => {
             let ctx_ro: &Ctx = ctx;
-            let _module_id = ics4_packet_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
-            let handler_output =
+            let module_id = ics4_packet_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
+            let mut handler_output =
                 ics4_packet_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
 
             if matches!(
@@ -131,6 +132,9 @@ where
                     .with_events(handler_output.events)
                     .with_result(()));
             }
+
+            ics4_packet_callback(ctx, &module_id, &msg, &mut handler_output)
+                .map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)

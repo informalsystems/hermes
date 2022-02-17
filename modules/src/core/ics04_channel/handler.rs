@@ -205,3 +205,42 @@ where
         PacketMsg::ToClosePacket(msg) => timeout_on_close::process(ctx, msg),
     }
 }
+
+pub fn packet_callback<Ctx>(
+    ctx: &mut Ctx,
+    module_id: &ModuleId,
+    msg: &PacketMsg,
+    _handler_output: &mut HandlerOutput<PacketResult>,
+) -> Result<(), Error>
+where
+    Ctx: Ics26Context,
+{
+    let cb = ctx
+        .router_mut()
+        .get_route_mut(module_id)
+        .ok_or_else(Error::route_not_found)?;
+
+    match msg {
+        PacketMsg::RecvPacket(msg) => {
+            let (ack, write_fn) = cb.on_recv_packet(&msg.packet, &msg.signer);
+            match ack {
+                None => {}
+                Some(ack) => {
+                    if ack.success() {
+                        if let Some(write_fn) = write_fn {
+                            write_fn(cb.as_any_mut());
+                        }
+                    }
+
+                    // TODO(hu55a1n1): write ack
+                }
+            }
+        }
+        PacketMsg::AckPacket(msg) => {
+            cb.on_acknowledgement_packet(&msg.packet, &msg.acknowledgement, &msg.signer)?
+        }
+        PacketMsg::ToPacket(msg) => cb.on_timeout_packet(&msg.packet, &msg.signer)?,
+        PacketMsg::ToClosePacket(msg) => cb.on_timeout_packet(&msg.packet, &msg.signer)?,
+    }
+    Ok(())
+}
