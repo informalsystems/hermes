@@ -217,7 +217,7 @@ impl ConnectionEnd {
     }
 
     /// Getter for the list of versions in this connection end.
-    pub fn versions<'a>(&'a self) -> &'a [Version] {
+    pub fn versions(&self) -> &[Version] {
         &self.versions
     }
 
