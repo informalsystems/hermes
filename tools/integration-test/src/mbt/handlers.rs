@@ -84,6 +84,13 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         &port_b.as_ref(),
     )?;
 
+    let channel_id_a_2 = assert_eventually_channel_established(
+        chain_handle_b,
+        chain_handle_a,
+        &channel_id_b_2.as_ref(),
+        &port_b.as_ref(),
+    )?;
+
     let new_connected_clients = ConnectedClients {
         client_id_a: DualTagged::new(client_b_to_a_2.id),
         client_id_b: DualTagged::new(client_a_to_b_2.id),
@@ -99,20 +106,13 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     let connected_channel = ConnectedChannel {
         connection: new_connected_connection,
         channel: channel_b_2.flipped(),
-        channel_id_a: DualTagged::new(channel_b_2.dst_channel_id().unwrap().clone()),
-        channel_id_b: channel_id_b_2.clone(),
+        channel_id_a: channel_id_a_2,
+        channel_id_b: channel_id_b_2,
         port_a,
-        port_b: port_b.clone(),
+        port_b,
     };
 
     *channel = Some(connected_channel);
-
-    assert_eventually_channel_established(
-        chain_handle_b,
-        chain_handle_a,
-        &channel_id_b_2.as_ref(),
-        &port_b.as_ref(),
-    )?;
 
     info!("[CreateChannel] Channel is created");
 
