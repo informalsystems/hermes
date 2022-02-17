@@ -11,10 +11,26 @@ use crate::object::Packet;
 use crate::telemetry;
 use crate::util::retry::{retry_with_index, RetryResult};
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
-use crate::worker::retry_strategy;
 
 use super::error::RunError;
 use super::WorkerCmd;
+
+mod retry_strategy {
+    use core::time::Duration;
+
+    use retry::delay::Fibonacci;
+
+    use crate::util::retry::clamp_total;
+
+    // Default parameters for the retrying mechanism
+    const MAX_DELAY: Duration = Duration::from_secs(2); // 1 minute
+    const MAX_TOTAL_DELAY: Duration = Duration::from_secs(5); // 10 minutes
+    const INITIAL_DELAY: Duration = Duration::from_secs(1); // 1 second
+
+    pub fn default() -> impl Iterator<Item = Duration> {
+        clamp_total(Fibonacci::from(INITIAL_DELAY), MAX_DELAY, MAX_TOTAL_DELAY)
+    }
+}
 
 /// Whether or not to clear pending packets at this `step` for the given height.
 /// Packets are cleared on the first iteration if `clear_on_start` is true.
@@ -103,7 +119,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
     spawn_background_task(span, Some(Duration::from_millis(200)), move || {
         if let Ok(cmd) = cmd_rx.try_recv() {
-            retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
+            retry_with_index(retry_strategy::default(), |index| {
                 handle_packet_cmd(
                     &mut is_first_run,
                     &link.lock().unwrap(),

@@ -82,7 +82,7 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
 
     let channel = Channel::new(
         connection.connection.clone(),
-        Order::Unordered,
+        Order::Ordered,
         port_a.0.clone(),
         port_b.0.clone(),
         None,
