@@ -298,7 +298,13 @@ impl BinaryChainTest for PacketExpirationTest {
             let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
                 .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            bootstrap_channel_with_chains(&chains, &PortId::transfer(), &PortId::transfer(), false)?
+            bootstrap_channel_with_chains(
+                &chains,
+                &PortId::transfer(),
+                &PortId::transfer(),
+                Order::Unordered,
+                false,
+            )?
         };
 
         wait_for_client_expiry();
@@ -419,6 +425,7 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
             connection,
             &DualTagged::new(&PortId::transfer()),
             &DualTagged::new(&PortId::transfer()),
+            Order::Unordered,
             false,
         );
 
