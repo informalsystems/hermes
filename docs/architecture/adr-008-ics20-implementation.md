@@ -54,7 +54,7 @@ on-chain modules
     
     type Coin = ibc_proto::cosmos::base::v1beta1::Coin;
 
-    pub trait ICS20Keeper<AccountId>: 
+    pub trait ICS20Keeper<AccountId: Into<String>>: 
         ChannelKeeper 
         + PortKeeper 
         + PortReader 
@@ -73,7 +73,7 @@ on-chain modules
         fn claim_capability(&self, cap: Capability, name: &str) -> Result<(), ICS20Error>;
     }
 
-    pub trait ICS20Reader<AccountId>:
+    pub trait ICS20Reader<AccountId: Into<String>>:
     PortReader
     + AccountReader<AccountId>
     {
@@ -85,7 +85,7 @@ on-chain modules
         fn get_port(&self) -> Result<PortId, Error>;
     }
 
-    pub trait BankKeeper<AccountId> {
+    pub trait BankKeeper<AccountId: Into<String>> {
         /// This function should enable sending ibc fungible tokens from one account to another
         fn send_coins(&self, from: AccountId, to: AccountId, amt: Coin) -> Result<(), ICS20Error>;
         /// This function to enable  minting ibc tokens in a module
@@ -98,7 +98,7 @@ on-chain modules
         fn send_coins_from_account_to_module(&self, from: AccountId, module: AccountId, amt: Coin) -> Result<(), ICS20Error>;
     }
 
-    pub trait AccountReader<AccountId> {
+    pub trait AccountReader<AccountId: Into<String>> {
         /// This function should return the account of the ibc module
         fn get_module_account(&self) -> AccountId;
         /// Returns the escrow account id for a port and channel combination
