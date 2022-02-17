@@ -1436,7 +1436,7 @@ mod tests {
                 _relayer: &Signer,
             ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
                 Ok((
-                    Box::new(MockAck::default()),
+                    Some(Box::new(MockAck::default())),
                     Some(Box::new(|module| {
                         let module = module.downcast_mut::<FooModule>().unwrap();
                         module.counter += 1;
@@ -1460,14 +1460,6 @@ mod tests {
                 counterparty_version: &Version,
             ) -> Result<Version, Error> {
                 Ok(counterparty_version.clone())
-            }
-
-            fn on_recv_packet(
-                &self,
-                _packet: &Packet,
-                _relayer: &Signer,
-            ) -> Result<DeferredWriteResult<dyn Acknowledgement>, Error> {
-                Ok((Box::new(MockAck::default()), None))
             }
         }
 
@@ -1500,7 +1492,7 @@ mod tests {
             on_recv_packet_result("barmodule"),
         ];
         results.into_iter().for_each(|(mid, (ack, write_fn))| {
-            if ack.success() {
+            if matches!(ack, Some(ack) if ack.success()) {
                 if let Some(write_fn) = write_fn {
                     write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut());
                 }
