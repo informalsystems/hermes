@@ -140,10 +140,7 @@ pub mod cosmos {
 }
 
 pub mod ibc {
-    #[deprecated(
-        since = "0.16.0-rc.0",
-        note = "Use `ibc_proto::ibc::applications` instead"
-    )]
+    #[deprecated(since = "0.15.0", note = "Use `ibc_proto::ibc::applications` instead")]
     pub mod apps {
         pub use super::applications::*;
     }
