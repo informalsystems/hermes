@@ -11,7 +11,7 @@ use crate::bootstrap::nary::channel::bootstrap_channels_with_connections;
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
-use crate::framework::binary::channel::BinaryChannelTest;
+use crate::framework::binary::channel::{BinaryChannelTest, ChannelOrderOverride};
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::framework::nary::connection::{run_nary_connection_test, NaryConnectionTest};
 use crate::relayer::driver::RelayerDriver;
@@ -28,7 +28,8 @@ where
         + NodeConfigOverride
         + RelayerConfigOverride
         + SupervisorOverride
-        + PortsOverride<SIZE>,
+        + PortsOverride<SIZE>
+        + ChannelOrderOverride,
 {
     run_nary_connection_test(&RunNaryChannelTest::new(test))
 }
@@ -41,7 +42,8 @@ where
         + NodeConfigOverride
         + RelayerConfigOverride
         + SupervisorOverride
-        + PortsOverride<2>,
+        + PortsOverride<2>
+        + ChannelOrderOverride,
 {
     run_nary_channel_test(&RunBinaryAsNaryChannelTest::new(test))
 }
@@ -145,7 +147,7 @@ impl<'a, Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE>
 where
     Test: NaryChannelTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: PortsOverride<SIZE>,
+    Overrides: PortsOverride<SIZE> + ChannelOrderOverride,
 {
     fn run<Handle: ChainHandle>(
         &self,
@@ -154,11 +156,15 @@ where
         chains: ConnectedChains<Handle, SIZE>,
         connections: ConnectedConnections<Handle, SIZE>,
     ) -> Result<(), Error> {
-        let port_ids = self.test.get_overrides().channel_ports();
+        let overrides = self.test.get_overrides();
+        let port_ids = overrides.channel_ports();
+        let order = overrides.channel_order();
+
         let channels = bootstrap_channels_with_connections(
             connections,
             chains.chain_handles().clone(),
             port_ids,
+            order,
             config.bootstrap_with_random_ids,
         )?;
 
