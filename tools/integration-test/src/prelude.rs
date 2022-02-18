@@ -37,7 +37,7 @@ pub use crate::framework::nary::chain::{
 };
 pub use crate::framework::nary::channel::{
     run_binary_as_nary_channel_test, run_nary_channel_test, NaryChannelTest,
-    RunBinaryAsNaryChannelTest, RunNaryChannelTest,
+    RunBinaryAsNaryChannelTest, RunNaryChannelTest, PortsOverride,
 };
 pub use crate::framework::nary::connection::{
     run_nary_connection_test, NaryConnectionTest, RunNaryConnectionTest,
@@ -51,6 +51,9 @@ pub use crate::relayer::foreign_client::TaggedForeignClientExt;
 pub use crate::types::binary::chains::ConnectedChains;
 pub use crate::types::binary::channel::ConnectedChannel;
 pub use crate::types::binary::connection::ConnectedConnection;
+pub use crate::types::nary::chains::ConnectedChains as NaryConnectedChains;
+pub use crate::types::nary::connection::ConnectedConnections as NaryConnectedConnections;
+pub use crate::types::nary::channel::ConnectedChannels as NaryConnectedChannels;
 pub use crate::types::config::TestConfig;
 pub use crate::types::id::*;
 pub use crate::types::single::node::{FullNode, TaggedFullNodeExt};

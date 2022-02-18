@@ -10,6 +10,7 @@ pub mod client_expiration;
 pub mod memo;
 pub mod supervisor;
 pub mod transfer;
+pub mod ternary_transfer;
 
 #[cfg(any(doc, feature = "manual"))]
 pub mod manual;
