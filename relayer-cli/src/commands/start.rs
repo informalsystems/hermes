@@ -59,9 +59,9 @@ impl Runnable for StartCmd {
 }
 
 /// Register the SIGHUP and SIGUSR1 signals, and notify the supervisor.
-/// - SIGHUP: Trigger a reload of the configuration.
+/// - [DEPRECATED] SIGHUP: Trigger a reload of the configuration.
 /// - SIGUSR1: Ask the supervisor to dump its state and print it to the console.
-fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
+fn register_signals(_reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     use signal_hook::{consts::signal::*, iterator::Signals};
 
     let sigs = vec![
@@ -74,14 +74,7 @@ fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resu
     std::thread::spawn(move || {
         for signal in &mut signals {
             match signal {
-                SIGHUP => {
-                    info!("reloading configuration (triggered by SIGHUP)");
-                    match reload.reload() {
-                        Ok(true) => info!("configuration successfully reloaded"),
-                        Ok(false) => info!("configuration did not change"),
-                        Err(e) => error!("failed to reload configuration: {}", e),
-                    }
-                }
+                SIGHUP => info!("configuration reloading via SIGHUP has been disabled and will be deprecated in the future"),
                 SIGUSR1 => {
                     info!("Dumping state (triggered by SIGUSR1)");
 
