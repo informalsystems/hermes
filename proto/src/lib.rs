@@ -8,7 +8,7 @@
 #![allow(clippy::large_enum_variant)]
 #![allow(rustdoc::bare_urls)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.15.0")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.16.0-rc.0")]
 
 extern crate alloc;
 extern crate core as std;
@@ -140,7 +140,10 @@ pub mod cosmos {
 }
 
 pub mod ibc {
-    #[deprecated(since = "0.16.0", note = "Use `ibc_proto::ibc::applications` instead")]
+    #[deprecated(
+        since = "0.16.0-rc.0",
+        note = "Use `ibc_proto::ibc::applications` instead"
+    )]
     pub mod apps {
         pub use super::applications::*;
     }
