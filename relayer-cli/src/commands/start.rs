@@ -9,7 +9,6 @@ use abscissa_core::{Command, Runnable};
 use crossbeam_channel::Sender;
 
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
-use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::rest;
@@ -40,10 +39,8 @@ impl Runnable for StartCmd {
             });
 
         match crate::config::config_path() {
-            Some(config_path) => {
-                let reload =
-                    ConfigReload::new(config_path, config, supervisor_handle.sender.clone());
-                register_signals(reload, supervisor_handle.sender.clone()).unwrap_or_else(|e| {
+            Some(_) => {
+                register_signals(supervisor_handle.sender.clone()).unwrap_or_else(|e| {
                     warn!("failed to install signal handler: {}", e);
                 });
             }
@@ -61,7 +58,7 @@ impl Runnable for StartCmd {
 /// Register the SIGHUP and SIGUSR1 signals, and notify the supervisor.
 /// - [DEPRECATED] SIGHUP: Trigger a reload of the configuration.
 /// - SIGUSR1: Ask the supervisor to dump its state and print it to the console.
-fn register_signals(_reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
+fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     use signal_hook::{consts::signal::*, iterator::Signals};
 
     let sigs = vec![
