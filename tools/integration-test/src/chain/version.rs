@@ -5,7 +5,7 @@ use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
 
 pub fn get_chain_command_version(command: &str) -> Result<Version, Error> {
-    let output = simple_exec(command, &["version"])?;
+    let output = simple_exec("version-command", command, &["version"])?;
 
     // gaia6 somehow outputs version string result in STDERR
     let raw_version_str = if output.stdout.is_empty() {

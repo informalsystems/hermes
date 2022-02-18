@@ -1,6 +1,5 @@
 use crate::ibc::denom::derive_ibc_denom;
 use crate::prelude::*;
-use crate::util::random::random_u64_range;
 
 #[test]
 fn test_ternary_ibc_transfer() -> Result<(), Error> {
@@ -39,6 +38,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             let wallet_a1 = node_a.wallets().user1().cloned();
 
             let wallet_b1 = node_b.wallets().user1().cloned();
+            let wallet_b2 = node_b.wallets().user2().cloned();
 
             let wallet_c1 = node_c.wallets().user1().cloned();
 
@@ -46,7 +46,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
                 .chain_driver()
                 .query_balance(&wallet_a1.address(), &denom_a)?;
 
-            let a_to_b_amount = random_u64_range(1000, 5000);
+            let a_to_b_amount = 5000;
 
             let channel_a_to_b = channels.channel_at::<0, 1>()?;
 
@@ -67,15 +67,17 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
                 &denom_a,
             )?;
 
-            let denom_b = derive_ibc_denom(
+            let denom_a_to_b = derive_ibc_denom(
                 &channel_a_to_b.port_b.as_ref(),
                 &channel_a_to_b.channel_id_b.as_ref(),
                 &denom_a,
             )?;
 
+            // Chain B will receive ibc/port-b/channel-b/denom
+
             info!(
                 "Waiting for user on chain B to receive IBC transferred amount of {} {}",
-                a_to_b_amount, denom_b
+                a_to_b_amount, denom_a_to_b
             );
 
             node_a.chain_driver().assert_eventual_wallet_amount(
@@ -87,7 +89,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             node_b.chain_driver().assert_eventual_wallet_amount(
                 &wallet_b1.as_ref(),
                 a_to_b_amount,
-                &denom_b.as_ref(),
+                &denom_a_to_b.as_ref(),
             )?;
 
             info!(
@@ -98,13 +100,13 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
             let channel_b_to_c = channels.channel_at::<1, 2>()?;
 
-            let denom_c = derive_ibc_denom(
+            let denom_a_to_c = derive_ibc_denom(
                 &channel_b_to_c.port_b.as_ref(),
                 &channel_b_to_c.channel_id_b.as_ref(),
-                &denom_b.as_ref(),
+                &denom_a_to_b.as_ref(),
             )?;
 
-            let b_to_c_amount = random_u64_range(500, a_to_b_amount);
+            let b_to_c_amount = 2500;
 
             node_b.chain_driver().transfer_token(
                 &channel_b_to_c.port_a.as_ref(),
@@ -112,28 +114,94 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
                 &wallet_b1.address(),
                 &wallet_c1.address(),
                 b_to_c_amount,
-                &denom_b.as_ref(),
+                &denom_a_to_b.as_ref(),
             )?;
+
+            // Chain C will receive ibc/port-c/channel-c/port-b/channel-b/denom
 
             info!(
                 "Waiting for user on chain C to receive IBC transferred amount of {} {}",
-                b_to_c_amount, denom_c
+                b_to_c_amount, denom_a_to_c
             );
-
-            info!("waiting for chain B balance to decrease");
 
             node_b.chain_driver().assert_eventual_wallet_amount(
                 &wallet_b1.as_ref(),
                 a_to_b_amount - b_to_c_amount,
-                &denom_b.as_ref(),
+                &denom_a_to_b.as_ref(),
             )?;
-
-            info!("waiting for chain C balance to increase");
 
             node_c.chain_driver().assert_eventual_wallet_amount(
                 &wallet_c1.as_ref(),
                 b_to_c_amount,
-                &denom_c.as_ref(),
+                &denom_a_to_c.as_ref(),
+            )?;
+
+            let channel_c_to_a = channels.channel_at::<2, 0>()?;
+
+            let denom_a_to_c_to_a = derive_ibc_denom(
+                &channel_c_to_a.port_b.as_ref(),
+                &channel_c_to_a.channel_id_b.as_ref(),
+                &denom_a_to_c.as_ref(),
+            )?;
+
+            let c_to_a_amount = 800;
+
+            node_c.chain_driver().transfer_token(
+                &channel_c_to_a.port_a.as_ref(),
+                &channel_c_to_a.channel_id_a.as_ref(),
+                &wallet_c1.address(),
+                &wallet_a1.address(),
+                c_to_a_amount,
+                &denom_a_to_c.as_ref(),
+            )?;
+
+            // Chain A will receive ibc/port-a/channel-a/port-c/channel-c/port-b/channel-b/denom
+
+            info!(
+                "Waiting for user on chain A to receive IBC transferred amount of {} {}",
+                c_to_a_amount, denom_a_to_c_to_a
+            );
+
+            node_c.chain_driver().assert_eventual_wallet_amount(
+                &wallet_c1.as_ref(),
+                b_to_c_amount - c_to_a_amount,
+                &denom_a_to_c.as_ref(),
+            )?;
+
+            node_a.chain_driver().assert_eventual_wallet_amount(
+                &wallet_a1.as_ref(),
+                c_to_a_amount,
+                &denom_a_to_c_to_a.as_ref(),
+            )?;
+
+            let c_to_b_amount = 500;
+
+            node_c.chain_driver().transfer_token(
+                &channel_b_to_c.port_b.as_ref(),
+                &channel_b_to_c.channel_id_b.as_ref(),
+                &wallet_c1.address(),
+                &wallet_b2.address(),
+                c_to_b_amount,
+                &denom_a_to_c.as_ref(),
+            )?;
+
+            // Chain B will receive ibc/port-b/channel-b/denom
+
+            info!(
+                "Waiting for user on chain B to receive IBC transferred amount of {} {}",
+                c_to_b_amount, denom_a_to_b
+            );
+
+            node_c.chain_driver().assert_eventual_wallet_amount(
+                &wallet_c1.as_ref(),
+                b_to_c_amount - c_to_a_amount - c_to_b_amount,
+                &denom_a_to_c.as_ref(),
+            )?;
+
+            node_b.chain_driver().assert_eventual_wallet_amount(
+                &wallet_b2.as_ref(),
+                c_to_b_amount,
+                &denom_a_to_b.as_ref(),
             )?;
 
             Ok(())

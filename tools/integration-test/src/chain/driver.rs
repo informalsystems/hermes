@@ -169,7 +169,7 @@ impl ChainDriver {
        copying from the logs.
     */
     pub fn exec(&self, args: &[&str]) -> Result<ExecOutput, Error> {
-        simple_exec(&self.command_path, args)
+        simple_exec(self.chain_id.as_str(), &self.command_path, args)
     }
 
     /**
@@ -455,8 +455,11 @@ impl ChainDriver {
         denom: &Denom,
     ) -> Result<(), Error> {
         assert_eventually_succeed(
-            "wallet reach expected amount",
-            40,
+            &format!(
+                "wallet reach {} amount {} {}",
+                user.address, target_amount, denom
+            ),
+            30,
             Duration::from_secs(1),
             || {
                 let amount = self.query_balance(&user.address, denom)?;
@@ -465,7 +468,8 @@ impl ChainDriver {
                     Ok(())
                 } else {
                     Err(Error::generic(eyre!(
-                        "current balance amount {} does not match the target amount {}",
+                        "current balance of account {} with amount {} does not match the target amount {}",
+                        user.address,
                         amount,
                         target_amount
                     )))

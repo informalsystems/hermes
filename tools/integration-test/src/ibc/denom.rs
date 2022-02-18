@@ -73,7 +73,7 @@ pub fn derive_ibc_denom<ChainA, ChainB>(
                 token_transfer::derive_ibc_denom_with_path(&format!("{}/{}", new_path, denom))?;
 
             Ok(MonoTagged::new(Denom::Ibc {
-                path: format!("{}/{}", port_id, channel_id),
+                path: new_path,
                 denom: denom.clone(),
                 hashed,
             }))
