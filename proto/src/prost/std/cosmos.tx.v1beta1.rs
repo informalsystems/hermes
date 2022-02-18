@@ -244,6 +244,8 @@ pub struct SimulateRequest {
     #[prost(message, optional, tag = "1")]
     pub tx: ::core::option::Option<Tx>,
     /// tx_bytes is the raw transaction.
+    ///
+    /// Since: cosmos-sdk 0.43
     #[prost(bytes = "vec", tag = "2")]
     pub tx_bytes: ::prost::alloc::vec::Vec<u8>,
 }

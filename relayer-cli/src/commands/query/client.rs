@@ -111,7 +111,7 @@ impl Runnable for QueryClientConsensusCmd {
         let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
-                "Failed while querying client '{}' on chain '{}' with error: {}",
+                "failed while querying client '{}' on chain '{}' with error: {}",
                 self.client_id, self.chain_id, e
             ))
             .exit(),
@@ -191,7 +191,7 @@ impl Runnable for QueryClientHeaderCmd {
         let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
-                "Failed while querying client '{}' on chain '{}' with error: {}",
+                "failed while querying client '{}' on chain '{}' with error: {}",
                 self.client_id, self.chain_id, e
             ))
             .exit(),

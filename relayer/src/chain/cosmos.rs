@@ -81,24 +81,23 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::event::monitor::{EventMonitor, EventReceiver};
+use crate::chain::{QueryResponse, StatusResponse};
+use crate::config::types::Memo;
+use crate::config::{AddressType, ChainConfig, GasPrice};
+use crate::error::Error;
+use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
-use crate::light_client::LightClient;
-use crate::light_client::Verified;
+use crate::light_client::{LightClient, Verified};
+use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::util::retry::{retry_with_index, RetryResult};
-use crate::{chain::QueryResponse, chain::StatusResponse, event::monitor::TxMonitorCmd};
-use crate::{config::types::Memo, error::Error};
-use crate::{
-    config::{AddressType, ChainConfig, GasPrice},
-    sdk_error::sdk_error_from_tx_sync_error_code,
-};
 
-use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
 use ibc::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
+
+use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
 
 mod compatibility;
 pub mod version;

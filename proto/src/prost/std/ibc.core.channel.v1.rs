@@ -160,6 +160,38 @@ pub enum Order {
     /// packets are delivered exactly in the order which they were sent
     Ordered = 2,
 }
+/// GenesisState defines the ibc channel submodule's genesis state.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag = "1")]
+    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
+    #[prost(message, repeated, tag = "2")]
+    pub acknowledgements: ::prost::alloc::vec::Vec<PacketState>,
+    #[prost(message, repeated, tag = "3")]
+    pub commitments: ::prost::alloc::vec::Vec<PacketState>,
+    #[prost(message, repeated, tag = "4")]
+    pub receipts: ::prost::alloc::vec::Vec<PacketState>,
+    #[prost(message, repeated, tag = "5")]
+    pub send_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
+    #[prost(message, repeated, tag = "6")]
+    pub recv_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
+    #[prost(message, repeated, tag = "7")]
+    pub ack_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
+    /// the sequence for the next generated channel identifier
+    #[prost(uint64, tag = "8")]
+    pub next_channel_sequence: u64,
+}
+/// PacketSequence defines the genesis type necessary to retrieve and store
+/// next send and receive sequences.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PacketSequence {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "3")]
+    pub sequence: u64,
+}
 /// MsgChannelOpenInit defines an sdk.Msg to initialize a channel handshake. It
 /// is called by a relayer on Chain A.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -173,9 +205,13 @@ pub struct MsgChannelOpenInit {
 }
 /// MsgChannelOpenInitResponse defines the Msg/ChannelOpenInit response type.
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenInitResponse {}
+pub struct MsgChannelOpenInitResponse {
+    #[prost(string, tag = "1")]
+    pub channel_id: ::prost::alloc::string::String,
+}
 /// MsgChannelOpenInit defines a msg sent by a Relayer to try to open a channel
-/// on Chain B.
+/// on Chain B. The version field within the Channel field has been deprecated. Its
+/// value will be ignored by core IBC.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgChannelOpenTry {
     #[prost(string, tag = "1")]
@@ -184,6 +220,7 @@ pub struct MsgChannelOpenTry {
     /// the channel identifier of the previous channel in state INIT
     #[prost(string, tag = "2")]
     pub previous_channel_id: ::prost::alloc::string::String,
+    /// NOTE: the version field within the channel has been deprecated. Its value will be ignored by core IBC.
     #[prost(message, optional, tag = "3")]
     pub channel: ::core::option::Option<Channel>,
     #[prost(string, tag = "4")]
@@ -559,38 +596,6 @@ pub mod msg_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
-}
-/// GenesisState defines the ibc channel submodule's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
-    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
-    #[prost(message, repeated, tag = "2")]
-    pub acknowledgements: ::prost::alloc::vec::Vec<PacketState>,
-    #[prost(message, repeated, tag = "3")]
-    pub commitments: ::prost::alloc::vec::Vec<PacketState>,
-    #[prost(message, repeated, tag = "4")]
-    pub receipts: ::prost::alloc::vec::Vec<PacketState>,
-    #[prost(message, repeated, tag = "5")]
-    pub send_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
-    #[prost(message, repeated, tag = "6")]
-    pub recv_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
-    #[prost(message, repeated, tag = "7")]
-    pub ack_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
-    /// the sequence for the next generated channel identifier
-    #[prost(uint64, tag = "8")]
-    pub next_channel_sequence: u64,
-}
-/// PacketSequence defines the genesis type necessary to retrieve and store
-/// next send and receive sequences.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PacketSequence {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    #[prost(uint64, tag = "3")]
-    pub sequence: u64,
 }
 /// QueryChannelRequest is the request type for the Query/Channel RPC method
 #[derive(Clone, PartialEq, ::prost::Message)]
