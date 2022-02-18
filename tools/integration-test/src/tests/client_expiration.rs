@@ -298,11 +298,12 @@ impl BinaryChainTest for PacketExpirationTest {
             let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
                 .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            bootstrap_channel_with_chains(&chains,
+            bootstrap_channel_with_chains(
+                &chains,
                 &PortId::transfer(),
                 &PortId::transfer(),
                 Order::Unordered,
-                false
+                false,
             )?
         };
 

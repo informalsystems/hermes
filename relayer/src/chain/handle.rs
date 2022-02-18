@@ -18,7 +18,6 @@ use ibc::{
             version::Version,
         },
         ics04_channel::{
-            self,
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
@@ -31,6 +30,7 @@ use ibc::{
     signer::Signer,
     Height,
 };
+
 use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -42,11 +42,8 @@ use ibc_proto::ibc::core::{
     commitment::v1::MerkleProof,
     connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
-pub use prod::ProdChainHandle;
 
 use crate::{
-    chain::handle::requests::AppVersion,
-    chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -54,10 +51,11 @@ use crate::{
     keyring::KeyEntry,
 };
 
-use super::{tx::TrackedMsgs, HealthCheck};
+use super::{tx::TrackedMsgs, HealthCheck, StatusResponse};
 
 mod prod;
-pub mod requests;
+
+pub use prod::ProdChainHandle;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
@@ -132,15 +130,14 @@ pub enum ChainRequest {
         reply_to: ReplyTo<KeyEntry>,
     },
 
-    AppVersion {
-        request: AppVersion,
-        reply_to: ReplyTo<ics04_channel::Version>,
-    },
-
     AddKey {
         key_name: String,
         key: KeyEntry,
         reply_to: ReplyTo<()>,
+    },
+
+    IbcVersion {
+        reply_to: ReplyTo<Option<semver::Version>>,
     },
 
     QueryStatus {
@@ -368,9 +365,10 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
-    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
-
     fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
+
+    /// Return the version of the IBC protocol that this chain is running, if known.
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
     fn query_status(&self) -> Result<StatusResponse, Error>;
 

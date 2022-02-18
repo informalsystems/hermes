@@ -2,10 +2,11 @@
    Constructs for implementing overrides for test cases.
 */
 
+use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
-use ibc::core::ics04_channel::channel::Order;
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::supervisor::SupervisorOptions;
@@ -15,7 +16,7 @@ use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
-use crate::framework::binary::channel::{PortsOverride, ChannelOrderOverride};
+use crate::framework::binary::channel::{ChannelOrderOverride, PortsOverride};
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::types::config::TestConfig;
 

@@ -4,8 +4,9 @@
    connected IBC channels with completed handshakes.
 */
 
-use ibc::core::ics24_host::identifier::PortId;
 use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
@@ -52,8 +53,7 @@ where
         + SupervisorOverride
         + PortsOverride
         + ChannelOrderOverride
-        + TestConfigOverride
-        ,
+        + TestConfigOverride,
 {
     run_binary_chain_test(&RunBinaryChannelTest::new(test))
 }

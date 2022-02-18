@@ -5,7 +5,7 @@
 use core::fmt;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::applications::{ics20_fungible_token_transfer, ics27_interchain_accounts};
+use crate::applications::ics20_fungible_token_transfer;
 use crate::prelude::*;
 
 /// The version field for a `ChannelEnd`.
@@ -19,10 +19,6 @@ pub struct Version(String);
 impl Version {
     pub fn ics20() -> Self {
         Self(ics20_fungible_token_transfer::VERSION.to_string())
-    }
-
-    pub fn ics27() -> Self {
-        Self(ics27_interchain_accounts::VERSION.to_string())
     }
 
     pub fn empty() -> Self {

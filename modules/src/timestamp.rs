@@ -134,7 +134,7 @@ impl Timestamp {
         self.time.map(Into::into)
     }
 
-    /// Convert a `Timestamp` to an optional [`Tendermint::Time`]
+    /// Convert a `Timestamp` to an optional [`tendermint::Time`]
     pub fn into_tm_time(self) -> Option<Time> {
         self.time
     }

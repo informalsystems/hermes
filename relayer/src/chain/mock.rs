@@ -17,7 +17,6 @@ use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectio
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::core::ics04_channel::Version;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
@@ -40,7 +39,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::{handle::requests::AppVersion, ChainEndpoint, StatusResponse};
+use crate::chain::{ChainEndpoint, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -160,6 +159,10 @@ impl ChainEndpoint for MockChain {
 
     fn add_key(&mut self, _key_name: &str, _key: KeyEntry) -> Result<(), Error> {
         unimplemented!()
+    }
+
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+        Ok(Some(semver::Version::new(3, 0, 0)))
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -436,10 +439,6 @@ impl ChainEndpoint for MockChain {
         _height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
-    }
-
-    fn query_app_version(&self, _request: AppVersion) -> Result<Version, Error> {
-        todo!()
     }
 }
 
