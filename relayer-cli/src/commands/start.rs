@@ -71,7 +71,7 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     std::thread::spawn(move || {
         for signal in &mut signals {
             match signal {
-                SIGHUP => warn!("configuration reloading via SIGHUP has been disabled and will be deprecated in the future"),
+                SIGHUP => warn!("configuration reloading via SIGHUP has been disabled. The signal handler will be removed in the future"),
                 SIGUSR1 => {
                     info!("Dumping state (triggered by SIGUSR1)");
 
