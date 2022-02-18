@@ -53,6 +53,8 @@ pub fn decode(message: Any) -> Result<Ics26Envelope, Error> {
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.
 /// Returns a handler output with empty result of type `HandlerOutput<()>` which contains the log
 /// and events produced after processing the input `msg`.
+/// If this method returns an error, the runtime is expected to rollback all state modifications to
+/// the `Ctx` caused by all messages from the transaction that this `msg` is a part of.
 pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, Error>
 where
     Ctx: Ics26Context,
