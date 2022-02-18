@@ -185,10 +185,6 @@ define_error! {
             { reason: String }
             |e| { format!("Failed to build conn open try: {0}", e.reason) },
 
-        AppVersion
-            { reason: String }
-            |e| { format!("failed to fetch application version: {0}", e.reason) },
-
         ChanOpenAck
             { channel_id: ChannelId, reason: String }
             |e| {
@@ -492,7 +488,27 @@ define_error! {
 
         EmptyQueryAccount
             { address: String }
-            |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) }
+            |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) },
+
+        NoHistoricalEntries
+            { chain_id: ChainId }
+            |e| {
+                format_args!(
+                    "staking module for chain '{}' does not maintain any historical entries \
+                    (`historical_entries` staking params is set to 0)",
+                    e.chain_id
+                )
+            },
+
+
+        TxIndexingDisabled
+            { chain_id: ChainId }
+            |e| {
+                format_args!(
+                    "transaction indexing for chain '{}' is disabled (`node_info.other.tx_index` is off)",
+                    e.chain_id
+                )
+            },
     }
 }
 

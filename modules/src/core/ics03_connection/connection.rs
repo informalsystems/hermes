@@ -217,8 +217,8 @@ impl ConnectionEnd {
     }
 
     /// Getter for the list of versions in this connection end.
-    pub fn versions(&self) -> Vec<Version> {
-        self.versions.clone()
+    pub fn versions(&self) -> &[Version] {
+        &self.versions
     }
 
     /// Getter for the counterparty.

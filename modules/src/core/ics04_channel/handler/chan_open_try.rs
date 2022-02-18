@@ -77,7 +77,7 @@ pub(crate) fn process(
     }
 
     let get_versions = conn.versions();
-    let version = match get_versions.as_slice() {
+    let version = match get_versions {
         [version] => version,
         _ => return Err(Error::invalid_version_length_connection()),
     };

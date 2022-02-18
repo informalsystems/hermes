@@ -4,6 +4,7 @@
    connected IBC channels with completed handshakes.
 */
 
+use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
@@ -35,6 +36,7 @@ where
         + RelayerConfigOverride
         + SupervisorOverride
         + PortsOverride
+        + ChannelOrderOverride
         + TestConfigOverride,
 {
     run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
@@ -51,6 +53,7 @@ where
         + RelayerConfigOverride
         + SupervisorOverride
         + PortsOverride
+        + ChannelOrderOverride
         + TestConfigOverride,
 {
     run_binary_connection_test(&RunBinaryChannelTest::new(test))
@@ -96,6 +99,10 @@ pub trait PortsOverride {
     fn channel_port_b(&self) -> PortId;
 }
 
+pub trait ChannelOrderOverride {
+    fn channel_order(&self) -> Order;
+}
+
 /**
    A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
    into a test case the implements [`BinaryConnectionTest`].
@@ -138,7 +145,7 @@ impl<'a, Test, Overrides> BinaryConnectionTest for RunBinaryChannelTest<'a, Test
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: PortsOverride,
+    Overrides: PortsOverride + ChannelOrderOverride,
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -147,8 +154,11 @@ where
         chains: ConnectedChains<ChainA, ChainB>,
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let port_a = self.test.get_overrides().channel_port_a();
-        let port_b = self.test.get_overrides().channel_port_b();
+        let overrides = self.test.get_overrides();
+
+        let port_a = overrides.channel_port_a();
+        let port_b = overrides.channel_port_b();
+        let order = overrides.channel_order();
 
         let channels = bootstrap_channel_with_connection(
             &chains.handle_a,
@@ -156,6 +166,7 @@ where
             connection,
             &DualTagged::new(port_a).as_ref(),
             &DualTagged::new(port_b).as_ref(),
+            order,
             config.bootstrap_with_random_ids,
         )?;
 
