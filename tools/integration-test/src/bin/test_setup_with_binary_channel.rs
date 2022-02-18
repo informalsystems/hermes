@@ -49,7 +49,7 @@ impl BinaryChannelTest for Test {
         _chains: ConnectedChains<ChainA, ChainB>,
         _channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        relayer.with_supervisor(|| suspend())
+        relayer.with_supervisor(suspend)
     }
 }
 

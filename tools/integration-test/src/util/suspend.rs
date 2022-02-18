@@ -12,7 +12,7 @@ use tracing::{error, warn};
    so that we can suspend the test and still interact with the
    spawned Gaia chains and chain supervisor for debugging.
 */
-pub fn suspend() -> ! {
+pub fn suspend<R>() -> R {
     warn!("suspending the test indefinitely. you can still interact with any spawned chains and relayers");
 
     loop {

@@ -283,7 +283,7 @@ impl ChainDriver {
         let amounts_str = itertools::join(
             amounts
                 .iter()
-                .map(|(denom, amount)| format!("{}{}", amount, denom.0)),
+                .map(|(denom, amount)| format!("{}{}", amount, denom)),
             ",",
         );
 
@@ -308,7 +308,7 @@ impl ChainDriver {
         denom: &Denom,
         amount: u64,
     ) -> Result<(), Error> {
-        let amount_str = format!("{}{}", amount, denom.0);
+        let amount_str = format!("{}{}", amount, denom);
 
         self.exec(&[
             "--home",
@@ -425,7 +425,7 @@ impl ChainDriver {
                 "balances",
                 &wallet_id.0,
                 "--denom",
-                denom.0.as_str(),
+                denom.as_str(),
                 "--output",
                 "json",
             ])?
@@ -456,7 +456,7 @@ impl ChainDriver {
     ) -> Result<(), Error> {
         assert_eventually_succeed(
             "wallet reach expected amount",
-            20,
+            40,
             Duration::from_secs(1),
             || {
                 let amount = self.query_balance(&user.address, denom)?;

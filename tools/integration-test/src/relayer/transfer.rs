@@ -53,7 +53,7 @@ pub fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
         packet_src_port_id: channel.port_a.value().clone(),
         packet_src_channel_id: channel.channel_id_a.value().clone(),
         amount: Amount(amount.into()),
-        denom: denom.value().0.clone(),
+        denom: denom.value().to_string(),
         receiver: Some(recipient.value().0.clone()),
         timeout_height_offset,
         timeout_seconds,

@@ -37,9 +37,10 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             let denom_a = node_a.denom();
 
             let wallet_a1 = node_a.wallets().user1().cloned();
-            let wallet_a2 = node_a.wallets().user2().cloned();
 
             let wallet_b1 = node_b.wallets().user1().cloned();
+
+            let wallet_c1 = node_c.wallets().user1().cloned();
 
             let balance_a = node_a
                 .chain_driver()
@@ -89,53 +90,51 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
                 &denom_b.as_ref(),
             )?;
 
-            // info!(
-            //     "successfully performed IBC transfer from chain {} to chain {}",
-            //     chains.chain_id_a(),
-            //     chains.chain_id_b(),
-            // );
+            info!(
+                "successfully performed IBC transfer from chain {} to chain {}",
+                node_a.chain_id(),
+                node_b.chain_id(),
+            );
 
-            // let balance_c = chains
-            //     .node_a
-            //     .chain_driver()
-            //     .query_balance(&wallet_c.address(), &denom_a)?;
+            let channel_b_to_c = channels.channel_at::<1, 2>()?;
 
-            // let b_to_a_amount = random_u64_range(500, a_to_b_amount);
+            let denom_c = derive_ibc_denom(
+                &channel_b_to_c.port_b.as_ref(),
+                &channel_b_to_c.channel_id_b.as_ref(),
+                &denom_b.as_ref(),
+            )?;
 
-            // info!(
-            //     "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
-            //     chains.chain_id_b(),
-            //     chains.chain_id_a(),
-            //     b_to_a_amount,
-            //     denom_b
-            // );
+            let b_to_c_amount = random_u64_range(500, a_to_b_amount);
 
-            // chains.node_b.chain_driver().transfer_token(
-            //     &channel.port_b.as_ref(),
-            //     &channel.channel_id_b.as_ref(),
-            //     &wallet_b.address(),
-            //     &wallet_c.address(),
-            //     b_to_a_amount,
-            //     &denom_b.as_ref(),
-            // )?;
+            node_b.chain_driver().transfer_token(
+                &channel_b_to_c.port_a.as_ref(),
+                &channel_b_to_c.channel_id_a.as_ref(),
+                &wallet_b1.address(),
+                &wallet_c1.address(),
+                b_to_c_amount,
+                &denom_b.as_ref(),
+            )?;
 
-            // chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            //     &wallet_b.as_ref(),
-            //     a_to_b_amount - b_to_a_amount,
-            //     &denom_b.as_ref(),
-            // )?;
+            info!(
+                "Waiting for user on chain C to receive IBC transferred amount of {} {}",
+                b_to_c_amount, denom_c
+            );
 
-            // chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            //     &wallet_c.as_ref(),
-            //     balance_c + b_to_a_amount,
-            //     &denom_a,
-            // )?;
+            info!("waiting for chain B balance to decrease");
 
-            // info!(
-            //     "successfully performed reverse IBC transfer from chain {} back to chain {}",
-            //     chains.chain_id_b(),
-            //     chains.chain_id_a(),
-            // );
+            node_b.chain_driver().assert_eventual_wallet_amount(
+                &wallet_b1.as_ref(),
+                a_to_b_amount - b_to_c_amount,
+                &denom_b.as_ref(),
+            )?;
+
+            info!("waiting for chain C balance to increase");
+
+            node_c.chain_driver().assert_eventual_wallet_amount(
+                &wallet_c1.as_ref(),
+                b_to_c_amount,
+                &denom_c.as_ref(),
+            )?;
 
             Ok(())
         })
