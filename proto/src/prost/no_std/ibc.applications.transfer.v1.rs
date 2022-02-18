@@ -22,7 +22,7 @@ pub struct MsgTransfer {
     /// The timeout is disabled when set to 0.
     #[prost(message, optional, tag = "6")]
     pub timeout_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
-    /// Timeout timestamp (in nanoseconds) relative to the current block timestamp.
+    /// Timeout timestamp in absolute nanoseconds since unix epoch.
     /// The timeout is disabled when set to 0.
     #[prost(uint64, tag = "7")]
     pub timeout_timestamp: u64,
@@ -105,6 +105,22 @@ pub struct QueryParamsResponse {
     /// params defines the parameters of the module.
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
+}
+/// QueryDenomHashRequest is the request type for the Query/DenomHash RPC
+/// method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomHashRequest {
+    /// The denomination trace (\[port_id]/[channel_id])+/[denom\]
+    #[prost(string, tag = "1")]
+    pub trace: ::prost::alloc::string::String,
+}
+/// QueryDenomHashResponse is the response type for the Query/DenomHash RPC
+/// method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomHashResponse {
+    /// hash (in hex format) of the denomination trace information.
+    #[prost(string, tag = "1")]
+    pub hash: ::prost::alloc::string::String,
 }
 /// GenesisState defines the ibc-transfer genesis state
 #[derive(Clone, PartialEq, ::prost::Message)]

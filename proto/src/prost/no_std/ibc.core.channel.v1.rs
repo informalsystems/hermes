@@ -205,7 +205,10 @@ pub struct MsgChannelOpenInit {
 }
 /// MsgChannelOpenInitResponse defines the Msg/ChannelOpenInit response type.
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenInitResponse {}
+pub struct MsgChannelOpenInitResponse {
+    #[prost(string, tag = "1")]
+    pub channel_id: ::prost::alloc::string::String,
+}
 /// MsgChannelOpenInit defines a msg sent by a Relayer to try to open a channel
 /// on Chain B. The version field within the Channel field has been deprecated. Its
 /// value will be ignored by core IBC.

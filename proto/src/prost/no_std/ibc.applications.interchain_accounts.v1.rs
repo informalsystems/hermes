@@ -33,6 +33,30 @@ pub enum Type {
     /// Execute a transaction on an interchain accounts host chain
     ExecuteTx = 1,
 }
+/// Metadata defines a set of protocol specific data encoded into the ICS27 channel version bytestring
+/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Metadata {
+    /// version defines the ICS27 protocol version
+    #[prost(string, tag = "1")]
+    pub version: ::prost::alloc::string::String,
+    /// controller_connection_id is the connection identifier associated with the controller chain
+    #[prost(string, tag = "2")]
+    pub controller_connection_id: ::prost::alloc::string::String,
+    /// host_connection_id is the connection identifier associated with the host chain
+    #[prost(string, tag = "3")]
+    pub host_connection_id: ::prost::alloc::string::String,
+    /// address defines the interchain account address to be fulfilled upon the OnChanOpenTry handshake step
+    /// NOTE: the address field is empty on the OnChanOpenInit handshake step
+    #[prost(string, tag = "4")]
+    pub address: ::prost::alloc::string::String,
+    /// encoding defines the supported codec format
+    #[prost(string, tag = "5")]
+    pub encoding: ::prost::alloc::string::String,
+    /// tx_type defines the type of transactions the interchain account can execute
+    #[prost(string, tag = "6")]
+    pub tx_type: ::prost::alloc::string::String,
+}
 /// GenesisState defines the interchain accounts genesis state
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
@@ -65,19 +89,23 @@ pub struct HostGenesisState {
     #[prost(message, optional, tag = "4")]
     pub params: ::core::option::Option<super::host::v1::Params>,
 }
-/// ActiveChannel contains a pairing of port ID and channel ID for an active interchain accounts channel
+/// ActiveChannel contains a connection ID, port ID and associated active channel ID
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActiveChannel {
     #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
+    pub connection_id: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
     pub channel_id: ::prost::alloc::string::String,
 }
-/// RegisteredInterchainAccount contains a pairing of controller port ID and associated interchain account address
+/// RegisteredInterchainAccount contains a connection ID, port ID and associated interchain account address
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RegisteredInterchainAccount {
     #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
+    pub connection_id: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
     pub account_address: ::prost::alloc::string::String,
 }

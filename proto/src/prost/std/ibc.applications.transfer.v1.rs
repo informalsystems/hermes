@@ -22,7 +22,7 @@ pub struct MsgTransfer {
     /// The timeout is disabled when set to 0.
     #[prost(message, optional, tag = "6")]
     pub timeout_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
-    /// Timeout timestamp (in nanoseconds) relative to the current block timestamp.
+    /// Timeout timestamp in absolute nanoseconds since unix epoch.
     /// The timeout is disabled when set to 0.
     #[prost(uint64, tag = "7")]
     pub timeout_timestamp: u64,
@@ -182,6 +182,22 @@ pub struct QueryParamsResponse {
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
 }
+/// QueryDenomHashRequest is the request type for the Query/DenomHash RPC
+/// method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomHashRequest {
+    /// The denomination trace (\[port_id]/[channel_id])+/[denom\]
+    #[prost(string, tag = "1")]
+    pub trace: ::prost::alloc::string::String,
+}
+/// QueryDenomHashResponse is the response type for the Query/DenomHash RPC
+/// method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomHashResponse {
+    /// hash (in hex format) of the denomination trace information.
+    #[prost(string, tag = "1")]
+    pub hash: ::prost::alloc::string::String,
+}
 #[doc = r" Generated client implementations."]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
@@ -291,6 +307,23 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/ibc.applications.transfer.v1.Query/Params");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        #[doc = " DenomHash queries a denomination hash information."]
+        pub async fn denom_hash(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryDenomHashRequest>,
+        ) -> Result<tonic::Response<super::QueryDenomHashResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.transfer.v1.Query/DenomHash",
+            );
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
