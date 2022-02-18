@@ -9,7 +9,7 @@ use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use super::chain::{RelayerConfigOverride, SupervisorOverride};
+use super::chain::RelayerConfigOverride;
 use super::connection::{run_binary_connection_test, BinaryConnectionTest};
 use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
@@ -34,7 +34,6 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride
         + RelayerConfigOverride
-        + SupervisorOverride
         + PortsOverride
         + ChannelOrderOverride
         + TestConfigOverride,
@@ -51,7 +50,6 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride
         + RelayerConfigOverride
-        + SupervisorOverride
         + PortsOverride
         + ChannelOrderOverride
         + TestConfigOverride,

@@ -79,6 +79,7 @@ pub fn boostrap_chain_pair_with_nodes(
         config_path,
         config,
         registry,
+        hang_on_fail: test_config.hang_on_fail,
     };
 
     let chains = ConnectedChains::new(

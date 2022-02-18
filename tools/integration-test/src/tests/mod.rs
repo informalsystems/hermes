@@ -9,8 +9,8 @@ pub mod clear_packet;
 pub mod client_expiration;
 pub mod memo;
 pub mod supervisor;
-pub mod transfer;
 pub mod ternary_transfer;
+pub mod transfer;
 
 #[cfg(any(doc, feature = "manual"))]
 pub mod manual;

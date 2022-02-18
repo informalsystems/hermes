@@ -5,16 +5,14 @@
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::config::Config;
-use ibc_relayer::supervisor::SupervisorHandle;
 
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
-use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
+use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::channel::{ChannelOrderOverride, PortsOverride};
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
-use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 
 /**
@@ -58,33 +56,6 @@ pub trait TestOverrides {
     */
     fn modify_relayer_config(&self, _config: &mut Config) {
         // No modification by default
-    }
-
-    /**
-       Indicates whether the test framework should spawn
-       the relayer before running the test. This is used by
-       [`Self::spawn_supervisor`] if it is not overridden.
-    */
-    fn should_spawn_supervisor(&self) -> bool {
-        true
-    }
-
-    /**
-       Optionally spawns the relayer supervisor after the relayer chain
-       handles and foreign clients are initialized. Default behavior
-       is to spawn the supervisor using [`RelayerDriver::spawn_supervisor`],
-       if [`self.should_spawn_supervisor()`](Self::should_spawn_supervisor)
-       is returns true.
-
-       Implemented for [`SupervisorOverride`].
-    */
-    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Result<Option<SupervisorHandle>, Error> {
-        if self.should_spawn_supervisor() {
-            let handle = relayer.spawn_supervisor()?;
-            Ok(Some(handle))
-        } else {
-            Ok(None)
-        }
     }
 
     /**
@@ -135,12 +106,6 @@ impl<Test: TestOverrides> NodeConfigOverride for Test {
 impl<Test: TestOverrides> RelayerConfigOverride for Test {
     fn modify_relayer_config(&self, config: &mut Config) {
         TestOverrides::modify_relayer_config(self, config)
-    }
-}
-
-impl<Test: TestOverrides> SupervisorOverride for Test {
-    fn spawn_supervisor(&self, relayer: &RelayerDriver) -> Result<Option<SupervisorHandle>, Error> {
-        TestOverrides::spawn_supervisor(self, relayer)
     }
 }
 

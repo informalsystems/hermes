@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use crate::error::Error;
 use crate::types::env::{EnvWriter, ExportEnv};
+use crate::util::suspend::hang_on_error;
 
 #[derive(Clone)]
 pub struct RelayerDriver {
@@ -34,6 +35,8 @@ pub struct RelayerDriver {
        [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
     */
     pub registry: SharedRegistry<ProdChainHandle>,
+
+    pub hang_on_fail: bool,
 }
 
 impl RelayerDriver {
@@ -48,6 +51,12 @@ impl RelayerDriver {
             },
         )
         .map_err(Error::supervisor)
+    }
+
+    pub fn with_supervisor<R>(&self, cont: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
+        let _handle = self.spawn_supervisor()?;
+
+        cont().map_err(hang_on_error(self.hang_on_fail))
     }
 }
 

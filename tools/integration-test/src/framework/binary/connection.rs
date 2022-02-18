@@ -7,9 +7,7 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use super::chain::{
-    run_binary_chain_test, BinaryChainTest, RelayerConfigOverride, SupervisorOverride,
-};
+use super::chain::{run_binary_chain_test, BinaryChainTest, RelayerConfigOverride};
 use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::error::Error;
@@ -30,7 +28,7 @@ pub fn run_two_way_binary_connection_test<Test, Overrides>(test: &Test) -> Resul
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + TestConfigOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + TestConfigOverride,
 {
     run_binary_connection_test(&RunTwoWayBinaryConnectionTest::new(test))
 }
@@ -42,7 +40,7 @@ pub fn run_binary_connection_test<Test, Overrides>(test: &Test) -> Result<(), Er
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + SupervisorOverride + TestConfigOverride,
+    Overrides: NodeConfigOverride + RelayerConfigOverride + TestConfigOverride,
 {
     run_binary_chain_test(&RunBinaryConnectionTest::new(test))
 }

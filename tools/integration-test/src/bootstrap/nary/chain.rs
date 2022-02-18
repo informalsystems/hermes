@@ -99,6 +99,7 @@ pub fn boostrap_chains_with_any_nodes(
         config_path,
         config,
         registry,
+        hang_on_fail: test_config.hang_on_fail,
     };
 
     let connected_chains = DynamicConnectedChains::new(chain_handles, full_nodes, foreign_clients);

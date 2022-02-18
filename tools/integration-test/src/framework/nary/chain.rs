@@ -12,7 +12,7 @@ use crate::bootstrap::nary::chain::{
 };
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
+use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::DropChainHandle;
@@ -41,7 +41,7 @@ pub fn run_nary_chain_test<Test, Overrides, const SIZE: usize>(test: &Test) -> R
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(test))
 }
@@ -66,7 +66,7 @@ pub fn run_self_connected_nary_chain_test<Test, Overrides, const SIZE: usize>(
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride,
 {
     run_nary_node_test(&RunSelfConnectedNaryChainTest::new(test))
 }
@@ -112,14 +112,12 @@ impl<'a, Test, Overrides, const SIZE: usize> NaryNodeTest<SIZE> for RunNaryChain
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride,
+    Overrides: RelayerConfigOverride,
 {
     fn run(&self, config: &TestConfig, nodes: [FullNode; SIZE]) -> Result<(), Error> {
         let (relayer, chains) = boostrap_chains_with_nodes(config, nodes, |config| {
             self.test.get_overrides().modify_relayer_config(config);
         })?;
-
-        let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer)?;
 
         let _drop_handles = chains
             .chain_handles()
@@ -138,15 +136,13 @@ impl<'a, Test, Overrides, const SIZE: usize> NaryNodeTest<1>
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + SupervisorOverride,
+    Overrides: RelayerConfigOverride,
 {
     fn run(&self, config: &TestConfig, nodes: [FullNode; 1]) -> Result<(), Error> {
         let (relayer, chains) =
             boostrap_chains_with_self_connected_node(config, nodes[0].clone(), |config| {
                 self.test.get_overrides().modify_relayer_config(config);
             })?;
-
-        let _supervisor = self.test.get_overrides().spawn_supervisor(&relayer)?;
 
         let _drop_handles = chains
             .chain_handles()

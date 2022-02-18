@@ -10,7 +10,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use crate::bootstrap::nary::channel::bootstrap_channels_with_connections;
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
+use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::channel::{BinaryChannelTest, ChannelOrderOverride};
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::framework::nary::connection::{run_nary_connection_test, NaryConnectionTest};
@@ -27,7 +27,6 @@ where
     Overrides: TestConfigOverride
         + NodeConfigOverride
         + RelayerConfigOverride
-        + SupervisorOverride
         + PortsOverride<SIZE>
         + ChannelOrderOverride,
 {
@@ -41,7 +40,6 @@ where
     Overrides: TestConfigOverride
         + NodeConfigOverride
         + RelayerConfigOverride
-        + SupervisorOverride
         + PortsOverride<2>
         + ChannelOrderOverride,
 {

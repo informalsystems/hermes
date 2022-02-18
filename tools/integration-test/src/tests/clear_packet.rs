@@ -15,11 +15,6 @@ impl TestOverrides for ClearPacketTest {
         config.mode.packets.clear_on_start = false;
         config.mode.packets.clear_interval = 0;
     }
-
-    // Do not start supervisor at the beginning of test
-    fn should_spawn_supervisor(&self) -> bool {
-        false
-    }
 }
 
 impl BinaryChannelTest for ClearPacketTest {
