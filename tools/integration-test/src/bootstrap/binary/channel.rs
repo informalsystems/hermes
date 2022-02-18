@@ -28,6 +28,7 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: &ConnectedChains<ChainA, ChainB>,
     port_a: &PortId,
     port_b: &PortId,
+    order: Order,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let channel = bootstrap_channel(
@@ -35,6 +36,7 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
         &chains.client_a_to_b,
         &DualTagged::new(port_a),
         &DualTagged::new(port_b),
+        order,
         bootstrap_with_random_ids,
     )?;
 
@@ -50,6 +52,7 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     client_a_to_b: &ForeignClient<ChainB, ChainA>,
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
+    order: Order,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let connection = bootstrap_connection(client_b_to_a, client_a_to_b, bootstrap_with_random_ids)?;
@@ -60,6 +63,7 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         connection,
         port_a,
         port_b,
+        order,
         bootstrap_with_random_ids,
     )
 }
@@ -73,6 +77,7 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
     connection: ConnectedConnection<ChainA, ChainB>,
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
+    order: Order,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     if bootstrap_with_random_ids {
@@ -82,7 +87,7 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
 
     let channel = Channel::new(
         connection.connection.clone(),
-        Order::Unordered,
+        order,
         port_a.0.clone(),
         port_b.0.clone(),
         None,
