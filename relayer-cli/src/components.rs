@@ -72,20 +72,26 @@ pub fn enable_ansi() -> bool {
     atty::is(atty::Stream::Stdout) && atty::is(atty::Stream::Stderr)
 }
 
+/// The relayer crates targeted by the default log level.
+const TARGET_CRATES: [&str; 2] = ["ibc_relayer", "ibc_relayer_cli"];
+
+/// Build a tracing directive setting the log level for the relayer crates to the
+/// given `log_level`.
+fn default_directive(log_level: LogLevel) -> String {
+    use itertools::Itertools;
+
+    TARGET_CRATES
+        .iter()
+        .map(|&c| format!("{}={}", c, log_level))
+        .join(",")
+}
+
 /// Builds a tracing filter based on the input `log_level`.
 /// Enables tracing exclusively for the relayer crates.
 /// Returns error if the filter failed to build.
 fn build_tracing_filter(default_level: LogLevel) -> Result<EnvFilter, FrameworkError> {
-    let directive = std::env::var(HERMES_LOG_VAR).unwrap_or_else(|_| {
-        let target_crates = ["ibc_relayer", "ibc_relayer_cli"];
-
-        // SAFETY: unwrap() below works as long as `target_crates` is not empty.
-        target_crates
-            .iter()
-            .map(|&c| format!("{}={}", c, log_level))
-            .reduce(|a, b| format!("{},{}", a, b))
-            .expect("non empty list of target crates")
-    });
+    let directive =
+        std::env::var(HERMES_LOG_VAR).unwrap_or_else(|_| default_directive(default_level));
 
     // Build the filter directive
     match EnvFilter::try_new(&directive) {
