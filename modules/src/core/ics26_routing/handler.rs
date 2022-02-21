@@ -21,28 +21,21 @@ use crate::core::ics26_routing::msgs::Ics26Envelope::{
 };
 use crate::{events::IbcEvent, handler::HandlerOutput};
 
-/// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
-/// info or signature checks here.
-/// Returns a vector of all events that got generated as a byproduct of processing `messages`.
-pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error>
+/// Mimics the DeliverTx ABCI interface, but for a single message and at a slightly lower level.
+/// No need for authentication info or signature checks here.
+/// Returns a vector of all events that got generated as a byproduct of processing `message`.
+pub fn deliver<Ctx>(ctx: &mut Ctx, message: Any) -> Result<Vec<IbcEvent>, Error>
 where
     Ctx: Ics26Context,
 {
-    // A buffer for all the events, to be used as return value.
-    let mut res: Vec<IbcEvent> = Vec::new();
+    // Decode the proto message into a domain message, creating an ICS26 envelope.
+    let envelope = decode(message)?;
 
-    for any_msg in messages {
-        // Decode the proto message into a domain message, creating an ICS26 envelope.
-        let envelope = decode(any_msg)?;
+    // Process the envelope, and accumulate any events that were generated.
+    let output = dispatch(ctx, envelope)?;
 
-        // Process the envelope, and accumulate any events that were generated.
-        let mut output = dispatch(ctx, envelope)?;
-
-        // TODO: output.log and output.result are discarded
-        res.append(&mut output.events);
-    }
-
-    Ok(res)
+    // TODO: output.log and output.result are discarded
+    Ok(output.events)
 }
 
 /// Attempts to convert a message into a [Ics26Envelope] message
