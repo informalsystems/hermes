@@ -24,7 +24,7 @@ use crate::{events::IbcEvent, handler::HandlerOutput};
 /// Mimics the DeliverTx ABCI interface, but for a single message and at a slightly lower level.
 /// No need for authentication info or signature checks here.
 /// Returns a vector of all events that got generated as a byproduct of processing `message`.
-pub fn deliver<Ctx>(ctx: &mut Ctx, message: Any) -> Result<Vec<IbcEvent>, Error>
+pub fn deliver<Ctx>(ctx: &mut Ctx, message: Any) -> Result<(Vec<IbcEvent>, Vec<String>), Error>
 where
     Ctx: Ics26Context,
 {
@@ -34,8 +34,7 @@ where
     // Process the envelope, and accumulate any events that were generated.
     let output = dispatch(ctx, envelope)?;
 
-    // TODO: output.log and output.result are discarded
-    Ok(output.events)
+    Ok((output.events, output.log))
 }
 
 /// Attempts to convert a message into a [Ics26Envelope] message
