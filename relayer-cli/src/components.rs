@@ -75,7 +75,7 @@ pub fn enable_ansi() -> bool {
 /// Builds a tracing filter based on the input `log_level`.
 /// Enables tracing exclusively for the relayer crates.
 /// Returns error if the filter failed to build.
-fn build_tracing_filter(log_level: LogLevel) -> Result<EnvFilter, FrameworkError> {
+fn build_tracing_filter(default_level: LogLevel) -> Result<EnvFilter, FrameworkError> {
     let directive = std::env::var(HERMES_LOG_VAR).unwrap_or_else(|_| {
         let target_crates = ["ibc_relayer", "ibc_relayer_cli"];
 
