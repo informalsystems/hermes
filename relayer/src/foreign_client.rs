@@ -254,7 +254,7 @@ define_error! {
                 event: IbcEvent
             }
             |e| {
-                format_args!("Failed to update client on destination {} because of error event: {}",
+                format_args!("failed to update client on destination {} because of error event: {}",
                     e.chain_id, e.event)
             },
     }

@@ -52,6 +52,8 @@ pub struct CancelSoftwareUpgradeProposal {
     pub description: ::prost::alloc::string::String,
 }
 /// ModuleVersion specifies a module and its consensus version.
+///
+/// Since: cosmos-sdk 0.43
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ModuleVersion {
     /// name of the app module
@@ -102,11 +104,14 @@ pub struct QueryUpgradedConsensusStateRequest {
 /// RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryUpgradedConsensusStateResponse {
+    /// Since: cosmos-sdk 0.43
     #[prost(bytes = "vec", tag = "2")]
     pub upgraded_consensus_state: ::prost::alloc::vec::Vec<u8>,
 }
 /// QueryModuleVersionsRequest is the request type for the Query/ModuleVersions
 /// RPC method.
+///
+/// Since: cosmos-sdk 0.43
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryModuleVersionsRequest {
     /// module_name is a field to query a specific module
@@ -117,6 +122,8 @@ pub struct QueryModuleVersionsRequest {
 }
 /// QueryModuleVersionsResponse is the response type for the Query/ModuleVersions
 /// RPC method.
+///
+/// Since: cosmos-sdk 0.43
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryModuleVersionsResponse {
     /// module_versions is a list of module names with their consensus versions.
@@ -240,6 +247,8 @@ pub mod query_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
         #[doc = " ModuleVersions queries the list of module versions from state."]
+        #[doc = ""]
+        #[doc = " Since: cosmos-sdk 0.43"]
         pub async fn module_versions(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryModuleVersionsRequest>,

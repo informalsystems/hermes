@@ -37,6 +37,8 @@ pub struct Params {
     pub sig_verify_cost_secp256k1: u64,
 }
 /// QueryAccountsRequest is the request type for the Query/Accounts RPC method.
+///
+/// Since: cosmos-sdk 0.43
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAccountsRequest {
     /// pagination defines an optional pagination for the request.
@@ -44,6 +46,8 @@ pub struct QueryAccountsRequest {
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
 }
 /// QueryAccountsResponse is the response type for the Query/Accounts RPC method.
+///
+/// Since: cosmos-sdk 0.43
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAccountsResponse {
     /// accounts are the existing accounts
@@ -139,6 +143,8 @@ pub mod query_client {
             self
         }
         #[doc = " Accounts returns all the existing accounts"]
+        #[doc = ""]
+        #[doc = " Since: cosmos-sdk 0.43"]
         pub async fn accounts(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryAccountsRequest>,

@@ -6,7 +6,7 @@ set -eou pipefail
 # files using the proto-compiler project. It will check
 # out the protobuf files from the git versions specified in
 # proto/src/prost/COSMOS_SDK_COMMIT and
-# proto/src/prost/COSMOS_IBC_COMMIT. If you want to sync
+# proto/src/prost/IBC_GO_COMMIT. If you want to sync
 # the protobuf files to a newer version, modify the
 # relevant files with the new commit IDs.
 
@@ -27,10 +27,10 @@ IBC_GO_GIT="${IBC_GO_GIT:-$CACHE_PATH/ibc-go.git}"
 
 
 COSMOS_SDK_COMMIT="$(cat proto/src/prost/COSMOS_SDK_COMMIT)"
-COSMOS_IBC_COMMIT="$(cat proto/src/prost/COSMOS_IBC_COMMIT)"
+IBC_GO_COMMIT="$(cat proto/src/prost/IBC_GO_COMMIT)"
 
 echo "COSMOS_SDK_COMMIT: $COSMOS_SDK_COMMIT"
-echo "COSMOS_IBC_COMMIT: $COSMOS_IBC_COMMIT"
+echo "IBC_GO_COMMIT: $IBC_GO_COMMIT"
 
 # Use either --sdk-commit flag for commit ID,
 # or --sdk-tag for git tag. Because we can't modify
@@ -93,8 +93,8 @@ IBC_GO_DIR=$(mktemp -d /tmp/ibc-go-XXXXXXXX)
 
 pushd "$IBC_GO_DIR"
 git clone "$IBC_GO_GIT" .
-git checkout "$COSMOS_IBC_COMMIT"
-git checkout -b "$COSMOS_IBC_COMMIT"
+git checkout "$IBC_GO_COMMIT"
+git checkout -b "$IBC_GO_COMMIT"
 popd
 
 # Remove the existing generated protobuf files
