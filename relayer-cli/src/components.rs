@@ -92,7 +92,7 @@ fn build_tracing_filter(default_level: LogLevel) -> Result<EnvFilter, FrameworkE
         Ok(out) => Ok(out),
         Err(e) => {
             eprintln!(
-                "Unable to initialize Hermes from filter directive {:?}: {}",
+                "ERROR: unable to initialize Hermes with log filtering directive {:?}: {}",
                 directive, e
             );
 
