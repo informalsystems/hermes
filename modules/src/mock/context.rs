@@ -1220,8 +1220,10 @@ impl Ics18Context for MockContext {
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Ics18Error> {
         // Forward call to Ics26 delivery method.
-        let events = deliver(self, msgs).map_err(Ics18Error::transaction_failed)?;
-
+        let mut events = vec![];
+        for msg in msgs {
+            events.append(&mut deliver(self, msg).map_err(Ics18Error::transaction_failed)?);
+        }
         self.advance_host_chain_height(); // Advance chain height
         Ok(events)
     }
