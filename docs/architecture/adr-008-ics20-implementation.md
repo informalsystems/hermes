@@ -19,26 +19,110 @@ on-chain modules
         InvalidDenomTrace,
         ...
     }
+    #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+    pub struct Denom(String);
+    
+    impl AsRef<str> for Denom {
+        ...
+    }
+
+    impl FromStr for Denom{
+        ...
+    }
+
+    impl fmt::Display for Decimal {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            ...
+        }
+    }
+
+    #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+    pub struct Decimal(u64);
+
+    impl FromStr for Decimal {
+        type Err = ICS20Error;
+
+        fn from_str(s: &str) -> Result<Self> {
+            ...
+        }
+    }
+
+    impl fmt::Display for Decimal {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            ...
+        }
+    }
+
+    impl Add for Decimal {
+        type Output = Decimal;
+
+        #[inline]
+        fn add(self, rhs: Decimal) -> Decimal {
+            ...
+        }
+    }
+
+    impl AddAssign for Decimal {
+        #[inline]
+        fn add_assign(&mut self, rhs: Decimal) {
+            ...
+        }
+    }
+
+    /// Coin defines a token with a denomination and an amount.
+    #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+    pub struct Coin {
+        /// Denomination
+        pub denom: Denom,
+
+        /// Amount
+        pub amount: Decimal,
+    }
+
+    impl TryFrom<proto::cosmos::base::v1beta1::Coin> for Coin {
+        type Error = ICS20Error;
+
+        fn try_from(proto: proto::cosmos::base::v1beta1::Coin) -> Result<Coin, Self::Error> {
+            ...
+        }
+    }
+
+    impl TryFrom<&proto::cosmos::base::v1beta1::Coin> for Coin {
+        type Error = ICS20Error;
+
+        fn try_from(proto: &proto::cosmos::base::v1beta1::Coin) -> Result<Coin, Self::Error> {
+            ...
+        }
+    }
+
+    impl From<Coin> for proto::cosmos::base::v1beta1::Coin {
+        fn from(coin: Coin) -> proto::cosmos::base::v1beta1::Coin {
+            ...
+        }
+    }
+
+    impl From<&Coin> for proto::cosmos::base::v1beta1::Coin {
+        fn from(coin: &Coin) -> proto::cosmos::base::v1beta1::Coin {
+            ...
+        }
+    }
+
+    pub struct TracePrefix {
+        pub port_id: PortId,
+        pub channel_id: ChannelId
+    }
 
     /// This struct and it's implementations should help identifying denomination traces
     pub struct DenomTrace {
         /// Full denomination path
-        trace_path: String,
+        pub trace_path: Vec<TracePrefix>,
         /// Base denimination
-        base_denom: String
+        pub base_denom: Denom
     }
 
     impl DenomTrace {
-        /// Creates a denom trace from a raw string
-        pub fn parse_denom_trace(raw_trace: &str) -> Self {
-            ...
-        }
         /// Returns the full denom path
         fn get_full_denom_path(&self) -> String {
-            ...
-        }
-        /// Validates the denom trace fields
-        fn validate(&self) -> Result<(), ICS20Error> {
             ...
         }
         /// IBCDenom a coin denomination for an ICS20 fungible token in the format
@@ -50,18 +134,26 @@ on-chain modules
         fn get_prefix(&self) -> String {
             ...
         }
-    }
-    
-    type Coin = ibc_proto::cosmos::base::v1beta1::Coin;
 
-    pub trait ICS20Keeper<AccountId: Into<String>>: 
+        /// Returns the prefix for this trace
+        fn has_prefix(full_path: &str, prefix: &str) -> bool {
+            ...
+        }
+    }
+
+    impl FromStr for DenomTrace {
+        ...
+    }
+
+    pub trait ICS20Keeper: 
         ChannelKeeper 
         + PortKeeper 
         + PortReader 
-        + BankKeeper<AccountId> 
-        + AccountKeeper<AccountId> 
+        + BankKeeper<Self::AccountId> 
+        + AccountKeeper<Self::AccountId> 
         + CapabilityKeeper 
     {
+        type AccountId: Into<String>;
         /// bind_port defines a wrapper function for the PortKeeper's bind_port function.
         fn bind_port(&self, port_id: PortId) -> Result<(), ICS20Error>;
         /// set_port sets the portID for the transfer module.
@@ -73,10 +165,11 @@ on-chain modules
         fn claim_capability(&self, cap: Capability, name: &str) -> Result<(), ICS20Error>;
     }
 
-    pub trait ICS20Reader<AccountId: Into<String>>:
+    pub trait ICS20Reader:
     PortReader
-    + AccountReader<AccountId>
+    + AccountReader<Self::AccountId>
     {
+        type AccountId: Into<String>;
         /// is_bound checks if the transfer module is already bound to the desired port.
         fn is_bound(&self, port_id: PortId) -> bool;
         /// get_transfer_account returns the ICS20 - transfers AccountId.
@@ -85,7 +178,7 @@ on-chain modules
         fn get_port(&self) -> Result<PortId, Error>;
     }
 
-    pub trait BankKeeper<AccountId: Into<String>> {
+    pub trait BankKeeper<AccountId> {
         /// This function should enable sending ibc fungible tokens from one account to another
         fn send_coins(&self, from: AccountId, to: AccountId, amt: Coin) -> Result<(), ICS20Error>;
         /// This function to enable  minting ibc tokens in a module
@@ -98,7 +191,7 @@ on-chain modules
         fn send_coins_from_account_to_module(&self, from: AccountId, module: AccountId, amt: Coin) -> Result<(), ICS20Error>;
     }
 
-    pub trait AccountReader<AccountId: Into<String>> {
+    pub trait AccountReader<AccountId> {
         /// This function should return the account of the ibc module
         fn get_module_account(&self) -> AccountId;
         /// Returns the escrow account id for a port and channel combination
@@ -114,9 +207,25 @@ The following handlers are recommended to be implemented in the ics20_fungible_t
 
 These handlers will be executed in the module callbacks of any thirdparty IBCmodule that is implementing an ICS20 application on-chain
 ```rust
+    pub enum ICS20Acknowledgement {
+        /// Equivalent to b"AQ=="
+        Success, 
+        /// Error Acknowledgement
+        Error(String)
+    }
+
+    impl From<GenericAcknoledgement> for ICS20Acknowledgement {
+        ...
+    }
+
+    impl Acknowledgement for ICS20Acknowledgement {
+        fn success() -> bool {
+            ...
+        }
+    }
     /// Initiates ICS20 token transfer
     /// Escrows tokens from sender and registers the send packet 
-    pub send_transfer<Ctx>(ctx: &Ctx, source_port: PortId, msg: MsgTransfer) -> Result<(), ICS20Error>
+    pub send_transfer<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<(), ICS20Error>
         where Ctx: ICS20Context
     {
         /* 
@@ -149,7 +258,7 @@ These handlers will be executed in the module callbacks of any thirdparty IBCmod
     /// acknowledgement written on the receiving chain. If the acknowledgement
     /// was a success then nothing occurs. If the acknowledgement failed, then
     /// the sender is refunded their tokens.
-    pub on_acknowledgement_packet<Ctx>(ctx: &Ctx, packet: Packet, data: MsgTransfer) -> Result<(), ICS20Error>
+    pub on_acknowledgement_packet<Ctx>(ctx: &Ctx, packet: Packet, data: MsgTransfer) -> Result<ICS20Acknowledgement, ICS20Error>
         where Ctx: ICS20Context
     {
         /* 
