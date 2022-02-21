@@ -1,5 +1,44 @@
 # CHANGELOG
 
+## v0.12.0-rc.0
+
+> ⚠️  This is a release candidate and not the final release for v0.12.0.
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - IBC handlers now retrieve the host timestamp from the latest host consensus
+    state ([#1770](https://github.com/informalsystems/ibc-rs/issues/1770))
+- [Relayer Library](relayer)
+  - Handle non-standard ports in channel handshake
+    ([#1837](https://github.com/informalsystems/ibc-rs/issues/1837))
+  - Fix duplicate SendPacket events emitted by EndBlock
+    ([#1844](https://github.com/informalsystems/ibc-rs/issues/1844))
+  - Fix support for non-standard ports in channel handshake
+    ([#1861](https://github.com/informalsystems/ibc-rs/issues/1861),
+    [#1837](https://github.com/informalsystems/ibc-rs/issues/1837))
+  - Fixed bug where Hermes cleared packets at startup, despite
+    `clear_on_start = false` ([#1872](https://github.com/informalsystems/ibc-rs/issues/1872))
+
+### FEATURES
+
+- Upgrade protos and compatibility to IBC v3.0.0-rc.0 and Cosmos SDK v0.45.1
+  ([#1797](https://github.com/informalsystems/ibc-rs/issues/1797))
+
+### IMPROVEMENTS
+
+- [IBC Modules](modules)
+  - Define CapabilityReader and CapabilityKeeper traits
+    ([#1769](https://github.com/informalsystems/ibc-rs/issues/1769))
+- [Relayer Library](relayer)
+  - Add two more health checks: tx indexing enabled and historical entries > 0
+    ([#1388](https://github.com/informalsystems/ibc-rs/issues/1388))
+  - Changed `ConnectionEnd::versions` method to be non-allocating by having it return a `&[Version]` instead of `Vec<Version>`. ([#1880](https://github.com/informalsystems/ibc-rs/pull/1880))
+- [Relayer CLI](relayer-cli)
+  - Added `clear packets` command, combining the effects of
+    `tx raw packet-recv` and `tx raw packet-ack`.
+    ([#1834](https://github.com/informalsystems/ibc-rs/pull/1834))
+
 ## v0.11.1
 *February 4th, 2022*
 
