@@ -19,7 +19,8 @@ on-chain modules
         InvalidDenomTrace,
         ...
     }
-    #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+    #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+    #[serde(untagged)]
     pub struct Denom(String);
     
     impl AsRef<str> for Denom {
@@ -163,6 +164,8 @@ on-chain modules
         /// claim_capability allows the transfer module to claim a capability that IBC module
         /// passes to it
         fn claim_capability(&self, cap: Capability, name: &str) -> Result<(), ICS20Error>;
+        /// Set channel escrow address
+        fn set_channel_escrow_address(&self, port_id: PortId, channel_id: ChannelId) -> Result<(), ICS20Error>;
     }
 
     pub trait ICS20Reader:
@@ -176,6 +179,8 @@ on-chain modules
         fn get_transfer_account(&self) -> AccountId;
         /// get_port returns the portID for the transfer module.
         fn get_port(&self) -> Result<PortId, Error>;
+        /// Returns the escrow account id for a port and channel combination
+        fn get_channel_escrow_address(&self, port_id: PortId, channel_id: ChannelId) -> Result<Self:AccountId, ICS20Error>;
     }
 
     pub trait BankKeeper<AccountId> {
@@ -194,8 +199,6 @@ on-chain modules
     pub trait AccountReader<AccountId> {
         /// This function should return the account of the ibc module
         fn get_module_account(&self) -> AccountId;
-        /// Returns the escrow account id for a port and channel combination
-        fn get_escrow_account(port_id: PortId, channel_id: ChannelId) -> AccountId;
     }
 
     pub trait ICS20Context: ICS20Keeper + ICS20Reader;
@@ -223,6 +226,15 @@ These handlers will be executed in the module callbacks of any thirdparty IBCmod
             ...
         }
     }
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(tag = "type")]
+    pub struct FungibleTokenPacketData {
+        denomination: Denom,
+        amount: U256,
+        sender: String,
+        receiver: String,
+    }
     /// Initiates ICS20 token transfer
     /// Escrows tokens from sender and registers the send packet 
     pub send_transfer<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<(), ICS20Error>
@@ -235,7 +247,7 @@ These handlers will be executed in the module callbacks of any thirdparty IBCmod
     }
     
     /// Handles incoming packets with ICS20 data
-    pub on_recv_packet<Ctx>(ctx: &Ctx, packet: Packet, data: MsgTransfer) -> Result<(), ICS20Error>
+    pub on_recv_packet<Ctx>(ctx: &Ctx, packet: Packet, data: FungibleTokenPacketData) -> Result<(), ICS20Error>
         where Ctx: ICS20Context
     {
         /* 
@@ -246,7 +258,7 @@ These handlers will be executed in the module callbacks of any thirdparty IBCmod
 
     /// on_timeout_packet refunds the sender since the original packet sent was
     /// never received and has been timed out.
-    pub on_timeout_packet<Ctx>(ctx: &Ctx, packet: Packet, data: MsgTransfer) -> Result<(), ICS20Error>
+    pub on_timeout_packet<Ctx>(ctx: &Ctx, packet: Packet, data: FungibleTokenPacketData) -> Result<(), ICS20Error>
         where Ctx: ICS20Context
     {
         /* 
@@ -258,7 +270,7 @@ These handlers will be executed in the module callbacks of any thirdparty IBCmod
     /// acknowledgement written on the receiving chain. If the acknowledgement
     /// was a success then nothing occurs. If the acknowledgement failed, then
     /// the sender is refunded their tokens.
-    pub on_acknowledgement_packet<Ctx>(ctx: &Ctx, packet: Packet, data: MsgTransfer) -> Result<ICS20Acknowledgement, ICS20Error>
+    pub on_acknowledgement_packet<Ctx>(ctx: &Ctx, packet: Packet, data: FungibleTokenPacketData) -> Result<ICS20Acknowledgement, ICS20Error>
         where Ctx: ICS20Context
     {
         /* 
@@ -268,7 +280,7 @@ These handlers will be executed in the module callbacks of any thirdparty IBCmod
     }
 
     /// Implements logic for refunding a sender on packet timeout or acknowledgement error
-    pub refund_packet_token<Ctx>(ctx: &Ctx, packet: Packet, data: MsgTransfer) -> Result<(), ICS20Error>
+    pub refund_packet_token<Ctx>(ctx: &Ctx, packet: Packet, data: FungibleTokenPacketData) -> Result<(), ICS20Error>
       where Ctx: ICS20Context
     {
         /* 
