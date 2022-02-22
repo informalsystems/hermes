@@ -33,7 +33,7 @@ time = { version = "0.3", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1", default-features = false }
-tracing = { version = "0.1.30", default-features = false }
+tracing = { version = "0.1.31", default-features = false }
 prost = { version = "0.9", default-features = false }
 prost-types = { version = "0.9", default-features = false }
 bytes = { version = "1.1.0", default-features = false }
