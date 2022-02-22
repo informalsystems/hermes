@@ -13,7 +13,7 @@ pub struct CompletionsCmd {
 
 impl Runnable for CompletionsCmd {
     fn run(&self) {
-        let mut app = EntryPoint::into_app();
+        let mut app = EntryPoint::command();
         let app_name = app.get_name().to_owned();
         clap_complete::generate(self.shell, &mut app, app_name, &mut io::stdout());
     }
