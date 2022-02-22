@@ -195,8 +195,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         channel_open_event: IbcEvent,
     ) -> Result<Channel<ChainA, ChainB>, ChannelError> {
         let channel_event_attributes = channel_open_event
+            .clone()
             .channel_attributes()
-            .ok_or_else(|| ChannelError::invalid_event(channel_open_event.clone()))?;
+            .ok_or_else(|| ChannelError::invalid_event(channel_open_event))?;
 
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id.clone();
