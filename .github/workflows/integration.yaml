@@ -71,6 +71,6 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
         run: |
-          nix shell github:JonathanLorimer/cosmos.nix/jonathan/switch-to-buildGoModule#${{ matrix.gaiad }} -c cargo \
+          nix shell github:informalsystems/cosmos.nix#${{ matrix.gaiad }} -c cargo \
             test -p ibc-integration-test --no-fail-fast -- \
             --nocapture --test-threads=1
