@@ -33,7 +33,7 @@ impl Runnable for StartCmd {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let supervisor_handle = make_supervisor::<ProdChainHandle>(config.clone(), self.full_scan)
+        let supervisor_handle = make_supervisor::<ProdChainHandle>(config, self.full_scan)
             .unwrap_or_else(|e| {
                 Output::error(format!("Hermes failed to start, last error: {}", e)).exit()
             });

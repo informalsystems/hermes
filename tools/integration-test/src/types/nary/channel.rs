@@ -8,7 +8,7 @@ use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;
 
-use super::chains::TaggedHandle;
+use super::aliases::NthHandle;
 use crate::error::Error;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::tagged::*;
@@ -39,28 +39,28 @@ pub struct DynamicConnectedChannels<Handle: ChainHandle> {
    at position `FIRST` and `SECOND`.
 */
 pub type TaggedConnectedChannel<Handle, const FIRST: usize, const SECOND: usize> =
-    ConnectedChannel<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>>;
+    ConnectedChannel<NthHandle<Handle, FIRST>, NthHandle<Handle, SECOND>>;
 
 /**
    A tagged [`Channel`] with the A side at `FIRST` position and B side at
    the `SECOND` position.
 */
 pub type TaggedChannel<Handle, const FIRST: usize, const SECOND: usize> =
-    Channel<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>>;
+    Channel<NthHandle<Handle, FIRST>, NthHandle<Handle, SECOND>>;
 
 /**
    A tagged [`ChannelId`] for the chain at position `FIRST` that is correspond
    to the counterparty chain at position `SECOND`
 */
 pub type TaggedChannelId<Handle, const FIRST: usize, const SECOND: usize> =
-    DualTagged<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>, ChannelId>;
+    DualTagged<NthHandle<Handle, FIRST>, NthHandle<Handle, SECOND>, ChannelId>;
 
 /**
    A tagged [`PortId`] for the chain at position `FIRST` that is correspond
    to the counterparty chain at position `SECOND`
 */
 pub type TaggedPortId<Handle, const FIRST: usize, const SECOND: usize> =
-    DualTagged<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>, PortId>;
+    DualTagged<NthHandle<Handle, FIRST>, NthHandle<Handle, SECOND>, PortId>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
     /**

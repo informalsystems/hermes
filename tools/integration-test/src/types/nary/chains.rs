@@ -7,11 +7,12 @@ use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
+use super::aliases::*;
 use crate::error::Error;
 use crate::types::binary::chains::ConnectedChains as BinaryConnectedChains;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
-use crate::util::array::{into_nested_vec, try_into_array, try_into_nested_array};
+use crate::util::array::try_into_array;
 
 /**
    A fixed-size N-ary connected chains as specified by `SIZE`.
@@ -27,7 +28,7 @@ use crate::util::array::{into_nested_vec, try_into_array, try_into_nested_array}
 pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
     chain_handles: [Handle; SIZE],
     full_nodes: [FullNode; SIZE],
-    foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
+    foreign_clients: ForeignClientPairs<Handle, SIZE>,
 }
 
 /**
@@ -42,40 +43,8 @@ pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
 pub struct DynamicConnectedChains<Handle: ChainHandle> {
     chain_handles: Vec<Handle>,
     full_nodes: Vec<FullNode>,
-    foreign_clients: Vec<Vec<ForeignClient<Handle, Handle>>>,
+    pub foreign_clients: Vec<Vec<ForeignClient<Handle, Handle>>>,
 }
-
-/**
-   Lifts a const generic `usize` into a type.
-
-   This allows us to use `usize` as a tag, for example,
-   `MonoTagged<Size<1>, String>` is a `String` that is
-   tagged by the const generic `1`.
-*/
-pub enum Size<const TAG: usize> {}
-
-/**
-   Tag a `Handle: ChainHandle` type with a const generic `TAG: usize`.
-
-   In an N-ary chain implementation, we have to use the same
-   `Handle: ChainHandle` type for all elements in the N-ary data
-   structures. However since the [`ChainHandle`] type is also being
-   used to tag other values, we want to be able to differentiate
-   between tagged values coming from chains at different positions
-   in the N-ary setup.
-
-   The solution is to tag each `Handle` with the const generic
-   positions. With that a position-tagged type like
-   `MonoTagged<Size<0>, Handle>` would have a different type
-   from the type tagged at a different position like
-   `MonoTagged<Size<1>, Handle>`.
-
-   To reduce the boilerplate, we define the type alias
-   `TaggedHandle` so that less typing is needed to refer
-   to `ChainHandle`s that are tagged by position.
-
-*/
-pub type TaggedHandle<Handle, const TAG: usize> = MonoTagged<Size<TAG>, Handle>;
 
 /**
    A pair of binary [`ConnectedChains`](BinaryConnectedChains) that are
@@ -99,20 +68,13 @@ pub type TaggedHandle<Handle, const TAG: usize> = MonoTagged<Size<TAG>, Handle>;
    than the usual abstract type tags.
 */
 pub type TaggedConnectedChains<Handle, const FIRST: usize, const SECOND: usize> =
-    BinaryConnectedChains<TaggedHandle<Handle, FIRST>, TaggedHandle<Handle, SECOND>>;
+    BinaryConnectedChains<NthHandle<Handle, FIRST>, NthHandle<Handle, SECOND>>;
 
 /**
    A [`FullNode`] that is tagged by a `Handle: ChainHandle` and
    the const generics `TAG: usize`.
 */
-pub type TaggedFullNode<Handle, const TAG: usize> = MonoTagged<TaggedHandle<Handle, TAG>, FullNode>;
-
-/**
-   A [`ForeignClient`] that is tagged by a `Handle: ChainHandle` and
-   the const generics `DEST: usize` and `SRC: usize`.
-*/
-pub type TaggedForeignClient<Handle, const DEST: usize, const SRC: usize> =
-    ForeignClient<TaggedHandle<Handle, DEST>, TaggedHandle<Handle, SRC>>;
+pub type TaggedFullNode<Handle, const TAG: usize> = MonoTagged<NthHandle<Handle, TAG>, FullNode>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
     /**
@@ -138,16 +100,16 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
             let handle_a = self.chain_handles[FIRST].clone();
             let handle_b = self.chain_handles[SECOND].clone();
 
-            let client_a_to_b = self.foreign_clients[FIRST][SECOND].clone();
-            let client_b_to_a = self.foreign_clients[SECOND][FIRST].clone();
+            let client_a_to_b = self.foreign_clients.foreign_client_at::<FIRST, SECOND>()?;
+            let client_b_to_a = self.foreign_clients.foreign_client_at::<SECOND, FIRST>()?;
 
             Ok(BinaryConnectedChains {
                 node_a: MonoTagged::new(node_a),
                 node_b: MonoTagged::new(node_b),
                 handle_a: MonoTagged::new(handle_a),
                 handle_b: MonoTagged::new(handle_b),
-                client_a_to_b: client_a_to_b.map_chain(MonoTagged::new, MonoTagged::new),
-                client_b_to_a: client_b_to_a.map_chain(MonoTagged::new, MonoTagged::new),
+                client_a_to_b: client_a_to_b.map_chain(MonoTagged::retag, MonoTagged::retag),
+                client_b_to_a: client_b_to_a.map_chain(MonoTagged::retag, MonoTagged::retag),
             })
         }
     }
@@ -174,7 +136,7 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
 
        Returns a [`ChainHandle`] tagged by `POS`.
     */
-    pub fn chain_handle_at<const POS: usize>(&self) -> Result<TaggedHandle<Handle, POS>, Error> {
+    pub fn chain_handle_at<const POS: usize>(&self) -> Result<NthHandle<Handle, POS>, Error> {
         if POS >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get full_node beyond position {}",
@@ -193,20 +155,8 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
     */
     pub fn foreign_client_at<const SRC: usize, const DEST: usize>(
         &self,
-    ) -> Result<TaggedForeignClient<Handle, DEST, SRC>, Error> {
-        if SRC >= SIZE || DEST >= SIZE {
-            Err(Error::generic(eyre!(
-                "cannot get foreign client beyond position {}/{}",
-                SRC,
-                DEST
-            )))
-        } else {
-            let client = self.foreign_clients[SRC][DEST]
-                .clone()
-                .map_chain(MonoTagged::new, MonoTagged::new);
-
-            Ok(client)
-        }
+    ) -> Result<NthForeignClient<Handle, DEST, SRC>, Error> {
+        self.foreign_clients.foreign_client_at::<SRC, DEST>()
     }
 
     pub fn chain_handles(&self) -> &[Handle; SIZE] {
@@ -217,7 +167,7 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
         &self.full_nodes
     }
 
-    pub fn foreign_clients(&self) -> &[[ForeignClient<Handle, Handle>; SIZE]; SIZE] {
+    pub fn foreign_clients(&self) -> &ForeignClientPairs<Handle, SIZE> {
         &self.foreign_clients
     }
 }
@@ -255,7 +205,7 @@ impl<Handle: ChainHandle, const SIZE: usize> From<ConnectedChains<Handle, SIZE>>
         Self {
             chain_handles: chains.chain_handles.into(),
             full_nodes: chains.full_nodes.into(),
-            foreign_clients: into_nested_vec(chains.foreign_clients),
+            foreign_clients: chains.foreign_clients.into_nested_vec(),
         }
     }
 }
@@ -269,7 +219,7 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChains<Hand
         Ok(ConnectedChains {
             chain_handles: try_into_array(chains.chain_handles)?,
             full_nodes: try_into_array(chains.full_nodes)?,
-            foreign_clients: try_into_nested_array(chains.foreign_clients)?,
+            foreign_clients: ForeignClientPairs::try_from_nested_vec(chains.foreign_clients)?,
         })
     }
 }

@@ -9,8 +9,9 @@ use ibc_relayer::foreign_client::ForeignClient;
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::error::Error;
 use crate::types::binary::connection::ConnectedConnection;
+use crate::types::nary::aliases::ForeignClientPairs;
 use crate::types::nary::connection::{ConnectedConnections, DynamicConnectedConnections};
-use crate::util::array::{assert_same_dimension, into_nested_vec};
+use crate::util::array::assert_same_dimension;
 
 /**
    Bootstrap a dynamic number of connections based on the
@@ -55,11 +56,11 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
 }
 
 pub fn bootstrap_connections<Handle: ChainHandle, const SIZE: usize>(
-    foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
+    foreign_clients: ForeignClientPairs<Handle, SIZE>,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedConnections<Handle, SIZE>, Error> {
     let connections = bootstrap_connections_dynamic(
-        &into_nested_vec(foreign_clients),
+        &foreign_clients.into_nested_vec(),
         bootstrap_with_random_ids,
     )?;
 

@@ -59,6 +59,7 @@
   so that they can be used and shown in a cleaner form.
 */
 
+pub mod aliases;
 pub mod chains;
 pub mod channel;
 pub mod connection;
