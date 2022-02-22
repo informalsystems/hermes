@@ -113,11 +113,8 @@ where
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let connection = bootstrap_connection(
-            &chains.client_b_to_a,
-            &chains.client_a_to_b,
-            config.bootstrap_with_random_ids,
-        )?;
+        let connection =
+            bootstrap_connection(&chains.foreign_clients, config.bootstrap_with_random_ids)?;
 
         let env_path = config.chain_store_dir.join("binary-connections.env");
 

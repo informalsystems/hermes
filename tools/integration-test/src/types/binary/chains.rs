@@ -3,10 +3,9 @@
 */
 
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::foreign_client::ForeignClient;
 use tracing::info;
 
-use crate::relayer::foreign_client::TaggedForeignClientExt;
+use super::foreign_client::ForeignClientPair;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::id::{TaggedChainIdRef, TaggedClientIdRef};
 use crate::types::single::node::{FullNode, TaggedFullNodeExt};
@@ -44,21 +43,7 @@ pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
     */
     pub node_b: MonoTagged<ChainB, FullNode>,
 
-    /**
-       The [`ForeignClient`] from chain A to chain B.
-
-       Note that the type parameter for [`ForeignClient`]
-       have the destination chain placed at first position.
-    */
-    pub client_a_to_b: ForeignClient<ChainB, ChainA>,
-
-    /**
-       The [`ForeignClient`] from chain B to chain A.
-
-       Note that the type parameter for [`ForeignClient`]
-       have the destination chain placed at first position.
-    */
-    pub client_b_to_a: ForeignClient<ChainA, ChainB>,
+    pub foreign_clients: ForeignClientPair<ChainA, ChainB>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
@@ -70,16 +55,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
         handle_b: ChainB,
         node_a: MonoTagged<ChainA, FullNode>,
         node_b: MonoTagged<ChainB, FullNode>,
-        client_a_to_b: ForeignClient<ChainB, ChainA>,
-        client_b_to_a: ForeignClient<ChainA, ChainB>,
+        foreign_clients: ForeignClientPair<ChainA, ChainB>,
     ) -> Self {
         Self {
             handle_a,
             handle_b,
             node_a,
             node_b,
-            client_a_to_b,
-            client_b_to_a,
+            foreign_clients,
         }
     }
 
@@ -105,11 +88,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
     }
 
     pub fn client_id_a(&self) -> TaggedClientIdRef<ChainA, ChainB> {
-        self.client_b_to_a.tagged_client_id()
+        self.foreign_clients.client_id_a()
     }
 
     pub fn client_id_b(&self) -> TaggedClientIdRef<ChainB, ChainA> {
-        self.client_a_to_b.tagged_client_id()
+        self.foreign_clients.client_id_b()
     }
 
     /**
@@ -131,23 +114,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
             handle_b: self.handle_a,
             node_a: self.node_b,
             node_b: self.node_a,
-            client_a_to_b: self.client_b_to_a,
-            client_b_to_a: self.client_a_to_b,
+            foreign_clients: self.foreign_clients.flip(),
         }
     }
 
     pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
         self,
-        map_a: impl Fn(ChainA) -> ChainC,
-        map_b: impl Fn(ChainB) -> ChainD,
+        map_a: &impl Fn(ChainA) -> ChainC,
+        map_b: &impl Fn(ChainB) -> ChainD,
     ) -> ConnectedChains<ChainC, ChainD> {
         ConnectedChains {
             handle_a: map_a(self.handle_a),
             handle_b: map_b(self.handle_b),
             node_a: self.node_a.retag(),
             node_b: self.node_b.retag(),
-            client_a_to_b: self.client_a_to_b.map_chain(&map_b, &map_a),
-            client_b_to_a: self.client_b_to_a.map_chain(&map_a, &map_b),
+            foreign_clients: self.foreign_clients.map_chain(map_a, map_b),
         }
     }
 }

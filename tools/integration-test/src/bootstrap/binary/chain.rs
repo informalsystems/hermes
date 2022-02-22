@@ -19,6 +19,7 @@ use tracing::{debug, info};
 
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
+use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
@@ -72,8 +73,7 @@ pub fn boostrap_chain_pair_with_nodes(
         pad_client_ids(&handle_b, &handle_a)?;
     }
 
-    let client_a_to_b = bootstrap_foreign_client(&handle_a, &handle_b)?;
-    let client_b_to_a = bootstrap_foreign_client(&handle_b, &handle_a)?;
+    let foreign_clients = bootstrap_foreign_client_pair(&handle_a, &handle_b)?;
 
     let relayer = RelayerDriver {
         config_path,
@@ -87,8 +87,7 @@ pub fn boostrap_chain_pair_with_nodes(
         handle_b,
         MonoTagged::new(node_a),
         MonoTagged::new(node_b),
-        client_a_to_b,
-        client_b_to_a,
+        foreign_clients,
     );
 
     Ok((relayer, chains))
@@ -133,6 +132,16 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
     }
 
     Ok(())
+}
+
+pub fn bootstrap_foreign_client_pair<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain_a: &ChainA,
+    chain_b: &ChainB,
+) -> Result<ForeignClientPair<ChainA, ChainB>, Error> {
+    let client_a_to_b = bootstrap_foreign_client(chain_a, chain_b)?;
+    let client_b_to_a = bootstrap_foreign_client(chain_b, chain_a)?;
+
+    Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
 }
 
 /**

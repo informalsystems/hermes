@@ -9,8 +9,9 @@ use ibc_relayer::foreign_client::ForeignClient;
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::error::Error;
 use crate::types::binary::connection::ConnectedConnection;
-use crate::types::nary::aliases::ForeignClientPairs;
+use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::nary::connection::{ConnectedConnections, DynamicConnectedConnections};
+use crate::types::nary::foreign_client::ForeignClientPairs;
 use crate::util::array::assert_same_dimension;
 
 /**
@@ -33,12 +34,10 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
         for (j, foreign_client) in foreign_clients_b.iter().enumerate() {
             if i <= j {
                 let counter_foreign_client = &foreign_clients[j][i];
+                let foreign_clients =
+                    ForeignClientPair::new(foreign_client.clone(), counter_foreign_client.clone());
 
-                let connection = bootstrap_connection(
-                    counter_foreign_client,
-                    foreign_client,
-                    bootstrap_with_random_ids,
-                )?;
+                let connection = bootstrap_connection(&foreign_clients, bootstrap_with_random_ids)?;
 
                 connections_b.push(connection);
             } else {

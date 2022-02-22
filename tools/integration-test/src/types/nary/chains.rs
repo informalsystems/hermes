@@ -8,6 +8,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use super::aliases::*;
+use super::foreign_client::*;
 use crate::error::Error;
 use crate::types::binary::chains::ConnectedChains as BinaryConnectedChains;
 use crate::types::single::node::FullNode;
@@ -100,17 +101,15 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
             let handle_a = self.chain_handles[FIRST].clone();
             let handle_b = self.chain_handles[SECOND].clone();
 
-            let client_a_to_b = self.foreign_clients.foreign_client_at::<FIRST, SECOND>()?;
-            let client_b_to_a = self.foreign_clients.foreign_client_at::<SECOND, FIRST>()?;
+            let foreign_clients = self.foreign_client_pair_at::<FIRST, SECOND>()?;
 
-            Ok(BinaryConnectedChains {
-                node_a: MonoTagged::new(node_a),
-                node_b: MonoTagged::new(node_b),
-                handle_a: MonoTagged::new(handle_a),
-                handle_b: MonoTagged::new(handle_b),
-                client_a_to_b: client_a_to_b.map_chain(MonoTagged::retag, MonoTagged::retag),
-                client_b_to_a: client_b_to_a.map_chain(MonoTagged::retag, MonoTagged::retag),
-            })
+            Ok(BinaryConnectedChains::new(
+                MonoTagged::new(handle_a),
+                MonoTagged::new(handle_b),
+                MonoTagged::new(node_a),
+                MonoTagged::new(node_b),
+                foreign_clients,
+            ))
         }
     }
 
@@ -157,6 +156,13 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
         &self,
     ) -> Result<NthForeignClient<Handle, DEST, SRC>, Error> {
         self.foreign_clients.foreign_client_at::<SRC, DEST>()
+    }
+
+    pub fn foreign_client_pair_at<const FIRST: usize, const SECOND: usize>(
+        &self,
+    ) -> Result<NthForeignClientPair<Handle, FIRST, SECOND>, Error> {
+        self.foreign_clients
+            .foreign_client_pair_at::<FIRST, SECOND>()
     }
 
     pub fn chain_handles(&self) -> &[Handle; SIZE] {

@@ -7,13 +7,12 @@ use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::default;
 use ibc_relayer::connection::{Connection, ConnectionSide};
-use ibc_relayer::foreign_client::ForeignClient;
 use tracing::{debug, info};
 
 use crate::relayer::connection::TaggedConnectionExt;
-use crate::relayer::foreign_client::TaggedForeignClientExt;
 use crate::types::binary::client::ConnectedClients;
 use crate::types::binary::connection::ConnectedConnection;
+use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::id::TaggedClientIdRef;
 use crate::util::random::random_u64_range;
 
@@ -22,15 +21,14 @@ use crate::util::random::random_u64_range;
    initialized client IDs.
 */
 pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
-    client_b_to_a: &ForeignClient<ChainA, ChainB>,
-    client_a_to_b: &ForeignClient<ChainB, ChainA>,
+    foreign_clients: &ForeignClientPair<ChainA, ChainB>,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedConnection<ChainA, ChainB>, Error> {
-    let chain_a = client_a_to_b.src_chain();
-    let chain_b = client_a_to_b.dst_chain();
+    let chain_a = foreign_clients.handle_a();
+    let chain_b = foreign_clients.handle_b();
 
-    let client_id_a = client_b_to_a.tagged_client_id();
-    let client_id_b = client_a_to_b.tagged_client_id();
+    let client_id_a = foreign_clients.client_id_a();
+    let client_id_b = foreign_clients.client_id_b();
 
     if bootstrap_with_random_ids {
         pad_connection_id(&chain_a, &chain_b, &client_id_a, &client_id_b)?;
@@ -38,8 +36,8 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     }
 
     let connection = Connection::new(
-        client_b_to_a.clone(),
-        client_a_to_b.clone(),
+        foreign_clients.client_b_to_a.clone(),
+        foreign_clients.client_a_to_b.clone(),
         default::connection_delay(),
     )?;
 

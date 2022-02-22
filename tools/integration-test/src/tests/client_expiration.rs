@@ -131,13 +131,15 @@ impl BinaryChainTest for ChannelExpirationTest {
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let connection = {
-            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_a =
+                spawn_refresh_client(chains.foreign_clients.client_b_to_a.clone())
+                    .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_b =
+                spawn_refresh_client(chains.foreign_clients.client_a_to_b.clone())
+                    .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?
+            bootstrap_connection(&chains.foreign_clients, false)?
         };
 
         wait_for_client_expiry();
@@ -153,8 +155,8 @@ impl BinaryChainTest for ChannelExpirationTest {
             let (connection_id_b, _) = init_connection(
                 &chains.handle_a,
                 &chains.handle_b,
-                &chains.client_b_to_a.tagged_client_id(),
-                &chains.client_a_to_b.tagged_client_id(),
+                &chains.client_id_a(),
+                &chains.client_id_b(),
             )?;
 
             let (channel_id_b, _) = init_channel(
@@ -277,11 +279,13 @@ impl BinaryChainTest for PacketExpirationTest {
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let channels = {
-            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_a =
+                spawn_refresh_client(chains.foreign_clients.client_b_to_a.clone())
+                    .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_b =
+                spawn_refresh_client(chains.foreign_clients.client_a_to_b.clone())
+                    .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
             bootstrap_channel_with_chains(
                 &chains,
@@ -368,20 +372,22 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
         // Create a connection before the IBC client expires, so that we can try create
         // new channel with the connection after the client expired.
         let connection = {
-            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_a =
+                spawn_refresh_client(chains.foreign_clients.client_b_to_a.clone())
+                    .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_b =
+                spawn_refresh_client(chains.foreign_clients.client_a_to_b.clone())
+                    .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?
+            bootstrap_connection(&chains.foreign_clients, false)?
         };
 
         wait_for_client_expiry();
 
         info!("trying to bootstrap connection after IBC client is expired");
 
-        let res = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false);
+        let res = bootstrap_connection(&chains.foreign_clients, false);
         match res {
             Ok(_) => {
                 return Err(Error::generic(eyre!(
@@ -460,14 +466,17 @@ impl BinaryChainTest for MisbehaviorExpirationTest {
         */
 
         {
-            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_a =
+                spawn_refresh_client(chains.foreign_clients.client_b_to_a.clone())
+                    .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_task_b =
+                spawn_refresh_client(chains.foreign_clients.client_a_to_b.clone())
+                    .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
             // build a client header that will be expired
             chains
+                .foreign_clients
                 .client_b_to_a
                 .build_latest_update_client_and_send()
                 .map_err(handle_generic_error)?;
@@ -480,6 +489,7 @@ impl BinaryChainTest for MisbehaviorExpirationTest {
         // Calling detect_misbehaviour_and_submit_evidence(None) will always produce error logs
         for _ in 0..3 {
             let misbehavior_result = chains
+                .foreign_clients
                 .client_b_to_a
                 .detect_misbehaviour_and_submit_evidence(None);
 

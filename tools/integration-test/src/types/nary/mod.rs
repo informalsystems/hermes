@@ -63,3 +63,4 @@ pub mod aliases;
 pub mod chains;
 pub mod channel;
 pub mod connection;
+pub mod foreign_client;

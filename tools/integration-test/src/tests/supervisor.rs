@@ -43,8 +43,8 @@ impl BinaryChainTest for SupervisorTest {
             let (connection_id_b, _) = init_connection(
                 &chains.handle_a,
                 &chains.handle_b,
-                &chains.client_b_to_a.tagged_client_id(),
-                &chains.client_a_to_b.tagged_client_id(),
+                &chains.foreign_clients.client_id_a(),
+                &chains.foreign_clients.client_id_b(),
             )?;
 
             let connection_id_a = assert_eventually_connection_established(

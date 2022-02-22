@@ -7,13 +7,13 @@ use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::{Channel, ChannelSide};
-use ibc_relayer::foreign_client::ForeignClient;
 use tracing::{debug, info};
 
 use super::connection::bootstrap_connection;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::binary::connection::ConnectedConnection;
+use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::id::TaggedPortIdRef;
 use crate::types::tagged::*;
 use crate::util::random::random_u64_range;
@@ -32,8 +32,7 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let channel = bootstrap_channel(
-        &chains.client_b_to_a,
-        &chains.client_a_to_b,
+        &chains.foreign_clients,
         &DualTagged::new(port_a),
         &DualTagged::new(port_b),
         order,
@@ -48,18 +47,17 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     with initialized client IDs.
 */
 pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
-    client_b_to_a: &ForeignClient<ChainA, ChainB>,
-    client_a_to_b: &ForeignClient<ChainB, ChainA>,
+    foreign_clients: &ForeignClientPair<ChainA, ChainB>,
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
     order: Order,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
-    let connection = bootstrap_connection(client_b_to_a, client_a_to_b, bootstrap_with_random_ids)?;
+    let connection = bootstrap_connection(foreign_clients, bootstrap_with_random_ids)?;
 
     bootstrap_channel_with_connection(
-        &client_a_to_b.src_chain(),
-        &client_a_to_b.dst_chain(),
+        &foreign_clients.handle_a(),
+        &foreign_clients.handle_b(),
         connection,
         port_a,
         port_b,
