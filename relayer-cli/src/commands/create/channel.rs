@@ -1,6 +1,5 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use clap::AppSettings;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
@@ -18,7 +17,7 @@ use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
 #[derive(Clone, Command, Debug, Parser)]
-#[clap(setting(AppSettings::DisableVersionFlag))]
+#[clap(disable_version_flag = true)]
 pub struct CreateChannelCommand {
     #[clap(
         required = true,

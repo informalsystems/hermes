@@ -33,7 +33,7 @@ impl Runnable for EntryPoint {
         match &self.command {
             Some(cmd) => cmd.run(),
             None => {
-                EntryPoint::into_app().print_help().unwrap();
+                EntryPoint::command().print_help().unwrap();
                 process::exit(0);
             }
         }
