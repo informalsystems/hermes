@@ -9,6 +9,7 @@ use tracing::{debug, error, info, span, trace, warn, Level};
 
 use ibc::{
     core::{
+        ics02_client::client_consensus::QueryClientEventRequest,
         ics04_channel::{
             channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
             events::{SendPacket, WriteAcknowledgement},
@@ -699,29 +700,49 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         self.channel.connection_delay == ZERO_DURATION
     }
 
+    fn update_height<C: ChainHandle>(
+        chain: &C,
+        client_id: ClientId,
+        consensus_height: Height,
+    ) -> Option<Height> {
+        if let Ok(mut events) = chain.query_txs(QueryTxRequest::Client(QueryClientEventRequest {
+            height: Height::zero(),
+            event_id: WithBlockDataType::UpdateClient,
+            client_id,
+            consensus_height,
+        })) {
+            if let Some(update_client_event) = events.pop() {
+                return Some(update_client_event.height());
+            }
+        }
+        None
+    }
+
     /// Handles updating the client on the destination chain
+    /// Returns the height at which the client update was processed
     fn update_client_dst(
         &self,
         src_chain_height: Height,
         tracking_id: &str,
-    ) -> Result<(), LinkError> {
+    ) -> Result<Height, LinkError> {
         // Handle the update on the destination chain
         // Check if a consensus state at update_height exists on destination chain already
-        if self
-            .dst_chain()
-            .proven_client_consensus(self.dst_client_id(), src_chain_height, Height::zero())
-            .is_ok()
-        {
-            return Ok(());
+        if let Some(update_height) = Self::update_height(
+            self.dst_chain(),
+            self.dst_client_id().clone(),
+            src_chain_height,
+        ) {
+            return Ok(update_height);
         }
 
         let mut dst_err_ev = None;
-        for i in 0..MAX_RETRIES {
+        'retry: for i in 0..MAX_RETRIES {
             let dst_update = self.build_update_client_on_dst(src_chain_height)?;
             info!(
                 "sending updateClient to client hosted on destination chain for height {} [try {}/{}]",
                 src_chain_height,
-                i + 1, MAX_RETRIES,
+                i + 1,
+                MAX_RETRIES,
             );
 
             let tm = TrackedMsgs::new(dst_update, tracking_id);
@@ -732,12 +753,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 .map_err(LinkError::relayer)?;
             info!("result: {}", PrettyEvents(&dst_tx_events));
 
-            dst_err_ev = dst_tx_events
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
-
-            if dst_err_ev.is_none() {
-                return Ok(());
+            for event in dst_tx_events {
+                match event {
+                    IbcEvent::ChainError(_) => {
+                        dst_err_ev = Some(event);
+                        continue 'retry;
+                    }
+                    IbcEvent::UpdateClient(ev) => return Ok(ev.height()),
+                    _ => {}
+                }
             }
         }
 
@@ -748,25 +772,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Handles updating the client on the source chain
+    /// Returns the height at which the client update was processed
     fn update_client_src(
         &self,
         dst_chain_height: Height,
         tracking_id: &str,
-    ) -> Result<(), LinkError> {
-        if self
-            .src_chain()
-            .proven_client_consensus(self.src_client_id(), dst_chain_height, Height::zero())
-            .is_ok()
-        {
-            return Ok(());
+    ) -> Result<Height, LinkError> {
+        if let Some(update_height) = Self::update_height(
+            self.src_chain(),
+            self.src_client_id().clone(),
+            dst_chain_height,
+        ) {
+            return Ok(update_height);
         }
 
         let mut src_err_ev = None;
-        for _ in 0..MAX_RETRIES {
+        'retry: for i in 0..MAX_RETRIES {
             let src_update = self.build_update_client_on_src(dst_chain_height)?;
             info!(
-                "sending updateClient to client hosted on source chain for height {}",
+                "sending updateClient to client hosted on source chain for height {} [try {}/{}]",
                 dst_chain_height,
+                i + 1,
+                MAX_RETRIES,
             );
 
             let tm = TrackedMsgs::new(src_update, tracking_id);
@@ -777,12 +804,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 .map_err(LinkError::relayer)?;
             info!("result: {}", PrettyEvents(&src_tx_events));
 
-            src_err_ev = src_tx_events
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
-
-            if src_err_ev.is_none() {
-                return Ok(());
+            for event in src_tx_events {
+                match event {
+                    IbcEvent::ChainError(_) => {
+                        src_err_ev = Some(event);
+                        continue 'retry;
+                    }
+                    IbcEvent::UpdateClient(ev) => return Ok(ev.height()),
+                    _ => {}
+                }
             }
         }
 
@@ -1387,10 +1417,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
-        if !self.zero_delay() {
+        let _header_update_height = if !self.zero_delay() {
             debug!("connection delay is non-zero: updating client");
             let target_height = od.proofs_height.increment();
-            match od.target {
+            let update_height = match od.target {
                 OperationalDataTarget::Source => {
                     self.update_client_src(target_height, &od.tracking_id)?
                 }
@@ -1398,9 +1428,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     self.update_client_dst(target_height, &od.tracking_id)?
                 }
             };
+            Some(update_height)
         } else {
             debug!("connection delay is zero: client update message will be prepended later");
-        }
+            None
+        };
 
         od.scheduled_time = Instant::now();
 
