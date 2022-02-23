@@ -13,7 +13,7 @@ use crate::link::{error::LinkError, Link};
 use crate::object::Packet;
 use crate::telemetry;
 use crate::util::retry::{retry_with_index, RetryResult};
-use crate::util::task::{Next, spawn_background_task, TaskError, TaskHandle};
+use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 
 use super::error::RunError;
 use super::WorkerCmd;
@@ -177,7 +177,13 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
             // Decide if packet clearing should be scheduled.
             // Packet clearing may happen once at start,
             // and then at predefined block intervals.
-            if should_clear_packets(is_first_run, clear_on_start, link.a_to_b.channel().ordering, clear_interval, height) {
+            if should_clear_packets(
+                is_first_run,
+                clear_on_start,
+                link.a_to_b.channel().ordering,
+                clear_interval,
+                height,
+            ) {
                 link.a_to_b.schedule_packet_clearing(Some(height))
             } else {
                 Ok(())
