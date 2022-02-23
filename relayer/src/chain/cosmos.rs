@@ -854,7 +854,7 @@ impl CosmosSdkChain {
                 for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
                     // If this transaction was not committed, determine whether it was because it failed
                     // or because it hasn't been committed yet.
-                    if empty_event_present(events) {
+                    if events.is_empty() {
                         // If the transaction failed, replace the events with an error,
                         // so that we don't attempt to resolve the transaction later on.
                         if response.code.value() != 0 {
@@ -932,14 +932,8 @@ impl CosmosSdkChain {
     }
 }
 
-fn empty_event_present(events: &[IbcEvent]) -> bool {
-    events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
-}
-
 fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
-    tx_sync_results
-        .iter()
-        .all(|r| !empty_event_present(&r.events))
+    tx_sync_results.iter().all(|r| !r.events.is_empty())
 }
 
 impl ChainEndpoint for CosmosSdkChain {
@@ -1092,11 +1086,10 @@ impl ChainEndpoint for CosmosSdkChain {
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                let events_per_tx = vec![IbcEvent::default(); msg_batch.len()];
                 let tx_sync_result = self.send_tx(msg_batch)?;
                 tx_sync_results.push(TxSyncResult {
                     response: tx_sync_result,
-                    events: events_per_tx,
+                    events: vec![],
                 });
                 n = 0;
                 size = 0;
@@ -1104,11 +1097,10 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         }
         if !msg_batch.is_empty() {
-            let events_per_tx = vec![IbcEvent::default(); msg_batch.len()];
             let tx_sync_result = self.send_tx(msg_batch)?;
             tx_sync_results.push(TxSyncResult {
                 response: tx_sync_result,
-                events: events_per_tx,
+                events: vec![],
             });
         }
 

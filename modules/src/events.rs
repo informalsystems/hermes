@@ -87,7 +87,6 @@ impl WithBlockDataType {
 }
 
 const NEW_BLOCK_EVENT: &str = "new_block";
-const EMPTY_EVENT: &str = "empty";
 const CHAIN_ERROR_EVENT: &str = "chain_error";
 /// Client event types
 const CREATE_CLIENT_EVENT: &str = "create_client";
@@ -138,7 +137,6 @@ pub enum IbcEventType {
     AckPacket,
     Timeout,
     TimeoutOnClose,
-    Empty,
     ChainError,
 }
 
@@ -166,7 +164,6 @@ impl IbcEventType {
             IbcEventType::AckPacket => ACK_PACKET_EVENT,
             IbcEventType::Timeout => TIMEOUT_EVENT,
             IbcEventType::TimeoutOnClose => TIMEOUT_ON_CLOSE_EVENT,
-            IbcEventType::Empty => EMPTY_EVENT,
             IbcEventType::ChainError => CHAIN_ERROR_EVENT,
         }
     }
@@ -198,7 +195,6 @@ impl FromStr for IbcEventType {
             ACK_PACKET_EVENT => Ok(IbcEventType::AckPacket),
             TIMEOUT_EVENT => Ok(IbcEventType::Timeout),
             TIMEOUT_ON_CLOSE_EVENT => Ok(IbcEventType::TimeoutOnClose),
-            EMPTY_EVENT => Ok(IbcEventType::Empty),
             CHAIN_ERROR_EVENT => Ok(IbcEventType::ChainError),
             _ => Err(Error::incorrect_event_type(s.to_string())),
         }
@@ -234,14 +230,7 @@ pub enum IbcEvent {
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
-    Empty(String),      // Special event, signifying empty response
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
-}
-
-impl Default for IbcEvent {
-    fn default() -> Self {
-        Self::Empty("".to_string())
-    }
 }
 
 /// For use in debug messages
@@ -285,7 +274,6 @@ impl fmt::Display for IbcEvent {
             IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacket({})", ev),
             IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacket({})", ev),
 
-            IbcEvent::Empty(ev) => write!(f, "Empty({})", ev),
             IbcEvent::ChainError(ev) => write!(f, "ChainError({})", ev),
         }
     }
@@ -418,7 +406,6 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(_) => IbcEventType::AckPacket,
             IbcEvent::TimeoutPacket(_) => IbcEventType::Timeout,
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
-            IbcEvent::Empty(_) => IbcEventType::Empty,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
         }
     }

@@ -104,6 +104,11 @@ define_error! {
                 format!("unexpected query tx response: {}", e.event)
             },
 
+        NoEventInResponse
+            |_| {
+                format!("no recognized event in query tx response")
+            },
+
         InvalidChannelState
             {
                 channel_id: ChannelId,
