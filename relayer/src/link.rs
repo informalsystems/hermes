@@ -157,7 +157,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         }
 
         let channel = Channel {
-            ordering: Default::default(),
+            ordering: a_channel.ordering,
             a_side: ChannelSide::new(
                 a_chain,
                 a_connection.client_id().clone(),
