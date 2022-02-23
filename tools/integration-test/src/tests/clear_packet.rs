@@ -27,8 +27,9 @@ impl TestOverrides for ClearPacketTest {
         Ok(None)
     }
 
+    // Unordered channel: will permit gaps in the sequence of relayed packets
     fn channel_order(&self) -> Order {
-        Order::Ordered
+        Order::Unordered
     }
 }
 
