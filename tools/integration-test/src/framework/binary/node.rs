@@ -25,6 +25,15 @@ where
     run_basic_test(&RunBinaryNodeTest { test })
 }
 
+pub fn run_single_node_test<Test, Overrides>(test: &Test) -> Result<(), Error>
+where
+    Test: BinaryNodeTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: NodeConfigOverride + TestConfigOverride,
+{
+    run_basic_test(&RunSingleNodeTest { test })
+}
+
 /**
    This trait is implemented for test cases that need to have two full nodes
    running without the relayer being setup.
@@ -70,6 +79,11 @@ pub struct RunBinaryNodeTest<'a, Test> {
     pub test: &'a Test,
 }
 
+pub struct RunSingleNodeTest<'a, Test> {
+    /// Inner test
+    pub test: &'a Test,
+}
+
 impl<'a, Test, Overrides> BasicTest for RunBinaryNodeTest<'a, Test>
 where
     Test: BinaryNodeTest,
@@ -96,7 +110,39 @@ where
     }
 }
 
+impl<'a, Test, Overrides> BasicTest for RunSingleNodeTest<'a, Test>
+where
+    Test: BinaryNodeTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: NodeConfigOverride,
+{
+    fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
+        let node = bootstrap_single_node(builder, "alpha", |config| {
+            self.test.get_overrides().modify_node_config(config)
+        })?;
+
+        let _node_process = node.process.clone();
+
+        self.test
+            .run(config, node.clone(), node)
+            .map_err(config.hang_on_error())?;
+
+        Ok(())
+    }
+}
+
 impl<'a, Test, Overrides> HasOverrides for RunBinaryNodeTest<'a, Test>
+where
+    Test: HasOverrides<Overrides = Overrides>,
+{
+    type Overrides = Overrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        self.test.get_overrides()
+    }
+}
+
+impl<'a, Test, Overrides> HasOverrides for RunSingleNodeTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
