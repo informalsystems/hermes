@@ -3,7 +3,6 @@ use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 use std::process;
 
-use git2::Repository;
 use tempdir::TempDir;
 use walkdir::WalkDir;
 
@@ -98,18 +97,78 @@ impl CompileCmd {
 
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
+
+        let attrs_serde = "#[derive(::serde::Serialize, ::serde::Deserialize)]";
+        let attrs_jsonschema =
+            r#"#[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]"#;
+        let attrs_serde_ord =
+            "#[derive(::serde::Serialize, ::serde::Deserialize, Eq, PartialOrd, Ord)]";
         let attrs_serde_eq = "#[derive(::serde::Serialize, ::serde::Deserialize, Eq)]";
+        let attrs_serde_default = "#[serde(default)]";
+        let attrs_serde_base64 = r#"#[cfg_attr(feature = "std", serde(with = "crate::base64"))]"#;
+        let attrs_jsonschema_base64 =
+            r#"#[cfg_attr(feature = "json-schema", schemars(with = "String"))]"#;
 
         let compilation = tonic_build::configure()
             .build_client(build_tonic)
+            .client_mod_attribute(".", r#"#[cfg(feature = "client")]"#)
             .build_server(false)
             .format(true)
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
+            .type_attribute(".ibc.core.client.v1.Height", attrs_serde_ord)
+            .type_attribute(".ibc.core.client.v1.Height", attrs_jsonschema)
+            .field_attribute(".ibc.core.client.v1.Height", attrs_serde_default)
+            .type_attribute(".ibc.core.commitment.v1.MerkleRoot", attrs_serde)
+            .type_attribute(".ibc.core.commitment.v1.MerkleRoot", attrs_jsonschema)
+            .field_attribute(
+                ".ibc.core.commitment.v1.MerkleRoot.hash",
+                attrs_serde_base64,
+            )
+            .field_attribute(
+                ".ibc.core.commitment.v1.MerkleRoot.hash",
+                attrs_jsonschema_base64,
+            )
+            .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_serde)
+            .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_jsonschema)
+            .field_attribute(
+                ".ibc.core.commitment.v1.MerklePrefix.key_prefix",
+                attrs_serde_base64,
+            )
+            .field_attribute(
+                ".ibc.core.commitment.v1.MerklePrefix.key_prefix",
+                attrs_jsonschema_base64,
+            )
+            .type_attribute(".ibc.core.channel.v1.Channel", attrs_serde)
+            .type_attribute(".ibc.core.channel.v1.Channel", attrs_jsonschema)
+            .type_attribute(".ibc.core.channel.v1.Counterparty", attrs_serde)
+            .type_attribute(".ibc.core.channel.v1.Counterparty", attrs_jsonschema)
+            .type_attribute(".ibc.core.connection.v1.ConnectionEnd", attrs_serde)
+            .type_attribute(".ibc.core.connection.v1.ConnectionEnd", attrs_jsonschema)
+            .type_attribute(".ibc.core.connection.v1.Counterparty", attrs_serde)
+            .type_attribute(".ibc.core.connection.v1.Counterparty", attrs_jsonschema)
+            .type_attribute(".ibc.core.connection.v1.Version", attrs_serde)
+            .type_attribute(".ibc.core.connection.v1.Version", attrs_jsonschema)
             .type_attribute(".ics23.LeafOp", attrs_serde_eq)
+            .type_attribute(".ics23.LeafOp", attrs_jsonschema)
+            .field_attribute(".ics23.LeafOp.prehash_key", attrs_serde_default)
+            .field_attribute(".ics23.LeafOp.prefix", attrs_serde_base64)
+            .field_attribute(".ics23.LeafOp.prefix", attrs_jsonschema_base64)
+            .type_attribute(".ics23.InnerOp", attrs_jsonschema)
+            .field_attribute(".ics23.InnerOp.prefix", attrs_serde_base64)
+            .field_attribute(".ics23.InnerOp.prefix", attrs_jsonschema_base64)
+            .field_attribute(".ics23.InnerOp.suffix", attrs_serde_base64)
+            .field_attribute(".ics23.InnerOp.suffix", attrs_jsonschema_base64)
             .type_attribute(".ics23.InnerOp", attrs_serde_eq)
             .type_attribute(".ics23.ProofSpec", attrs_serde_eq)
+            .type_attribute(".ics23.ProofSpec", attrs_jsonschema)
+            .field_attribute(".ics23.ProofSpec.max_depth", attrs_serde_default)
+            .field_attribute(".ics23.ProofSpec.min_depth", attrs_serde_default)
             .type_attribute(".ics23.InnerSpec", attrs_serde_eq)
+            .type_attribute(".ics23.InnerSpec", attrs_jsonschema)
+            .field_attribute(".ics23.InnerSpec.empty_child", attrs_serde_default)
+            .field_attribute(".ics23.InnerSpec.empty_child", attrs_serde_base64)
+            .field_attribute(".ics23.InnerSpec.empty_child", attrs_jsonschema_base64)
             .compile(&protos, &includes);
 
         match compilation {
@@ -188,6 +247,7 @@ impl CompileCmd {
 
         let compilation = tonic_build::configure()
             .build_client(build_tonic)
+            .client_mod_attribute(".", r#"#[cfg(feature = "client")]"#)
             .build_server(false)
             .format(true)
             .out_dir(out_dir)

@@ -5,6 +5,8 @@
 /// separate one.
 /// NOTE: there must only be 2 defined ConnectionEnds to establish
 /// a connection between two chains.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConnectionEnd {
     /// client associated with this connection.
@@ -51,6 +53,8 @@ pub struct IdentifiedConnection {
     pub delay_period: u64,
 }
 /// Counterparty defines the counterparty chain associated with a connection end.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Counterparty {
     /// identifies the client on the counterparty chain associated with a given
@@ -84,6 +88,8 @@ pub struct ConnectionPaths {
 }
 /// Version defines the versioning scheme used to negotiate the IBC verison in
 /// the connection handshake.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
     /// unique version identifier
@@ -238,6 +244,7 @@ pub struct MsgConnectionOpenConfirm {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenConfirmResponse {}
 #[doc = r" Generated client implementations."]
+#[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -490,6 +497,7 @@ pub struct QueryConnectionConsensusStateResponse {
     pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
 }
 #[doc = r" Generated client implementations."]
+#[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

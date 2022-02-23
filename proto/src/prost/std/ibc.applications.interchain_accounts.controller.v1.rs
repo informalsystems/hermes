@@ -17,6 +17,7 @@ pub struct QueryParamsResponse {
     pub params: ::core::option::Option<Params>,
 }
 #[doc = r" Generated client implementations."]
+#[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

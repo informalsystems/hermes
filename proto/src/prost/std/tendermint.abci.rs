@@ -1,4 +1,5 @@
 #[doc = r" Generated client implementations."]
+#[cfg(feature = "client")]
 pub mod abci_application_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

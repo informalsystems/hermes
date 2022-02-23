@@ -31,6 +31,7 @@ pub struct MsgTransfer {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgTransferResponse {}
 #[doc = r" Generated client implementations."]
+#[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
@@ -186,7 +187,7 @@ pub struct QueryParamsResponse {
 /// method
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDenomHashRequest {
-    /// The denomination trace `(\[port_id]/[channel_id])+/[denom\]`
+    /// The denomination trace (\[port_id]/[channel_id])+/[denom\]
     #[prost(string, tag = "1")]
     pub trace: ::prost::alloc::string::String,
 }
@@ -199,6 +200,7 @@ pub struct QueryDenomHashResponse {
     pub hash: ::prost::alloc::string::String,
 }
 #[doc = r" Generated client implementations."]
+#[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

@@ -80,13 +80,17 @@ pub struct UpgradeProposal {
 /// breaking changes In these cases, the RevisionNumber is incremented so that
 /// height continues to be monitonically increasing even as the RevisionHeight
 /// gets reset
+#[derive(::serde::Serialize, ::serde::Deserialize, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Height {
     /// the revision that the client is currently on
     #[prost(uint64, tag = "1")]
+    #[serde(default)]
     pub revision_number: u64,
     /// the height within the given revision
     #[prost(uint64, tag = "2")]
+    #[serde(default)]
     pub revision_height: u64,
 }
 /// Params defines the set of IBC light client parameters.
