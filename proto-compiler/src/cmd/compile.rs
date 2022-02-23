@@ -22,21 +22,12 @@ pub struct CompileCmd {
     #[argh(option, short = 'o')]
     /// path to output the generated Rust sources into
     out: PathBuf,
-
-    #[argh(option)]
-    /// generate tonic client code
-    build_tonic: bool,
 }
 
 impl CompileCmd {
     pub fn run(&self) {
         let tmp_sdk = TempDir::new("ibc-proto-sdk").unwrap();
-        Self::compile_sdk_protos(
-            &self.sdk,
-            tmp_sdk.as_ref(),
-            self.ibc.clone(),
-            self.build_tonic,
-        );
+        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref(), self.ibc.clone());
 
         match &self.ibc {
             None => {
@@ -45,7 +36,7 @@ impl CompileCmd {
             }
             Some(ibc_path) => {
                 let tmp_ibc = TempDir::new("ibc-proto-ibc-go").unwrap();
-                Self::compile_ibc_protos(ibc_path, tmp_ibc.as_ref(), self.build_tonic);
+                Self::compile_ibc_protos(ibc_path, tmp_ibc.as_ref());
 
                 // Merge the generated files into a single directory, taking care not to overwrite anything
                 Self::copy_generated_files(tmp_sdk.as_ref(), Some(tmp_ibc.as_ref()), &self.out);
@@ -53,7 +44,7 @@ impl CompileCmd {
         }
     }
 
-    fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path, build_tonic: bool) {
+    fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path) {
         println!(
             "[info ] Compiling IBC .proto files to Rust into '{}'...",
             out_dir.display()
@@ -110,7 +101,7 @@ impl CompileCmd {
             r#"#[cfg_attr(feature = "json-schema", schemars(with = "String"))]"#;
 
         let compilation = tonic_build::configure()
-            .build_client(build_tonic)
+            .build_client(true)
             .client_mod_attribute(".", r#"#[cfg(feature = "client")]"#)
             .build_server(false)
             .format(true)
@@ -182,12 +173,7 @@ impl CompileCmd {
         }
     }
 
-    fn compile_sdk_protos(
-        sdk_dir: &Path,
-        out_dir: &Path,
-        ibc_dep: Option<PathBuf>,
-        build_tonic: bool,
-    ) {
+    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>) {
         println!(
             "[info ] Compiling Cosmos-SDK .proto files to Rust into '{}'...",
             out_dir.display()
@@ -246,7 +232,7 @@ impl CompileCmd {
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
         let compilation = tonic_build::configure()
-            .build_client(build_tonic)
+            .build_client(true)
             .client_mod_attribute(".", r#"#[cfg(feature = "client")]"#)
             .build_server(false)
             .format(true)

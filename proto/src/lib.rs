@@ -1,7 +1,7 @@
 //! ibc-proto library gives the developer access to the Cosmos SDK IBC proto-defined structs.
 
 // Todo: automate the creation of this module setup based on the dots in the filenames.
-//  This module setup is necessary because the generated code contains "super::" calls for dependencies.
+// This module setup is necessary because the generated code contains "super::" calls for dependencies.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
@@ -11,6 +11,8 @@
 #![doc(html_root_url = "https://docs.rs/ibc-proto/0.16.0-rc.0")]
 
 extern crate alloc;
+
+#[cfg(not(feature = "std"))]
 extern crate core as std;
 
 // re-export format! macro from alloc::format to allow its use
@@ -21,25 +23,18 @@ macro_rules! format {
         ::alloc::format!($( $args )*)
     }
 }
-#[cfg(feature = "std")]
-macro_rules! include_proto {
-    ($path:literal) => {
-        include!(concat!("prost/std/", $path));
-    };
-}
 
-#[cfg(not(feature = "std"))]
 macro_rules! include_proto {
     ($path:literal) => {
-        include!(concat!("prost/no_std/", $path));
+        include!(concat!("prost/", $path));
     };
 }
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
-pub const COSMOS_SDK_COMMIT: &str = include_str!("prost/COSMOS_SDK_COMMIT");
+pub const COSMOS_SDK_COMMIT: &str = include_str!("COSMOS_SDK_COMMIT");
 
 /// The version (commit hash) of IBC Go used when generating this library.
-pub const IBC_GO_COMMIT: &str = include_str!("prost/IBC_GO_COMMIT");
+pub const IBC_GO_COMMIT: &str = include_str!("IBC_GO_COMMIT");
 
 pub mod cosmos {
     pub mod auth {
