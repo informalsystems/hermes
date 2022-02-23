@@ -423,8 +423,8 @@ impl IbcEvent {
         }
     }
 
-    pub fn channel_attributes(&self) -> Option<ChannelAttributes> {
-        match self.clone() {
+    pub fn channel_attributes(self) -> Option<ChannelAttributes> {
+        match self {
             IbcEvent::OpenInitChannel(ev) => Some(ev.into()),
             IbcEvent::OpenTryChannel(ev) => Some(ev.into()),
             IbcEvent::OpenAckChannel(ev) => Some(ev.into()),

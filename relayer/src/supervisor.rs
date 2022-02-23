@@ -418,7 +418,7 @@ pub fn collect_events(
             }
             IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                 collect_event(&mut collected, event, mode.channels.enabled, || {
-                    event.channel_attributes().and_then(|attr| {
+                    event.clone().channel_attributes().and_then(|attr| {
                         Object::channel_from_chan_open_events(&attr, src_chain).ok()
                     })
                 });
