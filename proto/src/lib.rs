@@ -8,7 +8,7 @@
 #![allow(clippy::large_enum_variant)]
 #![allow(rustdoc::bare_urls)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.15.0")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.16.0-rc.0")]
 
 extern crate alloc;
 extern crate core as std;
@@ -36,7 +36,10 @@ macro_rules! include_proto {
 }
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
-pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
+pub const COSMOS_SDK_COMMIT: &str = include_str!("prost/COSMOS_SDK_COMMIT");
+
+/// The version (commit hash) of IBC Go used when generating this library.
+pub const IBC_GO_COMMIT: &str = include_str!("prost/IBC_GO_COMMIT");
 
 pub mod cosmos {
     pub mod auth {
@@ -137,10 +140,29 @@ pub mod cosmos {
 }
 
 pub mod ibc {
+    #[deprecated(since = "0.15.0", note = "Use `ibc_proto::ibc::applications` instead")]
     pub mod apps {
+        pub use super::applications::*;
+    }
+    pub mod applications {
         pub mod transfer {
             pub mod v1 {
                 include_proto!("ibc.applications.transfer.v1.rs");
+            }
+        }
+        pub mod interchain_accounts {
+            pub mod v1 {
+                include_proto!("ibc.applications.interchain_accounts.v1.rs");
+            }
+            pub mod controller {
+                pub mod v1 {
+                    include_proto!("ibc.applications.interchain_accounts.controller.v1.rs");
+                }
+            }
+            pub mod host {
+                pub mod v1 {
+                    include_proto!("ibc.applications.interchain_accounts.host.v1.rs");
+                }
             }
         }
     }
@@ -168,11 +190,6 @@ pub mod ibc {
         pub mod types {
             pub mod v1 {
                 include_proto!("ibc.core.types.v1.rs");
-            }
-        }
-        pub mod port {
-            pub mod v1 {
-                include_proto!("ibc.core.port.v1.rs");
             }
         }
     }

@@ -265,7 +265,7 @@ impl Default for Packets {
 /// Log levels are wrappers over [`tracing_core::Level`].
 ///
 /// [`tracing_core::Level`]: https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     Trace,

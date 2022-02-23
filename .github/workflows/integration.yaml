@@ -46,7 +46,7 @@ jobs:
         gaiad:
           - gaia4
           - gaia5
-          - gaia6
+          - gaia6_0_2
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15

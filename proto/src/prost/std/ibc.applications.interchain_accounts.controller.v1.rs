@@ -1,37 +1,26 @@
-/// QueryAppVersionRequest is the request type for the Query/AppVersion RPC method
+/// Params defines the set of on-chain interchain accounts parameters.
+/// The following parameters may be used to disable the controller submodule.
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryAppVersionRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// connection unique identifier
-    #[prost(string, tag = "2")]
-    pub connection_id: ::prost::alloc::string::String,
-    /// whether the channel is ordered or unordered
-    #[prost(enumeration = "super::super::channel::v1::Order", tag = "3")]
-    pub ordering: i32,
-    /// counterparty channel end
-    #[prost(message, optional, tag = "4")]
-    pub counterparty: ::core::option::Option<super::super::channel::v1::Counterparty>,
-    /// proposed version
-    #[prost(string, tag = "5")]
-    pub proposed_version: ::prost::alloc::string::String,
+pub struct Params {
+    /// controller_enabled enables or disables the controller submodule.
+    #[prost(bool, tag = "1")]
+    pub controller_enabled: bool,
 }
-/// QueryAppVersionResponse is the response type for the Query/AppVersion RPC method.
+/// QueryParamsRequest is the request type for the Query/Params RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryAppVersionResponse {
-    /// port id associated with the request identifiers
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// supported app version
-    #[prost(string, tag = "2")]
-    pub version: ::prost::alloc::string::String,
+pub struct QueryParamsRequest {}
+/// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsResponse {
+    /// params defines the parameters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
 }
 #[doc = r" Generated client implementations."]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    #[doc = " Query defines the gRPC querier service"]
+    #[doc = " Query provides defines the gRPC querier service."]
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -88,11 +77,11 @@ pub mod query_client {
             self.inner = self.inner.accept_gzip();
             self
         }
-        #[doc = " AppVersion queries an IBC Port and determines the appropriate application version to be used"]
-        pub async fn app_version(
+        #[doc = " Params queries all parameters of the ICA controller submodule."]
+        pub async fn params(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryAppVersionRequest>,
-        ) -> Result<tonic::Response<super::QueryAppVersionResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::QueryParamsRequest>,
+        ) -> Result<tonic::Response<super::QueryParamsResponse>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -100,7 +89,9 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ibc.core.port.v1.Query/AppVersion");
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.interchain_accounts.controller.v1.Query/Params",
+            );
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
