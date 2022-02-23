@@ -5,7 +5,6 @@
 */
 
 use ibc::core::ics04_channel::channel::Order;
-use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
