@@ -127,6 +127,7 @@ if [ $platform = 'linux' ]; then
   sed -i 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+  sed -i '/^\[grpc-web\]/,/^\[/s/^enable = true/enable = false/' $CHAIN_DIR/$CHAIN_ID/config/app.toml
   # sed -i '' 's#index-events = \[\]#index-events = \["message.action","send_packet.packet_src_channel","send_packet.packet_sequence"\]#g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
 else
   sed -i '' 's#"172800s"#"200s"#g' $CHAIN_DIR/$CHAIN_ID/config/genesis.json
@@ -136,6 +137,7 @@ else
   sed -i '' 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+  sed -i '' '/^\[grpc-web\]/,/^\[/s/^enable = true/enable = false/' $CHAIN_DIR/$CHAIN_ID/config/app.toml
   # sed -i '' 's/min-retain-blocks = 0/min-retain-blocks = 100/g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
   # sed -i '' 's#index-events = \[\]#index-events = \["message.action","send_packet.packet_src_channel","send_packet.packet_sequence"\]#g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
   # sed -i '' 's/error/debug/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
