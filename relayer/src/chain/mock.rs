@@ -302,6 +302,10 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
+    fn query_host_consensus_state(&self, _height: Height) -> Result<Self::Header, Error> {
+        unimplemented!()
+    }
+
     fn proven_client_state(
         &self,
         _client_id: &ClientId,

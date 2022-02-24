@@ -1945,6 +1945,15 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
+    fn query_host_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error> {
+        let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
+
+        let response = self
+            .block_on(self.rpc_client.block(height))
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        Ok(response.block.header.into())
+    }
+
     fn proven_client_state(
         &self,
         client_id: &ClientId,

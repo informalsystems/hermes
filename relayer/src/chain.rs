@@ -270,6 +270,8 @@ pub trait ChainEndpoint: Sized {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 
+    fn query_host_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error>;
+
     // Provable queries
     fn proven_client_state(
         &self,

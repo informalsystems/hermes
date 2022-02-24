@@ -382,4 +382,8 @@ where
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
         self.value().query_blocks(request)
     }
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
+        self.value().query_host_consensus_state(height)
+    }
 }
