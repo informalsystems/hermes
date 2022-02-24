@@ -13,16 +13,8 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
+#[macro_use]
 extern crate core as std;
-
-// re-export format! macro from alloc::format to allow its use
-// in generated code
-#[macro_export]
-macro_rules! format {
-    ($($args:tt)*) => {
-        ::alloc::format!($( $args )*)
-    }
-}
 
 macro_rules! include_proto {
     ($path:literal) => {
