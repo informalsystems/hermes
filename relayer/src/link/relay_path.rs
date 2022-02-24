@@ -696,15 +696,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         self.recv_packet_acknowledged_on_src(&rp.packet)
     }
 
-    /// Returns `true` if the delay for this relaying path is zero.
-    /// Conversely, returns `false` if the delay is non-zero.
-    fn zero_delay(&self) -> bool {
-        self.channel.connection_delay == ZERO_DURATION
+    /// Returns `true` if the delay for this relaying path is non-zero.
+    /// Conversely, returns `false` if the delay is zero.
+    fn has_delay(&self) -> bool {
+        self.channel.connection_delay != ZERO_DURATION
     }
 
     /// Returns `true` if the delay for this relaying path is zero.
     pub fn conn_delay_needed(&self, op_data: &OperationalData) -> bool {
-        !self.zero_delay() && op_data.has_packet_msgs()
+        self.has_delay() && op_data.has_packet_msgs()
     }
 
     fn update_height<C: ChainHandle>(
