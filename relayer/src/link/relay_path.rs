@@ -1425,7 +1425,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
         od.scheduled_time = if self.conn_delay_needed(&od) {
-            debug!("connection delay is non-zero: updating client");
+            debug!("connection delay must be taken into account: updating client");
             let target_height = od.proofs_height.increment();
             let update_time = match od.target {
                 OperationalDataTarget::Source => {
@@ -1448,7 +1448,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 .unwrap_or(Duration::ZERO);
             Instant::now().sub(duration)
         } else {
-            debug!("connection delay is zero: client update message will be prepended later");
+            debug!(
+                "connection delay need not be taken into account: client update message will be \
+            prepended later"
+            );
             Instant::now()
         };
 
