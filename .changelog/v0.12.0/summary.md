@@ -1,4 +1,4 @@
-This release notably brings compatibility with Cosmos SDK 0.45 and IBC v3.0.0-rc.0,
+This release notably brings compatibility with Cosmos SDK 0.45 and IBC v3.0.0,
 as well as support for non-standard ports in the channel handshake.
 It also contains a fix for a bug where `SendPacket` events were duplicated when emitted at EndBlock,
 and fixes another bug where Hermes would clear packet at startup even when `clear_on_start = false`.
