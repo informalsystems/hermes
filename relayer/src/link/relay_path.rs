@@ -1,7 +1,8 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
+use std::ops::Add;
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use itertools::Itertools;
 use prost_types::Any;
@@ -52,6 +53,7 @@ use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
 use crate::link::{pending, relay_sender};
 use crate::util::queue::Queue;
+use ibc::timestamp::Timestamp;
 
 const MAX_RETRIES: usize = 5;
 
@@ -1417,24 +1419,33 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
-        let _header_update_height = if !self.zero_delay() {
+        od.scheduled_time = if !self.zero_delay() {
             debug!("connection delay is non-zero: updating client");
             let target_height = od.proofs_height.increment();
-            let update_height = match od.target {
+            let update_time = match od.target {
                 OperationalDataTarget::Source => {
-                    self.update_client_src(target_height, &od.tracking_id)?
+                    let update_height = self.update_client_src(target_height, &od.tracking_id)?;
+                    self.src_chain()
+                        .query_host_consensus_state(update_height)
+                        .map_err(LinkError::relayer)?
+                        .timestamp()
                 }
                 OperationalDataTarget::Destination => {
-                    self.update_client_dst(target_height, &od.tracking_id)?
+                    let update_height = self.update_client_dst(target_height, &od.tracking_id)?;
+                    self.dst_chain()
+                        .query_host_consensus_state(update_height)
+                        .map_err(LinkError::relayer)?
+                        .timestamp()
                 }
             };
-            Some(update_height)
+            let duration = Timestamp::now()
+                .duration_since(&update_time)
+                .unwrap_or(Duration::ZERO);
+            Instant::now().add(duration)
         } else {
             debug!("connection delay is zero: client update message will be prepended later");
-            None
+            Instant::now()
         };
-
-        od.scheduled_time = Instant::now();
 
         match od.target {
             OperationalDataTarget::Source => self.src_operational_data.push_back(od),
