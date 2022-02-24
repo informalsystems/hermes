@@ -302,7 +302,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_host_consensus_state(&self, _height: Height) -> Result<Self::Header, Error> {
+    fn query_host_consensus_state(&self, _height: Height) -> Result<Self::ConsensusState, Error> {
         unimplemented!()
     }
 
