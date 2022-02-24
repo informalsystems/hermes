@@ -8,7 +8,7 @@
 #![allow(clippy::large_enum_variant)]
 #![allow(rustdoc::bare_urls)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.16.0-rc.0")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.16.0")]
 
 extern crate alloc;
 extern crate core as std;
