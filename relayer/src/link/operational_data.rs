@@ -141,7 +141,7 @@ impl OperationalData {
         relay_path: &RelayPath<ChainA, ChainB>,
     ) -> Result<TrackedMsgs, LinkError> {
         // For zero delay we prepend the client update msgs.
-        let client_update_msg = if relay_path.zero_delay() {
+        let client_update_msg = if !relay_path.conn_delay_needed(self) {
             let update_height = self.proofs_height.increment();
 
             debug!(
@@ -177,6 +177,19 @@ impl OperationalData {
         info!("assembled batch of {} message(s)", tm.messages().len());
 
         Ok(tm)
+    }
+
+    pub fn has_packet_msgs(&self) -> bool {
+        self.batch.iter().any(|msg| {
+            matches!(
+                msg.event,
+                IbcEvent::ReceivePacket(_)
+                    | IbcEvent::WriteAcknowledgement(_)
+                    | IbcEvent::AcknowledgePacket(_)
+                    | IbcEvent::TimeoutPacket(_)
+                    | IbcEvent::TimeoutOnClosePacket(_)
+            )
+        })
     }
 }
 

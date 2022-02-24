@@ -698,8 +698,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     /// Returns `true` if the delay for this relaying path is zero.
     /// Conversely, returns `false` if the delay is non-zero.
-    pub fn zero_delay(&self) -> bool {
+    fn zero_delay(&self) -> bool {
         self.channel.connection_delay == ZERO_DURATION
+    }
+
+    /// Returns `true` if the delay for this relaying path is zero.
+    pub fn conn_delay_needed(&self, op_data: &OperationalData) -> bool {
+        !self.zero_delay() && op_data.has_packet_msgs()
     }
 
     fn update_height<C: ChainHandle>(
@@ -1419,7 +1424,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
-        od.scheduled_time = if !self.zero_delay() {
+        od.scheduled_time = if self.conn_delay_needed(&od) {
             debug!("connection delay is non-zero: updating client");
             let target_height = od.proofs_height.increment();
             let update_time = match od.target {
