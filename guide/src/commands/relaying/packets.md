@@ -1,7 +1,6 @@
 # Packet Relaying
 
-This section describes the configuration and commands that can be used to start the relayer and relay packets
- over one or multiple paths.
+This section describes the configuration and commands that can be used to start the relayer and relay packets over one or multiple paths.
 
 ## Table of Contents
 

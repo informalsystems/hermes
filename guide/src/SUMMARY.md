@@ -37,6 +37,7 @@
    - [Relaying](commands/relaying/index.md)
      - [Packet Messages](./commands/relaying/packets.md)
      - [Handshake Messages](commands/relaying/handshakes.md)
+     - [Clearing Packets](commands/relaying/clear.md)
    - [Listen mode](./commands/listen/index.md)
    - [Client upgrade](./commands/upgrade/index.md)
      - [Testing client upgrade](./commands/upgrade/test.md)
