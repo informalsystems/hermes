@@ -413,16 +413,14 @@ pub fn collect_events(
                 collect_event(&mut collected, event, mode.connections.enabled, || {
                     event
                         .connection_attributes()
-                        .map(|attr| Object::connection_from_conn_open_events(attr, src_chain).ok())
-                        .flatten()
+                        .and_then(|attr| Object::connection_from_conn_open_events(attr, src_chain).ok())
                 });
             }
             IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                 collect_event(&mut collected, event, mode.channels.enabled, || {
                     event
                         .channel_attributes()
-                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain).ok())
-                        .flatten()
+                        .and_then(|attr| Object::channel_from_chan_open_events(attr, src_chain).ok())
                 });
             }
             IbcEvent::OpenAckChannel(ref open_ack) => {

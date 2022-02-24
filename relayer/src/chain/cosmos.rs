@@ -1127,8 +1127,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let events = tx_sync_results
             .into_iter()
-            .map(|el| el.events)
-            .flatten()
+            .flat_map(|el| el.events)
             .collect();
 
         Ok(events)
@@ -2396,8 +2395,7 @@ fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
         .as_str()
         .split('-')
         .last()
-        .map(|e| e.parse::<u64>().ok())
-        .flatten()
+        .and_then(|e| e.parse::<u64>().ok())
 }
 
 pub struct TxSyncResult {
