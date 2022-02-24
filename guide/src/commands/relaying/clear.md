@@ -2,7 +2,7 @@
 
 ## `clear packets`
 
-Thsi command clears outstanding packets on a given channel in both directions,
+This command clears outstanding packets on a given channel in both directions,
 by issuing the appropriate [packet-recvs](/commands/raw/packet.md) and [packet-acks](/commands/raw/packet.md).
 
 ### Usage
