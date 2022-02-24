@@ -1,6 +1,6 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
-use std::ops::Add;
+use std::ops::Sub;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -1446,7 +1446,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             let duration = Timestamp::now()
                 .duration_since(&update_time)
                 .unwrap_or(Duration::ZERO);
-            Instant::now().add(duration)
+            Instant::now().sub(duration)
         } else {
             debug!("connection delay is zero: client update message will be prepended later");
             Instant::now()
