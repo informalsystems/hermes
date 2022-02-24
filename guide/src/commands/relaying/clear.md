@@ -487,7 +487,6 @@ Success: [
 
 4. The packets have now been successfully relayed:
 
-
 ```
 ❯ hermes query packet unreceived-packets ibc1 transfer channel-13
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
