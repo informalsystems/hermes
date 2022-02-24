@@ -37,15 +37,15 @@ pub struct DynamicConnectedConnections<Handle: ChainHandle> {
    A tagged binary [`ConnectedConnection`] that is connected between the chains at
    position `CHAIN_A` and `CHAIN_B`.
 */
-pub type NthConnectedConnection<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
-    ConnectedConnection<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>>;
+pub type NthConnectedConnection<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
+    ConnectedConnection<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>>;
 
 /**
    The connection ID on the chain at position `CHAIN_A` that corresponds to
    the counterparty chain at position `CHAIN_B`.
 */
-pub type NthConnectionId<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
-    DualTagged<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>, ConnectionId>;
+pub type NthConnectionId<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
+    DualTagged<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>, ConnectionId>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> {
     /**
@@ -54,7 +54,7 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> 
     */
     pub fn connection_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
-    ) -> Result<NthConnectedConnection<Handle, CHAIN_A, CHAIN_B>, Error> {
+    ) -> Result<NthConnectedConnection<CHAIN_A, CHAIN_B, Handle>, Error> {
         if CHAIN_A >= SIZE || CHAIN_B >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get connection beyond position {}/{}",
@@ -108,7 +108,7 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedConnections
 }
 
 impl<Handle: ChainHandle> From<ConnectedConnections<Handle, 2>>
-    for NthConnectedConnection<Handle, 0, 1>
+    for NthConnectedConnection<0, 1, Handle>
 {
     fn from(channels: ConnectedConnections<Handle, 2>) -> Self {
         channels.connection_at::<0, 1>().unwrap()

@@ -68,14 +68,14 @@ pub struct DynamicConnectedChains<Handle: ChainHandle> {
    connected chains that are parameterized by const generics rather
    than the usual abstract type tags.
 */
-pub type NthConnectedChains<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
-    BinaryConnectedChains<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>>;
+pub type NthConnectedChains<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
+    BinaryConnectedChains<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>>;
 
 /**
    A [`FullNode`] that is tagged by a `Handle: ChainHandle` and
    the const generics `TAG: usize`.
 */
-pub type NthFullNode<Handle, const TAG: usize> = MonoTagged<NthHandle<Handle, TAG>, FullNode>;
+pub type NthFullNode<const TAG: usize, Handle> = MonoTagged<NthHandle<TAG, Handle>, FullNode>;
 
 impl<Handle: ChainHandle, const SIZE: usize> NaryConnectedChains<Handle, SIZE> {
     /**
@@ -87,7 +87,7 @@ impl<Handle: ChainHandle, const SIZE: usize> NaryConnectedChains<Handle, SIZE> {
     */
     pub fn connected_chains_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
-    ) -> Result<NthConnectedChains<Handle, CHAIN_A, CHAIN_B>, Error> {
+    ) -> Result<NthConnectedChains<CHAIN_A, CHAIN_B, Handle>, Error> {
         if CHAIN_A >= SIZE || CHAIN_B >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get chains beyond position {}/{}",
@@ -118,7 +118,7 @@ impl<Handle: ChainHandle, const SIZE: usize> NaryConnectedChains<Handle, SIZE> {
 
        Returns a [`FullNode`] tagged with `POS`.
     */
-    pub fn full_node_at<const POS: usize>(&self) -> Result<NthFullNode<Handle, POS>, Error> {
+    pub fn full_node_at<const POS: usize>(&self) -> Result<NthFullNode<POS, Handle>, Error> {
         if POS >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get full_node beyond position {}",
@@ -135,7 +135,7 @@ impl<Handle: ChainHandle, const SIZE: usize> NaryConnectedChains<Handle, SIZE> {
 
        Returns a [`ChainHandle`] tagged by `POS`.
     */
-    pub fn chain_handle_at<const POS: usize>(&self) -> Result<NthHandle<Handle, POS>, Error> {
+    pub fn chain_handle_at<const POS: usize>(&self) -> Result<NthHandle<POS, Handle>, Error> {
         if POS >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get full_node beyond position {}",
@@ -231,7 +231,7 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChains<Hand
 }
 
 impl<Handle: ChainHandle> From<NaryConnectedChains<Handle, 2>>
-    for NthConnectedChains<Handle, 0, 1>
+    for NthConnectedChains<0, 1, Handle>
 {
     fn from(chains: NaryConnectedChains<Handle, 2>) -> Self {
         chains.connected_chains_at::<0, 1>().unwrap()

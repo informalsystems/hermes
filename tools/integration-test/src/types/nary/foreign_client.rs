@@ -14,10 +14,10 @@ use crate::util::array::{into_nested_vec, try_into_nested_array};
    the const generics `DEST: usize` and `SRC: usize`.
 */
 pub type NthForeignClient<Handle, const DST: usize, const SRC: usize> =
-    ForeignClient<NthHandle<Handle, DST>, NthHandle<Handle, SRC>>;
+    ForeignClient<NthHandle<DST, Handle>, NthHandle<SRC, Handle>>;
 
 pub type NthForeignClientPair<Handle, const DST: usize, const SRC: usize> =
-    ForeignClientPair<NthHandle<Handle, DST>, NthHandle<Handle, SRC>>;
+    ForeignClientPair<NthHandle<DST, Handle>, NthHandle<SRC, Handle>>;
 
 #[derive(Clone)]
 pub struct ForeignClientPairs<Handle: ChainHandle, const SIZE: usize> {

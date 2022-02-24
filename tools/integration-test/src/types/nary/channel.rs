@@ -38,29 +38,29 @@ pub struct DynamicConnectedChannels<Handle: ChainHandle> {
    A tagged [`ConnectedChannel`] that is connected between the chains
    at position `CHAIN_A` and `CHAIN_B`.
 */
-pub type NthConnectedChannel<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
-    ConnectedChannel<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>>;
+pub type NthConnectedChannel<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
+    ConnectedChannel<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>>;
 
 /**
    A tagged [`Channel`] with the A side at `CHAIN_A` position and B side at
    the `CHAIN_B` position.
 */
-pub type NthChannel<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
-    Channel<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>>;
+pub type NthChannel<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
+    Channel<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>>;
 
 /**
    A tagged [`ChannelId`] for the chain at position `CHAIN_A` that is correspond
    to the counterparty chain at position `CHAIN_B`
 */
-pub type NthChannelId<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
-    DualTagged<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>, ChannelId>;
+pub type NthChannelId<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
+    DualTagged<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>, ChannelId>;
 
 /**
    A tagged [`PortId`] for the chain at position `CHAIN_A` that is correspond
    to the counterparty chain at position `CHAIN_B`
 */
-pub type NthPortId<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
-    DualTagged<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>, PortId>;
+pub type NthPortId<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
+    DualTagged<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>, PortId>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
     /**
@@ -69,7 +69,7 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
     */
     pub fn channel_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
-    ) -> Result<NthConnectedChannel<Handle, CHAIN_A, CHAIN_B>, Error> {
+    ) -> Result<NthConnectedChannel<CHAIN_A, CHAIN_B, Handle>, Error> {
         if CHAIN_A >= SIZE || CHAIN_B >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get channel beyond position {}/{}",
@@ -112,7 +112,7 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChannels<Ha
     }
 }
 
-impl<Handle: ChainHandle> From<ConnectedChannels<Handle, 2>> for NthConnectedChannel<Handle, 0, 1> {
+impl<Handle: ChainHandle> From<ConnectedChannels<Handle, 2>> for NthConnectedChannel<0, 1, Handle> {
     fn from(channels: ConnectedChannels<Handle, 2>) -> Self {
         channels.channel_at::<0, 1>().unwrap()
     }
