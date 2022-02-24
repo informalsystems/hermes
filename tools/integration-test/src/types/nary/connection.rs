@@ -35,34 +35,34 @@ pub struct DynamicConnectedConnections<Handle: ChainHandle> {
 
 /**
    A tagged binary [`ConnectedConnection`] that is connected between the chains at
-   position `FIRST` and `SECOND`.
+   position `CHAIN_A` and `CHAIN_B`.
 */
-pub type TaggedConnectedConnection<Handle, const FIRST: usize, const SECOND: usize> =
-    ConnectedConnection<NthHandle<Handle, FIRST>, NthHandle<Handle, SECOND>>;
+pub type NthConnectedConnection<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
+    ConnectedConnection<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>>;
 
 /**
-   The connection ID on the chain at position `FIRST` that corresponds to
-   the counterparty chain at position `SECOND`.
+   The connection ID on the chain at position `CHAIN_A` that corresponds to
+   the counterparty chain at position `CHAIN_B`.
 */
-pub type TaggedConnectionId<Handle, const FIRST: usize, const SECOND: usize> =
-    DualTagged<NthHandle<Handle, FIRST>, NthHandle<Handle, SECOND>, ConnectionId>;
+pub type NthConnectionId<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
+    DualTagged<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>, ConnectionId>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> {
     /**
-       Get the connection pair for chains at position `FIRST` and `SECOND`,
+       Get the connection pair for chains at position `CHAIN_A` and `CHAIN_B`,
        which must be less then `SIZE`.
     */
-    pub fn connection_at<const FIRST: usize, const SECOND: usize>(
+    pub fn connection_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
-    ) -> Result<TaggedConnectedConnection<Handle, FIRST, SECOND>, Error> {
-        if FIRST >= SIZE || SECOND >= SIZE {
+    ) -> Result<NthConnectedConnection<Handle, CHAIN_A, CHAIN_B>, Error> {
+        if CHAIN_A >= SIZE || CHAIN_B >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get connection beyond position {}/{}",
-                FIRST,
-                SECOND
+                CHAIN_A,
+                CHAIN_B
             )))
         } else {
-            let raw_connection = self.connections[FIRST][SECOND].clone();
+            let raw_connection = self.connections[CHAIN_A][CHAIN_B].clone();
 
             let channel = raw_connection.map_chain(MonoTagged::new, MonoTagged::new);
 
@@ -108,7 +108,7 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedConnections
 }
 
 impl<Handle: ChainHandle> From<ConnectedConnections<Handle, 2>>
-    for TaggedConnectedConnection<Handle, 0, 1>
+    for NthConnectedConnection<Handle, 0, 1>
 {
     fn from(channels: ConnectedConnections<Handle, 2>) -> Self {
         channels.connection_at::<0, 1>().unwrap()

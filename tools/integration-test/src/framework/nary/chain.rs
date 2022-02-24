@@ -17,7 +17,7 @@ use crate::framework::binary::node::NodeConfigOverride;
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::DropChainHandle;
 use crate::types::config::TestConfig;
-use crate::types::nary::chains::ConnectedChains;
+use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::single::node::FullNode;
 
 /**
@@ -85,7 +85,7 @@ pub trait NaryChainTest<const SIZE: usize> {
         &self,
         config: &TestConfig,
         relayer: RelayerDriver,
-        chains: ConnectedChains<Handle, SIZE>,
+        chains: NaryConnectedChains<Handle, SIZE>,
     ) -> Result<(), Error>;
 }
 

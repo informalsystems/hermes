@@ -53,7 +53,7 @@ pub use crate::types::binary::channel::ConnectedChannel;
 pub use crate::types::binary::connection::ConnectedConnection;
 pub use crate::types::config::TestConfig;
 pub use crate::types::id::*;
-pub use crate::types::nary::chains::ConnectedChains as NaryConnectedChains;
+pub use crate::types::nary::chains::NaryConnectedChains;
 pub use crate::types::nary::channel::ConnectedChannels as NaryConnectedChannels;
 pub use crate::types::nary::connection::ConnectedConnections as NaryConnectedConnections;
 pub use crate::types::single::node::{FullNode, TaggedFullNodeExt};

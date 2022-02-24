@@ -5,7 +5,7 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::connection::Connection;
 
-use super::client::ConnectedClients;
+use super::client::ClientIdPair;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::id::TaggedConnectionId;
 
@@ -21,7 +21,7 @@ pub struct ConnectedConnection<ChainA: ChainHandle, ChainB: ChainHandle> {
     /**
        The underlying connected clients
     */
-    pub client: ConnectedClients<ChainA, ChainB>,
+    pub client_ids: ClientIdPair<ChainA, ChainB>,
 
     /**
        The underlying [`Connection`] data
@@ -40,12 +40,26 @@ pub struct ConnectedConnection<ChainA: ChainHandle, ChainB: ChainHandle> {
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedConnection<ChainA, ChainB> {
+    pub fn new(
+        client_ids: ClientIdPair<ChainA, ChainB>,
+        connection: Connection<ChainA, ChainB>,
+        connection_id_a: TaggedConnectionId<ChainA, ChainB>,
+        connection_id_b: TaggedConnectionId<ChainB, ChainA>,
+    ) -> Self {
+        Self {
+            client_ids,
+            connection,
+            connection_id_a,
+            connection_id_b,
+        }
+    }
+
     /**
        Flip the position of chain A and B of the connection.
     */
     pub fn flip(self) -> ConnectedConnection<ChainB, ChainA> {
         ConnectedConnection {
-            client: self.client.flip(),
+            client_ids: self.client_ids.flip(),
 
             connection: self.connection.flipped(),
 
@@ -60,21 +74,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedConnection<ChainA, Chain
         map_a: impl Fn(ChainA) -> ChainC,
         map_b: impl Fn(ChainB) -> ChainD,
     ) -> ConnectedConnection<ChainC, ChainD> {
-        ConnectedConnection {
-            client: ConnectedClients {
-                client_id_a: self.client.client_id_a.retag(),
-                client_id_b: self.client.client_id_b.retag(),
-            },
-            connection: self.connection.map_chain(map_a, map_b),
-            connection_id_a: self.connection_id_a.retag(),
-            connection_id_b: self.connection_id_b.retag(),
-        }
+        ConnectedConnection::new(
+            ClientIdPair::new(
+                self.client_ids.client_id_a.retag(),
+                self.client_ids.client_id_b.retag(),
+            ),
+            self.connection.map_chain(map_a, map_b),
+            self.connection_id_a.retag(),
+            self.connection_id_b.retag(),
+        )
     }
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedConnection<ChainA, ChainB> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        self.client.export_env(writer);
+        self.client_ids.export_env(writer);
         writer.write_env("CONNECTION_ID_A", &format!("{}", self.connection_id_a));
         writer.write_env("CONNECTION_ID_B", &format!("{}", self.connection_id_b));
     }

@@ -17,7 +17,7 @@ use crate::bootstrap::binary::chain::{
 use crate::error::{handle_generic_error, Error};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
-use crate::types::nary::chains::{ConnectedChains, DynamicConnectedChains};
+use crate::types::nary::chains::{DynamicConnectedChains, NaryConnectedChains};
 use crate::types::single::node::FullNode;
 
 /**
@@ -27,7 +27,7 @@ pub fn boostrap_chains_with_nodes<const SIZE: usize>(
     test_config: &TestConfig,
     full_nodes: [FullNode; SIZE],
     config_modifier: impl FnOnce(&mut Config),
-) -> Result<(RelayerDriver, ConnectedChains<impl ChainHandle, SIZE>), Error> {
+) -> Result<(RelayerDriver, NaryConnectedChains<impl ChainHandle, SIZE>), Error> {
     let (relayer, chains) =
         boostrap_chains_with_any_nodes(test_config, full_nodes.into(), config_modifier)?;
 
@@ -42,7 +42,7 @@ pub fn boostrap_chains_with_self_connected_node<const SIZE: usize>(
     test_config: &TestConfig,
     full_node: FullNode,
     config_modifier: impl FnOnce(&mut Config),
-) -> Result<(RelayerDriver, ConnectedChains<impl ChainHandle, SIZE>), Error> {
+) -> Result<(RelayerDriver, NaryConnectedChains<impl ChainHandle, SIZE>), Error> {
     let full_nodes = vec![full_node; SIZE];
     let (relayer, chains) =
         boostrap_chains_with_any_nodes(test_config, full_nodes, config_modifier)?;

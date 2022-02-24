@@ -14,7 +14,7 @@ use crate::framework::binary::connection::BinaryConnectionTest;
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
-use crate::types::nary::chains::ConnectedChains;
+use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::nary::connection::ConnectedConnections;
 
 use super::chain::{run_nary_chain_test, NaryChainTest};
@@ -43,7 +43,7 @@ pub trait NaryConnectionTest<const SIZE: usize> {
         &self,
         config: &TestConfig,
         relayer: RelayerDriver,
-        chains: ConnectedChains<Handle, SIZE>,
+        chains: NaryConnectedChains<Handle, SIZE>,
         connections: ConnectedConnections<Handle, SIZE>,
     ) -> Result<(), Error>;
 }
@@ -88,7 +88,7 @@ where
         &self,
         config: &TestConfig,
         relayer: RelayerDriver,
-        chains: ConnectedChains<Handle, SIZE>,
+        chains: NaryConnectedChains<Handle, SIZE>,
     ) -> Result<(), Error> {
         let connections = bootstrap_connections(
             chains.foreign_clients().clone(),
@@ -109,7 +109,7 @@ where
         &self,
         config: &TestConfig,
         relayer: RelayerDriver,
-        chains: ConnectedChains<Handle, 2>,
+        chains: NaryConnectedChains<Handle, 2>,
         connections: ConnectedConnections<Handle, 2>,
     ) -> Result<(), Error> {
         self.test

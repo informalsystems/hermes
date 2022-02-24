@@ -16,7 +16,7 @@ use crate::framework::binary::node::NodeConfigOverride;
 use crate::framework::nary::connection::{run_nary_connection_test, NaryConnectionTest};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
-use crate::types::nary::chains::ConnectedChains;
+use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::nary::channel::ConnectedChannels;
 use crate::types::nary::connection::ConnectedConnections;
 
@@ -69,7 +69,7 @@ pub trait NaryChannelTest<const SIZE: usize> {
         &self,
         config: &TestConfig,
         relayer: RelayerDriver,
-        chains: ConnectedChains<Handle, SIZE>,
+        chains: NaryConnectedChains<Handle, SIZE>,
         channels: ConnectedChannels<Handle, SIZE>,
     ) -> Result<(), Error>;
 }
@@ -151,7 +151,7 @@ where
         &self,
         config: &TestConfig,
         relayer: RelayerDriver,
-        chains: ConnectedChains<Handle, SIZE>,
+        chains: NaryConnectedChains<Handle, SIZE>,
         connections: ConnectedConnections<Handle, SIZE>,
     ) -> Result<(), Error> {
         let overrides = self.test.get_overrides();
@@ -180,7 +180,7 @@ where
         &self,
         config: &TestConfig,
         relayer: RelayerDriver,
-        chains: ConnectedChains<Handle, 2>,
+        chains: NaryConnectedChains<Handle, 2>,
         channels: ConnectedChannels<Handle, 2>,
     ) -> Result<(), Error> {
         self.test

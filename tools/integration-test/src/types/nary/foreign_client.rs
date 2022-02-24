@@ -1,3 +1,4 @@
+use core::convert::TryFrom;
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -47,11 +48,11 @@ impl<Handle: ChainHandle, const SIZE: usize> ForeignClientPairs<Handle, SIZE> {
         }
     }
 
-    pub fn foreign_client_pair_at<const FIRST: usize, const SECOND: usize>(
+    pub fn foreign_client_pair_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
-    ) -> Result<NthForeignClientPair<Handle, FIRST, SECOND>, Error> {
-        let client_a_to_b = self.foreign_client_at::<FIRST, SECOND>()?;
-        let client_b_to_a = self.foreign_client_at::<SECOND, FIRST>()?;
+    ) -> Result<NthForeignClientPair<Handle, CHAIN_A, CHAIN_B>, Error> {
+        let client_a_to_b = self.foreign_client_at::<CHAIN_A, CHAIN_B>()?;
+        let client_b_to_a = self.foreign_client_at::<CHAIN_B, CHAIN_A>()?;
 
         Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
     }
@@ -59,12 +60,15 @@ impl<Handle: ChainHandle, const SIZE: usize> ForeignClientPairs<Handle, SIZE> {
     pub fn into_nested_vec(self) -> Vec<Vec<ForeignClient<Handle, Handle>>> {
         into_nested_vec(self.foreign_clients)
     }
+}
 
-    pub fn try_from_nested_vec(
-        foreign_clients: Vec<Vec<ForeignClient<Handle, Handle>>>,
-    ) -> Result<Self, Error> {
-        let foreign_clients = try_into_nested_array(foreign_clients)?;
+impl<Handle: ChainHandle, const SIZE: usize> TryFrom<Vec<Vec<ForeignClient<Handle, Handle>>>>
+    for ForeignClientPairs<Handle, SIZE>
+{
+    type Error = Error;
 
+    fn try_from(clients: Vec<Vec<ForeignClient<Handle, Handle>>>) -> Result<Self, Error> {
+        let foreign_clients = try_into_nested_array(clients)?;
         Ok(Self { foreign_clients })
     }
 }

@@ -106,11 +106,11 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
     info!(
         "created new chain/client/connection/channel from {}/{}/{}/{} to {}/{}/{}/{}",
         chain_a.id(),
-        connection.client.client_id_a,
+        connection.client_ids.client_id_a,
         connection.connection_id_a,
         channel_id_a,
         chain_b.id(),
-        connection.client.client_id_b,
+        connection.client_ids.client_id_b,
         connection.connection_id_b,
         channel_id_b,
     );
@@ -141,8 +141,8 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     connection: &ConnectedConnection<ChainA, ChainB>,
     port_id: &TaggedPortIdRef<ChainA, ChainB>,
 ) -> Result<(), Error> {
-    let client_id_a = &connection.client.client_id_a;
-    let client_id_b = &connection.client.client_id_b;
+    let client_id_a = &connection.client_ids.client_id_a;
+    let client_id_b = &connection.client_ids.client_id_b;
 
     for i in 0..random_u64_range(1, 6) {
         debug!(

@@ -26,7 +26,7 @@ use crate::util::array::try_into_array;
    [`try_into()`](core::convert::TryInto::try_into).
 */
 #[derive(Clone)]
-pub struct ConnectedChains<Handle: ChainHandle, const SIZE: usize> {
+pub struct NaryConnectedChains<Handle: ChainHandle, const SIZE: usize> {
     chain_handles: [Handle; SIZE],
     full_nodes: [FullNode; SIZE],
     foreign_clients: ForeignClientPairs<Handle, SIZE>,
@@ -50,7 +50,7 @@ pub struct DynamicConnectedChains<Handle: ChainHandle> {
 /**
    A pair of binary [`ConnectedChains`](BinaryConnectedChains) that are
    tagged by a `Handle: CHainHandle` and the const generics
-   `FIRST: usize` and `SECOND: usize`.
+   `CHAIN_A: usize` and `CHAIN_B: usize`.
 
    Recall that binary [`ConnectedChains`](BinaryConnectedChains) is tagged
    by two generic types `ChainA: ChainHandle` and `ChainB: ChainHandle`.
@@ -59,49 +59,49 @@ pub struct DynamicConnectedChains<Handle: ChainHandle> {
    them when used as type parameter to `ConnectedChains`.
 
    The solution is to tag each `Handle` with the const generic
-   positions. So the first chain is `MonoTagged<Size<FIRST>, Handle>`,
+   positions. So the first chain is `MonoTagged<Size<CHAIN_A>, Handle>`,
    which has a different type from the second chain
-   `MonoTagged<Size<SECOND>, Handle>`.
+   `MonoTagged<Size<CHAIN_B>, Handle>`.
 
    Since writing the fully qualified chain types are rather cumbersome,
    we use the type alias `TaggedConnectedChains` to refer to
    connected chains that are parameterized by const generics rather
    than the usual abstract type tags.
 */
-pub type TaggedConnectedChains<Handle, const FIRST: usize, const SECOND: usize> =
-    BinaryConnectedChains<NthHandle<Handle, FIRST>, NthHandle<Handle, SECOND>>;
+pub type NthConnectedChains<Handle, const CHAIN_A: usize, const CHAIN_B: usize> =
+    BinaryConnectedChains<NthHandle<Handle, CHAIN_A>, NthHandle<Handle, CHAIN_B>>;
 
 /**
    A [`FullNode`] that is tagged by a `Handle: ChainHandle` and
    the const generics `TAG: usize`.
 */
-pub type TaggedFullNode<Handle, const TAG: usize> = MonoTagged<NthHandle<Handle, TAG>, FullNode>;
+pub type NthFullNode<Handle, const TAG: usize> = MonoTagged<NthHandle<Handle, TAG>, FullNode>;
 
-impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
+impl<Handle: ChainHandle, const SIZE: usize> NaryConnectedChains<Handle, SIZE> {
     /**
-       Get a connected chain pair at position `FIRST` and `SECOND`, which
+       Get a connected chain pair at position `CHAIN_A` and `CHAIN_B`, which
        must be less than `SIZE`.
 
        Returns a binary [`ConnectedChains`](BinaryConnectedChains) with the
-       first chain tagged by `FIRST`, and second chain tagged by `SECOND`.
+       first chain tagged by `CHAIN_A`, and second chain tagged by `CHAIN_B`.
     */
-    pub fn connected_chains_at<const FIRST: usize, const SECOND: usize>(
+    pub fn connected_chains_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
-    ) -> Result<TaggedConnectedChains<Handle, FIRST, SECOND>, Error> {
-        if FIRST >= SIZE || SECOND >= SIZE {
+    ) -> Result<NthConnectedChains<Handle, CHAIN_A, CHAIN_B>, Error> {
+        if CHAIN_A >= SIZE || CHAIN_B >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get chains beyond position {}/{}",
-                FIRST,
-                SECOND
+                CHAIN_A,
+                CHAIN_B
             )))
         } else {
-            let node_a = self.full_nodes[FIRST].clone();
-            let node_b = self.full_nodes[SECOND].clone();
+            let node_a = self.full_nodes[CHAIN_A].clone();
+            let node_b = self.full_nodes[CHAIN_B].clone();
 
-            let handle_a = self.chain_handles[FIRST].clone();
-            let handle_b = self.chain_handles[SECOND].clone();
+            let handle_a = self.chain_handles[CHAIN_A].clone();
+            let handle_b = self.chain_handles[CHAIN_B].clone();
 
-            let foreign_clients = self.foreign_client_pair_at::<FIRST, SECOND>()?;
+            let foreign_clients = self.foreign_client_pair_at::<CHAIN_A, CHAIN_B>()?;
 
             Ok(BinaryConnectedChains::new(
                 MonoTagged::new(handle_a),
@@ -118,7 +118,7 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
 
        Returns a [`FullNode`] tagged with `POS`.
     */
-    pub fn full_node_at<const POS: usize>(&self) -> Result<TaggedFullNode<Handle, POS>, Error> {
+    pub fn full_node_at<const POS: usize>(&self) -> Result<NthFullNode<Handle, POS>, Error> {
         if POS >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get full_node beyond position {}",
@@ -158,11 +158,11 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChains<Handle, SIZE> {
         self.foreign_clients.foreign_client_at::<SRC, DEST>()
     }
 
-    pub fn foreign_client_pair_at<const FIRST: usize, const SECOND: usize>(
+    pub fn foreign_client_pair_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
-    ) -> Result<NthForeignClientPair<Handle, FIRST, SECOND>, Error> {
+    ) -> Result<NthForeignClientPair<Handle, CHAIN_A, CHAIN_B>, Error> {
         self.foreign_clients
-            .foreign_client_pair_at::<FIRST, SECOND>()
+            .foreign_client_pair_at::<CHAIN_A, CHAIN_B>()
     }
 
     pub fn chain_handles(&self) -> &[Handle; SIZE] {
@@ -204,10 +204,10 @@ impl<Handle: ChainHandle> DynamicConnectedChains<Handle> {
     }
 }
 
-impl<Handle: ChainHandle, const SIZE: usize> From<ConnectedChains<Handle, SIZE>>
+impl<Handle: ChainHandle, const SIZE: usize> From<NaryConnectedChains<Handle, SIZE>>
     for DynamicConnectedChains<Handle>
 {
-    fn from(chains: ConnectedChains<Handle, SIZE>) -> Self {
+    fn from(chains: NaryConnectedChains<Handle, SIZE>) -> Self {
         Self {
             chain_handles: chains.chain_handles.into(),
             full_nodes: chains.full_nodes.into(),
@@ -217,21 +217,23 @@ impl<Handle: ChainHandle, const SIZE: usize> From<ConnectedChains<Handle, SIZE>>
 }
 
 impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChains<Handle>>
-    for ConnectedChains<Handle, SIZE>
+    for NaryConnectedChains<Handle, SIZE>
 {
     type Error = Error;
 
     fn try_from(chains: DynamicConnectedChains<Handle>) -> Result<Self, Error> {
-        Ok(ConnectedChains {
+        Ok(NaryConnectedChains {
             chain_handles: try_into_array(chains.chain_handles)?,
             full_nodes: try_into_array(chains.full_nodes)?,
-            foreign_clients: ForeignClientPairs::try_from_nested_vec(chains.foreign_clients)?,
+            foreign_clients: chains.foreign_clients.try_into()?,
         })
     }
 }
 
-impl<Handle: ChainHandle> From<ConnectedChains<Handle, 2>> for TaggedConnectedChains<Handle, 0, 1> {
-    fn from(chains: ConnectedChains<Handle, 2>) -> Self {
+impl<Handle: ChainHandle> From<NaryConnectedChains<Handle, 2>>
+    for NthConnectedChains<Handle, 0, 1>
+{
+    fn from(chains: NaryConnectedChains<Handle, 2>) -> Self {
         chains.connected_chains_at::<0, 1>().unwrap()
     }
 }

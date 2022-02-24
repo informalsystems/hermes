@@ -11,7 +11,7 @@ use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
 use crate::bootstrap::nary::connection::bootstrap_connections_dynamic;
 use crate::error::{handle_generic_error, Error};
 use crate::types::binary::channel::ConnectedChannel;
-use crate::types::nary::chains::{ConnectedChains, DynamicConnectedChains};
+use crate::types::nary::chains::{DynamicConnectedChains, NaryConnectedChains};
 use crate::types::nary::channel::{ConnectedChannels, DynamicConnectedChannels};
 use crate::types::nary::connection::{ConnectedConnections, DynamicConnectedConnections};
 use crate::types::tagged::*;
@@ -121,7 +121,7 @@ pub fn bootstrap_channels_and_connections_dynamic<Handle: ChainHandle>(
    together with bootstrapping the underlying connections.
 */
 pub fn bootstrap_channels_and_connections<Handle: ChainHandle, const SIZE: usize>(
-    chains: &ConnectedChains<Handle, SIZE>,
+    chains: &NaryConnectedChains<Handle, SIZE>,
     ports: [[PortId; SIZE]; SIZE],
     order: Order,
     bootstrap_with_random_ids: bool,

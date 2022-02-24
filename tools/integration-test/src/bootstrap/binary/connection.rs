@@ -10,7 +10,7 @@ use ibc_relayer::connection::{Connection, ConnectionSide};
 use tracing::{debug, info};
 
 use crate::relayer::connection::TaggedConnectionExt;
-use crate::types::binary::client::ConnectedClients;
+use crate::types::binary::client::ClientIdPair;
 use crate::types::binary::connection::ConnectedConnection;
 use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::id::TaggedClientIdRef;
@@ -61,19 +61,12 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
         connection_id_b,
     );
 
-    let connected_connection = ConnectedConnection {
+    let connected_connection = ConnectedConnection::new(
+        ClientIdPair::new(client_id_a.cloned(), client_id_b.cloned()),
         connection,
-
-        client: ConnectedClients {
-            client_id_a: client_id_a.cloned(),
-
-            client_id_b: client_id_b.cloned(),
-        },
-
         connection_id_a,
-
         connection_id_b,
-    };
+    );
 
     Ok(connected_connection)
 }
