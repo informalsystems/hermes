@@ -180,16 +180,7 @@ impl OperationalData {
     }
 
     pub fn has_packet_msgs(&self) -> bool {
-        self.batch.iter().any(|msg| {
-            matches!(
-                msg.event,
-                IbcEvent::ReceivePacket(_)
-                    | IbcEvent::WriteAcknowledgement(_)
-                    | IbcEvent::AcknowledgePacket(_)
-                    | IbcEvent::TimeoutPacket(_)
-                    | IbcEvent::TimeoutOnClosePacket(_)
-            )
-        })
+        self.batch.iter().any(|msg| msg.event.packet().is_some())
     }
 }
 
