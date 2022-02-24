@@ -1,9 +1,5 @@
 # Clearing Packets
 
-## Table of Contents
-
-<!-- toc -->
-
 ## `clear packets`
 
 Thsi command clears outstanding packets on a given channel in both directions,
