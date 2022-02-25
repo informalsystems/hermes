@@ -41,9 +41,7 @@ impl From<String> for Version {
 
 impl From<&str> for Version {
     fn from(raw_version: &str) -> Self {
-        Self {
-            0: raw_version.into(),
-        }
+        Self(raw_version.into())
     }
 }
 
