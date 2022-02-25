@@ -96,8 +96,8 @@ impl CompileCmd {
             "#[derive(::serde::Serialize, ::serde::Deserialize, Eq, PartialOrd, Ord)]";
         let attrs_serde_eq = "#[derive(::serde::Serialize, ::serde::Deserialize, Eq)]";
         let attrs_serde_default = "#[serde(default)]";
-        let attrs_serde_base64 = r#"#[cfg_attr(feature = "std", serde(with = "crate::base64"))]"#;
-        let attrs_jsonschema_base64 =
+        let attrs_serde_base64 = r#"#[serde(with = "crate::base64")]"#;
+        let attrs_jsonschema_str =
             r#"#[cfg_attr(feature = "json-schema", schemars(with = "String"))]"#;
 
         let compilation = tonic_build::configure()
@@ -118,7 +118,7 @@ impl CompileCmd {
             )
             .field_attribute(
                 ".ibc.core.commitment.v1.MerkleRoot.hash",
-                attrs_jsonschema_base64,
+                attrs_jsonschema_str,
             )
             .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_serde)
             .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_jsonschema)
@@ -128,7 +128,7 @@ impl CompileCmd {
             )
             .field_attribute(
                 ".ibc.core.commitment.v1.MerklePrefix.key_prefix",
-                attrs_jsonschema_base64,
+                attrs_jsonschema_str,
             )
             .type_attribute(".ibc.core.channel.v1.Channel", attrs_serde)
             .type_attribute(".ibc.core.channel.v1.Channel", attrs_jsonschema)
@@ -144,12 +144,12 @@ impl CompileCmd {
             .type_attribute(".ics23.LeafOp", attrs_jsonschema)
             .field_attribute(".ics23.LeafOp.prehash_key", attrs_serde_default)
             .field_attribute(".ics23.LeafOp.prefix", attrs_serde_base64)
-            .field_attribute(".ics23.LeafOp.prefix", attrs_jsonschema_base64)
+            .field_attribute(".ics23.LeafOp.prefix", attrs_jsonschema_str)
             .type_attribute(".ics23.InnerOp", attrs_jsonschema)
             .field_attribute(".ics23.InnerOp.prefix", attrs_serde_base64)
-            .field_attribute(".ics23.InnerOp.prefix", attrs_jsonschema_base64)
+            .field_attribute(".ics23.InnerOp.prefix", attrs_jsonschema_str)
             .field_attribute(".ics23.InnerOp.suffix", attrs_serde_base64)
-            .field_attribute(".ics23.InnerOp.suffix", attrs_jsonschema_base64)
+            .field_attribute(".ics23.InnerOp.suffix", attrs_jsonschema_str)
             .type_attribute(".ics23.InnerOp", attrs_serde_eq)
             .type_attribute(".ics23.ProofSpec", attrs_serde_eq)
             .type_attribute(".ics23.ProofSpec", attrs_jsonschema)
@@ -159,7 +159,7 @@ impl CompileCmd {
             .type_attribute(".ics23.InnerSpec", attrs_jsonschema)
             .field_attribute(".ics23.InnerSpec.empty_child", attrs_serde_default)
             .field_attribute(".ics23.InnerSpec.empty_child", attrs_serde_base64)
-            .field_attribute(".ics23.InnerSpec.empty_child", attrs_jsonschema_base64)
+            .field_attribute(".ics23.InnerSpec.empty_child", attrs_jsonschema_str)
             .compile(&protos, &includes);
 
         match compilation {

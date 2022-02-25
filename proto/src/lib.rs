@@ -206,18 +206,26 @@ pub mod ics23 {
     include_proto!("ics23.rs");
 }
 
-#[cfg(feature = "std")]
 pub(crate) mod base64 {
-    use serde::{Deserialize, Serialize};
-    use serde::{Deserializer, Serializer};
+    use alloc::string::String;
+    use alloc::vec::Vec;
 
-    pub fn serialize<S: Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
-        let base64 = base64::encode(v);
-        String::serialize(&base64, s)
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(v: &[u8], serializer: S) -> Result<S::Ok, S::Error> {
+        let mut buf = String::new();
+        base64::encode_config_buf(v, base64::STANDARD, &mut buf);
+
+        String::serialize(&buf, serializer)
     }
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
-        let base64 = String::deserialize(d)?;
-        base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Error> {
+        let base64 = String::deserialize(deserializer)?;
+
+        let mut buf = Vec::new();
+        base64::decode_config_buf(base64.as_bytes(), base64::STANDARD, &mut buf)
+            .map_err(serde::de::Error::custom)?;
+
+        Ok(buf)
     }
 }
