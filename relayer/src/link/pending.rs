@@ -13,7 +13,10 @@ use crate::link::error::LinkError;
 use crate::util::queue::Queue;
 use crate::{
     chain::handle::ChainHandle,
-    link::{operational_data::OperationalData, relay_sender::AsyncReply, RelaySummary, TxHashes},
+    link::{
+        operational_data::OperationalData, relay_sender::AsyncReply, RelayPath, RelaySummary,
+        TxHashes,
+    },
 };
 
 pub const TIMEOUT: Duration = Duration::from_secs(300);
@@ -177,16 +180,22 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         // relayer to resubmit the transaction to the chain again.
                         error!("timed out while confirming {}", tx_hashes);
 
-                        let resubmit_res = resubmit(pending.original_od.clone());
+                        // if `clear_interval` > 0, then the relayer will periodically clear pending
+                        // packets such that resubmitting would be duplicating work
+                        if clear_interval == 0 {
+                            let new_od =
+                                RelayPath::regenerate_operational_data(pending.original_od.clone());
+                            let resubmit_res = resubmit(new_od);
 
-                        match resubmit_res {
-                            Ok(reply) => {
-                                self.insert_new_pending_tx(reply, pending.original_od);
-                                Ok(None)
-                            }
-                            Err(e) => {
-                                self.pending_queue.push_back(pending);
-                                Err(e)
+                            match resubmit_res {
+                                Ok(reply) => {
+                                    self.insert_new_pending_tx(reply, pending.original_od);
+                                    Ok(None)
+                                }
+                                Err(e) => {
+                                    self.pending_queue.push_back(pending);
+                                    Err(e)
+                                }
                             }
                         }
                     } else {

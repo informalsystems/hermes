@@ -527,7 +527,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ///
     /// Side effects: may schedule a new operational data targeting the source chain, comprising
     /// new timeout messages.
-    fn regenerate_operational_data(
+    pub(crate) fn regenerate_operational_data(
         &self,
         initial_odata: OperationalData,
     ) -> Option<OperationalData> {
