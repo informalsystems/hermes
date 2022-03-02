@@ -5,6 +5,7 @@
 */
 
 use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
@@ -35,6 +36,7 @@ where
         + SupervisorOverride
         + PortsOverride
         + ChannelOrderOverride
+        + ChannelVersionOverride
         + TestConfigOverride,
 {
     run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
@@ -52,6 +54,7 @@ where
         + SupervisorOverride
         + PortsOverride
         + ChannelOrderOverride
+        + ChannelVersionOverride
         + TestConfigOverride,
 {
     run_binary_chain_test(&RunBinaryChannelTest::new(test))
@@ -100,8 +103,14 @@ pub trait PortsOverride {
     fn channel_port_b(&self) -> PortId;
 }
 
+/** Facility for overriding the channel ordering */
 pub trait ChannelOrderOverride {
     fn channel_order(&self) -> Order;
+}
+
+/** Facility for overriding the channel version */
+pub trait ChannelVersionOverride {
+    fn channel_version(&self) -> Version;
 }
 
 /**
@@ -146,7 +155,7 @@ impl<'a, Test, Overrides> BinaryChainTest for RunBinaryChannelTest<'a, Test>
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: PortsOverride + ChannelOrderOverride,
+    Overrides: PortsOverride + ChannelOrderOverride + ChannelVersionOverride,
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -158,12 +167,14 @@ where
         let port_a = overrides.channel_port_a();
         let port_b = overrides.channel_port_b();
         let order = overrides.channel_order();
+        let version = overrides.channel_version();
 
         let channels = bootstrap_channel_with_chains(
             &chains,
             &port_a,
             &port_b,
             order,
+            version,
             config.bootstrap_with_random_ids,
         )?;
 

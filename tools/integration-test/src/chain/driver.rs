@@ -5,7 +5,7 @@
 use core::str::FromStr;
 use core::time::Duration;
 use eyre::eyre;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use semver::Version;
 use serde_json as json;

@@ -1,6 +1,7 @@
 use core::time::Duration;
 use ibc::core::ics03_connection::connection::State as ConnectionState;
 use ibc::core::ics04_channel::channel::State as ChannelState;
+use ibc::core::ics04_channel::Version;
 use ibc_relayer::config::{self, Config, ModeConfig};
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
 use ibc_relayer::worker::client::spawn_refresh_client;
@@ -303,6 +304,7 @@ impl BinaryChainTest for PacketExpirationTest {
                 &PortId::transfer(),
                 &PortId::transfer(),
                 Order::Unordered,
+                Version::ics20(),
                 false,
             )?
         };
@@ -426,6 +428,7 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
             &DualTagged::new(&PortId::transfer()),
             &DualTagged::new(&PortId::transfer()),
             Order::Unordered,
+            Version::ics20(),
             false,
         );
 

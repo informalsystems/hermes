@@ -3,6 +3,7 @@
 */
 
 use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
@@ -18,6 +19,8 @@ use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride}
 use crate::framework::binary::channel::{ChannelOrderOverride, PortsOverride};
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::types::config::TestConfig;
+
+use super::binary::channel::ChannelVersionOverride;
 
 /**
    This trait should be implemented for all test cases to allow overriding
@@ -113,6 +116,10 @@ pub trait TestOverrides {
     fn channel_order(&self) -> Order {
         Order::Unordered
     }
+
+    fn channel_version(&self) -> Version {
+        Version::ics20()
+    }
 }
 
 impl<Test: TestOverrides> HasOverrides for Test {
@@ -164,5 +171,11 @@ impl<Test: TestOverrides> PortsOverride for Test {
 impl<Test: TestOverrides> ChannelOrderOverride for Test {
     fn channel_order(&self) -> Order {
         TestOverrides::channel_order(self)
+    }
+}
+
+impl<Test: TestOverrides> ChannelVersionOverride for Test {
+    fn channel_version(&self) -> Version {
+        TestOverrides::channel_version(self)
     }
 }
