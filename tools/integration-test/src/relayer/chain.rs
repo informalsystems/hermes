@@ -8,11 +8,11 @@
 
    This is the case for creating N-ary chains, because we cannot rely on the
    existential type encapsulation of `impl ChainHandle` to turn the
-   [`ProbeAndCachingChainHandle`](ibc_relayer::chain::handle::ProbeAndCachingChainHandle) to turn
+   [`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle) to turn
    them into unqiue types.
 
-   A workaround for this is to add a unique tag to `ProbeAndCachingChainHandle` itself,
-   so that the type `MonoTagged<Tag, ProbeAndCachingChainHandle>` becomes a unique chain
+   A workaround for this is to add a unique tag to `CountingAndCachingChainHandle` itself,
+   so that the type `MonoTagged<Tag, CountingAndCachingChainHandle>` becomes a unique chain
    handle type.
 
    We implement [`ChainHandle`] for a `MonoTagged<Tag, Handle>`, since if the

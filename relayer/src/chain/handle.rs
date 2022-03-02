@@ -61,7 +61,7 @@ pub use base::BaseChainHandle;
 pub use counting::CountingChainHandle;
 
 pub type CachingChainHandle = cache::CachingChainHandle<BaseChainHandle>;
-pub type ProbeAndCachingChainHandle =
+pub type CountingAndCachingChainHandle =
     cache::CachingChainHandle<CountingChainHandle<BaseChainHandle>>;
 
 /// A pair of [`ChainHandle`]s.
