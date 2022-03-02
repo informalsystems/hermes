@@ -44,7 +44,6 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    cache::Cache,
     chain::StatusResponse,
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -161,24 +160,6 @@ where
         rt: Arc<TokioRuntime>,
     ) -> Result<Handle, Error> {
         // Similar to `from_config`.
-        let chain = Endpoint::bootstrap(config, rt.clone())?;
-
-        // Start the light client
-        let light_client = chain.init_light_client()?;
-
-        // Instantiate & spawn the runtime
-        let (handle, _) = Self::init(chain, light_client, rt);
-
-        Ok(handle)
-    }
-
-    /// Spawns a new runtime for a specific Chain implementation with a caching layer.
-    pub fn spawn_with_cache<Handle: ChainHandle>(
-        config: ChainConfig,
-        rt: Arc<TokioRuntime>,
-        _cache: Cache,
-    ) -> Result<Handle, Error> {
-        // Perform chain-specific initialization
         let chain = Endpoint::bootstrap(config, rt.clone())?;
 
         // Start the light client
