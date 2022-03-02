@@ -279,11 +279,16 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         height: Height,
     ) -> Result<ConnectionEnd, Error> {
         let handle = self.handle();
-        self.cache
-            .get_or_try_insert_connection_with(connection_id, || {
-                self.inc_metric("query_connection");
-                handle.query_connection(connection_id, height)
-            })
+        if height.is_zero() {
+            self.cache
+                .get_or_try_insert_connection_with(connection_id, || {
+                    self.inc_metric("query_connection");
+                    handle.query_connection(connection_id, height)
+                })
+        } else {
+            self.inc_metric("query_connection");
+            handle.query_connection(connection_id, height)
+        }
     }
 
     fn query_connections(
@@ -325,11 +330,16 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         height: Height,
     ) -> Result<ChannelEnd, Error> {
         let handle = self.handle();
-        self.cache
-            .get_or_try_insert_channel_with(port_id, channel_id, || {
-                self.inc_metric("query_channel");
-                handle.query_channel(port_id, channel_id, height)
-            })
+        if height.is_zero() {
+            self.cache
+                .get_or_try_insert_channel_with(port_id, channel_id, || {
+                    self.inc_metric("query_channel");
+                    handle.query_channel(port_id, channel_id, height)
+                })
+        } else {
+            self.inc_metric("query_channel");
+            handle.query_channel(port_id, channel_id, height)
+        }
     }
 
     fn query_channel_client_state(
