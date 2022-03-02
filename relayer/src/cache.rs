@@ -1,6 +1,3 @@
-#![allow(unused_variables, dead_code)]
-// TODO: Remove hacky allow pragmas
-
 use core::fmt::Formatter;
 use std::fmt;
 use std::time::Duration;
@@ -13,6 +10,11 @@ use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::ChannelEnd;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 
+const CHANNEL_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
+const CONNECTION_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
+const CLIENT_STATE_CACHE_TTL: Duration = Duration::from_secs(1);
+const LATEST_HEIGHT_CACHE_TTL: Duration = Duration::from_secs(1);
+
 #[derive(Clone)]
 pub struct Cache {
     channels: MokaCache<(PortId, ChannelId), ChannelEnd>,
@@ -21,26 +23,26 @@ pub struct Cache {
     latest_height: MokaCache<(), Height>,
 }
 
+impl Default for Cache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Cache {
     pub fn new() -> Cache {
-        // TODO: Module-level constants.
-        // Time to live (TTL) and TIL: 10 minutes
-        let channels = MokaCache::builder()
-            .time_to_live(Duration::from_secs(10 * 60))
-            .time_to_idle(Duration::from_secs(10 * 60))
-            .build();
+        let channels = MokaCache::builder().time_to_live(CHANNEL_CACHE_TTL).build();
 
         let connections = MokaCache::builder()
-            .time_to_live(Duration::from_secs(10 * 60))
-            .time_to_idle(Duration::from_secs(10 * 60))
+            .time_to_live(CONNECTION_CACHE_TTL)
             .build();
 
         let client_states = MokaCache::builder()
-            .time_to_live(Duration::from_secs(1))
+            .time_to_live(CLIENT_STATE_CACHE_TTL)
             .build();
 
         let latest_height = MokaCache::builder()
-            .time_to_live(Duration::from_millis(500))
+            .time_to_live(LATEST_HEIGHT_CACHE_TTL)
             .build();
 
         Cache {
