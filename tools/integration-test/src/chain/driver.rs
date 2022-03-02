@@ -475,4 +475,64 @@ impl ChainDriver {
 
         Ok(())
     }
+
+    pub fn register_interchain_account(
+        &self,
+        from: &WalletAddress,
+        connection_id: &ConnectionId,
+    ) -> Result<(), Error> {
+        dbg!(&[
+            "--node",
+            &self.rpc_listen_address(),
+            "tx",
+            "intertx",
+            "register",
+            "--from",
+            &from.0,
+            "--connection-id",
+            connection_id.as_str(),
+            "--chain-id",
+            self.chain_id.as_str(),
+            "--output",
+            "json",
+        ]);
+
+        let res = self
+            .exec(&[
+                "--node",
+                &self.rpc_listen_address(),
+                "tx",
+                "intertx",
+                "register",
+                "--from",
+                &from.0,
+                "--connection-id",
+                connection_id.as_str(),
+                "--chain-id",
+                self.chain_id.as_str(),
+                "--output",
+                "json",
+            ])?
+            .stdout;
+
+        let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
+
+        let code = json_res
+            .get("code")
+            .ok_or_else(|| eyre!("expected `code` field"))?
+            .as_i64()
+            .ok_or_else(|| eyre!("expected integer field"))?;
+
+        if code == 0 {
+            Ok(())
+        } else {
+            let raw_log = json_res
+                .get("raw_log")
+                .ok_or_else(|| eyre!("expected `raw_log` field"))?
+                .as_str()
+                .ok_or_else(|| eyre!("expected string field"))?;
+
+            Err(Error::generic(eyre!("{}", raw_log)))
+        }
+    }
 }

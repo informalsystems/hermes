@@ -7,6 +7,7 @@
 
 pub mod clear_packet;
 pub mod client_expiration;
+pub mod ica_filter;
 pub mod memo;
 pub mod ordered_channel;
 pub mod supervisor;

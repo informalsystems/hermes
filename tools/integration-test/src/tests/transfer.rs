@@ -22,7 +22,7 @@ pub struct IbcTransferTest;
 
 impl TestOverrides for IbcTransferTest {
     fn channel_order(&self) -> Order {
-        Order::Ordered
+        Order::Unordered
     }
 }
 
