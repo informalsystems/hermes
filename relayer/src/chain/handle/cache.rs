@@ -13,9 +13,9 @@ use ibc::{
     core::ics03_connection::version::Version,
     core::ics04_channel::channel::ChannelEnd,
     core::ics23_commitment::commitment::CommitmentPrefix,
-    core::ics24_host::identifier::ChainId,
-    core::ics24_host::identifier::ChannelId,
-    core::ics24_host::identifier::{ClientId, ConnectionId, PortId},
+    core::ics24_host::identifier::{
+        ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+    },
     events::IbcEvent,
     proofs::Proofs,
     query::QueryBlockRequest,
@@ -309,11 +309,13 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<ChannelEnd, Error> {
         let handle = self.handle();
         if height.is_zero() {
-            self.cache
-                .get_or_try_insert_channel_with(port_id, channel_id, || {
+            self.cache.get_or_try_insert_channel_with(
+                &PortChannelId::new(channel_id.clone(), port_id.clone()),
+                || {
                     self.inc_metric("query_channel");
                     handle.query_channel(port_id, channel_id, height)
-                })
+                },
+            )
         } else {
             self.inc_metric("query_channel");
             handle.query_channel(port_id, channel_id, height)

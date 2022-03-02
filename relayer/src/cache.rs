@@ -8,7 +8,7 @@ use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::ChannelEnd;
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
 
 const CHANNEL_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const CONNECTION_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
@@ -17,7 +17,7 @@ const LATEST_HEIGHT_CACHE_TTL: Duration = Duration::from_secs(1);
 
 #[derive(Clone)]
 pub struct Cache {
-    channels: MokaCache<(PortId, ChannelId), ChannelEnd>,
+    channels: MokaCache<PortChannelId, ChannelEnd>,
     connections: MokaCache<ConnectionId, ConnectionEnd>,
     client_states: MokaCache<ClientId, AnyClientState>,
     latest_height: MokaCache<(), Height>,
@@ -55,21 +55,18 @@ impl Cache {
 
     pub fn get_or_try_insert_channel_with<F, E>(
         &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
+        id: &PortChannelId,
         f: F,
     ) -> Result<ChannelEnd, E>
     where
         F: FnOnce() -> Result<ChannelEnd, E>,
     {
-        // FIXME: create a struct type for this
-        let key = (port_id.clone(), channel_id.clone());
-        if let Some(chan) = self.channels.get(&key) {
+        if let Some(chan) = self.channels.get(id) {
             Ok(chan)
         } else {
             let chan = f()?;
             if chan.state().is_open() {
-                self.channels.insert(key, chan.clone());
+                self.channels.insert(id.clone(), chan.clone());
             }
             Ok(chan)
         }
