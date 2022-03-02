@@ -212,10 +212,11 @@ define_error! {
             {
                 client_id: ClientId,
                 chain_id: ChainId,
+                description: String,
             }
             |e| {
-                format_args!("client {0} on chain id {1} is expired or frozen",
-                    e.client_id, e.chain_id)
+                format_args!("client {0} on chain id {1} is expired or frozen: {2}",
+                    e.client_id, e.chain_id, e.description)
             },
 
         Misbehaviour
@@ -629,6 +630,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
+        if client_state.is_frozen() {
+            return Err(ForeignClientError::expired_or_frozen(
+                self.id().clone(),
+                self.dst_chain.id(),
+                "client state reports that client is frozen".into(),
+            ));
+        }
+
         let last_update_time = self
             .consensus_state(client_state.latest_height())?
             .timestamp();
@@ -636,10 +645,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Compute the duration since the last update of this client
         let elapsed = Timestamp::now().duration_since(&last_update_time);
 
-        if client_state.is_frozen() || client_state.expired(elapsed.unwrap_or_default()) {
+        if client_state.expired(elapsed.unwrap_or_default()) {
             return Err(ForeignClientError::expired_or_frozen(
                 self.id().clone(),
                 self.dst_chain.id(),
+                format!(
+                    "expired: time elapsed since last client update: {:?}",
+                    elapsed
+                ),
             ));
         }
 

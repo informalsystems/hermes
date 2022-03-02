@@ -12,6 +12,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 
 use crate::util::lock::RwArc;
 use crate::{
+    cache::Cache,
     chain::{handle::ChainHandle, runtime::ChainRuntime, CosmosSdkChain},
     config::Config,
     error::Error as RelayerError,
@@ -43,6 +44,7 @@ pub struct Registry<Chain: ChainHandle> {
     config: RwArc<Config>,
     handles: HashMap<ChainId, Chain>,
     rt: Arc<TokioRuntime>,
+    cache: Cache,
 }
 
 #[derive(Clone)]
@@ -62,6 +64,7 @@ impl<Chain: ChainHandle> Registry<Chain> {
             config,
             handles: HashMap::new(),
             rt: Arc::new(TokioRuntime::new().unwrap()),
+            cache: Cache::new(),
         }
     }
 
@@ -101,7 +104,8 @@ impl<Chain: ChainHandle> Registry<Chain> {
     /// Returns whether or not the runtime was actually spawned.
     pub fn spawn(&mut self, chain_id: &ChainId) -> Result<bool, SpawnError> {
         if !self.handles.contains_key(chain_id) {
-            let handle = spawn_chain_runtime(&self.config, chain_id, self.rt.clone())?;
+            let handle =
+                spawn_chain_runtime(&self.config, chain_id, self.rt.clone(), self.cache.clone())?;
             self.handles.insert(chain_id.clone(), handle);
             trace!("[{}] spawned chain runtime", chain_id);
             Ok(true)
@@ -156,6 +160,7 @@ pub fn spawn_chain_runtime<Chain: ChainHandle>(
     config: &RwArc<Config>,
     chain_id: &ChainId,
     rt: Arc<TokioRuntime>,
+    cache: Cache,
 ) -> Result<Chain, SpawnError> {
     let chain_config = config
         .read()
@@ -164,8 +169,8 @@ pub fn spawn_chain_runtime<Chain: ChainHandle>(
         .cloned()
         .ok_or_else(|| SpawnError::missing_chain(chain_id.clone()))?;
 
-    let handle =
-        ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt).map_err(SpawnError::relayer)?;
+    let handle = ChainRuntime::<CosmosSdkChain>::spawn_with_cache(chain_config, rt, cache)
+        .map_err(SpawnError::relayer)?;
 
     Ok(handle)
 }
