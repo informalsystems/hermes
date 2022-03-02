@@ -44,7 +44,9 @@ jobs:
     strategy:
       matrix:
         gaiad:
-          - gaia6-ordered
+          - gaia4
+          - gaia5
+          - gaia6_0_2
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
@@ -69,6 +71,6 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
         run: |
-          nix shell github:informalsystems/cosmos.nix/gaia-ordered#${{ matrix.gaiad }} -c cargo \
+          nix shell github:informalsystems/cosmos.nix#${{ matrix.gaiad }} -c cargo \
             test -p ibc-integration-test --no-fail-fast -- \
             --nocapture --test-threads=1
