@@ -327,7 +327,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     ) -> Result<(), Error> {
         info!("querying allowed channels...");
 
-        for (port_id, channel_id) in spec.iter() {
+        for (port_id, channel_id) in spec.iter_exact() {
             let result = scan_allowed_channel(self.registry, chain, port_id, channel_id);
 
             match result {
