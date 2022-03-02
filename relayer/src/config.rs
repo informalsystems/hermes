@@ -45,6 +45,7 @@ impl fmt::Display for GasPrice {
     }
 }
 
+/// Represents the ways in which packets can be filtered.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(
     rename_all = "lowercase",
@@ -53,8 +54,11 @@ impl fmt::Display for GasPrice {
     deny_unknown_fields
 )]
 pub enum PacketFilter {
+    /// Allow the specified channels & ports.
     Allow(ChannelsSpec),
+    /// Deny the specified channels & ports.
     Deny(ChannelsSpec),
+    /// Allow any & all packets.
     AllowAll,
 }
 
@@ -77,11 +81,14 @@ impl PacketFilter {
     }
 }
 
+/// The internal representation of channel filter policies.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ChannelsSpec(Vec<(PortFilterMatch, ChannelFilterMatch)>);
+pub struct ChannelFilters(Vec<(PortFilterMatch, ChannelFilterMatch)>);
 
-impl ChannelsSpec {
+impl ChannelFilters {
+    /// Indicates whether a match for the given [`PortId`]-[`ChannelId`] pair
+    /// exists in the filter policy.
     pub fn matches(&self, channel_port: &(PortId, ChannelId)) -> bool {
         let (port_id, channel_id) = channel_port;
         self.0.iter().any(|(port_filter, chan_filter)| {
@@ -89,6 +96,7 @@ impl ChannelsSpec {
         })
     }
 
+    /// Indicates whether this filter policy contains any wildcard patterns.
     #[inline]
     pub fn contains_patterns(&self) -> bool {
         self.0.iter().any(|(port_filter, channel_filter)| {
@@ -96,6 +104,7 @@ impl ChannelsSpec {
         })
     }
 
+    /// An iterator over the [`PortId`]-[`ChannelId`] pairs that don't contain wildcards.
     pub fn iter_exact(&self) -> impl Iterator<Item = (&PortId, &ChannelId)> {
         self.0.iter().filter_map(|port_chan_filter| {
             if let &(FilterMatch::Exact(ref port_id), FilterMatch::Exact(ref chan_id)) =
@@ -109,7 +118,7 @@ impl ChannelsSpec {
     }
 }
 
-impl fmt::Display for ChannelsSpec {
+impl fmt::Display for ChannelFilters {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -122,6 +131,7 @@ impl fmt::Display for ChannelsSpec {
     }
 }
 
+/// Newtype wrapper around a [`regex::Regex`].
 #[derive(Clone, Debug)]
 pub struct Regex(regex::Regex);
 
@@ -155,21 +165,27 @@ impl ser::Serialize for Regex {
     }
 }
 
+/// Represents a single channel to be filtered in a [`ChannelFilters`] list.
 #[derive(Clone, Debug, Serialize)]
 pub enum FilterMatch<T>
 where
     T: Clone + fmt::Debug,
 {
+    /// A channel specified exactly with its exact [`PortId`] & [`ChannelId`].
     Exact(T),
+    /// A glob of channel(s) specified with a wildcard in either or both [`PortId`] & [`ChannelId`].
     Pattern(Regex),
 }
 
 impl<T: Clone + fmt::Debug + ser::Serialize + AsRef<str> + PartialEq> FilterMatch<T> {
+    /// Indicates whether this filter is specified in part with a wildcard.
     #[inline]
     fn is_pattern(&self) -> bool {
         self.exact_value().is_none()
     }
 
+    /// Matches the given value via strict equality if the filter is an `Exact`, or via
+    /// wildcard matching if the filter is a `Pattern`.
     #[inline]
     fn matches(&self, value: &T) -> bool {
         match self {
@@ -178,6 +194,8 @@ impl<T: Clone + fmt::Debug + ser::Serialize + AsRef<str> + PartialEq> FilterMatc
         }
     }
 
+    /// Returns the contained value if this filter contains an `Exact` variant, or
+    /// `None` if it contains a `Pattern`.
     #[inline]
     fn exact_value(&self) -> Option<&T> {
         match self {
@@ -196,7 +214,9 @@ impl<T: fmt::Display + Clone + fmt::Debug + ser::Serialize> fmt::Display for Fil
     }
 }
 
+/// Type alias for a [`FilterMatch`] containing a [`PortId`].
 pub type PortFilterMatch = FilterMatch<PortId>;
+/// Type alias for a [`FilterMatch`] containing a [`ChannelId`].
 pub type ChannelFilterMatch = FilterMatch<ChannelId>;
 
 impl<'de> de::Deserialize<'de> for PortFilterMatch {
