@@ -1430,7 +1430,7 @@ mod test {
     use ibc::events::IbcEvent;
     use ibc::Height;
 
-    use crate::chain::handle::{ChainHandle, ProdChainHandle};
+    use crate::chain::handle::{ChainHandle, BaseChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;
@@ -1444,8 +1444,8 @@ mod test {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt).unwrap();
         let a_client =
             ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
 
@@ -1482,8 +1482,8 @@ mod test {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt).unwrap();
         let mut a_client = ForeignClient::restore(a_client_id, a_chain.clone(), b_chain.clone());
 
         let mut b_client =
@@ -1589,8 +1589,8 @@ mod test {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
@@ -1638,8 +1638,8 @@ mod test {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());

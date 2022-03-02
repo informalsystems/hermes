@@ -142,6 +142,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.handle().query_clients(request)
     }
 
+    // TODO: Introduce new query_client_state_latest to separate from this one.
     fn query_client_state(
         &self,
         client_id: &ClientId,

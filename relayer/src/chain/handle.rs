@@ -57,12 +57,11 @@ mod cache;
 mod probe;
 mod prod;
 
-pub use cache::CachingChainHandle;
 pub use probe::ProbingChainHandle;
-pub use prod::ProdChainHandle;
+pub use prod::BaseChainHandle;
 
-pub type CachingProdChainHandle = CachingChainHandle<ProdChainHandle>;
-pub type ProbeAndCachingChainHandle = CachingChainHandle<ProbingChainHandle<ProdChainHandle>>;
+pub type CachingChainHandle = cache::CachingChainHandle<BaseChainHandle>;
+pub type ProbeAndCachingChainHandle = CachingChainHandle<ProbingChainHandle<BaseChainHandle>>;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]

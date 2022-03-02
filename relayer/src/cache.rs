@@ -10,9 +10,9 @@ use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::ChannelEnd;
 use ibc::core::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
 
-const CHANNEL_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
+const CHANNEL_CACHE_TTL: Duration = Duration::from_secs(1 * 60);
 const CONNECTION_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
-const CLIENT_STATE_CACHE_TTL: Duration = Duration::from_secs(1);
+const CLIENT_STATE_CACHE_TTL: Duration = Duration::from_millis(500);
 const LATEST_HEIGHT_CACHE_TTL: Duration = Duration::from_secs(1);
 
 #[derive(Clone)]
@@ -62,8 +62,10 @@ impl Cache {
         F: FnOnce() -> Result<ChannelEnd, E>,
     {
         if let Some(chan) = self.channels.get(id) {
+            // If cache hit, return it.
             Ok(chan)
         } else {
+            // Only cache a channel end if the channel is open.
             let chan = f()?;
             if chan.state().is_open() {
                 self.channels.insert(id.clone(), chan.clone());
