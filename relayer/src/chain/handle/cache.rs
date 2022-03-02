@@ -44,20 +44,20 @@ use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
 #[derive(Debug, Clone)]
 pub struct CachingChainHandle<Handle> {
-    handle: Handle,
+    inner: Handle,
     cache: Cache,
 }
 
 impl<Handle> CachingChainHandle<Handle> {
     pub fn new(handle: Handle) -> Self {
         Self {
-            handle,
+            inner: handle,
             cache: Cache::new(),
         }
     }
 
-    pub fn handle(&self) -> &Handle {
-        &self.handle
+    fn inner(&self) -> &Handle {
+        &self.inner
     }
 }
 
@@ -66,7 +66,7 @@ impl<Handle: Serialize> Serialize for CachingChainHandle<Handle> {
     where
         S: Serializer,
     {
-        self.handle.serialize(serializer)
+        self.inner.serialize(serializer)
     }
 }
 
@@ -76,61 +76,61 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     }
 
     fn id(&self) -> ChainId {
-        self.handle().id()
+        self.inner().id()
     }
 
     fn shutdown(&self) -> Result<(), Error> {
-        self.handle().shutdown()
+        self.inner().shutdown()
     }
 
     fn health_check(&self) -> Result<HealthCheck, Error> {
-        self.handle().health_check()
+        self.inner().health_check()
     }
 
     fn subscribe(&self) -> Result<Subscription, Error> {
-        self.handle().subscribe()
+        self.inner().subscribe()
     }
 
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
-        self.handle().send_messages_and_wait_commit(tracked_msgs)
+        self.inner().send_messages_and_wait_commit(tracked_msgs)
     }
 
     fn send_messages_and_wait_check_tx(
         &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
-        self.handle().send_messages_and_wait_check_tx(tracked_msgs)
+        self.inner().send_messages_and_wait_check_tx(tracked_msgs)
     }
 
     fn get_signer(&self) -> Result<Signer, Error> {
-        self.handle().get_signer()
+        self.inner().get_signer()
     }
 
     fn config(&self) -> Result<ChainConfig, Error> {
-        self.handle().config()
+        self.inner().config()
     }
 
     fn get_key(&self) -> Result<KeyEntry, Error> {
-        self.handle().get_key()
+        self.inner().get_key()
     }
 
     fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
-        self.handle().add_key(key_name, key)
+        self.inner().add_key(key_name, key)
     }
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
-        self.handle().ibc_version()
+        self.inner().ibc_version()
     }
 
     fn query_status(&self) -> Result<StatusResponse, Error> {
-        self.handle().query_status()
+        self.inner().query_status()
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {
-        let handle = self.handle();
+        let handle = self.inner();
         self.cache
             .get_or_try_update_latest_height_with(|| handle.query_latest_height())
     }
@@ -139,7 +139,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-        self.handle().query_clients(request)
+        self.inner().query_clients(request)
     }
 
     // TODO: Introduce new query_client_state_latest to separate from this one.
@@ -148,7 +148,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error> {
-        let handle = self.handle();
+        let handle = self.inner();
         if height.is_zero() {
             self.cache
                 .get_or_try_insert_client_state_with(client_id, || {
@@ -163,14 +163,14 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error> {
-        self.handle().query_client_connections(request)
+        self.inner().query_client_connections(request)
     }
 
     fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        self.handle().query_consensus_states(request)
+        self.inner().query_consensus_states(request)
     }
 
     fn query_consensus_state(
@@ -179,7 +179,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         consensus_height: Height,
         query_height: Height,
     ) -> Result<AnyConsensusState, Error> {
-        self.handle()
+        self.inner()
             .query_consensus_state(client_id, consensus_height, query_height)
     }
 
@@ -187,22 +187,22 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.handle().query_upgraded_client_state(height)
+        self.inner().query_upgraded_client_state(height)
     }
 
     fn query_upgraded_consensus_state(
         &self,
         height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.handle().query_upgraded_consensus_state(height)
+        self.inner().query_upgraded_consensus_state(height)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        self.handle().query_commitment_prefix()
+        self.inner().query_commitment_prefix()
     }
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error> {
-        self.handle().query_compatible_versions()
+        self.inner().query_compatible_versions()
     }
 
     fn query_connection(
@@ -210,7 +210,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error> {
-        let handle = self.handle();
+        let handle = self.inner();
         if height.is_zero() {
             self.cache
                 .get_or_try_insert_connection_with(connection_id, || {
@@ -225,28 +225,28 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-        self.handle().query_connections(request)
+        self.inner().query_connections(request)
     }
 
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        self.handle().query_connection_channels(request)
+        self.inner().query_connection_channels(request)
     }
 
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error> {
-        self.handle().query_next_sequence_receive(request)
+        self.inner().query_next_sequence_receive(request)
     }
 
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        self.handle().query_channels(request)
+        self.inner().query_channels(request)
     }
 
     fn query_channel(
@@ -255,7 +255,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<ChannelEnd, Error> {
-        let handle = self.handle();
+        let handle = self.inner();
         if height.is_zero() {
             self.cache.get_or_try_insert_channel_with(
                 &PortChannelId::new(channel_id.clone(), port_id.clone()),
@@ -270,7 +270,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
-        self.handle().query_channel_client_state(request)
+        self.inner().query_channel_client_state(request)
     }
 
     fn proven_client_state(
@@ -278,7 +278,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         client_id: &ClientId,
         height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.handle().proven_client_state(client_id, height)
+        self.inner().proven_client_state(client_id, height)
     }
 
     fn proven_connection(
@@ -286,7 +286,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.handle().proven_connection(connection_id, height)
+        self.inner().proven_connection(connection_id, height)
     }
 
     fn proven_client_consensus(
@@ -295,7 +295,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         consensus_height: Height,
         height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.handle()
+        self.inner()
             .proven_client_consensus(client_id, consensus_height, height)
     }
 
@@ -305,7 +305,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         target_height: Height,
         client_state: AnyClientState,
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
-        self.handle()
+        self.inner()
             .build_header(trusted_height, target_height, client_state)
     }
 
@@ -315,7 +315,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         height: Height,
         dst_config: ChainConfig,
     ) -> Result<AnyClientState, Error> {
-        self.handle().build_client_state(height, dst_config)
+        self.inner().build_client_state(height, dst_config)
     }
 
     /// Constructs a consensus state at the given height
@@ -325,7 +325,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         target: Height,
         client_state: AnyClientState,
     ) -> Result<AnyConsensusState, Error> {
-        self.handle()
+        self.inner()
             .build_consensus_state(trusted, target, client_state)
     }
 
@@ -334,7 +334,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         update: UpdateClient,
         client_state: AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
-        self.handle().check_misbehaviour(update, client_state)
+        self.inner().check_misbehaviour(update, client_state)
     }
 
     fn build_connection_proofs_and_client_state(
@@ -344,7 +344,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         client_id: &ClientId,
         height: Height,
     ) -> Result<(Option<AnyClientState>, Proofs), Error> {
-        self.handle().build_connection_proofs_and_client_state(
+        self.inner().build_connection_proofs_and_client_state(
             message_type,
             connection_id,
             client_id,
@@ -358,7 +358,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<Proofs, Error> {
-        self.handle()
+        self.inner()
             .build_channel_proofs(port_id, channel_id, height)
     }
 
@@ -370,7 +370,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         sequence: Sequence,
         height: Height,
     ) -> Result<(Vec<u8>, Proofs), Error> {
-        self.handle()
+        self.inner()
             .build_packet_proofs(packet_type, port_id, channel_id, sequence, height)
     }
 
@@ -378,38 +378,38 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<PacketState>, Height), Error> {
-        self.handle().query_packet_commitments(request)
+        self.inner().query_packet_commitments(request)
     }
 
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error> {
-        self.handle().query_unreceived_packets(request)
+        self.inner().query_unreceived_packets(request)
     }
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<PacketState>, Height), Error> {
-        self.handle().query_packet_acknowledgements(request)
+        self.inner().query_packet_acknowledgements(request)
     }
 
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error> {
-        self.handle().query_unreceived_acknowledgement(request)
+        self.inner().query_unreceived_acknowledgement(request)
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
-        self.handle().query_txs(request)
+        self.inner().query_txs(request)
     }
 
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        self.handle().query_blocks(request)
+        self.inner().query_blocks(request)
     }
 }
