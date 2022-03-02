@@ -13,7 +13,7 @@ use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
-use serde::{de, ser, Deserializer};
+use serde::{de, ser, Deserializer, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client_verifier::types::TrustThreshold;
 
@@ -159,7 +159,7 @@ impl fmt::Display for Regex {
 impl ser::Serialize for Regex {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: ser::Serializer,
+        S: Serializer,
     {
         serializer.serialize_str(&self.0.to_string())
     }
@@ -586,7 +586,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 
 #[cfg(test)]
 mod tests {
-    use super::{load, store_writer};
+    use super::{load, store_writer, ChannelFilters, FilterPattern, PacketFilter};
     use test_log::test;
 
     #[test]
@@ -633,5 +633,34 @@ mod tests {
         let filter_policy = filter_policy.unwrap();
 
         println!("{:?}", filter_policy);
+    }
+
+    #[test]
+    #[ignore]
+    fn serialize_packet_filter_policy() {
+        use std::str::FromStr;
+
+        use super::Regex;
+        use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+
+        let filter_policy = ChannelFilters(vec![
+            (
+                FilterPattern::Exact(PortId::from_str("transfer").unwrap()),
+                FilterPattern::Exact(ChannelId::from_str("channel-0").unwrap()),
+            ),
+            (
+                FilterPattern::Wildcard(Regex(regex::Regex::new("ica*").unwrap())),
+                FilterPattern::Wildcard(Regex(regex::Regex::new("*").unwrap())),
+            ),
+        ]);
+        let fp = PacketFilter::Allow(filter_policy);
+        let toml_str = toml::to_string_pretty(&fp);
+        println!("{:?}", toml_str);
+
+        assert!(toml_str.is_ok());
+
+        let toml_str = toml_str.unwrap();
+
+        println!("{}", toml_str);
     }
 }
