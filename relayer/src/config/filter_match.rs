@@ -22,7 +22,7 @@ pub(crate) mod port {
             if let Ok(port_id) = PortId::from_str(v) {
                 Ok(PortFilterMatch::Exact(port_id))
             } else {
-                let v = regex::escape(v).replace('*', "(?:.*)");
+                let v = regex::escape(v).replace("\\*", "(?:.*)");
                 let regex = v.parse().map_err(E::custom)?;
                 Ok(PortFilterMatch::Wildcard(regex))
             }
@@ -51,7 +51,7 @@ pub(crate) mod channel {
             if let Ok(channel_id) = ChannelId::from_str(v) {
                 Ok(ChannelFilterMatch::Exact(channel_id))
             } else {
-                let v = regex::escape(v).replace('*', "(?:.*)");
+                let v = regex::escape(v).replace("\\*", "(?:.*)");
                 let regex = v.parse().map_err(E::custom)?;
                 Ok(ChannelFilterMatch::Wildcard(regex))
             }
