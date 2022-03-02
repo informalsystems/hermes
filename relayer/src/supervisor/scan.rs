@@ -26,7 +26,7 @@ use crate::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
     },
-    config::{ChainConfig, ChannelsSpec, Config, ModeConfig, PacketFilter},
+    config::{ChainConfig, ChannelFilters, Config, ModeConfig, PacketFilter},
     object::{Channel, Client, Connection, Object, Packet},
     registry::{Registry, SharedRegistry},
     supervisor::client_state_filter::{FilterPolicy, Permission},
@@ -324,7 +324,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     pub fn query_allowed_channels(
         &mut self,
         chain: &Chain,
-        spec: &ChannelsSpec,
+        spec: &ChannelFilters,
         scan: &mut ChainScan,
     ) -> Result<(), Error> {
         info!("querying allowed channels...");
@@ -526,7 +526,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         true
     }
 
-    fn use_allow_list<'b>(&self, chain_config: &'b ChainConfig) -> Option<&'b ChannelsSpec> {
+    fn use_allow_list<'b>(&self, chain_config: &'b ChainConfig) -> Option<&'b ChannelFilters> {
         if !self.filtering_enabled() {
             return None;
         }

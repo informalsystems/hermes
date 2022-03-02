@@ -38,12 +38,12 @@ trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
 
-[chains.packet_filter]
-policy = 'allow'
-list = [
-  ['ica*', '*'],
-  ['transfer', 'channel-0'],
-]
+# [chains.packet_filter]
+# policy = 'allow'
+# list = [
+#   ['ica*', '*'],
+#   ['transfer', 'channel-0'],
+# ]
 
 [[chains]]
 id = 'chain_B'

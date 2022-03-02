@@ -613,4 +613,25 @@ mod tests {
         let mut buffer = Vec::new();
         store_writer(&config, &mut buffer).unwrap();
     }
+
+    #[test]
+    fn deserialize_packet_filter_policy() {
+        use toml::Value;
+
+        let toml_content = r#"
+            [chains.packet_filter]
+            policy = 'allow'
+            list = [
+              ['ica*', '*'],
+              ['transfer', 'channel-0'],
+            ]
+            "#;
+        let filter_policy: Result<Value, toml::de::Error> = toml::from_str(toml_content);
+
+        assert!(filter_policy.is_ok());
+
+        let filter_policy = filter_policy.unwrap();
+
+        println!("{:?}", filter_policy);
+    }
 }
