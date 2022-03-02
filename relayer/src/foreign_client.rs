@@ -1430,7 +1430,7 @@ mod test {
     use ibc::events::IbcEvent;
     use ibc::Height;
 
-    use crate::chain::handle::{ChainHandle, BaseChainHandle};
+    use crate::chain::handle::{BaseChainHandle, ChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;

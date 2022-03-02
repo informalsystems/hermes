@@ -10,7 +10,7 @@ use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::ChannelEnd;
 use ibc::core::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
 
-const CHANNEL_CACHE_TTL: Duration = Duration::from_secs(1 * 60);
+const CHANNEL_CACHE_TTL: Duration = Duration::from_secs(60);
 const CONNECTION_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const CLIENT_STATE_CACHE_TTL: Duration = Duration::from_millis(500);
 const LATEST_HEIGHT_CACHE_TTL: Duration = Duration::from_millis(200);

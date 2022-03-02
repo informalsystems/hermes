@@ -7,7 +7,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::counterparty::channel_connection_client;
 use ibc_relayer::{
     chain::{
-        handle::{ChainHandle, BaseChainHandle},
+        handle::{BaseChainHandle, ChainHandle},
         runtime::ChainRuntime,
         CosmosSdkChain,
     },
