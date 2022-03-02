@@ -6,6 +6,7 @@ use serde_json as json;
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
+use crate::prelude::TaggedConnectionIdRef;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -98,6 +99,12 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error>;
+
+    fn register_interchain_account<Counterparty>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+    ) -> Result<(), Error>;
 }
 
 impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
@@ -160,5 +167,14 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error> {
         query_recipient_transactions(self.value(), recipient_address.value())
+    }
+
+    fn register_interchain_account<Counterparty>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+    ) -> Result<(), Error> {
+        self.value()
+            .register_interchain_account(from.value(), connection_id.value())
     }
 }

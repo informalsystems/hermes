@@ -4,10 +4,11 @@ use crate::ibc::denom::derive_ibc_denom;
 use crate::prelude::*;
 use crate::util::random::random_u64_range;
 
-#[test]
-fn test_ordered_channel() -> Result<(), Error> {
-    run_binary_channel_test(&OrderedChannelTest)
-}
+// #[test]
+// fn test_ordered_channel() -> Result<(), Error> {
+//     run_binary_channel_test(&OrderedChannelTest)
+// }
+
 pub struct OrderedChannelTest;
 
 impl TestOverrides for OrderedChannelTest {

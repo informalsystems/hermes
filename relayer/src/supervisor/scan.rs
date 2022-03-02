@@ -305,7 +305,9 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         match self.use_allow_list(chain_config) {
             Some(spec) if self.scan_mode == ScanMode::Auto => {
-                info!("chain uses an allow list, skipping scan for fast startup");
+                info!(
+                    "chain uses an allow list (without wildcards), skipping scan for fast startup"
+                );
                 info!("allowed ports/channels: {}", spec);
 
                 self.query_allowed_channels(&chain, spec, &mut scan)?;
@@ -530,7 +532,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         }
 
         match chain_config.packet_filter {
-            PacketFilter::Allow(ref spec) => Some(spec),
+            PacketFilter::Allow(ref spec) if !spec.contains_patterns() => Some(spec),
             _ => None,
         }
     }

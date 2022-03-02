@@ -1,7 +1,7 @@
 //! Relayer configuration
 
 mod error;
-mod filter_match;
+mod filter_pattern;
 mod proof_specs;
 pub mod reload;
 pub mod types;
@@ -25,7 +25,7 @@ use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::keyring::Store;
 
 pub use error::Error;
-use filter_match::{channel::ChannelFilterMatchVisitor, port::PortFilterMatchVisitor};
+use filter_pattern::{channel::ChannelFilterMatchVisitor, port::PortFilterMatchVisitor};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {

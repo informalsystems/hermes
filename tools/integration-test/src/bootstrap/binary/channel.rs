@@ -4,6 +4,7 @@
 
 use eyre::{eyre, Report as Error};
 use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::{Channel, ChannelSide};
@@ -29,6 +30,7 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     port_a: &PortId,
     port_b: &PortId,
     order: Order,
+    version: Version,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let channel = bootstrap_channel(
@@ -37,6 +39,7 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
         &DualTagged::new(port_a),
         &DualTagged::new(port_b),
         order,
+        version,
         bootstrap_with_random_ids,
     )?;
 
@@ -53,6 +56,7 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
     order: Order,
+    version: Version,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let connection = bootstrap_connection(client_b_to_a, client_a_to_b, bootstrap_with_random_ids)?;
@@ -64,6 +68,7 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         port_a,
         port_b,
         order,
+        version,
         bootstrap_with_random_ids,
     )
 }
@@ -78,6 +83,7 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
     order: Order,
+    version: Version,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     if bootstrap_with_random_ids {
@@ -90,7 +96,7 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
         order,
         port_a.0.clone(),
         port_b.0.clone(),
-        None,
+        Some(version),
     )?;
 
     let channel_id_a = channel

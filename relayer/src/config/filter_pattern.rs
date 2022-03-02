@@ -21,14 +21,10 @@ pub(crate) mod port {
         fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
             if let Ok(port_id) = PortId::from_str(v) {
                 Ok(PortFilterMatch::Exact(port_id))
-            } else if v.trim().is_empty() && v.replace('*', "").chars().all(char::is_alphanumeric) {
-                // FIXME(hu55a1n1): above check is not all-encompassing
-                let regex = v.parse().map_err(E::custom)?;
-                Ok(PortFilterMatch::Pattern(regex))
             } else {
-                Err(E::custom(
-                    "string is neither a valid PortId nor a supported regex",
-                ))
+                let v = regex::escape(v).replace("\\*", "(?:.*)");
+                let regex = v.parse().map_err(E::custom)?;
+                Ok(PortFilterMatch::Wildcard(regex))
             }
         }
 
@@ -54,14 +50,10 @@ pub(crate) mod channel {
         fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
             if let Ok(channel_id) = ChannelId::from_str(v) {
                 Ok(ChannelFilterMatch::Exact(channel_id))
-            } else if v.trim().is_empty() && v.replace('*', "").chars().all(char::is_alphanumeric) {
-                // FIXME(hu55a1n1): above check is not all-encompassing
-                let regex = v.parse().map_err(E::custom)?;
-                Ok(ChannelFilterMatch::Pattern(regex))
             } else {
-                Err(E::custom(
-                    "string is neither a valid ChannelId nor a supported regex",
-                ))
+                let v = regex::escape(v).replace("\\*", "(?:.*)");
+                let regex = v.parse().map_err(E::custom)?;
+                Ok(ChannelFilterMatch::Wildcard(regex))
             }
         }
 

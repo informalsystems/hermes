@@ -5,7 +5,7 @@
 use core::str::FromStr;
 use core::time::Duration;
 use eyre::eyre;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use semver::Version;
 use serde_json as json;
@@ -187,6 +187,27 @@ impl ChainDriver {
             "init",
             self.chain_id.as_str(),
         ])?;
+
+        Ok(())
+    }
+
+    /**
+       Modify the Gaia genesis file.
+    */
+    pub fn update_genesis_file(
+        &self,
+        file: &str,
+        cont: impl FnOnce(&mut serde_json::Value) -> Result<(), Error>,
+    ) -> Result<(), Error> {
+        let config1 = self.read_file(&format!("config/{}", file))?;
+
+        let mut config2 = serde_json::from_str(&config1).map_err(handle_generic_error)?;
+
+        cont(&mut config2)?;
+
+        let config3 = serde_json::to_string_pretty(&config2).map_err(handle_generic_error)?;
+
+        self.write_file("config/genesis.json", &config3)?;
 
         Ok(())
     }
@@ -474,5 +495,65 @@ impl ChainDriver {
         )?;
 
         Ok(())
+    }
+
+    pub fn register_interchain_account(
+        &self,
+        from: &WalletAddress,
+        connection_id: &ConnectionId,
+    ) -> Result<(), Error> {
+        dbg!(&[
+            "--node",
+            &self.rpc_listen_address(),
+            "tx",
+            "intertx",
+            "register",
+            "--from",
+            &from.0,
+            "--connection-id",
+            connection_id.as_str(),
+            "--chain-id",
+            self.chain_id.as_str(),
+            "--output",
+            "json",
+        ]);
+
+        let res = self
+            .exec(&[
+                "--node",
+                &self.rpc_listen_address(),
+                "tx",
+                "intertx",
+                "register",
+                "--from",
+                &from.0,
+                "--connection-id",
+                connection_id.as_str(),
+                "--chain-id",
+                self.chain_id.as_str(),
+                "--output",
+                "json",
+            ])?
+            .stdout;
+
+        let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
+
+        let code = json_res
+            .get("code")
+            .ok_or_else(|| eyre!("expected `code` field"))?
+            .as_i64()
+            .ok_or_else(|| eyre!("expected integer field"))?;
+
+        if code == 0 {
+            Ok(())
+        } else {
+            let raw_log = json_res
+                .get("raw_log")
+                .ok_or_else(|| eyre!("expected `raw_log` field"))?
+                .as_str()
+                .ok_or_else(|| eyre!("expected string field"))?;
+
+            Err(Error::generic(eyre!("{}", raw_log)))
+        }
     }
 }
