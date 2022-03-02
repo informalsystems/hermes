@@ -207,8 +207,17 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error> {
-        self.inc_metric(&format!("query_client_state({}, {})", client_id, height));
-        self.handle().query_client_state(client_id, height)
+        let handle = self.handle();
+        if height.is_zero() {
+            self.cache
+                .get_or_try_insert_client_state_with(client_id, || {
+                    self.inc_metric(&format!("query_client_state({}, {})", client_id, height));
+                    handle.query_client_state(client_id, height)
+                })
+        } else {
+            self.inc_metric(&format!("query_client_state({}, {})", client_id, height));
+            handle.query_client_state(client_id, height)
+        }
     }
 
     fn query_client_connections(
