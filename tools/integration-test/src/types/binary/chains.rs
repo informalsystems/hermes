@@ -2,7 +2,7 @@
    Type definition for two connected chains.
 */
 
-use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
+use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
@@ -46,7 +46,7 @@ pub struct ConnectedChains<ChainA: ChainHandle, ChainB: ChainHandle> {
        Use this shared registry when spawning new supervisor using
        [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
     */
-    pub registry: SharedRegistry<ProdChainHandle>,
+    pub registry: SharedRegistry<CountingAndCachingChainHandle>,
 
     /**
         The [`ChainHandle`] for chain A.
@@ -98,7 +98,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChains<ChainA, ChainB> {
     pub fn new(
         config_path: PathBuf,
         config: SharedConfig,
-        registry: SharedRegistry<ProdChainHandle>,
+        registry: SharedRegistry<CountingAndCachingChainHandle>,
         handle_a: ChainA,
         handle_b: ChainB,
         node_a: MonoTagged<ChainA, FullNode>,
@@ -193,7 +193,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChains<Cha
    this value is dropped.
 
    Note that we cannot stop the chain on drop for
-   [`ProdChainHandle`](ibc_relayer::chain::handle::ProdChainHandle)
+   [`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle)
    itself, as the chain handles can be cloned. But for testing purposes,
    we alway stop the chain handle when this "canonical" chain handle
    is dropped.

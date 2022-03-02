@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
-use ibc_relayer::chain::handle::ProdChainHandle;
+use ibc_relayer::chain::handle::BaseChainHandle;
 
 use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
@@ -36,7 +36,7 @@ impl QueryPacketAcknowledgementsCmd {
 
         debug!("Options: {:?}", self);
 
-        let (chains, channel) = spawn_chain_counterparty::<ProdChainHandle>(
+        let (chains, channel) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,

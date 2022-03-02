@@ -11,7 +11,7 @@ use tendermint::abci::transaction::Hash;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
-use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::runtime::ChainRuntime;
 use ibc_relayer::chain::CosmosSdkChain;
 
@@ -46,7 +46,7 @@ impl Runnable for QueryTxEventsCmd {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain =
-            ChainRuntime::<CosmosSdkChain>::spawn::<ProdChainHandle>(chain_config.clone(), rt)
+            ChainRuntime::<CosmosSdkChain>::spawn::<BaseChainHandle>(chain_config.clone(), rt)
                 .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = Hash::from_str(self.hash.as_str())
