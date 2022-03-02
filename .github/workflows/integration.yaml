@@ -44,6 +44,9 @@ jobs:
     strategy:
       matrix:
         gaiad:
+          - gaia4
+          - gaia5
+          - gaia6_0_2
           - gaia6-ordered
     steps:
       - uses: actions/checkout@v2
