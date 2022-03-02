@@ -8,9 +8,11 @@
 pub mod clear_packet;
 pub mod client_expiration;
 pub mod memo;
-pub mod ordered_channel;
 pub mod supervisor;
 pub mod transfer;
+
+#[cfg(any(doc, feature = "ordered"))]
+pub mod ordered_channel;
 
 #[cfg(any(doc, feature = "manual"))]
 pub mod manual;
