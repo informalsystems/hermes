@@ -53,8 +53,10 @@ use crate::{
 
 use super::{tx::TrackedMsgs, HealthCheck, StatusResponse};
 
+mod cache;
 mod prod;
 
+pub use cache::CachingChainHandle;
 pub use prod::ProdChainHandle;
 
 /// A pair of [`ChainHandle`]s.
