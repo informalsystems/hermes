@@ -98,7 +98,7 @@ impl ChannelsSpec {
 
     pub fn iter_exact(&self) -> impl Iterator<Item = (&PortId, &ChannelId)> {
         self.0.iter().filter_map(|port_chan_filter| {
-            if let &(FilterMatch::Exact(ref port_id), FilterMatch::Exact(ref chan_id)) =
+            if let &(FilterPattern::Exact(ref port_id), FilterPattern::Exact(ref chan_id)) =
                 port_chan_filter
             {
                 Some((port_id, chan_id))
@@ -156,15 +156,15 @@ impl ser::Serialize for Regex {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub enum FilterMatch<T>
+pub enum FilterPattern<T>
 where
     T: Clone + fmt::Debug,
 {
     Exact(T),
-    Pattern(Regex),
+    Wildcard(Regex),
 }
 
-impl<T: Clone + fmt::Debug + ser::Serialize + AsRef<str> + PartialEq> FilterMatch<T> {
+impl<T: Clone + fmt::Debug + ser::Serialize + AsRef<str> + PartialEq> FilterPattern<T> {
     #[inline]
     fn is_pattern(&self) -> bool {
         self.exact_value().is_none()
@@ -173,31 +173,31 @@ impl<T: Clone + fmt::Debug + ser::Serialize + AsRef<str> + PartialEq> FilterMatc
     #[inline]
     fn matches(&self, value: &T) -> bool {
         match self {
-            FilterMatch::Exact(v) => value == v,
-            FilterMatch::Pattern(regex) => regex.is_match(value.as_ref()),
+            FilterPattern::Exact(v) => value == v,
+            FilterPattern::Wildcard(regex) => regex.is_match(value.as_ref()),
         }
     }
 
     #[inline]
     fn exact_value(&self) -> Option<&T> {
         match self {
-            FilterMatch::Exact(value) => Some(value),
-            FilterMatch::Pattern(_) => None,
+            FilterPattern::Exact(value) => Some(value),
+            FilterPattern::Wildcard(_) => None,
         }
     }
 }
 
-impl<T: fmt::Display + Clone + fmt::Debug + ser::Serialize> fmt::Display for FilterMatch<T> {
+impl<T: fmt::Display + Clone + fmt::Debug + ser::Serialize> fmt::Display for FilterPattern<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FilterMatch::Exact(value) => write!(f, "{}", value),
-            FilterMatch::Pattern(regex) => write!(f, "{}", regex),
+            FilterPattern::Exact(value) => write!(f, "{}", value),
+            FilterPattern::Wildcard(regex) => write!(f, "{}", regex),
         }
     }
 }
 
-pub type PortFilterMatch = FilterMatch<PortId>;
-pub type ChannelFilterMatch = FilterMatch<ChannelId>;
+pub type PortFilterMatch = FilterPattern<PortId>;
+pub type ChannelFilterMatch = FilterPattern<ChannelId>;
 
 impl<'de> de::Deserialize<'de> for PortFilterMatch {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<PortFilterMatch, D::Error> {

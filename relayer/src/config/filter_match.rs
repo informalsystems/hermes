@@ -21,11 +21,11 @@ pub(crate) mod port {
         fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
             if let Ok(port_id) = PortId::from_str(v) {
                 Ok(PortFilterMatch::Exact(port_id))
+            } else {
+                let v = regex::escape(v).replace('*', "(?:.*)");
+                let regex = v.parse().map_err(E::custom)?;
+                Ok(PortFilterMatch::Wildcard(regex))
             }
-
-            let v = regex::escape(v).replace('*', "(?:.*)");
-            let regex = v.parse().map_err(E::custom)?;
-            Ok(PortFilterMatch::Pattern(regex))
         }
 
         fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
@@ -50,11 +50,11 @@ pub(crate) mod channel {
         fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
             if let Ok(channel_id) = ChannelId::from_str(v) {
                 Ok(ChannelFilterMatch::Exact(channel_id))
+            } else {
+                let v = regex::escape(v).replace('*', "(?:.*)");
+                let regex = v.parse().map_err(E::custom)?;
+                Ok(ChannelFilterMatch::Wildcard(regex))
             }
-
-            let v = regex::escape(v).replace('*', "(?:.*)");
-            let regex = v.parse().map_err(E::custom)?;
-            Ok(ChannelFilterMatch::Pattern(regex))
         }
 
         fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
