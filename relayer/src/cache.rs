@@ -9,13 +9,12 @@ use moka::sync;
 
 use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::ChannelEnd;
-
-use crate::supervisor::client_state_filter::CacheKey;
+use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId};
 
 #[derive(Clone)]
 pub struct Cache {
-    channels: sync::Cache<CacheKey, ChannelEnd>,
-    connections: sync::Cache<CacheKey, ConnectionEnd>,
+    channels: sync::Cache<ChannelId, ChannelEnd>,
+    connections: sync::Cache<ConnectionId, ConnectionEnd>,
 }
 
 impl Cache {
@@ -37,10 +36,29 @@ impl Cache {
             connections: conns,
         }
     }
+
+    pub fn get_or_try_insert_connection_with<F, E>(
+        &self,
+        id: &ConnectionId,
+        f: F,
+    ) -> Result<ConnectionEnd, E>
+    where
+        F: FnOnce() -> Result<ConnectionEnd, E>,
+    {
+        if let Some(conn) = self.connections.get(id) {
+            Ok(conn)
+        } else {
+            let conn = f()?;
+            if conn.state().is_open() {
+                self.connections.insert(id.clone(), conn.clone());
+            }
+            Ok(conn)
+        }
+    }
 }
 
 impl fmt::Debug for Cache {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        todo!()
+        f.debug_struct("Cache").finish_non_exhaustive()
     }
 }

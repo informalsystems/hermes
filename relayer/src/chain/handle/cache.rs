@@ -59,6 +59,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use tracing::debug;
 
+use crate::cache::Cache;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{HealthCheck, StatusResponse};
@@ -71,6 +72,7 @@ use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 pub struct CachingChainHandle<Handle> {
     handle: Handle,
     metrics: Arc<RwLock<HashMap<String, u64>>>,
+    cache: Cache,
 }
 
 impl<Handle> CachingChainHandle<Handle> {
@@ -78,6 +80,7 @@ impl<Handle> CachingChainHandle<Handle> {
         Self {
             handle,
             metrics: Arc::new(RwLock::new(HashMap::new())),
+            cache: Cache::new(),
         }
     }
 
@@ -263,8 +266,12 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error> {
-        self.inc_metric("query_connection");
-        self.handle().query_connection(connection_id, height)
+        let handle = self.handle();
+        self.cache
+            .get_or_try_insert_connection_with(connection_id, || {
+                self.inc_metric("query_connection");
+                handle.query_connection(connection_id, height)
+            })
     }
 
     fn query_connections(
