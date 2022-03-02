@@ -1373,6 +1373,7 @@ dependencies = [
  "num-rational",
  "prost",
  "prost-types",
+ "regex",
  "retry",
  "ripemd160",
  "semver",

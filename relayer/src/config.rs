@@ -7,9 +7,9 @@ pub mod reload;
 pub mod types;
 
 use alloc::collections::BTreeMap;
-use alloc::collections::BTreeSet;
 use core::{fmt, time::Duration};
 use itertools::Itertools;
+use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
@@ -79,7 +79,7 @@ impl PacketFilter {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ChannelsSpec(BTreeSet<(PortFilterMatch, ChannelFilterMatch)>);
+pub struct ChannelsSpec(Vec<(PortFilterMatch, ChannelFilterMatch)>);
 
 impl ChannelsSpec {
     pub fn matches(&self, channel_port: &(PortId, ChannelId)) -> bool {
@@ -122,7 +122,40 @@ impl fmt::Display for ChannelsSpec {
     }
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug)]
+pub struct Regex(regex::Regex);
+
+impl Regex {
+    #[inline]
+    pub fn is_match(&self, text: &str) -> bool {
+        self.0.is_match(text)
+    }
+}
+
+impl FromStr for Regex {
+    type Err = regex::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.parse()?))
+    }
+}
+
+impl fmt::Display for Regex {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl ser::Serialize for Regex {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        serializer.serialize_str(&self.0.to_string())
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
 pub enum FilterMatch<T>
 where
     T: Clone + fmt::Debug,
@@ -131,7 +164,7 @@ where
     Pattern(Regex),
 }
 
-impl<T: Clone + fmt::Debug + PartialEq + Eq + PartialOrd + Ord + ser::Serialize> FilterMatch<T> {
+impl<T: Clone + fmt::Debug + ser::Serialize + AsRef<str> + PartialEq> FilterMatch<T> {
     #[inline]
     fn is_pattern(&self) -> bool {
         self.exact_value().is_none()
@@ -141,9 +174,7 @@ impl<T: Clone + fmt::Debug + PartialEq + Eq + PartialOrd + Ord + ser::Serialize>
     fn matches(&self, value: &T) -> bool {
         match self {
             FilterMatch::Exact(v) => value == v,
-            FilterMatch::Pattern(_regex) => {
-                todo!()
-            }
+            FilterMatch::Pattern(regex) => regex.is_match(value.as_ref()),
         }
     }
 
@@ -156,9 +187,7 @@ impl<T: Clone + fmt::Debug + PartialEq + Eq + PartialOrd + Ord + ser::Serialize>
     }
 }
 
-impl<T: fmt::Display + Clone + fmt::Debug + PartialOrd + Ord + ser::Serialize> fmt::Display
-    for FilterMatch<T>
-{
+impl<T: fmt::Display + Clone + fmt::Debug + ser::Serialize> fmt::Display for FilterMatch<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             FilterMatch::Exact(value) => write!(f, "{}", value),
@@ -167,7 +196,6 @@ impl<T: fmt::Display + Clone + fmt::Debug + PartialOrd + Ord + ser::Serialize> f
     }
 }
 
-pub type Regex = String;
 pub type PortFilterMatch = FilterMatch<PortId>;
 pub type ChannelFilterMatch = FilterMatch<ChannelId>;
 
