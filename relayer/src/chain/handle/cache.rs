@@ -187,8 +187,11 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {
-        self.inc_metric("query_latest_height");
-        self.handle().query_latest_height()
+        let handle = self.handle();
+        self.cache.get_or_try_update_latest_height_with(|| {
+            self.inc_metric("query_latest_height");
+            handle.query_latest_height()
+        })
     }
 
     fn query_clients(

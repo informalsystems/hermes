@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use moka::sync;
 
+use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::ChannelEnd;
 use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
@@ -15,6 +16,7 @@ use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 pub struct Cache {
     channels: sync::Cache<(PortId, ChannelId), ChannelEnd>,
     connections: sync::Cache<ConnectionId, ConnectionEnd>,
+    latest_height: sync::Cache<(), Height>,
 }
 
 impl Cache {
@@ -31,9 +33,14 @@ impl Cache {
             .time_to_idle(Duration::from_secs(10 * 60))
             .build();
 
+        let latest_height = sync::Cache::builder()
+            .time_to_live(Duration::from_millis(500))
+            .build();
+
         Cache {
             channels: chans,
             connections: conns,
+            latest_height,
         }
     }
 
@@ -75,6 +82,19 @@ impl Cache {
                 self.connections.insert(id.clone(), conn.clone());
             }
             Ok(conn)
+        }
+    }
+
+    pub fn get_or_try_update_latest_height_with<F, E>(&self, f: F) -> Result<Height, E>
+    where
+        F: FnOnce() -> Result<Height, E>,
+    {
+        if let Some(height) = self.latest_height.get(&()) {
+            Ok(height)
+        } else {
+            let height = f()?;
+            self.latest_height.insert((), height);
+            Ok(height)
         }
     }
 }
