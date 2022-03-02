@@ -65,7 +65,6 @@ impl<Handle> ProbingChainHandle<Handle> {
         self.metrics.acquire_read()
     }
 
-    #[cfg(test)]
     pub fn inc_metric(&self, key: &str) {
         let mut metrics = self.metrics.acquire_write();
         if let Some(entry) = metrics.get_mut(key) {
@@ -74,9 +73,6 @@ impl<Handle> ProbingChainHandle<Handle> {
             metrics.insert(key.to_string(), 1);
         }
     }
-
-    #[cfg(not(test))]
-    pub fn inc_metric(&self, _key: &str) {}
 }
 
 impl<Handle: Serialize> Serialize for ProbingChainHandle<Handle> {
