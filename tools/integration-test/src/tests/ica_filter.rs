@@ -22,6 +22,29 @@ impl TestOverrides for IcaFilterTest {
         config.bootstrap_with_random_ids = false;
     }
 
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
+        use serde_json::Value;
+
+        let allow_messages = genesis
+            .get_mut("app_state")
+            .and_then(|app_state| app_state.get_mut("interchainaccounts"))
+            .and_then(|ica| ica.get_mut("host_genesis_state"))
+            .and_then(|state| state.get_mut("params"))
+            .and_then(|params| params.get_mut("allow_messages"))
+            .and_then(|allow_messages| allow_messages.as_array_mut());
+
+        if let Some(allow_messages) = allow_messages {
+            allow_messages.push(Value::String("/cosmos.bank.v1beta1.MsgSend".to_string()));
+            allow_messages.push(Value::String(
+                "/cosmos.staking.v1beta1.MsgDelegate".to_string(),
+            ));
+
+            Ok(())
+        } else {
+            Err(Error::generic(eyre!("failed to update genesis file")))
+        }
+    }
+
     // Do not start supervisor at the beginning of test
     fn spawn_supervisor(
         &self,

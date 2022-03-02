@@ -20,7 +20,7 @@ pub fn run_binary_node_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + TestConfigOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride + TestConfigOverride,
 {
     run_basic_test(&RunBinaryNodeTest { test })
 }
@@ -61,6 +61,11 @@ pub trait NodeConfigOverride {
     fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error>;
 }
 
+pub trait NodeGenesisOverride {
+    /// Modify the full node genesis file
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error>;
+}
+
 /**
    A wrapper type that lifts a test case that implements [`BinaryNodeTest`]
    into a test case that implements [`BasicTest`].
@@ -74,16 +79,22 @@ impl<'a, Test, Overrides> BasicTest for RunBinaryNodeTest<'a, Test>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node_a = bootstrap_single_node(builder, "alpha", |config| {
-            self.test.get_overrides().modify_node_config(config)
-        })?;
+        let node_a = bootstrap_single_node(
+            builder,
+            "alpha",
+            |config| self.test.get_overrides().modify_node_config(config),
+            |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+        )?;
 
-        let node_b = bootstrap_single_node(builder, "beta", |config| {
-            self.test.get_overrides().modify_node_config(config)
-        })?;
+        let node_b = bootstrap_single_node(
+            builder,
+            "beta",
+            |config| self.test.get_overrides().modify_node_config(config),
+            |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+        )?;
 
         let _node_process_a = node_a.process.clone();
         let _node_process_b = node_b.process.clone();

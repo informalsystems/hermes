@@ -192,6 +192,27 @@ impl ChainDriver {
     }
 
     /**
+       Modify the Gaia genesis file.
+    */
+    pub fn update_genesis_file(
+        &self,
+        file: &str,
+        cont: impl FnOnce(&mut serde_json::Value) -> Result<(), Error>,
+    ) -> Result<(), Error> {
+        let config1 = self.read_file(&format!("config/{}", file))?;
+
+        let mut config2 = serde_json::from_str(&config1).map_err(handle_generic_error)?;
+
+        cont(&mut config2)?;
+
+        let config3 = serde_json::to_string_pretty(&config2).map_err(handle_generic_error)?;
+
+        self.write_file("config/genesis.json", &config3)?;
+
+        Ok(())
+    }
+
+    /**
        Write the string content to a file path relative to the chain home
        directory.
 

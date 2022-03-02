@@ -13,7 +13,7 @@ use tracing::info;
 use super::chain::{
     run_binary_chain_test, BinaryChainTest, RelayerConfigOverride, SupervisorOverride,
 };
-use super::node::NodeConfigOverride;
+use super::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
@@ -32,6 +32,7 @@ where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
         + PortsOverride
@@ -50,6 +51,7 @@ where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
         + PortsOverride
