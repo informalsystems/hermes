@@ -57,6 +57,7 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
+use tracing::debug;
 
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
@@ -117,6 +118,12 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     }
 
     fn shutdown(&self) -> Result<(), Error> {
+        debug!(
+            "shutting down chain handle {}. usage metrics for chain: \n {:?}",
+            self.id(),
+            self.metrics()
+        );
+
         self.handle().shutdown()
     }
 
@@ -194,7 +201,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error> {
-        self.inc_metric("query_client_state");
+        self.inc_metric(&format!("query_client_state({}, {})", client_id, height));
         self.handle().query_client_state(client_id, height)
     }
 

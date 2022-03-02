@@ -58,6 +58,7 @@ mod prod;
 
 pub use cache::CachingChainHandle;
 pub use prod::ProdChainHandle;
+pub type CachingProdChainHandle = CachingChainHandle<ProdChainHandle>;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
