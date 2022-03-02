@@ -13,10 +13,7 @@ use crate::link::error::LinkError;
 use crate::util::queue::Queue;
 use crate::{
     chain::handle::ChainHandle,
-    link::{
-        operational_data::OperationalData, relay_sender::AsyncReply, RelayPath, RelaySummary,
-        TxHashes,
-    },
+    link::{operational_data::OperationalData, relay_sender::AsyncReply, RelaySummary, TxHashes},
 };
 
 pub const TIMEOUT: Duration = Duration::from_secs(300);
@@ -141,6 +138,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         &self,
         timeout: Duration,
         resubmit: impl FnOnce(OperationalData) -> Result<AsyncReply, LinkError>,
+        should_resubmit: bool,
     ) -> Result<Option<RelaySummary>, LinkError> {
         // We process pending transactions in a FIFO manner, so take from
         // the front of the queue.
@@ -180,14 +178,9 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         // relayer to resubmit the transaction to the chain again.
                         error!("timed out while confirming {}", tx_hashes);
 
-                        // if `clear_interval` > 0, then the relayer will periodically clear pending
-                        // packets such that resubmitting would be duplicating work
-                        if clear_interval == 0 {
-                            let new_od =
-                                RelayPath::regenerate_operational_data(pending.original_od.clone());
-                            let resubmit_res = resubmit(new_od);
-
-                            match resubmit_res {
+                        if should_resubmit {
+                            let new_od = regenerate_operational_data(pending.original_od.clone());
+                            match resubmit(new_od) {
                                 Ok(reply) => {
                                     self.insert_new_pending_tx(reply, pending.original_od);
                                     Ok(None)

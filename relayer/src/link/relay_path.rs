@@ -471,50 +471,45 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// sender, which implements [`relay_sender::Submit`].
     pub(crate) fn relay_from_operational_data<S: relay_sender::Submit>(
         &self,
-        clear_interval: u64,
         initial_od: OperationalData,
     ) -> Result<S::Reply, LinkError> {
+        // We will operate on potentially different operational data if the initial one fails.
+        let _span = span!(Level::INFO, "relay", odata = %initial_od.info()).entered();
+
         let mut odata = initial_od;
 
-        // if `clear_interval` > 0, then the relayer will periodically clear pending
-        // packets such that resubmitting would be duplicating work
-        if clear_interval == 0 {
-            // We will operate on potentially different operational data if the initial one fails.
-            let _span = span!(Level::INFO, "relay", odata = %initial_od.info()).entered();
+        for i in 0..MAX_RETRIES {
+            debug!(
+                "delayed by: {:?} [try {}/{}]",
+                odata.scheduled_time.elapsed(),
+                i + 1,
+                MAX_RETRIES
+            );
 
-            for i in 0..MAX_RETRIES {
-                debug!(
-                    "delayed by: {:?} [try {}/{}]",
-                    odata.scheduled_time.elapsed(),
-                    i + 1,
-                    MAX_RETRIES
-                );
+            // Consume the operational data by attempting to send its messages
+            match self.send_from_operational_data::<S>(odata.clone()) {
+                Ok(reply) => {
+                    // Done with this op. data
+                    info!("success");
 
-                // Consume the operational data by attempting to send its messages
-                match self.send_from_operational_data::<S>(odata.clone()) {
-                    Ok(reply) => {
-                        // Done with this op. data
-                        info!("success");
-
-                        return Ok(reply);
-                    }
-                    Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
-                        // This error means we could retry
-                        error!("error {}", e.event);
-                        if i + 1 == MAX_RETRIES {
-                            error!("{}/{} retries exhausted. giving up", i + 1, MAX_RETRIES)
-                        } else {
-                            // If we haven't exhausted all retries, regenerate the op. data & retry
-                            match self.regenerate_operational_data(odata.clone()) {
-                                None => return Ok(S::Reply::empty()), // Nothing to retry
-                                Some(new_od) => odata = new_od,
-                            }
+                    return Ok(reply);
+                }
+                Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
+                    // This error means we could retry
+                    error!("error {}", e.event);
+                    if i + 1 == MAX_RETRIES {
+                        error!("{}/{} retries exhausted. giving up", i + 1, MAX_RETRIES)
+                    } else {
+                        // If we haven't exhausted all retries, regenerate the op. data & retry
+                        match self.regenerate_operational_data(odata.clone()) {
+                            None => return Ok(S::Reply::empty()), // Nothing to retry
+                            Some(new_od) => odata = new_od,
                         }
                     }
-                    Err(e) => {
-                        // Unrecoverable error, propagate up the stack
-                        return Err(e);
-                    }
+                }
+                Err(e) => {
+                    // Unrecoverable error, propagate up the stack
+                    return Err(e);
                 }
             }
         }
