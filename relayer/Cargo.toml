@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.11.1"
+version      = "0.12.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -21,9 +21,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.11.1", path = "../modules", features = ["std", "clock"] }
-ibc-proto     = { version = "0.15.0", path = "../proto", default-features = false, features = ["std", "tonic"] }
-ibc-telemetry = { version = "0.11.1", path = "../telemetry", optional = true }
+ibc           = { version = "0.12.0", path = "../modules", features = ["std", "clock"] }
+ibc-proto     = { version = "0.16.0", path = "../proto", default-features = false, features = ["std", "tonic"] }
+ibc-telemetry = { version = "0.12.0", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.0.0"
@@ -31,7 +31,7 @@ serde = "1.0"
 serde_derive = "1.0"
 thiserror = "1.0.30"
 toml = "0.5"
-tracing = "0.1.30"
+tracing = "0.1.31"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
 bytes = "1.1.0"
@@ -44,7 +44,7 @@ hex = "0.4"
 bitcoin = { version = "=0.27", features = ["use-serde"] }
 tiny-bip39 = "0.8.0"
 hdpath = { version = "0.6.0", features = ["with-bitcoin"] }
-sha2 = "0.10.1"
+sha2 = "0.10.2"
 tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = false }
 ripemd160 = "0.9.1"
 bech32 = "0.8.1"
@@ -91,10 +91,10 @@ default-features = false
 version = "=0.23.5"
 
 [dev-dependencies]
-ibc = { version = "0.11.1", path = "../modules", features = ["mocks"] }
-serial_test = "0.5.0"
+ibc = { version = "0.12.0", path = "../modules", features = ["mocks"] }
+serial_test = "0.6.0"
 env_logger = "0.9.0"
-tracing-subscriber = { version = "0.3.8", features = ["fmt", "env-filter", "json"] }
+tracing-subscriber = { version = "0.3.9", features = ["fmt", "env-filter", "json"] }
 test-log = { version = "0.2.8", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.

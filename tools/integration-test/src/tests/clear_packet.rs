@@ -15,6 +15,11 @@ impl TestOverrides for ClearPacketTest {
         config.mode.packets.clear_on_start = false;
         config.mode.packets.clear_interval = 0;
     }
+
+    // Unordered channel: will permit gaps in the sequence of relayed packets
+    fn channel_order(&self) -> Order {
+        Order::Unordered
+    }
 }
 
 impl BinaryChannelTest for ClearPacketTest {
