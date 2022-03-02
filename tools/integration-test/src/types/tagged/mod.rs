@@ -79,7 +79,7 @@
    [`impl ChainHandle`](ibc_relayer::chain::handle::ChainHandle).
    Note that even though there is only one implementation of
    `ChainHandle`,
-   [`CachingProdChainHandle`](ibc_relayer::chain::handle::CachingProdChainHandle),
+   [`ProbeAndCachingChainHandle`](ibc_relayer::chain::handle::ProbeAndCachingChainHandle),
    when they are returned as `impl ChainHandle` they would be
    considered by Rust as an
    [abstract type](https://doc.rust-lang.org/reference/types/impl-trait.html#abstract-return-types)

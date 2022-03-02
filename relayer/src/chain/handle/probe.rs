@@ -13,9 +13,7 @@ use ibc::{
     core::ics03_connection::version::Version,
     core::ics04_channel::channel::ChannelEnd,
     core::ics23_commitment::commitment::CommitmentPrefix,
-    core::ics24_host::identifier::{
-        ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
-    },
+    core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     events::IbcEvent,
     proofs::Proofs,
     query::QueryBlockRequest,
@@ -33,35 +31,55 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock, RwLockReadGuard};
+use tracing::debug;
 
-use crate::cache::Cache;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{HealthCheck, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
+use crate::util::lock::LockExt;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
 #[derive(Debug, Clone)]
-pub struct CachingChainHandle<Handle> {
+pub struct ProbingChainHandle<Handle> {
     handle: Handle,
-    cache: Cache,
+    metrics: Arc<RwLock<HashMap<String, u64>>>,
 }
 
-impl<Handle> CachingChainHandle<Handle> {
+impl<Handle> ProbingChainHandle<Handle> {
     pub fn new(handle: Handle) -> Self {
         Self {
             handle,
-            cache: Cache::new(),
+            metrics: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
     pub fn handle(&self) -> &Handle {
         &self.handle
     }
+
+    pub fn metrics(&self) -> RwLockReadGuard<'_, HashMap<String, u64>> {
+        self.metrics.acquire_read()
+    }
+
+    #[cfg(test)]
+    pub fn inc_metric(&self, key: &str) {
+        let mut metrics = self.metrics.acquire_write();
+        if let Some(entry) = metrics.get_mut(key) {
+            *entry += 1;
+        } else {
+            metrics.insert(key.to_string(), 1);
+        }
+    }
+
+    #[cfg(not(test))]
+    pub fn inc_metric(&self, _key: &str) {}
 }
 
-impl<Handle: Serialize> Serialize for CachingChainHandle<Handle> {
+impl<Handle: Serialize> Serialize for ProbingChainHandle<Handle> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -70,7 +88,7 @@ impl<Handle: Serialize> Serialize for CachingChainHandle<Handle> {
     }
 }
 
-impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
+impl<Handle: ChainHandle> ChainHandle for ProbingChainHandle<Handle> {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
         Self::new(Handle::new(chain_id, sender))
     }
@@ -80,14 +98,22 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     }
 
     fn shutdown(&self) -> Result<(), Error> {
+        debug!(
+            "shutting down chain handle {}. usage metrics for chain: \n {:?}",
+            self.id(),
+            self.metrics()
+        );
+
         self.handle().shutdown()
     }
 
     fn health_check(&self) -> Result<HealthCheck, Error> {
+        self.inc_metric("health_check");
         self.handle().health_check()
     }
 
     fn subscribe(&self) -> Result<Subscription, Error> {
+        self.inc_metric("subscribe");
         self.handle().subscribe()
     }
 
@@ -95,6 +121,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
+        self.inc_metric("send_messages_and_wait_commit");
         self.handle().send_messages_and_wait_commit(tracked_msgs)
     }
 
@@ -102,43 +129,50 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
+        self.inc_metric("send_messages_and_wait_check_tx");
         self.handle().send_messages_and_wait_check_tx(tracked_msgs)
     }
 
     fn get_signer(&self) -> Result<Signer, Error> {
+        self.inc_metric("get_signer");
         self.handle().get_signer()
     }
 
     fn config(&self) -> Result<ChainConfig, Error> {
+        self.inc_metric("config");
         self.handle().config()
     }
 
     fn get_key(&self) -> Result<KeyEntry, Error> {
+        self.inc_metric("get_key");
         self.handle().get_key()
     }
 
     fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
+        self.inc_metric("add_key");
         self.handle().add_key(key_name, key)
     }
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+        self.inc_metric("ibc_version");
         self.handle().ibc_version()
     }
 
     fn query_status(&self) -> Result<StatusResponse, Error> {
+        self.inc_metric("query_status");
         self.handle().query_status()
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {
-        let handle = self.handle();
-        self.cache
-            .get_or_try_update_latest_height_with(|| handle.query_latest_height())
+        self.inc_metric("query_latest_height");
+        self.handle().query_latest_height()
     }
 
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
+        self.inc_metric("query_clients");
         self.handle().query_clients(request)
     }
 
@@ -147,21 +181,15 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error> {
-        let handle = self.handle();
-        if height.is_zero() {
-            self.cache
-                .get_or_try_insert_client_state_with(client_id, || {
-                    handle.query_client_state(client_id, height)
-                })
-        } else {
-            handle.query_client_state(client_id, height)
-        }
+        self.inc_metric(&format!("query_client_state({}, {})", client_id, height));
+        self.handle().query_client_state(client_id, height)
     }
 
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error> {
+        self.inc_metric("query_client_connections");
         self.handle().query_client_connections(request)
     }
 
@@ -169,6 +197,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
+        self.inc_metric("query_consensus_states");
         self.handle().query_consensus_states(request)
     }
 
@@ -178,6 +207,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         consensus_height: Height,
         query_height: Height,
     ) -> Result<AnyConsensusState, Error> {
+        self.inc_metric("query_consensus_state");
         self.handle()
             .query_consensus_state(client_id, consensus_height, query_height)
     }
@@ -186,6 +216,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
+        self.inc_metric("query_upgraded_client_state");
         self.handle().query_upgraded_client_state(height)
     }
 
@@ -193,14 +224,17 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
+        self.inc_metric("query_upgraded_consensus_state");
         self.handle().query_upgraded_consensus_state(height)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        self.inc_metric("query_commitment_prefix");
         self.handle().query_commitment_prefix()
     }
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error> {
+        self.inc_metric("query_compatible_versions");
         self.handle().query_compatible_versions()
     }
 
@@ -209,21 +243,15 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error> {
-        let handle = self.handle();
-        if height.is_zero() {
-            self.cache
-                .get_or_try_insert_connection_with(connection_id, || {
-                    handle.query_connection(connection_id, height)
-                })
-        } else {
-            handle.query_connection(connection_id, height)
-        }
+        self.inc_metric("query_connection");
+        self.handle().query_connection(connection_id, height)
     }
 
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
+        self.inc_metric("query_connections");
         self.handle().query_connections(request)
     }
 
@@ -231,6 +259,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+        self.inc_metric("query_connection_channels");
         self.handle().query_connection_channels(request)
     }
 
@@ -238,6 +267,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error> {
+        self.inc_metric("query_next_sequence_receive");
         self.handle().query_next_sequence_receive(request)
     }
 
@@ -245,6 +275,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+        self.inc_metric("query_channels");
         self.handle().query_channels(request)
     }
 
@@ -254,21 +285,15 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<ChannelEnd, Error> {
-        let handle = self.handle();
-        if height.is_zero() {
-            self.cache.get_or_try_insert_channel_with(
-                &PortChannelId::new(channel_id.clone(), port_id.clone()),
-                || handle.query_channel(port_id, channel_id, height),
-            )
-        } else {
-            handle.query_channel(port_id, channel_id, height)
-        }
+        self.inc_metric("query_channel");
+        self.handle().query_channel(port_id, channel_id, height)
     }
 
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
+        self.inc_metric("query_channel_client_state");
         self.handle().query_channel_client_state(request)
     }
 
@@ -277,6 +302,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         client_id: &ClientId,
         height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
+        self.inc_metric("proven_client_state");
         self.handle().proven_client_state(client_id, height)
     }
 
@@ -285,6 +311,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
+        self.inc_metric("proven_connection");
         self.handle().proven_connection(connection_id, height)
     }
 
@@ -294,6 +321,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         consensus_height: Height,
         height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
+        self.inc_metric("proven_client_consensus");
         self.handle()
             .proven_client_consensus(client_id, consensus_height, height)
     }
@@ -304,6 +332,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         target_height: Height,
         client_state: AnyClientState,
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
+        self.inc_metric("build_header");
         self.handle()
             .build_header(trusted_height, target_height, client_state)
     }
@@ -314,6 +343,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         height: Height,
         dst_config: ChainConfig,
     ) -> Result<AnyClientState, Error> {
+        self.inc_metric("build_client_state");
         self.handle().build_client_state(height, dst_config)
     }
 
@@ -324,6 +354,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         target: Height,
         client_state: AnyClientState,
     ) -> Result<AnyConsensusState, Error> {
+        self.inc_metric("build_consensus_state");
         self.handle()
             .build_consensus_state(trusted, target, client_state)
     }
@@ -333,6 +364,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         update: UpdateClient,
         client_state: AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
+        self.inc_metric("check_misbehaviour");
         self.handle().check_misbehaviour(update, client_state)
     }
 
@@ -343,6 +375,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         client_id: &ClientId,
         height: Height,
     ) -> Result<(Option<AnyClientState>, Proofs), Error> {
+        self.inc_metric("build_connection_proofs_and_client_state");
         self.handle().build_connection_proofs_and_client_state(
             message_type,
             connection_id,
@@ -357,6 +390,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<Proofs, Error> {
+        self.inc_metric("build_channel_proofs");
         self.handle()
             .build_channel_proofs(port_id, channel_id, height)
     }
@@ -369,6 +403,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         sequence: Sequence,
         height: Height,
     ) -> Result<(Vec<u8>, Proofs), Error> {
+        self.inc_metric("build_packet_proofs");
         self.handle()
             .build_packet_proofs(packet_type, port_id, channel_id, sequence, height)
     }
@@ -377,6 +412,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<PacketState>, Height), Error> {
+        self.inc_metric("query_packet_commitments");
         self.handle().query_packet_commitments(request)
     }
 
@@ -384,6 +420,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error> {
+        self.inc_metric("query_unreceived_packets");
         self.handle().query_unreceived_packets(request)
     }
 
@@ -391,6 +428,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<PacketState>, Height), Error> {
+        self.inc_metric("query_packet_acknowledgements");
         self.handle().query_packet_acknowledgements(request)
     }
 
@@ -398,10 +436,12 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error> {
+        self.inc_metric("query_unreceived_acknowledgement");
         self.handle().query_unreceived_acknowledgement(request)
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+        self.inc_metric("query_txs");
         self.handle().query_txs(request)
     }
 
@@ -409,6 +449,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+        self.inc_metric("query_blocks");
         self.handle().query_blocks(request)
     }
 }
