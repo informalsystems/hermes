@@ -9,11 +9,11 @@ use moka::sync;
 
 use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::ChannelEnd;
-use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId};
+use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 #[derive(Clone)]
 pub struct Cache {
-    channels: sync::Cache<ChannelId, ChannelEnd>,
+    channels: sync::Cache<(PortId, ChannelId), ChannelEnd>,
     connections: sync::Cache<ConnectionId, ConnectionEnd>,
 }
 
@@ -34,6 +34,28 @@ impl Cache {
         Cache {
             channels: chans,
             connections: conns,
+        }
+    }
+
+    pub fn get_or_try_insert_channel_with<F, E>(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        f: F,
+    ) -> Result<ChannelEnd, E>
+    where
+        F: FnOnce() -> Result<ChannelEnd, E>,
+    {
+        // FIXME: create a struct type for this
+        let key = (port_id.clone(), channel_id.clone());
+        if let Some(chan) = self.channels.get(&key) {
+            Ok(chan)
+        } else {
+            let chan = f()?;
+            if chan.state().is_open() {
+                self.channels.insert(key, chan.clone());
+            }
+            Ok(chan)
         }
     }
 

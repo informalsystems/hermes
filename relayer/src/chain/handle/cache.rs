@@ -312,8 +312,12 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<ChannelEnd, Error> {
-        self.inc_metric("query_channel");
-        self.handle().query_channel(port_id, channel_id, height)
+        let handle = self.handle();
+        self.cache
+            .get_or_try_insert_channel_with(port_id, channel_id, || {
+                self.inc_metric("query_channel");
+                handle.query_channel(port_id, channel_id, height)
+            })
     }
 
     fn query_channel_client_state(
