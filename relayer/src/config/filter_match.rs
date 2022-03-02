@@ -22,6 +22,7 @@ pub(crate) mod port {
             if let Ok(port_id) = PortId::from_str(v) {
                 Ok(PortFilterMatch::Exact(port_id))
             } else if v.trim().len() >= 1 && v.replace('*', "").chars().all(char::is_alphanumeric) {
+                // FIXME(hu55a1n1): above check is not all-encompassing
                 let regex = v.parse().map_err(E::custom)?;
                 Ok(PortFilterMatch::Pattern(regex))
             } else {
@@ -54,6 +55,7 @@ pub(crate) mod channel {
             if let Ok(channel_id) = ChannelId::from_str(v) {
                 Ok(ChannelFilterMatch::Exact(channel_id))
             } else if v.trim().len() >= 1 && v.replace('*', "").chars().all(char::is_alphanumeric) {
+                // FIXME(hu55a1n1): above check is not all-encompassing
                 let regex = v.parse().map_err(E::custom)?;
                 Ok(ChannelFilterMatch::Pattern(regex))
             } else {
