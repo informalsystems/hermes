@@ -8,7 +8,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use crossbeam_channel::Sender;
 
-use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
+use ibc_relayer::chain::handle::{CachingProdChainHandle, ChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::rest;
@@ -33,7 +33,7 @@ impl Runnable for StartCmd {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let supervisor_handle = make_supervisor::<ProdChainHandle>(config, self.full_scan)
+        let supervisor_handle = make_supervisor::<CachingProdChainHandle>(config, self.full_scan)
             .unwrap_or_else(|e| {
                 Output::error(format!("Hermes failed to start, last error: {}", e)).exit()
             });

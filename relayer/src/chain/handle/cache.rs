@@ -1,25 +1,3 @@
-/*!
-   Definition for a proxy [`ChainHandle`] implementation for tagged
-   chain handles.
-
-   Since we use the chain handle type to distinguish the chain tags, we will
-   run into problem if we have the same concrete `ChainHandle` implementations
-   for two chains that are not encapsulated behind an `impl ChainHandle`.
-
-   This is the case for creating N-ary chains, because we cannot rely on the
-   existential type encapsulation of `impl ChainHandle` to turn the
-   [`ProdChainHandle`](ibc_relayer::chain::handle::ProdChainHandle) to turn
-   them into unqiue types.
-
-   A workaround for this is to add a unique tag to `ProdChainHandle` itself,
-   so that the type `MonoTagged<Tag, ProdChainHandle>` becomes a unique chain
-   handle type.
-
-   We implement [`ChainHandle`] for a `MonoTagged<Tag, Handle>`, since if the
-   underlying `Handle` type implements [`ChainHandle`], then a tagged handle
-   is still a [`ChainHandle`].
-*/
-
 use crossbeam_channel as channel;
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
