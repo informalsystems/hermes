@@ -2,6 +2,7 @@ use ibc_relayer::util::task::TaskHandle;
 use ibc_relayer::worker::client::spawn_refresh_client;
 
 use crate::bootstrap::binary::chain::bootstrap_foreign_client;
+use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::ibc::denom::derive_ibc_denom;
 use crate::prelude::*;
 use crate::relayer::channel::{assert_eventually_channel_established, init_channel};
@@ -12,7 +13,25 @@ use crate::types::tagged::mono::Tagged;
 
 use super::state::Packet;
 
-use super::utils::{get_denom, get_port_channel_id, get_wallet, wait_for_client_expiry};
+use super::utils::{get_denom, get_port_channel_id, get_wallet, wait_for_client};
+
+pub fn setup_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chains: &ConnectedChains<ChainA, ChainB>,
+) -> Result<(), Error> {
+    {
+        let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+        let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+            .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+
+        bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?;
+    };
+
+    wait_for_client();
+
+    Ok(())
+}
 
 pub fn local_transfer_handler<ChainA>(
     node: Tagged<ChainA, &FullNode>,
@@ -114,7 +133,7 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     *channel = Some(connected_channel);
 
-    info!("[CreateChannel] Channel is created");
+    info!("Channel is created");
 
     Ok(())
 }
@@ -125,14 +144,14 @@ pub fn expire_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     refresh_task_b: &mut Option<TaskHandle>,
 ) -> Result<(), Error> {
     // dropping the client handler to expire the clients
-    refresh_task_a.take();
-    refresh_task_b.take();
+    super::utils::drop(refresh_task_a.take());
+    super::utils::drop(refresh_task_b.take());
 
-    wait_for_client_expiry();
+    wait_for_client();
 
-    channel.take();
+    super::utils::drop(channel.take());
 
-    info!("[ExpireChannel] Channel expired");
+    info!("Channel expired");
 
     Ok(())
 }
@@ -161,7 +180,7 @@ pub fn ibc_transfer_send_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
         .query_balance(&wallet_source.address(), &denom_source)?;
 
     info!(
-        "[IBCTransferSendPacket] Sending IBC transfer from chain {} to chain {} with amount of {} {}",
+        "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
         node_source.chain_id(),
         node_target.chain_id(),
         amount_source_to_target,
@@ -206,8 +225,12 @@ pub fn ibc_transfer_receive_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     let denom_target = derive_ibc_denom(&port_target, &channel_id_target, &denom_source)?;
 
     info!(
-        "[IBCTransferReceivePacket] Waiting for user on chain {} to receive IBC transferred amount of {} {} (chain {}/{})",
-        node_target.chain_id(), amount_source_to_target, denom_target, node_source.chain_id(), denom_source
+        "Waiting for user on chain {} to receive IBC transferred amount of {} {} (chain {}/{})",
+        node_target.chain_id(),
+        amount_source_to_target,
+        denom_target,
+        node_source.chain_id(),
+        denom_source
     );
 
     node_target.chain_driver().assert_eventual_wallet_amount(
@@ -229,12 +252,39 @@ pub fn ibc_transfer_acknowledge_packet<ChainA: ChainHandle, ChainB: ChainHandle>
     let amount_source_to_target = packet.amount;
 
     info!(
-        "[IBCTransferAcknowledgePacket] Waiting for user on chain {} to confirm IBC transferred amount of {} {}",
-        node_source.chain_id(), amount_source_to_target, denom_source
+        "Waiting for user on chain {} to confirm IBC transferred amount of {} {}",
+        node_source.chain_id(),
+        amount_source_to_target,
+        denom_source
     );
 
     info!(
-        "[IBCTransferAcknowledgePacket] Successfully performed IBC transfer from chain {} to chain {}",
+        "Successfully performed IBC transfer from chain {} to chain {}",
+        node_source.chain_id(),
+        node_target.chain_id(),
+    );
+
+    Ok(())
+}
+
+pub fn ibc_transfer_expire_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
+    node_source: Tagged<ChainA, &FullNode>,
+    node_target: Tagged<ChainB, &FullNode>,
+    _channels: &Option<ConnectedChannel<ChainA, ChainB>>,
+    packet: &Packet,
+) -> Result<(), Error> {
+    let denom_source = get_denom(&node_source, packet.denom);
+    let amount_source_to_target = packet.amount;
+
+    info!(
+        "Waiting for user on chain {} to get refund of previously IBC transferred amount of {} {}",
+        node_source.chain_id(),
+        amount_source_to_target,
+        denom_source
+    );
+
+    info!(
+        "Successfully performed IBC packet expiry intended from chain {} to chain {}",
         node_source.chain_id(),
         node_target.chain_id(),
     );

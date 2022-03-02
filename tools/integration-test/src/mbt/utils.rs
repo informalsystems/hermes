@@ -1,6 +1,11 @@
 use std::thread::sleep;
 use std::time::Duration;
 
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
+
 use crate::ibc::denom::Denom;
 use crate::prelude::*;
 use crate::types::tagged::mono::Tagged;
@@ -79,7 +84,7 @@ where
     (DualTagged::new(port_id), DualTagged::new(channel_id))
 }
 
-pub fn wait_for_client_expiry() {
+pub fn wait_for_client() {
     let sleep_time = CLIENT_EXPIRY + Duration::from_secs(5);
 
     info!(
@@ -98,3 +103,61 @@ pub fn parse_itf_from_json(itf_path: &str) -> Vec<State> {
 
     trace.states
 }
+
+pub fn get_unreceived_packets_at_dst<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain: &ChainA,
+    channel: &ConnectedChannel<ChainA, ChainB>,
+) -> Result<Vec<u64>, Error> {
+    let port_id_a = channel.port_a.value();
+    let channel_id_a = channel.channel_id_a.value();
+    let request = QueryUnreceivedPacketsRequest {
+        port_id: port_id_a.to_string(),
+        channel_id: channel_id_a.to_string(),
+        ..Default::default()
+    };
+    Ok(chain.query_unreceived_packets(request)?)
+}
+
+pub fn get_committed_packets_at_src<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain: &ChainA,
+    channel: &ConnectedChannel<ChainA, ChainB>,
+) -> Result<Vec<PacketState>, Error> {
+    let port_id_a = channel.port_a.value();
+    let channel_id_a = channel.channel_id_a.value();
+    let request = QueryPacketCommitmentsRequest {
+        port_id: port_id_a.to_string(),
+        channel_id: channel_id_a.to_string(),
+        ..Default::default()
+    };
+    Ok(chain.query_packet_commitments(request)?.0)
+}
+
+pub fn get_unacknowledged_packets_at_src<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain: &ChainA,
+    channel: &ConnectedChannel<ChainA, ChainB>,
+) -> Result<Vec<u64>, Error> {
+    let port_id_a = channel.port_a.value();
+    let channel_id_a = channel.channel_id_a.value();
+    let request = QueryUnreceivedAcksRequest {
+        port_id: port_id_a.to_string(),
+        channel_id: channel_id_a.to_string(),
+        ..Default::default()
+    };
+    Ok(chain.query_unreceived_acknowledgement(request)?)
+}
+
+pub fn get_acknowledged_packets_at_dst<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain: &ChainA,
+    channel: &ConnectedChannel<ChainA, ChainB>,
+) -> Result<Vec<PacketState>, Error> {
+    let port_id_a = channel.port_a.value();
+    let channel_id_a = channel.channel_id_a.value();
+    let request = QueryPacketAcknowledgementsRequest {
+        port_id: port_id_a.to_string(),
+        channel_id: channel_id_a.to_string(),
+        ..Default::default()
+    };
+    Ok(chain.query_packet_acknowledgements(request)?.0)
+}
+
+pub fn drop<X>(_: X) {}
