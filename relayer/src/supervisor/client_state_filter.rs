@@ -32,7 +32,7 @@ impl Permission {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum CacheKey {
+enum CacheKey {
     Client(ChainId, ClientId),
     Channel(ChainId, PortId, ChannelId),
     Connection(ChainId, ConnectionId),
