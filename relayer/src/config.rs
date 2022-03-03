@@ -636,7 +636,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn serialize_packet_filter_policy() {
         use std::str::FromStr;
 
@@ -649,8 +648,8 @@ mod tests {
                 FilterPattern::Exact(ChannelId::from_str("channel-0").unwrap()),
             ),
             (
-                FilterPattern::Wildcard(Regex(regex::Regex::new("ica*").unwrap())),
-                FilterPattern::Wildcard(Regex(regex::Regex::new("*").unwrap())),
+                FilterPattern::Wildcard(Regex(regex::Regex::new("ica\\*").unwrap())),
+                FilterPattern::Wildcard(Regex(regex::Regex::new("\\*").unwrap())),
             ),
         ]);
         let fp = PacketFilter::Allow(filter_policy);
