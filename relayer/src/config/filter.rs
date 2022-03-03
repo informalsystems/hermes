@@ -234,7 +234,7 @@ where
 
 /// Type alias for a [`FilterPattern`] containing a [`PortId`].
 pub type PortFilterMatch = FilterPattern<PortId>;
-/// Type alias for a [`FilterMatch`] containing a [`ChannelId`].
+/// Type alias for a [`FilterPattern`] containing a [`ChannelId`].
 pub type ChannelFilterMatch = FilterPattern<ChannelId>;
 
 impl<'de> Deserialize<'de> for PortFilterMatch {
