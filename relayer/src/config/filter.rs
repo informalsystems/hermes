@@ -376,12 +376,12 @@ mod tests {
                 exact_matches,
                 vec![
                     (
-                        PortId::from_str("transfer").unwrap(),
-                        ChannelId::from_str("channel-0").unwrap()
+                        &PortId::from_str("transfer").unwrap(),
+                        &ChannelId::from_str("channel-0").unwrap()
                     ),
                     (
-                        PortId::from_str("ft-transfer").unwrap(),
-                        ChannelId::from_str("network-0").unwrap()
+                        &PortId::from_str("ft-transfer").unwrap(),
+                        &ChannelId::from_str("network-0").unwrap()
                     )
                 ]
             );
