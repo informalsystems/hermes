@@ -26,7 +26,7 @@ use crate::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
     },
-    config::{ChainConfig, ChannelFilters, Config, ModeConfig, PacketFilter},
+    config::{filter::ChannelFilters, ChainConfig, Config, ModeConfig, PacketFilter},
     object::{Channel, Client, Connection, Object, Packet},
     registry::{Registry, SharedRegistry},
     supervisor::client_state_filter::{FilterPolicy, Permission},
