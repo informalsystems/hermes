@@ -389,4 +389,74 @@ mod tests {
             panic!("expected `PacketFilter::Deny` variant");
         }
     }
+
+    #[test]
+    fn packet_filter_deny_policy() {
+        let deny_policy = r#"
+            policy = 'deny'
+            list = [
+              ['ica', 'channel-*'],
+              ['ica*', '*'],
+              ['transfer', 'channel-0'],
+              ['transfer*', 'channel-1'],
+              ['ft-transfer', 'network-0'],
+            ]
+            "#;
+
+        let pf: PacketFilter = toml::from_str(deny_policy).expect("could not parse filter policy");
+
+        assert!(!pf.is_allowed(
+            &PortId::from_str("ft-transfer").unwrap(),
+            &ChannelId::from_str("network-0").unwrap()
+        ));
+        assert!(pf.is_allowed(
+            &PortId::from_str("ft-transfer").unwrap(),
+            &ChannelId::from_str("network-1").unwrap()
+        ));
+        assert!(pf.is_allowed(
+            &PortId::from_str("transfer").unwrap(),
+            &ChannelId::from_str("channel-2").unwrap()
+        ));
+        assert!(!pf.is_allowed(
+            &PortId::from_str("ica-1").unwrap(),
+            &ChannelId::from_str("channel-2").unwrap()
+        ));
+    }
+
+    #[test]
+    fn packet_filter_allow_policy() {
+        let allow_policy = r#"
+            policy = 'allow'
+            list = [
+              ['ica', 'channel-*'],
+              ['ica*', '*'],
+              ['transfer', 'channel-0'],
+              ['transfer*', 'channel-1'],
+              ['ft-transfer', 'network-0'],
+            ]
+            "#;
+
+        let pf: PacketFilter = toml::from_str(allow_policy).expect("could not parse filter policy");
+
+        assert!(pf.is_allowed(
+            &PortId::from_str("ft-transfer").unwrap(),
+            &ChannelId::from_str("network-0").unwrap()
+        ));
+        assert!(!pf.is_allowed(
+            &PortId::from_str("ft-transfer").unwrap(),
+            &ChannelId::from_str("network-1").unwrap()
+        ));
+        assert!(!pf.is_allowed(
+            &PortId::from_str("transfer-1").unwrap(),
+            &ChannelId::from_str("channel-2").unwrap()
+        ));
+        assert!(pf.is_allowed(
+            &PortId::from_str("ica-1").unwrap(),
+            &ChannelId::from_str("channel-2").unwrap()
+        ));
+        assert!(pf.is_allowed(
+            &PortId::from_str("ica").unwrap(),
+            &ChannelId::from_str("channel1").unwrap()
+        ));
+    }
 }
