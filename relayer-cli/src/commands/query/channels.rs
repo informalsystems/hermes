@@ -9,7 +9,7 @@ use ibc::core::ics04_channel::channel::{ChannelEnd, State};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
-use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::registry::Registry;
 
 use crate::commands::query::channel_ends::ChannelEnds;
@@ -190,7 +190,7 @@ fn query_channel_ends<Chain: ChainHandle>(
 
 impl Runnable for QueryChannelsCmd {
     fn run(&self) {
-        match run_query_channels::<ProdChainHandle>(self) {
+        match run_query_channels::<BaseChainHandle>(self) {
             Ok(output) => Output::success(output).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }

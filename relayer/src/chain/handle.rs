@@ -53,9 +53,16 @@ use crate::{
 
 use super::{tx::TrackedMsgs, HealthCheck, StatusResponse};
 
-mod prod;
+mod base;
+mod cache;
+mod counting;
 
-pub use prod::ProdChainHandle;
+pub use base::BaseChainHandle;
+pub use counting::CountingChainHandle;
+
+pub type CachingChainHandle = cache::CachingChainHandle<BaseChainHandle>;
+pub type CountingAndCachingChainHandle =
+    cache::CachingChainHandle<CountingChainHandle<BaseChainHandle>>;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]

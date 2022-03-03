@@ -7,7 +7,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::counterparty::channel_connection_client;
 use ibc_relayer::{
     chain::{
-        handle::{ChainHandle, ProdChainHandle},
+        handle::{BaseChainHandle, ChainHandle},
         runtime::ChainRuntime,
         CosmosSdkChain,
     },
@@ -18,7 +18,7 @@ use crate::error::Error;
 
 #[derive(Clone, Debug)]
 /// Pair of chain handles that are used by most CLIs.
-pub struct ChainHandlePair<Chain: ChainHandle = ProdChainHandle> {
+pub struct ChainHandlePair<Chain: ChainHandle = BaseChainHandle> {
     /// Source chain handle
     pub src: Chain,
     /// Destination chain handle
@@ -40,7 +40,7 @@ impl<Chain: ChainHandle> ChainHandlePair<Chain> {
     }
 }
 
-impl ChainHandlePair<ProdChainHandle> {
+impl ChainHandlePair<BaseChainHandle> {
     pub fn spawn(
         config: &Config,
         src_chain_id: &ChainId,
@@ -53,7 +53,7 @@ impl ChainHandlePair<ProdChainHandle> {
 /// Spawns a chain runtime from the configuration and given a chain identifier.
 /// Returns the corresponding handle if successful.
 pub fn spawn_chain_runtime(config: &Config, chain_id: &ChainId) -> Result<impl ChainHandle, Error> {
-    spawn_chain_runtime_generic::<ProdChainHandle>(config, chain_id)
+    spawn_chain_runtime_generic::<BaseChainHandle>(config, chain_id)
 }
 
 pub fn spawn_chain_runtime_generic<Chain: ChainHandle>(
