@@ -82,7 +82,7 @@ impl PacketFilter {
 }
 
 /// The internal representation of channel filter policies.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChannelFilters(Vec<(PortFilterMatch, ChannelFilterMatch)>);
 
@@ -131,63 +131,100 @@ impl fmt::Display for ChannelFilters {
     }
 }
 
-/// Newtype wrapper around a [`regex::Regex`].
-#[derive(Clone, Debug)]
-pub struct Regex(regex::Regex);
+impl ser::Serialize for ChannelFilters {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
 
-impl Regex {
+        struct Pair<'a> {
+            a: &'a FilterPattern<PortId>,
+            b: &'a FilterPattern<ChannelId>,
+        }
+
+        impl<'a> ser::Serialize for Pair<'a> {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                let mut seq = serializer.serialize_seq(Some(2))?;
+                seq.serialize_element(self.a)?;
+                seq.serialize_element(self.b)?;
+                seq.end()
+            }
+        }
+
+        let mut outer_seq = serializer.serialize_seq(Some(self.0.len()))?;
+
+        for (port, channel) in &self.0 {
+            outer_seq.serialize_element(&Pair {
+                a: port,
+                b: channel,
+            })?;
+        }
+
+        outer_seq.end()
+    }
+}
+
+/// Newtype wrapper for expressing wildcard patterns compiled to a [`regex::Regex`].
+#[derive(Clone, Debug)]
+pub struct Wildcard(regex::Regex);
+
+impl Wildcard {
     #[inline]
     pub fn is_match(&self, text: &str) -> bool {
         self.0.is_match(text)
     }
 }
 
-impl FromStr for Regex {
+impl FromStr for Wildcard {
     type Err = regex::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.parse()?))
+        let regex = regex::escape(s).replace("\\*", "(?:.*)").parse()?;
+        Ok(Self(regex))
     }
 }
 
-impl fmt::Display for Regex {
+impl fmt::Display for Wildcard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        let s = self.0.to_string().replace("(?:.*)", "*");
+        write!(f, "{}", s)
     }
 }
 
-impl ser::Serialize for Regex {
+impl ser::Serialize for Wildcard {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.0.to_string())
+        serializer.serialize_str(&self.to_string())
     }
 }
 
 /// Represents a single channel to be filtered in a [`ChannelFilters`] list.
-#[derive(Clone, Debug, Serialize)]
-pub enum FilterPattern<T>
-where
-    T: Clone + fmt::Debug,
-{
+#[derive(Clone, Debug)]
+pub enum FilterPattern<T> {
     /// A channel specified exactly with its [`PortId`] & [`ChannelId`].
     Exact(T),
     /// A glob of channel(s) specified with a wildcard in either or both [`PortId`] & [`ChannelId`].
-    Wildcard(Regex),
+    Wildcard(Wildcard),
 }
 
-impl<T: Clone + fmt::Debug + ser::Serialize + AsRef<str> + PartialEq> FilterPattern<T> {
+impl<T> FilterPattern<T> {
     /// Indicates whether this filter is specified in part with a wildcard.
-    #[inline]
-    fn is_pattern(&self) -> bool {
-        self.exact_value().is_none()
+    pub fn is_pattern(&self) -> bool {
+        matches!(self, Self::Wildcard(_))
     }
 
     /// Matches the given value via strict equality if the filter is an `Exact`, or via
     /// wildcard matching if the filter is a `Pattern`.
-    #[inline]
-    fn matches(&self, value: &T) -> bool {
+    pub fn matches(&self, value: &T) -> bool
+    where
+        T: PartialEq + AsRef<str>,
+    {
         match self {
             FilterPattern::Exact(v) => value == v,
             FilterPattern::Wildcard(regex) => regex.is_match(value.as_ref()),
@@ -196,8 +233,7 @@ impl<T: Clone + fmt::Debug + ser::Serialize + AsRef<str> + PartialEq> FilterPatt
 
     /// Returns the contained value if this filter contains an `Exact` variant, or
     /// `None` if it contains a `Pattern`.
-    #[inline]
-    fn exact_value(&self) -> Option<&T> {
+    pub fn exact_value(&self) -> Option<&T> {
         match self {
             FilterPattern::Exact(value) => Some(value),
             FilterPattern::Wildcard(_) => None,
@@ -205,11 +241,26 @@ impl<T: Clone + fmt::Debug + ser::Serialize + AsRef<str> + PartialEq> FilterPatt
     }
 }
 
-impl<T: fmt::Display + Clone + fmt::Debug + ser::Serialize> fmt::Display for FilterPattern<T> {
+impl<T: fmt::Display> fmt::Display for FilterPattern<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             FilterPattern::Exact(value) => write!(f, "{}", value),
             FilterPattern::Wildcard(regex) => write!(f, "{}", regex),
+        }
+    }
+}
+
+impl<T> ser::Serialize for FilterPattern<T>
+where
+    T: AsRef<str>,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            FilterPattern::Exact(e) => serializer.serialize_str(e.as_ref()),
+            FilterPattern::Wildcard(t) => serializer.serialize_str(&t.to_string()),
         }
     }
 }
@@ -616,10 +667,7 @@ mod tests {
 
     #[test]
     fn deserialize_packet_filter_policy() {
-        use toml::Value;
-
         let toml_content = r#"
-            [chains.packet_filter]
             policy = 'allow'
             list = [
               ['ica*', '*'],
@@ -627,7 +675,7 @@ mod tests {
             ]
             "#;
 
-        let filter_policy: Value =
+        let filter_policy: PacketFilter =
             toml::from_str(toml_content).expect("could not parse filter policy");
 
         dbg!(filter_policy);
@@ -637,7 +685,6 @@ mod tests {
     fn serialize_packet_filter_policy() {
         use std::str::FromStr;
 
-        use super::Regex;
         use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 
         let filter_policy = ChannelFilters(vec![
@@ -646,14 +693,14 @@ mod tests {
                 FilterPattern::Exact(ChannelId::from_str("channel-0").unwrap()),
             ),
             (
-                FilterPattern::Wildcard(Regex(regex::Regex::new("ica\\*").unwrap())),
-                FilterPattern::Wildcard(Regex(regex::Regex::new("\\*").unwrap())),
+                FilterPattern::Wildcard("ica*".parse().unwrap()),
+                FilterPattern::Wildcard("*".parse().unwrap()),
             ),
         ]);
 
         let fp = PacketFilter::Allow(filter_policy);
         let toml_str = toml::to_string_pretty(&fp).expect("could not serialize packet filter");
 
-        dbg!(toml_str);
+        println!("{}", toml_str);
     }
 }
