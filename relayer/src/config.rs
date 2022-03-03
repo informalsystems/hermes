@@ -596,9 +596,9 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = load(path);
-        println!("{:?}", config);
-        assert!(config.is_ok());
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
     }
 
     #[test]
@@ -626,13 +626,11 @@ mod tests {
               ['transfer', 'channel-0'],
             ]
             "#;
-        let filter_policy: Result<Value, toml::de::Error> = toml::from_str(toml_content);
 
-        assert!(filter_policy.is_ok());
+        let filter_policy: Value =
+            toml::from_str(toml_content).expect("could not parse filter policy");
 
-        let filter_policy = filter_policy.unwrap();
-
-        println!("{:?}", filter_policy);
+        dbg!(filter_policy);
     }
 
     #[test]
@@ -652,14 +650,10 @@ mod tests {
                 FilterPattern::Wildcard(Regex(regex::Regex::new("\\*").unwrap())),
             ),
         ]);
+
         let fp = PacketFilter::Allow(filter_policy);
-        let toml_str = toml::to_string_pretty(&fp);
-        println!("{:?}", toml_str);
+        let toml_str = toml::to_string_pretty(&fp).expect("could not serialize packet filter");
 
-        assert!(toml_str.is_ok());
-
-        let toml_str = toml_str.unwrap();
-
-        println!("{}", toml_str);
+        dbg!(toml_str);
     }
 }
