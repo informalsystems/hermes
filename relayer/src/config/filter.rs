@@ -36,8 +36,8 @@ impl PacketFilter {
     /// false otherwise.
     pub fn is_allowed(&self, port_id: &PortId, channel_id: &ChannelId) -> bool {
         match self {
-            PacketFilter::Allow(spec) => spec.matches(&(port_id.clone(), channel_id.clone())),
-            PacketFilter::Deny(spec) => !spec.matches(&(port_id.clone(), channel_id.clone())),
+            PacketFilter::Allow(spec) => spec.matches((port_id, channel_id)),
+            PacketFilter::Deny(spec) => !spec.matches((port_id, channel_id)),
             PacketFilter::AllowAll => true,
         }
     }
@@ -51,7 +51,7 @@ pub struct ChannelFilters(Vec<(PortFilterMatch, ChannelFilterMatch)>);
 impl ChannelFilters {
     /// Indicates whether a match for the given [`PortId`]-[`ChannelId`] pair
     /// exists in the filter policy.
-    pub fn matches(&self, channel_port: &(PortId, ChannelId)) -> bool {
+    pub fn matches(&self, channel_port: (&PortId, &ChannelId)) -> bool {
         let (port_id, channel_id) = channel_port;
         self.0.iter().any(|(port_filter, chan_filter)| {
             port_filter.matches(port_id) && chan_filter.matches(channel_id)
