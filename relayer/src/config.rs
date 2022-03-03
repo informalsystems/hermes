@@ -96,11 +96,11 @@ impl ChannelFilters {
         })
     }
 
-    /// Indicates whether this filter policy contains any wildcard patterns.
+    /// Indicates whether this filter policy contains only exact patterns.
     #[inline]
-    pub fn contains_patterns(&self) -> bool {
-        self.0.iter().any(|(port_filter, channel_filter)| {
-            port_filter.is_pattern() || channel_filter.is_pattern()
+    pub fn is_exact(&self) -> bool {
+        self.0.iter().all(|(port_filter, channel_filter)| {
+            port_filter.is_exact() && channel_filter.is_exact()
         })
     }
 
@@ -215,8 +215,13 @@ pub enum FilterPattern<T> {
 
 impl<T> FilterPattern<T> {
     /// Indicates whether this filter is specified in part with a wildcard.
-    pub fn is_pattern(&self) -> bool {
+    pub fn is_wildcard(&self) -> bool {
         matches!(self, Self::Wildcard(_))
+    }
+
+    /// Indicates whether this filter is specified as an exact match.
+    pub fn is_exact(&self) -> bool {
+        matches!(self, Self::Exact(_))
     }
 
     /// Matches the given value via strict equality if the filter is an `Exact`, or via

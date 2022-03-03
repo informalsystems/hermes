@@ -532,7 +532,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         }
 
         match chain_config.packet_filter {
-            PacketFilter::Allow(ref spec) if !spec.contains_patterns() => Some(spec),
+            PacketFilter::Allow(ref spec) if spec.is_exact() => Some(spec),
             _ => None,
         }
     }
