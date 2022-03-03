@@ -15,6 +15,10 @@ const CONNECTION_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const CLIENT_STATE_CACHE_TTL: Duration = Duration::from_millis(500);
 const LATEST_HEIGHT_CACHE_TTL: Duration = Duration::from_millis(200);
 
+const CHANNEL_CACHE_CAPACITY: u64 = 10_000;
+const CONNECTION_CACHE_CAPACITY: u64 = 128;
+const CLIENT_STATE_CACHE_CAPACITY: u64 = 10_000;
+
 #[derive(Clone)]
 pub struct Cache {
     channels: MokaCache<PortChannelId, ChannelEnd>,
@@ -31,18 +35,24 @@ impl Default for Cache {
 
 impl Cache {
     pub fn new() -> Cache {
-        let channels = MokaCache::builder().time_to_live(CHANNEL_CACHE_TTL).build();
+        let channels = MokaCache::builder()
+            .time_to_live(CHANNEL_CACHE_TTL)
+            .max_capacity(CHANNEL_CACHE_CAPACITY)
+            .build();
 
         let connections = MokaCache::builder()
             .time_to_live(CONNECTION_CACHE_TTL)
+            .max_capacity(CONNECTION_CACHE_CAPACITY)
             .build();
 
         let client_states = MokaCache::builder()
             .time_to_live(CLIENT_STATE_CACHE_TTL)
+            .max_capacity(CLIENT_STATE_CACHE_CAPACITY)
             .build();
 
         let latest_height = MokaCache::builder()
             .time_to_live(LATEST_HEIGHT_CACHE_TTL)
+            .max_capacity(1)
             .build();
 
         Cache {
