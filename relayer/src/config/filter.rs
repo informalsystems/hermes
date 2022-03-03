@@ -166,8 +166,14 @@ impl Serialize for Wildcard {
     }
 }
 
+impl PartialEq for Wildcard {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_string() == other.to_string()
+    }
+}
+
 /// Represents a single channel to be filtered in a [`ChannelFilters`] list.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum FilterPattern<T> {
     /// A channel specified exactly with its [`PortId`] & [`ChannelId`].
     Exact(T),
@@ -347,5 +353,40 @@ mod tests {
         let toml_str = toml::to_string_pretty(&fp).expect("could not serialize packet filter");
 
         println!("{}", toml_str);
+    }
+
+    #[test]
+    fn channel_filter_iter_exact() {
+        let toml_content = r#"
+            policy = 'deny'
+            list = [
+              ['ica', 'channel-*'],
+              ['ica*', '*'],
+              ['transfer', 'channel-0'],
+              ['transfer*', 'channel-1'],
+              ['ft-transfer', 'network-0'],
+            ]
+            "#;
+
+        let pf: PacketFilter = toml::from_str(toml_content).expect("could not parse filter policy");
+
+        if let PacketFilter::Deny(channel_filters) = pf {
+            let exact_matches = channel_filters.iter_exact().collect::<Vec<_>>();
+            assert_eq!(
+                exact_matches,
+                vec![
+                    (
+                        PortId::from_str("transfer").unwrap(),
+                        ChannelId::from_str("channel-0").unwrap()
+                    ),
+                    (
+                        PortId::from_str("ft-transfer").unwrap(),
+                        ChannelId::from_str("network-0").unwrap()
+                    )
+                ]
+            );
+        } else {
+            panic!("expected `PacketFilter::Deny` variant");
+        }
     }
 }
