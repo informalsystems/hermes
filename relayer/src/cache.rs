@@ -16,7 +16,7 @@ const CLIENT_STATE_CACHE_TTL: Duration = Duration::from_millis(500);
 const LATEST_HEIGHT_CACHE_TTL: Duration = Duration::from_millis(200);
 
 const CHANNEL_CACHE_CAPACITY: u64 = 10_000;
-const CONNECTION_CACHE_CAPACITY: u64 = 128;
+const CONNECTION_CACHE_CAPACITY: u64 = 10_000;
 const CLIENT_STATE_CACHE_CAPACITY: u64 = 10_000;
 
 #[derive(Clone)]
