@@ -9,10 +9,10 @@ use crate::{
     prelude::*,
 };
 
-#[test]
-fn test_ica_filter() -> Result<(), Error> {
-    run_binary_chain_test(&IcaFilterTest)
-}
+// #[test]
+// fn test_ica_filter() -> Result<(), Error> {
+//     run_binary_chain_test(&IcaFilterTest)
+// }
 
 pub struct IcaFilterTest;
 
