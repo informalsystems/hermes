@@ -324,12 +324,12 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     pub fn query_allowed_channels(
         &mut self,
         chain: &Chain,
-        spec: &ChannelFilters,
+        filters: &ChannelFilters,
         scan: &mut ChainScan,
     ) -> Result<(), Error> {
         info!("querying allowed channels...");
 
-        for (port_id, channel_id) in spec.iter_exact() {
+        for (port_id, channel_id) in filters.iter_exact() {
             let result = scan_allowed_channel(self.registry, chain, port_id, channel_id);
 
             match result {
@@ -532,7 +532,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         }
 
         match chain_config.packet_filter {
-            PacketFilter::Allow(ref spec) if spec.is_exact() => Some(spec),
+            PacketFilter::Allow(ref filters) if filters.is_exact() => Some(filters),
             _ => None,
         }
     }

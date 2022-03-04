@@ -36,8 +36,8 @@ impl PacketFilter {
     /// false otherwise.
     pub fn is_allowed(&self, port_id: &PortId, channel_id: &ChannelId) -> bool {
         match self {
-            PacketFilter::Allow(spec) => spec.matches((port_id, channel_id)),
-            PacketFilter::Deny(spec) => !spec.matches((port_id, channel_id)),
+            PacketFilter::Allow(filters) => filters.matches((port_id, channel_id)),
+            PacketFilter::Deny(filters) => !filters.matches((port_id, channel_id)),
             PacketFilter::AllowAll => true,
         }
     }
