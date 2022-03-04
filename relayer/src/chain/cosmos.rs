@@ -935,10 +935,13 @@ impl CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_latest_height");
 
         let status = self.status()?;
+        let abci_status = self
+            .block_on(self.rpc_client.abci_info())
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         Ok(ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
-            revision_height: u64::from(status.sync_info.latest_block_height),
+            revision_height: u64::from(abci_status.last_block_height),
         })
     }
 }
