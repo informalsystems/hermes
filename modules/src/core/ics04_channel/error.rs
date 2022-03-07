@@ -94,6 +94,8 @@ define_error! {
                     "Packet with the sequence number {0} has been already received",
                     e.sequence)
             },
+        MissingChannelId
+            | _ | { "missing channel id" },
 
         MissingCounterparty
             | _ | { "missing counterparty" },
