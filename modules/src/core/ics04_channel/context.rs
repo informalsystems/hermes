@@ -9,7 +9,7 @@ use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
-use crate::core::ics04_channel::{error::Error, packet::Receipt};
+use crate::core::ics04_channel::{error::Error, packet::{PacketData, Receipt}};
 use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::prelude::*;
@@ -220,7 +220,7 @@ pub trait ChannelKeeper {
         key: (PortId, ChannelId, Sequence),
         timestamp: Timestamp,
         heigh: Height,
-        data: Vec<u8>,
+        data: PacketData,
     ) -> Result<(), Error>;
 
     fn delete_packet_commitment(&mut self, key: (PortId, ChannelId, Sequence))

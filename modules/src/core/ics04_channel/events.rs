@@ -6,7 +6,7 @@ use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::packet::Packet;
+use crate::core::ics04_channel::packet::{Packet, PacketData};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::{
     extract_attribute, maybe_extract_attribute, Error as EventError, IbcEvent, IbcEventType,
@@ -176,7 +176,7 @@ fn extract_packet_and_write_ack_from_tx(
                 packet.timeout_timestamp = value.parse().unwrap();
             }
             PKT_DATA_ATTRIBUTE_KEY => {
-                packet.data = Vec::from(value.as_bytes());
+                packet.data = PacketData::from(value.as_bytes());
             }
             PKT_ACK_ATTRIBUTE_KEY => {
                 write_ack = Vec::from(value.as_bytes());
@@ -334,7 +334,7 @@ impl TryFrom<Packet> for Vec<Tag> {
         };
         attributes.push(timeout_timestamp);
         let val =
-            String::from_utf8(p.data).expect("hex-encoded string should always be valid UTF-8");
+            String::from_utf8(p.data.into()).expect("hex-encoded string should always be valid UTF-8");
         let packet_data = Tag {
             key: PKT_DATA_ATTRIBUTE_KEY.parse().unwrap(),
             value: val.parse().unwrap(),
@@ -1064,7 +1064,7 @@ macro_rules! impl_try_from_raw_obj_for_packet {
                 let data_str: String = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
 
                 let mut packet = Packet::try_from(obj)?;
-                packet.data = Vec::from(data_str.as_str().as_bytes());
+                packet.data = PacketData::from(data_str.as_str().as_bytes());
 
                 Ok(Self { height, packet })
             }
@@ -1091,7 +1091,7 @@ impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
             .into_bytes();
 
         let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_str().as_bytes());
+        packet.data = PacketData::from(data_str.as_str().as_bytes());
 
         Ok(Self {
             height,
@@ -1167,7 +1167,7 @@ mod tests {
             source_channel: "a_test_channel".parse().unwrap(),
             destination_port: "b_test_port".parse().unwrap(),
             destination_channel: "b_test_channel".parse().unwrap(),
-            data: "test_data".as_bytes().to_vec(),
+            data: "test_data".as_bytes().to_vec().into(),
             timeout_height: Height::new(1, 10),
             timeout_timestamp: Timestamp::now(),
         };
