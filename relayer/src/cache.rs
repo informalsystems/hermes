@@ -32,8 +32,6 @@ pub struct Cache {
     /// Cache storing [`AnyClientState`]s keyed by their [`ClientId`]s.
     client_states: MokaCache<ClientId, AnyClientState>,
     /// The latest `Height` associated with the chain runtime this `Cache` is associated with.
-    // TODO: Could `Height` be stored with a TTL without having to instantiate a separate
-    // `MokaCache` instance?
     latest_height: MokaCache<(), Height>,
 }
 
