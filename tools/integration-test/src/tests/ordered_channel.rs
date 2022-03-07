@@ -5,12 +5,12 @@ use crate::prelude::*;
 use crate::util::random::random_u64_range;
 
 #[test]
-fn test_clear_packet() -> Result<(), Error> {
-    run_binary_channel_test(&ClearPacketTest)
+fn test_ordered_channel() -> Result<(), Error> {
+    run_binary_channel_test(&OrderedChannelTest)
 }
-pub struct ClearPacketTest;
+pub struct OrderedChannelTest;
 
-impl TestOverrides for ClearPacketTest {
+impl TestOverrides for OrderedChannelTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         // Disabling clear_on_start should make the relayer not
         // relay any packet it missed before starting.
@@ -27,13 +27,12 @@ impl TestOverrides for ClearPacketTest {
         Ok(None)
     }
 
-    // Unordered channel: will permit gaps in the sequence of relayed packets
     fn channel_order(&self) -> Order {
-        Order::Unordered
+        Order::Ordered
     }
 }
 
-impl BinaryChannelTest for ClearPacketTest {
+impl BinaryChannelTest for OrderedChannelTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
@@ -53,7 +52,7 @@ impl BinaryChannelTest for ClearPacketTest {
         let amount1 = random_u64_range(1000, 5000);
 
         info!(
-            "Performing IBC transfer with amount {}, which should *not* be relayed",
+            "Performing IBC transfer with amount {}, which should be relayed because its an ordered channel",
             amount1
         );
 
@@ -68,7 +67,7 @@ impl BinaryChannelTest for ClearPacketTest {
 
         sleep(Duration::from_secs(1));
 
-        // Spawn the supervisor only after the first IBC trasnfer
+        // Spawn the supervisor only after the first IBC transfer
         let _supervisor = spawn_supervisor(
             chains.config.clone(),
             chains.registry.clone(),
@@ -112,10 +111,10 @@ impl BinaryChannelTest for ClearPacketTest {
             &denom_a,
         )?;
 
-        // Wallet on chain B should only receive the second IBC transfer
+        // Wallet on chain B should receive both IBC transfers
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.as_ref(),
-            amount2,
+            amount1 + amount2,
             &denom_b.as_ref(),
         )?;
 
