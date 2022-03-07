@@ -5,7 +5,7 @@
 
 use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::ClientId;
-use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
+use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
 use ibc_relayer::foreign_client::{extract_client_id, ForeignClient};
@@ -260,11 +260,11 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
 }
 
 /**
-   Create a new [`SharedRegistry`] that uses [`ProdChainHandle`]
+   Create a new [`SharedRegistry`] that uses [`CountingAndCachingChainHandle`]
    as the [`ChainHandle`] implementation.
 */
-pub fn new_registry(config: SharedConfig) -> SharedRegistry<ProdChainHandle> {
-    <SharedRegistry<ProdChainHandle>>::new(config)
+pub fn new_registry(config: SharedConfig) -> SharedRegistry<CountingAndCachingChainHandle> {
+    <SharedRegistry<CountingAndCachingChainHandle>>::new(config)
 }
 
 /**

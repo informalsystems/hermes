@@ -47,7 +47,7 @@ use crate::{
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
 #[derive(Debug, Clone)]
-pub struct ProdChainHandle {
+pub struct BaseChainHandle {
     /// Chain identifier
     chain_id: ChainId,
 
@@ -55,7 +55,7 @@ pub struct ProdChainHandle {
     runtime_sender: channel::Sender<ChainRequest>,
 }
 
-impl ProdChainHandle {
+impl BaseChainHandle {
     pub fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
         Self {
             chain_id,
@@ -77,7 +77,7 @@ impl ProdChainHandle {
     }
 }
 
-impl ChainHandle for ProdChainHandle {
+impl ChainHandle for BaseChainHandle {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
         Self::new(chain_id, sender)
     }
@@ -456,7 +456,7 @@ impl ChainHandle for ProdChainHandle {
     }
 }
 
-impl Serialize for ProdChainHandle {
+impl Serialize for BaseChainHandle {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
         S: Serializer,

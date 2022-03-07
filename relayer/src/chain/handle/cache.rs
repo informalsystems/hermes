@@ -1,25 +1,3 @@
-/*!
-   Definition for a proxy [`ChainHandle`] implementation for tagged
-   chain handles.
-
-   Since we use the chain handle type to distinguish the chain tags, we will
-   run into problem if we have the same concrete `ChainHandle` implementations
-   for two chains that are not encapsulated behind an `impl ChainHandle`.
-
-   This is the case for creating N-ary chains, because we cannot rely on the
-   existential type encapsulation of `impl ChainHandle` to turn the
-   [`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle) to turn
-   them into unqiue types.
-
-   A workaround for this is to add a unique tag to `CountingAndCachingChainHandle` itself,
-   so that the type `MonoTagged<Tag, CountingAndCachingChainHandle>` becomes a unique chain
-   handle type.
-
-   We implement [`ChainHandle`] for a `MonoTagged<Tag, Handle>`, since if the
-   underlying `Handle` type implements [`ChainHandle`], then a tagged handle
-   is still a [`ChainHandle`].
-*/
-
 use crossbeam_channel as channel;
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -35,9 +13,9 @@ use ibc::{
     core::ics03_connection::version::Version,
     core::ics04_channel::channel::ChannelEnd,
     core::ics23_commitment::commitment::CommitmentPrefix,
-    core::ics24_host::identifier::ChainId,
-    core::ics24_host::identifier::ChannelId,
-    core::ics24_host::identifier::{ClientId, ConnectionId, PortId},
+    core::ics24_host::identifier::{
+        ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+    },
     events::IbcEvent,
     proofs::Proofs,
     query::QueryBlockRequest,
@@ -54,114 +32,145 @@ use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusS
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use ibc_relayer::chain::tx::TrackedMsgs;
-use ibc_relayer::chain::{HealthCheck, StatusResponse};
-use ibc_relayer::config::ChainConfig;
-use ibc_relayer::error::Error;
-use ibc_relayer::{connection::ConnectionMsgType, keyring::KeyEntry};
+use serde::{Serialize, Serializer};
 
-use crate::types::tagged::*;
+use crate::cache::Cache;
+use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
+use crate::chain::tx::TrackedMsgs;
+use crate::chain::{HealthCheck, StatusResponse};
+use crate::config::ChainConfig;
+use crate::error::Error;
+use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
-/**
-   Implement `ChainHandle` for any existential type `Handle: ChainHandle`.
-   This allows us to tag values for chains that are tagged by position
-   in [N-ary chains](crate::types::nary).
-*/
-impl<Tag, Handle> ChainHandle for MonoTagged<Tag, Handle>
-where
-    Tag: Send + Sync + 'static,
-    Handle: ChainHandle,
-{
+#[derive(Debug, Clone)]
+pub struct CachingChainHandle<Handle> {
+    inner: Handle,
+    cache: Cache,
+}
+
+impl<Handle> CachingChainHandle<Handle> {
+    pub fn new(handle: Handle) -> Self {
+        Self {
+            inner: handle,
+            cache: Cache::new(),
+        }
+    }
+
+    fn inner(&self) -> &Handle {
+        &self.inner
+    }
+}
+
+impl<Handle: Serialize> Serialize for CachingChainHandle<Handle> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.inner.serialize(serializer)
+    }
+}
+
+impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
         Self::new(Handle::new(chain_id, sender))
     }
 
     fn id(&self) -> ChainId {
-        self.value().id()
+        self.inner().id()
     }
 
     fn shutdown(&self) -> Result<(), Error> {
-        self.value().shutdown()
+        self.inner().shutdown()
     }
 
     fn health_check(&self) -> Result<HealthCheck, Error> {
-        self.value().health_check()
+        self.inner().health_check()
     }
 
     fn subscribe(&self) -> Result<Subscription, Error> {
-        self.value().subscribe()
+        self.inner().subscribe()
     }
 
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
-        self.value().send_messages_and_wait_commit(tracked_msgs)
+        self.inner().send_messages_and_wait_commit(tracked_msgs)
     }
 
     fn send_messages_and_wait_check_tx(
         &self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
-        self.value().send_messages_and_wait_check_tx(tracked_msgs)
+        self.inner().send_messages_and_wait_check_tx(tracked_msgs)
     }
 
     fn get_signer(&self) -> Result<Signer, Error> {
-        self.value().get_signer()
+        self.inner().get_signer()
     }
 
     fn config(&self) -> Result<ChainConfig, Error> {
-        self.value().config()
+        self.inner().config()
     }
 
     fn get_key(&self) -> Result<KeyEntry, Error> {
-        self.value().get_key()
+        self.inner().get_key()
     }
 
     fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
-        self.value().add_key(key_name, key)
+        self.inner().add_key(key_name, key)
     }
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
-        self.value().ibc_version()
+        self.inner().ibc_version()
     }
 
     fn query_status(&self) -> Result<StatusResponse, Error> {
-        self.value().query_status()
+        self.inner().query_status()
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {
-        self.value().query_latest_height()
+        let handle = self.inner();
+        self.cache
+            .get_or_try_update_latest_height_with(|| handle.query_latest_height())
     }
 
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-        self.value().query_clients(request)
+        self.inner().query_clients(request)
     }
 
+    // TODO: Introduce new query_client_state_latest to separate from this one.
     fn query_client_state(
         &self,
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error> {
-        self.value().query_client_state(client_id, height)
+        let handle = self.inner();
+        if height.is_zero() {
+            self.cache
+                .get_or_try_insert_client_state_with(client_id, || {
+                    handle.query_client_state(client_id, height)
+                })
+        } else {
+            handle.query_client_state(client_id, height)
+        }
     }
 
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error> {
-        self.value().query_client_connections(request)
+        self.inner().query_client_connections(request)
     }
 
     fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        self.value().query_consensus_states(request)
+        self.inner().query_consensus_states(request)
     }
 
     fn query_consensus_state(
@@ -170,7 +179,7 @@ where
         consensus_height: Height,
         query_height: Height,
     ) -> Result<AnyConsensusState, Error> {
-        self.value()
+        self.inner()
             .query_consensus_state(client_id, consensus_height, query_height)
     }
 
@@ -178,22 +187,22 @@ where
         &self,
         height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.value().query_upgraded_client_state(height)
+        self.inner().query_upgraded_client_state(height)
     }
 
     fn query_upgraded_consensus_state(
         &self,
         height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.value().query_upgraded_consensus_state(height)
+        self.inner().query_upgraded_consensus_state(height)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        self.value().query_commitment_prefix()
+        self.inner().query_commitment_prefix()
     }
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error> {
-        self.value().query_compatible_versions()
+        self.inner().query_compatible_versions()
     }
 
     fn query_connection(
@@ -201,35 +210,43 @@ where
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error> {
-        self.value().query_connection(connection_id, height)
+        let handle = self.inner();
+        if height.is_zero() {
+            self.cache
+                .get_or_try_insert_connection_with(connection_id, || {
+                    handle.query_connection(connection_id, height)
+                })
+        } else {
+            handle.query_connection(connection_id, height)
+        }
     }
 
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-        self.value().query_connections(request)
+        self.inner().query_connections(request)
     }
 
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        self.value().query_connection_channels(request)
+        self.inner().query_connection_channels(request)
     }
 
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error> {
-        self.value().query_next_sequence_receive(request)
+        self.inner().query_next_sequence_receive(request)
     }
 
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        self.value().query_channels(request)
+        self.inner().query_channels(request)
     }
 
     fn query_channel(
@@ -238,14 +255,22 @@ where
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<ChannelEnd, Error> {
-        self.value().query_channel(port_id, channel_id, height)
+        let handle = self.inner();
+        if height.is_zero() {
+            self.cache.get_or_try_insert_channel_with(
+                &PortChannelId::new(channel_id.clone(), port_id.clone()),
+                || handle.query_channel(port_id, channel_id, height),
+            )
+        } else {
+            handle.query_channel(port_id, channel_id, height)
+        }
     }
 
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
-        self.value().query_channel_client_state(request)
+        self.inner().query_channel_client_state(request)
     }
 
     fn proven_client_state(
@@ -253,7 +278,7 @@ where
         client_id: &ClientId,
         height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.value().proven_client_state(client_id, height)
+        self.inner().proven_client_state(client_id, height)
     }
 
     fn proven_connection(
@@ -261,7 +286,7 @@ where
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.value().proven_connection(connection_id, height)
+        self.inner().proven_connection(connection_id, height)
     }
 
     fn proven_client_consensus(
@@ -270,7 +295,7 @@ where
         consensus_height: Height,
         height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.value()
+        self.inner()
             .proven_client_consensus(client_id, consensus_height, height)
     }
 
@@ -280,7 +305,7 @@ where
         target_height: Height,
         client_state: AnyClientState,
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
-        self.value()
+        self.inner()
             .build_header(trusted_height, target_height, client_state)
     }
 
@@ -290,7 +315,7 @@ where
         height: Height,
         dst_config: ChainConfig,
     ) -> Result<AnyClientState, Error> {
-        self.value().build_client_state(height, dst_config)
+        self.inner().build_client_state(height, dst_config)
     }
 
     /// Constructs a consensus state at the given height
@@ -300,7 +325,7 @@ where
         target: Height,
         client_state: AnyClientState,
     ) -> Result<AnyConsensusState, Error> {
-        self.value()
+        self.inner()
             .build_consensus_state(trusted, target, client_state)
     }
 
@@ -309,7 +334,7 @@ where
         update: UpdateClient,
         client_state: AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
-        self.value().check_misbehaviour(update, client_state)
+        self.inner().check_misbehaviour(update, client_state)
     }
 
     fn build_connection_proofs_and_client_state(
@@ -319,7 +344,7 @@ where
         client_id: &ClientId,
         height: Height,
     ) -> Result<(Option<AnyClientState>, Proofs), Error> {
-        self.value().build_connection_proofs_and_client_state(
+        self.inner().build_connection_proofs_and_client_state(
             message_type,
             connection_id,
             client_id,
@@ -333,7 +358,7 @@ where
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<Proofs, Error> {
-        self.value()
+        self.inner()
             .build_channel_proofs(port_id, channel_id, height)
     }
 
@@ -345,7 +370,7 @@ where
         sequence: Sequence,
         height: Height,
     ) -> Result<(Vec<u8>, Proofs), Error> {
-        self.value()
+        self.inner()
             .build_packet_proofs(packet_type, port_id, channel_id, sequence, height)
     }
 
@@ -353,38 +378,38 @@ where
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<PacketState>, Height), Error> {
-        self.value().query_packet_commitments(request)
+        self.inner().query_packet_commitments(request)
     }
 
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error> {
-        self.value().query_unreceived_packets(request)
+        self.inner().query_unreceived_packets(request)
     }
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<PacketState>, Height), Error> {
-        self.value().query_packet_acknowledgements(request)
+        self.inner().query_packet_acknowledgements(request)
     }
 
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error> {
-        self.value().query_unreceived_acknowledgement(request)
+        self.inner().query_unreceived_acknowledgement(request)
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
-        self.value().query_txs(request)
+        self.inner().query_txs(request)
     }
 
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        self.value().query_blocks(request)
+        self.inner().query_blocks(request)
     }
 }

@@ -71,7 +71,11 @@ pub(crate) fn process(
         channel_id: Some(chan_id),
         ..Default::default()
     };
-    output.emit(IbcEvent::OpenInitChannel(event_attributes.into()));
+    output.emit(IbcEvent::OpenInitChannel(
+        event_attributes
+            .try_into()
+            .map_err(|_| Error::missing_channel_id())?,
+    ));
 
     Ok(output.with_result(result))
 }

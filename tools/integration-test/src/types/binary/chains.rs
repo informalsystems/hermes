@@ -2,7 +2,7 @@
    Type definition for two connected chains.
 */
 
-use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use tracing::info;
 
 use super::foreign_client::ForeignClientPair;
@@ -148,7 +148,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChains<Cha
    this value is dropped.
 
    Note that we cannot stop the chain on drop for
-   [`ProdChainHandle`](ibc_relayer::chain::handle::ProdChainHandle)
+   [`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle)
    itself, as the chain handles can be cloned. But for testing purposes,
    we alway stop the chain handle when this "canonical" chain handle
    is dropped.
