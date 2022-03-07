@@ -73,8 +73,7 @@ jobs:
         run: |
           nix shell github:informalsystems/cosmos.nix#${{ matrix.gaiad }} -c cargo \
             test -p ibc-integration-test --no-fail-fast -- \
-            --nocapture --test-threads=1
-
+            --nocapture
 
   ordered-channel-test:
     runs-on: ubuntu-latest
