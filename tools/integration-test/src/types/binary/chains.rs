@@ -2,7 +2,7 @@
    Type definition for two connected chains.
 */
 
-use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
+use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
 use super::foreign_client::ForeignClientPair;

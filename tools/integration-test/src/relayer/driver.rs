@@ -1,4 +1,4 @@
-use ibc_relayer::chain::handle::ProdChainHandle;
+use ibc_relayer::chain::handle::CountingAndCachingChainHandle;
 use ibc_relayer::config::SharedConfig;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
@@ -34,7 +34,7 @@ pub struct RelayerDriver {
        Use this shared registry when spawning new supervisor using
        [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
     */
-    pub registry: SharedRegistry<ProdChainHandle>,
+    pub registry: SharedRegistry<CountingAndCachingChainHandle>,
 
     pub hang_on_fail: bool,
 }
