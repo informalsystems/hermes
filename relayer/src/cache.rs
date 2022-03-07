@@ -1,3 +1,7 @@
+//! Module to provide caching support for the relayer.
+//!
+//! Utilizes the [`moka`](https://docs.rs/moka) crate, which provides full
+//! concurrency of retrievals and a high expected concurrency for updates.
 use core::fmt::Formatter;
 use std::fmt;
 use std::time::Duration;
@@ -15,11 +19,21 @@ const CONNECTION_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const CLIENT_STATE_CACHE_TTL: Duration = Duration::from_millis(500);
 const LATEST_HEIGHT_CACHE_TTL: Duration = Duration::from_millis(200);
 
+/// The main cache data structure, which comprises multiple sub-caches for caching
+/// different chain components, each with different time-to-live values.
+///
+/// There should be one `Cache` instantiated per every chain runtime.
 #[derive(Clone)]
 pub struct Cache {
+    /// Cache storing [`ChannelEnd`]s keyed by their [`PortChannelId`]s.
     channels: MokaCache<PortChannelId, ChannelEnd>,
+    /// Cache storing [`ConnectionEnd`]s keyed by their [`ConnectionId`]s.
     connections: MokaCache<ConnectionId, ConnectionEnd>,
+    /// Cache storing [`AnyClientState`]s keyed by their [`ClientId`]s.
     client_states: MokaCache<ClientId, AnyClientState>,
+    /// The latest `Height` associated with the chain runtime this `Cache` is associated with.
+    // TODO: Could `Height` be stored with a TTL without having to instantiate a separate
+    // `MokaCache` instance?
     latest_height: MokaCache<(), Height>,
 }
 
@@ -30,6 +44,7 @@ impl Default for Cache {
 }
 
 impl Cache {
+    /// Initializes a new empty [`Cache`] with default time-to-live values.
     pub fn new() -> Cache {
         let channels = MokaCache::builder().time_to_live(CHANNEL_CACHE_TTL).build();
 
@@ -53,6 +68,9 @@ impl Cache {
         }
     }
 
+    /// Attempts to fetch a [`ChannelEnd`] via its [`PortChannelId`]. If a cache miss
+    /// is encountered, this method attempts to insert the channel into the cache,
+    /// assuming it is open.
     pub fn get_or_try_insert_channel_with<F, E>(
         &self,
         id: &PortChannelId,
@@ -74,6 +92,9 @@ impl Cache {
         }
     }
 
+    /// Attempts to fetch a [`ConnectionEnd`] via its [`ConnectionId`]. If a cache miss
+    /// is encountered, this method attempts to insert the connection into the cache,
+    /// assuming it is open.
     pub fn get_or_try_insert_connection_with<F, E>(
         &self,
         id: &ConnectionId,
@@ -93,6 +114,8 @@ impl Cache {
         }
     }
 
+    /// Attempts to fetch an [`AnyClientState`] via its [`ClientId`]. If a cache miss
+    /// is encountered, this method attempts to insert the client into the cache.
     pub fn get_or_try_insert_client_state_with<F, E>(
         &self,
         id: &ClientId,
@@ -110,6 +133,8 @@ impl Cache {
         }
     }
 
+    /// Attempts to fetch the latest [`Height`] value. If a cache miss is encountered,
+    /// this method attempts to insert the height into the cache.
     pub fn get_or_try_update_latest_height_with<F, E>(&self, f: F) -> Result<Height, E>
     where
         F: FnOnce() -> Result<Height, E>,
