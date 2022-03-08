@@ -6,8 +6,6 @@ use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
-use derive_more::{AsRef, From, Into};
-
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::{extract_attribute, Error as EventError, RawObject};
@@ -99,22 +97,6 @@ impl core::fmt::Display for Sequence {
     }
 }
 
-#[derive(AsRef, Clone, Default, Eq, From, Into, Hash, PartialEq, Deserialize, Serialize)]
-#[as_ref(forward)]
-pub struct PacketData(Vec<u8>);
-
-impl ::core::fmt::Debug for PacketData {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "{:?}", self.0)
-    }
-}
-
-impl ::core::convert::From<&[u8]> for PacketData {
-    fn from(original: &[u8]) -> PacketData {
-        PacketData::from(Vec::from(original))
-    }
-}
-
 #[derive(Clone, Debug, Default, Hash, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,
@@ -123,7 +105,7 @@ pub struct Packet {
     pub destination_port: PortId,
     pub destination_channel: ChannelId,
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
-    pub data: PacketData,
+    pub data: Vec<u8>,
     pub timeout_height: Height,
     pub timeout_timestamp: Timestamp,
 }
@@ -200,7 +182,7 @@ impl TryFrom<RawPacket> for Packet {
                 .destination_channel
                 .parse()
                 .map_err(Error::identifier)?,
-            data: raw_pkt.data.into(),
+            data: raw_pkt.data,
             timeout_height: packet_timeout_height,
             timeout_timestamp,
         })
@@ -229,7 +211,7 @@ impl TryFrom<RawObject<'_>> for Packet {
             )?
             .parse()
             .map_err(EventError::parse)?,
-            data: vec![].into(),
+            data: vec![],
             timeout_height: extract_attribute(
                 &obj,
                 &format!("{}.packet_timeout_height", obj.action),
@@ -254,7 +236,7 @@ impl From<Packet> for RawPacket {
             source_channel: packet.source_channel.to_string(),
             destination_port: packet.destination_port.to_string(),
             destination_channel: packet.destination_channel.to_string(),
-            data: packet.data.into(),
+            data: packet.data,
             timeout_height: Some(packet.timeout_height.into()),
             timeout_timestamp: packet.timeout_timestamp.nanoseconds(),
         }

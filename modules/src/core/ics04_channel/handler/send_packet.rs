@@ -2,7 +2,7 @@ use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics04_channel::channel::Counterparty;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::events::SendPacket;
-use crate::core::ics04_channel::packet::{PacketData, PacketResult, Sequence};
+use crate::core::ics04_channel::packet::{PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error, packet::Packet};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::IbcEvent;
@@ -19,7 +19,7 @@ pub struct SendPacketResult {
     pub seq_number: Sequence,
     pub timeout_height: Height,
     pub timeout_timestamp: Timestamp,
-    pub data: PacketData,
+    pub data: Vec<u8>,
 }
 
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
