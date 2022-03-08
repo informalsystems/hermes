@@ -110,7 +110,7 @@ mod tests {
 
         let mut packet: Packet = get_dummy_raw_packet(1, 6).try_into().unwrap();
         packet.sequence = 1.into();
-        packet.data = vec![0].into();
+        packet.data = vec![0];
 
         let ack = vec![0];
         let ack_null = Vec::new();

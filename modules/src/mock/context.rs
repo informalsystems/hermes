@@ -25,7 +25,7 @@ use crate::core::ics03_connection::error::Error as Ics03Error;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error as Ics04Error;
-use crate::core::ics04_channel::packet::{PacketData, Receipt, Sequence};
+use crate::core::ics04_channel::packet::{Receipt, Sequence};
 use crate::core::ics05_port::capabilities::{Capability, CapabilityName};
 use crate::core::ics05_port::context::{CapabilityReader, PortReader};
 use crate::core::ics05_port::error::Error as Ics05Error;
@@ -768,7 +768,7 @@ impl ChannelKeeper for MockContext {
         key: (PortId, ChannelId, Sequence),
         timeout_timestamp: Timestamp,
         timeout_height: Height,
-        data: PacketData,
+        data: Vec<u8>,
     ) -> Result<(), Ics04Error> {
         let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
         self.packet_commitment

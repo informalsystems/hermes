@@ -184,7 +184,7 @@ mod tests {
             source_channel: ChannelId::default(),
             destination_port: PortId::default(),
             destination_channel: ChannelId::default(),
-            data: vec![].into(),
+            data: Vec::new(),
             timeout_height: client_height,
             timeout_timestamp: Timestamp::from_nanoseconds(1).unwrap(),
         };
