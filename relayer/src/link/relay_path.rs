@@ -1227,45 +1227,55 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(())
     }
 
-    pub fn process_pending_txs(&self) -> RelaySummary {
+    pub fn process_pending_txs(&self, clear_interval: u64) -> RelaySummary {
         if !self.confirm_txes {
             return RelaySummary::empty();
         }
 
-        let mut summary_src = self.process_pending_txs_src().unwrap_or_else(|e| {
-            error!("error processing pending events in source chain: {}", e);
-            RelaySummary::empty()
-        });
+        let mut summary_src = self
+            .process_pending_txs_src(clear_interval)
+            .unwrap_or_else(|e| {
+                error!("error processing pending events in source chain: {}", e);
+                RelaySummary::empty()
+            });
 
-        let summary_dst = self.process_pending_txs_dst().unwrap_or_else(|e| {
-            error!(
-                "error processing pending events in destination chain: {}",
-                e
-            );
-            RelaySummary::empty()
-        });
+        let summary_dst = self
+            .process_pending_txs_dst(clear_interval)
+            .unwrap_or_else(|e| {
+                error!(
+                    "error processing pending events in destination chain: {}",
+                    e
+                );
+                RelaySummary::empty()
+            });
 
         summary_src.extend(summary_dst);
         summary_src
     }
 
-    fn process_pending_txs_src(&self) -> Result<RelaySummary, LinkError> {
+    fn process_pending_txs_src(&self, clear_interval: u64) -> Result<RelaySummary, LinkError> {
+        let should_resubmit = clear_interval == 0;
         let res = self
             .pending_txs_src
-            .process_pending(pending::TIMEOUT, |odata| {
-                self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
-            })?
+            .process_pending(
+                pending::TIMEOUT,
+                |odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata),
+                should_resubmit,
+            )?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
     }
 
-    fn process_pending_txs_dst(&self) -> Result<RelaySummary, LinkError> {
+    fn process_pending_txs_dst(&self, clear_interval: u64) -> Result<RelaySummary, LinkError> {
+        let should_resubmit = clear_interval == 0;
         let res = self
             .pending_txs_dst
-            .process_pending(pending::TIMEOUT, |odata| {
-                self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
-            })?
+            .process_pending(
+                pending::TIMEOUT,
+                |odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata),
+                should_resubmit,
+            )?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)

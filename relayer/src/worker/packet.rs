@@ -46,6 +46,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: Packet,
     // Mutex is used to prevent race condition between the packet workers
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
+    clear_interval: u64,
 ) -> TaskHandle {
     let span = {
         let relay_path = &link.lock().unwrap().a_to_b;
@@ -69,7 +70,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             .execute_schedule()
             .map_err(handle_link_error_in_task)?;
 
-        let summary = relay_path.process_pending_txs();
+        let summary = relay_path.process_pending_txs(clear_interval);
 
         if !summary.is_empty() {
             trace!("Packet worker produced relay summary: {:?}", summary);
@@ -202,7 +203,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
     }
 
-    let summary = link.a_to_b.process_pending_txs();
+    let summary = link.a_to_b.process_pending_txs(clear_interval);
 
     if !summary.is_empty() {
         trace!("produced relay summary: {:?}", summary);

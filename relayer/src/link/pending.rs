@@ -190,6 +190,8 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                                     Err(e)
                                 }
                             }
+                        } else {
+                            Ok(None)
                         }
                     } else {
                         // Reinsert the pending transaction, this time

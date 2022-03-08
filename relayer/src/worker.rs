@@ -120,7 +120,11 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     );
                     task_handles.push(packet_task);
 
-                    let link_task = packet::spawn_packet_worker(path.clone(), link);
+                    let link_task = packet::spawn_packet_worker(
+                        path.clone(),
+                        link,
+                        packets_config.clear_interval,
+                    );
                     task_handles.push(link_task);
                     Some(cmd_tx)
                 }
