@@ -150,7 +150,7 @@ mod tests {
             .try_into()
             .unwrap();
         packet.sequence = 1.into();
-        packet.data = vec![0];
+        packet.data = vec![0].into();
 
         let channel_end = ChannelEnd::new(
             State::TryOpen,
@@ -174,7 +174,7 @@ mod tests {
 
         let mut packet_old: Packet = get_dummy_raw_packet(1, 1).try_into().unwrap();
         packet_old.sequence = 1.into();
-        packet_old.data = vec![0];
+        packet_old.data = vec![0].into();
 
         let client_height = Height::new(0, Height::default().revision_height + 1);
 
