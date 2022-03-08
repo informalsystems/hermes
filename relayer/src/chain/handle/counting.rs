@@ -448,4 +448,8 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inc_metric("query_blocks");
         self.inner().query_blocks(request)
     }
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
+        self.inner.query_host_consensus_state(height)
+    }
 }

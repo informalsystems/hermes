@@ -566,5 +566,5 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 
-    fn query_host_consensus_state(&self, request: Height) -> Result<AnyConsensusState, Error>;
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
 }
