@@ -1253,29 +1253,37 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         summary_src
     }
 
-    fn process_pending_txs_src(&self, clear_interval: u64) -> Result<RelaySummary, LinkError> {
-        let should_resubmit = clear_interval == 0;
+    fn process_pending_txs_src(
+        &self,
+        clear_interval: u64,
+        relay_path: &RelayPath<ChainA, ChainB>,
+    ) -> Result<RelaySummary, LinkError> {
+        let resubmit = if clear_interval == 0 {
+            Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
+        } else {
+            None
+        };
         let res = self
             .pending_txs_src
-            .process_pending(
-                pending::TIMEOUT,
-                |odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata),
-                should_resubmit,
-            )?
+            .process_pending(pending::TIMEOUT, relay_path, resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
     }
 
-    fn process_pending_txs_dst(&self, clear_interval: u64) -> Result<RelaySummary, LinkError> {
-        let should_resubmit = clear_interval == 0;
+    fn process_pending_txs_dst(
+        &self,
+        clear_interval: u64,
+        relay_path: &RelayPath<ChainA, ChainB>,
+    ) -> Result<RelaySummary, LinkError> {
+        let resubmit = if clear_interval == 0 {
+            Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
+        } else {
+            None
+        };
         let res = self
             .pending_txs_dst
-            .process_pending(
-                pending::TIMEOUT,
-                |odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata),
-                should_resubmit,
-            )?
+            .process_pending(pending::TIMEOUT, relay_path, resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)

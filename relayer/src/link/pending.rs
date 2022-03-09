@@ -9,7 +9,7 @@ use ibc::events::IbcEvent;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use crate::error::Error as RelayerError;
-use crate::link::error::LinkError;
+use crate::link::{error::LinkError, RelayPath};
 use crate::util::queue::Queue;
 use crate::{
     chain::handle::ChainHandle,
@@ -134,11 +134,11 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
     }
 
     /// Try and process one pending transaction if available.
-    pub fn process_pending(
+    pub fn process_pending<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         timeout: Duration,
-        resubmit: impl FnOnce(OperationalData) -> Result<AsyncReply, LinkError>,
-        should_resubmit: bool,
+        relay_path: &RelayPath<ChainA, ChainB>,
+        resubmit: Option<impl FnOnce(OperationalData) -> Result<AsyncReply, LinkError>>,
     ) -> Result<Option<RelaySummary>, LinkError> {
         // We process pending transactions in a FIFO manner, so take from
         // the front of the queue.
@@ -178,20 +178,22 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         // relayer to resubmit the transaction to the chain again.
                         error!("timed out while confirming {}", tx_hashes);
 
-                        if should_resubmit {
-                            let new_od = regenerate_operational_data(pending.original_od.clone());
-                            match resubmit(new_od) {
-                                Ok(reply) => {
-                                    self.insert_new_pending_tx(reply, pending.original_od);
-                                    Ok(None)
-                                }
-                                Err(e) => {
-                                    self.pending_queue.push_back(pending);
-                                    Err(e)
+                        match resubmit {
+                            Some(f) => {
+                                let new_od = relay_path
+                                    .regenerate_operational_data(pending.original_od.clone());
+                                match f(new_od) {
+                                    Ok(reply) => {
+                                        self.insert_new_pending_tx(reply, pending.original_od);
+                                        Ok(None)
+                                    }
+                                    Err(e) => {
+                                        self.pending_queue.push_back(pending);
+                                        Err(e)
+                                    }
                                 }
                             }
-                        } else {
-                            Ok(None)
+                            None => Ok(None),
                         }
                     } else {
                         // Reinsert the pending transaction, this time
