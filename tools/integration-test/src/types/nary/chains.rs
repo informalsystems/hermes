@@ -38,7 +38,7 @@ pub struct NaryConnectedChains<Handle: ChainHandle, const SIZE: usize> {
    same length.
 
    The main use of [`DynamicConnectedChains`] is to convert it into
-   a [`ConnectedChains`].
+   a [`NaryConnectedChains`].
 */
 #[derive(Clone)]
 pub struct DynamicConnectedChains<Handle: ChainHandle> {

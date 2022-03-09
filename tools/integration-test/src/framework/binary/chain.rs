@@ -117,7 +117,7 @@ pub struct RunTwoWayBinaryChainTest<'a, Test> {
 
 /**
    A wrapper type that lifts a test case that implements [`BinaryChainTest`]
-   into a test case that implements [`BasicTest`].
+   into a test case that implements [`BinaryNodeTest`].
 
    During execution, the test case is given a [`ConnectedChains`] with a
    single underlying chain that is connected to itself.

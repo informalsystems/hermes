@@ -15,7 +15,7 @@
   know before hand how many types are needed. Instead,
   we can use _const generics_ to identify chains by _position_.
 
-  The first construct we need is the [`Size`](chains::Size) struct,
+  The first construct we need is the [`Size`](aliases::Size) struct,
   which lifts a const generic `usize` into a type:
 
   ```rust
@@ -52,8 +52,8 @@
   The current approach for tagging N-ary chain values is a bit cumbersome.
   To save the effort of typing the fully qualified type of N-ary tagged
   values, we also define type aliases such as
-  [`TaggedHandle`](chains::TaggedHandle) and
-  [`TaggedForeignClient`](chains::TaggedForeignClient).
+  [`NthHandle`](aliases::NthHandle) and
+  [`NthForeignClient`](foreign_client::NthForeignClient).
   This would still result in overly verbose messages in type errors involving
   these types. If necessary, we will refactor these defintions as newtypes
   so that they can be used and shown in a cleaner form.

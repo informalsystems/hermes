@@ -13,9 +13,10 @@ pub enum Size<const TAG: usize> {}
    Tag a `Handle: ChainHandle` type with a const generic `TAG: usize`.
 
    In an N-ary chain implementation, we have to use the same
-   `Handle: ChainHandle` type for all elements in the N-ary data
-   structures. However since the [`ChainHandle`] type is also being
-   used to tag other values, we want to be able to differentiate
+   [`Handle: ChainHandle`](ibc_relayer::chain::handle::ChainHandle)
+   type for all elements in the N-ary data structures. However since the
+   [`ChainHandle`](ibc_relayer::chain::handle::ChainHandle) type is
+   also being used to tag other values, we want to be able to differentiate
    between tagged values coming from chains at different positions
    in the N-ary setup.
 
