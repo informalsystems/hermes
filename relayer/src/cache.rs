@@ -68,7 +68,7 @@ impl Cache {
 
     /// Attempts to fetch a [`ChannelEnd`] via its [`PortChannelId`]. If a cache miss
     /// is encountered, this method attempts to insert the channel into the cache,
-    /// assuming it is open.
+    /// assuming the returned channel state is open.
     pub fn get_or_try_insert_channel_with<F, E>(
         &self,
         id: &PortChannelId,
@@ -92,7 +92,7 @@ impl Cache {
 
     /// Attempts to fetch a [`ConnectionEnd`] via its [`ConnectionId`]. If a cache miss
     /// is encountered, this method attempts to insert the connection into the cache,
-    /// assuming it is open.
+    /// assuming the returned connection state is open.
     pub fn get_or_try_insert_connection_with<F, E>(
         &self,
         id: &ConnectionId,
@@ -113,7 +113,7 @@ impl Cache {
     }
 
     /// Attempts to fetch an [`AnyClientState`] via its [`ClientId`]. If a cache miss
-    /// is encountered, this method attempts to insert the client into the cache.
+    /// is encountered, this method attempts to insert the client state into the cache.
     pub fn get_or_try_insert_client_state_with<F, E>(
         &self,
         id: &ClientId,
@@ -131,8 +131,11 @@ impl Cache {
         }
     }
 
-    /// Attempts to fetch the latest [`Height`] value. If a cache miss is encountered,
-    /// this method attempts to insert the height into the cache.
+    /// Attempts to fetch the latest [`Height`] value. This value is cached with a small
+    /// time-to-live so that the latest height query returns the same height if the same
+    /// query is repeated within a small time frame.
+    ///
+    /// If a cache miss is encountered, this method attempts to insert the height into the cache.
     pub fn get_or_try_update_latest_height_with<F, E>(&self, f: F) -> Result<Height, E>
     where
         F: FnOnce() -> Result<Height, E>,
