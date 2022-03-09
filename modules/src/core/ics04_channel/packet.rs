@@ -115,7 +115,7 @@ pub struct Packet {
 struct PacketData<'a>(&'a [u8]);
 
 impl<'a> ::core::fmt::Debug for PacketData<'a> {
-    fn fmt(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
         write!(formatter, "{:?}", self.0)
     }
 }
