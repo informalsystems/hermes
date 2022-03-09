@@ -19,6 +19,10 @@ const CONNECTION_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
 const CLIENT_STATE_CACHE_TTL: Duration = Duration::from_millis(500);
 const LATEST_HEIGHT_CACHE_TTL: Duration = Duration::from_millis(200);
 
+const CHANNEL_CACHE_CAPACITY: u64 = 10_000;
+const CONNECTION_CACHE_CAPACITY: u64 = 10_000;
+const CLIENT_STATE_CACHE_CAPACITY: u64 = 10_000;
+
 /// The main cache data structure, which comprises multiple sub-caches for caching
 /// different chain components, each with different time-to-live values.
 ///
@@ -44,18 +48,24 @@ impl Default for Cache {
 impl Cache {
     /// Initializes a new empty [`Cache`] with default time-to-live values.
     pub fn new() -> Cache {
-        let channels = MokaCache::builder().time_to_live(CHANNEL_CACHE_TTL).build();
+        let channels = MokaCache::builder()
+            .time_to_live(CHANNEL_CACHE_TTL)
+            .max_capacity(CHANNEL_CACHE_CAPACITY)
+            .build();
 
         let connections = MokaCache::builder()
             .time_to_live(CONNECTION_CACHE_TTL)
+            .max_capacity(CONNECTION_CACHE_CAPACITY)
             .build();
 
         let client_states = MokaCache::builder()
             .time_to_live(CLIENT_STATE_CACHE_TTL)
+            .max_capacity(CLIENT_STATE_CACHE_CAPACITY)
             .build();
 
         let latest_height = MokaCache::builder()
             .time_to_live(LATEST_HEIGHT_CACHE_TTL)
+            .max_capacity(1)
             .build();
 
         Cache {
