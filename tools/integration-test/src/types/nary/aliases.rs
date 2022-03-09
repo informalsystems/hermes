@@ -31,4 +31,4 @@ pub enum Size<const TAG: usize> {}
    to `ChainHandle`s that are tagged by position.
 
 */
-pub type NthHandle<const POS: usize, Handle> = MonoTagged<Size<POS>, Handle>;
+pub type NthChainHandle<const POS: usize, Handle> = MonoTagged<Size<POS>, Handle>;

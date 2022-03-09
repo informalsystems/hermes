@@ -52,7 +52,7 @@
   The current approach for tagging N-ary chain values is a bit cumbersome.
   To save the effort of typing the fully qualified type of N-ary tagged
   values, we also define type aliases such as
-  [`NthHandle`](aliases::NthHandle) and
+  [`NthChainHandle`](aliases::NthChainHandle) and
   [`NthForeignClient`](foreign_client::NthForeignClient).
   This would still result in overly verbose messages in type errors involving
   these types. If necessary, we will refactor these defintions as newtypes

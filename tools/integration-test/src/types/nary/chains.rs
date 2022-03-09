@@ -69,13 +69,13 @@ pub struct DynamicConnectedChains<Handle: ChainHandle> {
    than the usual abstract type tags.
 */
 pub type NthConnectedChains<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
-    BinaryConnectedChains<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>>;
+    BinaryConnectedChains<NthChainHandle<CHAIN_A, Handle>, NthChainHandle<CHAIN_B, Handle>>;
 
 /**
    A [`FullNode`] that is tagged by a `Handle: ChainHandle` and
    the const generics `TAG: usize`.
 */
-pub type NthFullNode<const TAG: usize, Handle> = MonoTagged<NthHandle<TAG, Handle>, FullNode>;
+pub type NthFullNode<const TAG: usize, Handle> = MonoTagged<NthChainHandle<TAG, Handle>, FullNode>;
 
 impl<Handle: ChainHandle, const SIZE: usize> NaryConnectedChains<Handle, SIZE> {
     /**
@@ -135,7 +135,7 @@ impl<Handle: ChainHandle, const SIZE: usize> NaryConnectedChains<Handle, SIZE> {
 
        Returns a [`ChainHandle`] tagged by `POS`.
     */
-    pub fn chain_handle_at<const POS: usize>(&self) -> Result<NthHandle<POS, Handle>, Error> {
+    pub fn chain_handle_at<const POS: usize>(&self) -> Result<NthChainHandle<POS, Handle>, Error> {
         if POS >= SIZE {
             Err(Error::generic(eyre!(
                 "cannot get full_node beyond position {}",

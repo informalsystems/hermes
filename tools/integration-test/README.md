@@ -24,3 +24,11 @@ nix shell github:informalsystems/cosmos.nix#gaia5
 
 See [`tests::example`](crate::tests::example) for an example test with
 access to a full test setup.
+
+## Diagrams
+
+Some diagrams have been prepared to ease the understanding of the test framework:
+
+- [Tagged Identifiers and Data Structures](https://app.excalidraw.com/l/4XqkU6POmGI/7za2eSTChuT)
+- [Test Data Structures](https://app.excalidraw.com/l/4XqkU6POmGI/5y6i0NKqiEv)
+- [Test Framework Traits](https://app.excalidraw.com/l/4XqkU6POmGI/80KAnVZ6cu4)

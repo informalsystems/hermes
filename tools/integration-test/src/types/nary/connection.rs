@@ -7,7 +7,7 @@ use eyre::eyre;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc_relayer::chain::handle::ChainHandle;
 
-use super::aliases::NthHandle;
+use super::aliases::NthChainHandle;
 use crate::error::Error;
 use crate::types::binary::connection::ConnectedConnection;
 use crate::types::tagged::*;
@@ -38,14 +38,14 @@ pub struct DynamicConnectedConnections<Handle: ChainHandle> {
    position `CHAIN_A` and `CHAIN_B`.
 */
 pub type NthConnectedConnection<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
-    ConnectedConnection<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>>;
+    ConnectedConnection<NthChainHandle<CHAIN_A, Handle>, NthChainHandle<CHAIN_B, Handle>>;
 
 /**
    The connection ID on the chain at position `CHAIN_A` that corresponds to
    the counterparty chain at position `CHAIN_B`.
 */
 pub type NthConnectionId<const CHAIN_A: usize, const CHAIN_B: usize, Handle> =
-    DualTagged<NthHandle<CHAIN_A, Handle>, NthHandle<CHAIN_B, Handle>, ConnectionId>;
+    DualTagged<NthChainHandle<CHAIN_A, Handle>, NthChainHandle<CHAIN_B, Handle>, ConnectionId>;
 
 impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> {
     /**
