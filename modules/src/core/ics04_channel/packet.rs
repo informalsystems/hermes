@@ -97,7 +97,9 @@ impl core::fmt::Display for Sequence {
     }
 }
 
-#[derive(Clone, Debug, Default, Hash, PartialEq, Eq, Deserialize, Serialize)]
+// Remember: when the contents of the struct are changed, the `Debug`
+// implementation must be adjusted to reflect the changes.
+#[derive(Clone, Default, Hash, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,
@@ -109,6 +111,33 @@ pub struct Packet {
     pub timeout_height: Height,
     pub timeout_timestamp: Timestamp,
 }
+
+struct PacketData<'a>(&'a [u8]);
+
+impl<'a> ::core::fmt::Debug for PacketData<'a> {
+    fn fmt(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(formatter, "{:?}", self.0)
+    }
+}
+
+impl ::core::fmt::Debug for Packet {
+    fn fmt(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+        let data_wrapper = PacketData(&self.data);
+
+        formatter
+            .debug_struct("Packet")
+            .field("sequence", &self.sequence)
+            .field("source_port", &self.source_port)
+            .field("source_channel", &self.source_channel)
+            .field("destination_port", &self.destination_port)
+            .field("destination_channel", &self.destination_channel)
+            .field("data", &data_wrapper)
+            .field("timeout_height", &self.timeout_height)
+            .field("timeout_timestamp", &self.timeout_timestamp)
+            .finish()
+    }
+}
+
 
 impl Packet {
     /// Checks whether a packet from a
