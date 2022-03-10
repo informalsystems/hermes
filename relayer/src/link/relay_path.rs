@@ -791,7 +791,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             self.src_client_id().clone(),
             dst_chain_height,
         ) {
-            return Ok(update_height);
+            Ok(update_height)
         } else {
             self.do_update_client_src(dst_chain_height, tracking_id, MAX_RETRIES)
         }
