@@ -792,42 +792,58 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_chain_height,
         ) {
             return Ok(update_height);
+        } else {
+            self.do_update_client_src(dst_chain_height, tracking_id, MAX_RETRIES)
         }
+    }
 
-        let mut src_err_ev = None;
-        'retry: for i in 0..MAX_RETRIES {
-            let src_update = self.build_update_client_on_src(dst_chain_height)?;
-            info!(
-                "sending updateClient to client hosted on source chain for height {} [try {}/{}]",
-                dst_chain_height,
-                i + 1,
-                MAX_RETRIES,
-            );
+    /// Perform actual update_client_src with retries.
+    ///
+    /// Note that the retry is only performed in the case when there
+    /// is a ChainError event. It would return error immediately if
+    /// there are other errors returned from calls such as
+    /// build_update_client_on_src.
+    fn do_update_client_src(
+        &self,
+        dst_chain_height: Height,
+        tracking_id: &str,
+        retries_left: usize,
+    ) -> Result<Height, LinkError> {
+        info!( "sending update_client to client hosted on source chain for height {} (retries left: {})", dst_chain_height, retries_left );
 
-            let tm = TrackedMsgs::new(src_update, tracking_id);
+        let src_update = self.build_update_client_on_src(dst_chain_height)?;
+        let tm = TrackedMsgs::new(src_update, tracking_id);
+        let src_tx_events = self
+            .src_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(LinkError::relayer)?;
+        info!("result: {}", PrettyEvents(&src_tx_events));
 
-            let src_tx_events = self
-                .src_chain()
-                .send_messages_and_wait_commit(tm)
-                .map_err(LinkError::relayer)?;
-            info!("result: {}", PrettyEvents(&src_tx_events));
-
-            for event in src_tx_events {
-                match event {
-                    IbcEvent::ChainError(_) => {
-                        src_err_ev = Some(event);
-                        continue 'retry;
+        for event in src_tx_events {
+            match event {
+                err_event @ IbcEvent::ChainError(_) => {
+                    if retries_left == 0 {
+                        return Err(LinkError::client(ForeignClientError::chain_error_event(
+                            self.src_chain().id(),
+                            err_event,
+                        )));
+                    } else {
+                        return self.do_update_client_src(
+                            dst_chain_height,
+                            tracking_id,
+                            retries_left - 1,
+                        );
                     }
-                    IbcEvent::UpdateClient(ev) => return Ok(ev.height()),
-                    _ => {}
                 }
+                IbcEvent::UpdateClient(ev) => return Ok(ev.height()),
+                _ => {}
             }
         }
-
-        Err(LinkError::client(ForeignClientError::chain_error_event(
-            self.src_chain().id(),
-            src_err_ev.unwrap(),
-        )))
+        if retries_left == 0 {
+            Err(LinkError::update_client_failed())
+        } else {
+            self.do_update_client_src(dst_chain_height, tracking_id, retries_left - 1)
+        }
     }
 
     /// Returns relevant packet events for building RecvPacket and timeout messages.
