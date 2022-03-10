@@ -97,8 +97,6 @@ impl core::fmt::Display for Sequence {
     }
 }
 
-// Remember: when the contents of the struct are changed, the `Debug`
-// implementation must be adjusted to reflect the changes.
 #[derive(Clone, Default, Hash, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,
@@ -122,15 +120,19 @@ impl<'a> ::core::fmt::Debug for PacketData<'a> {
 
 impl ::core::fmt::Debug for Packet {
     fn fmt(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+        // Remember: if you alter the definition of `Packet`,
+        // 1. update the formatter debug struct builder calls (return object of
+        //    this function)
+        // 2. update this destructuring assignment accordingly
         let Packet {
-            sequence,
-            source_port,
-            source_channel,
-            destination_port,
-            destination_channel,
+            sequence: _,
+            source_port: _,
+            source_channel: _,
+            destination_port: _,
+            destination_channel: _,
             data,
-            timeout_height,
-            timeout_timestamp,
+            timeout_height: _,
+            timeout_timestamp: _,
         } = self;
         let data_wrapper = PacketData(data);
 
