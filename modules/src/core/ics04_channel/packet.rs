@@ -122,7 +122,17 @@ impl<'a> ::core::fmt::Debug for PacketData<'a> {
 
 impl ::core::fmt::Debug for Packet {
     fn fmt(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
-        let data_wrapper = PacketData(&self.data);
+        let Packet {
+            sequence,
+            source_port,
+            source_channel,
+            destination_port,
+            destination_channel,
+            data,
+            timeout_height,
+            timeout_timestamp,
+        } = self;
+        let data_wrapper = PacketData(data);
 
         formatter
             .debug_struct("Packet")
