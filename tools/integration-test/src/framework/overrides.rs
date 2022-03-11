@@ -2,8 +2,10 @@
    Constructs for implementing overrides for test cases.
 */
 
+use core::time::Duration;
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
+use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::Config;
 
 use crate::error::Error;
@@ -11,6 +13,7 @@ use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
 use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::channel::{ChannelOrderOverride, PortsOverride};
+use crate::framework::binary::connection::ConnectionDelayOverride;
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
 use crate::types::config::TestConfig;
@@ -56,6 +59,10 @@ pub trait TestOverrides {
     */
     fn modify_relayer_config(&self, _config: &mut Config) {
         // No modification by default
+    }
+
+    fn connection_delay(&self) -> Duration {
+        default_connection_delay()
     }
 
     /**
@@ -106,6 +113,12 @@ impl<Test: TestOverrides> NodeConfigOverride for Test {
 impl<Test: TestOverrides> RelayerConfigOverride for Test {
     fn modify_relayer_config(&self, config: &mut Config) {
         TestOverrides::modify_relayer_config(self, config)
+    }
+}
+
+impl<Test: TestOverrides> ConnectionDelayOverride for Test {
+    fn connection_delay(&self) -> Duration {
+        TestOverrides::connection_delay(self)
     }
 }
 

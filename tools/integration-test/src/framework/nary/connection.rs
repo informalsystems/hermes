@@ -10,7 +10,7 @@ use crate::bootstrap::nary::connection::bootstrap_connections;
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::RelayerConfigOverride;
-use crate::framework::binary::connection::BinaryConnectionTest;
+use crate::framework::binary::connection::{BinaryConnectionTest, ConnectionDelayOverride};
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
@@ -25,7 +25,8 @@ pub fn run_nary_connection_test<Test, Overrides, const SIZE: usize>(
 where
     Test: NaryConnectionTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride,
+    Overrides:
+        TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + ConnectionDelayOverride,
 {
     run_nary_chain_test(&RunNaryConnectionTest::new(test))
 }
@@ -80,9 +81,12 @@ where
     }
 }
 
-impl<'a, Test, const SIZE: usize> NaryChainTest<SIZE> for RunNaryConnectionTest<'a, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> NaryChainTest<SIZE>
+    for RunNaryConnectionTest<'a, Test, SIZE>
 where
     Test: NaryConnectionTest<SIZE>,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: ConnectionDelayOverride,
 {
     fn run<Handle: ChainHandle>(
         &self,
@@ -90,8 +94,11 @@ where
         relayer: RelayerDriver,
         chains: NaryConnectedChains<Handle, SIZE>,
     ) -> Result<(), Error> {
+        let connection_delay = self.get_overrides().connection_delay();
+
         let connections = bootstrap_connections(
             chains.foreign_clients().clone(),
+            connection_delay,
             config.bootstrap_with_random_ids,
         )?;
 

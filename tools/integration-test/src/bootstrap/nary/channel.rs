@@ -3,6 +3,7 @@
 */
 
 use core::convert::TryInto;
+use core::time::Duration;
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -101,11 +102,15 @@ pub fn bootstrap_channels_with_connections<Handle: ChainHandle, const SIZE: usiz
 pub fn bootstrap_channels_and_connections_dynamic<Handle: ChainHandle>(
     chains: &DynamicConnectedChains<Handle>,
     ports: &Vec<Vec<PortId>>,
+    connection_delay: Duration,
     order: Order,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedChannels<Handle>, Error> {
-    let connections =
-        bootstrap_connections_dynamic(chains.foreign_clients(), bootstrap_with_random_ids)?;
+    let connections = bootstrap_connections_dynamic(
+        chains.foreign_clients(),
+        connection_delay,
+        bootstrap_with_random_ids,
+    )?;
 
     bootstrap_channels_with_connections_dynamic(
         connections,
@@ -123,12 +128,14 @@ pub fn bootstrap_channels_and_connections_dynamic<Handle: ChainHandle>(
 pub fn bootstrap_channels_and_connections<Handle: ChainHandle, const SIZE: usize>(
     chains: &NaryConnectedChains<Handle, SIZE>,
     ports: [[PortId; SIZE]; SIZE],
+    connection_delay: Duration,
     order: Order,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannels<Handle, SIZE>, Error> {
     let channels = bootstrap_channels_and_connections_dynamic(
         &chains.clone().into(),
         &into_nested_vec(ports),
+        connection_delay,
         order,
         bootstrap_with_random_ids,
     )?;

@@ -2,6 +2,7 @@
     Helper functions for bootstrapping a channel between two chains.
 */
 
+use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
@@ -29,6 +30,7 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     port_a: &PortId,
     port_b: &PortId,
     order: Order,
+    connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let channel = bootstrap_channel(
@@ -36,6 +38,7 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
         &DualTagged::new(port_a),
         &DualTagged::new(port_b),
         order,
+        connection_delay,
         bootstrap_with_random_ids,
     )?;
 
@@ -51,9 +54,11 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
     order: Order,
+    connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
-    let connection = bootstrap_connection(foreign_clients, bootstrap_with_random_ids)?;
+    let connection =
+        bootstrap_connection(foreign_clients, connection_delay, bootstrap_with_random_ids)?;
 
     bootstrap_channel_with_connection(
         &foreign_clients.handle_a(),

@@ -10,7 +10,9 @@ use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
 use super::chain::RelayerConfigOverride;
-use super::connection::{run_binary_connection_test, BinaryConnectionTest};
+use super::connection::{
+    run_binary_connection_test, BinaryConnectionTest, ConnectionDelayOverride,
+};
 use super::node::NodeConfigOverride;
 use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
 use crate::error::Error;
@@ -32,11 +34,12 @@ pub fn run_two_way_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
         + RelayerConfigOverride
+        + ConnectionDelayOverride
         + PortsOverride
-        + ChannelOrderOverride
-        + TestConfigOverride,
+        + ChannelOrderOverride,
 {
     run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
@@ -48,11 +51,12 @@ pub fn run_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
         + RelayerConfigOverride
+        + ConnectionDelayOverride
         + PortsOverride
-        + ChannelOrderOverride
-        + TestConfigOverride,
+        + ChannelOrderOverride,
 {
     run_binary_connection_test(&RunBinaryChannelTest::new(test))
 }

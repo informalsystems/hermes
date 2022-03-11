@@ -1,6 +1,7 @@
 use core::time::Duration;
 use ibc::core::ics03_connection::connection::State as ConnectionState;
 use ibc::core::ics04_channel::channel::State as ChannelState;
+use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::{self, Config, ModeConfig};
 use ibc_relayer::worker::client::spawn_refresh_client;
 use std::thread::sleep;
@@ -139,7 +140,7 @@ impl BinaryChainTest for ChannelExpirationTest {
                 spawn_refresh_client(chains.foreign_clients.client_a_to_b.clone())
                     .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            bootstrap_connection(&chains.foreign_clients, false)?
+            bootstrap_connection(&chains.foreign_clients, default_connection_delay(), false)?
         };
 
         wait_for_client_expiry();
@@ -292,6 +293,7 @@ impl BinaryChainTest for PacketExpirationTest {
                 &PortId::transfer(),
                 &PortId::transfer(),
                 Order::Unordered,
+                default_connection_delay(),
                 false,
             )?
         };
@@ -380,14 +382,15 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
                 spawn_refresh_client(chains.foreign_clients.client_a_to_b.clone())
                     .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-            bootstrap_connection(&chains.foreign_clients, false)?
+            bootstrap_connection(&chains.foreign_clients, default_connection_delay(), false)?
         };
 
         wait_for_client_expiry();
 
         info!("trying to bootstrap connection after IBC client is expired");
 
-        let res = bootstrap_connection(&chains.foreign_clients, false);
+        let res = bootstrap_connection(&chains.foreign_clients, default_connection_delay(), false);
+
         match res {
             Ok(_) => {
                 return Err(Error::generic(eyre!(

@@ -3,6 +3,7 @@
 */
 
 use core::convert::TryInto;
+use core::time::Duration;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
@@ -20,6 +21,7 @@ use crate::util::array::assert_same_dimension;
 */
 pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
     foreign_clients: &Vec<Vec<ForeignClient<Handle, Handle>>>,
+    connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedConnections<Handle>, Error> {
     let size = foreign_clients.len();
@@ -37,7 +39,11 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
                 let foreign_clients =
                     ForeignClientPair::new(foreign_client.clone(), counter_foreign_client.clone());
 
-                let connection = bootstrap_connection(&foreign_clients, bootstrap_with_random_ids)?;
+                let connection = bootstrap_connection(
+                    &foreign_clients,
+                    connection_delay,
+                    bootstrap_with_random_ids,
+                )?;
 
                 connections_b.push(connection);
             } else {
@@ -56,10 +62,12 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
 
 pub fn bootstrap_connections<Handle: ChainHandle, const SIZE: usize>(
     foreign_clients: ForeignClientPairs<Handle, SIZE>,
+    connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedConnections<Handle, SIZE>, Error> {
     let connections = bootstrap_connections_dynamic(
         &foreign_clients.into_nested_vec(),
+        connection_delay,
         bootstrap_with_random_ids,
     )?;
 

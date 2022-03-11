@@ -4,6 +4,7 @@
    connected IBC connections with completed handshakes.
 */
 
+use core::time::Duration;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
@@ -28,7 +29,8 @@ pub fn run_two_way_binary_connection_test<Test, Overrides>(test: &Test) -> Resul
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + TestConfigOverride,
+    Overrides:
+        TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + ConnectionDelayOverride,
 {
     run_binary_connection_test(&RunTwoWayBinaryConnectionTest::new(test))
 }
@@ -40,7 +42,8 @@ pub fn run_binary_connection_test<Test, Overrides>(test: &Test) -> Result<(), Er
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + RelayerConfigOverride + TestConfigOverride,
+    Overrides:
+        TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + ConnectionDelayOverride,
 {
     run_binary_chain_test(&RunBinaryConnectionTest::new(test))
 }
@@ -63,6 +66,10 @@ pub trait BinaryConnectionTest {
         chains: ConnectedChains<ChainA, ChainB>,
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error>;
+}
+
+pub trait ConnectionDelayOverride {
+    fn connection_delay(&self) -> Duration;
 }
 
 /**
@@ -103,9 +110,11 @@ where
     }
 }
 
-impl<'a, Test> BinaryChainTest for RunBinaryConnectionTest<'a, Test>
+impl<'a, Test, Overrides> BinaryChainTest for RunBinaryConnectionTest<'a, Test>
 where
     Test: BinaryConnectionTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: ConnectionDelayOverride,
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -113,8 +122,13 @@ where
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let connection =
-            bootstrap_connection(&chains.foreign_clients, config.bootstrap_with_random_ids)?;
+        let connection_delay = self.get_overrides().connection_delay();
+
+        let connection = bootstrap_connection(
+            &chains.foreign_clients,
+            connection_delay,
+            config.bootstrap_with_random_ids,
+        )?;
 
         let env_path = config.chain_store_dir.join("binary-connections.env");
 

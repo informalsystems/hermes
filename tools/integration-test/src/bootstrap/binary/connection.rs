@@ -2,10 +2,10 @@
     Helper functions for bootstrapping a connection between two chains.
 */
 
+use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::config::default;
 use ibc_relayer::connection::{Connection, ConnectionSide};
 use tracing::{debug, info};
 
@@ -22,6 +22,7 @@ use crate::util::random::random_u64_range;
 */
 pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     foreign_clients: &ForeignClientPair<ChainA, ChainB>,
+    connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedConnection<ChainA, ChainB>, Error> {
     let chain_a = foreign_clients.handle_a();
@@ -38,7 +39,7 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     let connection = Connection::new(
         foreign_clients.client_b_to_a.clone(),
         foreign_clients.client_a_to_b.clone(),
-        default::connection_delay(),
+        connection_delay,
     )?;
 
     let connection_id_a = connection
