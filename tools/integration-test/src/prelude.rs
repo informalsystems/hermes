@@ -51,6 +51,7 @@ pub use crate::relayer::foreign_client::TaggedForeignClientExt;
 pub use crate::types::binary::chains::ConnectedChains;
 pub use crate::types::binary::channel::ConnectedChannel;
 pub use crate::types::binary::connection::ConnectedConnection;
+pub use crate::types::binary::foreign_client::ForeignClientPair;
 pub use crate::types::config::TestConfig;
 pub use crate::types::id::*;
 pub use crate::types::nary::chains::NaryConnectedChains;
