@@ -39,7 +39,11 @@ fn test_self_connected_nary_ibc_transfer() -> Result<(), Error> {
 
 pub struct IbcTransferTest;
 
-impl TestOverrides for IbcTransferTest {}
+impl TestOverrides for IbcTransferTest {
+    fn connection_delay(&self) -> Duration {
+        Duration::from_secs(1)
+    }
+}
 
 impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
