@@ -112,14 +112,14 @@ pub struct Packet {
 
 struct PacketData<'a>(&'a [u8]);
 
-impl<'a> ::core::fmt::Debug for PacketData<'a> {
-    fn fmt(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+impl<'a> core::fmt::Debug for PacketData<'a> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(formatter, "{:?}", self.0)
     }
 }
 
-impl ::core::fmt::Debug for Packet {
-    fn fmt(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> Result<(), ::core::fmt::Error> {
+impl core::fmt::Debug for Packet {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         // Remember: if you alter the definition of `Packet`,
         // 1. update the formatter debug struct builder calls (return object of
         //    this function)
