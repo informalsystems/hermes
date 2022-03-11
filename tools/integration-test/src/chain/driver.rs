@@ -459,7 +459,7 @@ impl ChainDriver {
                 "wallet reach {} amount {} {}",
                 user.address, target_amount, denom
             ),
-            30,
+            60,
             Duration::from_secs(1),
             || {
                 let amount = self.query_balance(&user.address, denom)?;

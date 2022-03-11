@@ -41,7 +41,7 @@ pub struct IbcTransferTest;
 
 impl TestOverrides for IbcTransferTest {
     fn connection_delay(&self) -> Duration {
-        Duration::from_secs(1)
+        Duration::from_secs(30)
     }
 }
 
