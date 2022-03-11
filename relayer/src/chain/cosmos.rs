@@ -100,6 +100,8 @@ use ibc::core::ics24_host::path::{
 use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
 
 mod compatibility;
+pub mod tx;
+pub mod types;
 pub mod version;
 
 /// Default gas limit when submitting a transaction.
