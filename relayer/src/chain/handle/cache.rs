@@ -412,4 +412,8 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
         self.inner().query_blocks(request)
     }
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
+        self.inner.query_host_consensus_state(height)
+    }
 }
