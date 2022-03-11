@@ -76,9 +76,10 @@ impl Cache {
         }
     }
 
-    /// Attempts to fetch a [`ChannelEnd`] via its [`PortChannelId`]. If a cache miss
-    /// is encountered, this method attempts to insert the channel into the cache,
-    /// assuming the returned channel state is open.
+    /// Return a cached [`ChannelEnd`] via its [`PortChannelId`] if it exists in the cache.
+    /// Otherwise, attempts to fetch it via the supplied fetcher function `F`. If `F`
+    /// returns successfully with the channel end in an open state, a copy of it is stored in
+    /// the cache before it is returned.
     pub fn get_or_try_insert_channel_with<F, E>(
         &self,
         id: &PortChannelId,
@@ -100,9 +101,10 @@ impl Cache {
         }
     }
 
-    /// Attempts to fetch a [`ConnectionEnd`] via its [`ConnectionId`]. If a cache miss
-    /// is encountered, this method attempts to insert the connection into the cache,
-    /// assuming the returned connection state is open.
+    /// Return a cached [`ConnectionEnd`] via its [`ConnectionId`] if it exists in the cache.
+    /// Otherwise, attempts to fetch it via the supplied fetcher function `F`. If `F`
+    /// returns successfully with the connection end in an open state, a copy of it is
+    /// in the cache before it is returned.
     pub fn get_or_try_insert_connection_with<F, E>(
         &self,
         id: &ConnectionId,
@@ -122,8 +124,10 @@ impl Cache {
         }
     }
 
-    /// Attempts to fetch an [`AnyClientState`] via its [`ClientId`]. If a cache miss
-    /// is encountered, this method attempts to insert the client state into the cache.
+    /// Return a cached [`AnyClientState`] via its [`ClientId`] if it exists in the cache.
+    /// Otherwise, attempts to fetch it via the supplied fetcher function `F`. If `F`
+    /// returns successfully with the client state, a copy of it is stored in the cache
+    /// before it is returned.
     pub fn get_or_try_insert_client_state_with<F, E>(
         &self,
         id: &ClientId,
@@ -141,11 +145,13 @@ impl Cache {
         }
     }
 
-    /// Attempts to fetch the latest [`Height`] value. This value is cached with a small
-    /// time-to-live so that the latest height query returns the same height if the same
-    /// query is repeated within a small time frame.
+    /// Returns the latest [`Height`] value if it exists in the cache.
+    /// Otherwise, attempts to fetch it via the supplied fetcher function `F`. If
+    /// `F` returns successfully with the latest height, a copy of it is stored in the
+    /// cache before it is returned.
     ///
-    /// If a cache miss is encountered, this method attempts to insert the height into the cache.
+    /// This value is cached with a small time-to-live so that the latest height
+    /// query returns the same height if the same query is repeated within a small time frame.
     pub fn get_or_try_update_latest_height_with<F, E>(&self, f: F) -> Result<Height, E>
     where
         F: FnOnce() -> Result<Height, E>,
