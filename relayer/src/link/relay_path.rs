@@ -732,22 +732,26 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[inline]
-    fn partition_events(
+    fn event_per_type(
         mut tx_events: Vec<IbcEvent>,
-    ) -> (Vec<IbcEvent>, Vec<UpdateClientEvent>, Vec<IbcEvent>) {
-        let mut errors = Vec::<IbcEvent>::new();
-        let mut updates = Vec::<UpdateClientEvent>::new();
-        let mut others = Vec::<IbcEvent>::new();
+    ) -> (
+        Option<IbcEvent>,
+        Option<UpdateClientEvent>,
+        Option<IbcEvent>,
+    ) {
+        let mut error = None;
+        let mut update = None;
+        let mut other = None;
 
         while let Some(event) = tx_events.pop() {
             match event {
-                IbcEvent::ChainError(_) => errors.push(event),
-                IbcEvent::UpdateClient(event) => updates.push(event),
-                _ => others.push(event),
+                IbcEvent::ChainError(_) => error = Some(event),
+                IbcEvent::UpdateClient(event) => update = Some(event),
+                _ => other = Some(event),
             }
         }
 
-        (errors, updates, others)
+        (error, update, other)
     }
 
     /// Handles updating the client on the destination chain
@@ -832,8 +836,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(LinkError::relayer)?;
         info!("result: {}", PrettyEvents(&src_tx_events));
 
-        let (mut errors, mut updates, mut others) = Self::partition_events(src_tx_events);
-        match (errors.pop(), updates.pop(), others.pop()) {
+        let (error, update, other) = Self::event_per_type(src_tx_events);
+        match (error, update, other) {
             (None, Some(update_event), None) => Ok(update_event.height()),
             (Some(chain_error), _, _) => {
                 if retries_left == 0 {
@@ -846,7 +850,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
             }
             (None, None, None) => {
-                // `tm` is empty and update wasn't required
+                // `tm` was empty and update wasn't required
                 match Self::update_height(
                     self.src_chain(),
                     self.src_client_id().clone(),
