@@ -10,9 +10,10 @@ pub struct ExecOutput {
     pub stderr: String,
 }
 
-pub fn simple_exec(command_path: &str, args: &[&str]) -> Result<ExecOutput, Error> {
+pub fn simple_exec(desc: &str, command_path: &str, args: &[&str]) -> Result<ExecOutput, Error> {
     debug!(
-        "Executing command: {} {}",
+        "Executing command for {}: {} {}",
+        desc,
         command_path,
         itertools::join(args, " ")
     );

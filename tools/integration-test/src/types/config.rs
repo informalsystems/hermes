@@ -4,9 +4,8 @@
 
 use core::fmt::{Debug, Display};
 use std::path::PathBuf;
-use tracing::error;
 
-use crate::util::suspend::suspend;
+use crate::util::suspend::hang_on_error;
 
 /**
    The test config to be passed to each test case. Currently this is loaded
@@ -67,18 +66,6 @@ impl TestConfig {
        [`TestConfig::hang_on_fail`] is set to `true`.
     */
     pub fn hang_on_error<E: Debug + Display>(&self) -> impl FnOnce(E) -> E {
-        let hang_on_fail = self.hang_on_fail;
-        move |e| {
-            if hang_on_fail {
-                error!("test failure occured with HANG_ON_FAIL=1, suspending the test to allow debugging: {:?}",
-                    e);
-
-                suspend()
-            } else {
-                error!("test failure occured. set HANG_ON_FAIL=1 to suspend the test on failure for debugging: {}",
-                    e);
-                e
-            }
-        }
+        hang_on_error(self.hang_on_fail)
     }
 }

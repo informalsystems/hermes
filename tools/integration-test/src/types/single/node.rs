@@ -170,7 +170,7 @@ impl FullNode {
 impl ExportEnv for FullNode {
     fn export_env(&self, writer: &mut impl EnvWriter) {
         self.chain_driver.export_env(writer);
-        writer.write_env("DENOM", &self.denom.0);
+        writer.write_env("DENOM", self.denom.as_str());
         self.wallets
             .export_env(&mut prefix_writer("WALLETS", writer));
     }

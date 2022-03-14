@@ -1,7 +1,10 @@
-#![deny(warnings)]
+// #![deny(warnings)]
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
+#![allow(clippy::ptr_arg)]
 #![doc = include_str!("../README.md")]
+
+extern crate alloc;
 
 pub mod bootstrap;
 pub mod chain;
@@ -16,5 +19,3 @@ pub mod util;
 #[cfg(any(test, doc))]
 #[macro_use]
 pub mod tests;
-
-pub use util::suspend::suspend;

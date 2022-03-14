@@ -1,5 +1,3 @@
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
-
 use crate::ibc::denom::derive_ibc_denom;
 use crate::prelude::*;
 use crate::util::random::random_u64_range;
@@ -18,15 +16,6 @@ impl TestOverrides for ClearPacketTest {
         config.mode.packets.clear_interval = 0;
     }
 
-    // Do not start supervisor at the beginning of test
-    fn spawn_supervisor(
-        &self,
-        _config: &SharedConfig,
-        _registry: &SharedRegistry<impl ChainHandle>,
-    ) -> Result<Option<SupervisorHandle>, Error> {
-        Ok(None)
-    }
-
     // Unordered channel: will permit gaps in the sequence of relayed packets
     fn channel_order(&self) -> Order {
         Order::Unordered
@@ -37,6 +26,7 @@ impl BinaryChannelTest for ClearPacketTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -69,15 +59,7 @@ impl BinaryChannelTest for ClearPacketTest {
         sleep(Duration::from_secs(1));
 
         // Spawn the supervisor only after the first IBC trasnfer
-        let _supervisor = spawn_supervisor(
-            chains.config.clone(),
-            chains.registry.clone(),
-            None,
-            SupervisorOptions {
-                health_check: false,
-                force_full_scan: false,
-            },
-        )?;
+        let _supervisor = relayer.spawn_supervisor()?;
 
         sleep(Duration::from_secs(1));
 

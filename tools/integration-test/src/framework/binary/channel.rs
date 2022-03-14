@@ -9,17 +9,21 @@ use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use super::chain::{
-    run_binary_chain_test, BinaryChainTest, RelayerConfigOverride, SupervisorOverride,
+use super::chain::RelayerConfigOverride;
+use super::connection::{
+    run_binary_connection_test, BinaryConnectionTest, ConnectionDelayOverride,
 };
 use super::node::NodeConfigOverride;
-use crate::bootstrap::binary::channel::bootstrap_channel_with_chains;
+use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
+use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
+use crate::types::binary::connection::ConnectedConnection;
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
+use crate::types::tagged::*;
 
 /**
    Runs a test case that implements [`BinaryChannelTest`], with
@@ -30,12 +34,12 @@ pub fn run_two_way_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
         + RelayerConfigOverride
-        + SupervisorOverride
+        + ConnectionDelayOverride
         + PortsOverride
-        + ChannelOrderOverride
-        + TestConfigOverride,
+        + ChannelOrderOverride,
 {
     run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
@@ -47,31 +51,28 @@ pub fn run_binary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
         + RelayerConfigOverride
-        + SupervisorOverride
+        + ConnectionDelayOverride
         + PortsOverride
-        + ChannelOrderOverride
-        + TestConfigOverride,
+        + ChannelOrderOverride,
 {
-    run_binary_chain_test(&RunBinaryChannelTest::new(test))
+    run_binary_connection_test(&RunBinaryChannelTest::new(test))
 }
 
 /**
-   An owned version of [`BinaryChannelTest`], which the test case is given
-   owned [`ConnectedChains`] and [`ConnectedChannel`] values instead of just references.
-
-   Since the test case is given full ownership, the running full node will
-   and relayer will be stopped at the end of the test case.
-   The test framework cannot use functions such as
-   [`hang_on_error`](TestConfig::hang_on_error) to suspend
-   the termination of the full nodes if the test case return errors.
+   This trait is implemented for test cases that need to have two
+   full nodes running together with the relayer setup with chain
+   handles and foreign clients, together with connected IBC channels
+   with completed handshakes.
 */
 pub trait BinaryChannelTest {
     /// Test runner
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error>;
@@ -100,13 +101,27 @@ pub trait PortsOverride {
     fn channel_port_b(&self) -> PortId;
 }
 
+/**
+   An internal trait for test cases to override the channel ordering
+   when creating channels.
+
+  This is called by [`RunBinaryChannelTest`] before creating
+  the IBC channels.
+
+  Test writers should implement
+  [`TestOverrides`](crate::framework::overrides::TestOverrides)
+  for their test cases instead of implementing this trait directly.
+*/
 pub trait ChannelOrderOverride {
+    /**
+       Return the channel ordering as [`Order`].
+    */
     fn channel_order(&self) -> Order;
 }
 
 /**
    A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
-   into a test case the implements [`BinaryChainTest`].
+   into a test case the implements [`BinaryConnectionTest`].
 */
 pub struct RunBinaryChannelTest<'a, Test> {
     /// Inner test
@@ -142,7 +157,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> BinaryChainTest for RunBinaryChannelTest<'a, Test>
+impl<'a, Test, Overrides> BinaryConnectionTest for RunBinaryChannelTest<'a, Test>
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -151,7 +166,9 @@ where
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
+        connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let overrides = self.test.get_overrides();
 
@@ -159,10 +176,12 @@ where
         let port_b = overrides.channel_port_b();
         let order = overrides.channel_order();
 
-        let channels = bootstrap_channel_with_chains(
-            &chains,
-            &port_a,
-            &port_b,
+        let channels = bootstrap_channel_with_connection(
+            &chains.handle_a,
+            &chains.handle_b,
+            connection,
+            &DualTagged::new(port_a).as_ref(),
+            &DualTagged::new(port_b).as_ref(),
             order,
             config.bootstrap_with_random_ids,
         )?;
@@ -174,7 +193,7 @@ where
         info!("written channel environment to {}", env_path.display());
 
         self.test
-            .run(config, chains, channels)
+            .run(config, relayer, chains, channels)
             .map_err(config.hang_on_error())?;
 
         Ok(())
@@ -185,6 +204,7 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -197,7 +217,7 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
         );
 
         self.test
-            .run(config, chains.clone(), channels.clone())
+            .run(config, relayer.clone(), chains.clone(), channels.clone())
             .map_err(config.hang_on_error())?;
 
         info!(
@@ -212,7 +232,7 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
         let channels = channels.flip();
 
         self.test
-            .run(config, chains, channels)
+            .run(config, relayer, chains, channels)
             .map_err(config.hang_on_error())?;
 
         Ok(())
