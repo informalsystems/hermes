@@ -1,5 +1,3 @@
-#![allow(unused_imports)]
-
 use core::fmt;
 use std::collections::BTreeMap;
 
@@ -26,12 +24,9 @@ use crate::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
     },
-    config::{ChainConfig, ChannelsSpec, Config, ModeConfig, PacketFilter},
-    object::{Channel, Client, Connection, Object, Packet},
-    registry::{Registry, SharedRegistry},
+    config::{ChainConfig, ChannelsSpec, Config, PacketFilter},
+    registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
-    supervisor::error::Error as SupervisorError,
-    worker::WorkerMap,
 };
 
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
