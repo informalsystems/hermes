@@ -1,8 +1,8 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
-use std::ops::Sub;
+use std::ops::{Add, Sub};
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use itertools::Itertools;
 use prost_types::Any;
@@ -58,6 +58,7 @@ use crate::util::queue::Queue;
 use ibc::timestamp::Timestamp;
 
 const MAX_RETRIES: usize = 5;
+const AVG_BLOCK_TIME_SECS: u64 = 5;
 
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
@@ -1523,7 +1524,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             (true_res, false_res)
         }
 
-        let connection_delay = self.channel.connection_delay;
+        let connection_delay = {
+            match self.channel.connection_delay {
+                Duration::ZERO => self.channel.connection_delay,
+                _ => self
+                    .channel
+                    .connection_delay
+                    .add(Duration::from_secs(AVG_BLOCK_TIME_SECS)),
+            }
+        };
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
                 op.scheduled_time.elapsed() > connection_delay
