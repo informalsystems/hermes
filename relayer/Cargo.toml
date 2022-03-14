@@ -52,7 +52,7 @@ itertools = "0.10.3"
 tonic = { version = "0.6", features = ["tls", "tls-roots"] }
 dirs-next = "2.0.0"
 retry = { version = "1.3.1", default-features = false }
-async-stream = "0.3.2"
+async-stream = "0.3.3"
 http = "0.2.6"
 flex-error = { version = "0.4.4", default-features = false }
 signature = "1.4.0"
