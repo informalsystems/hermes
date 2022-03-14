@@ -863,7 +863,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     _ => Err(LinkError::update_client_failed()),
                 }
             }
-            (None, _, _) => Err(LinkError::update_client_failed()), /* maybe misbehaviour events */
+            (_, _, event) => {
+                if !matches!(event, Some(IbcEvent::ClientMisbehaviour(_))) && retries_left > 0 {
+                    self.do_update_client_src(dst_chain_height, tracking_id, retries_left - 1)
+                } else {
+                    Err(LinkError::update_client_failed())
+                }
+            }
         }
     }
 
