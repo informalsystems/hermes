@@ -10,7 +10,9 @@ use tracing::{debug, error, info, span, trace, warn, Level};
 
 use ibc::{
     core::{
-        ics02_client::client_consensus::QueryClientEventRequest,
+        ics02_client::{
+            client_consensus::QueryClientEventRequest, events::UpdateClient as UpdateClientEvent,
+        },
         ics04_channel::{
             channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
             events::{SendPacket, WriteAcknowledgement},
@@ -712,18 +714,40 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         chain: &C,
         client_id: ClientId,
         consensus_height: Height,
-    ) -> Option<Height> {
-        if let Ok(mut events) = chain.query_txs(QueryTxRequest::Client(QueryClientEventRequest {
-            height: Height::zero(),
-            event_id: WithBlockDataType::UpdateClient,
-            client_id,
-            consensus_height,
-        })) {
-            if let Some(update_client_event) = events.pop() {
-                return Some(update_client_event.height());
+    ) -> Result<Height, LinkError> {
+        let mut events = chain
+            .query_txs(QueryTxRequest::Client(QueryClientEventRequest {
+                height: Height::zero(),
+                event_id: WithBlockDataType::UpdateClient,
+                client_id,
+                consensus_height,
+            }))
+            .map_err(|e| LinkError::query(chain.id(), e))?;
+
+        match events.pop() {
+            Some(IbcEvent::UpdateClient(event)) => Ok(event.height()),
+            Some(event) => Err(LinkError::unexpected_event(event)),
+            None => Err(LinkError::unexpected_event(IbcEvent::default())),
+        }
+    }
+
+    #[inline]
+    fn partition_events(
+        mut tx_events: Vec<IbcEvent>,
+    ) -> (Vec<IbcEvent>, Vec<UpdateClientEvent>, Vec<IbcEvent>) {
+        let mut errors = Vec::<IbcEvent>::new();
+        let mut updates = Vec::<UpdateClientEvent>::new();
+        let mut others = Vec::<IbcEvent>::new();
+
+        while let Some(event) = tx_events.pop() {
+            match event {
+                IbcEvent::ChainError(_) => errors.push(event),
+                IbcEvent::UpdateClient(event) => updates.push(event),
+                _ => others.push(event),
             }
         }
-        None
+
+        (errors, updates, others)
     }
 
     /// Handles updating the client on the destination chain
@@ -733,19 +757,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         src_chain_height: Height,
         tracking_id: &str,
     ) -> Result<Height, LinkError> {
-        // Handle the update on the destination chain
-        // Check if a consensus state at update_height exists on destination chain already
-        if let Some(update_height) = Self::update_height(
-            self.dst_chain(),
-            self.dst_client_id().clone(),
-            src_chain_height,
-        ) {
-            return Ok(update_height);
-        }
-
-        let mut dst_err_ev = None;
-        'retry: for i in 0..MAX_RETRIES {
+        for i in 0..MAX_RETRIES {
             let dst_update = self.build_update_client_on_dst(src_chain_height)?;
+            if dst_update.is_empty() {
+                match Self::update_height(
+                    self.dst_chain(),
+                    self.dst_client_id().clone(),
+                    src_chain_height,
+                ) {
+                    Ok(height) => return Ok(height),
+                    Err(_) => continue,
+                }
+            }
+
             info!(
                 "sending updateClient to client hosted on destination chain for height {} [try {}/{}]",
                 src_chain_height,
@@ -754,29 +778,26 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             );
 
             let tm = TrackedMsgs::new(dst_update, tracking_id);
-
             let dst_tx_events = self
                 .dst_chain()
                 .send_messages_and_wait_commit(tm)
                 .map_err(LinkError::relayer)?;
             info!("result: {}", PrettyEvents(&dst_tx_events));
 
-            for event in dst_tx_events {
-                match event {
-                    IbcEvent::ChainError(_) => {
-                        dst_err_ev = Some(event);
-                        continue 'retry;
-                    }
-                    IbcEvent::UpdateClient(ev) => return Ok(ev.height()),
-                    _ => {}
-                }
+            if dst_tx_events
+                .iter()
+                .any(|e| matches!(e, IbcEvent::ChainError(_)))
+            {
+                continue;
+            } else if let Some(IbcEvent::UpdateClient(event)) = dst_tx_events
+                .iter()
+                .find(|e| matches!(e, IbcEvent::UpdateClient(_)))
+            {
+                return Ok(event.height());
             }
         }
 
-        Err(LinkError::client(ForeignClientError::chain_error_event(
-            self.dst_chain().id(),
-            dst_err_ev.unwrap(),
-        )))
+        Err(LinkError::update_client_failed())
     }
 
     /// Handles updating the client on the source chain
@@ -786,15 +807,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         dst_chain_height: Height,
         tracking_id: &str,
     ) -> Result<Height, LinkError> {
-        if let Some(update_height) = Self::update_height(
-            self.src_chain(),
-            self.src_client_id().clone(),
-            dst_chain_height,
-        ) {
-            Ok(update_height)
-        } else {
-            self.do_update_client_src(dst_chain_height, tracking_id, MAX_RETRIES)
-        }
+        self.do_update_client_src(dst_chain_height, tracking_id, MAX_RETRIES)
     }
 
     /// Perform actual update_client_src with retries.
@@ -819,30 +832,34 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(LinkError::relayer)?;
         info!("result: {}", PrettyEvents(&src_tx_events));
 
-        for event in src_tx_events {
-            match event {
-                err_event @ IbcEvent::ChainError(_) => {
-                    if retries_left == 0 {
-                        return Err(LinkError::client(ForeignClientError::chain_error_event(
-                            self.src_chain().id(),
-                            err_event,
-                        )));
-                    } else {
-                        return self.do_update_client_src(
-                            dst_chain_height,
-                            tracking_id,
-                            retries_left - 1,
-                        );
-                    }
+        let (mut errors, mut updates, mut others) = Self::partition_events(src_tx_events);
+        match (errors.pop(), updates.pop(), others.pop()) {
+            (None, Some(update_event), None) => Ok(update_event.height()),
+            (Some(chain_error), _, _) => {
+                if retries_left == 0 {
+                    Err(LinkError::client(ForeignClientError::chain_error_event(
+                        self.src_chain().id(),
+                        chain_error,
+                    )))
+                } else {
+                    self.do_update_client_src(dst_chain_height, tracking_id, retries_left - 1)
                 }
-                IbcEvent::UpdateClient(ev) => return Ok(ev.height()),
-                _ => {}
             }
-        }
-        if retries_left == 0 {
-            Err(LinkError::update_client_failed())
-        } else {
-            self.do_update_client_src(dst_chain_height, tracking_id, retries_left - 1)
+            (None, None, None) => {
+                // `tm` is empty and update wasn't required
+                match Self::update_height(
+                    self.src_chain(),
+                    self.src_client_id().clone(),
+                    dst_chain_height,
+                ) {
+                    Ok(update_height) => Ok(update_height),
+                    Err(_) if retries_left > 0 => {
+                        self.do_update_client_src(dst_chain_height, tracking_id, retries_left - 1)
+                    }
+                    _ => Err(LinkError::update_client_failed()),
+                }
+            }
+            (None, _, _) => Err(LinkError::update_client_failed()), /* maybe misbehaviour events */
         }
     }
 
