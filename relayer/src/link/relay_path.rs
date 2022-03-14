@@ -2,7 +2,7 @@ use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
 use std::ops::Sub;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use itertools::Itertools;
 use prost_types::Any;
@@ -1479,7 +1479,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             };
             let duration = Timestamp::now()
                 .duration_since(&update_time)
-                .unwrap_or(Duration::ZERO);
+                .unwrap_or_default();
             Instant::now().sub(duration)
         } else {
             debug!(
