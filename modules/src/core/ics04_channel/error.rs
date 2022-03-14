@@ -92,6 +92,9 @@ define_error! {
         MissingPacket
             | _ | { "there is no packet in this message" },
 
+        MissingChannelId
+            | _ | { "missing channel id" },
+
         MissingCounterparty
             | _ | { "missing counterparty" },
 

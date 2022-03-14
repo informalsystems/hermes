@@ -212,10 +212,11 @@ define_error! {
             {
                 client_id: ClientId,
                 chain_id: ChainId,
+                description: String,
             }
             |e| {
-                format_args!("client {0} on chain id {1} is expired or frozen",
-                    e.client_id, e.chain_id)
+                format_args!("client {0} on chain id {1} is expired or frozen: {2}",
+                    e.client_id, e.chain_id, e.description)
             },
 
         Misbehaviour
@@ -254,7 +255,7 @@ define_error! {
                 event: IbcEvent
             }
             |e| {
-                format_args!("Failed to update client on destination {} because of error event: {}",
+                format_args!("failed to update client on destination {} because of error event: {}",
                     e.chain_id, e.event)
             },
     }
@@ -629,6 +630,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
+        if client_state.is_frozen() {
+            return Err(ForeignClientError::expired_or_frozen(
+                self.id().clone(),
+                self.dst_chain.id(),
+                "client state reports that client is frozen".into(),
+            ));
+        }
+
         let last_update_time = self
             .consensus_state(client_state.latest_height())?
             .timestamp();
@@ -636,10 +645,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Compute the duration since the last update of this client
         let elapsed = Timestamp::now().duration_since(&last_update_time);
 
-        if client_state.is_frozen() || client_state.expired(elapsed.unwrap_or_default()) {
+        if client_state.expired(elapsed.unwrap_or_default()) {
             return Err(ForeignClientError::expired_or_frozen(
                 self.id().clone(),
                 self.dst_chain.id(),
+                format!(
+                    "expired: time elapsed since last client update: {:?}",
+                    elapsed
+                ),
             ));
         }
 
@@ -1417,7 +1430,7 @@ mod test {
     use ibc::events::IbcEvent;
     use ibc::Height;
 
-    use crate::chain::handle::{ChainHandle, ProdChainHandle};
+    use crate::chain::handle::{BaseChainHandle, ChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;
@@ -1431,8 +1444,8 @@ mod test {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt).unwrap();
         let a_client =
             ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
 
@@ -1469,8 +1482,8 @@ mod test {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt).unwrap();
         let mut a_client = ForeignClient::restore(a_client_id, a_chain.clone(), b_chain.clone());
 
         let mut b_client =
@@ -1576,8 +1589,8 @@ mod test {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
@@ -1625,8 +1638,8 @@ mod test {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());

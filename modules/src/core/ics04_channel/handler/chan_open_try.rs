@@ -77,7 +77,7 @@ pub(crate) fn process(
     }
 
     let get_versions = conn.versions();
-    let version = match get_versions.as_slice() {
+    let version = match get_versions {
         [version] => version,
         _ => return Err(Error::invalid_version_length_connection()),
     };
@@ -141,7 +141,11 @@ pub(crate) fn process(
         channel_id: Some(channel_id),
         ..Default::default()
     };
-    output.emit(IbcEvent::OpenTryChannel(event_attributes.into()));
+    output.emit(IbcEvent::OpenTryChannel(
+        event_attributes
+            .try_into()
+            .map_err(|_| Error::missing_channel_id())?,
+    ));
 
     Ok(output.with_result(result))
 }

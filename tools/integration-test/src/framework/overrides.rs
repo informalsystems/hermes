@@ -2,6 +2,7 @@
    Constructs for implementing overrides for test cases.
 */
 
+use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
@@ -14,7 +15,7 @@ use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
 use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
-use crate::framework::binary::channel::PortsOverride;
+use crate::framework::binary::channel::{ChannelOrderOverride, PortsOverride};
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::types::config::TestConfig;
 
@@ -108,6 +109,10 @@ pub trait TestOverrides {
     fn channel_port_b(&self) -> PortId {
         PortId::transfer()
     }
+
+    fn channel_order(&self) -> Order {
+        Order::Unordered
+    }
 }
 
 impl<Test: TestOverrides> HasOverrides for Test {
@@ -153,5 +158,11 @@ impl<Test: TestOverrides> PortsOverride for Test {
 
     fn channel_port_b(&self) -> PortId {
         TestOverrides::channel_port_b(self)
+    }
+}
+
+impl<Test: TestOverrides> ChannelOrderOverride for Test {
+    fn channel_order(&self) -> Order {
+        TestOverrides::channel_order(self)
     }
 }

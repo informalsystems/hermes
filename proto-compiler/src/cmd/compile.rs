@@ -3,7 +3,6 @@ use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 use std::process;
 
-use git2::Repository;
 use tempdir::TempDir;
 use walkdir::WalkDir;
 
@@ -23,18 +22,12 @@ pub struct CompileCmd {
     #[argh(option, short = 'o')]
     /// path to output the generated Rust sources into
     out: PathBuf,
-
-    #[argh(option)]
-    /// generate tonic client code
-    build_tonic: bool,
-
 }
 
 impl CompileCmd {
     pub fn run(&self) {
         let tmp_sdk = TempDir::new("ibc-proto-sdk").unwrap();
-        Self::output_version(&self.sdk, tmp_sdk.as_ref(), "COSMOS_SDK_COMMIT");
-        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref(), self.ibc.clone(), self.build_tonic);
+        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref(), self.ibc.clone());
 
         match &self.ibc {
             None => {
@@ -43,8 +36,7 @@ impl CompileCmd {
             }
             Some(ibc_path) => {
                 let tmp_ibc = TempDir::new("ibc-proto-ibc-go").unwrap();
-                Self::output_version(ibc_path, tmp_ibc.as_ref(), "COSMOS_IBC_COMMIT");
-                Self::compile_ibc_protos(ibc_path, tmp_ibc.as_ref(), self.build_tonic);
+                Self::compile_ibc_protos(ibc_path, tmp_ibc.as_ref());
 
                 // Merge the generated files into a single directory, taking care not to overwrite anything
                 Self::copy_generated_files(tmp_sdk.as_ref(), Some(tmp_ibc.as_ref()), &self.out);
@@ -52,16 +44,7 @@ impl CompileCmd {
         }
     }
 
-    fn output_version(dir: &Path, out_dir: &Path, commit_file: &str) {
-        let repo = Repository::open(dir).unwrap();
-        let commit = repo.head().unwrap();
-        let rev = commit.shorthand().unwrap();
-        let path = out_dir.join(commit_file);
-
-        std::fs::write(path, rev).unwrap();
-    }
-
-    fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path, build_tonic: bool) {
+    fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path) {
         println!(
             "[info ] Compiling IBC .proto files to Rust into '{}'...",
             out_dir.display()
@@ -105,18 +88,78 @@ impl CompileCmd {
 
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
+
+        let attrs_serde = "#[derive(::serde::Serialize, ::serde::Deserialize)]";
+        let attrs_jsonschema =
+            r#"#[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]"#;
+        let attrs_serde_ord =
+            "#[derive(::serde::Serialize, ::serde::Deserialize, Eq, PartialOrd, Ord)]";
         let attrs_serde_eq = "#[derive(::serde::Serialize, ::serde::Deserialize, Eq)]";
+        let attrs_serde_default = "#[serde(default)]";
+        let attrs_serde_base64 = r#"#[serde(with = "crate::base64")]"#;
+        let attrs_jsonschema_str =
+            r#"#[cfg_attr(feature = "json-schema", schemars(with = "String"))]"#;
 
         let compilation = tonic_build::configure()
-            .build_client(build_tonic)
+            .build_client(true)
+            .client_mod_attribute(".", r#"#[cfg(feature = "client")]"#)
             .build_server(false)
             .format(true)
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
+            .type_attribute(".ibc.core.client.v1.Height", attrs_serde_ord)
+            .type_attribute(".ibc.core.client.v1.Height", attrs_jsonschema)
+            .field_attribute(".ibc.core.client.v1.Height", attrs_serde_default)
+            .type_attribute(".ibc.core.commitment.v1.MerkleRoot", attrs_serde)
+            .type_attribute(".ibc.core.commitment.v1.MerkleRoot", attrs_jsonschema)
+            .field_attribute(
+                ".ibc.core.commitment.v1.MerkleRoot.hash",
+                attrs_serde_base64,
+            )
+            .field_attribute(
+                ".ibc.core.commitment.v1.MerkleRoot.hash",
+                attrs_jsonschema_str,
+            )
+            .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_serde)
+            .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_jsonschema)
+            .field_attribute(
+                ".ibc.core.commitment.v1.MerklePrefix.key_prefix",
+                attrs_serde_base64,
+            )
+            .field_attribute(
+                ".ibc.core.commitment.v1.MerklePrefix.key_prefix",
+                attrs_jsonschema_str,
+            )
+            .type_attribute(".ibc.core.channel.v1.Channel", attrs_serde)
+            .type_attribute(".ibc.core.channel.v1.Channel", attrs_jsonschema)
+            .type_attribute(".ibc.core.channel.v1.Counterparty", attrs_serde)
+            .type_attribute(".ibc.core.channel.v1.Counterparty", attrs_jsonschema)
+            .type_attribute(".ibc.core.connection.v1.ConnectionEnd", attrs_serde)
+            .type_attribute(".ibc.core.connection.v1.ConnectionEnd", attrs_jsonschema)
+            .type_attribute(".ibc.core.connection.v1.Counterparty", attrs_serde)
+            .type_attribute(".ibc.core.connection.v1.Counterparty", attrs_jsonschema)
+            .type_attribute(".ibc.core.connection.v1.Version", attrs_serde)
+            .type_attribute(".ibc.core.connection.v1.Version", attrs_jsonschema)
             .type_attribute(".ics23.LeafOp", attrs_serde_eq)
+            .type_attribute(".ics23.LeafOp", attrs_jsonschema)
+            .field_attribute(".ics23.LeafOp.prehash_key", attrs_serde_default)
+            .field_attribute(".ics23.LeafOp.prefix", attrs_serde_base64)
+            .field_attribute(".ics23.LeafOp.prefix", attrs_jsonschema_str)
+            .type_attribute(".ics23.InnerOp", attrs_jsonschema)
+            .field_attribute(".ics23.InnerOp.prefix", attrs_serde_base64)
+            .field_attribute(".ics23.InnerOp.prefix", attrs_jsonschema_str)
+            .field_attribute(".ics23.InnerOp.suffix", attrs_serde_base64)
+            .field_attribute(".ics23.InnerOp.suffix", attrs_jsonschema_str)
             .type_attribute(".ics23.InnerOp", attrs_serde_eq)
             .type_attribute(".ics23.ProofSpec", attrs_serde_eq)
+            .type_attribute(".ics23.ProofSpec", attrs_jsonschema)
+            .field_attribute(".ics23.ProofSpec.max_depth", attrs_serde_default)
+            .field_attribute(".ics23.ProofSpec.min_depth", attrs_serde_default)
             .type_attribute(".ics23.InnerSpec", attrs_serde_eq)
+            .type_attribute(".ics23.InnerSpec", attrs_jsonschema)
+            .field_attribute(".ics23.InnerSpec.empty_child", attrs_serde_default)
+            .field_attribute(".ics23.InnerSpec.empty_child", attrs_serde_base64)
+            .field_attribute(".ics23.InnerSpec.empty_child", attrs_jsonschema_str)
             .compile(&protos, &includes);
 
         match compilation {
@@ -130,7 +173,7 @@ impl CompileCmd {
         }
     }
 
-    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>, build_tonic: bool) {
+    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>) {
         println!(
             "[info ] Compiling Cosmos-SDK .proto files to Rust into '{}'...",
             out_dir.display()
@@ -189,7 +232,8 @@ impl CompileCmd {
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
         let compilation = tonic_build::configure()
-            .build_client(build_tonic)
+            .build_client(true)
+            .client_mod_attribute(".", r#"#[cfg(feature = "client")]"#)
             .build_server(false)
             .format(true)
             .out_dir(out_dir)

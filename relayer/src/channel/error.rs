@@ -60,34 +60,29 @@ define_error! {
             }
             [ ForeignClientError ]
             | e | {
-                format_args!("failed during an operation on client ({0}) hosted by chain ({1})",
+                format_args!("failed during an operation on client '{0}' hosted by chain '{1}'",
                     e.client_id, e.chain_id)
             },
 
         FetchSigner
             { chain_id: ChainId }
             [ Error ]
-            |e| { format_args!("failed while fetching the signer for destination chain {}", e.chain_id) },
+            |e| { format_args!("failed while fetching the signer for destination chain '{}'", e.chain_id) },
 
         Query
             { chain_id: ChainId }
             [ Error ]
-            |e| { format_args!("failed during a query to chain id {0}", e.chain_id) },
-
-        QueryAppVersion
-            { chain_id: ChainId }
-            [ Error ]
-            |e| { format_args!("failed during a query for the app version to chain id {0}", e.chain_id) },
+            |e| { format_args!("failed during a query to chain '{0}'", e.chain_id) },
 
         QueryChannel
             { channel_id: ChannelId }
             [ SupervisorError ]
-            |e| { format_args!("failed during a query to channel id {0}", e.channel_id) },
+            |e| { format_args!("failed during a query to channel '{0}'", e.channel_id) },
 
         Submit
             { chain_id: ChainId }
             [ Error ]
-            |_| { "failed during a transaction submission step to chain id {0}" },
+            |_| { "failed during a transaction submission step to chain '{0}'" },
 
         HandshakeFinalize
             {
@@ -97,7 +92,7 @@ define_error! {
             }
             [ Error ]
             |e| {
-                format_args!("failed to finalize a channel open handshake while querying for channel end {0}/{1} on chain chain {2}",
+                format_args!("failed to finalize a channel open handshake while querying for channel end '{0}/{1}' on chain '{2}'",
                     e.port_id, e.channel_id, e.chain_id)
             },
 
@@ -117,13 +112,13 @@ define_error! {
                 port_channel_id: PortChannelId,
             }
             | e | {
-                format_args!("channel {0} on chain {1} has no counterparty channel id",
+                format_args!("channel '{0}' on chain '{1}' has no counterparty channel id",
                     e.port_channel_id, e.chain_id)
             },
 
         ChannelAlreadyExist
             { channel_id: ChannelId }
-            |e| { format_args!("channel {} already exist in an incompatible state", e.channel_id) },
+            |e| { format_args!("channel '{}' already exist in an incompatible state", e.channel_id) },
 
         MismatchChannelEnds
             {
@@ -133,7 +128,7 @@ define_error! {
                 actual_counterrparty_port_channel_id: PortChannelId,
             }
             | e | {
-                format_args!("channel {0} on chain {1} expected to have counterparty {2} (but instead has {3})",
+                format_args!("channel '{0}' on chain '{1}' expected to have counterparty '{2}' but instead has '{3}'",
                     e.port_channel_id, e.chain_id,
                     e.expected_counterrparty_port_channel_id,
                     e.actual_counterrparty_port_channel_id)
@@ -148,8 +143,9 @@ define_error! {
                 counterparty_channel_id: ChannelId,
             }
             | e | {
-                format_args!("channel open try to chain `{}` and destination port `{}` does not match \
-                the source chain `{}` counterparty port `{}` for channel_id {}",
+                format_args!(
+                    "channel open try to chain '{}' and destination port '{}' does not match \
+                    the source chain '{}' counterparty port '{}' for channel '{}'",
                     e.destination_chain_id, e.destination_port_id,
                     e.source_chain_id,
                     e.counterparty_port_id,
@@ -157,9 +153,7 @@ define_error! {
             },
 
         MissingEvent
-            {
-                description: String
-            }
+            { description: String }
             | e | {
                 format_args!("missing event: {}", e.description)
             },
@@ -196,14 +190,6 @@ define_error! {
                 format_args!("channel object cannot be built from event: {}",
                     e.event)
             },
-
-        InvalidPortId
-            { port_id: PortId }
-            | e | {
-                format_args!("could not resolve channel version because the port is invalid: {0}",
-                    e.port_id)
-            },
-
     }
 }
 

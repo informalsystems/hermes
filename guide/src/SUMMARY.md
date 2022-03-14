@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v0.11.1)
+# Hermes (v0.13.0-rc.0)
 
 ---
 - [Introduction](./index.md)
@@ -37,6 +37,7 @@
    - [Relaying](commands/relaying/index.md)
      - [Packet Messages](./commands/relaying/packets.md)
      - [Handshake Messages](commands/relaying/handshakes.md)
+     - [Clearing Packets](commands/relaying/clear.md)
    - [Listen mode](./commands/listen/index.md)
    - [Client upgrade](./commands/upgrade/index.md)
      - [Testing client upgrade](./commands/upgrade/test.md)

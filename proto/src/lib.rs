@@ -1,42 +1,32 @@
 //! ibc-proto library gives the developer access to the Cosmos SDK IBC proto-defined structs.
 
 // Todo: automate the creation of this module setup based on the dots in the filenames.
-//  This module setup is necessary because the generated code contains "super::" calls for dependencies.
+// This module setup is necessary because the generated code contains "super::" calls for dependencies.
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![allow(rustdoc::bare_urls)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.15.0")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.16.0")]
 
 extern crate alloc;
-extern crate core as std;
-
-// re-export format! macro from alloc::format to allow its use
-// in generated code
-#[macro_export]
-macro_rules! format {
-    ($($args:tt)*) => {
-        ::alloc::format!($( $args )*)
-    }
-}
-#[cfg(feature = "std")]
-macro_rules! include_proto {
-    ($path:literal) => {
-        include!(concat!("prost/std/", $path));
-    };
-}
 
 #[cfg(not(feature = "std"))]
+#[macro_use]
+extern crate core as std;
+
 macro_rules! include_proto {
     ($path:literal) => {
-        include!(concat!("prost/no_std/", $path));
+        include!(concat!("prost/", $path));
     };
 }
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
-pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
+pub const COSMOS_SDK_COMMIT: &str = include_str!("COSMOS_SDK_COMMIT");
+
+/// The version (commit hash) of IBC Go used when generating this library.
+pub const IBC_GO_COMMIT: &str = include_str!("IBC_GO_COMMIT");
 
 pub mod cosmos {
     pub mod auth {
@@ -137,10 +127,29 @@ pub mod cosmos {
 }
 
 pub mod ibc {
+    #[deprecated(since = "0.15.0", note = "Use `ibc_proto::ibc::applications` instead")]
     pub mod apps {
+        pub use super::applications::*;
+    }
+    pub mod applications {
         pub mod transfer {
             pub mod v1 {
                 include_proto!("ibc.applications.transfer.v1.rs");
+            }
+        }
+        pub mod interchain_accounts {
+            pub mod v1 {
+                include_proto!("ibc.applications.interchain_accounts.v1.rs");
+            }
+            pub mod controller {
+                pub mod v1 {
+                    include_proto!("ibc.applications.interchain_accounts.controller.v1.rs");
+                }
+            }
+            pub mod host {
+                pub mod v1 {
+                    include_proto!("ibc.applications.interchain_accounts.host.v1.rs");
+                }
             }
         }
     }
@@ -170,11 +179,6 @@ pub mod ibc {
                 include_proto!("ibc.core.types.v1.rs");
             }
         }
-        pub mod port {
-            pub mod v1 {
-                include_proto!("ibc.core.port.v1.rs");
-            }
-        }
     }
     pub mod lightclients {
         pub mod localhost {
@@ -200,4 +204,28 @@ pub mod ibc {
 
 pub mod ics23 {
     include_proto!("ics23.rs");
+}
+
+pub(crate) mod base64 {
+    use alloc::string::String;
+    use alloc::vec::Vec;
+
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(v: &[u8], serializer: S) -> Result<S::Ok, S::Error> {
+        let mut buf = String::new();
+        base64::encode_config_buf(v, base64::STANDARD, &mut buf);
+
+        String::serialize(&buf, serializer)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Error> {
+        let base64 = String::deserialize(deserializer)?;
+
+        let mut buf = Vec::new();
+        base64::decode_config_buf(base64.as_bytes(), base64::STANDARD, &mut buf)
+            .map_err(serde::de::Error::custom)?;
+
+        Ok(buf)
+    }
 }

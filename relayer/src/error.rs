@@ -50,14 +50,14 @@ define_error! {
 
         AbciQuery
             { query: AbciQuery }
-            |e| { format!("ABCI query returns error: {:?}", e.query) },
+            |e| { format!("ABCI query returned an error: {:?}", e.query) },
 
         CheckTx
             {
                 detail: SdkError,
                 tx: TxResult
             }
-            |e| { format!("CheckTX Commit returns error: {0}. RawResult: {1:?}", e.detail, e.tx) },
+            |e| { format!("CheckTx commit returned an error: {0}, raw result: {1:?}", e.detail, e.tx) },
 
         DeliverTx
             {
@@ -96,16 +96,16 @@ define_error! {
         LightClient
             { address: String }
             [ TraceError<LightClientError> ]
-            |e| { format!("Light client error for RPC address {0}", e.address) },
+            |e| { format!("light client error for RPC address {0}", e.address) },
 
         LightClientState
             [ client_error::Error ]
-            |_| { "Light client encountered error due to client state".to_string() },
+            |_| { "light client encountered error due to client state".to_string() },
 
         LightClientIo
             { address: String }
             [ TraceError<LightClientIoError> ]
-            |e| { format!("Light client error for RPC address {0}", e.address) },
+            |e| { format!("light client error for RPC address {0}", e.address) },
 
         ChainNotCaughtUp
             {
@@ -115,17 +115,17 @@ define_error! {
             |e| { format!("node at {} running chain {} not caught up", e.address, e.chain_id) },
 
         PrivateStore
-            |_| { "Requested proof for a path in the private store" },
+            |_| { "requested proof for a path in the private store" },
 
         Event
-            |_| { "Bad notification" },
+            |_| { "bad notification" },
 
         ConversionFromAny
             [ TraceError<TendermintProtoError> ]
-            |_| { "Conversion from a protobuf `Any` into a domain type failed" },
+            |_| { "conversion from a protobuf `Any` into a domain type failed" },
 
         EmptyUpgradedClientState
-            |_| { "Found no upgraded client state" },
+            |_| { "found no upgraded client state" },
 
         ConsensusStateTypeMismatch
             {
@@ -135,29 +135,29 @@ define_error! {
             |e| { format!("consensus state type mismatch; hint: expected client type '{0}', got '{1}'", e.expected, e.got) },
 
         EmptyResponseValue
-            |_| { "Empty response value" },
+            |_| { "empty response value" },
 
         EmptyResponseProof
-            |_| { "Empty response proof" },
+            |_| { "empty response proof" },
 
         MalformedProof
             [ ProofError ]
-            |_| { "Malformed proof" },
+            |_| { "malformed proof" },
 
         InvalidHeight
             [ TendermintError ]
-            |_| { "Invalid height" },
+            |_| { "invalid height" },
 
         InvalidMetadata
             [ TraceError<InvalidMetadataValue> ]
             |_| { "invalid metadata" },
 
         BuildClientStateFailure
-            |_| { "Failed to create client state" },
+            |_| { "failed to create client state" },
 
         CreateClient
             { client_id: String }
-            |e| { format!("Failed to create client {0}", e.client_id) },
+            |e| { format!("failed to create client {0}", e.client_id) },
 
         ClientStateType
             { client_state_type: String }
@@ -165,7 +165,7 @@ define_error! {
 
         ConnectionNotFound
             { connection_id: ConnectionId }
-            |e| { format!("Connection not found: {0}", e.connection_id) },
+            |e| { format!("connection not found: {0}", e.connection_id) },
 
         BadConnectionState
             |_| { "bad connection state" },
@@ -173,34 +173,27 @@ define_error! {
         ConnOpen
             { connection_id: ConnectionId, reason: String }
             |e| {
-                format!("Failed to build conn open message {0}: {1}",
-                e.connection_id, e.reason)
+                format!("failed to build conn open message {0}: {1}", e.connection_id, e.reason)
             },
 
         ConnOpenInit
             { reason: String }
-            |e| { format!("Failed to build conn open init: {0}", e.reason) },
+            |e| { format!("failed to build conn open init: {0}", e.reason) },
 
         ConnOpenTry
             { reason: String }
-            |e| { format!("Failed to build conn open try: {0}", e.reason) },
-
-        AppVersion
-            { reason: String }
-            |e| { format!("failed to fetch application version: {0}", e.reason) },
+            |e| { format!("failed to build conn open try: {0}", e.reason) },
 
         ChanOpenAck
             { channel_id: ChannelId, reason: String }
             |e| {
-                format!("Failed to build channel open ack {0}: {1}",
-                e.channel_id, e.reason)
+                format!("failed to build channel open ack {0}: {1}", e.channel_id, e.reason)
             },
 
         ChanOpenConfirm
             { channel_id: ChannelId, reason: String }
             |e| {
-                format!("Failed to build channel open confirm {0}: {1}",
-                e.channel_id, e.reason)
+                format!("failed to build channel open confirm {0}: {1}", e.channel_id, e.reason)
             },
 
         ConsensusProof
@@ -210,42 +203,38 @@ define_error! {
         Packet
             { channel_id: ChannelId, reason: String }
             |e| {
-                format!("Failed to build packet {0}: {1}",
-                e.channel_id, e.reason)
+                format!("failed to build packet {0}: {1}", e.channel_id, e.reason)
             },
 
         RecvPacket
             { channel_id: ChannelId, reason: String }
             |e| {
-                format!("Failed to build recv packet {0}: {1}",
-                e.channel_id, e.reason)
+                format!("failed to build recv packet {0}: {1}", e.channel_id, e.reason)
             },
 
         AckPacket
             { channel_id: ChannelId, reason: String }
             |e| {
-                format!("Failed to build acknowledge packet {0}: {1}",
-                e.channel_id, e.reason)
+                format!("failed to build acknowledge packet {0}: {1}", e.channel_id, e.reason)
             },
 
         TimeoutPacket
             { channel_id: ChannelId, reason: String }
             |e| {
-                format!("Failed to build timeout packet {0}: {1}",
-                e.channel_id, e.reason)
+                format!("failed to build timeout packet {0}: {1}", e.channel_id, e.reason)
             },
 
         MessageTransaction
             { reason: String }
-            |e| { format!("Message transaction failure: {0}", e.reason) },
+            |e| { format!("message transaction failure: {0}", e.reason) },
 
         Query
             { query: String }
-            |e| { format!("Query error occurred (failed to query for {0})", e.query) },
+            |e| { format!("query error occurred (failed to query for {0})", e.query) },
 
         KeyBase
             [ KeyringError ]
-            |_| { "Keybase error" },
+            |_| { "keyring error" },
 
         KeyNotFound
             { key_name: String }
@@ -275,9 +264,7 @@ define_error! {
         InvalidUri
             { uri: String }
             [ TraceError<InvalidUri> ]
-            |e| {
-                format!("error parsing URI {}", e.uri)
-            },
+            |e| { format!("error parsing URI {}", e.uri) },
 
         ChainIdentifier
             { chain_id: String }
@@ -297,7 +284,7 @@ define_error! {
             |_| { "the input header is not recognized as a header for this chain" },
 
         TxNoConfirmation
-            |_| { "Failed Tx: no confirmation" },
+            |_| { "failed tx: no confirmation" },
 
         Misbehaviour
             { reason: String }
@@ -325,12 +312,12 @@ define_error! {
         ProtobufDecode
             { payload_type: String }
             [ TraceError<DecodeError> ]
-            |e| { format!("Error decoding protocol buffer for {}", e.payload_type) },
+            |e| { format!("error decoding protocol buffer for {}", e.payload_type) },
 
         ProtobufEncode
             { payload_type: String }
             [ TraceError<EncodeError> ]
-            |e| { format!("Error encoding protocol buffer for {}", e.payload_type) },
+            |e| { format!("error encoding protocol buffer for {}", e.payload_type) },
 
         TxSimulateGasEstimateExceeded
             {
@@ -483,16 +470,35 @@ define_error! {
                 type_url: String
             }
             |e| {
-                format!("Failed to deserialize account of an unknown protobuf type: {0}",
-                    e.type_url)
+                format!("Failed to deserialize account of an unknown protobuf type: {0}", e.type_url)
             },
 
         EmptyBaseAccount
-            |_| { "Empty BaseAccount within EthAccount" },
+            |_| { "empty BaseAccount within EthAccount" },
 
         EmptyQueryAccount
             { address: String }
-            |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) }
+            |e| { format!("Query/Account RPC returned an empty account for address: {}", e.address) },
+
+        NoHistoricalEntries
+            { chain_id: ChainId }
+            |e| {
+                format_args!(
+                    "staking module for chain '{}' does not maintain any historical entries \
+                    (`historical_entries` staking params is set to 0)",
+                    e.chain_id
+                )
+            },
+
+
+        TxIndexingDisabled
+            { chain_id: ChainId }
+            |e| {
+                format_args!(
+                    "transaction indexing for chain '{}' is disabled (`node_info.other.tx_index` is off)",
+                    e.chain_id
+                )
+            },
     }
 }
 
@@ -513,23 +519,6 @@ impl GrpcStatusSubdetail {
 
         let msg = self.status.message();
         msg.contains("verification failed") && msg.contains("client state height < proof height")
-    }
-
-    /// Check whether this gRPC error matches
-    /// - status: Unimplemented
-    /// - message: 'unknown service ibc.core.port.v1.Query'
-    ///
-    /// # Note:
-    /// Used for detecting if the ibc module is able to
-    /// resolve queries for the application version.
-    pub fn is_unimplemented_port_query(&self) -> bool {
-        if self.status.code() != tonic::Code::Unimplemented {
-            return false;
-        }
-
-        self.status
-            .message()
-            .contains("unknown service ibc.core.port.v1.Query")
     }
 
     /// Check whether this gRPC error matches

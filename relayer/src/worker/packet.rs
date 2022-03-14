@@ -1,8 +1,11 @@
 use core::time::Duration;
-use crossbeam_channel::Receiver;
-use ibc::Height;
 use std::sync::{Arc, Mutex};
-use tracing::{error, error_span, trace};
+
+use crossbeam_channel::Receiver;
+use tracing::{error, error_span, trace, warn};
+
+use ibc::core::ics04_channel::channel::Order;
+use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::foreign_client::HasExpiredOrFrozenError;
@@ -17,18 +20,25 @@ use super::error::RunError;
 use super::WorkerCmd;
 
 /// Whether or not to clear pending packets at this `step` for the given height.
-/// Packets are cleared on the first iteration if `clear_on_start` is true.
+/// Packets are cleared on the first iteration if this is an ordered channel, or
+/// if `clear_on_start` is true.
 /// Subsequently, packets are cleared only if `clear_interval` is not `0` and
 /// if we have reached the interval.
 fn should_clear_packets(
     is_first_run: &mut bool,
     clear_on_start: bool,
+    channel_ordering: Order,
     clear_interval: u64,
     height: Height,
 ) -> bool {
     if *is_first_run {
         *is_first_run = false;
-        clear_on_start
+        if channel_ordering == Order::Ordered {
+            warn!("ordered channel: will clear packets because this is the first run");
+            true
+        } else {
+            clear_on_start
+        }
     } else {
         clear_interval != 0 && height.revision_height % clear_interval == 0
     }
@@ -148,16 +158,23 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
             height,
             new_block: _,
         } => {
-            let do_clear_packet =
-                should_clear_packets(is_first_run, clear_on_start, clear_interval, height);
-
-            // Schedule the clearing of pending packets. This may happen once at start,
-            // and may be _forced_ at predefined block intervals.
-            link.a_to_b
-                .schedule_packet_clearing(Some(height), do_clear_packet)
+            // Decide if packet clearing should be scheduled.
+            // Packet clearing may happen once at start,
+            // and then at predefined block intervals.
+            if should_clear_packets(
+                is_first_run,
+                clear_on_start,
+                link.a_to_b.channel().ordering,
+                clear_interval,
+                height,
+            ) {
+                link.a_to_b.schedule_packet_clearing(Some(height))
+            } else {
+                Ok(())
+            }
         }
 
-        WorkerCmd::ClearPendingPackets => link.a_to_b.schedule_packet_clearing(None, true),
+        WorkerCmd::ClearPendingPackets => link.a_to_b.schedule_packet_clearing(None),
     };
 
     if let Err(e) = result {

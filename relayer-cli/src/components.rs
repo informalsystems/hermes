@@ -1,9 +1,13 @@
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
 use tracing_subscriber::{filter::EnvFilter, util::SubscriberInitExt, FmtSubscriber};
 
-use ibc_relayer::config::GlobalConfig;
+use ibc_relayer::config::{GlobalConfig, LogLevel};
 
 use crate::config::Error;
+
+/// The name of the environment variable through which one can override
+/// the tracing filter built in [`build_tracing_filter`].
+const HERMES_LOG_VAR: &str = "RUST_LOG";
 
 /// A custom component for parametrizing `tracing` in the relayer.
 /// Primarily used for:
@@ -17,7 +21,7 @@ pub struct JsonTracing;
 impl JsonTracing {
     /// Creates a new [`JsonTracing`] component
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level.to_string())?;
+        let filter = build_tracing_filter(cfg.log_level)?;
         // Note: JSON formatter is un-affected by ANSI 'color' option. Set to 'false'.
         let use_color = false;
 
@@ -43,7 +47,7 @@ pub struct PrettyTracing;
 impl PrettyTracing {
     /// Creates a new [`PrettyTracing`] component
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level.to_string())?;
+        let filter = build_tracing_filter(cfg.log_level)?;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.
         let builder = FmtSubscriber::builder()
@@ -68,30 +72,38 @@ pub fn enable_ansi() -> bool {
     atty::is(atty::Stream::Stdout) && atty::is(atty::Stream::Stderr)
 }
 
+/// The relayer crates targeted by the default log level.
+const TARGET_CRATES: [&str; 2] = ["ibc_relayer", "ibc_relayer_cli"];
+
+/// Build a tracing directive setting the log level for the relayer crates to the
+/// given `log_level`.
+fn default_directive(log_level: LogLevel) -> String {
+    use itertools::Itertools;
+
+    TARGET_CRATES
+        .iter()
+        .map(|&c| format!("{}={}", c, log_level))
+        .join(",")
+}
+
 /// Builds a tracing filter based on the input `log_level`.
 /// Enables tracing exclusively for the relayer crates.
 /// Returns error if the filter failed to build.
-fn build_tracing_filter(log_level: String) -> Result<EnvFilter, FrameworkError> {
-    let target_crates = ["ibc_relayer", "ibc_relayer_cli"];
-
-    // SAFETY: unwrap() below works as long as `target_crates` is not empty.
-    let directive_raw = target_crates
-        .iter()
-        .map(|&c| format!("{}={}", c, log_level))
-        .reduce(|a, b| format!("{},{}", a, b))
-        .unwrap();
+fn build_tracing_filter(default_level: LogLevel) -> Result<EnvFilter, FrameworkError> {
+    let directive =
+        std::env::var(HERMES_LOG_VAR).unwrap_or_else(|_| default_directive(default_level));
 
     // Build the filter directive
-    match EnvFilter::try_new(directive_raw.clone()) {
+    match EnvFilter::try_new(&directive) {
         Ok(out) => Ok(out),
         Err(e) => {
             eprintln!(
-                "Unable to initialize Hermes from filter directive {:?}: {}",
-                directive_raw, e
+                "ERROR: unable to initialize Hermes with log filtering directive {:?}: {}",
+                directive, e
             );
-            let our_err = Error::invalid_log_level(log_level, e);
+
             Err(FrameworkErrorKind::ConfigError
-                .context(format!("{}", our_err))
+                .context(Error::invalid_log_directive(directive, e))
                 .into())
         }
     }

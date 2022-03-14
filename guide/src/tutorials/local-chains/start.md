@@ -8,7 +8,7 @@ To this end, clone the `ibc-rs` repository and check out the current version:
 ```bash
 git clone git@github.com:informalsystems/ibc-rs.git
 cd ibc-rs
-git checkout v0.11.1
+git checkout v0.13.0-rc.0
 ```
 
 ### Stop existing `gaiad` processes

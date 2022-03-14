@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 #![deny(
+    warnings,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
@@ -18,6 +19,7 @@
 
 extern crate alloc;
 
+pub mod cache;
 pub mod chain;
 pub mod channel;
 pub mod config;

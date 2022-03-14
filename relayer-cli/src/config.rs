@@ -28,12 +28,11 @@ define_error! {
         ZeroChain
             |_| { "config file does not specify any chain" },
 
-        InvalidLogLevel
-            { log_level: String, }
+        InvalidLogDirective
+            { directive: String, }
             [ TraceError<ParseError> ]
             |e| {
-                format!("config file specifies an invalid log level ('{0}'), caused by",
-                    e.log_level)
+                format!("invalid log directive: {0:?}", e.directive)
             },
 
         InvalidMode

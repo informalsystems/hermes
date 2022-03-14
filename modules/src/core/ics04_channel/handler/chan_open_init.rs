@@ -30,7 +30,7 @@ pub(crate) fn process(
     // An IBC connection running on the local (host) chain should exist.
     let conn = ctx.connection_end(&msg.channel.connection_hops()[0])?;
     let get_versions = conn.versions();
-    let version = match get_versions.as_slice() {
+    let version = match get_versions {
         [version] => version,
         _ => return Err(Error::invalid_version_length_connection()),
     };
@@ -71,7 +71,11 @@ pub(crate) fn process(
         channel_id: Some(chan_id),
         ..Default::default()
     };
-    output.emit(IbcEvent::OpenInitChannel(event_attributes.into()));
+    output.emit(IbcEvent::OpenInitChannel(
+        event_attributes
+            .try_into()
+            .map_err(|_| Error::missing_channel_id())?,
+    ));
 
     Ok(output.with_result(result))
 }

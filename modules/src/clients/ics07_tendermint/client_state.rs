@@ -150,8 +150,7 @@ impl ClientState {
         elapsed > self.trusting_period
     }
 
-    /// Helper method to produce a
-    /// [`tendermint_light_client::light_client::Options`] struct for use in
+    /// Helper method to produce a [`Options`] struct for use in
     /// Tendermint-specific light client verification.
     pub fn as_light_client_options(&self) -> Result<Options, Error> {
         Ok(Options {
@@ -330,9 +329,11 @@ impl From<ClientState> for RawClientState {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
+    use crate::Height;
     use core::time::Duration;
     use test_log::test;
 
+    use ibc_proto::ics23::ProofSpec as Ics23ProofSpec;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
@@ -340,8 +341,20 @@ mod tests {
     use crate::core::ics23_commitment::specs::ProofSpecs;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::test::test_serialization_roundtrip;
-    use crate::timestamp::ZERO_DURATION;
-    use crate::Height;
+    use crate::timestamp::{Timestamp, ZERO_DURATION};
+
+    #[derive(Clone, Debug, PartialEq)]
+    struct ClientStateParams {
+        id: ChainId,
+        trust_level: TrustThreshold,
+        trusting_period: Duration,
+        unbonding_period: Duration,
+        max_clock_drift: Duration,
+        latest_height: Height,
+        proof_specs: ProofSpecs,
+        upgrade_path: Vec<String>,
+        allow_update: AllowUpdate,
+    }
 
     #[test]
     fn serialization_roundtrip_no_proof() {
@@ -359,19 +372,6 @@ mod tests {
 
     #[test]
     fn client_state_new() {
-        #[derive(Clone, Debug, PartialEq)]
-        struct ClientStateParams {
-            id: ChainId,
-            trust_level: TrustThreshold,
-            trusting_period: Duration,
-            unbonding_period: Duration,
-            max_clock_drift: Duration,
-            latest_height: Height,
-            proof_specs: ProofSpecs,
-            upgrade_path: Vec<String>,
-            allow_update: AllowUpdate,
-        }
-
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: ChainId::default(),
@@ -421,6 +421,30 @@ mod tests {
                 params: ClientStateParams {
                     trusting_period: Duration::new(11, 0),
                     unbonding_period: Duration::new(10, 0),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Invalid (too small) trusting trust threshold".to_string(),
+                params: ClientStateParams {
+                    trust_level: TrustThreshold::ZERO,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Invalid (too small) latest height".to_string(),
+                params: ClientStateParams {
+                    latest_height: Height::zero(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Invalid (empty) proof specs".to_string(),
+                params: ClientStateParams {
+                    proof_specs: ProofSpecs::from(Vec::<Ics23ProofSpec>::new()),
                     ..default_params
                 },
                 want_pass: false,
@@ -451,6 +475,163 @@ mod tests {
                 test.name,
                 test.params.clone(),
                 cs_result.err(),
+            );
+        }
+    }
+
+    #[test]
+    fn client_state_verify_delay_passed() {
+        #[derive(Debug, Clone)]
+        struct Params {
+            current_time: Timestamp,
+            current_height: Height,
+            processed_time: Timestamp,
+            processed_height: Height,
+            delay_period_time: Duration,
+            delay_period_blocks: u64,
+        }
+        struct Test {
+            name: String,
+            params: Params,
+            want_pass: bool,
+        }
+        let now = Timestamp::now();
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Successful delay verification".to_string(),
+                params: Params {
+                    current_time: (now + Duration::from_nanos(2000)).unwrap(),
+                    current_height: Height::new(0, 5),
+                    processed_time: (now + Duration::from_nanos(1000)).unwrap(),
+                    processed_height: Height::new(0, 3),
+                    delay_period_time: Duration::from_nanos(500),
+                    delay_period_blocks: 2,
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Delay period(time) has not elapsed".to_string(),
+                params: Params {
+                    current_time: (now + Duration::from_nanos(1200)).unwrap(),
+                    current_height: Height::new(0, 5),
+                    processed_time: (now + Duration::from_nanos(1000)).unwrap(),
+                    processed_height: Height::new(0, 3),
+                    delay_period_time: Duration::from_nanos(500),
+                    delay_period_blocks: 2,
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Delay period(blocks) has not elapsed".to_string(),
+                params: Params {
+                    current_time: (now + Duration::from_nanos(2000)).unwrap(),
+                    current_height: Height::new(0, 5),
+                    processed_time: (now + Duration::from_nanos(1000)).unwrap(),
+                    processed_height: Height::new(0, 4),
+                    delay_period_time: Duration::from_nanos(500),
+                    delay_period_blocks: 2,
+                },
+                want_pass: false,
+            },
+        ];
+
+        for test in tests {
+            let res = ClientState::verify_delay_passed(
+                test.params.current_time,
+                test.params.current_height,
+                test.params.processed_time,
+                test.params.processed_height,
+                test.params.delay_period_time,
+                test.params.delay_period_blocks,
+            );
+
+            assert_eq!(
+                test.want_pass,
+                res.is_ok(),
+                "ClientState::verify_delay_passed() failed for test {}, \nmsg{:?} with error {:?}",
+                test.name,
+                test.params.clone(),
+                res.err(),
+            );
+        }
+    }
+
+    #[test]
+    fn client_state_verify_height() {
+        // Define a "default" set of parameters to reuse throughout these tests.
+        let default_params: ClientStateParams = ClientStateParams {
+            id: ChainId::default(),
+            trust_level: TrustThreshold::ONE_THIRD,
+            trusting_period: Duration::new(64000, 0),
+            unbonding_period: Duration::new(128000, 0),
+            max_clock_drift: Duration::new(3, 0),
+            latest_height: Height::new(1, 10),
+            proof_specs: ProofSpecs::default(),
+            upgrade_path: vec!["".to_string()],
+            allow_update: AllowUpdate {
+                after_expiry: false,
+                after_misbehaviour: false,
+            },
+        };
+
+        struct Test {
+            name: String,
+            height: Height,
+            setup: Option<Box<dyn FnOnce(ClientState) -> ClientState>>,
+            want_pass: bool,
+        }
+
+        let tests = vec![
+            Test {
+                name: "Successful height verification".to_string(),
+                height: Height::new(1, 8),
+                setup: None,
+                want_pass: true,
+            },
+            Test {
+                name: "Invalid (too large)  client height".to_string(),
+                height: Height::new(1, 12),
+                setup: None,
+                want_pass: false,
+            },
+            Test {
+                name: "Invalid, client is frozen below current height".to_string(),
+                height: Height::new(1, 6),
+                setup: Some(Box::new(|client_state| {
+                    client_state.with_frozen_height(Height::new(1, 5)).unwrap()
+                })),
+                want_pass: false,
+            },
+        ];
+
+        for test in tests {
+            let p = default_params.clone();
+            let client_state = ClientState::new(
+                p.id,
+                p.trust_level,
+                p.trusting_period,
+                p.unbonding_period,
+                p.max_clock_drift,
+                p.latest_height,
+                p.proof_specs,
+                p.upgrade_path,
+                p.allow_update,
+            )
+            .unwrap();
+            let client_state = match test.setup {
+                Some(setup) => (setup)(client_state),
+                _ => client_state,
+            };
+            let res = client_state.verify_height(test.height);
+
+            assert_eq!(
+                test.want_pass,
+                res.is_ok(),
+                "ClientState::verify_delay_height() failed for test {}, \nmsg{:?} with error {:?}",
+                test.name,
+                test.height,
+                res.err(),
             );
         }
     }

@@ -8,11 +8,11 @@
 
    This is the case for creating N-ary chains, because we cannot rely on the
    existential type encapsulation of `impl ChainHandle` to turn the
-   [`ProdChainHandle`](ibc_relayer::chain::handle::ProdChainHandle) to turn
+   [`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle) to turn
    them into unqiue types.
 
-   A workaround for this is to add a unique tag to `ProdChainHandle` itself,
-   so that the type `MonoTagged<Tag, ProdChainHandle>` becomes a unique chain
+   A workaround for this is to add a unique tag to `CountingAndCachingChainHandle` itself,
+   so that the type `MonoTagged<Tag, CountingAndCachingChainHandle>` becomes a unique chain
    handle type.
 
    We implement [`ChainHandle`] for a `MonoTagged<Tag, Handle>`, since if the
@@ -26,7 +26,6 @@ use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientS
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
@@ -55,7 +54,6 @@ use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusS
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use ibc_relayer::chain::handle::requests::AppVersion;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::tx::TrackedMsgs;
 use ibc_relayer::chain::{HealthCheck, StatusResponse};
@@ -120,8 +118,8 @@ where
         self.value().add_key(key_name, key)
     }
 
-    fn app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error> {
-        self.value().app_version(request)
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+        self.value().ibc_version()
     }
 
     fn query_status(&self) -> Result<StatusResponse, Error> {

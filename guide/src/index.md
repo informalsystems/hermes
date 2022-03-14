@@ -1,4 +1,4 @@
-# Hermes Guide (v0.11.1)
+# Hermes Guide (v0.13.0-rc.0)
 
 
 Hermes is a an open-source Rust implementation of a relayer for the

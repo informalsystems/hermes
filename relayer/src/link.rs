@@ -16,7 +16,7 @@ use crate::link::error::LinkError;
 use crate::link::relay_path::RelayPath;
 
 pub mod error;
-mod operational_data;
+pub mod operational_data;
 mod pending;
 mod relay_path;
 mod relay_sender;
@@ -157,7 +157,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         }
 
         let channel = Channel {
-            ordering: Default::default(),
+            ordering: a_channel.ordering,
             a_side: ChannelSide::new(
                 a_chain,
                 a_connection.client_id().clone(),

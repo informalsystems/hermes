@@ -26,10 +26,7 @@ define_error! {
 
         Retry
             { retries: retry::Error<u64> }
-            | e | {
-                format_args!("Worker failed after {} retries",
-                    e.retries)
-            },
+            | e | { format_args!("worker failed after {} retries", e.retries) },
 
         Recv
             [ DisplayOnly<RecvError> ]

@@ -196,10 +196,12 @@ impl ConnectionEnd {
         self.client_id.eq(other)
     }
 
+    /// Helper function to determine whether the connection is open.
     pub fn is_open(&self) -> bool {
         self.state_matches(&State::Open)
     }
 
+    /// Helper function to determine whether the connection is uninitialized.
     pub fn is_uninitialized(&self) -> bool {
         self.state_matches(&State::Uninitialized)
     }
@@ -215,8 +217,8 @@ impl ConnectionEnd {
     }
 
     /// Getter for the list of versions in this connection end.
-    pub fn versions(&self) -> Vec<Version> {
-        self.versions.clone()
+    pub fn versions(&self) -> &[Version] {
+        &self.versions
     }
 
     /// Getter for the counterparty.

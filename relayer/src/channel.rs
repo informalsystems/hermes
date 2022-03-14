@@ -24,7 +24,6 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
-use crate::channel::version::ResolveContext;
 use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
@@ -34,7 +33,7 @@ use crate::util::retry::{retry_count, RetryResult};
 use crate::util::task::Next;
 
 pub mod error;
-mod version;
+pub mod version;
 
 mod retry_strategy {
     use core::time::Duration;
@@ -196,8 +195,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         channel_open_event: IbcEvent,
     ) -> Result<Channel<ChainA, ChainB>, ChannelError> {
         let channel_event_attributes = channel_open_event
+            .clone()
             .channel_attributes()
-            .ok_or_else(|| ChannelError::invalid_event(channel_open_event.clone()))?;
+            .ok_or_else(|| ChannelError::invalid_event(channel_open_event))?;
 
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id.clone();
@@ -233,7 +233,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 connection.counterparty().client_id().clone(),
                 counterparty_connection_id.clone(),
                 channel_event_attributes.counterparty_port_id.clone(),
-                channel_event_attributes.counterparty_channel_id.clone(),
+                channel_event_attributes.counterparty_channel_id,
                 None,
             ),
             connection_delay: connection.delay_period(),
@@ -398,7 +398,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             from_retry_error(
                 err,
-                format!("Failed to finish channel open init for {:?}", self),
+                format!("failed to finish channel open init for {:?}", self),
             )
         })?;
 
@@ -435,7 +435,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             from_retry_error(
                 err,
-                format!("Failed to finish channel open try for {:?}", self),
+                format!("failed to finish channel open try for {:?}", self),
             )
         })?;
 
@@ -609,7 +609,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             error!("failed to open channel after {} retries", err);
             from_retry_error(
                 err,
-                format!("Failed to finish channel handshake for {:?}", self),
+                format!("failed to finish channel handshake for {:?}", self),
             )
         })?;
 
@@ -673,7 +673,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     );
                     RetryResult::Err(index)
                 } else {
-                    error!("Failed Chan{:?} with error: {}", state, e);
+                    error!("failed Chan{:?} with error: {}", state, e);
                     RetryResult::Retry(index)
                 }
             }
@@ -717,7 +717,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
-        let version = version::resolve(ResolveContext::ChanOpenInit, self)?;
+        // If the user supplied a version, use that.
+        // Otherwise, either use the version defined for the `transfer`
+        // or an empty version if the port is non-standard.
+        let version = self
+            .dst_version()
+            .cloned()
+            .or_else(|| version::default_by_port(self.dst_port_id()))
+            .unwrap_or_else(|| {
+                warn!(
+                    chain = %self.dst_chain().id(),
+                    channel = ?self.dst_channel_id(),
+                    port = %self.dst_port_id(),
+                    "no version specified for the channel, falling back on empty version"
+                );
+
+                Version::empty()
+            });
 
         let channel = ChannelEnd::new(
             State::Init,
@@ -867,7 +883,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        let version = version::resolve(ResolveContext::ChanOpenTry, self)?;
+        // Re-use the version that was either set on ChanOpenInit or overwritten by the application.
+        let version = src_channel.version().clone();
 
         let channel = ChannelEnd::new(
             State::TryOpen,

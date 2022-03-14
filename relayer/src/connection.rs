@@ -138,7 +138,7 @@ define_error! {
 
         MaxRetry
             |_| {
-                format!("Failed to finish connection handshake in {:?} iterations",
+                format!("failed to finish connection handshake in {:?} iterations",
                     MAX_RETRIES)
             },
 
@@ -511,7 +511,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             counter += 1;
             match self.flipped().build_conn_init_and_send() {
                 Err(e) => {
-                    error!("Failed ConnInit {:?}: {}", self.a_side, e);
+                    error!("failed ConnInit {:?}: {}", self.a_side, e);
                     continue;
                 }
                 Ok(result) => {
@@ -528,7 +528,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             counter += 1;
             match self.build_conn_try_and_send() {
                 Err(e) => {
-                    error!("Failed ConnTry {:?}: {}", self.b_side, e);
+                    error!("failed ConnTry {:?}: {}", self.b_side, e);
                     continue;
                 }
                 Ok(result) => {
@@ -564,7 +564,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                     // Ack to a_chain
                     match self.flipped().build_conn_ack_and_send() {
-                        Err(e) => error!("Failed ConnAck {:?}: {}", self.a_side, e),
+                        Err(e) => error!("failed ConnAck {:?}: {}", self.a_side, e),
                         Ok(event) => {
                             println!("{}  {} => {:#?}\n", done, self.a_side.chain.id(), event)
                         }
@@ -573,7 +573,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 (State::Open, State::TryOpen) => {
                     // Confirm to b_chain
                     match self.build_conn_confirm_and_send() {
-                        Err(e) => error!("Failed ConnConfirm {:?}: {}", self.b_side, e),
+                        Err(e) => error!("failed ConnConfirm {:?}: {}", self.b_side, e),
                         Ok(event) => {
                             println!("{}  {} => {:#?}\n", done, self.b_side.chain.id(), event)
                         }
@@ -582,7 +582,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 (State::TryOpen, State::Open) => {
                     // Confirm to a_chain
                     match self.flipped().build_conn_confirm_and_send() {
-                        Err(e) => error!("Failed ConnConfirm {:?}: {}", self.a_side, e),
+                        Err(e) => error!("failed ConnConfirm {:?}: {}", self.a_side, e),
                         Ok(event) => {
                             println!("{}  {} => {:#?}\n", done, self.a_side.chain.id(), event)
                         }
@@ -683,7 +683,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
     /// Retrieves the connection from destination and compares against the expected connection
     /// built from the message type (`msg_type`) and options (`opts`).
-    /// If the expected and the destination connections are compatible, it returns the expected connection
+    /// If the expected and the destination connections are compatible, it returns the expected connection.
     fn validated_expected_connection(
         &self,
         msg_type: ConnectionMsgType,
@@ -891,7 +891,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 .query_compatible_versions()
                 .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?
         } else {
-            src_connection.versions()
+            src_connection.versions().to_vec()
         };
 
         // Get signer
@@ -1181,6 +1181,7 @@ pub enum ConnectionMsgType {
     OpenConfirm,
 }
 
+/// Verify that the destination connection exhibits the expected state.
 fn check_destination_connection_state(
     connection_id: ConnectionId,
     existing_connection: ConnectionEnd,
@@ -1196,10 +1197,17 @@ fn check_destination_connection_state(
         || existing_connection.counterparty().connection_id()
             == expected_connection.counterparty().connection_id();
 
-    // TODO check versions and store prefix
-    // https://github.com/informalsystems/ibc-rs/issues/1389
+    let good_version = existing_connection.versions() == expected_connection.versions();
 
-    if good_state && good_client_ids && good_connection_ids {
+    let good_counterparty_prefix =
+        existing_connection.counterparty().prefix() == expected_connection.counterparty().prefix();
+
+    if good_state
+        && good_client_ids
+        && good_connection_ids
+        && good_version
+        && good_counterparty_prefix
+    {
         Ok(())
     } else {
         Err(ConnectionError::connection_already_exist(connection_id))

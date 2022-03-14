@@ -72,6 +72,7 @@ entry_indent = 2
     # the parent of the `.changelog` folder).
     [components.all]
     ibc             = { name = "IBC Modules",     path = "modules" }
+    ibc-proto       = { name = "IBC Proto",       path = "proto" }
     ibc-relayer     = { name = "Relayer Library", path = "relayer" }
     ibc-relayer-cli = { name = "Relayer CLI",     path = "relayer-cli" }
     guide           = { name = "Guide",           path = "guide" }
