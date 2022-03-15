@@ -1377,32 +1377,14 @@ dependencies = [
 name = "ibc-integration-test"
 version = "0.13.0-rc.0"
 dependencies = [
- "color-eyre",
- "crossbeam-channel 0.5.2",
- "env_logger",
- "eyre",
- "flex-error",
- "hex",
  "ibc",
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-cli",
- "itertools",
- "prost",
- "prost-types",
- "rand 0.8.5",
- "semver",
- "serde",
+ "ibc-test-framework",
  "serde_json",
- "serde_yaml",
- "sha2 0.10.2",
- "subtle-encoding",
  "tendermint",
  "tendermint-rpc",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -1546,6 +1528,38 @@ dependencies = [
  "opentelemetry-prometheus",
  "prometheus",
  "rouille",
+]
+
+[[package]]
+name = "ibc-test-framework"
+version = "0.13.0-rc.0"
+dependencies = [
+ "color-eyre",
+ "crossbeam-channel 0.5.2",
+ "env_logger",
+ "eyre",
+ "flex-error",
+ "hex",
+ "ibc",
+ "ibc-proto",
+ "ibc-relayer",
+ "ibc-relayer-cli",
+ "itertools",
+ "prost",
+ "prost-types",
+ "rand 0.8.5",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2 0.10.2",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-rpc",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

@@ -37,7 +37,7 @@ impl<Tag, Value> Tagged<Tag, Value> {
        Example:
 
        ```rust
-       # use ibc_integration_test::types::tagged::mono::Tagged;
+       # use ibc_test_framework::types::tagged::mono::Tagged;
        struct Foo;
 
        let val: Tagged<Foo, i64> = Tagged::new(42);
@@ -53,7 +53,7 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
 
         let val1: Tagged<Foo, i64> = Tagged::new(42);
@@ -70,7 +70,7 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
 
         let mut val1: Tagged<Foo, i64> = Tagged::new(42);
@@ -87,7 +87,7 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
 
         let val1: Tagged<Foo, i64> = Tagged::new(42);
@@ -104,7 +104,7 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
 
         let val1: Tagged<Foo, i64> = Tagged::new(42);
@@ -121,7 +121,7 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
         struct Bar;
 
@@ -140,8 +140,8 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
-        # use ibc_integration_test::types::tagged::dual::Tagged as DualTagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged as DualTagged;
         struct Foo;
         struct Bar;
 
@@ -160,7 +160,7 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
 
         let val1: Tagged<Foo, i64> = Tagged::new(42);
@@ -178,7 +178,7 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Person { name: String, age: u8 }
         struct Alice;
 
@@ -204,7 +204,7 @@ impl<Tag, Value> Tagged<Tag, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Person { name: String, age: u8 }
         struct Alice;
 
@@ -228,7 +228,7 @@ impl<'a, Tag, Value: Clone> Tagged<Tag, &'a Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
 
         let val1: String = "foo".to_string();
@@ -252,7 +252,7 @@ impl<Tag, Value> Tagged<Tag, Option<Value>> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
 
         let val1: Tagged<Foo, Option<i64>> = Tagged::new(Some(8));
@@ -271,7 +271,7 @@ impl<Tag, Value, E> Tagged<Tag, Result<Value, E>> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
         struct Error;
 
@@ -291,7 +291,7 @@ impl<Tag, Value> Tagged<Tag, Vec<Value>> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::mono::Tagged;
+        # use ibc_test_framework::types::tagged::mono::Tagged;
         struct Foo;
 
         let val1: Tagged<Foo, Vec<i64>> = Tagged::new(vec![1, 2, 3]);
@@ -330,7 +330,7 @@ impl<Tag, Value: Serialize> Serialize for Tagged<Tag, Value> {
    Example:
 
    ```rust
-   # use ibc_integration_test::types::tagged::mono::Tagged;
+   # use ibc_test_framework::types::tagged::mono::Tagged;
    struct Foo;
 
    let values: Tagged<Foo, Vec<i64>> = Tagged::new(vec![1, 2, 3]);

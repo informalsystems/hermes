@@ -5,20 +5,20 @@ use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::{self, Config, ModeConfig};
 use std::thread::sleep;
 
-use crate::bootstrap::binary::chain::bootstrap_foreign_client_pair;
-use crate::bootstrap::binary::channel::{
+use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
+use ibc_test_framework::bootstrap::binary::channel::{
     bootstrap_channel_with_chains, bootstrap_channel_with_connection,
 };
-use crate::bootstrap::binary::connection::bootstrap_connection;
-use crate::ibc::denom::derive_ibc_denom;
-use crate::prelude::*;
-use crate::relayer::channel::{
+use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, init_channel, query_channel_end,
 };
-use crate::relayer::connection::{
+use ibc_test_framework::relayer::connection::{
     assert_eventually_connection_established, init_connection, query_connection_end,
 };
-use crate::relayer::refresh::spawn_refresh_client_tasks;
+use ibc_test_framework::relayer::refresh::spawn_refresh_client_tasks;
 
 // The cosmos ChainHandle handles requests in serial, and a refresh client
 // request may get blocked by other operations and cause the refresh to fail
