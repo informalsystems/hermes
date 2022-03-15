@@ -61,6 +61,12 @@ pub trait TestOverrides {
         // No modification by default
     }
 
+    /**
+       Return the connection delay used for creating connections as [`Duration`].
+       Defaults to zero.
+
+       Implemented for [`ConnectionDelayOverride`].
+    */
     fn connection_delay(&self) -> Duration {
         default_connection_delay()
     }
@@ -85,6 +91,12 @@ pub trait TestOverrides {
         PortId::transfer()
     }
 
+    /**
+       Return the channel ordering used for creating channels as [`Order`].
+       Defaults to [`Order::Unordered`].
+
+       Implemented for [`ChannelOrderOverride`].
+    */
     fn channel_order(&self) -> Order {
         Order::Unordered
     }

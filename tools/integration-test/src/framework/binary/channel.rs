@@ -101,7 +101,21 @@ pub trait PortsOverride {
     fn channel_port_b(&self) -> PortId;
 }
 
+/**
+   An internal trait for test cases to override the channel ordering
+   when creating channels.
+
+  This is called by [`RunBinaryChannelTest`] before creating
+  the IBC channels.
+
+  Test writers should implement
+  [`TestOverrides`](crate::framework::overrides::TestOverrides)
+  for their test cases instead of implementing this trait directly.
+*/
 pub trait ChannelOrderOverride {
+    /**
+       Return the channel ordering as [`Order`].
+    */
     fn channel_order(&self) -> Order;
 }
 

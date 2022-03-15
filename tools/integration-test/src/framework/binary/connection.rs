@@ -68,7 +68,21 @@ pub trait BinaryConnectionTest {
     ) -> Result<(), Error>;
 }
 
+/**
+   An internal trait that can be implemented by test cases to override
+   the connection delay parameter when creating connections.
+
+   This is called by [`RunBinaryConnectionTest`] before creating
+   the IBC connections.
+
+  Test writers should implement
+  [`TestOverrides`](crate::framework::overrides::TestOverrides)
+  for their test cases instead of implementing this trait directly.
+*/
 pub trait ConnectionDelayOverride {
+    /**
+       Return the connection delay as [`Duration`].
+    */
     fn connection_delay(&self) -> Duration;
 }
 
