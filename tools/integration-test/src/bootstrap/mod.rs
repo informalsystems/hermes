@@ -13,4 +13,5 @@
 
 pub mod binary;
 pub mod init;
+pub mod nary;
 pub mod single;

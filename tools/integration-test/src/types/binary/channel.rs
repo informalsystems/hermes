@@ -70,6 +70,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectedChannel<ChainA, ChainB> 
             port_b: self.port_a,
         }
     }
+
+    pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
+        self,
+        map_a: impl Fn(ChainA) -> ChainC,
+        map_b: impl Fn(ChainB) -> ChainD,
+    ) -> ConnectedChannel<ChainC, ChainD> {
+        ConnectedChannel {
+            connection: self.connection.map_chain(&map_a, &map_b),
+            channel: self.channel.map_chain(&map_a, &map_b),
+            channel_id_a: self.channel_id_a.retag(),
+            channel_id_b: self.channel_id_b.retag(),
+            port_a: self.port_a.retag(),
+            port_b: self.port_b.retag(),
+        }
+    }
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChannel<ChainA, ChainB> {

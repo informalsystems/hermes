@@ -2,21 +2,20 @@
    Constructs for implementing overrides for test cases.
 */
 
+use core::time::Duration;
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
-use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::Config;
-use ibc_relayer::config::SharedConfig;
-use ibc_relayer::registry::SharedRegistry;
-use ibc_relayer::supervisor::SupervisorOptions;
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
 
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
-use crate::framework::binary::chain::{RelayerConfigOverride, SupervisorOverride};
+use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::channel::{ChannelOrderOverride, PortsOverride};
+use crate::framework::binary::connection::ConnectionDelayOverride;
 use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
 use crate::types::config::TestConfig;
 
 /**
@@ -63,31 +62,13 @@ pub trait TestOverrides {
     }
 
     /**
-       Optionally spawns the relayer supervisor after the relayer chain
-       handles and foreign clients are initialized. Default behavior
-       is to spawn the supervisor using [`spawn_supervisor`].
+       Return the connection delay used for creating connections as [`Duration`].
+       Defaults to zero.
 
-       Test writers can disable the spawning of supervisor by overriding
-       this method and making it do nothing and return `None`.
-
-       Implemented for [`SupervisorOverride`].
+       Implemented for [`ConnectionDelayOverride`].
     */
-    fn spawn_supervisor(
-        &self,
-        config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle>,
-    ) -> Result<Option<SupervisorHandle>, Error> {
-        let handle = spawn_supervisor(
-            config.clone(),
-            registry.clone(),
-            None,
-            SupervisorOptions {
-                health_check: false,
-                force_full_scan: false,
-            },
-        )?;
-
-        Ok(Some(handle))
+    fn connection_delay(&self) -> Duration {
+        default_connection_delay()
     }
 
     /**
@@ -110,6 +91,12 @@ pub trait TestOverrides {
         PortId::transfer()
     }
 
+    /**
+       Return the channel ordering used for creating channels as [`Order`].
+       Defaults to [`Order::Unordered`].
+
+       Implemented for [`ChannelOrderOverride`].
+    */
     fn channel_order(&self) -> Order {
         Order::Unordered
     }
@@ -141,13 +128,9 @@ impl<Test: TestOverrides> RelayerConfigOverride for Test {
     }
 }
 
-impl<Test: TestOverrides> SupervisorOverride for Test {
-    fn spawn_supervisor(
-        &self,
-        config: &SharedConfig,
-        registry: &SharedRegistry<impl ChainHandle>,
-    ) -> Result<Option<SupervisorHandle>, Error> {
-        TestOverrides::spawn_supervisor(self, config, registry)
+impl<Test: TestOverrides> ConnectionDelayOverride for Test {
+    fn connection_delay(&self) -> Duration {
+        TestOverrides::connection_delay(self)
     }
 }
 
@@ -164,5 +147,14 @@ impl<Test: TestOverrides> PortsOverride for Test {
 impl<Test: TestOverrides> ChannelOrderOverride for Test {
     fn channel_order(&self) -> Order {
         TestOverrides::channel_order(self)
+    }
+}
+
+impl<Test: TestOverrides> NaryPortsOverride<2> for Test {
+    fn channel_ports(&self) -> [[PortId; 2]; 2] {
+        let port_a = self.channel_port_a();
+        let port_b = self.channel_port_b();
+
+        [[port_a.clone(), port_b.clone()], [port_b, port_a]]
     }
 }

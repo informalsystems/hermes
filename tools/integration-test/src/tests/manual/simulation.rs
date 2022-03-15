@@ -38,6 +38,7 @@ impl BinaryChannelTest for SimulationTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -53,6 +54,6 @@ impl BinaryChannelTest for SimulationTest {
             MAX_MSGS,
         )?;
 
-        crate::suspend()
+        suspend()
     }
 }

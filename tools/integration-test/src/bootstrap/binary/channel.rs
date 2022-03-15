@@ -2,18 +2,19 @@
     Helper functions for bootstrapping a channel between two chains.
 */
 
+use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::{Channel, ChannelSide};
-use ibc_relayer::foreign_client::ForeignClient;
 use tracing::{debug, info};
 
 use super::connection::bootstrap_connection;
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::binary::connection::ConnectedConnection;
+use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::id::TaggedPortIdRef;
 use crate::types::tagged::*;
 use crate::util::random::random_u64_range;
@@ -29,14 +30,15 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     port_a: &PortId,
     port_b: &PortId,
     order: Order,
+    connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let channel = bootstrap_channel(
-        &chains.client_b_to_a,
-        &chains.client_a_to_b,
+        &chains.foreign_clients,
         &DualTagged::new(port_a),
         &DualTagged::new(port_b),
         order,
+        connection_delay,
         bootstrap_with_random_ids,
     )?;
 
@@ -48,18 +50,19 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     with initialized client IDs.
 */
 pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
-    client_b_to_a: &ForeignClient<ChainA, ChainB>,
-    client_a_to_b: &ForeignClient<ChainB, ChainA>,
+    foreign_clients: &ForeignClientPair<ChainA, ChainB>,
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
     order: Order,
+    connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
-    let connection = bootstrap_connection(client_b_to_a, client_a_to_b, bootstrap_with_random_ids)?;
+    let connection =
+        bootstrap_connection(foreign_clients, connection_delay, bootstrap_with_random_ids)?;
 
     bootstrap_channel_with_connection(
-        &client_a_to_b.src_chain(),
-        &client_a_to_b.dst_chain(),
+        &foreign_clients.handle_a(),
+        &foreign_clients.handle_b(),
         connection,
         port_a,
         port_b,
@@ -108,11 +111,11 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
     info!(
         "created new chain/client/connection/channel from {}/{}/{}/{} to {}/{}/{}/{}",
         chain_a.id(),
-        connection.client.client_id_a,
+        connection.client_ids.client_id_a,
         connection.connection_id_a,
         channel_id_a,
         chain_b.id(),
-        connection.client.client_id_b,
+        connection.client_ids.client_id_b,
         connection.connection_id_b,
         channel_id_b,
     );
@@ -143,8 +146,8 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     connection: &ConnectedConnection<ChainA, ChainB>,
     port_id: &TaggedPortIdRef<ChainA, ChainB>,
 ) -> Result<(), Error> {
-    let client_id_a = &connection.client.client_id_a;
-    let client_id_b = &connection.client.client_id_b;
+    let client_id_a = &connection.client_ids.client_id_a;
+    let client_id_b = &connection.client_ids.client_id_b;
 
     for i in 0..random_u64_range(1, 6) {
         debug!(

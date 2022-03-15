@@ -169,7 +169,7 @@ impl ChainDriver {
        copying from the logs.
     */
     pub fn exec(&self, args: &[&str]) -> Result<ExecOutput, Error> {
-        simple_exec(&self.command_path, args)
+        simple_exec(self.chain_id.as_str(), &self.command_path, args)
     }
 
     /**
@@ -283,7 +283,7 @@ impl ChainDriver {
         let amounts_str = itertools::join(
             amounts
                 .iter()
-                .map(|(denom, amount)| format!("{}{}", amount, denom.0)),
+                .map(|(denom, amount)| format!("{}{}", amount, denom)),
             ",",
         );
 
@@ -308,7 +308,7 @@ impl ChainDriver {
         denom: &Denom,
         amount: u64,
     ) -> Result<(), Error> {
-        let amount_str = format!("{}{}", amount, denom.0);
+        let amount_str = format!("{}{}", amount, denom);
 
         self.exec(&[
             "--home",
@@ -425,7 +425,7 @@ impl ChainDriver {
                 "balances",
                 &wallet_id.0,
                 "--denom",
-                denom.0.as_str(),
+                denom.as_str(),
                 "--output",
                 "json",
             ])?
@@ -455,8 +455,11 @@ impl ChainDriver {
         denom: &Denom,
     ) -> Result<(), Error> {
         assert_eventually_succeed(
-            "wallet reach expected amount",
-            20,
+            &format!(
+                "wallet reach {} amount {} {}",
+                user.address, target_amount, denom
+            ),
+            30,
             Duration::from_secs(1),
             || {
                 let amount = self.query_balance(&user.address, denom)?;
@@ -465,7 +468,8 @@ impl ChainDriver {
                     Ok(())
                 } else {
                     Err(Error::generic(eyre!(
-                        "current balance amount {} does not match the target amount {}",
+                        "current balance of account {} with amount {} does not match the target amount {}",
+                        user.address,
                         amount,
                         target_amount
                     )))

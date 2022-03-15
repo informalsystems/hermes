@@ -13,7 +13,14 @@ use crate::types::tagged::*;
    A newtype wrapper to represent a denomination string.
 */
 #[derive(Debug, Clone)]
-pub struct Denom(pub String);
+pub enum Denom {
+    Base(String),
+    Ibc {
+        path: String,
+        denom: String,
+        hashed: String,
+    },
+}
 
 /**
    Type alias for [`Denom`] tagged with the chain it belongs to.
@@ -49,17 +56,53 @@ pub fn derive_ibc_denom<ChainA, ChainB>(
     channel_id: &TaggedChannelIdRef<ChainB, ChainA>,
     denom: &TaggedDenomRef<ChainA>,
 ) -> Result<TaggedDenom<ChainB>, Error> {
-    let res = token_transfer::derive_ibc_denom(
-        port_id.value(),
-        channel_id.value(),
-        denom.value().0.as_str(),
-    )?;
+    match denom.value() {
+        Denom::Base(denom) => {
+            let hashed =
+                token_transfer::derive_ibc_denom(port_id.value(), channel_id.value(), denom)?;
 
-    Ok(MonoTagged::new(Denom(res)))
+            Ok(MonoTagged::new(Denom::Ibc {
+                path: format!("{}/{}", port_id, channel_id),
+                denom: denom.clone(),
+                hashed,
+            }))
+        }
+        Denom::Ibc { path, denom, .. } => {
+            let new_path = format!("{}/{}/{}", port_id, channel_id, path);
+            let hashed =
+                token_transfer::derive_ibc_denom_with_path(&format!("{}/{}", new_path, denom))?;
+
+            Ok(MonoTagged::new(Denom::Ibc {
+                path: new_path,
+                denom: denom.clone(),
+                hashed,
+            }))
+        }
+    }
+}
+
+impl Denom {
+    pub fn base(denom: &str) -> Self {
+        Denom::Base(denom.to_string())
+    }
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            Denom::Base(denom) => denom,
+            Denom::Ibc { hashed, .. } => hashed,
+        }
+    }
 }
 
 impl Display for Denom {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0)
+        match self {
+            Denom::Base(denom) => {
+                write!(f, "{}", denom)
+            }
+            Denom::Ibc { hashed, .. } => {
+                write!(f, "{}", hashed)
+            }
+        }
     }
 }

@@ -2,11 +2,14 @@
     Helper functions for bootstrapping two relayer chain handles
     with connected foreign clients.
 */
+
 use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
+use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
 use ibc_relayer::foreign_client::{extract_client_id, ForeignClient};
+use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
 use ibc_relayer::registry::SharedRegistry;
 use std::fs;
 use std::path::Path;
@@ -14,7 +17,9 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use tracing::{debug, info};
 
+use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
+use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
@@ -35,7 +40,13 @@ pub fn boostrap_chain_pair_with_nodes(
     node_a: FullNode,
     node_b: FullNode,
     config_modifier: impl FnOnce(&mut Config),
-) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error> {
+) -> Result<
+    (
+        RelayerDriver,
+        ConnectedChains<impl ChainHandle, impl ChainHandle>,
+    ),
+    Error,
+> {
     let mut config = Config::default();
 
     add_chain_config(&mut config, &node_a)?;
@@ -62,22 +73,24 @@ pub fn boostrap_chain_pair_with_nodes(
         pad_client_ids(&handle_b, &handle_a)?;
     }
 
-    let client_a_to_b = bootstrap_foreign_client(&handle_a, &handle_b)?;
-    let client_b_to_a = bootstrap_foreign_client(&handle_b, &handle_a)?;
+    let foreign_clients = bootstrap_foreign_client_pair(&handle_a, &handle_b)?;
 
-    let chains = ConnectedChains::new(
+    let relayer = RelayerDriver {
         config_path,
         config,
         registry,
+        hang_on_fail: test_config.hang_on_fail,
+    };
+
+    let chains = ConnectedChains::new(
         handle_a,
         handle_b,
         MonoTagged::new(node_a),
         MonoTagged::new(node_b),
-        client_a_to_b,
-        client_b_to_a,
+        foreign_clients,
     );
 
-    Ok(chains)
+    Ok((relayer, chains))
 }
 
 /**
@@ -96,36 +109,14 @@ pub fn boostrap_self_connected_chain(
     test_config: &TestConfig,
     node: FullNode,
     config_modifier: impl FnOnce(&mut Config),
-) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error> {
-    let mut config = Config::default();
-
-    add_chain_config(&mut config, &node)?;
-
-    config_modifier(&mut config);
-
-    let config_path = test_config.chain_store_dir.join("relayer-config.toml");
-
-    save_relayer_config(&config, &config_path)?;
-
-    let config = Arc::new(RwLock::new(config));
-
-    let registry = new_registry(config.clone());
-
-    let handle = spawn_chain_handle(|| {}, &registry, &node)?;
-
-    let foreign_client = bootstrap_foreign_client(&handle, &handle)?;
-
-    Ok(ConnectedChains::new(
-        config_path,
-        config,
-        registry,
-        handle.clone(),
-        handle,
-        MonoTagged::new(node.clone()),
-        MonoTagged::new(node),
-        foreign_client.clone(),
-        foreign_client,
-    ))
+) -> Result<
+    (
+        RelayerDriver,
+        ConnectedChains<impl ChainHandle, impl ChainHandle>,
+    ),
+    Error,
+> {
+    boostrap_chain_pair_with_nodes(test_config, node.clone(), node, config_modifier)
 }
 
 pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -143,12 +134,22 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
     Ok(())
 }
 
+pub fn bootstrap_foreign_client_pair<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain_a: &ChainA,
+    chain_b: &ChainB,
+) -> Result<ForeignClientPair<ChainA, ChainB>, Error> {
+    let client_a_to_b = bootstrap_foreign_client(chain_a, chain_b)?;
+    let client_b_to_a = bootstrap_foreign_client(chain_b, chain_a)?;
+
+    Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
+}
+
 /**
    Bootstrap a foreign client from `ChainA` to `ChainB`, i.e. the foreign
    client collects information from `ChainA` and submits them as transactions
    to `ChainB`.
 
-   The returned `ForeignClient` is tagged in contravariant position, i.e.
+   The returned `ForeignClient` is tagged in contravariant ordering, i.e.
    `ChainB` then `ChainB`, because `ForeignClient` takes the the destination
    chain in the first position.
 */
@@ -228,9 +229,19 @@ pub fn add_key_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallet: &Wallet,
 ) -> Result<(), Error> {
-    chain.add_key(wallet.id.0.clone(), wallet.key.clone())?;
+    let res = chain.add_key(wallet.id.0.clone(), wallet.key.clone());
 
-    Ok(())
+    // Ignore error if chain handle already have the given key
+    match res {
+        Err(e) => match e.detail() {
+            RelayerErrorDetail::KeyBase(e2) => match e2.source {
+                KeyringErrorDetail::KeyAlreadyExist(_) => Ok(()),
+                _ => Err(e.into()),
+            },
+            _ => Err(e.into()),
+        },
+        Ok(()) => Ok(()),
+    }
 }
 
 /**
