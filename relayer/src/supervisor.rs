@@ -7,7 +7,7 @@ use std::sync::RwLock;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use itertools::Itertools;
-use tracing::{debug, error, error_span, info, trace, warn};
+use tracing::{error, error_span, info, trace, warn};
 
 use ibc::{
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
@@ -17,7 +17,7 @@ use ibc::{
 
 use crate::{
     chain::{handle::ChainHandle, HealthCheck},
-    config::{ChainConfig, Config, SharedConfig},
+    config::{Config, SharedConfig},
     event::{
         self,
         monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
@@ -47,7 +47,7 @@ pub mod scan;
 pub mod spawn;
 
 pub mod cmd;
-use cmd::{CmdEffect, ConfigUpdate, SupervisorCmd};
+use cmd::SupervisorCmd;
 
 use self::{scan::ChainScanner, spawn::SpawnContext};
 
@@ -164,19 +164,12 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     let batch_task = spawn_batch_worker(
         config.clone(),
         registry.clone(),
-        client_state_filter.clone(),
-        workers.clone(),
-        subscriptions.clone(),
-    );
-
-    let cmd_task = spawn_cmd_worker(
-        config.clone(),
-        registry.clone(),
         client_state_filter,
         workers.clone(),
         subscriptions,
-        cmd_rx,
     );
+
+    let cmd_task = spawn_cmd_worker(registry.clone(), workers.clone(), cmd_rx);
 
     let mut tasks = vec![batch_task, cmd_task];
 
@@ -216,45 +209,22 @@ fn spawn_batch_worker<Chain: ChainHandle>(
 }
 
 pub fn spawn_cmd_worker<Chain: ChainHandle>(
-    config: Arc<RwLock<Config>>,
     registry: SharedRegistry<Chain>,
-    client_state_filter: Arc<RwLock<FilterPolicy>>,
     workers: Arc<RwLock<WorkerMap>>,
-    subscriptions: Arc<RwLock<Vec<(Chain, Subscription)>>>,
     cmd_rx: Receiver<SupervisorCmd>,
 ) -> TaskHandle {
     spawn_background_task(
         error_span!("cmd"),
         Some(Duration::from_millis(500)),
-        move || {
+        move || -> Result<Next, TaskError<Infallible>> {
             if let Ok(cmd) = cmd_rx.try_recv() {
                 match cmd {
-                    SupervisorCmd::UpdateConfig(update) => {
-                        let effect = update_config(
-                            &mut config.acquire_write(),
-                            &mut registry.write(),
-                            &mut workers.acquire_write(),
-                            &mut client_state_filter.acquire_write(),
-                            *update,
-                        );
-
-                        if let CmdEffect::ConfigChanged = effect {
-                            let new_subscriptions =
-                                init_subscriptions(&config.acquire_read(), &mut registry.write());
-                            match new_subscriptions {
-                                Ok(subs) => {
-                                    *subscriptions.acquire_write() = subs;
-                                }
-                                Err(Error(ErrorDetail::NoChainsAvailable(_), _)) => (),
-                                Err(e) => return Err(TaskError::Fatal(e)),
-                            }
-                        }
-                    }
                     SupervisorCmd::DumpState(reply_to) => {
                         dump_state(&registry.read(), &workers.acquire_read(), reply_to);
                     }
                 }
             }
+
             Ok(Next::Continue)
         },
     )
@@ -686,8 +656,11 @@ fn handle_batch<Chain: ChainHandle>(
 
     match batch.deref() {
         Ok(batch) => {
-            let _ = process_batch(config, registry, client_state_filter, workers, chain, batch)
-                .map_err(|e| error!("[{}] error during batch processing: {}", chain_id, e));
+            if let Err(e) =
+                process_batch(config, registry, client_state_filter, workers, chain, batch)
+            {
+                error!("[{}] error during batch processing: {}", chain_id, e);
+            }
         }
         Err(EventError(EventErrorDetail::SubscriptionCancelled(_), _)) => {
             warn!(chain.id = %chain_id, "event subscription was cancelled, clearing pending packets");
@@ -701,141 +674,6 @@ fn handle_batch<Chain: ChainHandle>(
         }
         Err(e) => {
             error!("[{}] error in receiving event batch: {}", chain_id, e)
-        }
-    }
-}
-
-/// Remove the given chain to the configuration and spawn the associated workers.
-/// Will not have any effect if the chain was not already present in the config.
-///
-/// If the removal had any effect, returns [`CmdEffect::ConfigChanged`] as
-/// subscriptions need to be reset to take into account the newly added chain.
-fn remove_chain<Chain: ChainHandle>(
-    config: &mut Config,
-    registry: &mut Registry<Chain>,
-    workers: &mut WorkerMap,
-    id: &ChainId,
-) -> CmdEffect {
-    if !config.has_chain(id) {
-        info!(chain = %id, "skipping removal of non-existing chain");
-        return CmdEffect::Nothing;
-    }
-
-    info!(chain = %id, "removing existing chain");
-    config.chains.retain(|c| &c.id != id);
-
-    debug!(chain = %id, "shutting down workers");
-    let mut ctx = spawn_context(config, registry, workers);
-    ctx.shutdown_workers_for_chain(id);
-
-    debug!(chain = %id, "shutting down chain runtime");
-    registry.shutdown(id);
-
-    CmdEffect::ConfigChanged
-}
-
-/// Add the given chain to the configuration and spawn the associated workers.
-/// Will not have any effect if the chain is already present in the config.
-///
-/// If the addition had any effect, returns [`CmdEffect::ConfigChanged`] as
-/// subscriptions need to be reset to take into account the newly added chain.
-fn add_chain<Chain: ChainHandle>(
-    config: &mut Config,
-    registry: &mut Registry<Chain>,
-    workers: &mut WorkerMap,
-    client_state_filter: &mut FilterPolicy,
-    chain_config: ChainConfig,
-) -> CmdEffect {
-    let id = chain_config.id.clone();
-
-    if config.has_chain(&id) {
-        info!(chain = %id, "skipping addition of already existing chain");
-        return CmdEffect::Nothing;
-    }
-
-    info!(chain = %id, "adding new chain");
-
-    config.chains.push(chain_config.clone());
-
-    debug!(chain = %id, "spawning chain runtime");
-
-    if let Err(e) = registry.spawn(&id) {
-        error!(
-            "failed to add chain {} because of failure to spawn the chain runtime: {}",
-            id, e
-        );
-
-        // Remove the newly added config
-        config.chains.retain(|c| c.id != id);
-
-        return CmdEffect::Nothing;
-    }
-
-    debug!(chain = %id, "scanning chain");
-
-    let scan_result = chain_scanner(config, registry, client_state_filter, ScanMode::Auto)
-        .scan_chain(&chain_config);
-
-    let scan = match scan_result {
-        Ok(scan) => scan,
-        Err(e) => {
-            error!("failed to scan chain {}: {}", id, e);
-
-            // Remove the newly added config
-            config.chains.retain(|c| c.id != id);
-
-            return CmdEffect::Nothing;
-        }
-    };
-
-    debug!(chain = %id, "spawning workers");
-
-    let mut ctx = spawn_context(config, registry, workers);
-    ctx.spawn_workers_for_chain(scan);
-
-    CmdEffect::ConfigChanged
-}
-
-/// Update the given chain configuration, by removing it with
-/// [`Supervisor::remove_chain`] and adding the updated
-/// chain config with [`Supervisor::remove_chain`].
-///
-/// If the update had any effect, returns [`CmdEffect::ConfigChanged`] as
-/// subscriptions need to be reset to take into account the newly added chain.
-fn update_chain<Chain: ChainHandle>(
-    config: &mut Config,
-    registry: &mut Registry<Chain>,
-    workers: &mut WorkerMap,
-    client_state_filter: &mut FilterPolicy,
-    chain_config: ChainConfig,
-) -> CmdEffect {
-    info!(chain = %chain_config.id, "updating existing chain");
-
-    let removed = remove_chain(config, registry, workers, &chain_config.id);
-
-    let added = add_chain(config, registry, workers, client_state_filter, chain_config);
-
-    removed.or(added)
-}
-
-/// Apply the given configuration update.
-///
-/// Returns an [`CmdEffect`] which instructs the caller as to
-/// whether or not the event subscriptions needs to be reset or not.
-fn update_config<Chain: ChainHandle>(
-    config: &mut Config,
-    registry: &mut Registry<Chain>,
-    workers: &mut WorkerMap,
-    client_state_filter: &mut FilterPolicy,
-    update: ConfigUpdate,
-) -> CmdEffect {
-    match update {
-        ConfigUpdate::Add(chain_config) => {
-            add_chain(config, registry, workers, client_state_filter, chain_config)
-        }
-        ConfigUpdate::Remove(id) => remove_chain(config, registry, workers, &id),
-        ConfigUpdate::Update(chain_config) => {
-            update_chain(config, registry, workers, client_state_filter, chain_config)
         }
     }
 }
