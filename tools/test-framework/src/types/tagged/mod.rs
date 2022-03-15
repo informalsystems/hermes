@@ -10,7 +10,7 @@
    different types.
 
    ```rust,compile_fail
-   # use ibc_integration_test::types::tagged::*;
+   # use ibc_test_framework::types::tagged::*;
    struct Foo;
    struct Bar;
 
@@ -37,7 +37,7 @@
    For example, it is entirely fine to do something like:
 
    ```rust
-   # use ibc_integration_test::types::tagged::*;
+   # use ibc_test_framework::types::tagged::*;
    struct Foo;
    struct Bar;
    struct Baz;
