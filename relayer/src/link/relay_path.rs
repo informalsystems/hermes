@@ -710,12 +710,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         self.has_delay() && op_data.has_packet_msgs()
     }
 
+    // Returns the `processed_height` for the consensus state at specified height
     fn update_height<C: ChainHandle>(
         chain: &C,
         client_id: ClientId,
         consensus_height: Height,
     ) -> Result<Height, LinkError> {
-        let mut events = chain
+        let events = chain
             .query_txs(QueryTxRequest::Client(QueryClientEventRequest {
                 height: Height::zero(),
                 event_id: WithBlockDataType::UpdateClient,
@@ -724,9 +725,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             }))
             .map_err(|e| LinkError::query(chain.id(), e))?;
 
-        match events.pop() {
+        // The handler may treat redundant updates as no-ops and emit `UpdateClient` events for them
+        // but the `processed_height` is the height at which the first `UpdateClient` event for this
+        // consensus state/height was emitted. We expect that these events are received in the exact
+        // same order in which they were emitted.
+        match events.first() {
             Some(IbcEvent::UpdateClient(event)) => Ok(event.height()),
-            Some(event) => Err(LinkError::unexpected_event(event)),
+            Some(event) => Err(LinkError::unexpected_event(event.clone())),
             None => Err(LinkError::unexpected_event(IbcEvent::default())),
         }
     }
