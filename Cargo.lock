@@ -1399,6 +1399,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-rpc",
+ "time",
  "tokio",
  "toml",
  "tracing",
