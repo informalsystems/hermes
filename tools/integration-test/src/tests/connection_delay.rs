@@ -1,9 +1,9 @@
 use core::time::Duration;
 use time::OffsetDateTime;
 
-use crate::ibc::denom::derive_ibc_denom;
-use crate::prelude::*;
-use crate::util::random::random_u64_range;
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::util::random::random_u64_range;
 
 const CONNECTION_DELAY: Duration = Duration::from_secs(10);
 
