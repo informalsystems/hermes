@@ -20,11 +20,6 @@ Other than Rust, the test suite assumes the `gaiad` binary is present in `$PATH`
 nix shell github:informalsystems/cosmos.nix#gaia5
 ```
 
-## Quick Start
-
-See [`tests::example`](crate::tests::example) for an example test with
-access to a full test setup.
-
 ## Diagrams
 
 Some diagrams have been prepared to ease the understanding of the test framework:

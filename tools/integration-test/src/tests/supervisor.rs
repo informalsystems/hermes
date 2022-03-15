@@ -1,9 +1,11 @@
-use crate::ibc::denom::derive_ibc_denom;
 use ibc_relayer::config::{self, Config, ModeConfig};
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
 
-use crate::prelude::*;
-use crate::relayer::channel::{assert_eventually_channel_established, init_channel};
-use crate::relayer::connection::{assert_eventually_connection_established, init_connection};
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::channel::{assert_eventually_channel_established, init_channel};
+use ibc_test_framework::relayer::connection::{
+    assert_eventually_connection_established, init_connection,
+};
 
 #[test]
 fn test_supervisor() -> Result<(), Error> {

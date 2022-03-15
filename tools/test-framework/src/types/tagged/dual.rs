@@ -29,7 +29,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
        Example:
 
        ```rust
-       # use ibc_integration_test::types::tagged::dual::Tagged;
+       # use ibc_test_framework::types::tagged::dual::Tagged;
        struct Foo;
        struct Bar;
 
@@ -46,7 +46,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
 
@@ -64,7 +64,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
 
@@ -82,7 +82,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
 
@@ -100,7 +100,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
 
@@ -118,7 +118,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
         struct Baz;
@@ -139,7 +139,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
 
@@ -158,7 +158,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Person { name: String, age: u8 }
         struct Alice;
         struct Wonderland;
@@ -186,7 +186,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Person { name: String, age: u8 }
         struct Alice;
         struct Wonderland;
@@ -210,7 +210,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
 
@@ -225,7 +225,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
 
         ```rust
         # use ibc::core::ics24_host::identifier::ConnectionId;
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct ConnectionEnd {
             connection_id: ConnectionId,
             counterparty_connection_id: ConnectionId,
@@ -270,7 +270,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
        Example:
 
        ```rust
-       # use ibc_integration_test::types::tagged::dual::Tagged;
+       # use ibc_test_framework::types::tagged::dual::Tagged;
        struct Person { name: String, age: u8 }
        struct Alice;
        struct Wonderland;
@@ -298,7 +298,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
 
@@ -318,7 +318,7 @@ impl<'a, TagA, TagB, Value: Clone> Tagged<TagA, TagB, &'a Value> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
 
@@ -343,7 +343,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Option<Value>> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
 
@@ -363,7 +363,7 @@ impl<TagA, TagB, Value, E> Tagged<TagA, TagB, Result<Value, E>> {
         Example:
 
         ```rust
-        # use ibc_integration_test::types::tagged::dual::Tagged;
+        # use ibc_test_framework::types::tagged::dual::Tagged;
         struct Foo;
         struct Bar;
         struct Error;
@@ -433,7 +433,7 @@ impl<TagA, TagB, Value: Ord> Ord for Tagged<TagA, TagB, Value> {
    Example:
 
    ```rust
-   # use ibc_integration_test::types::tagged::dual::Tagged;
+   # use ibc_test_framework::types::tagged::dual::Tagged;
    struct Foo;
    struct Bar;
 
