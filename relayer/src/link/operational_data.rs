@@ -7,6 +7,7 @@ use nanoid::nanoid;
 use prost_types::Any;
 use tracing::{debug, info};
 
+use ibc::core::ics02_client::client_state::ClientState;
 use ibc::events::IbcEvent;
 use ibc::Height;
 
@@ -162,7 +163,22 @@ impl OperationalData {
 
             client_update_opt.pop()
         } else {
-            None
+            let client_state = match self.target {
+                OperationalDataTarget::Source => relay_path
+                    .src_chain()
+                    .query_client_state(relay_path.src_client_id(), Height::zero())
+                    .map_err(|e| LinkError::query(relay_path.src_chain().id(), e))?,
+                OperationalDataTarget::Destination => relay_path
+                    .dst_chain()
+                    .query_client_state(relay_path.dst_client_id(), Height::zero())
+                    .map_err(|e| LinkError::query(relay_path.dst_chain().id(), e))?,
+            };
+
+            if client_state.is_frozen() {
+                return Ok(TrackedMsgs::new(vec![], &self.tracking_id));
+            } else {
+                None
+            }
         };
 
         let msgs: Vec<Any> = match client_update_msg {
