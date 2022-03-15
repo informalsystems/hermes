@@ -26,7 +26,7 @@ ibc-proto     = { version = "0.16.0", path = "../proto", default-features = fals
 ibc-telemetry = { version = "0.13.0-rc.0", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
-humantime-serde = "1.0.0"
+humantime-serde = "1.1.1"
 serde = "1.0"
 serde_derive = "1.0"
 thiserror = "1.0.30"
