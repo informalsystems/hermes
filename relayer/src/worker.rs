@@ -87,13 +87,12 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 None
             };
 
-            (
-                cmd_tx,
-                Some(WorkerData::Client {
-                    misbehaviour,
-                    refresh,
-                }),
-            )
+            let data = WorkerData::Client {
+                misbehaviour,
+                refresh,
+            };
+
+            (cmd_tx, Some(data))
         }
         Object::Connection(connection) => {
             let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
