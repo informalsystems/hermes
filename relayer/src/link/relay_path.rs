@@ -1492,6 +1492,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         .timestamp()
                 }
             };
+
+            // set the `scheduled_time` to an instant in the past, i.e. when this client update was
+            // first processed (`processed_time`)
             let duration = Timestamp::now()
                 .duration_since(&update_time)
                 .unwrap_or_default();
