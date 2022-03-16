@@ -1,8 +1,8 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
-use std::ops::{Add, Sub};
+use std::ops::Sub;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use itertools::Itertools;
 use prost_types::Any;
@@ -57,7 +57,6 @@ use crate::link::{pending, relay_sender};
 use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
-const AVG_BLOCK_TIME_SECS: u64 = 5;
 
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
@@ -1314,7 +1313,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Retains the operational data as pending, and associates it
     /// with one or more transaction hash(es).
     pub fn execute_schedule(&self) -> Result<(), LinkError> {
-        let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
+        let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data()?;
 
         for od in dst_ods {
             let reply =
@@ -1477,6 +1476,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(())
     }
 
+    // Returns an instant (in the past) that corresponds to the block timestamp of the chain at
+    // specified height. If the timestamp is in the future wrt the relayer's current time, we simply
+    // return the current timestamp.
+    fn chain_time_at_height(
+        chain: &impl ChainHandle,
+        height: Height,
+    ) -> Result<Instant, LinkError> {
+        let chain_time = chain
+            .query_host_consensus_state(height)
+            .map_err(LinkError::relayer)?
+            .timestamp();
+        let duration = Timestamp::now()
+            .duration_since(&chain_time)
+            .unwrap_or_default();
+        Ok(Instant::now().sub(duration))
+    }
+
     /// Adds a new operational data item for this relaying path to process later.
     /// If the relaying path has non-zero packet delays, this method also updates the client on the
     /// target chain with the appropriate headers.
@@ -1492,32 +1508,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
+        // If the connection-delay must be taken into account, set the `scheduled_time` to an
+        // instant in the past, i.e. when this client update was first processed (`processed_time`)
         od.scheduled_time = if self.conn_delay_needed(&od) {
             debug!("connection delay must be taken into account: updating client");
             let target_height = od.proofs_height.increment();
-            let update_time = match od.target {
+            match od.target {
                 OperationalDataTarget::Source => {
                     let update_height = self.update_client_src(target_height, &od.tracking_id)?;
-                    self.src_chain()
-                        .query_host_consensus_state(update_height)
-                        .map_err(LinkError::relayer)?
-                        .timestamp()
+                    Self::chain_time_at_height(self.src_chain(), update_height)?
                 }
                 OperationalDataTarget::Destination => {
                     let update_height = self.update_client_dst(target_height, &od.tracking_id)?;
-                    self.dst_chain()
-                        .query_host_consensus_state(update_height)
-                        .map_err(LinkError::relayer)?
-                        .timestamp()
+                    Self::chain_time_at_height(self.dst_chain(), update_height)?
                 }
-            };
-
-            // set the `scheduled_time` to an instant in the past, i.e. when this client update was
-            // first processed (`processed_time`)
-            let duration = Timestamp::now()
-                .duration_since(&update_time)
-                .unwrap_or_default();
-            Instant::now().sub(duration)
+            }
         } else {
             debug!(
                 "connection delay need not be taken into account: client update message will be \
@@ -1539,7 +1544,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// scheduled), returns immediately with `vec![]`.
     fn try_fetch_scheduled_operational_data(
         &self,
-    ) -> (VecDeque<OperationalData>, VecDeque<OperationalData>) {
+    ) -> Result<(VecDeque<OperationalData>, VecDeque<OperationalData>), LinkError> {
         // Extracts elements from a Vec when the predicate returns true.
         // The mutable vector is then updated to the remaining unextracted elements.
         fn partition<T>(
@@ -1560,31 +1565,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             (true_res, false_res)
         }
 
-        let connection_delay = {
-            match self.channel.connection_delay {
-                Duration::ZERO => self.channel.connection_delay,
-                _ => self
-                    .channel
-                    .connection_delay
-                    .add(Duration::from_secs(AVG_BLOCK_TIME_SECS)),
-            }
-        };
+        let connection_delay = self.channel.connection_delay;
+        let src_chain_time = Self::chain_time_at_height(self.src_chain(), Height::zero())?;
+        let dst_chain_time = Self::chain_time_at_height(self.dst_chain(), Height::zero())?;
 
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
-                op.scheduled_time.elapsed() > connection_delay
+                op.scheduled_time.duration_since(src_chain_time) > connection_delay
             });
-
-        self.src_operational_data.replace(unelapsed_src_ods);
-
         let (elapsed_dst_ods, unelapsed_dst_ods) =
             partition(self.dst_operational_data.take(), |op| {
-                op.scheduled_time.elapsed() > connection_delay
+                op.scheduled_time.duration_since(dst_chain_time) > connection_delay
             });
-
+        self.src_operational_data.replace(unelapsed_src_ods);
         self.dst_operational_data.replace(unelapsed_dst_ods);
 
-        (elapsed_src_ods, elapsed_dst_ods)
+        Ok((elapsed_src_ods, elapsed_dst_ods))
     }
 
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
