@@ -21,7 +21,6 @@ use crate::framework::binary::node::NodeConfigOverride;
 use crate::types::config::TestConfig;
 
 use super::binary::channel::ChannelVersionOverride;
-use super::binary::node::NodeGenesisOverride;
 
 /**
    This trait should be implemented for all test cases to allow overriding
@@ -53,10 +52,6 @@ pub trait TestOverrides {
         Implemented for [`NodeConfigOverride`].
     */
     fn modify_node_config(&self, _config: &mut toml::Value) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn modify_genesis_file(&self, _genesis: &mut serde_json::Value) -> Result<(), Error> {
         Ok(())
     }
 
@@ -144,12 +139,6 @@ impl<Test: TestOverrides> TestConfigOverride for Test {
 impl<Test: TestOverrides> NodeConfigOverride for Test {
     fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
         TestOverrides::modify_node_config(self, config)
-    }
-}
-
-impl<Test: TestOverrides> NodeGenesisOverride for Test {
-    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        TestOverrides::modify_genesis_file(self, genesis)
     }
 }
 
