@@ -1949,8 +1949,12 @@ impl ChainEndpoint for CosmosSdkChain {
         let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
         // TODO(hu55a1n1): use the `/header` RPC endpoint instead when we move to tendermint v0.35.x
+        let rpc_call = match height.value() {
+            0 => self.rpc_client.latest_block(),
+            _ => self.rpc_client.block(height),
+        };
         let response = self
-            .block_on(self.rpc_client.block(height))
+            .block_on(rpc_call)
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
         Ok(response.block.header.into())
     }
