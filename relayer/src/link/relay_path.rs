@@ -182,7 +182,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.dst_chain()
             .query_channel(self.dst_port_id(), self.dst_channel_id(), height)
-            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
+            .map_err(|e| LinkError::channel(ChannelError::query(self.dst_chain().id(), e)))
     }
 
     fn src_signer(&self) -> Result<Signer, LinkError> {
@@ -766,47 +766,66 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         src_chain_height: Height,
         tracking_id: &str,
     ) -> Result<Height, LinkError> {
-        for i in 0..MAX_RETRIES {
-            let dst_update = self.build_update_client_on_dst(src_chain_height)?;
-            if dst_update.is_empty() {
+        self.do_update_client_dst(src_chain_height, tracking_id, MAX_RETRIES)
+    }
+
+    /// Perform actual update_client_dst with retries.
+    ///
+    /// Note that the retry is only performed in the case when there
+    /// is a ChainError event. It would return error immediately if
+    /// there are other errors returned from calls such as
+    /// build_update_client_on_dst.
+    fn do_update_client_dst(
+        &self,
+        src_chain_height: Height,
+        tracking_id: &str,
+        retries_left: usize,
+    ) -> Result<Height, LinkError> {
+        info!( "sending update_client to client hosted on source chain for height {} (retries left: {})", src_chain_height, retries_left );
+
+        let dst_update = self.build_update_client_on_dst(src_chain_height)?;
+        let tm = TrackedMsgs::new(dst_update, tracking_id);
+        let dst_tx_events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(LinkError::relayer)?;
+        info!("result: {}", PrettyEvents(&dst_tx_events));
+
+        let (error, update, other) = Self::event_per_type(dst_tx_events);
+        match (error, update, other) {
+            (None, Some(update_event), None) => Ok(update_event.height()),
+            (Some(chain_error), _, _) => {
+                if retries_left == 0 {
+                    Err(LinkError::client(ForeignClientError::chain_error_event(
+                        self.dst_chain().id(),
+                        chain_error,
+                    )))
+                } else {
+                    self.do_update_client_dst(src_chain_height, tracking_id, retries_left - 1)
+                }
+            }
+            (None, None, None) => {
+                // `tm` was empty and update wasn't required
                 match Self::update_height(
                     self.dst_chain(),
                     self.dst_client_id().clone(),
                     src_chain_height,
                 ) {
-                    Ok(height) => return Ok(height),
-                    Err(_) => continue,
+                    Ok(update_height) => Ok(update_height),
+                    Err(_) if retries_left > 0 => {
+                        self.do_update_client_dst(src_chain_height, tracking_id, retries_left - 1)
+                    }
+                    _ => Err(LinkError::update_client_failed()),
                 }
             }
-
-            info!(
-                "sending updateClient to client hosted on destination chain for height {} [try {}/{}]",
-                src_chain_height,
-                i + 1,
-                MAX_RETRIES,
-            );
-
-            let tm = TrackedMsgs::new(dst_update, tracking_id);
-            let dst_tx_events = self
-                .dst_chain()
-                .send_messages_and_wait_commit(tm)
-                .map_err(LinkError::relayer)?;
-            info!("result: {}", PrettyEvents(&dst_tx_events));
-
-            if dst_tx_events
-                .iter()
-                .any(|e| matches!(e, IbcEvent::ChainError(_)))
-            {
-                continue;
-            } else if let Some(IbcEvent::UpdateClient(event)) = dst_tx_events
-                .iter()
-                .find(|e| matches!(e, IbcEvent::UpdateClient(_)))
-            {
-                return Ok(event.height());
+            (_, _, event) => {
+                if !matches!(event, Some(IbcEvent::ClientMisbehaviour(_))) && retries_left > 0 {
+                    self.do_update_client_dst(src_chain_height, tracking_id, retries_left - 1)
+                } else {
+                    Err(LinkError::update_client_failed())
+                }
             }
         }
-
-        Err(LinkError::update_client_failed())
     }
 
     /// Handles updating the client on the source chain
