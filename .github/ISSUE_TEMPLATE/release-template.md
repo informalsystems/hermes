@@ -16,6 +16,7 @@ v                     without deliberation
 ⚡
 
 - [ ] Create a new release in the changelog, using [`unclog`](https://github.com/informalsystems/unclog).
+  - If doing a release candidate (`rc`) version, then skip the `unclog release` step.
 - [ ] Bump all crate versions to the new version.
 - [ ] Reassign unfinished issues of previous milestone to the next milestone.
 - [ ] Update Cargo.lock file (if re-publishing `ibc-relayer-cli`)

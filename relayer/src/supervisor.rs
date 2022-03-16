@@ -418,34 +418,36 @@ pub fn collect_events(
             }
             IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                 collect_event(&mut collected, event, mode.channels.enabled, || {
-                    event.channel_attributes().and_then(|attr| {
-                        Object::channel_from_chan_open_events(attr, src_chain).ok()
+                    event.clone().channel_attributes().and_then(|attr| {
+                        Object::channel_from_chan_open_events(&attr, src_chain).ok()
                     })
                 });
             }
-            IbcEvent::OpenAckChannel(ref open_ack) => {
+            IbcEvent::OpenAckChannel(open_ack) => {
                 // Create client and packet workers here as channel end must be opened
+                let attributes = open_ack.clone().into();
                 collect_event(&mut collected, event, mode.clients.enabled, || {
-                    Object::client_from_chan_open_events(open_ack.attributes(), src_chain).ok()
+                    Object::client_from_chan_open_events(&attributes, src_chain).ok()
                 });
 
                 collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::packet_from_chan_open_events(open_ack.attributes(), src_chain).ok()
+                    Object::packet_from_chan_open_events(&attributes, src_chain).ok()
                 });
 
                 // If handshake message relaying is enabled create worker to send the MsgChannelOpenConfirm message
                 collect_event(&mut collected, event, mode.channels.enabled, || {
-                    Object::channel_from_chan_open_events(open_ack.attributes(), src_chain).ok()
+                    Object::channel_from_chan_open_events(&attributes, src_chain).ok()
                 });
             }
-            IbcEvent::OpenConfirmChannel(ref open_confirm) => {
+            IbcEvent::OpenConfirmChannel(open_confirm) => {
+                let attributes = open_confirm.clone().into();
                 // Create client worker here as channel end must be opened
                 collect_event(&mut collected, event, mode.clients.enabled, || {
-                    Object::client_from_chan_open_events(open_confirm.attributes(), src_chain).ok()
+                    Object::client_from_chan_open_events(&attributes, src_chain).ok()
                 });
 
                 collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::packet_from_chan_open_events(open_confirm.attributes(), src_chain).ok()
+                    Object::packet_from_chan_open_events(&attributes, src_chain).ok()
                 });
             }
             IbcEvent::SendPacket(ref packet) => {

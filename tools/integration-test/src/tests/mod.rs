@@ -10,6 +10,7 @@ pub mod client_expiration;
 pub mod ica_filter;
 pub mod memo;
 pub mod supervisor;
+pub mod ternary_transfer;
 pub mod transfer;
 
 #[cfg(any(doc, feature = "ordered"))]

@@ -62,7 +62,11 @@ pub(crate) fn process(
         channel_id: Some(msg.channel_id),
         ..Default::default()
     };
-    output.emit(IbcEvent::CloseInitChannel(event_attributes.into()));
+    output.emit(IbcEvent::CloseInitChannel(
+        event_attributes
+            .try_into()
+            .map_err(|_| Error::missing_channel_id())?,
+    ));
 
     Ok(output.with_result(result))
 }

@@ -10,6 +10,7 @@ members = [
     "telemetry",
     "proto",
     "tools/integration-test",
+    "tools/test-framework",
 ]
 
 exclude = [

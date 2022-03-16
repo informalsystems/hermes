@@ -19,7 +19,7 @@ jobs:
       - run: cargo doc
 
       - name: Deploy
-        if: ${{ github.ref == 'ref/head/master' }}
+        if: github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.IBC_RS_DOC_PRIVATE_KEY }}

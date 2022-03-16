@@ -16,6 +16,9 @@ log_level = 'info'
 enabled = true
 
 # Whether or not to enable periodic refresh of clients. [Default: true]
+# This feature only applies to clients that underlie an open channel.
+# For Tendermint clients, the frequency at which Hermes refreshes them is 2/3 of their
+# trusting period (e.g., refresh every ~9 days if the trusting period is 14 days).
 # Note: Even if this is disabled, clients will be refreshed automatically if
 #      there is activity on a connection or channel they are involved with.
 refresh = true
