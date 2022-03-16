@@ -12,12 +12,11 @@ use ibc_proto::google::protobuf::Any;
 use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc::events::IbcEvent;
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::{Plan, SoftwareUpgradeProposal};
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::cosmos::events::CosmosEvent;
 use crate::chain::{ChainEndpoint, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -68,7 +67,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     mut dst_chain: CosmosSdkChain, // the chain which will undergo an upgrade
     src_chain: CosmosSdkChain, // the source chain; supplies a client state for building the upgrade plan
     opts: &UpgradePlanOptions,
-) -> Result<Vec<IbcEvent>, UpgradeChainError> {
+) -> Result<Vec<CosmosEvent>, UpgradeChainError> {
     let upgrade_height = dst_chain
         .query_latest_height()
         .map_err(UpgradeChainError::query)?
@@ -141,12 +140,12 @@ pub fn build_and_send_ibc_upgrade_proposal(
     };
 
     let events = dst_chain
-        .send_messages_and_wait_commit(TrackedMsgs::new_single(any_msg, "upgrade"))
+        .send_message_and_wait_commit_cosmos(any_msg)
         .map_err(|e| UpgradeChainError::submit(dst_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction
     let result = events.iter().find_map(|event| match event {
-        IbcEvent::ChainError(reason) => Some(reason.clone()),
+        CosmosEvent::ChainError(reason) => Some(reason.clone()),
         _ => None,
     });
 

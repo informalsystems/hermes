@@ -98,8 +98,11 @@ use super::{ChainEndpoint, HealthCheck, QueryResponse, StatusResponse};
 
 pub mod account;
 pub mod client;
-pub mod compatibility;
+mod compatibility;
+pub mod events;
 pub mod version;
+
+use self::events::CosmosEvent;
 
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 400_000;
@@ -816,7 +819,7 @@ impl CosmosSdkChain {
     /// Given a vector of `TxSyncResult` elements,
     /// each including a transaction response hash for one or more messages, periodically queries the chain
     /// with the transaction hashes to get the list of IbcEvents included in those transactions.
-    pub fn wait_for_block_commits(
+    fn wait_for_block_commits(
         &self,
         mut tx_sync_results: Vec<TxSyncResult>,
     ) -> Result<Vec<TxSyncResult>, Error> {
@@ -848,10 +851,15 @@ impl CosmosSdkChain {
                     return RetryResult::Ok(());
                 }
 
-                for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
+                for TxSyncResult {
+                    response,
+                    events,
+                    cosmos_events,
+                } in tx_sync_results.iter_mut()
+                {
                     // If this transaction was not committed, determine whether it was because it failed
                     // or because it hasn't been committed yet.
-                    if events.is_empty() {
+                    if events.is_empty() && cosmos_events.is_empty() {
                         // If the transaction failed, replace the events with an error,
                         // so that we don't attempt to resolve the transaction later on.
                         if response.code.value() != 0 {
@@ -869,6 +877,12 @@ impl CosmosSdkChain {
                             // whether or not the transaction was fully committed.
                             if !events_per_tx.is_empty() {
                                 *events = events_per_tx;
+                            }
+                        } else if let Ok(cosmos_events_per_tx) =
+                            self.query_cosmos_events_for_tx(QueryTxHash(response.hash))
+                        {
+                            if !cosmos_events_per_tx.is_empty() {
+                                *cosmos_events = cosmos_events_per_tx;
                             }
                         }
                     }
@@ -927,10 +941,63 @@ impl CosmosSdkChain {
             revision_height: u64::from(status.sync_info.latest_block_height),
         })
     }
+
+    /// This function queries transactions for Cosmos-specific events matching a tx hash.
+    fn query_cosmos_events_for_tx(&self, tx: QueryTxHash) -> Result<Vec<CosmosEvent>, Error> {
+        crate::time!("query_cosmos_events_for_tx");
+        crate::telemetry!(query, self.id(), "query_cosmos_events_for_tx");
+
+        let mut response = self
+            .block_on(self.rpc_client.tx_search(
+                tx_hash_query(&tx),
+                false,
+                1,
+                1, // get only the first Tx matching the query
+                Order::Ascending,
+            ))
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+        if response.txs.is_empty() {
+            Ok(vec![])
+        } else {
+            let tx = response.txs.remove(0);
+            Ok(all_cosmos_events_from_tx_search_response(self.id(), &tx))
+        }
+    }
+
+    /// A Cosmos-specific variant of `send_messages_and_wait_commit`,
+    /// expecting a Cosmos event in response to the message committed as a
+    /// transaction.
+    pub fn send_message_and_wait_commit_cosmos(
+        &mut self,
+        msg: Any,
+    ) -> Result<Vec<CosmosEvent>, Error> {
+        crate::time!("send_messages_and_wait_commit_cosmos");
+
+        let _span = span!(Level::DEBUG, "send_tx_commit_cosmos").entered();
+
+        let tx_sync_response = self.send_tx(vec![msg])?;
+        let tx_sync_results = vec![TxSyncResult {
+            response: tx_sync_response,
+            events: vec![],
+            cosmos_events: vec![],
+        }];
+
+        let tx_sync_results = self.wait_for_block_commits(tx_sync_results)?;
+
+        let events = tx_sync_results
+            .into_iter()
+            .flat_map(|el| el.cosmos_events)
+            .collect();
+
+        Ok(events)
+    }
 }
 
 fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
-    tx_sync_results.iter().all(|r| !r.events.is_empty())
+    tx_sync_results
+        .iter()
+        .all(|r| !r.events.is_empty() || !r.cosmos_events.is_empty())
 }
 
 impl ChainEndpoint for CosmosSdkChain {
@@ -1070,8 +1137,8 @@ impl ChainEndpoint for CosmosSdkChain {
         if proto_msgs.is_empty() {
             return Ok(vec![]);
         }
-        let mut tx_sync_results = vec![];
 
+        let mut tx_sync_results = vec![];
         let mut n = 0;
         let mut size = 0;
         let mut msg_batch = vec![];
@@ -1087,6 +1154,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 tx_sync_results.push(TxSyncResult {
                     response: tx_sync_result,
                     events: vec![],
+                    cosmos_events: vec![],
                 });
                 n = 0;
                 size = 0;
@@ -1098,6 +1166,7 @@ impl ChainEndpoint for CosmosSdkChain {
             tx_sync_results.push(TxSyncResult {
                 response: tx_sync_result,
                 events: vec![],
+                cosmos_events: vec![],
             });
         }
 
@@ -1852,7 +1921,7 @@ impl ChainEndpoint for CosmosSdkChain {
                     Ok(vec![])
                 } else {
                     let tx = response.txs.remove(0);
-                    Ok(all_ibc_events_from_tx_search_response(self.id(), tx))
+                    Ok(all_ibc_events_from_tx_search_response(self.id(), &tx))
                 }
             }
         }
@@ -2222,9 +2291,12 @@ fn update_client_from_tx_search_response(
         .map(IbcEvent::UpdateClient)
 }
 
-fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx) -> Vec<IbcEvent> {
+fn all_ibc_events_from_tx_search_response(
+    chain_id: &ChainId,
+    response: &ResultTx,
+) -> Vec<IbcEvent> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    let deliver_tx_result = response.tx_result;
+    let deliver_tx_result = &response.tx_result;
     if deliver_tx_result.code.is_err() {
         return vec![IbcEvent::ChainError(format!(
             "deliver_tx for {} reports error: code={:?}, log={:?}",
@@ -2233,9 +2305,31 @@ fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx
     }
 
     let mut result = vec![];
-    for event in deliver_tx_result.events {
-        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
+    for event in &deliver_tx_result.events {
+        if let Some(ibc_ev) = from_tx_response_event(height, event) {
             result.push(ibc_ev);
+        }
+    }
+    result
+}
+
+fn all_cosmos_events_from_tx_search_response(
+    chain_id: &ChainId,
+    response: &ResultTx,
+) -> Vec<CosmosEvent> {
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    let deliver_tx_result = &response.tx_result;
+    if deliver_tx_result.code.is_err() {
+        return vec![CosmosEvent::ChainError(format!(
+            "deliver_tx for {} reports error: code={:?}, log={:?}",
+            response.hash, deliver_tx_result.code, deliver_tx_result.log
+        ))];
+    }
+
+    let mut result = vec![];
+    for event in &deliver_tx_result.events {
+        if let Some(sdk_ev) = CosmosEvent::try_from_tx_response(height, event) {
+            result.push(sdk_ev);
         }
     }
     result
@@ -2360,8 +2454,10 @@ fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
 pub struct TxSyncResult {
     // the broadcast_tx_sync response
     response: Response,
-    // the events generated by a Tx once executed
+    // the IBC events generated by a Tx once executed
     events: Vec<IbcEvent>,
+    // Cosmos-specific events generated by a Tx once executed
+    cosmos_events: Vec<CosmosEvent>,
 }
 
 pub fn auth_info_and_bytes(
