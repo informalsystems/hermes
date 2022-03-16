@@ -3,7 +3,8 @@
 ## `clear packets`
 
 This command clears outstanding packets on a given channel in both directions,
-by issuing the appropriate [packet-recvs](/commands/raw/packet.md) and [packet-acks](/commands/raw/packet.md).
+by issuing the appropriate [packet-recvs](../raw/packet.md#relay-receive-and-timeout-packets)
+and [packet-acks](../raw/packet.md#relay-acknowledgment-packets).
 
 ### Usage
 
