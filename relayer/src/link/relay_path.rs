@@ -202,6 +202,26 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(|e| LinkError::query(self.dst_chain().id(), e))
     }
 
+    #[inline]
+    fn src_time_at_height(&self, height: Height) -> Result<Instant, LinkError> {
+        Self::chain_time_at_height(self.src_chain(), height)
+    }
+
+    #[inline]
+    fn dst_time_at_height(&self, height: Height) -> Result<Instant, LinkError> {
+        Self::chain_time_at_height(self.dst_chain(), height)
+    }
+
+    #[inline]
+    fn src_time_latest(&self) -> Result<Instant, LinkError> {
+        self.src_time_at_height(Height::zero())
+    }
+
+    #[inline]
+    fn dst_time_latest(&self) -> Result<Instant, LinkError> {
+        self.dst_time_at_height(Height::zero())
+    }
+
     fn unordered_channel(&self) -> bool {
         self.channel.ordering == Order::Unordered
     }
@@ -699,12 +719,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     /// Returns `true` if the connection delay for this relaying path is non-zero.
     /// Conversely, returns `false` if the delay is zero.
+    #[inline]
     fn has_delay(&self) -> bool {
         self.channel.connection_delay != ZERO_DURATION
     }
 
     /// Returns `true` iff the connection delay for this relaying path is non-zero and `op_data`
     /// contains packet messages.
+    #[inline]
     pub fn conn_delay_needed(&self, op_data: &OperationalData) -> bool {
         self.has_delay() && op_data.has_packet_msgs()
     }
@@ -748,6 +770,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[inline]
+    // Loops over `tx_events` and returns a tuple of optional events where the first element is a
+    // `ChainError` variant, the second one is an `UpdateClient` variant and the third one is any
+    // other variant (usually `ClientMisbehaviour`). This function is essentially just an
+    // `Iterator::find()` for multiple variants with a single pass.
     fn event_per_type(
         mut tx_events: Vec<IbcEvent>,
     ) -> (
@@ -768,6 +794,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         (error, update, other)
+    }
+
+    // Returns an instant (in the past) that corresponds to the block timestamp of the chain at
+    // specified height (relative to the relayer's current time). If the timestamp is in the future
+    // wrt the relayer's current time, we simply return the current relayer time.
+    fn chain_time_at_height(
+        chain: &impl ChainHandle,
+        height: Height,
+    ) -> Result<Instant, LinkError> {
+        let chain_time = chain
+            .query_host_consensus_state(height)
+            .map_err(LinkError::relayer)?
+            .timestamp();
+        let duration = Timestamp::now()
+            .duration_since(&chain_time)
+            .unwrap_or_default();
+        Ok(Instant::now().sub(duration))
     }
 
     /// Handles updating the client on the destination chain
@@ -1488,23 +1531,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(())
     }
 
-    // Returns an instant (in the past) that corresponds to the block timestamp of the chain at
-    // specified height. If the timestamp is in the future wrt the relayer's current time, we simply
-    // return the current timestamp.
-    fn chain_time_at_height(
-        chain: &impl ChainHandle,
-        height: Height,
-    ) -> Result<Instant, LinkError> {
-        let chain_time = chain
-            .query_host_consensus_state(height)
-            .map_err(LinkError::relayer)?
-            .timestamp();
-        let duration = Timestamp::now()
-            .duration_since(&chain_time)
-            .unwrap_or_default();
-        Ok(Instant::now().sub(duration))
-    }
-
     /// Adds a new operational data item for this relaying path to process later.
     /// If the relaying path has non-zero packet delays, this method also updates the client on the
     /// target chain with the appropriate headers.
@@ -1528,11 +1554,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             match od.target {
                 OperationalDataTarget::Source => {
                     let update_height = self.update_client_src(target_height, &od.tracking_id)?;
-                    Self::chain_time_at_height(self.src_chain(), update_height)?
+                    self.src_time_at_height(update_height)?
                 }
                 OperationalDataTarget::Destination => {
                     let update_height = self.update_client_dst(target_height, &od.tracking_id)?;
-                    Self::chain_time_at_height(self.dst_chain(), update_height)?
+                    self.dst_time_at_height(update_height)?
                 }
             }
         } else {
@@ -1552,8 +1578,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Pulls out the operational elements with elapsed delay period and that can
-    /// now be processed. Does not block: if no OD fulfilled the delay period (or none is
-    /// scheduled), returns immediately with `vec![]`.
+    /// now be processed.
     fn try_fetch_scheduled_operational_data(
         &self,
     ) -> Result<(VecDeque<OperationalData>, VecDeque<OperationalData>), LinkError> {
@@ -1577,13 +1602,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             (true_res, false_res)
         }
 
-        let src_chain_time = Self::chain_time_at_height(self.src_chain(), Height::zero())?;
+        let src_chain_time = self.src_time_latest()?;
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
                 self.conn_delay_elapsed(op, src_chain_time)
             });
 
-        let dst_chain_time = Self::chain_time_at_height(self.dst_chain(), Height::zero())?;
+        let dst_chain_time = self.dst_time_latest()?;
         let (elapsed_dst_ods, unelapsed_dst_ods) =
             partition(self.dst_operational_data.take(), |op| {
                 self.conn_delay_elapsed(op, dst_chain_time)
