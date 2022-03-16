@@ -709,9 +709,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         self.has_delay() && op_data.has_packet_msgs()
     }
 
+    #[inline]
+    fn conn_delay_elapsed(&self, op: &OperationalData, chain_time: Instant) -> bool {
+        if self.conn_delay_needed(op) {
+            // since chain time instant is relative to relayer's current time, it is possible that
+            // `op.scheduled_time` is later (by nano secs) than `chain_time`, hence the call to
+            // `saturating_duration_since()`.
+            chain_time.saturating_duration_since(op.scheduled_time) > self.channel.connection_delay
+        } else {
+            true
+        }
+    }
+
     // Returns the `processed_height` for the consensus state at specified height
-    fn update_height<C: ChainHandle>(
-        chain: &C,
+    fn update_height(
+        chain: &impl ChainHandle,
         client_id: ClientId,
         consensus_height: Height,
     ) -> Result<Height, LinkError> {
@@ -1565,21 +1577,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             (true_res, false_res)
         }
 
-        let connection_delay = self.channel.connection_delay;
         let src_chain_time = Self::chain_time_at_height(self.src_chain(), Height::zero())?;
-        let dst_chain_time = Self::chain_time_at_height(self.dst_chain(), Height::zero())?;
-
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
-                op.scheduled_time.duration_since(src_chain_time) > connection_delay
+                self.conn_delay_elapsed(op, src_chain_time)
             });
+
+        let dst_chain_time = Self::chain_time_at_height(self.dst_chain(), Height::zero())?;
         let (elapsed_dst_ods, unelapsed_dst_ods) =
             partition(self.dst_operational_data.take(), |op| {
-                op.scheduled_time.duration_since(dst_chain_time) > connection_delay
+                self.conn_delay_elapsed(op, dst_chain_time)
             });
+
         self.src_operational_data.replace(unelapsed_src_ods);
         self.dst_operational_data.replace(unelapsed_dst_ods);
-
         Ok((elapsed_src_ods, elapsed_dst_ods))
     }
 
