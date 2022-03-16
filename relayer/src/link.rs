@@ -211,7 +211,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         let mut results = vec![];
 
         // Block waiting for all of the scheduled data (until `None` is returned)
-        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
+        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
             let mut last_res = self
                 .a_to_b
                 .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
@@ -237,7 +237,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         let mut results = vec![];
 
         // Block waiting for all of the scheduled data
-        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
+        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
             let mut last_res = self
                 .a_to_b
                 .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;

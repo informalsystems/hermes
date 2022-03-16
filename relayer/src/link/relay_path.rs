@@ -2,7 +2,7 @@ use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
 use std::ops::Sub;
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use itertools::Itertools;
 use prost_types::Any;
@@ -749,14 +749,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[inline]
-    fn conn_time_delay_elapsed(&self, op: &OperationalData, chain_time: Instant) -> bool {
+    fn conn_time_delay_elapsed(
+        &self,
+        op: &OperationalData,
+        chain_time: Instant,
+    ) -> Result<(), Duration> {
         if self.conn_delay_needed(op) {
             // since chain time instant is relative to relayer's current time, it is possible that
             // `op.scheduled_time` is later (by nano secs) than `chain_time`, hence the call to
             // `saturating_duration_since()`.
-            chain_time.saturating_duration_since(op.scheduled_time) > self.channel.connection_delay
+            let elapsed = chain_time.saturating_duration_since(op.scheduled_time);
+            if elapsed > self.channel.connection_delay {
+                Ok(())
+            } else {
+                Err(elapsed)
+            }
         } else {
-            true
+            Ok(())
         }
     }
 
@@ -766,15 +775,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         op: &OperationalData,
         block_delay: u64,
         latest_height: Height,
-    ) -> bool {
+    ) -> Result<(), u64> {
         if self.conn_delay_needed(op) {
-            latest_height
-                >= op
-                    .update_processed_height
-                    .expect("processed height not set")
-                    .add(block_delay)
+            let acceptable_height = op
+                .update_processed_height
+                .expect("processed height not set")
+                .add(block_delay);
+            if latest_height >= acceptable_height {
+                Ok(())
+            } else {
+                debug_assert!(acceptable_height.revision_number == latest_height.revision_number);
+                Err(acceptable_height.revision_height - latest_height.revision_height)
+            }
         } else {
-            true
+            Ok(())
         }
     }
 
@@ -1655,8 +1669,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_latest_height = self.src_latest_height()?;
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
-                self.conn_time_delay_elapsed(op, src_chain_time)
-                    && self.conn_block_delay_elapsed(op, src_block_delay, src_latest_height)
+                self.conn_time_delay_elapsed(op, src_chain_time).is_ok()
+                    && self
+                        .conn_block_delay_elapsed(op, src_block_delay, src_latest_height)
+                        .is_ok()
             });
 
         let dst_chain_time = self.dst_time_latest()?;
@@ -1664,8 +1680,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let dst_latest_height = self.dst_latest_height()?;
         let (elapsed_dst_ods, unelapsed_dst_ods) =
             partition(self.dst_operational_data.take(), |op| {
-                self.conn_time_delay_elapsed(op, dst_chain_time)
-                    && self.conn_block_delay_elapsed(op, dst_block_delay, dst_latest_height)
+                self.conn_time_delay_elapsed(op, dst_chain_time).is_ok()
+                    && self
+                        .conn_block_delay_elapsed(op, dst_block_delay, dst_latest_height)
+                        .is_ok()
             });
 
         self.src_operational_data.replace(unelapsed_src_ods);
@@ -1676,42 +1694,58 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
     /// waiting for the delay period to pass.
     /// Returns `None` if there is no operational data scheduled.
-    pub(crate) fn fetch_scheduled_operational_data(&self) -> Option<OperationalData> {
-        let odata = self
-            .src_operational_data
-            .pop_front()
-            .or_else(|| self.dst_operational_data.pop_front());
+    pub(crate) fn fetch_scheduled_operational_data(
+        &self,
+    ) -> Result<Option<OperationalData>, LinkError> {
+        let (delay_time_left, delay_blocks_left, odata) =
+            if let Some(odata) = self.src_operational_data.pop_front() {
+                let src_chain_time = self.src_time_latest()?;
+                let src_block_delay = self.src_conn_block_delay()?;
+                let src_latest_height = self.src_latest_height()?;
+                (
+                    self.conn_time_delay_elapsed(&odata, src_chain_time).err(),
+                    self.conn_block_delay_elapsed(&odata, src_block_delay, src_latest_height)
+                        .err(),
+                    Some(odata),
+                )
+            } else if let Some(odata) = self.dst_operational_data.pop_front() {
+                let dst_chain_time = self.dst_time_latest()?;
+                let dst_block_delay = self.dst_conn_block_delay()?;
+                let dst_latest_height = self.dst_latest_height()?;
+                (
+                    self.conn_time_delay_elapsed(&odata, dst_chain_time).err(),
+                    self.conn_block_delay_elapsed(&odata, dst_block_delay, dst_latest_height)
+                        .err(),
+                    Some(odata),
+                )
+            } else {
+                (None, None, None)
+            };
 
         if let Some(odata) = odata {
-            // TODO
-            // Check if the delay period did not completely elapse
-            let delay_left = self
-                .channel
-                .connection_delay
-                .checked_sub(odata.scheduled_time.elapsed());
-
-            match delay_left {
-                None => info!(
+            match (delay_time_left, delay_blocks_left) {
+                (None, None) => info!(
                     "ready to fetch a scheduled op. data with batch of size {} targeting {}",
                     odata.batch.len(),
                     odata.target,
                 ),
-                Some(delay_left) => {
+                (Some(delay_time), _) => {
                     info!(
                         "waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
-                        delay_left,
+                        delay_time,
                         odata.batch.len(),
                         odata.target,
                     );
 
                     // Wait until the delay period passes
-                    thread::sleep(delay_left);
+                    thread::sleep(delay_time);
                 }
+                (None, Some(_blocks)) => {}
             }
 
-            Some(odata)
+            Ok(Some(odata))
         } else {
-            None
+            Ok(None)
         }
     }
 
