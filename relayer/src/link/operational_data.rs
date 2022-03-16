@@ -88,6 +88,7 @@ pub struct TransitMessage {
 #[derive(Clone)]
 pub struct OperationalData {
     pub proofs_height: Height,
+    pub update_processed_height: Option<Height>,
     pub batch: Vec<TransitMessage>,
     pub target: OperationalDataTarget,
     /// Stores the time when the clients on the target chain has been updated, i.e., when this data
@@ -104,6 +105,7 @@ impl OperationalData {
     ) -> Self {
         OperationalData {
             proofs_height,
+            update_processed_height: None,
             batch: vec![],
             target,
             scheduled_time: Instant::now(),
