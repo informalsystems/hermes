@@ -141,6 +141,11 @@ pub fn build_and_send_ibc_upgrade_proposal(
         value: buf_msg,
     };
 
+    // Can't use send_messages_and_wait_commit because no IBC events
+    // corresponding to the transaction can be recognized to confirm the
+    // upgrade.
+    // https://github.com/informalsystems/ibc-rs/issues/1288#issuecomment-1066884163
+
     let responses = dst_chain
         .send_messages_and_wait_check_tx(TrackedMsgs::new_single(any_msg, "upgrade"))
         .map_err(|e| UpgradeChainError::submit(dst_chain.id().clone(), e))?;
