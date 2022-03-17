@@ -79,10 +79,9 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
-            let ctx_ro: &Ctx = ctx;
-            let module_id = ics4_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
+            let module_id = ics4_validate(ctx, &msg).map_err(Error::ics04_channel)?;
             let mut handler_output =
-                ics4_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
+                ics4_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
 
             let mut module_output = HandlerOutput::builder().with_result(());
             let cb_result = ics4_callback(
@@ -120,10 +119,9 @@ where
         }
 
         Ics4PacketMsg(msg) => {
-            let ctx_ro: &Ctx = ctx;
-            let module_id = ics4_packet_validate(ctx_ro, &msg).map_err(Error::ics04_channel)?;
+            let module_id = ics4_packet_validate(ctx, &msg).map_err(Error::ics04_channel)?;
             let mut handler_output =
-                ics4_packet_msg_dispatcher(ctx_ro, &msg).map_err(Error::ics04_channel)?;
+                ics4_packet_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
 
             if matches!(
                 handler_output.result,
