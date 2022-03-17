@@ -20,6 +20,7 @@ use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::connection::ConnectedConnection;
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
+use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`BinaryConnectionTest`], with
@@ -221,7 +222,9 @@ where
                 .clone()
                 .with_supervisor(|| self.test.run(config, relayer, chains, connection))
         } else {
-            self.test.run(config, relayer, chains, connection)
+            hang_on_error(config.hang_on_fail, || {
+                self.test.run(config, relayer, chains, connection)
+            })
         }
     }
 }

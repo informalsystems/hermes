@@ -25,6 +25,7 @@ use crate::types::binary::connection::ConnectedConnection;
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
 use crate::types::tagged::*;
+use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`BinaryChannelTest`], with
@@ -197,9 +198,7 @@ where
 
         info!("written channel environment to {}", env_path.display());
 
-        self.test
-            .run(config, relayer, chains, channels)
-            .map_err(config.hang_on_error())?;
+        self.test.run(config, relayer, chains, channels)?;
 
         Ok(())
     }
@@ -222,8 +221,7 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
         );
 
         self.test
-            .run(config, relayer.clone(), chains.clone(), channels.clone())
-            .map_err(config.hang_on_error())?;
+            .run(config, relayer.clone(), chains.clone(), channels.clone())?;
 
         info!(
             "running two-way channel test in the opposite direction, from {}/{} to {}/{}",
@@ -236,9 +234,7 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
         let chains = chains.flip();
         let channels = channels.flip();
 
-        self.test
-            .run(config, relayer, chains, channels)
-            .map_err(config.hang_on_error())?;
+        self.test.run(config, relayer, chains, channels)?;
 
         Ok(())
     }
@@ -262,7 +258,9 @@ where
                 .clone()
                 .with_supervisor(|| self.test.run(config, relayer, chains, channels))
         } else {
-            self.test.run(config, relayer, chains, channels)
+            hang_on_error(config.hang_on_fail, || {
+                self.test.run(config, relayer, chains, channels)
+            })
         }
     }
 }

@@ -19,6 +19,7 @@ use crate::types::binary::chains::DropChainHandle;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::single::node::FullNode;
+use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`NaryChainTest`] with a `SIZE` number of
@@ -175,7 +176,9 @@ where
                 .clone()
                 .with_supervisor(|| self.test.run(config, relayer, chains))
         } else {
-            self.test.run(config, relayer, chains)
+            hang_on_error(config.hang_on_fail, || {
+                self.test.run(config, relayer, chains)
+            })
         }
     }
 }

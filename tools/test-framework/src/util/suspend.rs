@@ -20,17 +20,22 @@ pub fn suspend<R>() -> R {
     }
 }
 
-pub fn hang_on_error<E: Debug + Display>(hang_on_fail: bool) -> impl FnOnce(E) -> E {
-    move |e| {
-        if hang_on_fail {
+pub fn hang_on_error<R, E: Debug + Display>(
+    hang_on_fail: bool,
+    cont: impl FnOnce() -> Result<R, E>,
+) -> Result<R, E> {
+    if hang_on_fail {
+        cont().map_err(|e| {
             error!("test failure occured with HANG_ON_FAIL=1, suspending the test to allow debugging: {:?}",
                 e);
 
             suspend()
-        } else {
+        })
+    } else {
+        cont().map_err(|e| {
             error!("test failure occured. set HANG_ON_FAIL=1 to suspend the test on failure for debugging: {}",
                 e);
             e
-        }
+        })
     }
 }

@@ -19,6 +19,7 @@ use crate::types::binary::chains::{ConnectedChains, DropChainHandle};
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
 use crate::types::single::node::FullNode;
+use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`BinaryChainTest`], with
@@ -178,9 +179,7 @@ where
         let _drop_handle_a = DropChainHandle(chains.handle_a.clone());
         let _drop_handle_b = DropChainHandle(chains.handle_b.clone());
 
-        self.test
-            .run(config, relayer, chains)
-            .map_err(config.hang_on_error())?;
+        self.test.run(config, relayer, chains)?;
 
         Ok(())
     }
@@ -232,7 +231,9 @@ where
                 .clone()
                 .with_supervisor(|| self.test.run(config, relayer, chains))
         } else {
-            self.test.run(config, relayer, chains)
+            hang_on_error(config.hang_on_fail, || {
+                self.test.run(config, relayer, chains)
+            })
         }
     }
 }

@@ -23,6 +23,7 @@ use crate::types::config::TestConfig;
 use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::nary::channel::ConnectedChannels;
 use crate::types::nary::connection::ConnectedConnections;
+use crate::util::suspend::hang_on_error;
 
 pub fn run_nary_channel_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Result<(), Error>
 where
@@ -216,7 +217,9 @@ where
                 .clone()
                 .with_supervisor(|| self.test.run(config, relayer, chains, channels))
         } else {
-            self.test.run(config, relayer, chains, channels)
+            hang_on_error(config.hang_on_fail, || {
+                self.test.run(config, relayer, chains, channels)
+            })
         }
     }
 }

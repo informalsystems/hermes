@@ -81,7 +81,7 @@ impl RelayerDriver {
     pub fn with_supervisor<R>(&self, cont: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
         let _handle = self.spawn_supervisor()?;
 
-        cont().map_err(hang_on_error(self.hang_on_fail))
+        hang_on_error(self.hang_on_fail, cont)
     }
 }
 

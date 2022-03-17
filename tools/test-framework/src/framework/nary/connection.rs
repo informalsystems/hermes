@@ -19,6 +19,7 @@ use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::nary::connection::ConnectedConnections;
+use crate::util::suspend::hang_on_error;
 
 pub fn run_nary_connection_test<Test, Overrides, const SIZE: usize>(
     test: &Test,
@@ -149,7 +150,9 @@ where
                 .clone()
                 .with_supervisor(|| self.test.run(config, relayer, chains, connections))
         } else {
-            self.test.run(config, relayer, chains, connections)
+            hang_on_error(config.hang_on_fail, || {
+                self.test.run(config, relayer, chains, connections)
+            })
         }
     }
 }
