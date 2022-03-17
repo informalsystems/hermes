@@ -7,6 +7,18 @@ fn test_ibc_transfer() -> Result<(), Error> {
     run_binary_channel_test(&IbcTransferTest)
 }
 
+#[cfg(feature = "manual")]
+#[test]
+fn test_slow_ibc_transfer() -> Result<(), Error> {
+    // Purposely run the supervisor right after the chains are bootstrapped,
+    // instead of the original behavior of running them after the channels
+    // are bootstrapped. This will cause the IBC transfer to be relayed
+    // very slowly.
+    run_binary_node_test(&RunBinaryChainTest::new(&RunWithSupervisor::new(
+        &RunBinaryConnectionTest::new(&RunBinaryChannelTest::new(&IbcTransferTest)),
+    )))
+}
+
 /**
    Test that IBC token transfer can still work with a single
    chain that is connected to itself.
