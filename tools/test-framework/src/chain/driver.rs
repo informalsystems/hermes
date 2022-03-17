@@ -105,7 +105,10 @@ impl ChainDriver {
         grpc_web_port: u16,
         p2p_port: u16,
     ) -> Result<Self, Error> {
-        let command_version = get_chain_command_version(&command_path)?;
+        // Assume we're on Gaia 6 if we can't get a version
+        // (eg. with `icad`, which returns an empty string).
+        let command_version =
+            get_chain_command_version(&command_path).unwrap_or_else(|_| Version::new(6, 0, 0));
 
         Ok(Self {
             command_path,
@@ -485,9 +488,13 @@ impl ChainDriver {
         from: &WalletAddress,
         connection_id: &ConnectionId,
     ) -> Result<(), Error> {
-        dbg!(&[
+        let args = &[
+            "--home",
+            &self.home_path,
             "--node",
             &self.rpc_listen_address(),
+            "--output",
+            "json",
             "tx",
             "intertx",
             "register",
@@ -497,28 +504,12 @@ impl ChainDriver {
             connection_id.as_str(),
             "--chain-id",
             self.chain_id.as_str(),
-            "--output",
-            "json",
-        ]);
+            "--keyring-backend",
+            "test",
+            "-y",
+        ];
 
-        let res = self
-            .exec(&[
-                "--node",
-                &self.rpc_listen_address(),
-                "tx",
-                "intertx",
-                "register",
-                "--from",
-                &from.0,
-                "--connection-id",
-                connection_id.as_str(),
-                "--chain-id",
-                self.chain_id.as_str(),
-                "--output",
-                "json",
-            ])?
-            .stdout;
-
+        let res = self.exec(args)?.stdout;
         let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
 
         let code = json_res
@@ -538,5 +529,36 @@ impl ChainDriver {
 
             Err(Error::generic(eyre!("{}", raw_log)))
         }
+    }
+
+    pub fn query_interchain_account(
+        &self,
+        from: &WalletAddress,
+        connection_id: &ConnectionId,
+    ) -> Result<WalletAddress, Error> {
+        let args = &[
+            "--home",
+            &self.home_path,
+            "--node",
+            &self.rpc_listen_address(),
+            "--output",
+            "json",
+            "query",
+            "intertx",
+            "interchainaccounts",
+            connection_id.as_str(),
+            &from.0,
+        ];
+
+        let res = self.exec(args)?.stdout;
+        let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
+
+        let address = json_res
+            .get("interchain_account_address")
+            .ok_or_else(|| eyre!("expected `interchain_account_address` field"))?
+            .as_str()
+            .ok_or_else(|| eyre!("expected string field"))?;
+
+        Ok(WalletAddress(address.to_string()))
     }
 }

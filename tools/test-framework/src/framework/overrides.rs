@@ -104,6 +104,12 @@ pub trait TestOverrides {
         Order::Unordered
     }
 
+    /**
+       Return the channel version used for creating channels as [`Version`].
+       Defaults to [`Version::ics20()`].
+
+       Implemented for [`ChannelVersionOverride`].
+    */
     fn channel_version(&self) -> Version {
         Version::ics20()
     }

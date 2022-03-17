@@ -105,6 +105,12 @@ pub trait TaggedChainDriverExt<Chain> {
         from: &MonoTagged<Chain, &WalletAddress>,
         connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
     ) -> Result<(), Error>;
+
+    fn query_interchain_account<Counterparty>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+    ) -> Result<MonoTagged<Chain, WalletAddress>, Error>;
 }
 
 impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
@@ -176,5 +182,15 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
     ) -> Result<(), Error> {
         self.value()
             .register_interchain_account(from.value(), connection_id.value())
+    }
+
+    fn query_interchain_account<Counterparty>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+    ) -> Result<MonoTagged<Chain, WalletAddress>, Error> {
+        self.value()
+            .query_interchain_account(from.value(), connection_id.value())
+            .map(MonoTagged::new)
     }
 }
