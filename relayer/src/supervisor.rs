@@ -298,7 +298,8 @@ fn channel_filter_enabled(_config: &Config) -> bool {
     true
 }
 
-fn relay_packets_on_channel(
+/// Whether or not the given channel is allowed by the filter policy, if any.
+fn is_channel_allowed(
     config: &Config,
     chain_id: &ChainId,
     port_id: &PortId,
@@ -312,6 +313,8 @@ fn relay_packets_on_channel(
     config.packets_on_channel_allowed(chain_id, port_id, channel_id)
 }
 
+/// Whether or not the relayer should relay packets
+/// or complete handshakes for the given [`Object`].
 fn relay_on_object<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -324,14 +327,24 @@ fn relay_on_object<Chain: ChainHandle>(
         return true;
     }
 
-    // First, apply the channel filter
-    if let Object::Packet(u) = object {
-        if !relay_packets_on_channel(config, chain_id, u.src_port_id(), u.src_channel_id()) {
-            return false;
+    // First, apply the channel filter on packets and channel workers
+    match object {
+        Object::Packet(p) => {
+            if !is_channel_allowed(config, chain_id, p.src_port_id(), p.src_channel_id()) {
+                // Forbid relaying packets on that channel
+                return false;
+            }
         }
-    }
+        Object::Channel(c) => {
+            if !is_channel_allowed(config, chain_id, c.src_port_id(), c.src_channel_id()) {
+                // Forbid completing handshake for that channel
+                return false;
+            }
+        }
+        _ => (),
+    };
 
-    // Second, apply the client filter
+    // Then, apply the client filter
     let client_filter_outcome = match object {
         Object::Client(client) => client_state_filter.control_client_object(registry, client),
         Object::Connection(conn) => client_state_filter.control_conn_object(registry, conn),
