@@ -3,7 +3,13 @@ use ibc_test_framework::prelude::*;
 
 #[test]
 fn test_ternary_ibc_transfer() -> Result<(), Error> {
-    run_nary_channel_test(&TernaryIbcTransferTest)
+    // Purposely run the supervisor right after the chains are bootstrapped,
+    // instead of the original behavior of running them after the channels
+    // are bootstrapped. This will cause the IBC transfer to be relayed
+    // very slowly.
+    run_nary_node_test(&RunNaryChainTest::new(&RunWithSupervisor::new(
+        &RunNaryConnectionTest::new(&RunNaryChannelTest::new(&TernaryIbcTransferTest)),
+    )))
 }
 
 pub struct TernaryIbcTransferTest;
