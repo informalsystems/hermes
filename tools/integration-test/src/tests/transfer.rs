@@ -1,3 +1,4 @@
+use ibc_relayer::config::types::MaxMsgNum;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
@@ -39,7 +40,13 @@ fn test_self_connected_nary_ibc_transfer() -> Result<(), Error> {
 
 pub struct IbcTransferTest;
 
-impl TestOverrides for IbcTransferTest {}
+impl TestOverrides for IbcTransferTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        for mut chain_config in config.chains.iter_mut() {
+            chain_config.max_msg_num = MaxMsgNum(1);
+        }
+    }
+}
 
 impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
