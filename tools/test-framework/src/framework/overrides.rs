@@ -16,6 +16,7 @@ use crate::framework::binary::channel::{ChannelOrderOverride, PortsOverride};
 use crate::framework::binary::connection::ConnectionDelayOverride;
 use crate::framework::binary::node::NodeConfigOverride;
 use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
+use crate::framework::supervisor::SupervisorOverride;
 use crate::types::config::TestConfig;
 
 /**
@@ -59,6 +60,10 @@ pub trait TestOverrides {
     */
     fn modify_relayer_config(&self, _config: &mut Config) {
         // No modification by default
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        true
     }
 
     /**
@@ -125,6 +130,12 @@ impl<Test: TestOverrides> NodeConfigOverride for Test {
 impl<Test: TestOverrides> RelayerConfigOverride for Test {
     fn modify_relayer_config(&self, config: &mut Config) {
         TestOverrides::modify_relayer_config(self, config)
+    }
+}
+
+impl<Test: TestOverrides> SupervisorOverride for Test {
+    fn should_spawn_supervisor(&self) -> bool {
+        TestOverrides::should_spawn_supervisor(self)
     }
 }
 

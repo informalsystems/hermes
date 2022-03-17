@@ -122,6 +122,10 @@ impl TestOverrides for ExpirationTestOverrides {
             chain_config.trusting_period = Some(CLIENT_EXPIRY);
         }
     }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
 }
 
 impl BinaryChainTest for ChannelExpirationTest {

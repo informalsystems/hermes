@@ -5,8 +5,6 @@
 
 use ibc_relayer::chain::handle::ChainHandle;
 
-use super::node::{run_nary_node_test, NaryNodeTest};
-
 use crate::bootstrap::nary::chain::{
     boostrap_chains_with_nodes, boostrap_chains_with_self_connected_node,
 };
@@ -14,6 +12,8 @@ use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::nary::node::{run_nary_node_test, NaryNodeTest};
+use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::DropChainHandle;
 use crate::types::config::TestConfig;
@@ -41,9 +41,9 @@ pub fn run_nary_chain_test<Test, Overrides, const SIZE: usize>(test: &Test) -> R
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride,
+    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
-    run_nary_node_test(&RunNaryChainTest::new(test))
+    run_nary_node_test(&RunNaryChainTest::new(&RunWithSupervisor::new(test)))
 }
 
 /**
@@ -66,9 +66,11 @@ pub fn run_self_connected_nary_chain_test<Test, Overrides, const SIZE: usize>(
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride,
+    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
 {
-    run_nary_node_test(&RunSelfConnectedNaryChainTest::new(test))
+    run_nary_node_test(&RunSelfConnectedNaryChainTest::new(
+        &RunWithSupervisor::new(test),
+    ))
 }
 
 /**
@@ -153,6 +155,28 @@ where
         self.test.run(config, relayer, chains)?;
 
         Ok(())
+    }
+}
+
+impl<'a, Test, Overrides, const SIZE: usize> NaryChainTest<SIZE> for RunWithSupervisor<'a, Test>
+where
+    Test: NaryChainTest<SIZE>,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: SupervisorOverride,
+{
+    fn run<Handle: ChainHandle>(
+        &self,
+        config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: NaryConnectedChains<Handle, SIZE>,
+    ) -> Result<(), Error> {
+        if self.get_overrides().should_spawn_supervisor() {
+            relayer
+                .clone()
+                .with_supervisor(|| self.test.run(config, relayer, chains))
+        } else {
+            self.test.run(config, relayer, chains)
+        }
     }
 }
 

@@ -14,7 +14,10 @@ use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::channel::{BinaryChannelTest, ChannelOrderOverride};
 use crate::framework::binary::connection::ConnectionDelayOverride;
 use crate::framework::binary::node::NodeConfigOverride;
-use crate::framework::nary::connection::{run_nary_connection_test, NaryConnectionTest};
+use crate::framework::nary::chain::RunNaryChainTest;
+use crate::framework::nary::connection::{NaryConnectionTest, RunNaryConnectionTest};
+use crate::framework::nary::node::run_nary_node_test;
+use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::NaryConnectedChains;
@@ -28,11 +31,14 @@ where
     Overrides: TestConfigOverride
         + NodeConfigOverride
         + RelayerConfigOverride
+        + SupervisorOverride
         + ConnectionDelayOverride
         + PortsOverride<SIZE>
         + ChannelOrderOverride,
 {
-    run_nary_connection_test(&RunNaryChannelTest::new(test))
+    run_nary_node_test(&RunNaryChainTest::new(&RunNaryConnectionTest::new(
+        &RunNaryChannelTest::new(&RunWithSupervisor::new(test)),
+    )))
 }
 
 pub fn run_binary_as_nary_channel_test<Test, Overrides>(test: &Test) -> Result<(), Error>
@@ -42,6 +48,7 @@ where
     Overrides: TestConfigOverride
         + NodeConfigOverride
         + RelayerConfigOverride
+        + SupervisorOverride
         + ConnectionDelayOverride
         + PortsOverride<2>
         + ChannelOrderOverride,
@@ -188,6 +195,29 @@ where
     ) -> Result<(), Error> {
         self.test
             .run(config, relayer, chains.into(), channels.into())
+    }
+}
+
+impl<'a, Test, Overrides, const SIZE: usize> NaryChannelTest<SIZE> for RunWithSupervisor<'a, Test>
+where
+    Test: NaryChannelTest<SIZE>,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: SupervisorOverride,
+{
+    fn run<Handle: ChainHandle>(
+        &self,
+        config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: NaryConnectedChains<Handle, SIZE>,
+        channels: ConnectedChannels<Handle, SIZE>,
+    ) -> Result<(), Error> {
+        if self.get_overrides().should_spawn_supervisor() {
+            relayer
+                .clone()
+                .with_supervisor(|| self.test.run(config, relayer, chains, channels))
+        } else {
+            self.test.run(config, relayer, chains, channels)
+        }
     }
 }
 
