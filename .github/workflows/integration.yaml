@@ -131,6 +131,6 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
         run: |
-          nix shell github:informalsystems/cosmos.nix/soares/gaia-ica#gaia-ica -c cargo \
+          nix shell github:informalsystems/cosmos.nix#ica -c cargo \
             test -p ibc-integration-test --features ica-filter --no-fail-fast -- \
             --nocapture --test-threads=1 test_ica_filter
