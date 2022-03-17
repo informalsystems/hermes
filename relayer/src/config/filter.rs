@@ -49,6 +49,11 @@ impl PacketFilter {
 pub struct ChannelFilters(Vec<(PortFilterMatch, ChannelFilterMatch)>);
 
 impl ChannelFilters {
+    /// Create a new filter from the given list of port/channel filters.
+    pub fn new(filters: Vec<(PortFilterMatch, ChannelFilterMatch)>) -> Self {
+        Self(filters)
+    }
+
     /// Indicates whether a match for the given [`PortId`]-[`ChannelId`] pair
     /// exists in the filter policy.
     pub fn matches(&self, channel_port: (&PortId, &ChannelId)) -> bool {
