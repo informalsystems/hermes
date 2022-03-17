@@ -29,6 +29,7 @@ default = []
 example = []
 manual = []
 ordered = []
+ica-filter = []
 experimental = []
 
 [[bin]]
