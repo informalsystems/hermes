@@ -748,6 +748,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         self.has_delay() && op_data.has_packet_msgs()
     }
 
+    /// Returns `Ok(())` if the connection-delay has elapsed and `Err(remaining-delay)` otherwise.
     #[inline]
     fn conn_time_delay_elapsed(
         &self,
@@ -769,6 +770,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
     }
 
+    /// Returns `Ok(())` if the connection-delay has elapsed and `Err(remaining-delay)` otherwise.
     #[inline]
     fn conn_block_delay_elapsed(
         &self,
@@ -792,6 +794,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
     }
 
+    /// Calculates and returns the block-delay based on the `max_expected_time_per_block`
     fn conn_block_delay(&self, chain: &impl ChainHandle) -> Result<u64, LinkError> {
         // TODO(hu55a1n1): Ideally, we should get the `max_expected_time_per_block` using the
         // `/genesis` endpoint once it is working in tendermint-rs.
@@ -803,7 +806,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         ))
     }
 
-    // Returns the `processed_height` for the consensus state at specified height
+    /// Returns the `processed_height` for the consensus state at specified height
     fn update_height(
         chain: &impl ChainHandle,
         client_id: ClientId,
@@ -829,11 +832,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
     }
 
+    /// Loops over `tx_events` and returns a tuple of optional events where the first element is a
+    /// `ChainError` variant, the second one is an `UpdateClient` variant and the third one is any
+    /// other variant (usually `ClientMisbehaviour`). This function is essentially just an
+    /// `Iterator::find()` for multiple variants with a single pass.
     #[inline]
-    // Loops over `tx_events` and returns a tuple of optional events where the first element is a
-    // `ChainError` variant, the second one is an `UpdateClient` variant and the third one is any
-    // other variant (usually `ClientMisbehaviour`). This function is essentially just an
-    // `Iterator::find()` for multiple variants with a single pass.
     fn event_per_type(
         mut tx_events: Vec<IbcEvent>,
     ) -> (
@@ -856,9 +859,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         (error, update, other)
     }
 
-    // Returns an instant (in the past) that corresponds to the block timestamp of the chain at
-    // specified height (relative to the relayer's current time). If the timestamp is in the future
-    // wrt the relayer's current time, we simply return the current relayer time.
+    /// Returns an instant (in the past) that corresponds to the block timestamp of the chain at
+    /// specified height (relative to the relayer's current time). If the timestamp is in the future
+    /// wrt the relayer's current time, we simply return the current relayer time.
     fn chain_time_at_height(
         chain: &impl ChainHandle,
         height: Height,
