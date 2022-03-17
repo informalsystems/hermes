@@ -20,6 +20,14 @@ pub fn suspend<R>() -> R {
     }
 }
 
+/**
+   Suspends the test using [`suspend`] if `hang_on_fail` is `true` and if
+   the continuation returns `Err`.
+
+   The parameter `hang_on_fail` should be obtained from
+   [`TestConfig`](crate::types::config::TestConfig),
+   which in turns is set from the `HANG_ON_FAIL` environment variable.
+*/
 pub fn hang_on_error<R, E: Debug + Display>(
     hang_on_fail: bool,
     cont: impl FnOnce() -> Result<R, E>,
