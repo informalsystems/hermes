@@ -8,7 +8,7 @@ use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::{Ics26Context, ModuleId, ModuleOutput, Router};
-use crate::handler::HandlerOutput;
+use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 
 pub mod acknowledgement;
 pub mod chan_close_confirm;
@@ -108,8 +108,7 @@ pub fn channel_callback<Ctx>(
     module_id: &ModuleId,
     msg: &ChannelMsg,
     result: &mut ChannelResult,
-    module_output: &mut ModuleOutput,
-) -> Result<(), Error>
+) -> Result<ModuleOutput<()>, Error>
 where
     Ctx: Ics26Context,
 {
@@ -118,9 +117,8 @@ where
         .get_route_mut(module_id)
         .ok_or_else(Error::route_not_found)?;
 
-    match msg {
+    let output = match msg {
         ChannelMsg::ChannelOpenInit(msg) => cb.on_chan_open_init(
-            module_output,
             msg.channel.ordering,
             &msg.channel.connection_hops,
             &msg.port_id,
@@ -130,8 +128,7 @@ where
             &msg.channel.version,
         )?,
         ChannelMsg::ChannelOpenTry(msg) => {
-            let version = cb.on_chan_open_try(
-                module_output,
+            let output = cb.on_chan_open_try(
                 msg.channel.ordering,
                 &msg.channel.connection_hops,
                 &msg.port_id,
@@ -140,25 +137,24 @@ where
                 msg.channel.counterparty(),
                 &msg.counterparty_version,
             )?;
+            let (version, output) = destructure_output(output);
             result.channel_end.version = version;
+            output
         }
-        ChannelMsg::ChannelOpenAck(msg) => cb.on_chan_open_ack(
-            module_output,
-            &msg.port_id,
-            &result.channel_id,
-            &msg.counterparty_version,
-        )?,
+        ChannelMsg::ChannelOpenAck(msg) => {
+            cb.on_chan_open_ack(&msg.port_id, &result.channel_id, &msg.counterparty_version)?
+        }
         ChannelMsg::ChannelOpenConfirm(msg) => {
-            cb.on_chan_open_confirm(module_output, &msg.port_id, &result.channel_id)?
+            cb.on_chan_open_confirm(&msg.port_id, &result.channel_id)?
         }
         ChannelMsg::ChannelCloseInit(msg) => {
-            cb.on_chan_close_init(module_output, &msg.port_id, &result.channel_id)?
+            cb.on_chan_close_init(&msg.port_id, &result.channel_id)?
         }
         ChannelMsg::ChannelCloseConfirm(msg) => {
-            cb.on_chan_close_confirm(module_output, &msg.port_id, &result.channel_id)?
+            cb.on_chan_close_confirm(&msg.port_id, &result.channel_id)?
         }
-    }
-    Ok(())
+    };
+    Ok(output)
 }
 
 pub fn packet_validate<Ctx>(ctx: &Ctx, msg: &PacketMsg) -> Result<ModuleId, Error>
@@ -214,8 +210,7 @@ pub fn packet_callback<Ctx>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
     msg: &PacketMsg,
-    module_output: &mut ModuleOutput,
-) -> Result<(), Error>
+) -> Result<ModuleOutput<()>, Error>
 where
     Ctx: Ics26Context,
 {
@@ -224,9 +219,10 @@ where
         .get_route_mut(module_id)
         .ok_or_else(Error::route_not_found)?;
 
-    match msg {
+    let output = match msg {
         PacketMsg::RecvPacket(msg) => {
-            let (ack, write_fn) = cb.on_recv_packet(module_output, &msg.packet, &msg.signer);
+            let output = cb.on_recv_packet(&msg.packet, &msg.signer);
+            let ((ack, write_fn), output) = destructure_output(output);
             match ack {
                 None => {}
                 Some(ack) => {
@@ -239,19 +235,26 @@ where
                     // TODO(hu55a1n1): write ack
                 }
             }
+            output
         }
-        PacketMsg::AckPacket(msg) => cb.on_acknowledgement_packet(
-            module_output,
-            &msg.packet,
-            &msg.acknowledgement,
-            &msg.signer,
-        )?,
-        PacketMsg::ToPacket(msg) => {
-            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)?
+        PacketMsg::AckPacket(msg) => {
+            cb.on_acknowledgement_packet(&msg.packet, &msg.acknowledgement, &msg.signer)?
         }
-        PacketMsg::ToClosePacket(msg) => {
-            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)?
-        }
-    }
-    Ok(())
+        PacketMsg::ToPacket(msg) => cb.on_timeout_packet(&msg.packet, &msg.signer)?,
+        PacketMsg::ToClosePacket(msg) => cb.on_timeout_packet(&msg.packet, &msg.signer)?,
+    };
+    Ok(output)
+}
+
+fn destructure_output<T>(output: ModuleOutput<T>) -> (T, ModuleOutput<()>) {
+    let HandlerOutput {
+        result,
+        log,
+        events,
+    } = output;
+    let output = HandlerOutputBuilder::new()
+        .with_log(log)
+        .with_events(events)
+        .with_result(());
+    (result, output)
 }

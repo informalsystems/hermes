@@ -1250,6 +1250,7 @@ mod tests {
     use crate::core::ics26_routing::context::{
         Acknowledgement, DeferredWriteResult, Module, ModuleId, ModuleOutput, Router, RouterBuilder,
     };
+    use crate::handler::HandlerOutputBuilder;
     use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
     use crate::mock::host::HostType;
@@ -1422,7 +1423,6 @@ mod tests {
         impl Module for FooModule {
             fn on_chan_open_try(
                 &mut self,
-                _output: &mut ModuleOutput,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
@@ -1430,23 +1430,23 @@ mod tests {
                 _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
-            ) -> Result<Version, Error> {
-                Ok(counterparty_version.clone())
+            ) -> Result<ModuleOutput<Version>, Error> {
+                Ok(HandlerOutputBuilder::new().with_result(counterparty_version.clone()))
             }
 
             fn on_recv_packet(
                 &self,
-                _output: &mut ModuleOutput,
                 _packet: &Packet,
                 _relayer: &Signer,
-            ) -> DeferredWriteResult<dyn Acknowledgement> {
-                (
+            ) -> ModuleOutput<DeferredWriteResult<dyn Acknowledgement>> {
+                let result = (
                     Some(Box::new(MockAck::default())),
                     Some(Box::new(|module| {
                         let module = module.downcast_mut::<FooModule>().unwrap();
                         module.counter += 1;
                     })),
-                )
+                );
+                HandlerOutputBuilder::new().with_result(result)
             }
         }
 
@@ -1456,7 +1456,6 @@ mod tests {
         impl Module for BarModule {
             fn on_chan_open_try(
                 &mut self,
-                _output: &mut ModuleOutput,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
@@ -1465,7 +1464,7 @@ mod tests {
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
             ) -> Result<Version, Error> {
-                Ok(counterparty_version.clone())
+                Ok(HandlerOutputBuilder::new().with_result(counterparty_version.clone()))
             }
         }
 
@@ -1487,11 +1486,7 @@ mod tests {
         let mut on_recv_packet_result = |module_id: &'static str| {
             let module_id = ModuleId::from_str(module_id).unwrap();
             let m = ctx.router.get_route_mut(&module_id).unwrap();
-            let result = m.on_recv_packet(
-                &mut ModuleOutput::builder().with_result(()),
-                &Packet::default(),
-                &Signer::new(""),
-            );
+            let result = m.on_recv_packet(&Packet::default(), &Signer::new(""));
             (module_id, result)
         };
 

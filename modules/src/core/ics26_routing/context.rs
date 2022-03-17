@@ -18,7 +18,7 @@ use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::IbcEvent;
-use crate::handler::HandlerOutput;
+use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 use crate::signer::Signer;
 
 /// This trait captures all the functional dependencies (i.e., context) which the ICS26 module
@@ -88,13 +88,12 @@ pub type DeferredWriteResult<T> = (Option<Box<T>>, Option<Box<WriteFn>>);
 // FIXME(hu55a1n1): Define concrete type that implements `Into<AbciEvent>`?
 pub type ModuleEvent = IbcEvent;
 
-pub type ModuleOutput = HandlerOutput<(), ModuleEvent>;
+pub type ModuleOutput<T> = HandlerOutput<T, ModuleEvent>;
 
 pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
         &mut self,
-        _output: &mut ModuleOutput,
         _order: Order,
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
@@ -102,14 +101,13 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _channel_cap: &ChannelCapability,
         _counterparty: &Counterparty,
         _version: &Version,
-    ) -> Result<(), Error> {
-        Ok(())
+    ) -> Result<ModuleOutput<()>, Error> {
+        Ok(HandlerOutputBuilder::new().with_result(()))
     }
 
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_try(
         &mut self,
-        _output: &mut ModuleOutput,
         _order: Order,
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
@@ -117,71 +115,64 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _channel_cap: &ChannelCapability,
         _counterparty: &Counterparty,
         _counterparty_version: &Version,
-    ) -> Result<Version, Error>;
+    ) -> Result<ModuleOutput<Version>, Error>;
 
     fn on_chan_open_ack(
         &mut self,
-        _output: &mut ModuleOutput,
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _counterparty_version: &Version,
-    ) -> Result<(), Error> {
-        Ok(())
+    ) -> Result<ModuleOutput<()>, Error> {
+        Ok(HandlerOutputBuilder::new().with_result(()))
     }
 
     fn on_chan_open_confirm(
         &mut self,
-        _output: &mut ModuleOutput,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-    ) -> Result<(), Error> {
-        Ok(())
+    ) -> Result<ModuleOutput<()>, Error> {
+        Ok(HandlerOutputBuilder::new().with_result(()))
     }
 
     fn on_chan_close_init(
         &mut self,
-        _output: &mut ModuleOutput,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-    ) -> Result<(), Error> {
-        Ok(())
+    ) -> Result<ModuleOutput<()>, Error> {
+        Ok(HandlerOutputBuilder::new().with_result(()))
     }
 
     fn on_chan_close_confirm(
         &mut self,
-        _output: &mut ModuleOutput,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-    ) -> Result<(), Error> {
-        Ok(())
+    ) -> Result<ModuleOutput<()>, Error> {
+        Ok(HandlerOutputBuilder::new().with_result(()))
     }
 
     fn on_recv_packet(
         &self,
-        _output: &mut ModuleOutput,
         _packet: &Packet,
         _relayer: &Signer,
-    ) -> DeferredWriteResult<dyn Acknowledgement> {
-        (None, None)
+    ) -> ModuleOutput<DeferredWriteResult<dyn Acknowledgement>> {
+        HandlerOutputBuilder::new().with_result((None, None))
     }
 
     fn on_acknowledgement_packet(
         &mut self,
-        _output: &mut ModuleOutput,
         _packet: &Packet,
         _acknowledgement: &GenericAcknowledgement,
         _relayer: &Signer,
-    ) -> Result<(), Error> {
-        Ok(())
+    ) -> Result<ModuleOutput<()>, Error> {
+        Ok(HandlerOutputBuilder::new().with_result(()))
     }
 
     fn on_timeout_packet(
         &mut self,
-        _output: &mut ModuleOutput,
         _packet: &Packet,
         _relayer: &Signer,
-    ) -> Result<(), Error> {
-        Ok(())
+    ) -> Result<ModuleOutput<()>, Error> {
+        Ok(HandlerOutputBuilder::new().with_result(()))
     }
 }
 
