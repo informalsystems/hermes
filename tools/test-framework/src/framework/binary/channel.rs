@@ -194,7 +194,7 @@ where
 
         let env_path = config.chain_store_dir.join("binary-channels.env");
 
-        write_env(&env_path, &(&chains, &channels))?;
+        write_env(&env_path, &(&chains, &(&relayer, &channels)))?;
 
         info!("written channel environment to {}", env_path.display());
 
