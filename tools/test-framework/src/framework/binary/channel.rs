@@ -14,7 +14,7 @@ use super::chain::RelayerConfigOverride;
 use super::connection::{
     run_binary_connection_test, BinaryConnectionTest, ConnectionDelayOverride,
 };
-use super::node::NodeConfigOverride;
+use super::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
@@ -37,6 +37,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + ConnectionDelayOverride
         + PortsOverride
@@ -55,6 +56,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + ConnectionDelayOverride
         + PortsOverride

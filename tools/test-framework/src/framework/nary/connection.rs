@@ -11,7 +11,7 @@ use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::connection::{BinaryConnectionTest, ConnectionDelayOverride};
-use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::NaryConnectedChains;
@@ -25,8 +25,11 @@ pub fn run_nary_connection_test<Test, Overrides, const SIZE: usize>(
 where
     Test: NaryConnectionTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides:
-        TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + ConnectionDelayOverride,
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
+        + NodeGenesisOverride
+        + RelayerConfigOverride
+        + ConnectionDelayOverride,
 {
     run_nary_chain_test(&RunNaryConnectionTest::new(test))
 }

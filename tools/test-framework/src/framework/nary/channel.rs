@@ -13,7 +13,7 @@ use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::channel::{BinaryChannelTest, ChannelOrderOverride};
 use crate::framework::binary::connection::ConnectionDelayOverride;
-use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::connection::{run_nary_connection_test, NaryConnectionTest};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
@@ -27,6 +27,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + ConnectionDelayOverride
         + PortsOverride<SIZE>
@@ -41,6 +42,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + ConnectionDelayOverride
         + PortsOverride<2>

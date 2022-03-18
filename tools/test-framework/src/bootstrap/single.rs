@@ -37,6 +37,7 @@ pub fn bootstrap_single_node(
     builder: &ChainBuilder,
     prefix: &str,
     config_modifier: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
+    genesis_modifier: impl FnOnce(&mut serde_json::Value) -> Result<(), Error>,
 ) -> Result<FullNode, Error> {
     let stake_denom = Denom::base("stake");
     let denom = Denom::base(&format!("coin{:x}", random_u32()));
@@ -45,6 +46,8 @@ pub fn bootstrap_single_node(
     let chain_driver = builder.new_chain(prefix)?;
 
     chain_driver.initialize()?;
+
+    chain_driver.update_genesis_file("genesis.json", genesis_modifier)?;
 
     let validator = chain_driver.add_random_wallet("validator")?;
     let relayer = chain_driver.add_random_wallet("relayer")?;

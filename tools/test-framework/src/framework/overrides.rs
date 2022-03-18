@@ -13,13 +13,13 @@ use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
 use crate::framework::binary::chain::RelayerConfigOverride;
-use crate::framework::binary::channel::{ChannelOrderOverride, PortsOverride};
+use crate::framework::binary::channel::{
+    ChannelOrderOverride, ChannelVersionOverride, PortsOverride,
+};
 use crate::framework::binary::connection::ConnectionDelayOverride;
-use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
 use crate::types::config::TestConfig;
-
-use super::binary::channel::ChannelVersionOverride;
 
 /**
    This trait should be implemented for all test cases to allow overriding
@@ -51,6 +51,18 @@ pub trait TestOverrides {
         Implemented for [`NodeConfigOverride`].
     */
     fn modify_node_config(&self, _config: &mut toml::Value) -> Result<(), Error> {
+        Ok(())
+    }
+
+    /**
+        Modify the genesis file before the chain gets initialized.
+
+        The config is in the dynamic-typed [`serde_json::Value`] format, as we do not
+        want to model the full format of the genesis file in Rust.
+
+        Implemented for [`NodeGenesisOverride`].
+    */
+    fn modify_genesis_file(&self, _genesis: &mut serde_json::Value) -> Result<(), Error> {
         Ok(())
     }
 
@@ -132,6 +144,12 @@ impl<Test: TestOverrides> TestConfigOverride for Test {
 impl<Test: TestOverrides> NodeConfigOverride for Test {
     fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
         TestOverrides::modify_node_config(self, config)
+    }
+}
+
+impl<Test: TestOverrides> NodeGenesisOverride for Test {
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
+        TestOverrides::modify_genesis_file(self, genesis)
     }
 }
 

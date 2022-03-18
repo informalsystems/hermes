@@ -8,7 +8,7 @@ use crate::chain::builder::ChainBuilder;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::{run_basic_test, BasicTest, TestConfigOverride};
-use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
 use crate::util::array::try_into_array;
@@ -17,7 +17,7 @@ pub fn run_nary_node_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Re
 where
     Test: NaryNodeTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + TestConfigOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride + TestConfigOverride,
 {
     run_basic_test(&RunNaryNodeTest { test })
 }
@@ -49,16 +49,19 @@ impl<'a, Test, Overrides, const SIZE: usize> BasicTest for RunNaryNodeTest<'a, T
 where
     Test: NaryNodeTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
         let mut nodes = Vec::new();
         let mut node_processes = Vec::new();
 
         for i in 0..SIZE {
-            let node = bootstrap_single_node(builder, &format!("{}", i), |config| {
-                self.test.get_overrides().modify_node_config(config)
-            })?;
+            let node = bootstrap_single_node(
+                builder,
+                &format!("{}", i),
+                |config| self.test.get_overrides().modify_node_config(config),
+                |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+            )?;
 
             node_processes.push(node.process.clone());
             nodes.push(node);
