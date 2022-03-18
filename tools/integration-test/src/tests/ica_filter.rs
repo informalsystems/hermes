@@ -70,9 +70,13 @@ impl BinaryChainTest for IcaFilterTestAllow {
         relayer: RelayerDriver,
         chains: ConnectedChains<Controller, Host>,
     ) -> Result<(), Error> {
+        // Setup a new connection, and register an interchain account on behalf of
+        // controller wallet `user1` where the counterparty chain is the interchain accounts host.
+        // Then spawn the supervisor.
         let (_handle, wallet_a, connection_a, channel_id_a, port_id_a) =
-            bootstrap_and_register_interchain_account(&relayer, &chains, Duration::from_secs(0))?;
+            bootstrap_and_register_interchain_account(&relayer, &chains)?;
 
+        // Check that the corresponding ICA channel is eventually established.
         let _counterparty_channel_id = assert_eventually_channel_established(
             chains.handle_a(),
             chains.handle_b(),
@@ -80,6 +84,7 @@ impl BinaryChainTest for IcaFilterTestAllow {
             &port_id_a.as_ref(),
         )?;
 
+        // Query the controller chain for the address of the ICA wallet on the host chain.
         let ica_address = chains.node_a.chain_driver().query_interchain_account(
             &wallet_a.address(),
             &connection_a.connection_id_a.as_ref(),
@@ -87,6 +92,7 @@ impl BinaryChainTest for IcaFilterTestAllow {
 
         let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
 
+        // Query the interchain account balance on the host chain. It should be empty.
         let ica_balance = chains
             .node_b
             .chain_driver()
@@ -94,6 +100,7 @@ impl BinaryChainTest for IcaFilterTestAllow {
 
         assert_eq("balance of ICA account should be 0", &ica_balance, &0)?;
 
+        // Send funds to the interchain account.
         let ica_fund = 42000;
 
         chains.node_b.chain_driver().local_transfer_token(
@@ -103,6 +110,7 @@ impl BinaryChainTest for IcaFilterTestAllow {
             &stake_denom.as_ref(),
         )?;
 
+        // Check that the balance has been updated.
         chains
             .node_b
             .chain_driver()
@@ -139,12 +147,15 @@ impl BinaryChainTest for IcaFilterTestAllow {
             }],
         };
 
+        // Send funds from the ICA account to the `user2` account on the host chain on behalf
+        // of the `user1` account on the controller chain.
         chains.node_a.chain_driver().interchain_submit(
             &wallet_a.address(),
             &connection_a.connection_id_a.as_ref(),
             &msg,
         )?;
 
+        // Check that the ICA account's balance has been debited the sent amount.
         chains
             .node_b
             .chain_driver()
@@ -172,6 +183,7 @@ impl TestOverrides for IcaFilterTestDeny {
         config.bootstrap_with_random_ids = false;
     }
 
+    // Enable channel workers and deny ICA ports
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
 
@@ -191,8 +203,15 @@ impl BinaryChainTest for IcaFilterTestDeny {
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
+        // Register an interchain account on behalf of controller wallet `user1`
+        // where the counterparty chain is the interchain accounts host.
+        // Then spawn the supervisor.
         let (_handle, _, _, channel_id_a, port_id_a) =
-            bootstrap_and_register_interchain_account(&relayer, &chains, Duration::from_secs(30))?;
+            bootstrap_and_register_interchain_account(&relayer, &chains)?;
+
+        // Wait a bit, the relayer will refuse to complete the channel handshake
+        // because the port is explicitly disallowed by the filter.
+        std::thread::sleep(Duration::from_secs(30));
 
         let channel_end = query_channel_end(
             chains.handle_a(),
@@ -200,6 +219,7 @@ impl BinaryChainTest for IcaFilterTestDeny {
             &port_id_a.as_ref(),
         )?;
 
+        // Check that the channel is left in state Init
         assert_eq(
             "channel end should still be in state Init",
             channel_end.value().state(),
@@ -212,7 +232,6 @@ impl BinaryChainTest for IcaFilterTestDeny {
 fn bootstrap_and_register_interchain_account<ChainA: ChainHandle, ChainB: ChainHandle>(
     relayer: &RelayerDriver,
     chains: &ConnectedChains<ChainA, ChainB>,
-    sleep: Duration,
 ) -> Result<
     (
         SupervisorHandle,
@@ -234,8 +253,6 @@ fn bootstrap_and_register_interchain_account<ChainA: ChainHandle, ChainB: ChainH
         .node_a
         .chain_driver()
         .register_interchain_account(&wallet_a.address(), &connection_a.connection_id_a.as_ref())?;
-
-    std::thread::sleep(sleep);
 
     let channel_id_a: TaggedChannelId<ChainA, ChainB> =
         TaggedChannelId::new("channel-0".parse().unwrap());
