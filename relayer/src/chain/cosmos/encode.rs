@@ -1,10 +1,12 @@
+use bech32::{ToBase32, Variant};
+use core::str::FromStr;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{Fee, ModeInfo, SignDoc, SignerInfo, TxRaw};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use prost_types::Any;
+use tendermint::account::Id as AccountId;
 
 use crate::chain::cosmos::types::SignedTx;
-use crate::chain::cosmos::{auth_info_and_bytes, tx_body_and_bytes};
 use crate::config::types::Memo;
 use crate::config::AddressType;
 use crate::config::ChainConfig;
@@ -139,4 +141,51 @@ pub fn encode_tx_to_raw(
         auth_info_bytes,
         signatures: vec![signed_doc],
     })
+}
+
+pub fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error> {
+    let account = AccountId::from_str(address)
+        .map_err(|e| Error::invalid_key_address(address.to_string(), e))?;
+
+    let encoded = bech32::encode(account_prefix, account.to_base32(), Variant::Bech32)
+        .map_err(Error::bech32_encoding)?;
+
+    Ok(encoded)
+}
+
+pub fn auth_info_and_bytes(
+    signer_info: SignerInfo,
+    fee: Fee,
+) -> Result<(AuthInfo, Vec<u8>), Error> {
+    let auth_info = AuthInfo {
+        signer_infos: vec![signer_info],
+        fee: Some(fee),
+    };
+
+    // A protobuf serialization of a AuthInfo
+    let mut auth_buf = Vec::new();
+
+    prost::Message::encode(&auth_info, &mut auth_buf)
+        .map_err(|e| Error::protobuf_encode(String::from("AuthInfo"), e))?;
+
+    Ok((auth_info, auth_buf))
+}
+
+pub fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
+    // Create TxBody
+    let body = TxBody {
+        messages: proto_msgs.to_vec(),
+        memo: memo.to_string(),
+        timeout_height: 0_u64,
+        extension_options: Vec::<Any>::new(),
+        non_critical_extension_options: Vec::<Any>::new(),
+    };
+
+    // A protobuf serialization of a TxBody
+    let mut body_buf = Vec::new();
+
+    prost::Message::encode(&body, &mut body_buf)
+        .map_err(|e| Error::protobuf_encode(String::from("TxBody"), e))?;
+
+    Ok((body, body_buf))
 }

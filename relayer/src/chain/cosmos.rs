@@ -9,12 +9,9 @@ use core::{
 use num_bigint::BigInt;
 use std::{fmt, thread, time::Instant};
 
-use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use itertools::Itertools;
-use prost::Message;
 use prost_types::Any;
-use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params as ConsensusParams;
 use tendermint::{
@@ -24,8 +21,6 @@ use tendermint::{
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
-use tendermint_rpc::query::Query;
-use tendermint_rpc::Url;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };
@@ -50,7 +45,6 @@ use ibc::core::ics04_channel::channel::{
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
@@ -62,15 +56,12 @@ use ibc::query::QueryBlockRequest;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
-use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
-use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
+use ibc_proto::cosmos::auth::v1beta1::BaseAccount;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{
-    AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, SimulateResponse, Tx, TxBody,
-    TxRaw,
+    Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, SimulateResponse, Tx, TxRaw,
 };
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -84,7 +75,12 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
+use crate::chain::cosmos::encode::{auth_info_and_bytes, encode_to_bech32, tx_body_and_bytes};
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
+use crate::chain::cosmos::query::{
+    abci_query, fetch_version_specs, header_query, packet_query, query_account, tx_hash_query,
+};
+use crate::chain::cosmos::tx::broadcast_tx_sync;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{QueryResponse, StatusResponse};
@@ -99,10 +95,11 @@ use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::util::retry::{retry_with_index, RetryResult};
 
 pub mod batch;
-mod compatibility;
+pub mod compatibility;
 pub mod encode;
 pub mod estimate;
 pub mod gas;
+pub mod query;
 pub mod simulate;
 pub mod tx;
 pub mod types;
@@ -634,7 +631,14 @@ impl CosmosSdkChain {
             return Err(Error::private_store());
         }
 
-        let response = self.block_on(abci_query(self, path, data.to_string(), height, prove))?;
+        let response = self.block_on(abci_query(
+            &self.rpc_client,
+            &self.config.rpc_addr,
+            path,
+            data.to_string(),
+            height,
+            prove,
+        ))?;
 
         // TODO - Verify response proof, if requested.
         if prove {}
@@ -659,7 +663,8 @@ impl CosmosSdkChain {
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
             .expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
         let response: QueryResponse = self.block_on(abci_query(
-            self,
+            &self.rpc_client,
+            &self.config.rpc_addr,
             path,
             Path::Upgrade(data).to_string(),
             prev_height,
@@ -719,8 +724,14 @@ impl CosmosSdkChain {
         Ok((key, key_bytes))
     }
 
+    fn query_account(&self) -> Result<BaseAccount, Error> {
+        crate::telemetry!(query, self.id(), "query_account");
+
+        self.block_on(query_account(self.grpc_addr.clone(), self.key()?.account))
+    }
+
     fn refresh_account(&mut self) -> Result<(), Error> {
-        let account = self.block_on(query_account(self, self.key()?.account))?;
+        let account = self.query_account()?;
         info!(
             sequence = %account.sequence,
             number = %account.account_number,
@@ -2130,47 +2141,6 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 }
 
-fn packet_query(request: &QueryPacketEventDataRequest, seq: Sequence) -> Query {
-    tendermint_rpc::query::Query::eq(
-        format!("{}.packet_src_channel", request.event_id.as_str()),
-        request.source_channel_id.to_string(),
-    )
-    .and_eq(
-        format!("{}.packet_src_port", request.event_id.as_str()),
-        request.source_port_id.to_string(),
-    )
-    .and_eq(
-        format!("{}.packet_dst_channel", request.event_id.as_str()),
-        request.destination_channel_id.to_string(),
-    )
-    .and_eq(
-        format!("{}.packet_dst_port", request.event_id.as_str()),
-        request.destination_port_id.to_string(),
-    )
-    .and_eq(
-        format!("{}.packet_sequence", request.event_id.as_str()),
-        seq.to_string(),
-    )
-}
-
-fn header_query(request: &QueryClientEventRequest) -> Query {
-    tendermint_rpc::query::Query::eq(
-        format!("{}.client_id", request.event_id.as_str()),
-        request.client_id.to_string(),
-    )
-    .and_eq(
-        format!("{}.consensus_height", request.event_id.as_str()),
-        format!(
-            "{}-{}",
-            request.consensus_height.revision_number, request.consensus_height.revision_height
-        ),
-    )
-}
-
-fn tx_hash_query(request: &QueryTxHash) -> Query {
-    tendermint_rpc::query::Query::eq("tx.hash", request.0.to_string())
-}
-
 // Extract the packet events from the query_txs RPC response. For any given
 // packet query, there is at most one Tx matching such query. Moreover, a Tx may
 // contain several events, but a single one must match the packet query.
@@ -2288,111 +2258,6 @@ fn filter_matching_event(
     }
 }
 
-/// Perform a generic `abci_query`, and return the corresponding deserialized response data.
-async fn abci_query(
-    chain: &CosmosSdkChain,
-    path: TendermintABCIPath,
-    data: String,
-    height: Height,
-    prove: bool,
-) -> Result<QueryResponse, Error> {
-    let height = if height.value() == 0 {
-        None
-    } else {
-        Some(height)
-    };
-
-    // Use the Tendermint-rs RPC client to do the query.
-    let response = chain
-        .rpc_client
-        .abci_query(Some(path), data.into_bytes(), height, prove)
-        .await
-        .map_err(|e| Error::rpc(chain.config.rpc_addr.clone(), e))?;
-
-    if !response.code.is_ok() {
-        // Fail with response log.
-        return Err(Error::abci_query(response));
-    }
-
-    if prove && response.proof.is_none() {
-        // Fail due to empty proof
-        return Err(Error::empty_response_proof());
-    }
-
-    let proof = response
-        .proof
-        .map(|p| convert_tm_to_ics_merkle_proof(&p))
-        .transpose()
-        .map_err(Error::ics23)?;
-
-    let response = QueryResponse {
-        value: response.value,
-        height: response.height,
-        proof,
-    };
-
-    Ok(response)
-}
-
-/// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
-pub async fn broadcast_tx_sync(
-    rpc_client: &HttpClient,
-    rpc_address: &Url,
-    data: Vec<u8>,
-) -> Result<Response, Error> {
-    let response = rpc_client
-        .broadcast_tx_sync(data.into())
-        .await
-        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
-
-    Ok(response)
-}
-
-/// Uses the GRPC client to retrieve the account sequence
-async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAccount, Error> {
-    crate::telemetry!(query, chain.id(), "query_account");
-
-    let mut client = ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(
-        chain.grpc_addr.clone(),
-    )
-    .await
-    .map_err(Error::grpc_transport)?;
-
-    let request = tonic::Request::new(QueryAccountRequest {
-        address: address.clone(),
-    });
-
-    let response = client.account(request).await;
-
-    // Querying for an account might fail, i.e. if the account doesn't actually exist
-    let resp_account = match response.map_err(Error::grpc_status)?.into_inner().account {
-        Some(account) => account,
-        None => return Err(Error::empty_query_account(address)),
-    };
-
-    if resp_account.type_url == "/cosmos.auth.v1beta1.BaseAccount" {
-        Ok(BaseAccount::decode(resp_account.value.as_slice())
-            .map_err(|e| Error::protobuf_decode("BaseAccount".to_string(), e))?)
-    } else if resp_account.type_url.ends_with(".EthAccount") {
-        Ok(EthAccount::decode(resp_account.value.as_slice())
-            .map_err(|e| Error::protobuf_decode("EthAccount".to_string(), e))?
-            .base_account
-            .ok_or_else(Error::empty_base_account)?)
-    } else {
-        Err(Error::unknown_account_type(resp_account.type_url))
-    }
-}
-
-fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error> {
-    let account = AccountId::from_str(address)
-        .map_err(|e| Error::invalid_key_address(address.to_string(), e))?;
-
-    let encoded = bech32::encode(account_prefix, account.to_base32(), Variant::Bech32)
-        .map_err(Error::bech32_encoding)?;
-
-    Ok(encoded)
-}
-
 /// Returns the suffix counter for a CosmosSDK client id.
 /// Returns `None` if the client identifier is malformed
 /// and the suffix could not be parsed.
@@ -2409,39 +2274,6 @@ pub struct TxSyncResult {
     response: Response,
     // the events generated by a Tx once executed
     events: Vec<IbcEvent>,
-}
-
-pub fn auth_info_and_bytes(
-    signer_info: SignerInfo,
-    fee: Fee,
-) -> Result<(AuthInfo, Vec<u8>), Error> {
-    let auth_info = AuthInfo {
-        signer_infos: vec![signer_info],
-        fee: Some(fee),
-    };
-
-    // A protobuf serialization of a AuthInfo
-    let mut auth_buf = Vec::new();
-    prost::Message::encode(&auth_info, &mut auth_buf)
-        .map_err(|e| Error::protobuf_encode(String::from("AuthInfo"), e))?;
-    Ok((auth_info, auth_buf))
-}
-
-pub fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
-    // Create TxBody
-    let body = TxBody {
-        messages: proto_msgs.to_vec(),
-        memo: memo.to_string(),
-        timeout_height: 0_u64,
-        extension_options: Vec::<Any>::new(),
-        non_critical_extension_options: Vec::<Any>::new(),
-    };
-
-    // A protobuf serialization of a TxBody
-    let mut body_buf = Vec::new();
-    prost::Message::encode(&body, &mut body_buf)
-        .map_err(|e| Error::protobuf_encode(String::from("TxBody"), e))?;
-    Ok((body, body_buf))
 }
 
 fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
@@ -2485,50 +2317,6 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     Ok(())
-}
-
-/// Queries the chain to obtain the version information.
-async fn fetch_version_specs(
-    chain_id: &ChainId,
-    grpc_address: &Uri,
-) -> Result<version::Specs, Error> {
-    let grpc_addr_string = grpc_address.to_string();
-
-    // Construct a gRPC client
-    let mut client = ServiceClient::connect(grpc_address.clone())
-        .await
-        .map_err(|e| {
-            Error::fetch_version_grpc_transport(
-                chain_id.clone(),
-                grpc_addr_string.clone(),
-                "tendermint::ServiceClient".to_string(),
-                e,
-            )
-        })?;
-
-    let request = tonic::Request::new(GetNodeInfoRequest {});
-
-    let response = client.get_node_info(request).await.map_err(|e| {
-        Error::fetch_version_grpc_status(
-            chain_id.clone(),
-            grpc_addr_string.clone(),
-            "tendermint::ServiceClient".to_string(),
-            e,
-        )
-    })?;
-
-    let version = response.into_inner().application_version.ok_or_else(|| {
-        Error::fetch_version_invalid_version_response(
-            chain_id.clone(),
-            grpc_addr_string.clone(),
-            "tendermint::GetNodeInfoRequest".to_string(),
-        )
-    })?;
-
-    // Parse the raw version info into a domain-type `version::Specs`
-    version
-        .try_into()
-        .map_err(|e| Error::fetch_version_parsing(chain_id.clone(), grpc_addr_string.clone(), e))
 }
 
 /// Determine whether the given error yielded by `tx_simulate`

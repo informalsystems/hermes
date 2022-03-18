@@ -1,12 +1,11 @@
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use prost_types::Any;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::{HttpClient, Url};
+use tendermint_rpc::{Client, HttpClient, Url};
 use tonic::codegen::http::Uri;
 use tracing::{debug, error};
 
 use crate::chain::cosmos::batch::batch_messages;
-use crate::chain::cosmos::broadcast_tx_sync;
 use crate::chain::cosmos::encode::sign_and_encode_tx;
 use crate::chain::cosmos::estimate::estimate_tx_fees;
 use crate::config::types::Memo;
@@ -160,6 +159,20 @@ pub async fn raw_send_tx(
     )?;
 
     let response = broadcast_tx_sync(rpc_client, rpc_address, tx_bytes).await?;
+
+    Ok(response)
+}
+
+/// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
+pub async fn broadcast_tx_sync(
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    data: Vec<u8>,
+) -> Result<Response, Error> {
+    let response = rpc_client
+        .broadcast_tx_sync(data.into())
+        .await
+        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
     Ok(response)
 }
