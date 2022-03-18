@@ -24,12 +24,13 @@ fn test_ica_filter_allow() -> Result<(), Error> {
 pub struct IcaFilterTestAllow;
 
 impl TestOverrides for IcaFilterTestAllow {
-    // Use deterministic identifiers for clients, connections, and channels
+    // Use `icad` binary and deterministic identifiers for clients, connections, and channels
     fn modify_test_config(&self, config: &mut TestConfig) {
         config.chain_command_path = "icad".to_string();
         config.bootstrap_with_random_ids = false;
     }
 
+    // Enable channel workers and allow relaying on ICA channels
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
 
@@ -38,6 +39,28 @@ impl TestOverrides for IcaFilterTestAllow {
                 FilterPattern::Wildcard("ica*".parse().unwrap()),
                 FilterPattern::Wildcard("*".parse().unwrap()),
             )]));
+        }
+    }
+
+    // Allow MsgSend messages over ICA
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
+        use serde_json::Value;
+
+        println!("HELLOWORLD");
+
+        let allow_messages = genesis
+            .get_mut("app_state")
+            .and_then(|app_state| app_state.get_mut("interchainaccounts"))
+            .and_then(|ica| ica.get_mut("host_genesis_state"))
+            .and_then(|state| state.get_mut("params"))
+            .and_then(|params| params.get_mut("allow_messages"))
+            .and_then(|allow_messages| allow_messages.as_array_mut());
+
+        if let Some(allow_messages) = allow_messages {
+            allow_messages.push(Value::String("/cosmos.bank.v1beta1.MsgSend".to_string()));
+            Ok(())
+        } else {
+            Err(Error::generic(eyre!("failed to update genesis file")))
         }
     }
 }
