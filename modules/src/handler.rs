@@ -15,16 +15,6 @@ impl<T> HandlerOutput<T> {
     pub fn builder() -> HandlerOutputBuilder<T> {
         HandlerOutputBuilder::new()
     }
-
-    pub fn merge(&mut self, other: HandlerOutput<()>) {
-        let HandlerOutput {
-            mut log,
-            mut events,
-            ..
-        } = other;
-        self.log.append(&mut log);
-        self.events.append(&mut events);
-    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -67,5 +57,15 @@ impl<T> HandlerOutputBuilder<T> {
             log: self.log,
             events: self.events,
         }
+    }
+
+    pub fn merge(&mut self, other: HandlerOutput<()>) {
+        let HandlerOutput {
+            mut log,
+            mut events,
+            ..
+        } = other;
+        self.log.append(&mut log);
+        self.events.append(&mut events);
     }
 }

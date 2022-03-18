@@ -18,7 +18,7 @@ use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerOutputBuilder};
+use crate::handler::HandlerOutput;
 use crate::signer::Signer;
 
 /// This trait captures all the functional dependencies (i.e., context) which the ICS26 module
@@ -102,7 +102,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _counterparty: &Counterparty,
         _version: &Version,
     ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutputBuilder::new().with_result(()))
+        Ok(HandlerOutput::builder().with_result(()))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -123,7 +123,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _channel_id: &ChannelId,
         _counterparty_version: &Version,
     ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutputBuilder::new().with_result(()))
+        Ok(HandlerOutput::builder().with_result(()))
     }
 
     fn on_chan_open_confirm(
@@ -131,7 +131,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _port_id: &PortId,
         _channel_id: &ChannelId,
     ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutputBuilder::new().with_result(()))
+        Ok(HandlerOutput::builder().with_result(()))
     }
 
     fn on_chan_close_init(
@@ -139,7 +139,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _port_id: &PortId,
         _channel_id: &ChannelId,
     ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutputBuilder::new().with_result(()))
+        Ok(HandlerOutput::builder().with_result(()))
     }
 
     fn on_chan_close_confirm(
@@ -147,7 +147,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _port_id: &PortId,
         _channel_id: &ChannelId,
     ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutputBuilder::new().with_result(()))
+        Ok(HandlerOutput::builder().with_result(()))
     }
 
     fn on_recv_packet(
@@ -155,7 +155,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _packet: &Packet,
         _relayer: &Signer,
     ) -> ModuleOutput<DeferredWriteResult<dyn Acknowledgement>> {
-        HandlerOutputBuilder::new().with_result((None, None))
+        HandlerOutput::builder().with_result((None, None))
     }
 
     fn on_acknowledgement_packet(
@@ -164,7 +164,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _acknowledgement: &GenericAcknowledgement,
         _relayer: &Signer,
     ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutputBuilder::new().with_result(()))
+        Ok(HandlerOutput::builder().with_result(()))
     }
 
     fn on_timeout_packet(
@@ -172,7 +172,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _packet: &Packet,
         _relayer: &Signer,
     ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutputBuilder::new().with_result(()))
+        Ok(HandlerOutput::builder().with_result(()))
     }
 }
 

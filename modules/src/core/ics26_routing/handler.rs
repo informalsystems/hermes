@@ -80,21 +80,18 @@ where
 
         Ics4ChannelMsg(msg) => {
             let module_id = ics4_validate(ctx, &msg).map_err(Error::ics04_channel)?;
-            let mut handler_output =
+            let (mut handler_builder, channel_result) =
                 ics4_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
 
-            let cb_result = ics4_callback(ctx, &module_id, &msg, &mut handler_output.result)
+            let (cb_output, channel_result) = ics4_callback(ctx, &module_id, &msg, channel_result)
                 .map_err(Error::ics04_channel)?;
-            handler_output.merge(cb_result);
+            handler_builder.merge(cb_output);
 
             // Apply any results to the host chain store.
-            ctx.store_channel_result(handler_output.result)
+            ctx.store_channel_result(channel_result)
                 .map_err(Error::ics04_channel)?;
 
-            HandlerOutput::builder()
-                .with_log(handler_output.log)
-                .with_events(handler_output.events)
-                .with_result(())
+            handler_builder.with_result(())
         }
 
         Ics20Msg(msg) => {
@@ -113,31 +110,22 @@ where
 
         Ics4PacketMsg(msg) => {
             let module_id = ics4_packet_validate(ctx, &msg).map_err(Error::ics04_channel)?;
-            let mut handler_output =
+            let (mut handler_builder, packet_result) =
                 ics4_packet_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
 
-            if matches!(
-                handler_output.result,
-                PacketResult::Recv(RecvPacketResult::NoOp)
-            ) {
-                return Ok(HandlerOutput::builder()
-                    .with_log(handler_output.log)
-                    .with_events(handler_output.events)
-                    .with_result(()));
+            if matches!(packet_result, PacketResult::Recv(RecvPacketResult::NoOp)) {
+                return Ok(handler_builder.with_result(()));
             }
 
-            let cb_result =
+            let cb_output =
                 ics4_packet_callback(ctx, &module_id, &msg).map_err(Error::ics04_channel)?;
-            handler_output.merge(cb_result);
+            handler_builder.merge(cb_output);
 
             // Apply any results to the host chain store.
-            ctx.store_packet_result(handler_output.result)
+            ctx.store_packet_result(packet_result)
                 .map_err(Error::ics04_channel)?;
 
-            HandlerOutput::builder()
-                .with_log(handler_output.log)
-                .with_events(handler_output.events)
-                .with_result(())
+            handler_builder.with_result(())
         }
     };
 
