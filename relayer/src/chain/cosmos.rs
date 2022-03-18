@@ -7,7 +7,6 @@ use core::{
     time::Duration,
 };
 use num_bigint::BigInt;
-use num_rational::BigRational;
 use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
@@ -53,6 +52,10 @@ use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics24_host::path::{
+    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
+    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+};
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::QueryBlockRequest;
@@ -81,6 +84,9 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
+use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
+use crate::chain::tx::TrackedMsgs;
+use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{QueryResponse, StatusResponse};
 use crate::config::types::Memo;
 use crate::config::{AddressType, ChainConfig, GasPrice};
@@ -92,15 +98,12 @@ use crate::light_client::{LightClient, Verified};
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::util::retry::{retry_with_index, RetryResult};
 
-use ibc::core::ics24_host::path::{
-    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
-    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
-};
-
-use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
-
+pub mod batch;
 mod compatibility;
 pub mod encode;
+pub mod estimate;
+pub mod gas;
+pub mod simulate;
 pub mod tx;
 pub mod types;
 pub mod version;
@@ -2565,24 +2568,6 @@ impl fmt::Display for PrettyFee<'_> {
             .field("gas_limit", &self.0.gas_limit)
             .finish()
     }
-}
-
-fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
-    let fee_amount = mul_ceil(adjusted_gas_amount, gas_price.price);
-
-    Coin {
-        denom: gas_price.denom.to_string(),
-        amount: fee_amount.to_string(),
-    }
-}
-
-/// Multiply `a` with `f` and round the result up to the nearest integer.
-fn mul_ceil(a: u64, f: f64) -> BigInt {
-    assert!(f.is_finite());
-
-    let a = BigInt::from(a);
-    let f = BigRational::from_float(f).expect("f is finite");
-    (f * a).ceil().to_integer()
 }
 
 /// Compute the `max_clock_drift` for a (new) client state

@@ -11,6 +11,34 @@ use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::keyring::{sign_message, KeyEntry};
 
+pub fn sign_and_encode_tx(
+    config: &ChainConfig,
+    messages: Vec<Any>,
+    account_sequence: u64,
+    key_entry: &KeyEntry,
+    fee: &Fee,
+    tx_memo: &Memo,
+    account_number: u64,
+) -> Result<Vec<u8>, Error> {
+    let signed_tx = encode_tx_to_raw(
+        config,
+        messages,
+        account_sequence,
+        key_entry,
+        fee,
+        tx_memo,
+        account_number,
+    )?;
+
+    let tx_raw = TxRaw {
+        body_bytes: signed_tx.body_bytes,
+        auth_info_bytes: signed_tx.auth_info_bytes,
+        signatures: signed_tx.signatures,
+    };
+
+    encode_tx_raw(tx_raw)
+}
+
 pub fn encode_key_bytes(key: &KeyEntry) -> Result<Vec<u8>, Error> {
     let mut pk_buf = Vec::new();
 
