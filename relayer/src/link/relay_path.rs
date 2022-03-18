@@ -15,7 +15,6 @@ use ibc::{
         },
         ics04_channel::{
             channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
-            context::calculate_block_delay,
             events::{SendPacket, WriteAcknowledgement},
             msgs::{
                 acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
@@ -29,7 +28,7 @@ use ibc::{
     events::{IbcEvent, PrettyEvents, WithBlockDataType},
     query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
-    timestamp::{Timestamp, ZERO_DURATION},
+    timestamp::Timestamp,
     tx_msg::Msg,
     Height,
 };
@@ -209,34 +208,38 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(|e| LinkError::query(self.dst_chain().id(), e))
     }
 
-    #[inline]
     fn src_time_at_height(&self, height: Height) -> Result<Instant, LinkError> {
         Self::chain_time_at_height(self.src_chain(), height)
     }
 
-    #[inline]
     fn dst_time_at_height(&self, height: Height) -> Result<Instant, LinkError> {
         Self::chain_time_at_height(self.dst_chain(), height)
     }
 
-    #[inline]
     fn src_time_latest(&self) -> Result<Instant, LinkError> {
         self.src_time_at_height(Height::zero())
     }
 
-    #[inline]
     fn dst_time_latest(&self) -> Result<Instant, LinkError> {
         self.dst_time_at_height(Height::zero())
     }
 
-    #[inline]
-    fn src_conn_block_delay(&self) -> Result<u64, LinkError> {
-        self.conn_block_delay(self.src_chain())
+    fn src_max_block_time(&self) -> Result<Duration, LinkError> {
+        // TODO(hu55a1n1): Ideally, we should get the `max_expected_time_per_block` using the
+        // `/genesis` endpoint once it is working in tendermint-rs.
+        Ok(self
+            .src_chain()
+            .config()
+            .map_err(LinkError::relayer)?
+            .max_block_time)
     }
 
-    #[inline]
-    fn dst_conn_block_delay(&self) -> Result<u64, LinkError> {
-        self.conn_block_delay(self.dst_chain())
+    fn dst_max_block_time(&self) -> Result<Duration, LinkError> {
+        Ok(self
+            .dst_chain()
+            .config()
+            .map_err(LinkError::relayer)?
+            .max_block_time)
     }
 
     fn unordered_channel(&self) -> bool {
@@ -413,12 +416,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_latest_height,
             OperationalDataTarget::Source,
             events.tracking_id(),
+            self.channel.connection_delay,
         );
         // Operational data targeting the destination chain (e.g., SendPacket messages)
         let mut dst_od = OperationalData::new(
             src_height,
             OperationalDataTarget::Destination,
             events.tracking_id(),
+            self.channel.connection_delay,
         );
 
         for event in input {
@@ -520,12 +525,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let mut odata = initial_od;
 
         for i in 0..MAX_RETRIES {
-            debug!(
-                "delayed by: {:?} [try {}/{}]",
-                odata.scheduled_time.elapsed(),
-                i + 1,
-                MAX_RETRIES
-            );
+            debug!("[try {}/{}]", i + 1, MAX_RETRIES);
 
             // Consume the operational data by attempting to send its messages
             match self.send_from_operational_data::<S>(odata.clone()) {
@@ -732,78 +732,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Checks if a receive packet event has already been handled (e.g. by another relayer).
     fn write_ack_event_handled(&self, rp: &WriteAcknowledgement) -> Result<bool, LinkError> {
         self.recv_packet_acknowledged_on_src(&rp.packet)
-    }
-
-    /// Returns `true` if the connection delay for this relaying path is non-zero.
-    /// Conversely, returns `false` if the delay is zero.
-    #[inline]
-    fn has_delay(&self) -> bool {
-        self.channel.connection_delay != ZERO_DURATION
-    }
-
-    /// Returns `true` iff the connection delay for this relaying path is non-zero and `op_data`
-    /// contains packet messages.
-    #[inline]
-    pub fn conn_delay_needed(&self, op_data: &OperationalData) -> bool {
-        self.has_delay() && op_data.has_packet_msgs()
-    }
-
-    /// Returns `Ok(())` if the connection-delay has elapsed and `Err(remaining-delay)` otherwise.
-    #[inline]
-    fn conn_time_delay_elapsed(
-        &self,
-        op: &OperationalData,
-        chain_time: Instant,
-    ) -> Result<(), Duration> {
-        if self.conn_delay_needed(op) {
-            // since chain time instant is relative to relayer's current time, it is possible that
-            // `op.scheduled_time` is later (by nano secs) than `chain_time`, hence the call to
-            // `saturating_duration_since()`.
-            let elapsed = chain_time.saturating_duration_since(op.scheduled_time);
-            if elapsed > self.channel.connection_delay {
-                Ok(())
-            } else {
-                Err(elapsed)
-            }
-        } else {
-            Ok(())
-        }
-    }
-
-    /// Returns `Ok(())` if the connection-delay has elapsed and `Err(remaining-delay)` otherwise.
-    #[inline]
-    fn conn_block_delay_elapsed(
-        &self,
-        op: &OperationalData,
-        block_delay: u64,
-        latest_height: Height,
-    ) -> Result<(), u64> {
-        if self.conn_delay_needed(op) {
-            let acceptable_height = op
-                .update_processed_height
-                .expect("processed height not set")
-                .add(block_delay);
-            if latest_height >= acceptable_height {
-                Ok(())
-            } else {
-                debug_assert!(acceptable_height.revision_number == latest_height.revision_number);
-                Err(acceptable_height.revision_height - latest_height.revision_height)
-            }
-        } else {
-            Ok(())
-        }
-    }
-
-    /// Calculates and returns the block-delay based on the `max_expected_time_per_block`
-    fn conn_block_delay(&self, chain: &impl ChainHandle) -> Result<u64, LinkError> {
-        // TODO(hu55a1n1): Ideally, we should get the `max_expected_time_per_block` using the
-        // `/genesis` endpoint once it is working in tendermint-rs.
-        let max_expected_time_per_block =
-            chain.config().map_err(LinkError::relayer)?.max_block_time;
-        Ok(calculate_block_delay(
-            self.channel.connection_delay,
-            max_expected_time_per_block,
-        ))
     }
 
     /// Returns the `processed_height` for the consensus state at specified height
@@ -1542,6 +1470,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                                         dst_current_height,
                                         OperationalDataTarget::Source,
                                         &odata.tracking_id,
+                                        self.channel.connection_delay,
                                     )
                                 })
                                 .push(TransitMessage {
@@ -1611,18 +1540,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
         // If the connection-delay must be taken into account, set the `scheduled_time` to an
         // instant in the past, i.e. when this client update was first processed (`processed_time`)
-        od.scheduled_time = if self.conn_delay_needed(&od) {
+        let scheduled_time = if od.conn_delay_needed() {
             debug!("connection delay must be taken into account: updating client");
             let target_height = od.proofs_height.increment();
             match od.target {
                 OperationalDataTarget::Source => {
                     let update_height = self.update_client_src(target_height, &od.tracking_id)?;
-                    od.update_processed_height = Some(update_height);
+                    od.set_update_height(update_height);
                     self.src_time_at_height(update_height)?
                 }
                 OperationalDataTarget::Destination => {
                     let update_height = self.update_client_dst(target_height, &od.tracking_id)?;
-                    od.update_processed_height = Some(update_height);
+                    od.set_update_height(update_height);
                     self.dst_time_at_height(update_height)?
                 }
             }
@@ -1633,6 +1562,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             );
             Instant::now()
         };
+
+        od.set_scheduled_time(scheduled_time);
 
         match od.target {
             OperationalDataTarget::Source => self.src_operational_data.push_back(od),
@@ -1668,24 +1599,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         let src_chain_time = self.src_time_latest()?;
-        let src_block_delay = self.src_conn_block_delay()?;
+        let src_max_block_time = self.src_max_block_time()?;
         let src_latest_height = self.src_latest_height()?;
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
-                self.conn_time_delay_elapsed(op, src_chain_time).is_ok()
-                    && self
-                        .conn_block_delay_elapsed(op, src_block_delay, src_latest_height)
+                op.conn_time_delay_elapsed(src_chain_time).is_ok()
+                    && op
+                        .conn_block_delay_elapsed(src_max_block_time, src_latest_height)
                         .is_ok()
             });
 
         let dst_chain_time = self.dst_time_latest()?;
-        let dst_block_delay = self.dst_conn_block_delay()?;
+        let dst_max_block_time = self.dst_max_block_time()?;
         let dst_latest_height = self.dst_latest_height()?;
         let (elapsed_dst_ods, unelapsed_dst_ods) =
             partition(self.dst_operational_data.take(), |op| {
-                self.conn_time_delay_elapsed(op, dst_chain_time).is_ok()
-                    && self
-                        .conn_block_delay_elapsed(op, dst_block_delay, dst_latest_height)
+                op.conn_time_delay_elapsed(dst_chain_time).is_ok()
+                    && op
+                        .conn_block_delay_elapsed(dst_max_block_time, dst_latest_height)
                         .is_ok()
             });
 
@@ -1700,24 +1631,26 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub(crate) fn fetch_scheduled_operational_data(
         &self,
     ) -> Result<Option<OperationalData>, LinkError> {
-        let (delay_time_left, delay_blocks_left, odata) =
+        let (time_left, blocks_left, odata) =
             if let Some(odata) = self.src_operational_data.pop_front() {
                 let src_chain_time = self.src_time_latest()?;
-                let src_block_delay = self.src_conn_block_delay()?;
+                let src_block_time = self.src_max_block_time()?;
                 let src_latest_height = self.src_latest_height()?;
                 (
-                    self.conn_time_delay_elapsed(&odata, src_chain_time).err(),
-                    self.conn_block_delay_elapsed(&odata, src_block_delay, src_latest_height)
+                    odata.conn_time_delay_elapsed(src_chain_time).err(),
+                    odata
+                        .conn_block_delay_elapsed(src_block_time, src_latest_height)
                         .err(),
                     Some(odata),
                 )
             } else if let Some(odata) = self.dst_operational_data.pop_front() {
                 let dst_chain_time = self.dst_time_latest()?;
-                let dst_block_delay = self.dst_conn_block_delay()?;
+                let dst_block_time = self.dst_max_block_time()?;
                 let dst_latest_height = self.dst_latest_height()?;
                 (
-                    self.conn_time_delay_elapsed(&odata, dst_chain_time).err(),
-                    self.conn_block_delay_elapsed(&odata, dst_block_delay, dst_latest_height)
+                    odata.conn_time_delay_elapsed(dst_chain_time).err(),
+                    odata
+                        .conn_block_delay_elapsed(dst_block_time, dst_latest_height)
                         .err(),
                     Some(odata),
                 )
@@ -1726,7 +1659,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             };
 
         if let Some(odata) = odata {
-            match (delay_time_left, delay_blocks_left) {
+            match (time_left, blocks_left) {
                 (None, None) => info!(
                     "ready to fetch a scheduled op. data with batch of size {} targeting {}",
                     odata.batch.len(),
