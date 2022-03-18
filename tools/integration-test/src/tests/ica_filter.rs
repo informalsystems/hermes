@@ -46,8 +46,6 @@ impl TestOverrides for IcaFilterTestAllow {
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
         use serde_json::Value;
 
-        println!("HELLOWORLD");
-
         let allow_messages = genesis
             .get_mut("app_state")
             .and_then(|app_state| app_state.get_mut("interchainaccounts"))
@@ -75,21 +73,17 @@ impl BinaryChainTest for IcaFilterTestAllow {
         let (_handle, wallet_a, connection_a, channel_id_a, port_id_a) =
             bootstrap_and_register_interchain_account(&relayer, &chains, Duration::from_secs(0))?;
 
-        let counterparty_channel_id = assert_eventually_channel_established(
+        let _counterparty_channel_id = assert_eventually_channel_established(
             chains.handle_a(),
             chains.handle_b(),
             &channel_id_a.as_ref(),
             &port_id_a.as_ref(),
         )?;
 
-        dbg!(counterparty_channel_id);
-
         let ica_address = chains.node_a.chain_driver().query_interchain_account(
             &wallet_a.address(),
             &connection_a.connection_id_a.as_ref(),
         )?;
-
-        dbg!(&ica_address);
 
         let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
 
