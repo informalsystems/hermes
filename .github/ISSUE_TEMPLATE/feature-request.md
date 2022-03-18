@@ -11,13 +11,9 @@ v    Word of caution: poorly thought-out proposals may be rejected
 v                     without deliberation 
 ☺ > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > >  -->
 
-## Crate
-
-<!-- Which crate does this feature concern? -->
-
 ## Summary
 
-<!-- Short, concise description of the proposed feature -->
+<!-- Short description of the proposed feature -->
 
 ## Problem Definition
 

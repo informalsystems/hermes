@@ -1395,6 +1395,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             },
         }
     }
+
+    pub fn map_chain<DstChain2: ChainHandle, SrcChain2: ChainHandle>(
+        self,
+        map_dst: impl Fn(DstChain) -> DstChain2,
+        map_src: impl Fn(SrcChain) -> SrcChain2,
+    ) -> ForeignClient<DstChain2, SrcChain2> {
+        ForeignClient {
+            id: self.id,
+            dst_chain: map_dst(self.dst_chain),
+            src_chain: map_src(self.src_chain),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

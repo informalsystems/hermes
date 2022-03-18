@@ -17,6 +17,7 @@
         fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
             &self,
             _config: &TestConfig,
+            _relayer: RelayerDriver,
             _chains: ConnectedChains<ChainA, ChainB>,
             _channel: ConnectedChannel<ChainA, ChainB>,
         ) -> Result<(), Error> {
@@ -27,11 +28,11 @@
 
     We first define an empty struct [`ExampleTest`] to represent our test case.
     We then implement the
-    [`BinaryChannelTest`](crate::framework::binary::channel::BinaryChannelTest)
+    [`BinaryChannelTest`](ibc_test_framework::framework::binary::channel::BinaryChannelTest)
     trait so that the test framework sets up the relayer with two chains
     running together with connected channels.
 
-    Inside our test, we simply call the [`suspend`](crate::suspend) function to
+    Inside our test, we simply call the [`suspend`] function to
     suspend the test indefinitely. While this means that the test would never
     pass, we can use this as a starting point to do _manual testing_ with the
     chains that have been setup by the test, and figure out how to continue
@@ -43,12 +44,12 @@
 
     Finally, we define the `example_test` function with the `#[test]` pragma
     as the entry point for Rust to execute the test. We call the runner function
-    [`run_binary_channel_test`](crate::framework::binary::channel::run_binary_channel_test),
+    [`run_binary_channel_test`](ibc_test_framework::framework::binary::channel::run_binary_channel_test),
     which accepts a reference to any struct implementing
-    [`BinaryChannelTest`](crate::framework::binary::channel::BinaryChannelTest)
+    [`BinaryChannelTest`](ibc_test_framework::framework::binary::channel::BinaryChannelTest)
     and run the test for us.
 
-    By convention, the tests written are placed in the [`tests`](crate::tests)
+    By convention, the tests written are placed in the [`tests`](ibc_test_framework::tests)
     module. We can then run the test on the command line such as follows:
 
     ```bash
@@ -61,7 +62,7 @@
     and `RUST_BACKTRACE` to display backtrace when errors occurred.
     The test flag `--test-threads=1` is set so that Rust do not run multiple
     tests in parallel, as it can make it difficult to follow the logs.
-    See [TestConfig](crate::types::config::TestConfig) for more information
+    See [TestConfig](ibc_test_framework::types::config::TestConfig) for more information
     about configuring how the tests should be run.
 
     For this example, we disable the test from running by default, since
@@ -111,7 +112,7 @@
     same directory.
 */
 
-use crate::prelude::*;
+use ibc_test_framework::prelude::*;
 
 #[test]
 pub fn example_test() -> Result<(), Error> {
@@ -126,9 +127,10 @@ impl BinaryChannelTest for ExampleTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        relayer: RelayerDriver,
         _chains: ConnectedChains<ChainA, ChainB>,
         _channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        suspend()
+        relayer.with_supervisor(suspend)
     }
 }

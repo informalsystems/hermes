@@ -1,9 +1,9 @@
 use ibc_relayer::config::{types::Memo, Config};
 use serde_json as json;
 
-use crate::ibc::denom::derive_ibc_denom;
-use crate::prelude::*;
-use crate::util::random::{random_string, random_u64_range};
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::util::random::{random_string, random_u64_range};
 
 #[test]
 fn test_memo() -> Result<(), Error> {
@@ -28,47 +28,50 @@ impl BinaryChannelTest for MemoTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        info!(
-            "testing IBC transfer with memo configured: \"{}\"",
-            self.memo
-        );
+        relayer.with_supervisor(|| {
+            info!(
+                "testing IBC transfer with memo configured: \"{}\"",
+                self.memo
+            );
 
-        let denom_a = chains.node_a.denom();
+            let denom_a = chains.node_a.denom();
 
-        let a_to_b_amount = random_u64_range(1000, 5000);
+            let a_to_b_amount = random_u64_range(1000, 5000);
 
-        chains.node_a.chain_driver().transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            &chains.node_a.wallets().user1().address(),
-            &chains.node_b.wallets().user1().address(),
-            a_to_b_amount,
-            &denom_a,
-        )?;
+            chains.node_a.chain_driver().transfer_token(
+                &channel.port_a.as_ref(),
+                &channel.channel_id_a.as_ref(),
+                &chains.node_a.wallets().user1().address(),
+                &chains.node_b.wallets().user1().address(),
+                a_to_b_amount,
+                &denom_a,
+            )?;
 
-        let denom_b = derive_ibc_denom(
-            &channel.port_b.as_ref(),
-            &channel.channel_id_b.as_ref(),
-            &denom_a,
-        )?;
+            let denom_b = derive_ibc_denom(
+                &channel.port_b.as_ref(),
+                &channel.channel_id_b.as_ref(),
+                &denom_a,
+            )?;
 
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_b.wallets().user1(),
-            a_to_b_amount,
-            &denom_b.as_ref(),
-        )?;
+            chains.node_b.chain_driver().assert_eventual_wallet_amount(
+                &chains.node_b.wallets().user1(),
+                a_to_b_amount,
+                &denom_b.as_ref(),
+            )?;
 
-        let tx_info = chains
-            .node_b
-            .chain_driver()
-            .query_recipient_transactions(&chains.node_b.wallets().user1().address())?;
+            let tx_info = chains
+                .node_b
+                .chain_driver()
+                .query_recipient_transactions(&chains.node_b.wallets().user1().address())?;
 
-        assert_tx_memo_equals(&tx_info, self.memo.as_str())?;
+            assert_tx_memo_equals(&tx_info, self.memo.as_str())?;
 
-        Ok(())
+            Ok(())
+        })
     }
 }
 

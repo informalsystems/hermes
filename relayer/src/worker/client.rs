@@ -64,19 +64,7 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
         return None;
     }
 
-    {
-        let _span = span!(
-            tracing::Level::DEBUG,
-            "DetectMisbehaviorFirstCheck",
-            client = %client.id,
-            src_chain = %client.src_chain.id(),
-            dst_chain = %client.dst_chain.id(),
-        )
-        .entered();
-        debug!("doing first check");
-        let misbehavior_result = client.detect_misbehaviour_and_submit_evidence(None);
-        trace!("detect misbehavior result: {:?}", misbehavior_result);
-    }
+    let mut first_check_done = false;
 
     let handle = spawn_background_task(
         span!(
@@ -88,6 +76,21 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
         ),
         Some(Duration::from_millis(600)),
         move || -> Result<Next, TaskError<Infallible>> {
+            if !first_check_done {
+                first_check_done = true;
+                let _span = span!(
+                    tracing::Level::DEBUG,
+                    "DetectMisbehaviorFirstCheck",
+                    client = %client.id,
+                    src_chain = %client.src_chain.id(),
+                    dst_chain = %client.dst_chain.id(),
+                )
+                .entered();
+                debug!("doing first check");
+                let misbehavior_result = client.detect_misbehaviour_and_submit_evidence(None);
+                trace!("detect misbehavior result: {:?}", misbehavior_result);
+            }
+
             if let Ok(cmd) = receiver.try_recv() {
                 match cmd {
                     WorkerCmd::IbcEvents { batch } => {
