@@ -8,6 +8,7 @@ use eyre::eyre;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use semver::Version;
+use serde::Serialize;
 use serde_json as json;
 use std::fs;
 use std::path::PathBuf;
@@ -457,22 +458,32 @@ impl ChainDriver {
         target_amount: u64,
         denom: &Denom,
     ) -> Result<(), Error> {
+        self.assert_eventual_wallet_addr_amount(&user.address, target_amount, denom)
+    }
+
+    /**
+       Assert that a wallet should eventually have the expected amount in the
+       given denomination.
+    */
+    pub fn assert_eventual_wallet_addr_amount(
+        &self,
+        wallet: &WalletAddress,
+        target_amount: u64,
+        denom: &Denom,
+    ) -> Result<(), Error> {
         assert_eventually_succeed(
-            &format!(
-                "wallet reach {} amount {} {}",
-                user.address, target_amount, denom
-            ),
+            &format!("wallet reach {} amount {} {}", wallet, target_amount, denom),
             30,
             Duration::from_secs(1),
             || {
-                let amount = self.query_balance(&user.address, denom)?;
+                let amount = self.query_balance(wallet, denom)?;
 
                 if amount == target_amount {
                     Ok(())
                 } else {
                     Err(Error::generic(eyre!(
                         "current balance of account {} with amount {} does not match the target amount {}",
-                        user.address,
+                        wallet,
                         amount,
                         target_amount
                     )))
@@ -560,5 +571,58 @@ impl ChainDriver {
             .ok_or_else(|| eyre!("expected string field"))?;
 
         Ok(WalletAddress(address.to_string()))
+    }
+
+    pub fn interchain_submit<T: Serialize>(
+        &self,
+        from: &WalletAddress,
+        connection_id: &ConnectionId,
+        msg: &T,
+    ) -> Result<(), Error> {
+        let msg_json = serde_json::to_string_pretty(msg).unwrap();
+        println!("{}", msg_json);
+
+        let args = &[
+            "--home",
+            &self.home_path,
+            "--node",
+            &self.rpc_listen_address(),
+            "--output",
+            "json",
+            "tx",
+            "intertx",
+            "submit",
+            &msg_json,
+            "--connection-id",
+            connection_id.as_str(),
+            "--from",
+            &from.0,
+            "--chain-id",
+            self.chain_id.as_str(),
+            "--keyring-backend",
+            "test",
+            "-y",
+        ];
+
+        let res = self.exec(args)?.stdout;
+        let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
+
+        let code = json_res
+            .get("code")
+            .ok_or_else(|| eyre!("expected `code` field"))?
+            .as_i64()
+            .ok_or_else(|| eyre!("expected integer field"))?;
+
+        if code == 0 {
+            Ok(())
+        } else {
+            let raw_log = json_res
+                .get("raw_log")
+                .ok_or_else(|| eyre!("expected `raw_log` field"))?
+                .as_str()
+                .ok_or_else(|| eyre!("expected string field"))?;
+
+            Err(Error::generic(eyre!("{}", raw_log)))
+        }
     }
 }

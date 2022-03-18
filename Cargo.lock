@@ -1382,6 +1382,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-test-framework",
+ "serde",
  "serde_json",
  "tendermint",
  "tendermint-rpc",

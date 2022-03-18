@@ -2,6 +2,7 @@
    Methods for tagged version of the chain driver.
 */
 
+use serde::Serialize;
 use serde_json as json;
 
 use crate::error::Error;
@@ -47,6 +48,19 @@ pub trait TaggedChainDriverExt<Chain> {
     fn assert_eventual_wallet_amount(
         &self,
         user: &MonoTagged<Chain, &Wallet>,
+        target_amount: u64,
+        denom: &MonoTagged<Chain, &Denom>,
+    ) -> Result<(), Error>;
+
+    /**
+       Tagged version of [`ChainDriver::assert_eventual_wallet_addr_amount`].
+
+       Assert that a wallet belongs to `Chain` would reach the target
+       amount in the denomination that belongs to `Chain`.
+    */
+    fn assert_eventual_wallet_addr_amount(
+        &self,
+        user: &MonoTagged<Chain, &WalletAddress>,
         target_amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<(), Error>;
@@ -110,7 +124,14 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         from: &MonoTagged<Chain, &WalletAddress>,
         connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
-    ) -> Result<MonoTagged<Chain, WalletAddress>, Error>;
+    ) -> Result<MonoTagged<Counterparty, WalletAddress>, Error>;
+
+    fn interchain_submit<Counterparty, T: Serialize>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+        msg: &T,
+    ) -> Result<(), Error>;
 }
 
 impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
@@ -130,6 +151,16 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
     ) -> Result<(), Error> {
         self.value()
             .assert_eventual_wallet_amount(user.value(), target_amount, denom.value())
+    }
+
+    fn assert_eventual_wallet_addr_amount(
+        &self,
+        user: &MonoTagged<Chain, &WalletAddress>,
+        target_amount: u64,
+        denom: &MonoTagged<Chain, &Denom>,
+    ) -> Result<(), Error> {
+        self.value()
+            .assert_eventual_wallet_addr_amount(user.value(), target_amount, denom.value())
     }
 
     fn transfer_token<Counterparty>(
@@ -188,9 +219,19 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
         &self,
         from: &MonoTagged<Chain, &WalletAddress>,
         connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
-    ) -> Result<MonoTagged<Chain, WalletAddress>, Error> {
+    ) -> Result<MonoTagged<Counterparty, WalletAddress>, Error> {
         self.value()
             .query_interchain_account(from.value(), connection_id.value())
             .map(MonoTagged::new)
+    }
+
+    fn interchain_submit<Counterparty, T: Serialize>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+        msg: &T,
+    ) -> Result<(), Error> {
+        self.value()
+            .interchain_submit(from.value(), connection_id.value(), msg)
     }
 }

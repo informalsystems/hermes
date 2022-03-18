@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use serde::Serialize;
+
 use ibc::core::ics04_channel::channel::State;
 use ibc_relayer::config::{
     default::connection_delay as default_connection_delay,
@@ -9,6 +11,7 @@ use ibc_relayer::config::{
 
 use ibc_test_framework::{
     bootstrap::binary::connection::bootstrap_connection,
+    ibc::denom::Denom,
     prelude::*,
     relayer::channel::{assert_eventually_channel_established, query_channel_end},
 };
@@ -40,11 +43,11 @@ impl TestOverrides for IcaFilterTestAllow {
 }
 
 impl BinaryChainTest for IcaFilterTestAllow {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+    fn run<Controller: ChainHandle, Host: ChainHandle>(
         &self,
         _config: &TestConfig,
         relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
+        chains: ConnectedChains<Controller, Host>,
     ) -> Result<(), Error> {
         let (_handle, wallet_a, connection_a, channel_id_a, port_id_a) =
             bootstrap_and_register_interchain_account(&relayer, &chains, Duration::from_secs(0))?;
@@ -63,7 +66,76 @@ impl BinaryChainTest for IcaFilterTestAllow {
             &connection_a.connection_id_a.as_ref(),
         )?;
 
-        dbg!(ica_address);
+        dbg!(&ica_address);
+
+        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
+
+        let ica_balance = chains
+            .node_b
+            .chain_driver()
+            .query_balance(&ica_address.as_ref(), &stake_denom.as_ref())?;
+
+        assert_eq("balance of ICA account should be 0", &ica_balance, &0)?;
+
+        let ica_fund = 42000;
+
+        chains.node_b.chain_driver().local_transfer_token(
+            &chains.node_b.wallets().user1().address(),
+            &ica_address.as_ref(),
+            ica_fund,
+            &stake_denom.as_ref(),
+        )?;
+
+        chains
+            .node_b
+            .chain_driver()
+            .assert_eventual_wallet_addr_amount(
+                &ica_address.as_ref(),
+                ica_fund,
+                &stake_denom.as_ref(),
+            )?;
+
+        #[derive(Serialize)]
+        struct MsgSend {
+            #[serde(rename = "@type")]
+            tpe: String,
+            from_address: String,
+            to_address: String,
+            amount: Vec<Amount>,
+        }
+
+        #[derive(Serialize)]
+        struct Amount {
+            denom: String,
+            amount: String,
+        }
+
+        let amount = 12345;
+
+        let msg = MsgSend {
+            tpe: "/cosmos.bank.v1beta1.MsgSend".to_string(),
+            from_address: ica_address.to_string(),
+            to_address: chains.node_a.wallets().user2().address().to_string(),
+            amount: vec![Amount {
+                denom: stake_denom.to_string(),
+                amount: amount.to_string(),
+            }],
+        };
+
+        chains.node_a.chain_driver().interchain_submit(
+            &wallet_a.address(),
+            &connection_a.connection_id_a.as_ref(),
+            &msg,
+        )?;
+
+        chains
+            .node_b
+            .chain_driver()
+            .assert_eventual_wallet_addr_amount(
+                &ica_address.as_ref(),
+                ica_fund - amount,
+                &stake_denom.as_ref(),
+            )?;
 
         Ok(())
     }
