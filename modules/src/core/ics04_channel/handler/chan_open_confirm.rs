@@ -118,7 +118,7 @@ mod tests {
     use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
-    use crate::core::ics04_channel::handler::{channel_dispatch, ChannelResult};
+    use crate::core::ics04_channel::handler::channel_dispatch;
     use crate::core::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
     use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
     use crate::core::ics04_channel::msgs::ChannelMsg;
@@ -189,7 +189,7 @@ mod tests {
             let res = channel_dispatch(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
-                Ok(proto_output) => {
+                Ok((proto_output, res)) => {
                     assert!(
                             test.want_pass,
                             "chan_open_confirm: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
@@ -198,10 +198,10 @@ mod tests {
                             test.ctx.clone()
                         );
 
+                    let proto_output = proto_output.with_result(());
                     assert!(!proto_output.events.is_empty()); // Some events must exist.
 
                     // The object in the output is a ConnectionEnd, should have init state.
-                    let res: ChannelResult = proto_output.result;
                     //assert_eq!(res.channel_id, msg_chan_init.channel_id().clone());
                     assert_eq!(res.channel_end.state().clone(), State::Open);
 

@@ -1239,6 +1239,7 @@ mod tests {
     use test_log::test;
 
     use alloc::str::FromStr;
+    use core::any::Any;
 
     use crate::core::ics04_channel::channel::{Counterparty, Order};
     use crate::core::ics04_channel::error::Error;
@@ -1250,7 +1251,6 @@ mod tests {
     use crate::core::ics26_routing::context::{
         Acknowledgement, DeferredWriteResult, Module, ModuleId, ModuleOutput, Router, RouterBuilder,
     };
-    use crate::handler::HandlerOutputBuilder;
     use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
     use crate::mock::host::HostType;
@@ -1400,6 +1400,8 @@ mod tests {
 
     #[test]
     fn test_router() {
+        use crate::handler::HandlerOutput;
+
         #[derive(Default)]
         struct MockAck(Vec<u8>);
 
@@ -1431,7 +1433,7 @@ mod tests {
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
             ) -> Result<ModuleOutput<Version>, Error> {
-                Ok(HandlerOutputBuilder::new().with_result(counterparty_version.clone()))
+                Ok(HandlerOutput::builder().with_result(counterparty_version.clone()))
             }
 
             fn on_recv_packet(
@@ -1439,14 +1441,13 @@ mod tests {
                 _packet: &Packet,
                 _relayer: &Signer,
             ) -> ModuleOutput<DeferredWriteResult<dyn Acknowledgement>> {
-                let result = (
-                    Some(Box::new(MockAck::default())),
-                    Some(Box::new(|module| {
-                        let module = module.downcast_mut::<FooModule>().unwrap();
-                        module.counter += 1;
-                    })),
-                );
-                HandlerOutputBuilder::new().with_result(result)
+                let ack: Box<dyn Acknowledgement> = Box::new(MockAck::default());
+                let write_cb: Box<dyn FnOnce(&mut dyn Any)> = Box::new(|module| {
+                    let module = module.downcast_mut::<FooModule>().unwrap();
+                    module.counter += 1;
+                });
+                let result = (Some(ack), Some(write_cb));
+                HandlerOutput::builder().with_result(result)
             }
         }
 
@@ -1463,8 +1464,8 @@ mod tests {
                 _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
-            ) -> Result<Version, Error> {
-                Ok(HandlerOutputBuilder::new().with_result(counterparty_version.clone()))
+            ) -> Result<ModuleOutput<Version>, Error> {
+                Ok(HandlerOutput::builder().with_result(counterparty_version.clone()))
             }
         }
 
@@ -1494,12 +1495,15 @@ mod tests {
             on_recv_packet_result("foomodule"),
             on_recv_packet_result("barmodule"),
         ];
-        results.into_iter().for_each(|(mid, (ack, write_fn))| {
-            if matches!(ack, Some(ack) if ack.success()) {
-                if let Some(write_fn) = write_fn {
-                    write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut());
+        results
+            .into_iter()
+            .map(|(mid, output)| (mid, output.result))
+            .for_each(|(mid, (ack, write_fn))| {
+                if matches!(ack, Some(ack) if ack.success()) {
+                    if let Some(write_fn) = write_fn {
+                        write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut());
+                    }
                 }
-            }
-        });
+            });
     }
 }

@@ -89,26 +89,33 @@ where
 pub fn channel_dispatch<Ctx>(
     ctx: &Ctx,
     msg: &ChannelMsg,
-) -> Result<HandlerOutput<ChannelResult>, Error>
+) -> Result<(HandlerOutputBuilder<()>, ChannelResult), Error>
 where
     Ctx: ChannelReader,
 {
-    match msg {
+    let output = match msg {
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
         ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process(ctx, msg),
         ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process(ctx, msg),
         ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process(ctx, msg),
         ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg),
         ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process(ctx, msg),
-    }
+    }?;
+    let HandlerOutput {
+        result,
+        log,
+        events,
+    } = output;
+    let builder = HandlerOutput::builder().with_log(log).with_events(events);
+    Ok((builder, result))
 }
 
 pub fn channel_callback<Ctx>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
     msg: &ChannelMsg,
-    result: &mut ChannelResult,
-) -> Result<ModuleOutput<()>, Error>
+    mut result: ChannelResult,
+) -> Result<(ModuleOutput<()>, ChannelResult), Error>
 where
     Ctx: Ics26Context,
 {
@@ -137,7 +144,7 @@ where
                 msg.channel.counterparty(),
                 &msg.counterparty_version,
             )?;
-            let (version, output) = destructure_output(output);
+            let (output, version) = destructure_output(output);
             result.channel_end.version = version;
             output
         }
@@ -154,7 +161,7 @@ where
             cb.on_chan_close_confirm(&msg.port_id, &result.channel_id)?
         }
     };
-    Ok(output)
+    Ok((output, result))
 }
 
 pub fn packet_validate<Ctx>(ctx: &Ctx, msg: &PacketMsg) -> Result<ModuleId, Error>
@@ -194,16 +201,23 @@ where
 pub fn packet_dispatch<Ctx>(
     ctx: &Ctx,
     msg: &PacketMsg,
-) -> Result<HandlerOutput<PacketResult>, Error>
+) -> Result<(HandlerOutputBuilder<()>, PacketResult), Error>
 where
     Ctx: ChannelReader,
 {
-    match msg {
+    let output = match msg {
         PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
         PacketMsg::AckPacket(msg) => acknowledgement::process(ctx, msg),
         PacketMsg::ToPacket(msg) => timeout::process(ctx, msg),
         PacketMsg::ToClosePacket(msg) => timeout_on_close::process(ctx, msg),
-    }
+    }?;
+    let HandlerOutput {
+        result,
+        log,
+        events,
+    } = output;
+    let builder = HandlerOutput::builder().with_log(log).with_events(events);
+    Ok((builder, result))
 }
 
 pub fn packet_callback<Ctx>(
@@ -222,7 +236,7 @@ where
     let output = match msg {
         PacketMsg::RecvPacket(msg) => {
             let output = cb.on_recv_packet(&msg.packet, &msg.signer);
-            let ((ack, write_fn), output) = destructure_output(output);
+            let (output, (ack, write_fn)) = destructure_output(output);
             match ack {
                 None => {}
                 Some(ack) => {
@@ -246,15 +260,15 @@ where
     Ok(output)
 }
 
-fn destructure_output<T>(output: ModuleOutput<T>) -> (T, ModuleOutput<()>) {
+fn destructure_output<T>(output: HandlerOutput<T>) -> (HandlerOutput<()>, T) {
     let HandlerOutput {
         result,
         log,
         events,
     } = output;
-    let output = HandlerOutputBuilder::new()
+    let output = HandlerOutput::builder()
         .with_log(log)
         .with_events(events)
         .with_result(());
-    (result, output)
+    (output, result)
 }
