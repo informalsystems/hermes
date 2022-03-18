@@ -1,13 +1,12 @@
 use alloc::sync::Arc;
 use core::{
-    cmp::min,
     convert::{TryFrom, TryInto},
     future::Future,
     str::FromStr,
     time::Duration,
 };
 use num_bigint::BigInt;
-use std::{fmt, thread, time::Instant};
+use std::{thread, time::Instant};
 
 use bitcoin::hashes::hex::ToHex;
 use itertools::Itertools;
@@ -57,12 +56,7 @@ use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::cosmos::auth::v1beta1::BaseAccount;
-use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
-use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{
-    Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, SimulateResponse, Tx, TxRaw,
-};
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
@@ -75,17 +69,17 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::cosmos::encode::{auth_info_and_bytes, encode_to_bech32, tx_body_and_bytes};
+use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::{
     abci_query, fetch_version_specs, header_query, packet_query, query_account, tx_hash_query,
 };
-use crate::chain::cosmos::tx::broadcast_tx_sync;
+use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{QueryResponse, StatusResponse};
 use crate::config::types::Memo;
-use crate::config::{AddressType, ChainConfig, GasPrice};
+use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
@@ -100,6 +94,7 @@ pub mod encode;
 pub mod estimate;
 pub mod gas;
 pub mod query;
+pub mod retry;
 pub mod simulate;
 pub mod tx;
 pub mod types;
@@ -108,11 +103,6 @@ pub mod version;
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 400_000;
 
-/// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
-const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
-
-const DEFAULT_FEE_GRANTER: &str = "";
-
 /// Upper limit on the size of transactions submitted by Hermes, expressed as a
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
@@ -120,25 +110,6 @@ pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 // The error "incorrect account sequence" is defined as the unique error code 32 in cosmos-sdk:
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
 pub const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
-
-mod retry_strategy {
-    use crate::util::retry::Fixed;
-    use core::time::Duration;
-
-    // Maximum number of retries for send_tx in the case of
-    // an account sequence mismatch at broadcast step.
-    pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 1;
-
-    // Backoff multiplier to apply while retrying in the case
-    // of account sequence mismatch.
-    pub const BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY: u64 = 300;
-
-    pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
-        let backoff_millis = 300; // The periodic backoff
-        let count: usize = (max_total_wait.as_millis() / backoff_millis as u128) as usize;
-        Fixed::from_millis(backoff_millis).take(count)
-    }
-}
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
@@ -328,66 +299,18 @@ impl CosmosSdkChain {
             account_seq,
         );
 
-        let signer_info = self.signer(account_seq)?;
-        let max_fee = self.max_fee();
-
-        debug!("max fee, for use in tx simulation: {}", PrettyFee(&max_fee));
-
-        let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
-
-        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), max_fee)?;
-        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
-
-        let simulate_tx = Tx {
-            body: Some(body),
-            auth_info: Some(auth_info),
-            signatures: vec![signed_doc],
-        };
-
-        // This may result in an account sequence mismatch error
-        let estimated_gas = self.estimate_gas(simulate_tx)?;
-
-        if estimated_gas > self.max_gas() {
-            debug!(
-                id = %self.id(), estimated = ?estimated_gas, max = ?self.max_gas(),
-                "send_tx: estimated gas is higher than max gas"
-            );
-
-            return Err(Error::tx_simulate_gas_estimate_exceeded(
-                self.id().clone(),
-                estimated_gas,
-                self.max_gas(),
-            ));
-        }
-
-        let adjusted_fee = self.fee_with_gas(estimated_gas);
-
-        debug!(
-            id = %self.id(),
-            "send_tx: using {} gas, fee {}",
-            estimated_gas,
-            PrettyFee(&adjusted_fee)
-        );
-
-        let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
         let account_number = self.account_number()?;
-        let signed_doc =
-            self.signed_doc(body_buf.clone(), auth_buf_adjusted.clone(), account_number)?;
 
-        let tx_raw = TxRaw {
-            body_bytes: body_buf,
-            auth_info_bytes: auth_buf_adjusted,
-            signatures: vec![signed_doc],
-        };
-
-        let mut tx_bytes = Vec::new();
-        prost::Message::encode(&tx_raw, &mut tx_bytes)
-            .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
-
-        self.block_on(broadcast_tx_sync(
+        self.block_on(estimate_fee_and_send_tx(
+            &self.config,
             &self.rpc_client,
             &self.config.rpc_addr,
-            tx_bytes,
+            &self.grpc_addr,
+            proto_msgs,
+            account_seq,
+            account_number,
+            &self.key()?,
+            self.tx_memo(),
         ))
     }
 
@@ -432,13 +355,13 @@ impl CosmosSdkChain {
 
             // Gas estimation succeeded. Broadcasting failed with a retry-able error.
             Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
-                if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
+                if retry_counter < retry::MAX_ACCOUNT_SEQUENCE_RETRY {
                     let retry_counter = retry_counter + 1;
                     warn!("failed at broadcast step with incorrect account sequence. retrying ({}/{})",
-                        retry_counter, retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY);
+                        retry_counter, retry::MAX_ACCOUNT_SEQUENCE_RETRY);
                     // Backoff & re-fetch the account s.n.
-                    let backoff = (retry_counter as u64)
-                        * retry_strategy::BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
+                    let backoff =
+                        (retry_counter as u64) * retry::BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
                     thread::sleep(Duration::from_millis(backoff));
                     self.refresh_account()?;
 
@@ -492,60 +415,6 @@ impl CosmosSdkChain {
         self.send_tx_with_account_sequence_retry(proto_msgs, 0)
     }
 
-    /// Try to simulate the given tx in order to estimate how much gas will be needed to submit it.
-    ///
-    /// It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
-    /// they do not individually verify. For example for the following batch:
-    /// [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
-    ///
-    /// If the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check.
-    /// In this case we use the `default_gas` param.
-    fn estimate_gas(&mut self, tx: Tx) -> Result<u64, Error> {
-        let simulated_gas = self.send_tx_simulate(tx).map(|sr| sr.gas_info);
-        let _span = span!(Level::ERROR, "estimate_gas").entered();
-
-        match simulated_gas {
-            Ok(Some(gas_info)) => {
-                debug!(
-                    "tx simulation successful, gas amount used: {:?}",
-                    gas_info.gas_used
-                );
-
-                Ok(gas_info.gas_used)
-            }
-
-            Ok(None) => {
-                warn!(
-                    "tx simulation successful but no gas amount used was returned, falling back on default gas: {}",
-                    self.default_gas()
-                );
-
-                Ok(self.default_gas())
-            }
-
-            // If there is a chance that the tx will be accepted once actually submitted, we fall
-            // back on the max gas and will attempt to send it anyway.
-            // See `can_recover_from_simulation_failure` for more info.
-            Err(e) if can_recover_from_simulation_failure(&e) => {
-                warn!(
-                    "failed to simulate tx, falling back on default gas because the error is potentially recoverable: {}",
-                    e.detail()
-                );
-
-                Ok(self.default_gas())
-            }
-
-            Err(e) => {
-                error!(
-                    "failed to simulate tx. propagating error to caller: {}",
-                    e.detail()
-                );
-                // Propagate the error, the retrying mechanism at caller may catch & retry.
-                Err(e)
-            }
-        }
-    }
-
     /// The default amount of gas the relayer is willing to pay for a transaction,
     /// when it cannot simulate the tx and therefore estimate the gas amount needed.
     fn default_gas(&self) -> u64 {
@@ -555,51 +424,6 @@ impl CosmosSdkChain {
     /// The maximum amount of gas the relayer is willing to pay for a transaction
     fn max_gas(&self) -> u64 {
         self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
-    }
-
-    /// Get the fee granter address
-    fn fee_granter(&self) -> &str {
-        self.config
-            .fee_granter
-            .as_deref()
-            .unwrap_or(DEFAULT_FEE_GRANTER)
-    }
-
-    /// The gas price
-    fn gas_price(&self) -> &GasPrice {
-        &self.config.gas_price
-    }
-
-    /// The gas price adjustment
-    fn gas_adjustment(&self) -> f64 {
-        self.config
-            .gas_adjustment
-            .unwrap_or(DEFAULT_GAS_PRICE_ADJUSTMENT)
-    }
-
-    /// Adjusts the fee based on the configured `gas_adjustment` to prevent out of gas errors.
-    /// The actual gas cost, when a transaction is executed, may be slightly higher than the
-    /// one returned by the simulation.
-    fn apply_adjustment_to_gas(&self, gas_amount: u64) -> u64 {
-        assert!(self.gas_adjustment() <= 1.0);
-
-        let (_, digits) = mul_ceil(gas_amount, self.gas_adjustment()).to_u64_digits();
-        assert!(digits.len() == 1);
-
-        let adjustment = digits[0];
-        let gas = gas_amount.checked_add(adjustment).unwrap_or(u64::MAX);
-
-        min(gas, self.max_gas())
-    }
-
-    /// The maximum fee the relayer pays for a transaction
-    fn max_fee_in_coins(&self) -> Coin {
-        calculate_fee(self.max_gas(), self.gas_price())
-    }
-
-    /// The fee in coins based on gas amount
-    fn fee_from_gas_in_coins(&self, gas: u64) -> Coin {
-        calculate_fee(gas, self.gas_price())
     }
 
     /// The maximum number of messages included in a transaction
@@ -676,52 +500,10 @@ impl CosmosSdkChain {
         Ok((response.value, proof))
     }
 
-    fn send_tx_simulate(&self, tx: Tx) -> Result<SimulateResponse, Error> {
-        crate::time!("send_tx_simulate");
-
-        use ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
-
-        // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
-        let mut tx_bytes = vec![];
-        prost::Message::encode(&tx, &mut tx_bytes)
-            .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
-
-        #[allow(deprecated)]
-        let req = SimulateRequest {
-            tx: Some(tx), // needed for simulation to go through with Cosmos SDK <  0.43
-            tx_bytes,     // needed for simulation to go through with Cosmos SDk >= 0.43
-        };
-
-        let mut client = self
-            .block_on(ServiceClient::connect(self.grpc_addr.clone()))
-            .map_err(Error::grpc_transport)?;
-
-        let request = tonic::Request::new(req);
-        let response = self
-            .block_on(client.simulate(request))
-            .map_err(Error::grpc_status)?
-            .into_inner();
-
-        Ok(response)
-    }
-
     fn key(&self) -> Result<KeyEntry, Error> {
         self.keybase()
             .get_key(&self.config.key_name)
             .map_err(Error::key_base)
-    }
-
-    fn key_bytes(&self, key: &KeyEntry) -> Result<Vec<u8>, Error> {
-        let mut pk_buf = Vec::new();
-        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf)
-            .map_err(|e| Error::protobuf_encode(String::from("Key bytes"), e))?;
-        Ok(pk_buf)
-    }
-
-    fn key_and_bytes(&self) -> Result<(KeyEntry, Vec<u8>), Error> {
-        let key = self.key()?;
-        let key_bytes = self.key_bytes(&key)?;
-        Ok((key, key_bytes))
     }
 
     fn query_account(&self) -> Result<BaseAccount, Error> {
@@ -767,80 +549,6 @@ impl CosmosSdkChain {
         }
     }
 
-    fn signer(&self, sequence: u64) -> Result<SignerInfo, Error> {
-        let (_key, pk_buf) = self.key_and_bytes()?;
-        let pk_type = match &self.config.address_type {
-            AddressType::Cosmos => "/cosmos.crypto.secp256k1.PubKey".to_string(),
-            AddressType::Ethermint { pk_type } => pk_type.clone(),
-        };
-        // Create a MsgSend proto Any message
-        let pk_any = Any {
-            type_url: pk_type,
-            value: pk_buf,
-        };
-
-        let single = Single { mode: 1 };
-        let sum_single = Some(Sum::Single(single));
-        let mode = Some(ModeInfo { sum: sum_single });
-        let signer_info = SignerInfo {
-            public_key: Some(pk_any),
-            mode_info: mode,
-            sequence,
-        };
-        Ok(signer_info)
-    }
-
-    fn max_fee(&self) -> Fee {
-        Fee {
-            amount: vec![self.max_fee_in_coins()],
-            gas_limit: self.max_gas(),
-            payer: "".to_string(),
-            granter: self.fee_granter().to_string(),
-        }
-    }
-
-    fn fee_with_gas(&self, gas_limit: u64) -> Fee {
-        let adjusted_gas_limit = self.apply_adjustment_to_gas(gas_limit);
-
-        Fee {
-            amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
-            gas_limit: adjusted_gas_limit,
-            payer: "".to_string(),
-            granter: self.fee_granter().to_string(),
-        }
-    }
-
-    fn signed_doc(
-        &self,
-        body_bytes: Vec<u8>,
-        auth_info_bytes: Vec<u8>,
-        account_number: u64,
-    ) -> Result<Vec<u8>, Error> {
-        let sign_doc = SignDoc {
-            body_bytes,
-            auth_info_bytes,
-            chain_id: self.config.clone().id.to_string(),
-            account_number,
-        };
-
-        // A protobuf serialization of a SignDoc
-        let mut signdoc_buf = Vec::new();
-        prost::Message::encode(&sign_doc, &mut signdoc_buf)
-            .map_err(|e| Error::protobuf_encode(String::from("SignDoc"), e))?;
-
-        // Sign doc
-        let signed = self
-            .keybase
-            .sign_msg(
-                &self.config.key_name,
-                signdoc_buf,
-                &self.config.address_type,
-            )
-            .map_err(Error::key_base)?;
-
-        Ok(signed)
-    }
-
     /// Given a vector of `TxSyncResult` elements,
     /// each including a transaction response hash for one or more messages, periodically queries the chain
     /// with the transaction hashes to get the list of IbcEvents included in those transactions.
@@ -864,7 +572,7 @@ impl CosmosSdkChain {
 
         let start = Instant::now();
         let result = retry_with_index(
-            retry_strategy::wait_for_block_commits(self.config.rpc_timeout),
+            retry::wait_for_block_commits(self.config.rpc_timeout),
             |index| {
                 if all_tx_results_found(&tx_sync_results) {
                     trace!(
@@ -2320,17 +2028,6 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 }
 
 /// Determine whether the given error yielded by `tx_simulate`
-/// can be recovered from by submitting the tx anyway.
-fn can_recover_from_simulation_failure(e: &Error) -> bool {
-    use crate::error::ErrorDetail::*;
-
-    match e.detail() {
-        GrpcStatus(detail) => detail.is_client_state_height_too_low(),
-        _ => false,
-    }
-}
-
-/// Determine whether the given error yielded by `tx_simulate`
 /// indicates that the current sequence number cached in Hermes
 /// may be out-of-sync with the full node's version of the s.n.
 fn mismatching_account_sequence_number(e: &Error) -> bool {
@@ -2339,22 +2036,6 @@ fn mismatching_account_sequence_number(e: &Error) -> bool {
     match e.detail() {
         GrpcStatus(detail) => detail.is_account_sequence_mismatch(),
         _ => false,
-    }
-}
-
-struct PrettyFee<'a>(&'a Fee);
-
-impl fmt::Display for PrettyFee<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let amount = match self.0.amount.get(0) {
-            Some(coin) => format!("{}{}", coin.amount, coin.denom),
-            None => "<no amount specified>".to_string(),
-        };
-
-        f.debug_struct("Fee")
-            .field("amount", &amount)
-            .field("gas_limit", &self.0.gas_limit)
-            .finish()
     }
 }
 

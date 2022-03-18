@@ -43,12 +43,14 @@ pub async fn send_messages_as_batches(
             rpc_address,
             grpc_address,
             batch,
-            account_sequence,
+            *account_sequence,
             account_number,
             key_entry,
             tx_memo,
         )
         .await?;
+
+        maybe_update_account_sequence(config, account_sequence, &response);
 
         responses.push(response);
     }
@@ -62,7 +64,7 @@ pub async fn estimate_fee_and_send_tx(
     rpc_address: &Url,
     grpc_address: &Uri,
     messages: Vec<Any>,
-    account_sequence: &mut u64,
+    account_sequence: u64,
     account_number: u64,
     key_entry: &KeyEntry,
     tx_memo: &Memo,
@@ -70,7 +72,7 @@ pub async fn estimate_fee_and_send_tx(
     let fee = estimate_tx_fees(
         config,
         grpc_address,
-        *account_sequence,
+        account_sequence,
         account_number,
         messages.clone(),
         key_entry,
@@ -78,7 +80,7 @@ pub async fn estimate_fee_and_send_tx(
     )
     .await?;
 
-    send_tx_and_update_account_sequence(
+    raw_send_tx(
         config,
         rpc_client,
         rpc_address,
@@ -92,30 +94,11 @@ pub async fn estimate_fee_and_send_tx(
     .await
 }
 
-pub async fn send_tx_and_update_account_sequence(
+pub fn maybe_update_account_sequence(
     config: &ChainConfig,
-    rpc_client: &HttpClient,
-    rpc_address: &Url,
-    fee: &Fee,
     account_sequence: &mut u64,
-    account_number: u64,
-    messages: Vec<Any>,
-    key_entry: &KeyEntry,
-    tx_memo: &Memo,
-) -> Result<Response, Error> {
-    let response = raw_send_tx(
-        config,
-        rpc_client,
-        rpc_address,
-        fee,
-        *account_sequence,
-        account_number,
-        messages,
-        key_entry,
-        tx_memo,
-    )
-    .await?;
-
+    response: &Response,
+) {
     match response.code {
         tendermint::abci::Code::Ok => {
             // A success means the account s.n. was increased
@@ -133,8 +116,6 @@ pub async fn send_tx_and_update_account_sequence(
             );
         }
     }
-
-    Ok(response)
 }
 
 pub async fn raw_send_tx(
