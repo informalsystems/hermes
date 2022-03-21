@@ -132,13 +132,13 @@ impl BinaryChainTest for SupervisorTest {
             );
 
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
-                &wallet_a.as_ref(),
+                &wallet_a.address(),
                 balance_a - transfer_amount,
                 &denom_a,
             )?;
 
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.as_ref(),
+                &wallet_b.address(),
                 transfer_amount,
                 &denom_b.as_ref(),
             )?;

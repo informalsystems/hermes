@@ -477,19 +477,6 @@ impl ChainDriver {
     */
     pub fn assert_eventual_wallet_amount(
         &self,
-        user: &Wallet,
-        target_amount: u64,
-        denom: &Denom,
-    ) -> Result<(), Error> {
-        self.assert_eventual_wallet_addr_amount(&user.address, target_amount, denom)
-    }
-
-    /**
-       Assert that a wallet should eventually have the expected amount in the
-       given denomination.
-    */
-    pub fn assert_eventual_wallet_addr_amount(
-        &self,
         wallet: &WalletAddress,
         target_amount: u64,
         denom: &Denom,

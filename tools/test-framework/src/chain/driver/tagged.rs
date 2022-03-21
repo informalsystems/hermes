@@ -10,7 +10,7 @@ use crate::ibc::denom::Denom;
 use crate::prelude::TaggedConnectionIdRef;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
-use crate::types::wallet::{Wallet, WalletAddress};
+use crate::types::wallet::WalletAddress;
 
 use super::interchain::{interchain_submit, query_interchain_account, register_interchain_account};
 use super::query_txs::query_recipient_transactions;
@@ -47,19 +47,6 @@ pub trait TaggedChainDriverExt<Chain> {
        amount in the denomination that belongs to `Chain`.
     */
     fn assert_eventual_wallet_amount(
-        &self,
-        user: &MonoTagged<Chain, &Wallet>,
-        target_amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<(), Error>;
-
-    /**
-       Tagged version of [`ChainDriver::assert_eventual_wallet_addr_amount`].
-
-       Assert that a wallet belongs to `Chain` would reach the target
-       amount in the denomination that belongs to `Chain`.
-    */
-    fn assert_eventual_wallet_addr_amount(
         &self,
         user: &MonoTagged<Chain, &WalletAddress>,
         target_amount: u64,
@@ -146,22 +133,12 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
 
     fn assert_eventual_wallet_amount(
         &self,
-        user: &MonoTagged<Chain, &Wallet>,
-        target_amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<(), Error> {
-        self.value()
-            .assert_eventual_wallet_amount(user.value(), target_amount, denom.value())
-    }
-
-    fn assert_eventual_wallet_addr_amount(
-        &self,
         user: &MonoTagged<Chain, &WalletAddress>,
         target_amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<(), Error> {
         self.value()
-            .assert_eventual_wallet_addr_amount(user.value(), target_amount, denom.value())
+            .assert_eventual_wallet_amount(user.value(), target_amount, denom.value())
     }
 
     fn transfer_token<Counterparty>(

@@ -91,7 +91,7 @@ pub fn bootstrap_single_node(
 
     let process = chain_driver.start()?;
 
-    chain_driver.assert_eventual_wallet_amount(&relayer, initial_amount, &denom)?;
+    chain_driver.assert_eventual_wallet_amount(&relayer.address, initial_amount, &denom)?;
 
     info!(
         "started new chain {} at with home path {} and RPC address {}.",

@@ -110,14 +110,11 @@ impl BinaryChainTest for IcaFilterTestAllow {
         )?;
 
         // Check that the balance has been updated.
-        chains
-            .node_b
-            .chain_driver()
-            .assert_eventual_wallet_addr_amount(
-                &ica_address.as_ref(),
-                ica_fund,
-                &stake_denom.as_ref(),
-            )?;
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            ica_fund,
+            &stake_denom.as_ref(),
+        )?;
 
         #[derive(Serialize)]
         struct MsgSend {
@@ -155,14 +152,11 @@ impl BinaryChainTest for IcaFilterTestAllow {
         )?;
 
         // Check that the ICA account's balance has been debited the sent amount.
-        chains
-            .node_b
-            .chain_driver()
-            .assert_eventual_wallet_addr_amount(
-                &ica_address.as_ref(),
-                ica_fund - amount,
-                &stake_denom.as_ref(),
-            )?;
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &ica_address.as_ref(),
+            ica_fund - amount,
+            &stake_denom.as_ref(),
+        )?;
 
         Ok(())
     }
