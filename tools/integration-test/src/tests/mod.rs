@@ -15,8 +15,8 @@ pub mod transfer;
 #[cfg(any(doc, feature = "ordered"))]
 pub mod ordered_channel;
 
-#[cfg(any(doc, feature = "ica-filter"))]
-pub mod ica_filter;
+#[cfg(any(doc, feature = "ica"))]
+pub mod ica;
 
 #[cfg(any(doc, feature = "manual"))]
 pub mod manual;
