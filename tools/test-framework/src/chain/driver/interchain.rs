@@ -9,6 +9,8 @@ use crate::prelude::WalletAddress;
 
 use super::ChainDriver;
 
+/// Register a new interchain account controlled by the given account
+/// over the given connection.
 pub fn register_interchain_account(
     driver: &ChainDriver,
     from: &WalletAddress,
@@ -41,9 +43,11 @@ pub fn register_interchain_account(
     Ok(())
 }
 
+/// Query the address of the interchain account
+/// corresponding to the given controller account.
 pub fn query_interchain_account(
     driver: &ChainDriver,
-    from: &WalletAddress,
+    account: &WalletAddress,
     connection_id: &ConnectionId,
 ) -> Result<WalletAddress, Error> {
     let args = &[
@@ -57,7 +61,7 @@ pub fn query_interchain_account(
         "intertx",
         "interchainaccounts",
         connection_id.as_str(),
-        &from.0,
+        &account.0,
     ];
 
     let res = driver.exec(args)?.stdout;
@@ -72,6 +76,8 @@ pub fn query_interchain_account(
     Ok(WalletAddress(address.to_string()))
 }
 
+/// Submit a msg from a controller account over an ICA channel
+/// using the given connection.
 pub fn interchain_submit<T: Serialize>(
     driver: &ChainDriver,
     from: &WalletAddress,
@@ -109,6 +115,8 @@ pub fn interchain_submit<T: Serialize>(
     Ok(())
 }
 
+/// Check that a command succeeded, by ensuring that the JSON emitted
+/// contains a `code` integer field set to 0.
 fn check_result_code(res: &str) -> Result<(), Error> {
     let json_res = json::from_str::<json::Value>(res).map_err(handle_generic_error)?;
 
