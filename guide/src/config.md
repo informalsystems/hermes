@@ -116,6 +116,8 @@ trust_threshold = { numerator = '1', denominator = '3' }
 
 ## Update the configuration without restarting Hermes
 
+> ⚠️  This feature has been removed in Hermes v0.12.0.
+
 Before Hermes 0.6.1, the only way to get Hermes to pick up a change in the
 configuration was to stop and restart Hermes.
 
@@ -123,7 +125,7 @@ As of version 0.6.1, Hermes will react to receiving a `SIGHUP` signal
 by reloading the `[chains]` section of the configuration, and
 stopping, starting or restarting the affected workers.
 
-> ⚠️  **Warning:** the configuration reload feature only supports
+> **Warning:** the configuration reload feature only supports
 > adding, removing, or updating configuration of chains. It does
 > not support dynamically changing global features, such as the
 > filtering mechanism or logging level.
