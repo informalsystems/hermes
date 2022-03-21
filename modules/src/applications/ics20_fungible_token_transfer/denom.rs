@@ -1,8 +1,11 @@
 #![allow(unused)]
 
+use core::convert::AsRef;
 use core::fmt;
+use core::ops::{Add, AddAssign};
 use core::str::FromStr;
 
+use ibc_proto::cosmos::base::v1beta1::Coin as RawCoin;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use subtle_encoding::hex;
@@ -81,6 +84,59 @@ impl From<Vec<TracePrefix>> for TracePath {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct DenomTrace {
+    trace_path: TracePath,
+    base_denom: Denom,
+}
+
+impl DenomTrace {
+    /// Returns the full denom path
+    pub fn get_full_denom_path(&self) -> String {
+        todo!()
+    }
+
+    /// Returns a coin denomination for an ICS20 fungible token in the format
+    /// 'ibc/trace_path/base_denom'. If the trace is empty, it will return the base denomination.
+    pub fn ibc_denom(&self) -> String {
+        todo!()
+    }
+
+    /// Returns the prefix for this trace
+    pub fn get_prefix(&self) -> String {
+        todo!()
+    }
+
+    /// Returns true iff this path has the specified prefix
+    pub fn has_prefix(&self, _prefix: &str) -> bool {
+        todo!()
+    }
+}
+
+impl FromStr for DenomTrace {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts: Vec<&str> = s.split('/').collect();
+        assert!(!parts.is_empty(), "split() never returns an empty iterator");
+
+        let (base_denom, trace_path) = {
+            if parts.first().unwrap() == &s {
+                (Denom::from_str(s)?, TracePath::default())
+            } else {
+                let base_denom = Denom::from_str(parts.pop().unwrap())?;
+                let trace_path = TracePath::try_from(parts)?;
+                (base_denom, trace_path)
+            }
+        };
+
+        Ok(Self {
+            trace_path,
+            base_denom,
+        })
+    }
+}
+
 pub fn derive_ibc_denom(
     port_id: &PortId,
     channel_id: &ChannelId,
@@ -100,4 +156,58 @@ pub fn derive_ibc_denom_with_path(transfer_path: &str) -> Result<String, Error> 
     let denom_hex = String::from_utf8(hex::encode_upper(denom_bytes)).map_err(Error::utf8)?;
 
     Ok(format!("ibc/{}", denom_hex))
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+pub struct Decimal(u64);
+
+impl FromStr for Decimal {
+    type Err = ();
+
+    fn from_str(_s: &str) -> Result<Self, Self::Err> {
+        todo!()
+    }
+}
+
+impl fmt::Display for Decimal {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+impl Add for Decimal {
+    type Output = Decimal;
+
+    fn add(self, _rhs: Self) -> Self::Output {
+        todo!()
+    }
+}
+
+impl AddAssign for Decimal {
+    fn add_assign(&mut self, _rhs: Decimal) {
+        todo!()
+    }
+}
+
+/// Coin defines a token with a denomination and an amount.
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+pub struct Coin {
+    /// Denomination
+    pub denom: Denom,
+    /// Amount
+    pub amount: Decimal,
+}
+
+impl TryFrom<RawCoin> for Coin {
+    type Error = ();
+
+    fn try_from(_proto: RawCoin) -> Result<Coin, Self::Error> {
+        todo!()
+    }
+}
+
+impl From<Coin> for RawCoin {
+    fn from(_coin: Coin) -> RawCoin {
+        todo!()
+    }
 }
