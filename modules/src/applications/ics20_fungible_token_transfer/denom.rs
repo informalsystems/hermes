@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use core::fmt;
 use core::str::FromStr;
 
@@ -36,6 +38,46 @@ impl FromStr for Denom {
 impl fmt::Display for Denom {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Clone, Debug)]
+struct TracePrefix {
+    port_id: PortId,
+    channel_id: ChannelId,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct TracePath(Vec<TracePrefix>);
+
+impl<'a> TryFrom<Vec<&'a str>> for TracePath {
+    type Error = Error;
+
+    fn try_from(v: Vec<&'a str>) -> Result<Self, Self::Error> {
+        if v.is_empty() || v.len() % 2 != 0 {
+            return Err(Error::invalid_trace_length(v.len()));
+        }
+
+        let mut trace = vec![];
+        let id_pairs = v.windows(2).map(|paths| (paths[0], paths[1]));
+        for (pos, (port_id, channel_id)) in id_pairs.enumerate() {
+            let port_id =
+                PortId::from_str(port_id).map_err(|e| Error::invalid_trace_port_id(pos, e))?;
+            let channel_id = ChannelId::from_str(channel_id)
+                .map_err(|e| Error::invalid_trace_channel_id(pos, e))?;
+            trace.push(TracePrefix {
+                port_id,
+                channel_id,
+            });
+        }
+
+        Ok(trace.into())
+    }
+}
+
+impl From<Vec<TracePrefix>> for TracePath {
+    fn from(v: Vec<TracePrefix>) -> Self {
+        Self(v)
     }
 }
 

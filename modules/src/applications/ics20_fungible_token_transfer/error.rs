@@ -48,5 +48,19 @@ define_error! {
 
         InvalidBaseDenom
             |_| { "invalid characters in base denomination" },
+
+        InvalidTracePortId
+            { pos: usize }
+            [ ValidationError ]
+            | e | { format_args!("invalid port id in trace at position: {0}", e.pos) },
+
+        InvalidTraceChannelId
+            { pos: usize }
+            [ ValidationError ]
+            | e | { format_args!("invalid channel id in trace at position: {0}", e.pos) },
+
+        InvalidTraceLength
+            { len: usize }
+            | e | { format_args!("trace length must be even but got: {0}", e.len) },
     }
 }
