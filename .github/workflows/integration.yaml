@@ -130,6 +130,7 @@ jobs:
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
+          CHAIN_COMMAND_PATH: icad
         run: |
           nix shell github:informalsystems/cosmos.nix#ica -c cargo \
             test -p ibc-integration-test --features ica-filter --no-fail-fast -- \

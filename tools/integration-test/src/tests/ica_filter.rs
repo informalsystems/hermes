@@ -26,7 +26,6 @@ pub struct IcaFilterTestAllow;
 impl TestOverrides for IcaFilterTestAllow {
     // Use `icad` binary and deterministic identifiers for clients, connections, and channels
     fn modify_test_config(&self, config: &mut TestConfig) {
-        config.chain_command_path = "icad".to_string();
         config.bootstrap_with_random_ids = false;
     }
 
@@ -179,7 +178,6 @@ pub struct IcaFilterTestDeny;
 impl TestOverrides for IcaFilterTestDeny {
     // Use deterministic identifiers for clients, connections, and channels
     fn modify_test_config(&self, config: &mut TestConfig) {
-        config.chain_command_path = "icad".to_string();
         config.bootstrap_with_random_ids = false;
     }
 
