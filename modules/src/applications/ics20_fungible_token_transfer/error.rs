@@ -42,5 +42,11 @@ define_error! {
         Utf8
             [ DisplayOnly<FromUtf8Error> ]
             | _ | { "utf8 decoding error" },
+
+        EmptyBaseDenom
+            |_| { "base denomination is empty" },
+
+        InvalidBaseDenom
+            |_| { "invalid characters in base denomination" },
     }
 }
