@@ -4,11 +4,9 @@
 
 use core::str::FromStr;
 use core::time::Duration;
+
 use eyre::eyre;
-use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
-use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use semver::Version;
-use serde::Serialize;
 use serde_json as json;
 use std::fs;
 use std::path::PathBuf;
@@ -16,6 +14,9 @@ use std::process::{Command, Stdio};
 use std::str;
 use toml;
 use tracing::debug;
+
+use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 
 use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::chain::version::get_chain_command_version;
@@ -28,6 +29,7 @@ use crate::util::file::pipe_to_file;
 use crate::util::random::random_u32;
 use crate::util::retry::assert_eventually_succeed;
 
+pub mod interchain;
 pub mod query_txs;
 pub mod tagged;
 pub mod transfer;
@@ -513,137 +515,5 @@ impl ChainDriver {
         )?;
 
         Ok(())
-    }
-
-    pub fn register_interchain_account(
-        &self,
-        from: &WalletAddress,
-        connection_id: &ConnectionId,
-    ) -> Result<(), Error> {
-        let args = &[
-            "--home",
-            &self.home_path,
-            "--node",
-            &self.rpc_listen_address(),
-            "--output",
-            "json",
-            "tx",
-            "intertx",
-            "register",
-            "--from",
-            &from.0,
-            "--connection-id",
-            connection_id.as_str(),
-            "--chain-id",
-            self.chain_id.as_str(),
-            "--keyring-backend",
-            "test",
-            "-y",
-        ];
-
-        let res = self.exec(args)?.stdout;
-        let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
-
-        let code = json_res
-            .get("code")
-            .ok_or_else(|| eyre!("expected `code` field"))?
-            .as_i64()
-            .ok_or_else(|| eyre!("expected integer field"))?;
-
-        if code == 0 {
-            Ok(())
-        } else {
-            let raw_log = json_res
-                .get("raw_log")
-                .ok_or_else(|| eyre!("expected `raw_log` field"))?
-                .as_str()
-                .ok_or_else(|| eyre!("expected string field"))?;
-
-            Err(Error::generic(eyre!("{}", raw_log)))
-        }
-    }
-
-    pub fn query_interchain_account(
-        &self,
-        from: &WalletAddress,
-        connection_id: &ConnectionId,
-    ) -> Result<WalletAddress, Error> {
-        let args = &[
-            "--home",
-            &self.home_path,
-            "--node",
-            &self.rpc_listen_address(),
-            "--output",
-            "json",
-            "query",
-            "intertx",
-            "interchainaccounts",
-            connection_id.as_str(),
-            &from.0,
-        ];
-
-        let res = self.exec(args)?.stdout;
-        let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
-
-        let address = json_res
-            .get("interchain_account_address")
-            .ok_or_else(|| eyre!("expected `interchain_account_address` field"))?
-            .as_str()
-            .ok_or_else(|| eyre!("expected string field"))?;
-
-        Ok(WalletAddress(address.to_string()))
-    }
-
-    pub fn interchain_submit<T: Serialize>(
-        &self,
-        from: &WalletAddress,
-        connection_id: &ConnectionId,
-        msg: &T,
-    ) -> Result<(), Error> {
-        let msg_json = serde_json::to_string_pretty(msg).unwrap();
-        println!("{}", msg_json);
-
-        let args = &[
-            "--home",
-            &self.home_path,
-            "--node",
-            &self.rpc_listen_address(),
-            "--output",
-            "json",
-            "tx",
-            "intertx",
-            "submit",
-            &msg_json,
-            "--connection-id",
-            connection_id.as_str(),
-            "--from",
-            &from.0,
-            "--chain-id",
-            self.chain_id.as_str(),
-            "--keyring-backend",
-            "test",
-            "-y",
-        ];
-
-        let res = self.exec(args)?.stdout;
-        let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
-
-        let code = json_res
-            .get("code")
-            .ok_or_else(|| eyre!("expected `code` field"))?
-            .as_i64()
-            .ok_or_else(|| eyre!("expected integer field"))?;
-
-        if code == 0 {
-            Ok(())
-        } else {
-            let raw_log = json_res
-                .get("raw_log")
-                .ok_or_else(|| eyre!("expected `raw_log` field"))?
-                .as_str()
-                .ok_or_else(|| eyre!("expected string field"))?;
-
-            Err(Error::generic(eyre!("{}", raw_log)))
-        }
     }
 }

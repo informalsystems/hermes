@@ -12,6 +12,7 @@ use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
 
+use super::interchain::{interchain_submit, query_interchain_account, register_interchain_account};
 use super::query_txs::query_recipient_transactions;
 use super::transfer::{local_transfer_token, transfer_token};
 use super::ChainDriver;
@@ -211,8 +212,7 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
         from: &MonoTagged<Chain, &WalletAddress>,
         connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
     ) -> Result<(), Error> {
-        self.value()
-            .register_interchain_account(from.value(), connection_id.value())
+        register_interchain_account(self.value(), from.value(), connection_id.value())
     }
 
     fn query_interchain_account<Counterparty>(
@@ -220,8 +220,7 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
         from: &MonoTagged<Chain, &WalletAddress>,
         connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
     ) -> Result<MonoTagged<Counterparty, WalletAddress>, Error> {
-        self.value()
-            .query_interchain_account(from.value(), connection_id.value())
+        query_interchain_account(self.value(), from.value(), connection_id.value())
             .map(MonoTagged::new)
     }
 
@@ -231,7 +230,6 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
         connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
         msg: &T,
     ) -> Result<(), Error> {
-        self.value()
-            .interchain_submit(from.value(), connection_id.value(), msg)
+        interchain_submit(self.value(), from.value(), connection_id.value(), msg)
     }
 }
