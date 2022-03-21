@@ -247,13 +247,16 @@ trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 </code></pre>
 <h2 id="update-the-configuration-without-restarting-hermes"><a class="header" href="#update-the-configuration-without-restarting-hermes">Update the configuration without restarting Hermes</a></h2>
+<blockquote>
+<p>⚠️  This feature has been removed in Hermes v0.12.0.</p>
+</blockquote>
 <p>Before Hermes 0.6.1, the only way to get Hermes to pick up a change in the
 configuration was to stop and restart Hermes.</p>
 <p>As of version 0.6.1, Hermes will react to receiving a <code>SIGHUP</code> signal
 by reloading the <code>[chains]</code> section of the configuration, and
 stopping, starting or restarting the affected workers.</p>
 <blockquote>
-<p>⚠️  <strong>Warning:</strong> the configuration reload feature only supports
+<p><strong>Warning:</strong> the configuration reload feature only supports
 adding, removing, or updating configuration of chains. It does
 not support dynamically changing global features, such as the
 filtering mechanism or logging level.</p>
