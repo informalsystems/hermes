@@ -26,12 +26,24 @@ define_error! {
         RuntimeNotFound
             | _ | { "expected runtime to be found in registry" },
 
-        MissingChain
+        MissingChainConfig
             { chain_id: ChainId }
             | e | {
-                format_args!("missing chain for id ({}) in configuration file",
+                format_args!("missing chain config for '{}' in configuration file",
                     e.chain_id)
             }
+    }
+}
+
+impl SpawnError {
+    pub fn log_as_debug(&self) -> bool {
+        self.detail().log_as_debug()
+    }
+}
+
+impl SpawnErrorDetail {
+    pub fn log_as_debug(&self) -> bool {
+        matches!(self, SpawnErrorDetail::MissingChainConfig(_))
     }
 }
 
@@ -150,7 +162,7 @@ pub fn spawn_chain_runtime<Chain: ChainHandle>(
     let chain_config = config
         .find_chain(chain_id)
         .cloned()
-        .ok_or_else(|| SpawnError::missing_chain(chain_id.clone()))?;
+        .ok_or_else(|| SpawnError::missing_chain_config(chain_id.clone()))?;
 
     let handle =
         ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt).map_err(SpawnError::relayer)?;

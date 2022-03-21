@@ -63,7 +63,7 @@ pub fn spawn_chain_runtime_generic<Chain: ChainHandle>(
     let chain_config = config
         .find_chain(chain_id)
         .cloned()
-        .ok_or_else(|| Error::missing_config(chain_id.clone()))?;
+        .ok_or_else(|| Error::missing_chain_config(chain_id.clone()))?;
 
     let rt = Arc::new(TokioRuntime::new().unwrap());
     let handle =
