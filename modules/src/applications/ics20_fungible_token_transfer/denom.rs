@@ -5,6 +5,7 @@ use core::fmt;
 use core::ops::{Add, AddAssign};
 use core::str::FromStr;
 
+use derive_more::{Add, AsRef, Display, From, FromStr};
 use ibc_proto::cosmos::base::v1beta1::Coin as RawCoin;
 use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
@@ -16,15 +17,9 @@ use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 
 /// Base denomination type
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, AsRef, Display)]
 #[serde(transparent)]
 pub struct Denom(String);
-
-impl AsRef<str> for Denom {
-    fn as_ref(&self) -> &str {
-        self.0.as_str()
-    }
-}
 
 impl FromStr for Denom {
     type Err = Error;
@@ -40,12 +35,6 @@ impl FromStr for Denom {
     }
 }
 
-impl fmt::Display for Denom {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 #[derive(Clone, Debug)]
 struct TracePrefix {
     port_id: PortId,
@@ -58,7 +47,7 @@ impl fmt::Display for TracePrefix {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, From)]
 pub struct TracePath(Vec<TracePrefix>);
 
 impl<'a> TryFrom<Vec<&'a str>> for TracePath {
@@ -83,12 +72,6 @@ impl<'a> TryFrom<Vec<&'a str>> for TracePath {
         }
 
         Ok(trace.into())
-    }
-}
-
-impl From<Vec<TracePrefix>> for TracePath {
-    fn from(v: Vec<TracePrefix>) -> Self {
-        Self(v)
     }
 }
 
@@ -212,36 +195,8 @@ pub fn derive_ibc_denom_with_path(transfer_path: &str) -> Result<String, Error> 
     Ok(format!("ibc/{}", denom_hex))
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, Add, From, FromStr)]
 pub struct Decimal(u64);
-
-impl FromStr for Decimal {
-    type Err = ();
-
-    fn from_str(_s: &str) -> Result<Self, Self::Err> {
-        todo!()
-    }
-}
-
-impl fmt::Display for Decimal {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Add for Decimal {
-    type Output = Decimal;
-
-    fn add(self, _rhs: Self) -> Self::Output {
-        todo!()
-    }
-}
-
-impl AddAssign for Decimal {
-    fn add_assign(&mut self, _rhs: Decimal) {
-        todo!()
-    }
-}
 
 /// Coin defines a token with a denomination and an amount.
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
