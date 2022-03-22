@@ -79,15 +79,14 @@ pub mod commitment_proof {
 ///
 ///Then combine the bytes, and hash it
 ///output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
-#[derive(Eq)]
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[derive(Eq, ::serde::Serialize, ::serde::Deserialize)]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LeafOp {
     #[prost(enumeration = "HashOp", tag = "1")]
     pub hash: i32,
     #[prost(enumeration = "HashOp", tag = "2")]
-    #[cfg_attr(feature = "std", serde(default))]
+    #[serde(default)]
     pub prehash_key: i32,
     #[prost(enumeration = "HashOp", tag = "3")]
     pub prehash_value: i32,
@@ -96,7 +95,7 @@ pub struct LeafOp {
     /// prefix is a fixed bytes that may optionally be included at the beginning to differentiate
     /// a leaf node from an inner node.
     #[prost(bytes = "vec", tag = "5")]
-    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
+    #[serde(with = "crate::base64")]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
 }
@@ -117,18 +116,16 @@ pub struct LeafOp {
 ///some value to differentiate from leaf nodes, should be included in prefix and suffix.
 ///If either of prefix or suffix is empty, we just treat it as an empty string
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
-#[derive(Eq)]
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Eq, ::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct InnerOp {
     #[prost(enumeration = "HashOp", tag = "1")]
     pub hash: i32,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
+    #[serde(with = "crate::base64")]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "3")]
-    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
+    #[serde(with = "crate::base64")]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub suffix: ::prost::alloc::vec::Vec<u8>,
 }
@@ -143,8 +140,7 @@ pub struct InnerOp {
 ///generate a given hash (by interpretting the preimage differently).
 ///We need this for proper security, requires client knows a priori what
 ///tree format server uses. But not in code, rather a configuration object.
-#[derive(Eq)]
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[derive(Eq, ::serde::Serialize, ::serde::Deserialize)]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofSpec {
@@ -156,11 +152,11 @@ pub struct ProofSpec {
     pub inner_spec: ::core::option::Option<InnerSpec>,
     /// max_depth (if > 0) is the maximum number of InnerOps allowed (mainly for fixed-depth tries)
     #[prost(int32, tag = "3")]
-    #[cfg_attr(feature = "std", serde(default))]
+    #[serde(default)]
     pub max_depth: i32,
     /// min_depth (if > 0) is the minimum number of InnerOps allowed (mainly for fixed-depth tries)
     #[prost(int32, tag = "4")]
-    #[cfg_attr(feature = "std", serde(default))]
+    #[serde(default)]
     pub min_depth: i32,
 }
 ///
@@ -172,8 +168,7 @@ pub struct ProofSpec {
 ///isLeftMost(spec: InnerSpec, op: InnerOp)
 ///isRightMost(spec: InnerSpec, op: InnerOp)
 ///isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
-#[derive(Eq)]
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[derive(Eq, ::serde::Serialize, ::serde::Deserialize)]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InnerSpec {
@@ -190,8 +185,8 @@ pub struct InnerSpec {
     pub max_prefix_length: i32,
     /// empty child is the prehash image that is used when one child is nil (eg. 20 bytes of 0)
     #[prost(bytes = "vec", tag = "5")]
-    #[cfg_attr(feature = "std", serde(default))]
-    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
+    #[serde(default)]
+    #[serde(with = "crate::base64")]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub empty_child: ::prost::alloc::vec::Vec<u8>,
     /// hash is the algorithm that must be used for each InnerOp
