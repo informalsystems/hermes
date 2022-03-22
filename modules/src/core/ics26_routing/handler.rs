@@ -83,9 +83,11 @@ where
             let (mut handler_builder, channel_result) =
                 ics4_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
 
-            let (cb_output, channel_result) = ics4_callback(ctx, &module_id, &msg, channel_result)
-                .map_err(Error::ics04_channel)?;
-            handler_builder.merge(cb_output);
+            let mut module_output = HandlerOutput::builder().with_result(());
+            let cb_result =
+                ics4_callback(ctx, &module_id, &msg, channel_result, &mut module_output);
+            handler_builder.merge(module_output);
+            let channel_result = cb_result.map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_channel_result(channel_result)
@@ -117,9 +119,10 @@ where
                 return Ok(handler_builder.with_result(()));
             }
 
-            let cb_output =
-                ics4_packet_callback(ctx, &module_id, &msg).map_err(Error::ics04_channel)?;
-            handler_builder.merge(cb_output);
+            let mut module_output = HandlerOutput::builder().with_result(());
+            let cb_result = ics4_packet_callback(ctx, &module_id, &msg, &mut module_output);
+            handler_builder.merge(module_output);
+            cb_result.map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(packet_result)

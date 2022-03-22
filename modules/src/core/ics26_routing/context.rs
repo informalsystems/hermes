@@ -88,12 +88,13 @@ pub type DeferredWriteResult<T> = (Option<Box<T>>, Option<Box<WriteFn>>);
 // FIXME(hu55a1n1): Define concrete type that implements `Into<AbciEvent>`?
 pub type ModuleEvent = IbcEvent;
 
-pub type ModuleOutput<T> = HandlerOutput<T, ModuleEvent>;
+pub type ModuleOutput = HandlerOutput<(), ModuleEvent>;
 
 pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
         &mut self,
+        _output: &mut ModuleOutput,
         _order: Order,
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
@@ -101,13 +102,14 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _channel_cap: &ChannelCapability,
         _counterparty: &Counterparty,
         _version: &Version,
-    ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutput::builder().with_result(()))
+    ) -> Result<(), Error> {
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_try(
         &mut self,
+        _output: &mut ModuleOutput,
         _order: Order,
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
@@ -115,64 +117,71 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _channel_cap: &ChannelCapability,
         _counterparty: &Counterparty,
         _counterparty_version: &Version,
-    ) -> Result<ModuleOutput<Version>, Error>;
+    ) -> Result<Version, Error>;
 
     fn on_chan_open_ack(
         &mut self,
+        _output: &mut ModuleOutput,
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _counterparty_version: &Version,
-    ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutput::builder().with_result(()))
+    ) -> Result<(), Error> {
+        Ok(())
     }
 
     fn on_chan_open_confirm(
         &mut self,
+        _output: &mut ModuleOutput,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-    ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutput::builder().with_result(()))
+    ) -> Result<(), Error> {
+        Ok(())
     }
 
     fn on_chan_close_init(
         &mut self,
+        _output: &mut ModuleOutput,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-    ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutput::builder().with_result(()))
+    ) -> Result<(), Error> {
+        Ok(())
     }
 
     fn on_chan_close_confirm(
         &mut self,
+        _output: &mut ModuleOutput,
         _port_id: &PortId,
         _channel_id: &ChannelId,
-    ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutput::builder().with_result(()))
+    ) -> Result<(), Error> {
+        Ok(())
     }
 
     fn on_recv_packet(
         &self,
+        _output: &mut ModuleOutput,
         _packet: &Packet,
         _relayer: &Signer,
-    ) -> ModuleOutput<DeferredWriteResult<dyn Acknowledgement>> {
-        HandlerOutput::builder().with_result((None, None))
+    ) -> DeferredWriteResult<dyn Acknowledgement> {
+        (None, None)
     }
 
     fn on_acknowledgement_packet(
         &mut self,
+        _output: &mut ModuleOutput,
         _packet: &Packet,
         _acknowledgement: &GenericAcknowledgement,
         _relayer: &Signer,
-    ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutput::builder().with_result(()))
+    ) -> Result<(), Error> {
+        Ok(())
     }
 
     fn on_timeout_packet(
         &mut self,
+        _output: &mut ModuleOutput,
         _packet: &Packet,
         _relayer: &Signer,
-    ) -> Result<ModuleOutput<()>, Error> {
-        Ok(HandlerOutput::builder().with_result(()))
+    ) -> Result<(), Error> {
+        Ok(())
     }
 }
 
