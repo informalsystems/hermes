@@ -1,6 +1,5 @@
 /// Plan specifies information about a planned upgrade and when it should occur.
-#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct Plan {
     /// Sets the name for the upgrade. This name will be used by the upgraded
     /// version of the software to apply any special "on-upgrade" commands during

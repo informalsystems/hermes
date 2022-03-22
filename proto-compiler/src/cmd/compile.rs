@@ -333,7 +333,7 @@ impl CompileCmd {
 
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
-        let attrs_serde = r#"#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]"#;
+        let attrs_serde = r#"#[derive(::serde::Serialize, ::serde::Deserialize)]"#;
         let compilation = tonic_build::configure()
             .build_client(true)
             .compile_well_known_types(true)
