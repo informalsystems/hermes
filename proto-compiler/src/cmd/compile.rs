@@ -95,8 +95,8 @@ impl CompileCmd {
         let attrs_ord =
             "#[derive(Eq, PartialOrd, Ord)]";
         let attrs_eq = "#[derive(Eq)]";
-        let attrs_serde_default = "#[serde(default)]";
-        let attrs_serde_base64 = r#"#[serde(with = "crate::base64")]"#;
+        let attrs_serde_default = r#"#[cfg_attr(feature = "std", serde(default))]"#;
+        let attrs_serde_base64 = r#"#[cfg_attr(feature = "std", serde(with = "crate::base64"))]"#;
         let attrs_jsonschema_str =
             r#"#[cfg_attr(feature = "json-schema", schemars(with = "String"))]"#;
 

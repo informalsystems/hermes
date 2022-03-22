@@ -93,11 +93,11 @@ pub struct UpgradeProposal {
 pub struct Height {
     /// the revision that the client is currently on
     #[prost(uint64, tag = "1")]
-    #[serde(default)]
+    #[cfg_attr(feature = "std", serde(default))]
     pub revision_number: u64,
     /// the height within the given revision
     #[prost(uint64, tag = "2")]
-    #[serde(default)]
+    #[cfg_attr(feature = "std", serde(default))]
     pub revision_height: u64,
 }
 /// Params defines the set of IBC light client parameters.

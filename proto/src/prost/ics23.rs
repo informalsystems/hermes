@@ -87,7 +87,7 @@ pub struct LeafOp {
     #[prost(enumeration = "HashOp", tag = "1")]
     pub hash: i32,
     #[prost(enumeration = "HashOp", tag = "2")]
-    #[serde(default)]
+    #[cfg_attr(feature = "std", serde(default))]
     pub prehash_key: i32,
     #[prost(enumeration = "HashOp", tag = "3")]
     pub prehash_value: i32,
@@ -96,7 +96,7 @@ pub struct LeafOp {
     /// prefix is a fixed bytes that may optionally be included at the beginning to differentiate
     /// a leaf node from an inner node.
     #[prost(bytes = "vec", tag = "5")]
-    #[serde(with = "crate::base64")]
+    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
 }
@@ -124,11 +124,11 @@ pub struct InnerOp {
     #[prost(enumeration = "HashOp", tag = "1")]
     pub hash: i32,
     #[prost(bytes = "vec", tag = "2")]
-    #[serde(with = "crate::base64")]
+    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "3")]
-    #[serde(with = "crate::base64")]
+    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub suffix: ::prost::alloc::vec::Vec<u8>,
 }
@@ -156,11 +156,11 @@ pub struct ProofSpec {
     pub inner_spec: ::core::option::Option<InnerSpec>,
     /// max_depth (if > 0) is the maximum number of InnerOps allowed (mainly for fixed-depth tries)
     #[prost(int32, tag = "3")]
-    #[serde(default)]
+    #[cfg_attr(feature = "std", serde(default))]
     pub max_depth: i32,
     /// min_depth (if > 0) is the minimum number of InnerOps allowed (mainly for fixed-depth tries)
     #[prost(int32, tag = "4")]
-    #[serde(default)]
+    #[cfg_attr(feature = "std", serde(default))]
     pub min_depth: i32,
 }
 ///
@@ -190,8 +190,8 @@ pub struct InnerSpec {
     pub max_prefix_length: i32,
     /// empty child is the prehash image that is used when one child is nil (eg. 20 bytes of 0)
     #[prost(bytes = "vec", tag = "5")]
-    #[serde(default)]
-    #[serde(with = "crate::base64")]
+    #[cfg_attr(feature = "std", serde(default))]
+    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub empty_child: ::prost::alloc::vec::Vec<u8>,
     /// hash is the algorithm that must be used for each InnerOp

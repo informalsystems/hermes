@@ -5,7 +5,7 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerkleRoot {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::base64")]
+    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
@@ -17,7 +17,7 @@ pub struct MerkleRoot {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerklePrefix {
     #[prost(bytes = "vec", tag = "1")]
-    #[serde(with = "crate::base64")]
+    #[cfg_attr(feature = "std", serde(with = "crate::base64"))]
     #[cfg_attr(feature = "json-schema", schemars(with = "String"))]
     pub key_prefix: ::prost::alloc::vec::Vec<u8>,
 }
