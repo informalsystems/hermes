@@ -175,10 +175,6 @@ pub mod google {
                         self.nanos = 0;
                     }
                 }
-
-                // TODO: should this be checked?
-                // debug_assert!(self.seconds >= -62_135_596_800 && self.seconds <= 253_402_300_799,
-                //               "invalid timestamp: {:?}", self);
             }
         }
 
