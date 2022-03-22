@@ -17,9 +17,6 @@ pub mod protobuf {
 
     impl Duration {
         /// Normalizes the duration to a canonical format.
-        ///
-        /// Based on [`google::protobuf::util::CreateNormalized`][1].
-        /// [1]: https://github.com/google/protobuf/blob/v3.3.2/src/google/protobuf/util/time_util.cc#L79-L100
         pub fn normalize(&mut self) {
             // Make sure nanos is in the range.
             if self.nanos <= -NANOS_PER_SECOND || self.nanos >= NANOS_PER_SECOND {
@@ -60,9 +57,6 @@ pub mod protobuf {
                     self.nanos = -NANOS_MAX;
                 }
             }
-            // TODO: should this be checked?
-            // debug_assert!(self.seconds >= -315_576_000_000 && self.seconds <= 315_576_000_000,
-            //               "invalid duration: {:?}", self);
         }
     }
 
@@ -110,9 +104,6 @@ pub mod protobuf {
 
     impl Timestamp {
         /// Normalizes the timestamp to a canonical format.
-        ///
-        /// Based on [`google::protobuf::util::CreateNormalized`][1].
-        /// [1]: https://github.com/google/protobuf/blob/v3.3.2/src/google/protobuf/util/time_util.cc#L59-L77
         #[cfg(feature = "std")]
         pub fn normalize(&mut self) {
             // Make sure nanos is in the range.
