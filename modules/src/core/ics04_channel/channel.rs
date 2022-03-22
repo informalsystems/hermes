@@ -67,7 +67,7 @@ impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
                 .iter()
                 .map(|v| v.as_str().to_string())
                 .collect(),
-            version: value.channel_end.version.into(),
+            version: value.channel_end.version.to_string(),
             port_id: value.port_id.to_string(),
             channel_id: value.channel_id.to_string(),
         }
@@ -146,7 +146,7 @@ impl From<ChannelEnd> for RawChannel {
                 .iter()
                 .map(|v| v.as_str().to_string())
                 .collect(),
-            version: value.version.into(),
+            version: value.version.to_string(),
         }
     }
 }

@@ -95,7 +95,7 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
             counterparty_channel_id: domain_msg.counterparty_channel_id.to_string(),
-            counterparty_version: domain_msg.counterparty_version.into(),
+            counterparty_version: domain_msg.counterparty_version.to_string(),
             proof_try: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: domain_msg.signer.to_string(),
