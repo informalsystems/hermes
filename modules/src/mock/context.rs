@@ -1239,7 +1239,6 @@ mod tests {
     use test_log::test;
 
     use alloc::str::FromStr;
-    use core::any::Any;
 
     use crate::core::ics04_channel::channel::{Counterparty, Order};
     use crate::core::ics04_channel::error::Error;
@@ -1400,8 +1399,6 @@ mod tests {
 
     #[test]
     fn test_router() {
-        use crate::handler::HandlerOutput;
-
         #[derive(Default)]
         struct MockAck(Vec<u8>);
 
@@ -1425,6 +1422,7 @@ mod tests {
         impl Module for FooModule {
             fn on_chan_open_try(
                 &mut self,
+                _output: &mut ModuleOutput,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
@@ -1432,22 +1430,23 @@ mod tests {
                 _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
-            ) -> Result<ModuleOutput<Version>, Error> {
-                Ok(HandlerOutput::builder().with_result(counterparty_version.clone()))
+            ) -> Result<Version, Error> {
+                Ok(counterparty_version.clone())
             }
 
             fn on_recv_packet(
                 &self,
+                _output: &mut ModuleOutput,
                 _packet: &Packet,
                 _relayer: &Signer,
-            ) -> ModuleOutput<DeferredWriteResult<dyn Acknowledgement>> {
-                let ack: Box<dyn Acknowledgement> = Box::new(MockAck::default());
-                let write_cb: Box<dyn FnOnce(&mut dyn Any)> = Box::new(|module| {
-                    let module = module.downcast_mut::<FooModule>().unwrap();
-                    module.counter += 1;
-                });
-                let result = (Some(ack), Some(write_cb));
-                HandlerOutput::builder().with_result(result)
+            ) -> DeferredWriteResult<dyn Acknowledgement> {
+                (
+                    Some(Box::new(MockAck::default())),
+                    Some(Box::new(|module| {
+                        let module = module.downcast_mut::<FooModule>().unwrap();
+                        module.counter += 1;
+                    })),
+                )
             }
         }
 
@@ -1457,6 +1456,7 @@ mod tests {
         impl Module for BarModule {
             fn on_chan_open_try(
                 &mut self,
+                _output: &mut ModuleOutput,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
@@ -1464,8 +1464,8 @@ mod tests {
                 _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
-            ) -> Result<ModuleOutput<Version>, Error> {
-                Ok(HandlerOutput::builder().with_result(counterparty_version.clone()))
+            ) -> Result<Version, Error> {
+                Ok(counterparty_version.clone())
             }
         }
 
@@ -1487,7 +1487,11 @@ mod tests {
         let mut on_recv_packet_result = |module_id: &'static str| {
             let module_id = ModuleId::from_str(module_id).unwrap();
             let m = ctx.router.get_route_mut(&module_id).unwrap();
-            let result = m.on_recv_packet(&Packet::default(), &Signer::new(""));
+            let result = m.on_recv_packet(
+                &mut ModuleOutput::builder().with_result(()),
+                &Packet::default(),
+                &Signer::new(""),
+            );
             (module_id, result)
         };
 
@@ -1495,15 +1499,12 @@ mod tests {
             on_recv_packet_result("foomodule"),
             on_recv_packet_result("barmodule"),
         ];
-        results
-            .into_iter()
-            .map(|(mid, output)| (mid, output.result))
-            .for_each(|(mid, (ack, write_fn))| {
-                if matches!(ack, Some(ack) if ack.success()) {
-                    if let Some(write_fn) = write_fn {
-                        write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut());
-                    }
+        results.into_iter().for_each(|(mid, (ack, write_fn))| {
+            if matches!(ack, Some(ack) if ack.success()) {
+                if let Some(write_fn) = write_fn {
+                    write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut());
                 }
-            });
+            }
+        });
     }
 }
