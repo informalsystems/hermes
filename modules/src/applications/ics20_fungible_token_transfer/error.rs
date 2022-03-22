@@ -1,10 +1,12 @@
+use alloc::string::FromUtf8Error;
+use core::num::ParseIntError;
+
 use crate::core::ics04_channel::error as channel_error;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 
-use alloc::string::FromUtf8Error;
-use flex_error::{define_error, DisplayOnly};
+use flex_error::{define_error, DisplayOnly, TraceError};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -62,5 +64,9 @@ define_error! {
         InvalidTraceLength
             { len: usize }
             | e | { format_args!("trace length must be even but got: {0}", e.len) },
+
+        InvalidCoinAmount
+            [ TraceError<ParseIntError> ]
+            | _ | { "invalid coin amount" },
     }
 }

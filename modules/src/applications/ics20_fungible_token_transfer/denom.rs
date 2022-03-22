@@ -208,15 +208,20 @@ pub struct Coin {
 }
 
 impl TryFrom<RawCoin> for Coin {
-    type Error = ();
+    type Error = Error;
 
-    fn try_from(_proto: RawCoin) -> Result<Coin, Self::Error> {
-        todo!()
+    fn try_from(proto: RawCoin) -> Result<Coin, Self::Error> {
+        let denom = Denom::from_str(&proto.denom)?;
+        let amount = Decimal::from_str(&proto.amount).map_err(Error::invalid_coin_amount)?;
+        Ok(Self { denom, amount })
     }
 }
 
 impl From<Coin> for RawCoin {
-    fn from(_coin: Coin) -> RawCoin {
-        todo!()
+    fn from(coin: Coin) -> RawCoin {
+        RawCoin {
+            denom: coin.denom.to_string(),
+            amount: coin.amount.to_string(),
+        }
     }
 }
