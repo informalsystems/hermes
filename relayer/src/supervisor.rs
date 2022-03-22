@@ -400,10 +400,6 @@ pub fn collect_events(
                     Object::client_from_chan_open_events(&attributes, src_chain).ok()
                 });
 
-                collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::packet_from_chan_open_events(&attributes, src_chain).ok()
-                });
-
                 // If handshake message relaying is enabled create worker to send the MsgChannelOpenConfirm message
                 collect_event(&mut collected, event, mode.channels.enabled, || {
                     Object::channel_from_chan_open_events(&attributes, src_chain).ok()
@@ -414,10 +410,6 @@ pub fn collect_events(
                 // Create client worker here as channel end must be opened
                 collect_event(&mut collected, event, mode.clients.enabled, || {
                     Object::client_from_chan_open_events(&attributes, src_chain).ok()
-                });
-
-                collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::packet_from_chan_open_events(&attributes, src_chain).ok()
                 });
             }
             IbcEvent::SendPacket(ref packet) => {
