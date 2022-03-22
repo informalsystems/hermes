@@ -48,35 +48,7 @@ pub fn channel_validate<Ctx>(ctx: &Ctx, msg: &ChannelMsg) -> Result<ModuleId, Er
 where
     Ctx: Ics26Context,
 {
-    let module_id = match msg {
-        ChannelMsg::ChannelOpenInit(msg) => {
-            ctx.lookup_module_by_port(&msg.port_id)
-                .map_err(Error::ics05_port)?
-                .0
-        }
-        ChannelMsg::ChannelOpenTry(msg) => {
-            ctx.lookup_module_by_port(&msg.port_id)
-                .map_err(Error::ics05_port)?
-                .0
-        }
-        ChannelMsg::ChannelOpenAck(msg) => {
-            ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
-                .0
-        }
-        ChannelMsg::ChannelOpenConfirm(msg) => {
-            ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
-                .0
-        }
-        ChannelMsg::ChannelCloseInit(msg) => {
-            ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
-                .0
-        }
-        ChannelMsg::ChannelCloseConfirm(msg) => {
-            ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
-                .0
-        }
-    };
-
+    let module_id = msg.lookup_module(ctx)?;
     if ctx.router().has_route(&module_id) {
         Ok(module_id)
     } else {
