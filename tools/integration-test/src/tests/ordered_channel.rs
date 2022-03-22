@@ -47,59 +47,60 @@ impl BinaryChannelTest for OrderedChannelTest {
             amount1
         );
 
-        chains.node_a.chain_driver().transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            &wallet_a.address(),
-            &wallet_b.address(),
-            amount1,
-            &denom_a,
-        )?;
-
-        sleep(Duration::from_secs(1));
-
-        relayer.with_supervisor(|| {
-            sleep(Duration::from_secs(1));
-
-            let amount2 = random_u64_range(1000, 5000);
-
-            info!(
-                "Performing IBC transfer with amount {}, which should be relayed",
-                amount2
-            );
-
+        for _ in 0..5 {
             chains.node_a.chain_driver().transfer_token(
                 &channel.port_a.as_ref(),
                 &channel.channel_id_a.as_ref(),
                 &wallet_a.address(),
                 &wallet_b.address(),
-                amount2,
+                amount1,
                 &denom_a,
             )?;
+        }
 
-            sleep(Duration::from_secs(1));
+        let _relayer1 = relayer.spawn_supervisor()?;
+        let _relayer2 = relayer.spawn_supervisor()?;
 
-            let denom_b = derive_ibc_denom(
-                &channel.port_b.as_ref(),
-                &channel.channel_id_b.as_ref(),
-                &denom_a,
-            )?;
+        sleep(Duration::from_secs(3));
 
-            // Wallet on chain A should have both amount deducted.
-            chains.node_a.chain_driver().assert_eventual_wallet_amount(
-                &wallet_a.address(),
-                balance_a - amount1 - amount2,
-                &denom_a,
-            )?;
+        let amount2 = random_u64_range(1000, 5000);
 
-            // Wallet on chain B should receive both IBC transfers
-            chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.address(),
-                amount1 + amount2,
-                &denom_b.as_ref(),
-            )?;
+        info!(
+            "Performing IBC transfer with amount {}, which should be relayed",
+            amount2
+        );
 
-            Ok(())
-        })
+        chains.node_a.chain_driver().transfer_token(
+            &channel.port_a.as_ref(),
+            &channel.channel_id_a.as_ref(),
+            &wallet_a.address(),
+            &wallet_b.address(),
+            amount2,
+            &denom_a,
+        )?;
+
+        sleep(Duration::from_secs(1));
+
+        let denom_b = derive_ibc_denom(
+            &channel.port_b.as_ref(),
+            &channel.channel_id_b.as_ref(),
+            &denom_a,
+        )?;
+
+        // Wallet on chain A should have both amount deducted.
+        chains.node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.address(),
+            balance_a - amount1 - amount2,
+            &denom_a,
+        )?;
+
+        // Wallet on chain B should receive both IBC transfers
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            amount1 + amount2,
+            &denom_b.as_ref(),
+        )?;
+
+        Ok(())
     }
 }

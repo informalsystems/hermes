@@ -11,11 +11,11 @@ use std::sync::Arc;
 use std::sync::RwLock;
 
 use crate::bootstrap::binary::chain::{
-    add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client, new_registry,
+    add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client,
     save_relayer_config,
 };
 use crate::error::{handle_generic_error, Error};
-use crate::relayer::driver::RelayerDriver;
+use crate::relayer::driver::{RelayerDriver, new_registry};
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::{DynamicConnectedChains, NaryConnectedChains};
 use crate::types::single::node::FullNode;

@@ -83,10 +83,22 @@ impl RelayerDriver {
 
         cont().map_err(hang_on_error(self.hang_on_fail))
     }
+
+    pub fn fork(&self) -> Self {
+        todo!()
+    }
 }
 
 impl ExportEnv for RelayerDriver {
     fn export_env(&self, writer: &mut impl EnvWriter) {
         writer.write_env("RELAYER_CONFIG", &format!("{}", self.config_path.display()));
     }
+}
+
+/**
+   Create a new [`SharedRegistry`] that uses [`CountingAndCachingChainHandle`]
+   as the [`ChainHandle`] implementation.
+*/
+pub fn new_registry(config: SharedConfig) -> SharedRegistry<CountingAndCachingChainHandle> {
+    <SharedRegistry<CountingAndCachingChainHandle>>::new(config)
 }

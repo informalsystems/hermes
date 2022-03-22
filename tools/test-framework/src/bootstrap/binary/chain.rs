@@ -5,8 +5,8 @@
 
 use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::ClientId;
-use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
-use ibc_relayer::config::{Config, SharedConfig};
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::Config;
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
 use ibc_relayer::foreign_client::{extract_client_id, ForeignClient};
 use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use tracing::{debug, info};
 
-use crate::relayer::driver::RelayerDriver;
+use crate::relayer::driver::{RelayerDriver, new_registry};
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::config::TestConfig;
@@ -257,14 +257,6 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
     add_key_to_chain_handle(chain, &wallets.user2)?;
 
     Ok(())
-}
-
-/**
-   Create a new [`SharedRegistry`] that uses [`CountingAndCachingChainHandle`]
-   as the [`ChainHandle`] implementation.
-*/
-pub fn new_registry(config: SharedConfig) -> SharedRegistry<CountingAndCachingChainHandle> {
-    <SharedRegistry<CountingAndCachingChainHandle>>::new(config)
 }
 
 /**

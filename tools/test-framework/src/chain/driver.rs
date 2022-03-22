@@ -488,8 +488,11 @@ impl ChainDriver {
         denom: &Denom,
     ) -> Result<(), Error> {
         assert_eventually_succeed(
-            &format!("wallet reach {} amount {} {}", wallet, target_amount, denom),
-            30,
+            &format!(
+                "wallet reach {} amount {} {}",
+                user.address, target_amount, denom
+            ),
+            60,
             Duration::from_secs(1),
             || {
                 let amount = self.query_balance(wallet, denom)?;
