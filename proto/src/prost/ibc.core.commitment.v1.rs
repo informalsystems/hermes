@@ -1,6 +1,6 @@
 /// MerkleRoot defines a merkle root hash.
 /// In the Cosmos SDK, the AppHash of a block header becomes the root.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerkleRoot {
@@ -12,7 +12,7 @@ pub struct MerkleRoot {
 /// MerklePrefix is merkle path prefixed to the key.
 /// The constructed key from the Path and the key will be append(Path.KeyPath,
 /// append(Path.KeyPrefix, key...))
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerklePrefix {

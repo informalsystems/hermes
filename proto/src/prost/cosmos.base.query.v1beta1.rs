@@ -5,6 +5,7 @@
 ///          Foo some_parameter = 1;
 ///          PageRequest pagination = 2;
 ///  }
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin
@@ -40,6 +41,7 @@ pub struct PageRequest {
 ///          repeated Bar results = 1;
 ///          PageResponse page = 2;
 ///  }
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PageResponse {
     /// next_key is the key to be passed to PageRequest.key to

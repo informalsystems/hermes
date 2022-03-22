@@ -1,4 +1,5 @@
 /// Plan specifies information about a planned upgrade and when it should occur.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Plan {
     /// Sets the name for the upgrade. This name will be used by the upgraded
@@ -15,7 +16,7 @@ pub struct Plan {
     /// If this field is not empty, an error will be thrown.
     #[deprecated]
     #[prost(message, optional, tag = "2")]
-    pub time: ::core::option::Option<::prost_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// The height at which the upgrade must be performed.
     /// Only used if Time is not set.
     #[prost(int64, tag = "3")]
@@ -29,7 +30,7 @@ pub struct Plan {
     /// If this field is not empty, an error will be thrown.
     #[deprecated]
     #[prost(message, optional, tag = "5")]
-    pub upgraded_client_state: ::core::option::Option<::prost_types::Any>,
+    pub upgraded_client_state: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// SoftwareUpgradeProposal is a gov Content type for initiating a software
 /// upgrade.

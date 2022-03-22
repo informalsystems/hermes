@@ -1,5 +1,6 @@
 /// IdentifiedClientState defines a client state with an additional client
 /// identifier field.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IdentifiedClientState {
     /// client identifier
@@ -7,10 +8,11 @@ pub struct IdentifiedClientState {
     pub client_id: ::prost::alloc::string::String,
     /// client state
     #[prost(message, optional, tag = "2")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
+    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
 }
 /// ConsensusStateWithHeight defines a consensus state with an additional height
 /// field.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusStateWithHeight {
     /// consensus state height
@@ -18,10 +20,11 @@ pub struct ConsensusStateWithHeight {
     pub height: ::core::option::Option<Height>,
     /// consensus state
     #[prost(message, optional, tag = "2")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
 }
 /// ClientConsensusStates defines all the stored consensus states for a given
 /// client.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientConsensusStates {
     /// client identifier
@@ -35,6 +38,7 @@ pub struct ClientConsensusStates {
 /// client's latest consensus state is copied over to the subject client. The proposal
 /// handler may fail if the subject and the substitute do not match in client and
 /// chain parameters (with exception to latest height, frozen height, and chain-id).
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientUpdateProposal {
     /// the title of the update proposal
@@ -53,6 +57,7 @@ pub struct ClientUpdateProposal {
 }
 /// UpgradeProposal is a gov Content type for initiating an IBC breaking
 /// upgrade.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UpgradeProposal {
     #[prost(string, tag = "1")]
@@ -68,7 +73,8 @@ pub struct UpgradeProposal {
     /// of the chain. This will allow IBC connections to persist smoothly across
     /// planned chain upgrades
     #[prost(message, optional, tag = "4")]
-    pub upgraded_client_state: ::core::option::Option<::prost_types::Any>,
+    pub upgraded_client_state:
+        ::core::option::Option<super::super::super::super::google::protobuf::Any>,
 }
 /// Height is a monotonically increasing data type
 /// that can be compared against another Height for the purposes of updating and
@@ -80,7 +86,8 @@ pub struct UpgradeProposal {
 /// breaking changes In these cases, the RevisionNumber is incremented so that
 /// height continues to be monitonically increasing even as the RevisionHeight
 /// gets reset
-#[derive(::serde::Serialize, ::serde::Deserialize, Eq, PartialOrd, Ord)]
+#[derive(Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Height {
@@ -94,6 +101,7 @@ pub struct Height {
     pub revision_height: u64,
 }
 /// Params defines the set of IBC light client parameters.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Params {
     /// allowed_clients defines the list of allowed client state types.
@@ -101,6 +109,7 @@ pub struct Params {
     pub allowed_clients: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// GenesisState defines the ibc client submodule's genesis state.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
     /// client states with their corresponding identifiers
@@ -123,6 +132,7 @@ pub struct GenesisState {
 }
 /// GenesisMetadata defines the genesis type for metadata that clients may return
 /// with ExportMetadata
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisMetadata {
     /// store key of metadata without clientID-prefix
@@ -134,6 +144,7 @@ pub struct GenesisMetadata {
 }
 /// IdentifiedGenesisMetadata has the client metadata with the corresponding
 /// client id.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IdentifiedGenesisMetadata {
     #[prost(string, tag = "1")]
@@ -146,11 +157,11 @@ pub struct IdentifiedGenesisMetadata {
 pub struct MsgCreateClient {
     /// light client state
     #[prost(message, optional, tag = "1")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
+    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// consensus state associated with the client that corresponds to a given
     /// height.
     #[prost(message, optional, tag = "2")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// signer address
     #[prost(string, tag = "3")]
     pub signer: ::prost::alloc::string::String,
@@ -167,7 +178,7 @@ pub struct MsgUpdateClient {
     pub client_id: ::prost::alloc::string::String,
     /// header to update the light client
     #[prost(message, optional, tag = "2")]
-    pub header: ::core::option::Option<::prost_types::Any>,
+    pub header: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// signer address
     #[prost(string, tag = "3")]
     pub signer: ::prost::alloc::string::String,
@@ -184,11 +195,11 @@ pub struct MsgUpgradeClient {
     pub client_id: ::prost::alloc::string::String,
     /// upgraded client state
     #[prost(message, optional, tag = "2")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
+    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// upgraded consensus state, only contains enough information to serve as a
     /// basis of trust in update logic
     #[prost(message, optional, tag = "3")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// proof that old chain committed to new client
     #[prost(bytes = "vec", tag = "4")]
     pub proof_upgrade_client: ::prost::alloc::vec::Vec<u8>,
@@ -211,7 +222,7 @@ pub struct MsgSubmitMisbehaviour {
     pub client_id: ::prost::alloc::string::String,
     /// misbehaviour used for freezing the light client
     #[prost(message, optional, tag = "2")]
-    pub misbehaviour: ::core::option::Option<::prost_types::Any>,
+    pub misbehaviour: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// signer address
     #[prost(string, tag = "3")]
     pub signer: ::prost::alloc::string::String,
@@ -345,6 +356,7 @@ pub mod msg_client {
 }
 /// QueryClientStateRequest is the request type for the Query/ClientState RPC
 /// method
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientStateRequest {
     /// client state unique identifier
@@ -354,11 +366,12 @@ pub struct QueryClientStateRequest {
 /// QueryClientStateResponse is the response type for the Query/ClientState RPC
 /// method. Besides the client state, it includes a proof and the height from
 /// which the proof was retrieved.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientStateResponse {
     /// client state associated with the request identifier
     #[prost(message, optional, tag = "1")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
+    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// merkle proof of existence
     #[prost(bytes = "vec", tag = "2")]
     pub proof: ::prost::alloc::vec::Vec<u8>,
@@ -368,6 +381,7 @@ pub struct QueryClientStateResponse {
 }
 /// QueryClientStatesRequest is the request type for the Query/ClientStates RPC
 /// method
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientStatesRequest {
     /// pagination request
@@ -378,6 +392,7 @@ pub struct QueryClientStatesRequest {
 }
 /// QueryClientStatesResponse is the response type for the Query/ClientStates RPC
 /// method.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientStatesResponse {
     /// list of stored ClientStates of the chain.
@@ -392,6 +407,7 @@ pub struct QueryClientStatesResponse {
 /// QueryConsensusStateRequest is the request type for the Query/ConsensusState
 /// RPC method. Besides the consensus state, it includes a proof and the height
 /// from which the proof was retrieved.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConsensusStateRequest {
     /// client identifier
@@ -410,11 +426,12 @@ pub struct QueryConsensusStateRequest {
 }
 /// QueryConsensusStateResponse is the response type for the Query/ConsensusState
 /// RPC method
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConsensusStateResponse {
     /// consensus state associated with the client identifier at the given height
     #[prost(message, optional, tag = "1")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// merkle proof of existence
     #[prost(bytes = "vec", tag = "2")]
     pub proof: ::prost::alloc::vec::Vec<u8>,
@@ -424,6 +441,7 @@ pub struct QueryConsensusStateResponse {
 }
 /// QueryConsensusStatesRequest is the request type for the Query/ConsensusStates
 /// RPC method.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConsensusStatesRequest {
     /// client identifier
@@ -437,6 +455,7 @@ pub struct QueryConsensusStatesRequest {
 }
 /// QueryConsensusStatesResponse is the response type for the
 /// Query/ConsensusStates RPC method
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConsensusStatesResponse {
     /// consensus states associated with the identifier
@@ -450,6 +469,7 @@ pub struct QueryConsensusStatesResponse {
 }
 /// QueryClientStatusRequest is the request type for the Query/ClientStatus RPC
 /// method
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientStatusRequest {
     /// client unique identifier
@@ -458,6 +478,7 @@ pub struct QueryClientStatusRequest {
 }
 /// QueryClientStatusResponse is the response type for the Query/ClientStatus RPC
 /// method. It returns the current status of the IBC client.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientStatusResponse {
     #[prost(string, tag = "1")]
@@ -465,10 +486,12 @@ pub struct QueryClientStatusResponse {
 }
 /// QueryClientParamsRequest is the request type for the Query/ClientParams RPC
 /// method.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientParamsRequest {}
 /// QueryClientParamsResponse is the response type for the Query/ClientParams RPC
 /// method.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientParamsResponse {
     /// params defines the parameters of the module.
@@ -477,27 +500,33 @@ pub struct QueryClientParamsResponse {
 }
 /// QueryUpgradedClientStateRequest is the request type for the
 /// Query/UpgradedClientState RPC method
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryUpgradedClientStateRequest {}
 /// QueryUpgradedClientStateResponse is the response type for the
 /// Query/UpgradedClientState RPC method.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryUpgradedClientStateResponse {
     /// client state associated with the request identifier
     #[prost(message, optional, tag = "1")]
-    pub upgraded_client_state: ::core::option::Option<::prost_types::Any>,
+    pub upgraded_client_state:
+        ::core::option::Option<super::super::super::super::google::protobuf::Any>,
 }
 /// QueryUpgradedConsensusStateRequest is the request type for the
 /// Query/UpgradedConsensusState RPC method
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryUpgradedConsensusStateRequest {}
 /// QueryUpgradedConsensusStateResponse is the response type for the
 /// Query/UpgradedConsensusState RPC method.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryUpgradedConsensusStateResponse {
     /// Consensus state associated with the request identifier
     #[prost(message, optional, tag = "1")]
-    pub upgraded_consensus_state: ::core::option::Option<::prost_types::Any>,
+    pub upgraded_consensus_state:
+        ::core::option::Option<super::super::super::super::google::protobuf::Any>,
 }
 #[doc = r" Generated client implementations."]
 #[cfg(feature = "client")]

@@ -79,7 +79,8 @@ pub mod commitment_proof {
 ///
 ///Then combine the bytes, and hash it
 ///output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
-#[derive(::serde::Serialize, ::serde::Deserialize, Eq)]
+#[derive(Eq)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LeafOp {
@@ -116,7 +117,9 @@ pub struct LeafOp {
 ///some value to differentiate from leaf nodes, should be included in prefix and suffix.
 ///If either of prefix or suffix is empty, we just treat it as an empty string
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
-#[derive(::serde::Serialize, ::serde::Deserialize, Eq, Clone, PartialEq, ::prost::Message)]
+#[derive(Eq)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InnerOp {
     #[prost(enumeration = "HashOp", tag = "1")]
     pub hash: i32,
@@ -140,7 +143,8 @@ pub struct InnerOp {
 ///generate a given hash (by interpretting the preimage differently).
 ///We need this for proper security, requires client knows a priori what
 ///tree format server uses. But not in code, rather a configuration object.
-#[derive(::serde::Serialize, ::serde::Deserialize, Eq)]
+#[derive(Eq)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofSpec {
@@ -168,7 +172,8 @@ pub struct ProofSpec {
 ///isLeftMost(spec: InnerSpec, op: InnerOp)
 ///isRightMost(spec: InnerSpec, op: InnerOp)
 ///isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
-#[derive(::serde::Serialize, ::serde::Deserialize, Eq)]
+#[derive(Eq)]
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InnerSpec {

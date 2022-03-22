@@ -1,4 +1,5 @@
 /// GenesisState defines the ibc module's genesis state.
+#[cfg_attr(feature = "std", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
     /// ICS002 - Clients genesis state
