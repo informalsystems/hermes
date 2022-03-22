@@ -6,6 +6,7 @@ use core::ops::{Add, AddAssign};
 use core::str::FromStr;
 
 use ibc_proto::cosmos::base::v1beta1::Coin as RawCoin;
+use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use subtle_encoding::hex;
@@ -14,6 +15,7 @@ use super::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 
+/// Base denomination type
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Denom(String);
@@ -50,6 +52,12 @@ struct TracePrefix {
     channel_id: ChannelId,
 }
 
+impl fmt::Display for TracePrefix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/{}", self.port_id, self.channel_id)
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct TracePath(Vec<TracePrefix>);
 
@@ -84,9 +92,33 @@ impl From<Vec<TracePrefix>> for TracePath {
     }
 }
 
+impl FromStr for TracePath {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts: Vec<&str> = s.split('/').collect();
+        parts.try_into()
+    }
+}
+
+impl fmt::Display for TracePath {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let path = self
+            .0
+            .iter()
+            .map(|prefix| prefix.to_string())
+            .collect::<Vec<String>>()
+            .join("/");
+        write!(f, "{}", path)
+    }
+}
+
+/// A type that contains the base denomination for ICS20 and the source tracing information path.
 #[derive(Clone, Debug)]
 pub struct DenomTrace {
+    /// A series of `{port-id}/{channel-id}`s for tracing the source of the token.
     trace_path: TracePath,
+    /// Base denomination of the relayed fungible token.
     base_denom: Denom,
 }
 
@@ -134,6 +166,28 @@ impl FromStr for DenomTrace {
             trace_path,
             base_denom,
         })
+    }
+}
+
+impl TryFrom<RawDenomTrace> for DenomTrace {
+    type Error = Error;
+
+    fn try_from(value: RawDenomTrace) -> Result<Self, Self::Error> {
+        let base_denom = Denom::from_str(&value.base_denom)?;
+        let trace_path = TracePath::from_str(&value.path)?;
+        Ok(Self {
+            trace_path,
+            base_denom,
+        })
+    }
+}
+
+impl From<DenomTrace> for RawDenomTrace {
+    fn from(value: DenomTrace) -> Self {
+        Self {
+            path: value.trace_path.to_string(),
+            base_denom: value.base_denom.to_string(),
+        }
     }
 }
 
