@@ -12,6 +12,7 @@ use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 
+/// A generic Acknowledgement type that modules may interpret as they like.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Acknowledgement(Vec<u8>);
 

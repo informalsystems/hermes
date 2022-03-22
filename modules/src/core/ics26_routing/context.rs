@@ -77,6 +77,7 @@ impl Borrow<str> for ModuleId {
     }
 }
 
+/// Types implementing this trait are expected to implement `From<GenericAcknowledgement>`
 pub trait Acknowledgement: AsRef<[u8]> {
     fn success(&self) -> bool;
 }
