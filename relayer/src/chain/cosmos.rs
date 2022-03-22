@@ -79,7 +79,6 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::{cosmos::account::query_account, QueryResponse, StatusResponse};
 use crate::config::types::Memo;
 use crate::config::{AddressType, ChainConfig, GasPrice};
 use crate::error::Error;
@@ -95,9 +94,10 @@ use ibc::core::ics24_host::path::{
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
 
-use self::account::{Account, AccountNumber, AccountSequence};
-
-use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
+use self::account::{query_account, Account, AccountNumber, AccountSequence};
+use super::client::ClientOptions;
+use super::tx::TrackedMsgs;
+use super::{ChainEndpoint, HealthCheck, QueryResponse, StatusResponse};
 
 pub mod account;
 pub mod compatibility;
@@ -2077,17 +2077,23 @@ impl ChainEndpoint for CosmosSdkChain {
     fn build_client_state(
         &self,
         height: ICSHeight,
-        dst_config: ChainConfig,
+        options: ClientOptions,
     ) -> Result<Self::ClientState, Error> {
         let unbonding_period = self.unbonding_period()?;
-
-        let max_clock_drift = calculate_client_state_drift(self.config(), &dst_config);
+        let trusting_period = options
+            .trusting_period
+            .unwrap_or_else(|| self.trusting_period(unbonding_period));
+        let trust_threshold = options
+            .trust_threshold
+            .unwrap_or(self.config.trust_threshold)
+            .into();
+        let max_clock_drift = options.max_clock_drift.unwrap();
 
         // Build the client state.
         ClientState::new(
             self.id().clone(),
-            self.config.trust_threshold.into(),
-            self.trusting_period(unbonding_period),
+            trust_threshold,
+            trusting_period,
             unbonding_period,
             max_clock_drift,
             height,
@@ -2548,20 +2554,6 @@ fn mul_ceil(a: u64, f: f64) -> BigInt {
     let a = BigInt::from(a);
     let f = BigRational::from_float(f).expect("f is finite");
     (f * a).ceil().to_integer()
-}
-
-/// Compute the `max_clock_drift` for a (new) client state
-/// as a function of the configuration of the source chain
-/// and the destination chain configuration.
-///
-/// The client state clock drift must account for destination
-/// chain block frequency and clock drift on source and dest.
-/// https://github.com/informalsystems/ibc-rs/issues/1445
-fn calculate_client_state_drift(
-    src_chain_config: &ChainConfig,
-    dst_chain_config: &ChainConfig,
-) -> Duration {
-    src_chain_config.clock_drift + dst_chain_config.clock_drift + dst_chain_config.max_block_time
 }
 
 #[cfg(test)]

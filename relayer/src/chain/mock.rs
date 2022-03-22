@@ -39,7 +39,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::{ChainEndpoint, StatusResponse};
+use crate::chain::{ChainEndpoint, ClientOptions, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -350,15 +350,22 @@ impl ChainEndpoint for MockChain {
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        options: ClientOptions,
     ) -> Result<Self::ClientState, Error> {
+        let trusting_period = options
+            .trusting_period
+            .unwrap_or_else(|| self.trusting_period());
+        let trust_threshold = options
+            .trust_threshold
+            .unwrap_or(self.config.trust_threshold)
+            .into();
+
         let client_state = TendermintClientState::new(
             self.id().clone(),
-            self.config.trust_threshold.into(),
-            self.trusting_period(),
+            trust_threshold,
+            trusting_period,
             self.trusting_period().add(Duration::from_secs(1000)),
-            // See `calculate_client_state_drift`
-            self.config.clock_drift + dst_config.clock_drift + dst_config.max_block_time,
+            options.max_clock_drift.unwrap(),
             height,
             ProofSpecs::default(),
             vec!["upgrade/upgradedClient".to_string()],

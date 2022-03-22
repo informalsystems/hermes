@@ -37,7 +37,7 @@ use serde::{Serialize, Serializer};
 use crate::cache::Cache;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
-use crate::chain::{HealthCheck, StatusResponse};
+use crate::chain::{ClientOptions, HealthCheck, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
@@ -313,9 +313,9 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        options: ClientOptions,
     ) -> Result<AnyClientState, Error> {
-        self.inner().build_client_state(height, dst_config)
+        self.inner().build_client_state(height, options)
     }
 
     /// Constructs a consensus state at the given height

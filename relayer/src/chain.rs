@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
 
-use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
@@ -36,6 +35,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::connection::ConnectionMsgType;
@@ -45,8 +45,10 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
+use self::client::ClientOptions;
 use self::tx::TrackedMsgs;
 
+pub mod client;
 pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
@@ -309,7 +311,7 @@ pub trait ChainEndpoint: Sized {
     fn build_client_state(
         &self,
         height: ICSHeight,
-        dst_config: ChainConfig,
+        options: ClientOptions,
     ) -> Result<Self::ClientState, Error>;
 
     fn build_consensus_state(

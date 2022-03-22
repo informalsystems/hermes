@@ -37,7 +37,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{
-    chain::{tx::TrackedMsgs, StatusResponse},
+    chain::{tx::TrackedMsgs, ClientOptions, StatusResponse},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -331,11 +331,11 @@ impl ChainHandle for BaseChainHandle {
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        options: ClientOptions,
     ) -> Result<AnyClientState, Error> {
         self.send(|reply_to| ChainRequest::BuildClientState {
             height,
-            dst_config,
+            options,
             reply_to,
         })
     }
