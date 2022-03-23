@@ -7,6 +7,8 @@ pub mod msgs;
 pub mod relay_application_logic;
 
 mod denom;
+mod packet;
+
 pub use denom::*;
 
 /// The port identifier that the ICS20 applications
