@@ -68,5 +68,8 @@ define_error! {
         InvalidCoinAmount
             [ TraceError<ParseIntError> ]
             | _ | { "invalid coin amount" },
+
+        InvalidToken
+            | _ | { "invalid token" },
     }
 }

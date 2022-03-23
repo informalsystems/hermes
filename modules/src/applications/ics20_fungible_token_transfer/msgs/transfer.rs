@@ -7,6 +7,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 use crate::applications::ics20_fungible_token_transfer::error::Error;
+use crate::applications::ics20_fungible_token_transfer::Coin;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
@@ -23,7 +24,7 @@ pub struct MsgTransfer {
     /// the channel by which the packet will be sent
     pub source_channel: ChannelId,
     /// the tokens to be transferred
-    pub token: Option<ibc_proto::cosmos::base::v1beta1::Coin>,
+    pub token: Coin,
     /// the sender address
     pub sender: Signer,
     /// the recipient address on the destination chain
@@ -65,6 +66,8 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             })?,
         };
 
+        let token = raw_msg.token.ok_or_else(Error::invalid_token)?.try_into()?;
+
         Ok(MsgTransfer {
             source_port: raw_msg
                 .source_port
@@ -74,7 +77,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
                 .source_channel
                 .parse()
                 .map_err(|e| Error::invalid_channel_id(raw_msg.source_channel.clone(), e))?,
-            token: raw_msg.token,
+            token,
             sender: raw_msg.sender.into(),
             receiver: raw_msg.receiver.into(),
             timeout_height,
@@ -88,7 +91,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
         RawMsgTransfer {
             source_port: domain_msg.source_port.to_string(),
             source_channel: domain_msg.source_channel.to_string(),
-            token: domain_msg.token,
+            token: Some(domain_msg.token.into()),
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
             timeout_height: Some(domain_msg.timeout_height.into()),
@@ -109,6 +112,7 @@ pub mod test_util {
         Height,
     };
 
+    use super::Coin;
     use super::MsgTransfer;
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
@@ -118,7 +122,10 @@ pub mod test_util {
         MsgTransfer {
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
-            token: None,
+            token: Coin {
+                denom: "uatom".parse().unwrap(),
+                amount: 10.into(),
+            },
             sender: id.clone(),
             receiver: id,
             timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
