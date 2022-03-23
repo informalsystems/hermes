@@ -343,6 +343,10 @@ impl CompileCmd {
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
             .type_attribute(".cosmos.upgrade.v1beta1.Plan", attrs_serde)
+            .type_attribute(".cosmos.base.v1beta1.Coin", attrs_serde)
+            .type_attribute(".cosmos.base.v1beta1.DecCoin", attrs_serde)
+            .type_attribute(".cosmos.base.v1beta1.IntProto", attrs_serde)
+            .type_attribute(".cosmos.base.v1beta1.DecProto", attrs_serde)
             .type_attribute(".cosmos.base.query.v1beta1.PageRequest", attrs_serde)
             .type_attribute(".cosmos.base.query.v1beta1.PageResponse", attrs_serde)
             .compile(&protos, &includes);
