@@ -1,9 +1,12 @@
+use core::convert::TryInto;
 use core::fmt::{Display, Formatter};
 use core::str::FromStr;
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
-use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use ibc::applications::ics20_fungible_token_transfer::{
+    error::Error as Ics20Error, msgs::transfer::MsgTransfer,
+};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
@@ -51,6 +54,10 @@ define_error! {
                 format!("internal error, expected IBCEvent::ChainError, got {:?}",
                     e.event)
             },
+
+        TokenTransfer
+            [ Ics20Error ]
+            |_| { "Token transfer error" },
     }
 }
 
@@ -110,13 +117,17 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
             .add(opts.timeout_height_offset)
     };
 
+    let token = ibc_proto::cosmos::base::v1beta1::Coin {
+        denom: opts.denom.clone(),
+        amount: opts.amount.to_string(),
+    }
+    .try_into()
+    .map_err(PacketError::token_transfer)?;
+
     let msg = MsgTransfer {
         source_port: opts.packet_src_port_id.clone(),
         source_channel: opts.packet_src_channel_id.clone(),
-        token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
-            denom: opts.denom.clone(),
-            amount: opts.amount.to_string(),
-        }),
+        token,
         sender,
         receiver,
         timeout_height,
