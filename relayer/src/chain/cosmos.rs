@@ -137,6 +137,34 @@ mod retry_strategy {
     }
 }
 
+/// Newtype for account numbers
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct AccountNumber(u64);
+impl From<AccountNumber> for u64 {
+    fn from(a: AccountNumber) -> u64 {
+        a.0
+    }
+}
+impl fmt::Display for AccountNumber {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+/// Newtype for account sequence numbers
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct AccountSequence(u64);
+impl From<AccountSequence> for u64 {
+    fn from(a: AccountSequence) -> u64 {
+        a.0
+    }
+}
+impl fmt::Display for AccountSequence {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 pub struct CosmosSdkChain {
     config: ChainConfig,
     rpc_client: HttpClient,
@@ -317,7 +345,7 @@ impl CosmosSdkChain {
     fn send_tx_with_account_sequence(
         &mut self,
         proto_msgs: Vec<Any>,
-        account_seq: u64,
+        account_seq: AccountSequence,
     ) -> Result<Response, Error> {
         debug!(
             "sending {} messages using account sequence {}",
@@ -736,12 +764,12 @@ impl CosmosSdkChain {
             .expect("account was supposedly just cached"))
     }
 
-    fn account_number(&mut self) -> Result<u64, Error> {
-        Ok(self.account()?.account_number)
+    fn account_number(&mut self) -> Result<AccountNumber, Error> {
+        Ok(AccountNumber(self.account()?.account_number))
     }
 
-    fn account_sequence(&mut self) -> Result<u64, Error> {
-        Ok(self.account()?.sequence)
+    fn account_sequence(&mut self) -> Result<AccountSequence, Error> {
+        Ok(AccountSequence(self.account()?.sequence))
     }
 
     fn incr_account_sequence(&mut self) {
@@ -750,7 +778,7 @@ impl CosmosSdkChain {
         }
     }
 
-    fn signer(&self, sequence: u64) -> Result<SignerInfo, Error> {
+    fn signer(&self, sequence: AccountSequence) -> Result<SignerInfo, Error> {
         let (_key, pk_buf) = self.key_and_bytes()?;
         let pk_type = match &self.config.address_type {
             AddressType::Cosmos => "/cosmos.crypto.secp256k1.PubKey".to_string(),
@@ -768,7 +796,7 @@ impl CosmosSdkChain {
         let signer_info = SignerInfo {
             public_key: Some(pk_any),
             mode_info: mode,
-            sequence,
+            sequence: sequence.into(),
         };
         Ok(signer_info)
     }
@@ -797,13 +825,13 @@ impl CosmosSdkChain {
         &self,
         body_bytes: Vec<u8>,
         auth_info_bytes: Vec<u8>,
-        account_number: u64,
+        account_number: AccountNumber,
     ) -> Result<Vec<u8>, Error> {
         let sign_doc = SignDoc {
             body_bytes,
             auth_info_bytes,
             chain_id: self.config.clone().id.to_string(),
-            account_number,
+            account_number: account_number.into(),
         };
 
         // A protobuf serialization of a SignDoc
