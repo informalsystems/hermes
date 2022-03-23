@@ -8,6 +8,7 @@ pub mod relay_application_logic;
 
 mod denom;
 mod packet;
+mod signer;
 
 pub use denom::*;
 

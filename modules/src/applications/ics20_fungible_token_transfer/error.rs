@@ -71,5 +71,8 @@ define_error! {
 
         InvalidToken
             | _ | { "invalid token" },
+
+        EmptySigner
+            | _ | { "signer cannot be empty" },
     }
 }
