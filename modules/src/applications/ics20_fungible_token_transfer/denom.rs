@@ -2,10 +2,10 @@
 
 use core::convert::AsRef;
 use core::fmt;
-use core::ops::{Add, AddAssign};
+use core::ops::Add;
 use core::str::FromStr;
 
-use derive_more::{Add, AsRef, Display, From, FromStr};
+use derive_more::{AsRef, Display, From, FromStr};
 use ibc_proto::cosmos::base::v1beta1::Coin as RawCoin;
 use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
@@ -230,8 +230,22 @@ pub fn derive_ibc_denom_with_path(transfer_path: &str) -> Result<String, Error> 
     Ok(format!("ibc/{}", denom_hex))
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, Add, From, FromStr)]
+/// A decimal type for representing token transfer amounts.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, From, FromStr)]
 pub struct Decimal(u64);
+
+// We only provide an `Add<Decimal>` implementation which always panics on overflow.
+impl Add<Self> for Decimal {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(
+            self.0
+                .checked_add(rhs.0)
+                .expect("decimal addition overflow"),
+        )
+    }
+}
 
 /// Coin defines a token with a denomination and an amount.
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
