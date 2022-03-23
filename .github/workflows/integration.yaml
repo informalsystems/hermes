@@ -70,6 +70,7 @@ jobs:
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
         run: |
           nix shell github:informalsystems/cosmos.nix#${{ matrix.gaiad }} -c cargo \
             test -p ibc-integration-test --no-fail-fast -- \
@@ -100,6 +101,7 @@ jobs:
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
         run: |
           nix shell github:informalsystems/cosmos.nix/gaia-ordered#gaia6-ordered -c cargo \
             test -p ibc-integration-test --features ordered --no-fail-fast -- \
@@ -130,6 +132,7 @@ jobs:
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATH: icad
         run: |
           nix shell github:informalsystems/cosmos.nix#ica -c cargo \
