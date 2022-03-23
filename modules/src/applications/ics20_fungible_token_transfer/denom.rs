@@ -35,8 +35,8 @@ impl FromStr for Denom {
     }
 }
 
-#[derive(Clone, Debug)]
-struct TracePrefix {
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct TracePrefix {
     port_id: PortId,
     channel_id: ChannelId,
 }
@@ -106,25 +106,31 @@ pub struct DenomTrace {
 }
 
 impl DenomTrace {
-    /// Returns the full denom path
-    pub fn get_full_denom_path(&self) -> String {
-        todo!()
-    }
-
     /// Returns a coin denomination for an ICS20 fungible token in the format
-    /// 'ibc/trace_path/base_denom'. If the trace is empty, it will return the base denomination.
-    pub fn ibc_denom(&self) -> String {
-        todo!()
-    }
-
-    /// Returns the prefix for this trace
-    pub fn get_prefix(&self) -> String {
-        todo!()
+    /// 'ibc/{Hash(trace_path/base_denom)}'.
+    pub fn hashed_denom(&self) -> HashedDenom {
+        HashedDenom::from(self)
     }
 
     /// Returns true iff this path has the specified prefix
-    pub fn has_prefix(&self, _prefix: &str) -> bool {
-        todo!()
+    pub fn has_prefix(&self, prefix: &TracePrefix) -> bool {
+        self.trace_path
+            .0
+            .first()
+            .map(|p| p == prefix)
+            .unwrap_or(false)
+    }
+
+    /// Returns true if the denomination originally came from the receiving chain and false
+    /// otherwise.
+    pub fn is_receiver_chain_source(&self, prefix: &TracePrefix) -> bool {
+        self.has_prefix(prefix)
+    }
+
+    /// Returns false if the denomination originally came from the receiving chain and true
+    /// otherwise.
+    pub fn is_sender_chain_source(&self, prefix: &TracePrefix) -> bool {
+        !self.is_receiver_chain_source(prefix)
     }
 }
 
@@ -171,6 +177,35 @@ impl From<DenomTrace> for RawDenomTrace {
             path: value.trace_path.to_string(),
             base_denom: value.base_denom.to_string(),
         }
+    }
+}
+
+impl fmt::Display for DenomTrace {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.trace_path.0.is_empty() {
+            write!(f, "{}", self.base_denom)
+        } else {
+            write!(f, "{}/{}", self.trace_path, self.base_denom)
+        }
+    }
+}
+
+#[derive(Clone, Debug, From)]
+pub struct HashedDenom(Vec<u8>);
+
+impl From<&DenomTrace> for HashedDenom {
+    fn from(value: &DenomTrace) -> Self {
+        let mut hasher = Sha256::new();
+        hasher.update(value.to_string().as_bytes());
+        let denom_bytes = hasher.finalize();
+        Self(denom_bytes.to_vec())
+    }
+}
+
+impl fmt::Display for HashedDenom {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let denom_hex = String::from_utf8(hex::encode_upper(&self.0)).map_err(|_| fmt::Error)?;
+        write!(f, "ibc/{}", denom_hex)
     }
 }
 
