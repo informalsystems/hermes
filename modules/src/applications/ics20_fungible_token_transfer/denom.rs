@@ -15,6 +15,15 @@ use super::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 
+/// A `Coin` type with fully qualified `DenomTrace`.
+pub type PrefixedCoin = Coin<DenomTrace>;
+
+/// A `Coin` type with a `HashedDenom`.
+pub type HashedCoin = Coin<HashedDenom>;
+
+/// A `Coin` type with an unprefixed denomination.
+pub type BaseCoin = Coin<Denom>;
+
 /// Base denomination type
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, AsRef, Display)]
 #[serde(transparent)]
@@ -46,7 +55,8 @@ impl fmt::Display for TracePrefix {
     }
 }
 
-#[derive(Clone, Debug, Default, From)]
+/// A full trace path modelled as a collection of `TracePrefix`s.
+#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord, From)]
 pub struct TracePath(Vec<TracePrefix>);
 
 impl<'a> TryFrom<Vec<&'a str>> for TracePath {
@@ -96,7 +106,7 @@ impl fmt::Display for TracePath {
 }
 
 /// A type that contains the base denomination for ICS20 and the source tracing information path.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct DenomTrace {
     /// A series of `{port-id}/{channel-id}`s for tracing the source of the token.
     trace_path: TracePath,
@@ -189,7 +199,7 @@ impl fmt::Display for DenomTrace {
     }
 }
 
-#[derive(Clone, Debug, From)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, From)]
 pub struct HashedDenom(Vec<u8>);
 
 impl From<&DenomTrace> for HashedDenom {
@@ -205,6 +215,18 @@ impl fmt::Display for HashedDenom {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let denom_hex = String::from_utf8(hex::encode_upper(&self.0)).map_err(|_| fmt::Error)?;
         write!(f, "ibc/{}", denom_hex)
+    }
+}
+
+impl FromStr for HashedDenom {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s
+            .strip_prefix("ibc/")
+            .ok_or_else(Error::missing_denom_ibc_prefix)?;
+        let bytes = hex::decode_upper(s).map_err(Error::parse_hex)?;
+        Ok(Self(bytes))
     }
 }
 
@@ -248,28 +270,60 @@ impl Add<Self> for Decimal {
 
 /// Coin defines a token with a denomination and an amount.
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
-pub struct Coin {
+pub struct Coin<D> {
     /// Denomination
-    pub denom: Denom,
+    pub denom: D,
     /// Amount
     pub amount: Decimal,
 }
 
-impl TryFrom<RawCoin> for Coin {
+impl<D: FromStr> TryFrom<RawCoin> for Coin<D>
+where
+    Error: From<<D as FromStr>::Err>,
+{
     type Error = Error;
 
-    fn try_from(proto: RawCoin) -> Result<Coin, Self::Error> {
-        let denom = Denom::from_str(&proto.denom)?;
+    fn try_from(proto: RawCoin) -> Result<Coin<D>, Self::Error> {
+        let denom = D::from_str(&proto.denom)?;
         let amount = Decimal::from_str(&proto.amount).map_err(Error::invalid_coin_amount)?;
         Ok(Self { denom, amount })
     }
 }
 
-impl From<Coin> for RawCoin {
-    fn from(coin: Coin) -> RawCoin {
+impl<D: ToString> From<Coin<D>> for RawCoin {
+    fn from(coin: Coin<D>) -> RawCoin {
         RawCoin {
             denom: coin.denom.to_string(),
             amount: coin.amount.to_string(),
         }
+    }
+}
+
+/// The `Coin` type used in `MsgTransfer`, whose denomination is either hashed or unprefixed.
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+pub enum IbcCoin {
+    Hashed(HashedCoin),
+    Base(BaseCoin),
+}
+
+impl TryFrom<RawCoin> for IbcCoin {
+    type Error = Error;
+
+    fn try_from(proto: RawCoin) -> Result<IbcCoin, Self::Error> {
+        if proto.denom.starts_with("ibc/") {
+            Ok(Self::Hashed(HashedCoin::try_from(proto)?))
+        } else {
+            Ok(Self::Base(BaseCoin::try_from(proto)?))
+        }
+    }
+}
+
+impl From<IbcCoin> for RawCoin {
+    fn from(ibc_coin: IbcCoin) -> Self {
+        let (denom, amount) = match ibc_coin {
+            IbcCoin::Hashed(c) => (c.denom.to_string(), c.amount.to_string()),
+            IbcCoin::Base(c) => (c.denom.to_string(), c.amount.to_string()),
+        };
+        Self { denom, amount }
     }
 }

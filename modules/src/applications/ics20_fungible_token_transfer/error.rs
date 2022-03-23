@@ -7,6 +7,7 @@ use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 
 use flex_error::{define_error, DisplayOnly, TraceError};
+use subtle_encoding::Error as HexError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -74,5 +75,12 @@ define_error! {
 
         EmptySigner
             | _ | { "signer cannot be empty" },
+
+        MissingDenomIbcPrefix
+            | _ | { "missing 'ibc/' prefix in denomination" },
+
+        ParseHex
+            [ TraceError<HexError> ]
+            | _ | { "invalid hex string" },
     }
 }
