@@ -7,7 +7,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 use crate::applications::ics20_fungible_token_transfer::error::Error;
-use crate::applications::ics20_fungible_token_transfer::Coin;
+use crate::applications::ics20_fungible_token_transfer::IbcCoin;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
@@ -24,7 +24,7 @@ pub struct MsgTransfer {
     /// the channel by which the packet will be sent
     pub source_channel: ChannelId,
     /// the tokens to be transferred
-    pub token: Coin,
+    pub token: IbcCoin,
     /// the sender address
     pub sender: Signer,
     /// the recipient address on the destination chain
@@ -112,8 +112,8 @@ pub mod test_util {
         Height,
     };
 
-    use super::Coin;
     use super::MsgTransfer;
+    use super::{BaseCoin, Coin, IbcCoin};
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
@@ -122,10 +122,10 @@ pub mod test_util {
         MsgTransfer {
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
-            token: Coin {
+            token: IbcCoin::Base(BaseCoin {
                 denom: "uatom".parse().unwrap(),
                 amount: 10.into(),
-            },
+            }),
             sender: id.clone(),
             receiver: id,
             timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),

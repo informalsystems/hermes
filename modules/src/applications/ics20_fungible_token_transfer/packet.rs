@@ -5,11 +5,11 @@ use core::str::FromStr;
 use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
 
 use super::error::Error;
-use super::{signer::Signer, Coin, Decimal, Denom};
+use super::{signer::Signer, Decimal, DenomTrace, PrefixedCoin};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PacketData {
-    pub token: Coin,
+    pub token: PrefixedCoin,
     pub sender: Signer,
     pub receiver: Signer,
 }
@@ -18,10 +18,10 @@ impl TryFrom<RawPacketData> for PacketData {
     type Error = Error;
 
     fn try_from(raw_pkt_data: RawPacketData) -> Result<Self, Self::Error> {
-        let denom = Denom::from_str(&raw_pkt_data.denom)?;
+        let denom = DenomTrace::from_str(&raw_pkt_data.denom)?;
         let amount = Decimal::from_str(&raw_pkt_data.amount).map_err(Error::invalid_coin_amount)?;
         Ok(Self {
-            token: Coin { denom, amount },
+            token: PrefixedCoin { denom, amount },
             sender: raw_pkt_data.sender.parse()?,
             receiver: raw_pkt_data.receiver.parse()?,
         })
