@@ -35,9 +35,10 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 
 use crate::cache::Cache;
+use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
-use crate::chain::{ClientOptions, HealthCheck, StatusResponse};
+use crate::chain::{HealthCheck, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
@@ -313,9 +314,9 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn build_client_state(
         &self,
         height: Height,
-        options: ClientOptions,
+        settings: ClientSettings,
     ) -> Result<AnyClientState, Error> {
-        self.inner().build_client_state(height, options)
+        self.inner().build_client_state(height, settings)
     }
 
     /// Constructs a consensus state at the given height

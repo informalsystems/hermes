@@ -45,7 +45,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
-use self::client::ClientOptions;
+use self::client::ClientSettings;
 use self::tx::TrackedMsgs;
 
 pub mod client;
@@ -311,7 +311,7 @@ pub trait ChainEndpoint: Sized {
     fn build_client_state(
         &self,
         height: ICSHeight,
-        options: ClientOptions,
+        settings: ClientSettings,
     ) -> Result<Self::ClientState, Error>;
 
     fn build_consensus_state(

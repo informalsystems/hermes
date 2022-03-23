@@ -51,7 +51,9 @@ use crate::{
     keyring::KeyEntry,
 };
 
-use super::{tx::TrackedMsgs, ClientOptions, HealthCheck, StatusResponse};
+use super::client::ClientSettings;
+use super::tx::TrackedMsgs;
+use super::{HealthCheck, StatusResponse};
 
 mod base;
 mod cache;
@@ -165,7 +167,7 @@ pub enum ChainRequest {
 
     BuildClientState {
         height: Height,
-        options: ClientOptions,
+        settings: ClientSettings,
         reply_to: ReplyTo<AnyClientState>,
     },
 
@@ -493,7 +495,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn build_client_state(
         &self,
         height: Height,
-        options: ClientOptions,
+        settings: ClientSettings,
     ) -> Result<AnyClientState, Error>;
 
     /// Constructs a consensus state at the given height

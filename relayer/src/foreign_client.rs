@@ -34,10 +34,12 @@ use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
+use tendermint_light_client_verifier::types::TrustThreshold;
 
-use crate::chain::client::{self, ClientOptions};
+use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
+use crate::config::ChainConfig;
 use crate::error::Error as RelayerError;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
@@ -277,6 +279,46 @@ impl HasExpiredOrFrozenError for ForeignClientError {
     }
 }
 
+/// Optional onfiguration parameters for the CreateClient command.
+/// If set, the options override the defaults taken from the chain configuration.
+#[derive(Debug, Default)]
+pub struct CreateOptions {
+    /// The `max_clock_drift` value for a client state. If set to none,
+    /// The default value is computed as a function
+    /// of the configurations of the source chain and the destination chain.
+    ///
+    /// The client state clock drift must account for destination
+    /// chain block frequency and clock drift on source and dest.
+    /// https://github.com/informalsystems/ibc-rs/issues/1445
+    pub max_clock_drift: Option<Duration>,
+
+    pub trusting_period: Option<Duration>,
+    pub trust_threshold: Option<TrustThreshold>,
+}
+
+impl CreateOptions {
+    fn build_client_settings(
+        self,
+        src_chain_config: &ChainConfig,
+        dst_chain_config: &ChainConfig,
+    ) -> ClientSettings {
+        let max_clock_drift = self.max_clock_drift.unwrap_or_else(|| {
+            src_chain_config.clock_drift
+                + dst_chain_config.clock_drift
+                + dst_chain_config.max_block_time
+        });
+        let trusting_period = self.trusting_period.or(src_chain_config.trusting_period);
+        let trust_threshold = self
+            .trust_threshold
+            .unwrap_or(src_chain_config.trust_threshold);
+        ClientSettings {
+            max_clock_drift,
+            trusting_period,
+            trust_threshold,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
     /// The identifier of this client. The host chain determines this id upon client creation,
@@ -488,7 +530,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Lower-level interface for preparing a message to create a client.
     pub fn build_create_client(
         &self,
-        mut options: ClientOptions,
+        options: CreateOptions,
     ) -> Result<MsgCreateAnyClient, ForeignClientError> {
         // Get signer
         let signer = self.dst_chain.get_signer().map_err(|e| {
@@ -511,28 +553,27 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        if options.max_clock_drift.is_none() {
-            let src_config = self.src_chain.config().map_err(|e| {
-                ForeignClientError::client_create(
-                    self.src_chain.id(),
-                    "failed while querying the source chain for configuration".to_string(),
-                    e,
-                )
-            })?;
-            let dst_config = self.dst_chain.config().map_err(|e| {
-                ForeignClientError::client_create(
-                    self.dst_chain.id(),
-                    "failed while querying the destination chain for configuration".to_string(),
-                    e,
-                )
-            })?;
-
-            options.max_clock_drift = Some(client::calculate_clock_drift(&src_config, &dst_config));
-        }
+        // Calculate client state settings from the chain configurations and
+        // optional user overrides.
+        let src_config = self.src_chain.config().map_err(|e| {
+            ForeignClientError::client_create(
+                self.src_chain.id(),
+                "failed while querying the source chain for configuration".to_string(),
+                e,
+            )
+        })?;
+        let dst_config = self.dst_chain.config().map_err(|e| {
+            ForeignClientError::client_create(
+                self.dst_chain.id(),
+                "failed while querying the destination chain for configuration".to_string(),
+                e,
+            )
+        })?;
+        let settings = options.build_client_settings(&src_config, &dst_config);
 
         let client_state = self
             .src_chain
-            .build_client_state(latest_height, options)
+            .build_client_state(latest_height, settings)
             .map_err(|e| {
                 ForeignClientError::client_create(
                     self.src_chain.id(),
@@ -568,7 +609,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Returns the identifier of the newly created client.
     pub fn build_create_client_and_send(
         &self,
-        options: ClientOptions,
+        options: CreateOptions,
     ) -> Result<IbcEvent, ForeignClientError> {
         let new_msg = self.build_create_client(options)?;
 
@@ -593,7 +634,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
     fn create(&mut self) -> Result<(), ForeignClientError> {
         let event = self
-            .build_create_client_and_send(ClientOptions::default())
+            .build_create_client_and_send(CreateOptions::default())
             .map_err(|e| {
                 error!("[{}]  failed CreateClient: {}", self, e);
                 e

@@ -35,9 +35,10 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use tracing::debug;
 
+use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
-use crate::chain::{ClientOptions, HealthCheck, StatusResponse};
+use crate::chain::{HealthCheck, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::util::lock::LockExt;
@@ -337,7 +338,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn build_client_state(
         &self,
         height: Height,
-        options: ClientOptions,
+        options: ClientSettings,
     ) -> Result<AnyClientState, Error> {
         self.inc_metric("build_client_state");
         self.inner().build_client_state(height, options)

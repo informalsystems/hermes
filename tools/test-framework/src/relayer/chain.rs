@@ -54,7 +54,7 @@ use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusS
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use ibc_relayer::chain::client::ClientOptions;
+use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::tx::TrackedMsgs;
 use ibc_relayer::chain::{HealthCheck, StatusResponse};
@@ -289,9 +289,9 @@ where
     fn build_client_state(
         &self,
         height: Height,
-        options: ClientOptions,
+        settings: ClientSettings,
     ) -> Result<AnyClientState, Error> {
-        self.value().build_client_state(height, options)
+        self.value().build_client_state(height, settings)
     }
 
     /// Constructs a consensus state at the given height
