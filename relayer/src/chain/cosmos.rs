@@ -13,7 +13,6 @@ use std::{fmt, thread, time::Instant};
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use itertools::Itertools;
-use prost::Message;
 use prost_types::Any;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
@@ -59,7 +58,6 @@ use ibc::query::QueryBlockRequest;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
 use ibc_proto::cosmos::base::v1beta1::Coin;
@@ -81,7 +79,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::{QueryResponse, StatusResponse};
+use crate::chain::{cosmos::account::query_account, QueryResponse, StatusResponse};
 use crate::config::types::Memo;
 use crate::config::{AddressType, ChainConfig, GasPrice};
 use crate::error::Error;
@@ -97,9 +95,12 @@ use ibc::core::ics24_host::path::{
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
 
+use self::account::{Account, AccountNumber, AccountSequence};
+
 use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
 
-mod compatibility;
+pub mod account;
+pub mod compatibility;
 pub mod version;
 
 /// Default gas limit when submitting a transaction.
@@ -144,7 +145,7 @@ pub struct CosmosSdkChain {
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
     /// A cached copy of the account information
-    account: Option<BaseAccount>,
+    account: Option<Account>,
 }
 
 impl CosmosSdkChain {
@@ -317,7 +318,7 @@ impl CosmosSdkChain {
     fn send_tx_with_account_sequence(
         &mut self,
         proto_msgs: Vec<Any>,
-        account_seq: u64,
+        account_seq: AccountSequence,
     ) -> Result<Response, Error> {
         debug!(
             "sending {} messages using account sequence {}",
@@ -331,9 +332,10 @@ impl CosmosSdkChain {
         debug!("max fee, for use in tx simulation: {}", PrettyFee(&max_fee));
 
         let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
+        let account_number = self.account_number()?;
 
         let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), max_fee)?;
-        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
+        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_number)?;
 
         let simulate_tx = Tx {
             body: Some(body),
@@ -367,7 +369,6 @@ impl CosmosSdkChain {
         );
 
         let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
-        let account_number = self.account_number()?;
         let signed_doc =
             self.signed_doc(body_buf.clone(), auth_buf_adjusted.clone(), account_number)?;
 
@@ -715,17 +716,19 @@ impl CosmosSdkChain {
 
     fn refresh_account(&mut self) -> Result<(), Error> {
         let account = self.block_on(query_account(self, self.key()?.account))?;
+
         info!(
             sequence = %account.sequence,
             number = %account.account_number,
             "refresh: retrieved account",
         );
 
-        self.account = Some(account);
+        self.account = Some(account.into());
+
         Ok(())
     }
 
-    fn account(&mut self) -> Result<&BaseAccount, Error> {
+    fn account(&mut self) -> Result<&Account, Error> {
         if self.account == None {
             self.refresh_account()?;
         }
@@ -736,21 +739,21 @@ impl CosmosSdkChain {
             .expect("account was supposedly just cached"))
     }
 
-    fn account_number(&mut self) -> Result<u64, Error> {
-        Ok(self.account()?.account_number)
+    fn account_number(&mut self) -> Result<AccountNumber, Error> {
+        Ok(self.account()?.number)
     }
 
-    fn account_sequence(&mut self) -> Result<u64, Error> {
+    fn account_sequence(&mut self) -> Result<AccountSequence, Error> {
         Ok(self.account()?.sequence)
     }
 
     fn incr_account_sequence(&mut self) {
         if let Some(account) = &mut self.account {
-            account.sequence += 1;
+            account.sequence = account.sequence.increment();
         }
     }
 
-    fn signer(&self, sequence: u64) -> Result<SignerInfo, Error> {
+    fn signer(&self, sequence: AccountSequence) -> Result<SignerInfo, Error> {
         let (_key, pk_buf) = self.key_and_bytes()?;
         let pk_type = match &self.config.address_type {
             AddressType::Cosmos => "/cosmos.crypto.secp256k1.PubKey".to_string(),
@@ -768,7 +771,7 @@ impl CosmosSdkChain {
         let signer_info = SignerInfo {
             public_key: Some(pk_any),
             mode_info: mode,
-            sequence,
+            sequence: sequence.to_u64(),
         };
         Ok(signer_info)
     }
@@ -797,13 +800,13 @@ impl CosmosSdkChain {
         &self,
         body_bytes: Vec<u8>,
         auth_info_bytes: Vec<u8>,
-        account_number: u64,
+        account_number: AccountNumber,
     ) -> Result<Vec<u8>, Error> {
         let sign_doc = SignDoc {
             body_bytes,
             auth_info_bytes,
             chain_id: self.config.clone().id.to_string(),
-            account_number,
+            account_number: account_number.to_u64(),
         };
 
         // A protobuf serialization of a SignDoc
@@ -2340,41 +2343,6 @@ pub async fn broadcast_tx_sync(
         .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
     Ok(response)
-}
-
-/// Uses the GRPC client to retrieve the account sequence
-async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAccount, Error> {
-    crate::telemetry!(query, chain.id(), "query_account");
-
-    let mut client = ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(
-        chain.grpc_addr.clone(),
-    )
-    .await
-    .map_err(Error::grpc_transport)?;
-
-    let request = tonic::Request::new(QueryAccountRequest {
-        address: address.clone(),
-    });
-
-    let response = client.account(request).await;
-
-    // Querying for an account might fail, i.e. if the account doesn't actually exist
-    let resp_account = match response.map_err(Error::grpc_status)?.into_inner().account {
-        Some(account) => account,
-        None => return Err(Error::empty_query_account(address)),
-    };
-
-    if resp_account.type_url == "/cosmos.auth.v1beta1.BaseAccount" {
-        Ok(BaseAccount::decode(resp_account.value.as_slice())
-            .map_err(|e| Error::protobuf_decode("BaseAccount".to_string(), e))?)
-    } else if resp_account.type_url.ends_with(".EthAccount") {
-        Ok(EthAccount::decode(resp_account.value.as_slice())
-            .map_err(|e| Error::protobuf_decode("EthAccount".to_string(), e))?
-            .base_account
-            .ok_or_else(Error::empty_base_account)?)
-    } else {
-        Err(Error::unknown_account_type(resp_account.type_url))
-    }
 }
 
 fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error> {
