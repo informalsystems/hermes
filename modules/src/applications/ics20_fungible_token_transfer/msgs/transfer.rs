@@ -106,6 +106,7 @@ pub mod test_util {
     use core::time::Duration;
 
     use crate::{
+        applications::ics20_fungible_token_transfer::{BaseCoin, IbcCoin},
         core::ics24_host::identifier::{ChannelId, PortId},
         test_utils::get_dummy_account_id,
         timestamp::Timestamp,
@@ -113,7 +114,6 @@ pub mod test_util {
     };
 
     use super::MsgTransfer;
-    use super::{BaseCoin, Coin, IbcCoin};
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
