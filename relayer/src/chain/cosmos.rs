@@ -331,9 +331,10 @@ impl CosmosSdkChain {
         debug!("max fee, for use in tx simulation: {}", PrettyFee(&max_fee));
 
         let (body, body_buf) = tx_body_and_bytes(proto_msgs, self.tx_memo())?;
+        let account_number = self.account_number()?;
 
         let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), max_fee)?;
-        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
+        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_number)?;
 
         let simulate_tx = Tx {
             body: Some(body),
@@ -367,7 +368,6 @@ impl CosmosSdkChain {
         );
 
         let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
-        let account_number = self.account_number()?;
         let signed_doc =
             self.signed_doc(body_buf.clone(), auth_buf_adjusted.clone(), account_number)?;
 
