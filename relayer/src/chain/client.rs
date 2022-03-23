@@ -5,7 +5,7 @@ use core::time::Duration;
 use tendermint_light_client_verifier::types::TrustThreshold;
 
 /// Client parameters for the `build_create_client` operation.
-/// If set, the options override the defaults taken from the chain configuration.
+/// If set, the options override the defaults taken from the source chain configuration.
 #[derive(Clone, Debug, Default)]
 pub struct ClientSettings {
     pub max_clock_drift: Duration,
