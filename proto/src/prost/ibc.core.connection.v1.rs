@@ -150,7 +150,7 @@ pub struct GenesisState {
 }
 /// MsgConnectionOpenInit defines the msg sent by an account on Chain A to
 /// initialize a connection with Chain B.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenInit {
     #[prost(string, tag = "1")]
     pub client_id: ::prost::alloc::string::String,
@@ -165,11 +165,11 @@ pub struct MsgConnectionOpenInit {
 }
 /// MsgConnectionOpenInitResponse defines the Msg/ConnectionOpenInit response
 /// type.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenInitResponse {}
 /// MsgConnectionOpenTry defines a msg sent by a Relayer to try to open a
 /// connection on Chain B.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenTry {
     #[prost(string, tag = "1")]
     pub client_id: ::prost::alloc::string::String,
@@ -203,11 +203,11 @@ pub struct MsgConnectionOpenTry {
     pub signer: ::prost::alloc::string::String,
 }
 /// MsgConnectionOpenTryResponse defines the Msg/ConnectionOpenTry response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenTryResponse {}
 /// MsgConnectionOpenAck defines a msg sent by a Relayer to Chain A to
 /// acknowledge the change of connection state to TRYOPEN on Chain B.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenAck {
     #[prost(string, tag = "1")]
     pub connection_id: ::prost::alloc::string::String,
@@ -235,11 +235,11 @@ pub struct MsgConnectionOpenAck {
     pub signer: ::prost::alloc::string::String,
 }
 /// MsgConnectionOpenAckResponse defines the Msg/ConnectionOpenAck response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenAckResponse {}
 /// MsgConnectionOpenConfirm defines a msg sent by a Relayer to Chain B to
 /// acknowledge the change of connection state to OPEN on Chain A.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenConfirm {
     #[prost(string, tag = "1")]
     pub connection_id: ::prost::alloc::string::String,
@@ -253,7 +253,7 @@ pub struct MsgConnectionOpenConfirm {
 }
 /// MsgConnectionOpenConfirmResponse defines the Msg/ConnectionOpenConfirm
 /// response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenConfirmResponse {}
 #[doc = r" Generated client implementations."]
 #[cfg(feature = "client")]

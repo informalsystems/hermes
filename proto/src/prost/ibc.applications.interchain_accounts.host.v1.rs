@@ -1,6 +1,6 @@
 /// Params defines the set of on-chain interchain accounts parameters.
 /// The following parameters may be used to disable the host submodule.
-#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Params {
     /// host_enabled enables or disables the host submodule.
     #[prost(bool, tag = "1")]
@@ -10,10 +10,10 @@ pub struct Params {
     pub allow_messages: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
-#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {}
 /// QueryParamsResponse is the response type for the Query/Params RPC method.
-#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsResponse {
     /// params defines the parameters of the module.
     #[prost(message, optional, tag = "1")]

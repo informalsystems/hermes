@@ -81,7 +81,7 @@ pub struct UpgradeProposal {
 /// breaking changes In these cases, the RevisionNumber is incremented so that
 /// height continues to be monitonically increasing even as the RevisionHeight
 /// gets reset
-#[derive(Eq, PartialOrd, Ord, ::serde::Serialize, ::serde::Deserialize)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Height {
@@ -143,7 +143,7 @@ pub struct IdentifiedGenesisMetadata {
     pub client_metadata: ::prost::alloc::vec::Vec<GenesisMetadata>,
 }
 /// MsgCreateClient defines a message to create an IBC client
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateClient {
     /// light client state
     #[prost(message, optional, tag = "1")]
@@ -157,11 +157,11 @@ pub struct MsgCreateClient {
     pub signer: ::prost::alloc::string::String,
 }
 /// MsgCreateClientResponse defines the Msg/CreateClient response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateClientResponse {}
 /// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
 /// the given header.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateClient {
     /// client unique identifier
     #[prost(string, tag = "1")]
@@ -174,11 +174,11 @@ pub struct MsgUpdateClient {
     pub signer: ::prost::alloc::string::String,
 }
 /// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateClientResponse {}
 /// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
 /// state
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpgradeClient {
     /// client unique identifier
     #[prost(string, tag = "1")]
@@ -201,11 +201,11 @@ pub struct MsgUpgradeClient {
     pub signer: ::prost::alloc::string::String,
 }
 /// MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpgradeClientResponse {}
 /// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
 /// light client misbehaviour.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitMisbehaviour {
     /// client unique identifier
     #[prost(string, tag = "1")]
@@ -219,7 +219,7 @@ pub struct MsgSubmitMisbehaviour {
 }
 /// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
 /// type.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitMisbehaviourResponse {}
 #[doc = r" Generated client implementations."]
 #[cfg(feature = "client")]

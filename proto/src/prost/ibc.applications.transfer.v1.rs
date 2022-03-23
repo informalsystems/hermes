@@ -1,7 +1,7 @@
 /// MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
 /// ICS20 enabled chains. See ICS Spec here:
 /// <https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures>
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgTransfer {
     /// the port on which the packet will be sent
     #[prost(string, tag = "1")]
@@ -28,7 +28,7 @@ pub struct MsgTransfer {
     pub timeout_timestamp: u64,
 }
 /// MsgTransferResponse defines the Msg/Transfer response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct MsgTransferResponse {}
 #[doc = r" Generated client implementations."]
 #[cfg(feature = "client")]
@@ -187,7 +187,7 @@ pub struct QueryParamsResponse {
 /// method
 #[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct QueryDenomHashRequest {
-    /// The denomination trace (\[port_id]/[channel_id\])+/[denom\]
+    /// The denomination trace (\[port_id]/[channel_id])+/[denom\]
     #[prost(string, tag = "1")]
     pub trace: ::prost::alloc::string::String,
 }
