@@ -136,7 +136,7 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
         run: |
-          nix shell github:informalsystems/cosmos.nix/gaia-ordered#gaia6-ordered -c cargo \
+          nix shell github:informalsystems/cosmos.nix#gaia6-ordered -c cargo \
             test -p ibc-integration-test --features ordered --no-fail-fast -- \
             --nocapture --test-threads=1 test_ordered_channel
 
