@@ -15,6 +15,8 @@ use super::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 
+const IBC_DENOM_PREFIX: &str = "ibc/";
+
 /// A `Coin` type with fully qualified `DenomTrace`.
 pub type PrefixedCoin = Coin<DenomTrace>;
 
@@ -117,7 +119,7 @@ pub struct DenomTrace {
 impl DenomTrace {
     /// Returns a coin denomination for an ICS20 fungible token in the format
     /// 'ibc/{Hash(trace_path/base_denom)}'.
-    pub fn hashed_denom(&self) -> HashedDenom {
+    pub fn hashed(&self) -> HashedDenom {
         HashedDenom::from(self)
     }
 
@@ -214,7 +216,7 @@ impl From<&DenomTrace> for HashedDenom {
 impl fmt::Display for HashedDenom {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let denom_hex = String::from_utf8(hex::encode_upper(&self.0)).map_err(|_| fmt::Error)?;
-        write!(f, "ibc/{}", denom_hex)
+        write!(f, "{}{}", IBC_DENOM_PREFIX, denom_hex)
     }
 }
 
@@ -223,7 +225,7 @@ impl FromStr for HashedDenom {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s
-            .strip_prefix("ibc/")
+            .strip_prefix(IBC_DENOM_PREFIX)
             .ok_or_else(Error::missing_denom_ibc_prefix)?;
         let bytes = hex::decode_upper(s).map_err(Error::parse_hex)?;
         Ok(Self(bytes))
@@ -310,7 +312,7 @@ impl TryFrom<RawCoin> for IbcCoin {
     type Error = Error;
 
     fn try_from(proto: RawCoin) -> Result<IbcCoin, Self::Error> {
-        if proto.denom.starts_with("ibc/") {
+        if proto.denom.starts_with(IBC_DENOM_PREFIX) {
             Ok(Self::Hashed(HashedCoin::try_from(proto)?))
         } else {
             Ok(Self::Base(BaseCoin::try_from(proto)?))
