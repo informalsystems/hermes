@@ -25,13 +25,15 @@ pub struct TxCreateClientCmd {
     #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    /// Override the default clock drift specified in the configuration.
+    /// The maximum allowed clock drift for this client.
     ///
     /// The clock drift is a correction parameter. It helps deal with clocks
     /// that are only approximately synchronized between the source and destination chains
     /// of this client.
     /// The destination chain for this client uses the clock drift parameter when deciding
     /// to accept or reject a new header (originating from the source chain) for this client.
+    /// If this option is not specified, a suitable clock drift value is derived from the chain
+    /// configurations.
     #[clap(short = 'd', long)]
     clock_drift: Option<humantime::Duration>,
 
