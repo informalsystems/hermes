@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import requests
 import logging as l
 from typing import Tuple
 from pathlib import Path
@@ -151,6 +152,11 @@ def passive_packets(
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived acks mismatch (expected 0)")
+
+    # Show metrics after workflow
+    res = requests.get('http://localhost:3001/metrics')
+    print(res.text)
+
     # 9.Stop the relayer
     proc.kill()
 
@@ -191,7 +197,7 @@ def raw(c: Config, ibc0: ChainId, ibc1: ChainId, port_id: PortId) -> Tuple[Clien
 
     # The ChannelCloseInit message is currently denied by Gaia,
     # and requires a patch to be accepted.
-    # channel.close(c, ibc0 , ibc1, ibc0_conn_id,
+    # channel.close(c, ibc0, ibc1, ibc0_conn_id,
     #               ibc1_conn_id, ibc0_chan_id, ibc1_chan_id)
 
     return ibc0_client_id, ibc0_conn_id, ibc0_chan_id, ibc1_client_id, ibc1_conn_id, ibc1_chan_id
