@@ -156,10 +156,7 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     )
     .spawn_workers(scan);
 
-    let subscriptions = Arc::new(RwLock::new(init_subscriptions(
-        &config.acquire_read(),
-        &mut registry.write(),
-    )?));
+    let subscriptions = init_subscriptions(&config.acquire_read(), &mut registry.write())?;
 
     let batch_task = spawn_batch_worker(
         config.clone(),
@@ -186,14 +183,13 @@ fn spawn_batch_worker<Chain: ChainHandle>(
     registry: SharedRegistry<Chain>,
     client_state_filter: Arc<RwLock<FilterPolicy>>,
     workers: Arc<RwLock<WorkerMap>>,
-    subscriptions: Arc<RwLock<Vec<(Chain, Subscription)>>>,
+    subscriptions: Vec<(Chain, Subscription)>,
 ) -> TaskHandle {
     spawn_background_task(
         tracing::Span::none(),
         None,
         move || -> Result<Next, TaskError<Infallible>> {
-            let subs = subscriptions.acquire_read();
-            let mut selector = RecvMultiple::new(&subs);
+            let mut selector = RecvMultiple::new(&subscriptions);
 
             while let Some((chain, batch)) = selector.recv_multiple() {
                 handle_batch(
