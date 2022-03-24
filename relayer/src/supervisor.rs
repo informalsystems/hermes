@@ -29,7 +29,7 @@ use crate::{
     util::{
         lock::LockExt,
         task::{spawn_background_task, Next, TaskError, TaskHandle},
-        try_recv_multiple,
+        RecvMultiple,
     },
     worker::WorkerMap,
 };
@@ -190,9 +190,12 @@ fn spawn_batch_worker<Chain: ChainHandle>(
 ) -> TaskHandle {
     spawn_background_task(
         tracing::Span::none(),
-        Some(Duration::from_millis(500)),
+        None,
         move || -> Result<Next, TaskError<Infallible>> {
-            if let Some((chain, batch)) = try_recv_multiple(&subscriptions.acquire_read()) {
+            let subs = subscriptions.acquire_read();
+            let mut selector = RecvMultiple::new(&subs);
+
+            while let Some((chain, batch)) = selector.recv_multiple() {
                 handle_batch(
                     &config.acquire_read(),
                     &mut registry.write(),
