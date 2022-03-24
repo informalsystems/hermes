@@ -14,7 +14,6 @@ use prost_types::Any;
 use sha2::Digest;
 use tracing::debug;
 
-use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -612,8 +611,6 @@ impl Ics26Context for MockContext {
         &mut self.router
     }
 }
-
-impl Ics20Context for MockContext {}
 
 impl CapabilityReader for MockContext {
     fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, Ics05Error> {

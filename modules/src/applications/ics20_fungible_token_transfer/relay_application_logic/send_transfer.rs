@@ -7,7 +7,8 @@ use crate::core::ics04_channel::packet::PacketResult;
 use crate::handler::HandlerOutput;
 use crate::prelude::*;
 
-pub(crate) fn send_transfer<Ctx>(
+#[allow(unused)]
+pub(crate) fn send_transfer<Ctx, AccountId>(
     ctx: &Ctx,
     msg: MsgTransfer,
 ) -> Result<HandlerOutput<PacketResult>, Error>

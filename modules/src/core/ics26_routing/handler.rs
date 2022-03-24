@@ -2,7 +2,6 @@ use crate::prelude::*;
 
 use prost_types::Any;
 
-use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
@@ -17,7 +16,7 @@ use crate::core::ics04_channel::packet::PacketResult;
 use crate::core::ics26_routing::context::Ics26Context;
 use crate::core::ics26_routing::error::Error;
 use crate::core::ics26_routing::msgs::Ics26Envelope::{
-    self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4ChannelMsg, Ics4PacketMsg,
+    self, Ics2Msg, Ics3Msg, Ics4ChannelMsg, Ics4PacketMsg,
 };
 use crate::{events::IbcEvent, handler::HandlerOutput};
 
@@ -94,20 +93,6 @@ where
                 .map_err(Error::ics04_channel)?;
 
             handler_builder.with_result(())
-        }
-
-        Ics20Msg(msg) => {
-            let handler_output =
-                ics20_msg_dispatcher(ctx, msg).map_err(Error::ics20_fungible_token_transfer)?;
-
-            // Apply any results to the host chain store.
-            ctx.store_packet_result(handler_output.result)
-                .map_err(Error::ics04_channel)?;
-
-            HandlerOutput::builder()
-                .with_log(handler_output.log)
-                .with_events(handler_output.events)
-                .with_result(())
         }
 
         Ics4PacketMsg(msg) => {
@@ -274,7 +259,6 @@ mod tests {
             MsgChannelCloseConfirm::try_from(get_dummy_raw_msg_chan_close_confirm(client_height))
                 .unwrap();
 
-        let msg_transfer = get_dummy_msg_transfer(35);
         let msg_transfer_two = get_dummy_msg_transfer(36);
 
         let mut msg_to_on_close =
@@ -386,12 +370,6 @@ mod tests {
                 msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenAck(msg_chan_ack)),
                 want_pass: true,
             },
-            //ICS20-04-packet
-            Test {
-                name: "Packet send".to_string(),
-                msg: Ics26Envelope::Ics20Msg(msg_transfer),
-                want_pass: true,
-            },
             // The client update is required in this test, because the proof associated with
             // msg_recv_packet has the same height as the packet TO height (see get_dummy_raw_msg_recv_packet)
             Test {
@@ -413,11 +391,6 @@ mod tests {
             Test {
                 name: "Re-Receive packet".to_string(),
                 msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
-                want_pass: true,
-            },
-            Test {
-                name: "Packet send".to_string(),
-                msg: Ics26Envelope::Ics20Msg(msg_transfer_two),
                 want_pass: true,
             },
             Test {

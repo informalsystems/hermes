@@ -5,7 +5,6 @@ use core::any::Any;
 use core::fmt::Debug;
 use core::{fmt, str::FromStr};
 
-use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
@@ -32,7 +31,6 @@ pub trait Ics26Context:
     + ChannelKeeper
     + ChannelReader
     + PortReader
-    + Ics20Context
 {
     type Router: Router;
 
