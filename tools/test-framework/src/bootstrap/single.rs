@@ -50,7 +50,8 @@ pub fn bootstrap_single_node(
     chain_driver.update_genesis_file("genesis.json", genesis_modifier)?;
 
     let validator = chain_driver.add_random_wallet("validator")?;
-    let relayer = chain_driver.add_random_wallet("relayer")?;
+    let relayer1 = chain_driver.add_random_wallet("relayer")?;
+    let relayer2 = chain_driver.add_random_wallet("relayer")?;
     let user1 = chain_driver.add_random_wallet("user1")?;
     let user2 = chain_driver.add_random_wallet("user2")?;
 
@@ -69,7 +70,12 @@ pub fn bootstrap_single_node(
     )?;
 
     chain_driver.add_genesis_account(
-        &relayer.address,
+        &relayer1.address,
+        &[(&stake_denom, initial_amount), (&denom, initial_amount)],
+    )?;
+
+    chain_driver.add_genesis_account(
+        &relayer2.address,
         &[(&stake_denom, initial_amount), (&denom, initial_amount)],
     )?;
 
@@ -91,7 +97,7 @@ pub fn bootstrap_single_node(
 
     let process = chain_driver.start()?;
 
-    chain_driver.assert_eventual_wallet_amount(&relayer.address, initial_amount, &denom)?;
+    chain_driver.assert_eventual_wallet_amount(&relayer1.address, initial_amount, &denom)?;
 
     info!(
         "started new chain {} at with home path {} and RPC address {}.",
@@ -114,7 +120,8 @@ pub fn bootstrap_single_node(
 
     let wallets = TestWallets {
         validator,
-        relayer,
+        relayer1,
+        relayer2,
         user1,
         user2,
     };

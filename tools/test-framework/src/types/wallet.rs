@@ -58,7 +58,9 @@ pub struct TestWallets {
     pub validator: Wallet,
 
     /// The relayer wallet. This is used by the relayer by default.
-    pub relayer: Wallet,
+    pub relayer1: Wallet,
+
+    pub relayer2: Wallet,
 
     /// The first user wallet that can be used for testing.
     pub user1: Wallet,
@@ -95,7 +97,9 @@ pub trait TaggedTestWalletsExt<Chain> {
     fn validator(&self) -> MonoTagged<Chain, &Wallet>;
 
     /// Get the relayer [`Wallet`] tagged with the given `Chain`.
-    fn relayer(&self) -> MonoTagged<Chain, &Wallet>;
+    fn relayer1(&self) -> MonoTagged<Chain, &Wallet>;
+
+    fn relayer2(&self) -> MonoTagged<Chain, &Wallet>;
 
     /// Get the first user [`Wallet`] tagged with the given `Chain`.
     fn user1(&self) -> MonoTagged<Chain, &Wallet>;
@@ -148,8 +152,12 @@ impl<Chain> TaggedTestWalletsExt<Chain> for MonoTagged<Chain, TestWallets> {
         self.map_ref(|w| &w.validator)
     }
 
-    fn relayer(&self) -> MonoTagged<Chain, &Wallet> {
-        self.map_ref(|w| &w.relayer)
+    fn relayer1(&self) -> MonoTagged<Chain, &Wallet> {
+        self.map_ref(|w| &w.relayer1)
+    }
+
+    fn relayer2(&self) -> MonoTagged<Chain, &Wallet> {
+        self.map_ref(|w| &w.relayer2)
     }
 
     fn user1(&self) -> MonoTagged<Chain, &Wallet> {
@@ -166,8 +174,12 @@ impl<'a, Chain> TaggedTestWalletsExt<Chain> for MonoTagged<Chain, &'a TestWallet
         self.map_ref(|w| &w.validator)
     }
 
-    fn relayer(&self) -> MonoTagged<Chain, &Wallet> {
-        self.map_ref(|w| &w.relayer)
+    fn relayer1(&self) -> MonoTagged<Chain, &Wallet> {
+        self.map_ref(|w| &w.relayer1)
+    }
+
+    fn relayer2(&self) -> MonoTagged<Chain, &Wallet> {
+        self.map_ref(|w| &w.relayer2)
     }
 
     fn user1(&self) -> MonoTagged<Chain, &Wallet> {
@@ -183,8 +195,10 @@ impl ExportEnv for TestWallets {
     fn export_env(&self, writer: &mut impl EnvWriter) {
         self.validator
             .export_env(&mut prefix_writer("VALIDATOR", writer));
-        self.relayer
-            .export_env(&mut prefix_writer("RELAYER", writer));
+        self.relayer1
+            .export_env(&mut prefix_writer("RELAYER1", writer));
+        self.relayer2
+            .export_env(&mut prefix_writer("RELAYER2", writer));
         self.user1.export_env(&mut prefix_writer("USER1", writer));
         self.user2.export_env(&mut prefix_writer("USER2", writer));
     }

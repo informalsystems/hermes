@@ -490,7 +490,7 @@ impl ChainDriver {
         assert_eventually_succeed(
             &format!(
                 "wallet reach {} amount {} {}",
-                user.address, target_amount, denom
+                wallet, target_amount, denom
             ),
             60,
             Duration::from_secs(1),

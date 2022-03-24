@@ -126,7 +126,7 @@ impl FullNode {
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
             rpc_timeout: Duration::from_secs(10),
             account_prefix: "cosmos".to_string(),
-            key_name: self.wallets.relayer.id.0.clone(),
+            key_name: self.wallets.relayer1.id.0.clone(),
 
             // By default we use in-memory key store to avoid polluting
             // ~/.hermes/keys. See

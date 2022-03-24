@@ -252,7 +252,8 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallets: &TestWallets,
 ) -> Result<(), Error> {
-    add_key_to_chain_handle(chain, &wallets.relayer)?;
+    add_key_to_chain_handle(chain, &wallets.relayer1)?;
+    add_key_to_chain_handle(chain, &wallets.relayer2)?;
     add_key_to_chain_handle(chain, &wallets.user1)?;
     add_key_to_chain_handle(chain, &wallets.user2)?;
 
