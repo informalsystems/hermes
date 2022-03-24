@@ -92,7 +92,7 @@ pub struct OperationalData {
     pub batch: Vec<TransitMessage>,
     pub target: OperationalDataTarget,
     pub tracking_id: String,
-    // Stores `Some(non-zero connection-delay)` or `None`
+    /// Stores `Some(ConnectionDelay)` if the delay is non-zero and `None` otherwise
     connection_delay: Option<ConnectionDelay>,
 }
 

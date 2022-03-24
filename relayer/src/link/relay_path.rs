@@ -1627,7 +1627,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
     /// waiting for the delay period to pass.
-    /// Returns `None` if there is no operational data scheduled.
+    /// Returns `Ok(None)` if there is no operational data scheduled.
     pub(crate) fn fetch_scheduled_operational_data(
         &self,
     ) -> Result<Option<OperationalData>, LinkError> {
