@@ -30,7 +30,7 @@ pub trait Ics20Keeper:
 
     /// Set channel escrow address
     fn set_channel_escrow_address(
-        &self,
+        &mut self,
         port_id: PortId,
         channel_id: ChannelId,
     ) -> Result<(), Ics20Error>;
