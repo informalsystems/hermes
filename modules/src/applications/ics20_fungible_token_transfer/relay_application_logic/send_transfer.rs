@@ -13,7 +13,7 @@ pub(crate) fn send_transfer<Ctx, AccountId>(
     msg: MsgTransfer,
 ) -> Result<HandlerOutput<PacketResult>, Error>
 where
-    Ctx: Ics20Context,
+    Ctx: Ics20Context<AccountId = AccountId>,
 {
     let source_channel_end = ctx
         .channel_end(&(msg.source_port.clone(), msg.source_channel.clone()))
