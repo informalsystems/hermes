@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-import requests
 import logging as l
 from typing import Tuple
 from pathlib import Path
 import toml
+import urllib.request
 
 import e2e.channel as channel
 import e2e.client as client
@@ -154,8 +154,8 @@ def passive_packets(
                                     "unreceived acks mismatch (expected 0)")
 
     # Show metrics after workflow
-    res = requests.get('http://localhost:3001/metrics')
-    print(res.text)
+    res = urllib.request.urlopen('http://localhost:3001/metrics')
+    print(res.read())
 
     # 9.Stop the relayer
     proc.kill()
