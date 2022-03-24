@@ -157,7 +157,7 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
 
     let subscriptions = init_subscriptions(&config.acquire_read(), &mut registry.write())?;
 
-    let batch_task = spawn_batch_worker(
+    let batch_tasks = spawn_batch_workers(
         config.clone(),
         registry.clone(),
         client_state_filter,
@@ -167,7 +167,8 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
 
     let cmd_task = spawn_cmd_worker(registry.clone(), workers.clone(), cmd_rx);
 
-    let mut tasks = vec![batch_task, cmd_task];
+    let mut tasks = vec![cmd_task];
+    tasks.extend(batch_tasks);
 
     if let Some(rest_rx) = rest_rx {
         let rest_task = spawn_rest_worker(config, registry, workers, rest_rx);
@@ -177,32 +178,44 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     Ok(tasks)
 }
 
-fn spawn_batch_worker<Chain: ChainHandle>(
+fn spawn_batch_workers<Chain: ChainHandle>(
     config: Arc<RwLock<Config>>,
     registry: SharedRegistry<Chain>,
     client_state_filter: Arc<RwLock<FilterPolicy>>,
     workers: Arc<RwLock<WorkerMap>>,
     subscriptions: Vec<(Chain, Subscription)>,
-) -> TaskHandle {
-    spawn_background_task(
-        tracing::Span::none(),
-        None,
-        move || -> Result<Next, TaskError<Infallible>> {
-            for (chain, receiver) in subscriptions.iter() {
-                if let Ok(batch) = receiver.try_recv() {
-                    handle_batch(
-                        &config.acquire_read(),
-                        &mut registry.write(),
-                        &mut client_state_filter.acquire_write(),
-                        &mut workers.acquire_write(),
-                        chain.clone(),
-                        batch,
-                    );
+) -> Vec<TaskHandle> {
+    let mut handles = Vec::with_capacity(subscriptions.len());
+
+    for (chain, subscription) in subscriptions {
+        let config = config.clone();
+        let registry = registry.clone();
+        let client_state_filter = client_state_filter.clone();
+        let workers = workers.clone();
+
+        let handle = spawn_background_task(
+            tracing::Span::none(),
+            None,
+            move || -> Result<Next, TaskError<Infallible>> {
+                loop {
+                    if let Ok(batch) = subscription.recv() {
+                        handle_batch(
+                            &config.acquire_read(),
+                            &mut registry.write(),
+                            &mut client_state_filter.acquire_write(),
+                            &mut workers.acquire_write(),
+                            chain.clone(),
+                            batch,
+                        );
+                    }
                 }
-            }
-            Ok(Next::Continue)
-        },
-    )
+            },
+        );
+
+        handles.push(handle);
+    }
+
+    handles
 }
 
 pub fn spawn_cmd_worker<Chain: ChainHandle>(
