@@ -15,7 +15,7 @@ fn test_slow_ibc_transfer() -> Result<(), Error> {
     // are bootstrapped. This will cause the IBC transfer to be relayed
     // very slowly.
     run_binary_node_test(&RunBinaryChainTest::new(&RunWithSupervisor::new(
-        &RunBinaryConnectionTest::new(&RunBinaryChannelTest::new(&IbcTransferTest)),
+        &RunBinaryConnectionTest::new(&RunBinaryChannelTest::new(&RepeatIbcTransferTest::<10>)),
     )))
 }
 
@@ -50,8 +50,28 @@ fn test_self_connected_nary_ibc_transfer() -> Result<(), Error> {
 }
 
 pub struct IbcTransferTest;
+pub struct RepeatIbcTransferTest<const COUNT: usize>;
 
 impl TestOverrides for IbcTransferTest {}
+impl<const COUNT: usize> TestOverrides for RepeatIbcTransferTest<COUNT> {}
+
+impl<const COUNT: usize> BinaryChannelTest for RepeatIbcTransferTest<COUNT> {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channel: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        for i in 0..COUNT {
+            info!("Repeating IBC transfer test for the {}-th time", i);
+
+            IbcTransferTest.run(config, relayer.clone(), chains.clone(), channel.clone())?;
+        }
+
+        Ok(())
+    }
+}
 
 impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -97,6 +117,11 @@ impl BinaryChannelTest for IbcTransferTest {
             &denom_a,
         )?;
 
+        let balance_b = chains
+            .node_b
+            .chain_driver()
+            .query_balance(&wallet_b.address(), &denom_b.as_ref())?;
+
         info!(
             "Waiting for user on chain B to receive IBC transferred amount of {} {}",
             a_to_b_amount, denom_b
@@ -110,7 +135,7 @@ impl BinaryChannelTest for IbcTransferTest {
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
-            a_to_b_amount,
+            balance_b + a_to_b_amount,
             &denom_b.as_ref(),
         )?;
 
@@ -144,9 +169,14 @@ impl BinaryChannelTest for IbcTransferTest {
             &denom_b.as_ref(),
         )?;
 
+        info!(
+            "Waiting for user on chain A to receive IBC transferred amount of {} {}",
+            b_to_a_amount, denom_a
+        );
+
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
-            a_to_b_amount - b_to_a_amount,
+            balance_b + a_to_b_amount - b_to_a_amount,
             &denom_b.as_ref(),
         )?;
 
