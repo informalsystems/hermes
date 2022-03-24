@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
