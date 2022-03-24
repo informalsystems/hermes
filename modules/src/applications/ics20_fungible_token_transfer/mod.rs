@@ -8,6 +8,7 @@ pub mod relay_application_logic;
 
 mod acknowledgement;
 mod denom;
+mod events;
 mod packet;
 mod signer;
 
