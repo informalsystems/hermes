@@ -17,7 +17,7 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
-static PROMPT: &str = "WARN: Are you sure you want new clients & connections to be created? Hermes will use default security parameters.\nHint: consider using the default invocation `hermes create channel --port-a <PORT-ID> --port-b <PORT-ID> <CHAIN-A-ID> <CONNECTION-A-ID>` to re-use a pre-existing connection.";
+static PROMPT: &str = "Are you sure you want new clients & connections to be created? Hermes will use default security parameters.\nHint: consider using the default invocation\n`hermes create channel --port-a <PORT-ID> --port-b <PORT-ID> <CHAIN-A-ID> <CONNECTION-A-ID>`\nto re-use a pre-existing connection.";
 
 /// The data structure that represents all the possible options when invoking
 /// the `create channel` CLI command.
@@ -99,10 +99,7 @@ impl Runnable for CreateChannelCommand {
             None => match &self.chain_b_id {
                 Some(chain_b) => {
                     if self.new_client_connection {
-                        match Confirm::new()
-                            .with_prompt(PROMPT)
-                            .interact_on(&Term::stdout())
-                        {
+                        match Confirm::new().with_prompt(PROMPT).interact() {
                             Ok(confirm) => {
                                 if confirm {
                                     self.run_using_new_connection(chain_b);
