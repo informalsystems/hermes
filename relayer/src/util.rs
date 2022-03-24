@@ -1,9 +1,6 @@
 mod block_on;
 pub use block_on::block_on;
 
-mod recv_multiple;
-pub use recv_multiple::RecvMultiple;
-
 pub mod bigint;
 pub mod diff;
 pub mod iter;
