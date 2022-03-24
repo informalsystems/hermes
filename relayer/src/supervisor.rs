@@ -195,20 +195,20 @@ fn spawn_batch_workers<Chain: ChainHandle>(
 
         let handle = spawn_background_task(
             tracing::Span::none(),
-            None,
+            Some(Duration::from_millis(5)),
             move || -> Result<Next, TaskError<Infallible>> {
-                loop {
-                    if let Ok(batch) = subscription.recv() {
-                        handle_batch(
-                            &config.acquire_read(),
-                            &mut registry.write(),
-                            &mut client_state_filter.acquire_write(),
-                            &mut workers.acquire_write(),
-                            chain.clone(),
-                            batch,
-                        );
-                    }
+                if let Ok(batch) = subscription.try_recv() {
+                    handle_batch(
+                        &config.acquire_read(),
+                        &mut registry.write(),
+                        &mut client_state_filter.acquire_write(),
+                        &mut workers.acquire_write(),
+                        chain.clone(),
+                        batch,
+                    );
                 }
+
+                Ok(Next::Continue)
             },
         );
 
