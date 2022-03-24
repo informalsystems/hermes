@@ -1,5 +1,6 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use dialoguer::Confirm;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
@@ -16,6 +17,8 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
+static PROMPT: &str = "WARN: Are you sure you want new clients & connections to be created? Hermes will use default security parameters.\nHint: consider using the default invocation `hermes create channel --port-a <PORT-ID> --port-b <PORT-ID> <CHAIN-A-ID> <CONNECTION-A-ID>` to re-use a pre-existing connection.";
+
 /// The data structure that represents all the possible options when invoking
 /// the `create channel` CLI command.
 ///
@@ -30,9 +33,9 @@ use ibc_relayer::config::default::connection_delay;
 /// way in which this command should be used, specifying a `connection-id` for this new channel
 /// to re-use. The command expects that `connection-ID` is associated with Chain-A.
 ///
-/// `connection-ID`s have to be considered based off of the chain's perspective. Although chain A
-/// and chain B might refer to the connection with different names, they are referring to the same
-/// connection.
+/// Note that `connection-ID`s have to be considered based off of the chain's perspective. Although
+/// chain A and chain B might refer to the connection with different names, they are referring
+/// to the same connection.
 #[derive(Clone, Command, Debug, Parser)]
 #[clap(disable_version_flag = true)]
 pub struct CreateChannelCommand {
@@ -96,7 +99,24 @@ impl Runnable for CreateChannelCommand {
             None => match &self.chain_b_id {
                 Some(chain_b) => {
                     if self.new_client_connection {
-                        self.run_using_new_connection(chain_b)
+                        match Confirm::new()
+                            .with_prompt(PROMPT)
+                            .interact_on(&Term::stdout())
+                        {
+                            Ok(confirm) => {
+                                if confirm {
+                                    self.run_using_new_connection(chain_b);
+                                } else {
+                                    Output::error("You elected not to create new clients and connections. Please re-invoke `create channel` with a pre-existing connection ID".to_string()).exit();
+                                }
+                            }
+                            Err(e) => {
+                                Output::error(format!(
+                                    "An error occurred while waiting for user input: {}",
+                                    e
+                                ));
+                            }
+                        }
                     } else {
                         Output::error(
                                 "The `--new-client-connection` flag is required if invoking with `<chain-b-id>`".to_string()
