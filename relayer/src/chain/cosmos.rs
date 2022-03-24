@@ -12,8 +12,8 @@ use std::{fmt, thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
+use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use prost_types::Any;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params as ConsensusParams;
