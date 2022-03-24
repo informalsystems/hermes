@@ -1,7 +1,7 @@
 use core::marker::{Send, Sync};
 use core::time::Duration;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -290,7 +290,7 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
 #[cfg(test)]
 mod tests {
 
-    use prost_types::Any;
+    use ibc_proto::google::protobuf::Any;
     use test_log::test;
 
     use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;

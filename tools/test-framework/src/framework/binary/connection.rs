@@ -13,7 +13,9 @@ use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
 use crate::framework::binary::chain::{BinaryChainTest, RelayerConfigOverride, RunBinaryChainTest};
-use crate::framework::binary::node::{run_binary_node_test, NodeConfigOverride};
+use crate::framework::binary::node::{
+    run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
+};
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
@@ -33,6 +35,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
         + ConnectionDelayOverride,
@@ -49,6 +52,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
         + ConnectionDelayOverride,

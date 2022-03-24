@@ -1,9 +1,11 @@
 use core::time::Duration;
+use std::thread::sleep;
+
 use ibc::core::ics03_connection::connection::State as ConnectionState;
 use ibc::core::ics04_channel::channel::State as ChannelState;
+use ibc::core::ics04_channel::Version as ChannelVersion;
 use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::{self, Config, ModeConfig};
-use std::thread::sleep;
 
 use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
 use ibc_test_framework::bootstrap::binary::channel::{
@@ -280,6 +282,7 @@ impl BinaryChainTest for PacketExpirationTest {
                 &PortId::transfer(),
                 &PortId::transfer(),
                 Order::Unordered,
+                ChannelVersion::ics20(),
                 default_connection_delay(),
                 false,
             )?
@@ -394,6 +397,7 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
             &DualTagged::new(&PortId::transfer()),
             &DualTagged::new(&PortId::transfer()),
             Order::Unordered,
+            ChannelVersion::ics20(),
             false,
         );
 

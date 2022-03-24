@@ -92,14 +92,14 @@ impl BinaryChannelTest for ClearPacketTest {
 
             // Wallet on chain A should have both amount deducted.
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
-                &wallet_a.as_ref(),
+                &wallet_a.address(),
                 balance_a - amount1 - amount2,
                 &denom_a,
             )?;
 
             // Wallet on chain B should only receive the second IBC transfer
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.as_ref(),
+                &wallet_b.address(),
                 amount2,
                 &denom_b.as_ref(),
             )?;

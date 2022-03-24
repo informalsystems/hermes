@@ -6,6 +6,7 @@ use ibc_test_framework::util::random::random_u64_range;
 fn test_ordered_channel() -> Result<(), Error> {
     run_binary_channel_test(&OrderedChannelTest)
 }
+
 pub struct OrderedChannelTest;
 
 impl TestOverrides for OrderedChannelTest {
@@ -90,14 +91,14 @@ impl BinaryChannelTest for OrderedChannelTest {
 
             // Wallet on chain A should have both amount deducted.
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
-                &wallet_a.as_ref(),
+                &wallet_a.address(),
                 balance_a - amount1 - amount2,
                 &denom_a,
             )?;
 
             // Wallet on chain B should receive both IBC transfers
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.as_ref(),
+                &wallet_b.address(),
                 amount1 + amount2,
                 &denom_b.as_ref(),
             )?;

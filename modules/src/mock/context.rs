@@ -7,7 +7,7 @@ use core::cmp::min;
 use core::ops::{Add, Sub};
 use core::time::Duration;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use sha2::Digest;
 use tracing::debug;
 

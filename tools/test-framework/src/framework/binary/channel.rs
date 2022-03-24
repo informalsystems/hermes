@@ -5,6 +5,7 @@
 */
 
 use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
@@ -16,7 +17,9 @@ use crate::framework::binary::chain::{RelayerConfigOverride, RunBinaryChainTest}
 use crate::framework::binary::connection::{
     BinaryConnectionTest, ConnectionDelayOverride, RunBinaryConnectionTest,
 };
-use crate::framework::binary::node::{run_binary_node_test, NodeConfigOverride};
+use crate::framework::binary::node::{
+    run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
+};
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
@@ -38,11 +41,13 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
         + ConnectionDelayOverride
         + PortsOverride
-        + ChannelOrderOverride,
+        + ChannelOrderOverride
+        + ChannelVersionOverride,
 {
     run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
@@ -56,11 +61,13 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
         + ConnectionDelayOverride
         + PortsOverride
-        + ChannelOrderOverride,
+        + ChannelOrderOverride
+        + ChannelVersionOverride,
 {
     run_binary_node_test(&RunBinaryChainTest::new(&RunBinaryConnectionTest::new(
         &RunBinaryChannelTest::new(&RunWithSupervisor::new(test)),
@@ -125,6 +132,11 @@ pub trait ChannelOrderOverride {
     fn channel_order(&self) -> Order;
 }
 
+/** Facility for overriding the channel version */
+pub trait ChannelVersionOverride {
+    fn channel_version(&self) -> Version;
+}
+
 /**
    A wrapper type that lifts a test case that implements [`BinaryChannelTest`]
    into a test case the implements [`BinaryConnectionTest`].
@@ -167,7 +179,7 @@ impl<'a, Test, Overrides> BinaryConnectionTest for RunBinaryChannelTest<'a, Test
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: PortsOverride + ChannelOrderOverride,
+    Overrides: PortsOverride + ChannelOrderOverride + ChannelVersionOverride,
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -181,6 +193,7 @@ where
         let port_a = overrides.channel_port_a();
         let port_b = overrides.channel_port_b();
         let order = overrides.channel_order();
+        let version = overrides.channel_version();
 
         let channels = bootstrap_channel_with_connection(
             &chains.handle_a,
@@ -189,6 +202,7 @@ where
             &DualTagged::new(port_a).as_ref(),
             &DualTagged::new(port_b).as_ref(),
             order,
+            version,
             config.bootstrap_with_random_ids,
         )?;
 

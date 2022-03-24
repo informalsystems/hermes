@@ -57,7 +57,7 @@ impl BinaryChannelTest for MemoTest {
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_b.wallets().user1(),
+            &chains.node_b.wallets().user1().address(),
             a_to_b_amount,
             &denom_b.as_ref(),
         )?;

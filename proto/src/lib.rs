@@ -10,12 +10,15 @@
 #![forbid(unsafe_code)]
 #![doc(html_root_url = "https://docs.rs/ibc-proto/0.16.0")]
 
+pub mod google;
+
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
 #[macro_use]
 extern crate core as std;
 
+#[macro_export]
 macro_rules! include_proto {
     ($path:literal) => {
         include!(concat!("prost/", $path));

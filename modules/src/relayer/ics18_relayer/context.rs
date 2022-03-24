@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::header::AnyHeader;
