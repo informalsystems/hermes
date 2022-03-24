@@ -81,6 +81,12 @@ pub struct CreateChannelCommand {
         help = "the version for the new channel"
     )]
     version: Option<String>,
+
+    #[clap(
+        long,
+        help = "indicates that a new client and connection will be created alongside the new channel"
+    )]
+    new_client_connection: bool,
 }
 
 impl Runnable for CreateChannelCommand {
