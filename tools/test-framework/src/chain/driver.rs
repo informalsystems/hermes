@@ -4,9 +4,8 @@
 
 use core::str::FromStr;
 use core::time::Duration;
+
 use eyre::eyre;
-use ibc::core::ics24_host::identifier::ChainId;
-use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use semver::Version;
 use serde_json as json;
 use std::fs;
@@ -15,6 +14,9 @@ use std::process::{Command, Stdio};
 use std::str;
 use toml;
 use tracing::debug;
+
+use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 
 use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::chain::version::get_chain_command_version;
@@ -27,6 +29,7 @@ use crate::util::file::pipe_to_file;
 use crate::util::random::random_u32;
 use crate::util::retry::assert_eventually_succeed;
 
+pub mod interchain;
 pub mod query_txs;
 pub mod tagged;
 pub mod transfer;
@@ -55,7 +58,7 @@ pub struct ChainDriver {
     */
     pub command_path: String,
 
-    pub command_version: Version,
+    pub command_version: Option<Version>,
 
     /**
        The ID of the chain.
@@ -105,6 +108,8 @@ impl ChainDriver {
         grpc_web_port: u16,
         p2p_port: u16,
     ) -> Result<Self, Error> {
+        // Assume we're on Gaia 6 if we can't get a version
+        // (eg. with `icad`, which returns an empty string).
         let command_version = get_chain_command_version(&command_path)?;
 
         Ok(Self {
@@ -187,6 +192,27 @@ impl ChainDriver {
             "init",
             self.chain_id.as_str(),
         ])?;
+
+        Ok(())
+    }
+
+    /**
+       Modify the Gaia genesis file.
+    */
+    pub fn update_genesis_file(
+        &self,
+        file: &str,
+        cont: impl FnOnce(&mut serde_json::Value) -> Result<(), Error>,
+    ) -> Result<(), Error> {
+        let config1 = self.read_file(&format!("config/{}", file))?;
+
+        let mut config2 = serde_json::from_str(&config1).map_err(handle_generic_error)?;
+
+        cont(&mut config2)?;
+
+        let config3 = serde_json::to_string_pretty(&config2).map_err(handle_generic_error)?;
+
+        self.write_file("config/genesis.json", &config3)?;
 
         Ok(())
     }
@@ -355,6 +381,13 @@ impl ChainDriver {
         Ok(())
     }
 
+    pub fn is_v6_or_later(&self) -> bool {
+        match &self.command_version {
+            Some(version) => version.major >= 6,
+            None => true,
+        }
+    }
+
     /**
        Start a full node by running in the background `gaiad start`.
 
@@ -381,7 +414,7 @@ impl ChainDriver {
             &format!("localhost:{}", self.grpc_web_port),
         ];
 
-        let args: Vec<&str> = if self.command_version.major >= 6 {
+        let args: Vec<&str> = if self.is_v6_or_later() {
             let mut list = base_args.to_vec();
             list.extend_from_slice(&extra_args);
             list
@@ -450,26 +483,23 @@ impl ChainDriver {
     */
     pub fn assert_eventual_wallet_amount(
         &self,
-        user: &Wallet,
+        wallet: &WalletAddress,
         target_amount: u64,
         denom: &Denom,
     ) -> Result<(), Error> {
         assert_eventually_succeed(
-            &format!(
-                "wallet reach {} amount {} {}",
-                user.address, target_amount, denom
-            ),
+            &format!("wallet reach {} amount {} {}", wallet, target_amount, denom),
             300,
             Duration::from_secs(1),
             || {
-                let amount = self.query_balance(&user.address, denom)?;
+                let amount = self.query_balance(wallet, denom)?;
 
                 if amount == target_amount {
                     Ok(())
                 } else {
                     Err(Error::generic(eyre!(
                         "current balance of account {} with amount {} does not match the target amount {}",
-                        user.address,
+                        wallet,
                         amount,
                         target_amount
                     )))

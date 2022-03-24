@@ -11,7 +11,7 @@ use crate::bootstrap::nary::chain::{
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::RelayerConfigOverride;
-use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::node::{run_nary_node_test, NaryNodeTest};
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
@@ -19,6 +19,7 @@ use crate::types::binary::chains::DropChainHandle;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::single::node::FullNode;
+use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`NaryChainTest`] with a `SIZE` number of
@@ -41,7 +42,11 @@ pub fn run_nary_chain_test<Test, Overrides, const SIZE: usize>(test: &Test) -> R
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
+        + NodeGenesisOverride
+        + RelayerConfigOverride
+        + SupervisorOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(&RunWithSupervisor::new(test)))
 }
@@ -66,7 +71,11 @@ pub fn run_self_connected_nary_chain_test<Test, Overrides, const SIZE: usize>(
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: TestConfigOverride + NodeConfigOverride + RelayerConfigOverride + SupervisorOverride,
+    Overrides: TestConfigOverride
+        + NodeConfigOverride
+        + NodeGenesisOverride
+        + RelayerConfigOverride
+        + SupervisorOverride,
 {
     run_nary_node_test(&RunSelfConnectedNaryChainTest::new(
         &RunWithSupervisor::new(test),
@@ -175,7 +184,9 @@ where
                 .clone()
                 .with_supervisor(|| self.test.run(config, relayer, chains))
         } else {
-            self.test.run(config, relayer, chains)
+            hang_on_error(config.hang_on_fail, || {
+                self.test.run(config, relayer, chains)
+            })
         }
     }
 }

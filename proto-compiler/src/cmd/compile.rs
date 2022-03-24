@@ -89,28 +89,32 @@ impl CompileCmd {
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
-        let attrs_serde = "#[derive(::serde::Serialize, ::serde::Deserialize)]";
+        let attrs_serde = r#"#[derive(::serde::Serialize, ::serde::Deserialize)]"#;
         let attrs_jsonschema =
             r#"#[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]"#;
-        let attrs_serde_ord =
-            "#[derive(::serde::Serialize, ::serde::Deserialize, Eq, PartialOrd, Ord)]";
-        let attrs_serde_eq = "#[derive(::serde::Serialize, ::serde::Deserialize, Eq)]";
-        let attrs_serde_default = "#[serde(default)]";
+        let attrs_ord = "#[derive(Eq, PartialOrd, Ord)]";
+        let attrs_eq = "#[derive(Eq)]";
+        let attrs_serde_default = r#"#[serde(default)]"#;
         let attrs_serde_base64 = r#"#[serde(with = "crate::base64")]"#;
         let attrs_jsonschema_str =
             r#"#[cfg_attr(feature = "json-schema", schemars(with = "String"))]"#;
 
         let compilation = tonic_build::configure()
             .build_client(true)
+            .compile_well_known_types(true)
             .client_mod_attribute(".", r#"#[cfg(feature = "client")]"#)
             .build_server(false)
             .format(true)
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
-            .type_attribute(".ibc.core.client.v1.Height", attrs_serde_ord)
+            .type_attribute(".google.protobuf.Any", attrs_serde)
+            .type_attribute(".google.protobuf.Timestamp", attrs_serde)
+            .type_attribute(".google.protobuf.Duration", attrs_serde)
+            .type_attribute(".ibc.core.client.v1", attrs_serde)
+            .type_attribute(".ibc.core.client.v1.Height", attrs_ord)
             .type_attribute(".ibc.core.client.v1.Height", attrs_jsonschema)
             .field_attribute(".ibc.core.client.v1.Height", attrs_serde_default)
-            .type_attribute(".ibc.core.commitment.v1.MerkleRoot", attrs_serde)
+            .type_attribute(".ibc.core.commitment.v1", attrs_serde)
             .type_attribute(".ibc.core.commitment.v1.MerkleRoot", attrs_jsonschema)
             .field_attribute(
                 ".ibc.core.commitment.v1.MerkleRoot.hash",
@@ -120,7 +124,6 @@ impl CompileCmd {
                 ".ibc.core.commitment.v1.MerkleRoot.hash",
                 attrs_jsonschema_str,
             )
-            .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_serde)
             .type_attribute(".ibc.core.commitment.v1.MerklePrefix", attrs_jsonschema)
             .field_attribute(
                 ".ibc.core.commitment.v1.MerklePrefix.key_prefix",
@@ -130,17 +133,21 @@ impl CompileCmd {
                 ".ibc.core.commitment.v1.MerklePrefix.key_prefix",
                 attrs_jsonschema_str,
             )
-            .type_attribute(".ibc.core.channel.v1.Channel", attrs_serde)
+            .type_attribute(".ibc.core.channel.v1", attrs_serde)
             .type_attribute(".ibc.core.channel.v1.Channel", attrs_jsonschema)
-            .type_attribute(".ibc.core.channel.v1.Counterparty", attrs_serde)
             .type_attribute(".ibc.core.channel.v1.Counterparty", attrs_jsonschema)
-            .type_attribute(".ibc.core.connection.v1.ConnectionEnd", attrs_serde)
+            .type_attribute(".ibc.core.connection.v1", attrs_serde)
             .type_attribute(".ibc.core.connection.v1.ConnectionEnd", attrs_jsonschema)
-            .type_attribute(".ibc.core.connection.v1.Counterparty", attrs_serde)
             .type_attribute(".ibc.core.connection.v1.Counterparty", attrs_jsonschema)
-            .type_attribute(".ibc.core.connection.v1.Version", attrs_serde)
             .type_attribute(".ibc.core.connection.v1.Version", attrs_jsonschema)
-            .type_attribute(".ics23.LeafOp", attrs_serde_eq)
+            .type_attribute(".ibc.core.types.v1", attrs_serde)
+            .type_attribute(".ibc.applications.transfer.v1", attrs_serde)
+            .type_attribute(
+                ".ibc.applications.interchain_accounts.controller.v1",
+                attrs_serde,
+            )
+            .type_attribute(".ics23", attrs_serde)
+            .type_attribute(".ics23.LeafOp", attrs_eq)
             .type_attribute(".ics23.LeafOp", attrs_jsonschema)
             .field_attribute(".ics23.LeafOp.prehash_key", attrs_serde_default)
             .field_attribute(".ics23.LeafOp.prefix", attrs_serde_base64)
@@ -150,12 +157,12 @@ impl CompileCmd {
             .field_attribute(".ics23.InnerOp.prefix", attrs_jsonschema_str)
             .field_attribute(".ics23.InnerOp.suffix", attrs_serde_base64)
             .field_attribute(".ics23.InnerOp.suffix", attrs_jsonschema_str)
-            .type_attribute(".ics23.InnerOp", attrs_serde_eq)
-            .type_attribute(".ics23.ProofSpec", attrs_serde_eq)
+            .type_attribute(".ics23.InnerOp", attrs_eq)
+            .type_attribute(".ics23.ProofSpec", attrs_eq)
             .type_attribute(".ics23.ProofSpec", attrs_jsonschema)
             .field_attribute(".ics23.ProofSpec.max_depth", attrs_serde_default)
             .field_attribute(".ics23.ProofSpec.min_depth", attrs_serde_default)
-            .type_attribute(".ics23.InnerSpec", attrs_serde_eq)
+            .type_attribute(".ics23.InnerSpec", attrs_eq)
             .type_attribute(".ics23.InnerSpec", attrs_jsonschema)
             .field_attribute(".ics23.InnerSpec.empty_child", attrs_serde_default)
             .field_attribute(".ics23.InnerSpec.empty_child", attrs_serde_base64)
@@ -230,14 +237,18 @@ impl CompileCmd {
 
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
-
+        let attrs_serde = r#"#[derive(::serde::Serialize, ::serde::Deserialize)]"#;
         let compilation = tonic_build::configure()
             .build_client(true)
+            .compile_well_known_types(true)
             .client_mod_attribute(".", r#"#[cfg(feature = "client")]"#)
             .build_server(false)
             .format(true)
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
+            .type_attribute(".cosmos.upgrade.v1beta1", attrs_serde)
+            .type_attribute(".cosmos.base.v1beta1", attrs_serde)
+            .type_attribute(".cosmos.base.query.v1beta1", attrs_serde)
             .compile(&protos, &includes);
 
         match compilation {

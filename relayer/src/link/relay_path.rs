@@ -3,8 +3,8 @@ use alloc::collections::VecDeque;
 use std::thread;
 use std::time::Instant;
 
+use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use prost_types::Any;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use ibc::{

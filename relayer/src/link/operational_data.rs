@@ -3,8 +3,8 @@ use core::fmt;
 use core::iter;
 use std::time::Instant;
 
+use ibc_proto::google::protobuf::Any;
 use nanoid::nanoid;
-use prost_types::Any;
 use tracing::{debug, info};
 
 use ibc::events::IbcEvent;

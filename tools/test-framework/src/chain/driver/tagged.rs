@@ -2,14 +2,17 @@
    Methods for tagged version of the chain driver.
 */
 
+use serde::Serialize;
 use serde_json as json;
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
+use crate::prelude::TaggedConnectionIdRef;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
-use crate::types::wallet::{Wallet, WalletAddress};
+use crate::types::wallet::WalletAddress;
 
+use super::interchain::{interchain_submit, query_interchain_account, register_interchain_account};
 use super::query_txs::query_recipient_transactions;
 use super::transfer::{local_transfer_token, transfer_token};
 use super::ChainDriver;
@@ -45,7 +48,7 @@ pub trait TaggedChainDriverExt<Chain> {
     */
     fn assert_eventual_wallet_amount(
         &self,
-        user: &MonoTagged<Chain, &Wallet>,
+        user: &MonoTagged<Chain, &WalletAddress>,
         target_amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<(), Error>;
@@ -98,6 +101,25 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error>;
+
+    fn register_interchain_account<Counterparty>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+    ) -> Result<(), Error>;
+
+    fn query_interchain_account<Counterparty>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+    ) -> Result<MonoTagged<Counterparty, WalletAddress>, Error>;
+
+    fn interchain_submit<Counterparty, T: Serialize>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+        msg: &T,
+    ) -> Result<(), Error>;
 }
 
 impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
@@ -111,7 +133,7 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
 
     fn assert_eventual_wallet_amount(
         &self,
-        user: &MonoTagged<Chain, &Wallet>,
+        user: &MonoTagged<Chain, &WalletAddress>,
         target_amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
     ) -> Result<(), Error> {
@@ -160,5 +182,31 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error> {
         query_recipient_transactions(self.value(), recipient_address.value())
+    }
+
+    fn register_interchain_account<Counterparty>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+    ) -> Result<(), Error> {
+        register_interchain_account(self.value(), from.value(), connection_id.value())
+    }
+
+    fn query_interchain_account<Counterparty>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+    ) -> Result<MonoTagged<Counterparty, WalletAddress>, Error> {
+        query_interchain_account(self.value(), from.value(), connection_id.value())
+            .map(MonoTagged::new)
+    }
+
+    fn interchain_submit<Counterparty, T: Serialize>(
+        &self,
+        from: &MonoTagged<Chain, &WalletAddress>,
+        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
+        msg: &T,
+    ) -> Result<(), Error> {
+        interchain_submit(self.value(), from.value(), connection_id.value(), msg)
     }
 }

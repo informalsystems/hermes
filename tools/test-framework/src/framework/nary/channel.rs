@@ -13,7 +13,7 @@ use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::RelayerConfigOverride;
 use crate::framework::binary::channel::{BinaryChannelTest, ChannelOrderOverride};
 use crate::framework::binary::connection::ConnectionDelayOverride;
-use crate::framework::binary::node::NodeConfigOverride;
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::chain::RunNaryChainTest;
 use crate::framework::nary::connection::{NaryConnectionTest, RunNaryConnectionTest};
 use crate::framework::nary::node::run_nary_node_test;
@@ -23,6 +23,7 @@ use crate::types::config::TestConfig;
 use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::nary::channel::ConnectedChannels;
 use crate::types::nary::connection::ConnectedConnections;
+use crate::util::suspend::hang_on_error;
 
 pub fn run_nary_channel_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Result<(), Error>
 where
@@ -30,6 +31,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
         + ConnectionDelayOverride
@@ -47,6 +49,7 @@ where
     Test: HasOverrides<Overrides = Overrides>,
     Overrides: TestConfigOverride
         + NodeConfigOverride
+        + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
         + ConnectionDelayOverride
@@ -216,7 +219,9 @@ where
                 .clone()
                 .with_supervisor(|| self.test.run(config, relayer, chains, channels))
         } else {
-            self.test.run(config, relayer, chains, channels)
+            hang_on_error(config.hang_on_fail, || {
+                self.test.run(config, relayer, chains, channels)
+            })
         }
     }
 }

@@ -20,7 +20,7 @@ pub fn run_binary_node_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + TestConfigOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride + TestConfigOverride,
 {
     run_basic_test(&RunBinaryNodeTest { test })
 }
@@ -29,7 +29,7 @@ pub fn run_single_node_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + TestConfigOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride + TestConfigOverride,
 {
     run_basic_test(&RunSingleNodeTest { test })
 }
@@ -71,6 +71,25 @@ pub trait NodeConfigOverride {
 }
 
 /**
+   An internal trait that can be implemented by test cases to override the
+   genesis file before the chain gets initialized.
+
+   The config is in the dynamic-typed [`serde_json::Value`] format, as we do not
+   want to model the full format of the genesis file in Rust.
+
+   This is called by [`RunBinaryNodeTest`] before the full nodes are
+   initialized and started.
+
+   Test writers should implement
+   [`TestOverrides`](crate::framework::overrides::TestOverrides)
+   for their test cases instead of implementing this trait directly.
+*/
+pub trait NodeGenesisOverride {
+    /// Modify the genesis file
+    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error>;
+}
+
+/**
    A wrapper type that lifts a test case that implements [`BinaryNodeTest`]
    into a test case that implements [`BasicTest`].
 */
@@ -88,23 +107,27 @@ impl<'a, Test, Overrides> BasicTest for RunBinaryNodeTest<'a, Test>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node_a = bootstrap_single_node(builder, "alpha", |config| {
-            self.test.get_overrides().modify_node_config(config)
-        })?;
+        let node_a = bootstrap_single_node(
+            builder,
+            "alpha",
+            |config| self.test.get_overrides().modify_node_config(config),
+            |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+        )?;
 
-        let node_b = bootstrap_single_node(builder, "beta", |config| {
-            self.test.get_overrides().modify_node_config(config)
-        })?;
+        let node_b = bootstrap_single_node(
+            builder,
+            "beta",
+            |config| self.test.get_overrides().modify_node_config(config),
+            |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+        )?;
 
         let _node_process_a = node_a.process.clone();
         let _node_process_b = node_b.process.clone();
 
-        self.test
-            .run(config, node_a, node_b)
-            .map_err(config.hang_on_error())?;
+        self.test.run(config, node_a, node_b)?;
 
         Ok(())
     }
@@ -114,18 +137,19 @@ impl<'a, Test, Overrides> BasicTest for RunSingleNodeTest<'a, Test>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node = bootstrap_single_node(builder, "alpha", |config| {
-            self.test.get_overrides().modify_node_config(config)
-        })?;
+        let node = bootstrap_single_node(
+            builder,
+            "alpha",
+            |config| self.test.get_overrides().modify_node_config(config),
+            |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+        )?;
 
         let _node_process = node.process.clone();
 
-        self.test
-            .run(config, node.clone(), node)
-            .map_err(config.hang_on_error())?;
+        self.test.run(config, node.clone(), node)?;
 
         Ok(())
     }
