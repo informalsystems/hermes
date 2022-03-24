@@ -191,18 +191,18 @@ fn spawn_batch_worker<Chain: ChainHandle>(
         move || -> Result<Next, TaskError<Infallible>> {
             let mut selector = RecvMultiple::new(&subscriptions);
 
-            while let Some((chain, batch)) = selector.recv_multiple() {
-                handle_batch(
-                    &config.acquire_read(),
-                    &mut registry.write(),
-                    &mut client_state_filter.acquire_write(),
-                    &mut workers.acquire_write(),
-                    chain.clone(),
-                    batch,
-                );
+            loop {
+                if let Some((chain, batch)) = selector.recv_multiple() {
+                    handle_batch(
+                        &config.acquire_read(),
+                        &mut registry.write(),
+                        &mut client_state_filter.acquire_write(),
+                        &mut workers.acquire_write(),
+                        chain.clone(),
+                        batch,
+                    );
+                }
             }
-
-            Ok(Next::Continue)
         },
     )
 }
