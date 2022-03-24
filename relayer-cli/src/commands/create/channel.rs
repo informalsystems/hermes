@@ -92,25 +92,32 @@ pub struct CreateChannelCommand {
 
 impl Runnable for CreateChannelCommand {
     fn run(&self) {
-        match &self.chain_b_id {
-            None => self.run_reusing_connection(),
-            Some(chain_b) => self.run_using_new_connection(chain_b),
+        match &self.connection_a {
+            Some(conn) => self.run_reusing_connection(conn),
+            None => match &self.chain_b_id {
+                Some(chain_b) => {
+                    if self.new_client_connection {
+                        self.run_using_new_connection(chain_b)
+                    } else {
+                        Output::error(
+                                "The `--new-client-connection` flag is required if invoking with `<chain-b-id>`".to_string()
+                            )
+                            .exit();
+                    }
+                }
+                None => {
+                    Output::error("Missing one of `<chain-b-id>` or `<connection-a>`".to_string())
+                        .exit()
+                }
+            },
         }
     }
 }
 
 impl CreateChannelCommand {
-    // Creates a new channel, as well as a new underlying connection and clients.
+    /// Creates a new channel, as well as a new underlying connection and clients.
     fn run_using_new_connection(&self, chain_b_id: &ChainId) {
         let config = app_config();
-
-        // Bail with an explicit error. The user might be expecting to use this connection.
-        if self.connection_a.is_some() {
-            Output::error(
-                "Option `<connection-a>` is incompatible with `<chain-b-id>`".to_string(),
-            )
-            .exit();
-        }
 
         let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
@@ -142,23 +149,13 @@ impl CreateChannelCommand {
         Output::success(channel).exit();
     }
 
-    // Creates a new channel, reusing an already existing connection and its clients.
-    fn run_reusing_connection(&self) {
+    /// Creates a new channel, reusing an already existing connection and its clients.
+    fn run_reusing_connection(&self, connection_a_id: &ConnectionId) {
         let config = app_config();
 
         // Validate & spawn runtime for side a.
         let chain_a = spawn_chain_runtime(&config, &self.chain_a_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
-
-        // Unwrap the identifier of the connection on side a.
-        let connection_a_id = match &self.connection_a {
-            Some(c) => c,
-            None => Output::error(
-                "Option `--connection-a` is necessary when <chain-b-id> argument is missing"
-                    .to_string(),
-            )
-            .exit(),
-        };
 
         // Query the connection end.
         let height = Height::new(chain_a.id().version(), 0);
