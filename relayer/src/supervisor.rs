@@ -29,7 +29,7 @@ use crate::{
     util::{
         lock::LockExt,
         task::{spawn_background_task, Next, TaskError, TaskHandle},
-        try_recv_multiple,
+        RecvMultiple,
     },
     worker::WorkerMap,
 };
@@ -156,10 +156,7 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     )
     .spawn_workers(scan);
 
-    let subscriptions = Arc::new(RwLock::new(init_subscriptions(
-        &config.acquire_read(),
-        &mut registry.write(),
-    )?));
+    let subscriptions = init_subscriptions(&config.acquire_read(), &mut registry.write())?;
 
     let batch_task = spawn_batch_worker(
         config.clone(),
@@ -186,13 +183,15 @@ fn spawn_batch_worker<Chain: ChainHandle>(
     registry: SharedRegistry<Chain>,
     client_state_filter: Arc<RwLock<FilterPolicy>>,
     workers: Arc<RwLock<WorkerMap>>,
-    subscriptions: Arc<RwLock<Vec<(Chain, Subscription)>>>,
+    subscriptions: Vec<(Chain, Subscription)>,
 ) -> TaskHandle {
     spawn_background_task(
         tracing::Span::none(),
-        Some(Duration::from_millis(500)),
+        None,
         move || -> Result<Next, TaskError<Infallible>> {
-            if let Some((chain, batch)) = try_recv_multiple(&subscriptions.acquire_read()) {
+            let mut selector = RecvMultiple::new(&subscriptions);
+
+            while let Some((chain, batch)) = selector.recv_multiple() {
                 handle_batch(
                     &config.acquire_read(),
                     &mut registry.write(),
