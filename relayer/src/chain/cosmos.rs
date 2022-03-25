@@ -14,21 +14,21 @@ use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
+use k256::pkcs8::der::Encodable;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params as ConsensusParams;
-use tendermint::{
-    abci::{Code, Event, Path as TendermintABCIPath},
-    node::info::TxIndexStatus,
-};
+use tendermint::node::info::TxIndexStatus;
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::Url;
 use tendermint_rpc::{
-    endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
+    abci::Code, abci::Path as TendermintABCIPath, endpoint::broadcast::tx_sync::Response,
+    endpoint::status, Client, HttpClient, Order,
 };
+use tendermint_rpc_abci::Event;
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, info, span, trace, warn, Level};
@@ -429,7 +429,10 @@ impl CosmosSdkChain {
             }
 
             // Gas estimation succeeded. Broadcasting failed with a retry-able error.
-            Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
+            Ok(response)
+                if response.code
+                    == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR.try_into().unwrap()) =>
+            {
                 if retry_counter < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
                     let retry_counter = retry_counter + 1;
                     warn!("failed at broadcast step with incorrect account sequence. retrying ({}/{})",
@@ -457,20 +460,20 @@ impl CosmosSdkChain {
             Ok(response) => {
                 // Complete success.
                 match response.code {
-                    tendermint::abci::Code::Ok => {
+                    tendermint_rpc::abci::Code::Ok => {
                         debug!("broadcast_tx_sync: {:?}", response);
 
                         self.incr_account_sequence();
                         Ok(response)
                     }
                     // Gas estimation succeeded, but broadcasting failed with unrecoverable error.
-                    tendermint::abci::Code::Err(code) => {
+                    tendermint_rpc::abci::Code::Err(code) => {
                         // Avoid increasing the account s.n. if CheckTx failed
                         // Log the error
                         error!(
                             "broadcast_tx_sync: {:?}: diagnostic: {:?}",
                             response,
-                            sdk_error_from_tx_sync_error_code(code)
+                            sdk_error_from_tx_sync_error_code(code.into())
                         );
                         Ok(response)
                     }
@@ -2243,6 +2246,10 @@ fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx
 
     let mut result = vec![];
     for event in deliver_tx_result.events {
+        let event = Event {
+            type_str: event.type_str,
+            attributes: event.attributes,
+        };
         if let Some(ibc_ev) = from_tx_response_event(height, &event) {
             result.push(ibc_ev);
         }

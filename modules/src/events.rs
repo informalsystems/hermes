@@ -6,7 +6,7 @@ use core::str::FromStr;
 use flex_error::{define_error, TraceError};
 use prost::alloc::fmt::Formatter;
 use serde_derive::{Deserialize, Serialize};
-use tendermint::abci::Event as AbciEvent;
+use tendermint_rpc_abci::Event as AbciEvent;
 
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events as ClientEvents;
@@ -320,7 +320,10 @@ impl TryFrom<IbcEvent> for AbciEvent {
 }
 
 // This is tendermint specific
-pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -> Option<IbcEvent> {
+pub fn from_tx_response_event(
+    height: Height,
+    event: &tendermint_rpc_abci::Event,
+) -> Option<IbcEvent> {
     // Return the first hit we find
     if let Some(mut client_res) = ClientEvents::try_from_tx(event) {
         client_res.set_height(height);

@@ -21,8 +21,8 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.13.0-rc.0", path = "../modules", features = ["std", "clock"] }
-ibc-proto     = { version = "0.16.0", path = "../proto", default-features = false, features = ["std", "tonic"] }
+ibc           = { version = "0.13.0-rc.0", path = "../modules" }
+ibc-proto     = { version = "0.16.0", path = "../proto", default-features = false, features = ["tonic", "client"] }
 ibc-telemetry = { version = "0.13.0-rc.0", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
@@ -39,7 +39,7 @@ prost = { version = "0.9" }
 prost-types = { version = "0.9" }
 futures = "0.3.21"
 crossbeam-channel = "0.5.4"
-k256 = { version = "0.10.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
+k256 = { version = "0.11.0-pre.0", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
 bitcoin = { version = "=0.27", features = ["use-serde"] }
 tiny-bip39 = "0.8.0"
@@ -64,33 +64,14 @@ nanoid = "0.4.0"
 regex = "1.5.5"
 moka = "0.7.2"
 
-[dependencies.num-bigint]
-version = "0.4"
-features = ["serde"]
-
-[dependencies.num-rational]
-version = "0.4.0"
-features = ["num-bigint", "serde"]
-
-[dependencies.tendermint]
-version = "=0.23.5"
-features = ["secp256k1"]
-
-[dependencies.tendermint-rpc]
-version = "=0.23.5"
-features = ["http-client", "websocket-client"]
-
-[dependencies.tendermint-light-client]
-version = "=0.23.5"
-default-features = false
-features = ["rpc-client", "secp256k1", "unstable"]
-
-[dependencies.tendermint-light-client-verifier]
-version = "=0.23.5"
-default-features = false
-
-[dependencies.tendermint-proto]
-version = "=0.23.5"
+tendermint-proto = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets" }
+tendermint = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets", features = ["secp256k1"] }
+tendermint-rpc = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets", features = ["http-client", "websocket-client"] }
+tendermint-light-client = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets", features = ["unstable"] }
+tendermint-light-client-verifier = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets" }
+num-bigint = { version = "0.4", features = ["serde"] }
+num-rational = { version = "0.4.0", features = ["num-bigint", "serde"] }
+tendermint-rpc-abci = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets" }
 
 [dev-dependencies]
 ibc = { version = "0.13.0-rc.0", path = "../modules", features = ["mocks"] }
@@ -100,4 +81,4 @@ tracing-subscriber = { version = "0.3.9", features = ["fmt", "env-filter", "json
 test-log = { version = "0.2.8", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.5" }
+tendermint-testgen = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets" }

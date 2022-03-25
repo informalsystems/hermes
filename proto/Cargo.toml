@@ -30,13 +30,10 @@ tonic       = { version = "0.6", optional = true, default-features = false }
 serde       = { version = "1.0", default-features = false }
 schemars    = { version = "0.8", optional = true }
 base64      = { version = "0.13", default-features = false, features = ["alloc"] }
-
-[dependencies.tendermint-proto]
-version          = "=0.23.5"
-default-features = false
+tendermint-proto = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets", default-features = false }
 
 [features]
-default     = ["std", "client"]
-std         = []
+default     = ["std"]
+std         = ["prost/std", "prost-types/std", "bytes/std", "serde/std", "base64/std", "tendermint-proto/std"]
 client      = ["std", "tonic", "tonic/codegen", "tonic/transport", "tonic/prost"]
 json-schema = ["std", "schemars"]

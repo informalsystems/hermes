@@ -89,7 +89,7 @@ pub struct GetNodeInfoRequest {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetNodeInfoResponse {
     #[prost(message, optional, tag = "1")]
-    pub default_node_info: ::core::option::Option<::tendermint_proto::p2p::DefaultNodeInfo>,
+    pub default_node_info: ::core::option::Option<::tendermint_proto::p2p::NodeInfo>,
     #[prost(message, optional, tag = "2")]
     pub application_version: ::core::option::Option<VersionInfo>,
 }

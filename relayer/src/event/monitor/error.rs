@@ -53,7 +53,9 @@ impl Error {
         use tendermint_rpc::error::ErrorDetail;
 
         match e.detail() {
-            ErrorDetail::Server(detail) if detail.reason.contains("subscription was cancelled") => {
+            ErrorDetail::WebSocket(detail)
+                if detail.reason.contains("subscription was cancelled") =>
+            {
                 Self::subscription_cancelled(e)
             }
             _ => Self::rpc(e),

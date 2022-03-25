@@ -26,7 +26,7 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.13.0-rc.0", path = "../modules", features = ["std", "clock"] }
+ibc              = { version = "0.13.0-rc.0", path = "../modules" }
 ibc-relayer      = { version = "0.13.0-rc.0", path = "../relayer" }
 ibc-proto        = { version = "0.16.0", path = "../proto" }
 ibc-telemetry    = { version = "0.13.0-rc.0", path = "../telemetry", optional = true }
@@ -57,27 +57,12 @@ atty = "0.2.14"
 flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
 signal-hook = "0.3.13"
 
-[dependencies.tendermint-proto]
-version = "=0.23.5"
-
-[dependencies.tendermint]
-version = "=0.23.5"
-features = ["secp256k1"]
-
-[dependencies.tendermint-rpc]
-version = "=0.23.5"
-features = ["http-client", "websocket-client"]
-
-[dependencies.tendermint-light-client]
-version = "=0.23.5"
-features = ["unstable"]
-
-[dependencies.tendermint-light-client-verifier]
-version = "=0.23.5"
-
-[dependencies.abscissa_core]
-version = "=0.6.0"
-features = ["options"]
+tendermint-proto = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets" }
+tendermint = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets", features = ["secp256k1"] }
+tendermint-rpc = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets", features = ["http-client", "websocket-client"] }
+tendermint-light-client = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets", features = ["unstable"] }
+tendermint-light-client-verifier = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets" }
+abscissa_core = { version = "=0.6.0", features = ["options"] }
 
 [dev-dependencies]
 abscissa_core = { version = "=0.6.0", features = ["testing"] }

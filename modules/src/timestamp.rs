@@ -74,7 +74,7 @@ impl Timestamp {
     }
 
     /// Returns a `Timestamp` representation of the current time.
-    #[cfg(feature = "clock")]
+    #[cfg(feature = "std")]
     pub fn now() -> Timestamp {
         Time::now().into()
     }

@@ -18,8 +18,8 @@ ibc             = { path = "../../modules" }
 ibc-relayer     = { path = "../../relayer" }
 ibc-relayer-cli = { path = "../../relayer-cli" }
 ibc-proto       = { path = "../../proto" }
-tendermint      = { version = "=0.23.5" }
-tendermint-rpc  = { version = "=0.23.5", features = ["http-client", "websocket-client"] }
+tendermint      = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets"}
+tendermint-rpc  = { git = "https://github.com/Wizdave97/tendermint-rs.git", branch = "david/no_std-and-std-targets", features = ["http-client", "websocket-client"] }
 
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.32"
