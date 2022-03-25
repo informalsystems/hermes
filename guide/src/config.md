@@ -51,6 +51,47 @@ Here is a full example of a configuration file with two chains configured:
 {{#include ../../config.toml}}
 ```
 
+## Support for Interchain Accounts
+
+As of version 0.13.0, Hermes supports relaying on [Interchain Accounts][ica] channels.
+
+If the `packet_filter` option in the chain configuration is disabled, then
+Hermes will relay on all existing and future channels, including ICA channels.
+
+There are two kinds of ICA channels:
+
+1. The host channels, whose port is `icahost`
+2. The controller channels, whose port starts with `icacontroller-` followed
+   by the owner account address. [See the spec for more details][ica].
+
+If you wish to only relay on a few specific standard channels (here `channel-0` and `channel-1`),
+but also relay on all ICA channels, you can specify the following packet filter:
+
+> Note the use of wildcards in the port and channel identifiers
+> to match over all the possible ICA ports.
+
+```toml
+[chains.packet_filter]
+policy = 'allow'
+list = [
+  ['ica*', '*'], # allow relaying on all channels whose port starts with `ica`
+  ['transfer', 'channel-0'],
+  ['transfer', 'channel-1'],
+  # Add any other port/channel pairs you wish to relay on
+]
+```
+
+If you wish to relay on all channels but not on ICA channels, you can use
+the following packet filter configuration:
+
+```toml
+[chains.packet_filter]
+policy = 'deny'
+list = [
+  ['ica*', '*'], # deny relaying on all channels whose port starts with `ica`
+]
+```
+
 ## Update the configuration without restarting Hermes
 
 > ⚠️  This feature has been removed in Hermes v0.12.0.
@@ -134,3 +175,4 @@ on [inspecting the relayer state](help.md#inspecting-the-relayer-state).
 Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
 
 [log-level]: ./help.md#parametrizing-the-log-output-level
+[ica]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
