@@ -28,8 +28,8 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 ///
 /// There are two possible ways to invoke this command:
 ///
-/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Chain-B-ID> --new-client-connection` to indicate
-/// that a new connection/client pair is being created as part of this new channel.
+/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Chain-B-ID> --new-client-connection`
+/// to indicate that a new connection/client pair is being created as part of this new channel.
 /// This brings up an interactive yes/no prompt to ensure that the operator at least
 /// considers the fact that they're initializing a new connection with the channel.
 ///
