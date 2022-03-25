@@ -7,9 +7,11 @@ use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_relayer::chain::client::ClientSettings;
+use ibc_relayer::chain::cosmos;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
-use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
+use ibc_relayer::foreign_client::ForeignClient;
 use tendermint_light_client_verifier::types::TrustThreshold;
 
 use crate::application::app_config;
@@ -69,15 +71,15 @@ impl Runnable for TxCreateClientCmd {
 
         let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
 
-        let options = CreateOptions {
+        let settings = ClientSettings::Cosmos(cosmos::client::Settings {
             max_clock_drift: self.clock_drift.map(Into::into),
             trusting_period: self.trusting_period.map(Into::into),
             trust_threshold: self.trust_threshold,
-        };
+        });
 
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client
-            .build_create_client_and_send(options)
+            .build_create_client_and_send(settings)
             .map_err(Error::foreign_client);
 
         match res {

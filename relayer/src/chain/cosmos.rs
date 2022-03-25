@@ -100,6 +100,7 @@ use super::tx::TrackedMsgs;
 use super::{ChainEndpoint, HealthCheck, QueryResponse, StatusResponse};
 
 pub mod account;
+pub mod client;
 pub mod compatibility;
 pub mod version;
 
@@ -2079,18 +2080,28 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
         settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
+        let settings = match settings {
+            ClientSettings::Cosmos(s) => s,
+        };
+        let max_clock_drift = settings
+            .max_clock_drift
+            .expect("`fill_in_from_chain_configs` should have been called");
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = settings
             .trusting_period
             .unwrap_or_else(|| self.trusting_period(unbonding_period));
+        let trust_threshold = settings
+            .trust_threshold
+            .unwrap_or(self.config.trust_threshold)
+            .into();
 
         // Build the client state.
         ClientState::new(
             self.id().clone(),
-            settings.trust_threshold.into(),
+            trust_threshold,
             trusting_period,
             unbonding_period,
-            settings.max_clock_drift,
+            max_clock_drift,
             height,
             self.config.proof_specs.clone(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],

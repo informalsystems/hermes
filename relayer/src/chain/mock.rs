@@ -353,16 +353,26 @@ impl ChainEndpoint for MockChain {
         height: Height,
         settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
+        let settings = match settings {
+            ClientSettings::Cosmos(s) => s,
+        };
+        let max_clock_drift = settings
+            .max_clock_drift
+            .expect("`fill_in_from_chain_configs` should have been called");
         let trusting_period = settings
             .trusting_period
             .unwrap_or_else(|| self.trusting_period());
+        let trust_threshold = settings
+            .trust_threshold
+            .unwrap_or(self.config.trust_threshold)
+            .into();
 
         let client_state = TendermintClientState::new(
             self.id().clone(),
-            settings.trust_threshold.into(),
+            trust_threshold,
             trusting_period,
             self.trusting_period().add(Duration::from_secs(1000)),
-            settings.max_clock_drift,
+            max_clock_drift,
             height,
             ProofSpecs::default(),
             vec!["upgrade/upgradedClient".to_string()],

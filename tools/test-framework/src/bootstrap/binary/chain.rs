@@ -5,6 +5,7 @@
 
 use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::ClientId;
+use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
@@ -128,7 +129,7 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     for i in 0..random_u64_range(1, 6) {
         debug!("creating new client id {} on chain {}", i + 1, chain_b.id());
-        foreign_client.build_create_client_and_send(Default::default())?;
+        foreign_client.build_create_client_and_send(ClientSettings::Cosmos(Default::default()))?;
     }
 
     Ok(())
@@ -160,7 +161,8 @@ pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     let foreign_client =
         ForeignClient::restore(ClientId::default(), chain_b.clone(), chain_a.clone());
 
-    let event = foreign_client.build_create_client_and_send(Default::default())?;
+    let event =
+        foreign_client.build_create_client_and_send(ClientSettings::Cosmos(Default::default()))?;
     let client_id = extract_client_id(&event)?.clone();
 
     info!(
