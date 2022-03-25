@@ -1,5 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+
+use console::style;
 use dialoguer::Confirm;
 
 use ibc::core::ics02_client::client_state::ClientState;
@@ -18,7 +20,8 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
-static PROMPT: &str = "Are you sure you want new clients & connections to be created? Hermes will use default security parameters.\nHint: consider using the default invocation\n`hermes create channel --port-a <PORT-ID> --port-b <PORT-ID> <CHAIN-A-ID> <CONNECTION-A-ID>`\nto re-use a pre-existing connection.";
+static PROMPT: &str = "Are you sure you want new clients & connections to be created? Hermes will use default security parameters.";
+static HINT: &str = "Consider using the default invocation\n\nhermes create channel --port-a <PORT-ID> --port-b <PORT-ID> <CHAIN-A-ID> <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
 
 /// The data structure that represents all the possible options when invoking
 /// the `create channel` CLI command.
@@ -100,7 +103,16 @@ impl Runnable for CreateChannelCommand {
             None => match &self.chain_b_id {
                 Some(chain_b) => {
                     if self.new_client_connection {
-                        match Confirm::new().with_prompt(PROMPT).interact() {
+                        match Confirm::new()
+                            .with_prompt(format!(
+                                "{}: {}\n{}: {}",
+                                style("WARN").yellow(),
+                                PROMPT,
+                                style("Hint").cyan(),
+                                HINT
+                            ))
+                            .interact()
+                        {
                             Ok(confirm) => {
                                 if confirm {
                                     self.run_using_new_connection(chain_b);
