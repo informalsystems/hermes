@@ -27,17 +27,17 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 ///
 /// There are two possible ways to invoke this command:
 ///
-/// `create channel --port-a --port-b <Chain-A-ID> <Chain-B-ID> --new-client-connection` to indicate
+/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Chain-B-ID> --new-client-connection` to indicate
 /// that a new connection/client pair is being created as part of this new channel.
-/// This will bring up an interactive yes/no prompt so that the operator at least has to
-/// consider the fact that they're initializing a new connection with the channel.
+/// This brings up an interactive yes/no prompt to ensure that the operator at least
+/// considers the fact that they're initializing a new connection with the channel.
 ///
-/// `create channel --port-a --port-b <Chain-A-ID> <Connection-ID>` is the default
-/// way in which this command should be used, specifying a `connection-id` for this new channel
-/// to re-use. The command expects that `connection-ID` is associated with Chain-A.
+/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Connection-ID>` is the default
+/// way in which this command should be used, specifying a `Connection-ID` for this new channel
+/// to re-use. The command expects that `Connection-ID` is associated with chain A.
 ///
-/// Note that `connection-ID`s have to be considered based off of the chain's perspective. Although
-/// chain A and chain B might refer to the connection with different names, they are referring
+/// Note that `Connection-ID`s have to be considered based off of the chain's perspective. Although
+/// chain A and chain B might refer to the connection with different names, they are actually referring
 /// to the same connection.
 #[derive(Clone, Command, Debug, Parser)]
 #[clap(disable_version_flag = true)]
