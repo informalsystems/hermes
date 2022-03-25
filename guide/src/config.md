@@ -48,70 +48,7 @@ please refer to the [Keys](./commands/keys/index.md) sections in order to learn 
 Here is a full example of a configuration file with two chains configured:
 
 ```toml
-[global]
-log_level = 'info'
-
-[mode]
-
-[mode.clients]
-enabled = true
-refresh = true
-misbehaviour = true
-
-[mode.connections]
-enabled = false
-
-[mode.channels]
-enabled = false
-
-[mode.packets]
-enabled = true
-clear_interval = 100
-clear_on_start = true
-tx_confirmation = true
-
-[rest]
-enabled = true
-host = '127.0.0.1'
-port = 3000
-
-[telemetry]
-enabled = true
-host = '127.0.0.1'
-port = 3001
-
-[[chains]]
-id = 'ibc-0'
-rpc_addr = 'http://127.0.0.1:26657'
-grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://localhost:26657/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 2000000
-fee_granter = ''
-gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[[chains]]
-id = 'ibc-1'
-rpc_addr = 'http://127.0.0.1:26557'
-grpc_addr = 'http://127.0.0.1:9091'
-websocket_addr = 'ws://localhost:26557/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 2000000
-gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+{{#include ../../config.toml}}
 ```
 
 ## Update the configuration without restarting Hermes
