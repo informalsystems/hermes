@@ -50,8 +50,8 @@ pub fn bootstrap_single_node(
     chain_driver.update_genesis_file("genesis.json", genesis_modifier)?;
 
     let validator = chain_driver.add_random_wallet("validator")?;
-    let relayer1 = chain_driver.add_random_wallet("relayer")?;
-    let relayer2 = chain_driver.add_random_wallet("relayer")?;
+    let relayer1 = chain_driver.add_random_wallet("relayer1")?;
+    let relayer2 = chain_driver.add_random_wallet("relayer2")?;
     let user1 = chain_driver.add_random_wallet("user1")?;
     let user2 = chain_driver.add_random_wallet("user2")?;
 

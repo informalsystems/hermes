@@ -10,12 +10,12 @@ use ibc_relayer::registry::SharedRegistry;
 use std::sync::Arc;
 use std::sync::RwLock;
 
-use crate::bootstrap::binary::chain::{
-    add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client,
-    save_relayer_config,
-};
+use crate::bootstrap::binary::chain::bootstrap_foreign_client;
 use crate::error::{handle_generic_error, Error};
-use crate::relayer::driver::{RelayerDriver, new_registry};
+use crate::relayer::driver::RelayerDriver;
+use crate::relayer::spawn::{
+    add_chain_config, add_keys_to_chain_handle, new_registry, save_relayer_config,
+};
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::{DynamicConnectedChains, NaryConnectedChains};
 use crate::types::single::node::FullNode;

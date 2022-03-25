@@ -488,10 +488,7 @@ impl ChainDriver {
         denom: &Denom,
     ) -> Result<(), Error> {
         assert_eventually_succeed(
-            &format!(
-                "wallet reach {} amount {} {}",
-                wallet, target_amount, denom
-            ),
+            &format!("wallet reach {} amount {} {}", wallet, target_amount, denom),
             60,
             Duration::from_secs(1),
             || {

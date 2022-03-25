@@ -3,12 +3,15 @@
 */
 
 use ibc_relayer::chain::handle::CountingAndCachingChainHandle;
-use ibc_relayer::config::SharedConfig;
+use ibc_relayer::config::{Config, SharedConfig};
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
+use ibc_relayer::util::lock::LockExt;
 use std::path::PathBuf;
+use std::sync::{Arc, RwLock};
 
 use crate::error::Error;
+use crate::relayer::spawn::new_registry;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::util::suspend::hang_on_error;
 
@@ -84,8 +87,21 @@ impl RelayerDriver {
         cont().map_err(hang_on_error(self.hang_on_fail))
     }
 
-    pub fn fork(&self) -> Self {
-        todo!()
+    pub fn fork(&self, modify_config: impl FnOnce(&mut Config)) -> Self {
+        let mut raw_config: Config = self.config.acquire_read().clone();
+
+        modify_config(&mut raw_config);
+
+        let config = Arc::new(RwLock::new(raw_config));
+
+        let registry = new_registry(config.clone());
+
+        RelayerDriver {
+            config_path: self.config_path.clone(),
+            config,
+            registry,
+            hang_on_fail: self.hang_on_fail,
+        }
     }
 }
 
@@ -93,12 +109,4 @@ impl ExportEnv for RelayerDriver {
     fn export_env(&self, writer: &mut impl EnvWriter) {
         writer.write_env("RELAYER_CONFIG", &format!("{}", self.config_path.display()));
     }
-}
-
-/**
-   Create a new [`SharedRegistry`] that uses [`CountingAndCachingChainHandle`]
-   as the [`ChainHandle`] implementation.
-*/
-pub fn new_registry(config: SharedConfig) -> SharedRegistry<CountingAndCachingChainHandle> {
-    <SharedRegistry<CountingAndCachingChainHandle>>::new(config)
 }

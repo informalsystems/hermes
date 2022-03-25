@@ -24,4 +24,5 @@ pub mod connection;
 pub mod driver;
 pub mod foreign_client;
 pub mod refresh;
+pub mod spawn;
 pub mod transfer;
