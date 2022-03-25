@@ -67,7 +67,7 @@ There are two kinds of ICA channels:
 If you wish to only relay on a few specific standard channels (here `channel-0` and `channel-1`),
 but also relay on all ICA channels, you can specify the following packet filter:
 
-> Note the use of wildcards in the port and channel identifiers
+> Note the use of wildcards in the port and channel identifiers (`['ica*', '*']`)
 > to match over all the possible ICA ports.
 
 ```toml
