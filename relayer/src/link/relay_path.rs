@@ -4,8 +4,8 @@ use std::ops::Sub;
 use std::thread;
 use std::time::{Duration, Instant};
 
+use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use prost_types::Any;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use ibc::{

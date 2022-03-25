@@ -132,7 +132,7 @@ key_name = 'testkey'
 #
 # Example configuration for chains based on Ethermint library:
 #
-# address_type = { derivation = 'ethermint', proto_type = { pk_type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
+# address_type = { derivation = 'ethermint', proto_type = { pk_type = '/ethermint.crypto.v1.ethsecp256k1.PubKey' } }
 #
 # Default: { derivation = 'cosmos' }, i.e. address derivation as in Cosmos SDK.
 # Warning: This is an advanced feature! Modify with caution.
@@ -207,13 +207,15 @@ memo_prefix = ''
 # 1. `policy` - one of two types are supported:
 #       - 'allow': permit relaying _only on_ the port/channel id in the list below,
 #       - 'deny': permit relaying on any channel _except for_ the list below.
-# 2. `list` - the list of channels specified by the port and channel identifiers.
+# 2. `list` - the list of channels specified by the port and channel identifiers. Optionally, each element may also be a
+#       'wildcard', for eg. 'ica*' to match all identifiers starting with 'ica' or '*' to match all identifiers.
 #
 # Example configuration of a channel filter, denying packet relaying on channel with port ID 'transfer' and channel ID 'channel-0':
 #
 # [chains.packet_filter]
-# policy = 'deny'
+# policy = 'allow'
 # list = [
+#   ['ica*', '*'],
 #   ['transfer', 'channel-0'],
 # ]
 

@@ -92,13 +92,13 @@ impl BinaryChannelTest for IbcTransferTest {
             );
 
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
-                &wallet_a.as_ref(),
+                &wallet_a.address(),
                 balance_a - a_to_b_amount,
                 &denom_a,
             )?;
 
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.as_ref(),
+                &wallet_b.address(),
                 a_to_b_amount,
                 &denom_b.as_ref(),
             )?;
@@ -134,13 +134,13 @@ impl BinaryChannelTest for IbcTransferTest {
             )?;
 
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.as_ref(),
+                &wallet_b.address(),
                 a_to_b_amount - b_to_a_amount,
                 &denom_b.as_ref(),
             )?;
 
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
-                &wallet_c.as_ref(),
+                &wallet_c.address(),
                 balance_c + b_to_a_amount,
                 &denom_a,
             )?;

@@ -7,7 +7,7 @@ use bytes::BufMut;
 use flex_error::define_error;
 use ibc::clients::ics07_tendermint::client_state::UpgradeOptions;
 use ibc::downcast;
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 
 use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
 use ibc::core::ics02_client::height::Height;

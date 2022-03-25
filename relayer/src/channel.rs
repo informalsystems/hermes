@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
@@ -120,6 +120,10 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
         self.channel_id.as_ref()
     }
 
+    pub fn version(&self) -> Option<&Version> {
+        self.version.as_ref()
+    }
+
     pub fn map_chain<ChainB: ChainHandle>(
         self,
         mapper: impl Fn(Chain) -> ChainB,
@@ -151,7 +155,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         ordering: Order,
         a_port: PortId,
         b_port: PortId,
-        version: Option<String>,
+        version: Option<Version>,
     ) -> Result<Self, ChannelError> {
         let src_connection_id = connection
             .src_connection_id()
@@ -159,9 +163,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let dst_connection_id = connection
             .dst_connection_id()
             .ok_or_else(|| ChannelError::missing_local_connection(connection.dst_chain().id()))?;
-
-        // Convert the raw version into our domain type.
-        let domain_version = version.map(Into::into);
 
         let mut channel = Self {
             ordering,
@@ -171,7 +172,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 src_connection_id.clone(),
                 a_port,
                 Default::default(),
-                domain_version.clone(),
+                version.clone(),
             ),
             b_side: ChannelSide::new(
                 connection.dst_chain(),
@@ -179,7 +180,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 dst_connection_id.clone(),
                 b_port,
                 Default::default(),
-                domain_version,
+                version,
             ),
             connection_delay: connection.delay_period,
         };
