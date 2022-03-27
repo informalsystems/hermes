@@ -37,6 +37,7 @@ pub enum Path {
     Connections(ConnectionsPath),
     Ports(PortsPath),
     ChannelEnds(ChannelEndsPath),
+    ChannelCapability(ChannelCapabilityPath),
     SeqSends(SeqSendsPath),
     SeqRecvs(SeqRecvsPath),
     SeqAcks(SeqAcksPath),
@@ -82,6 +83,10 @@ pub struct PortsPath(pub PortId);
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
 #[display(fmt = "channelEnds/ports/{}/channels/{}", _0, _1)]
 pub struct ChannelEndsPath(pub PortId, pub ChannelId);
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
+#[display(fmt = "capabilities/ports/{}/channels/{}", _0, _1)]
+pub struct ChannelCapabilityPath(pub PortId, pub ChannelId);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Display)]
 #[display(fmt = "nextSequenceSend/ports/{}/channels/{}", _0, _1)]
@@ -188,6 +193,7 @@ impl FromStr for Path {
             .or_else(|| parse_connections(&components))
             .or_else(|| parse_ports(&components))
             .or_else(|| parse_channel_ends(&components))
+            .or_else(|| parse_channel_capabilities(&components))
             .or_else(|| parse_seqs(&components))
             .or_else(|| parse_commitments(&components))
             .or_else(|| parse_acks(&components))
@@ -397,6 +403,38 @@ fn parse_channel_ends(components: &[&str]) -> Option<Path> {
     };
 
     Some(ChannelEndsPath(port_id, channel_id).into())
+}
+
+fn parse_channel_capabilities(components: &[&str]) -> Option<Path> {
+    if components.len() != 5 {
+        return None;
+    }
+
+    let first = match components.first() {
+        Some(f) => *f,
+        None => return None,
+    };
+
+    if first != "capabilities" {
+        return None;
+    }
+
+    let port = parse_ports(&components[1..=2]);
+    let channel = parse_channels(&components[3..=4]);
+
+    let port_id = if let Some(Path::Ports(PortsPath(port_id))) = port {
+        port_id
+    } else {
+        return None;
+    };
+
+    let channel_id = if let Some(SubPath::Channels(channel_id)) = channel {
+        channel_id
+    } else {
+        return None;
+    };
+
+    Some(ChannelCapabilityPath(port_id, channel_id).into())
 }
 
 fn parse_seqs(components: &[&str]) -> Option<Path> {
@@ -787,6 +825,20 @@ mod tests {
         assert_eq!(
             parse_channel_ends(&components),
             Some(Path::ChannelEnds(ChannelEndsPath(
+                PortId::default(),
+                ChannelId::default()
+            ))),
+        );
+    }
+
+    #[test]
+    fn test_parse_channel_capabilities_fn() {
+        let path = "capabilities/ports/defaultPort/channels/channel-0";
+        let components: Vec<&str> = path.split('/').collect();
+
+        assert_eq!(
+            parse_channel_capabilities(&components),
+            Some(Path::ChannelCapability(ChannelCapabilityPath(
                 PortId::default(),
                 ChannelId::default()
             ))),
