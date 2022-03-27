@@ -126,10 +126,6 @@ define_error! {
         ConnectionVerificationFailure
             | _ | { "the connection proof verification failed" },
 
-        MissingLocalConsensusState
-            { height: Height }
-            | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
-
         ConsensusStateVerificationFailure
             { height: Height }
             [ client_error::Error ]

@@ -24,7 +24,7 @@ fn version() -> String {
             if git.is_dirty() {
                 vers.push_str("-dirty");
             }
-            vers = vers.replace("\n", "");
+            vers = vers.replace('\n', "");
         }
     }
     vers

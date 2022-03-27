@@ -4,6 +4,7 @@ use abscissa_core::{Command, Runnable};
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -63,7 +64,7 @@ pub struct CreateChannelCommand {
         alias = "version",
         help = "the version for the new channel"
     )]
-    version: Option<String>,
+    version: Option<Version>,
 }
 
 impl Runnable for CreateChannelCommand {

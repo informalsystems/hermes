@@ -25,7 +25,7 @@ hermes [-c CONFIG_FILE] COMMAND
 The configuration file must have one `global` section, and one `chains` section for each chain.
 
 > **Note:** As of 0.6.0, the Hermes configuration file is self-documented.
-> Please read the configuration file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.12.0/config.toml)
+> Please read the configuration file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.13.0-rc.0/config.toml)
 > itself for the most up-to-date documentation of parameters.
 
 By default, Hermes will relay on all channels available between all the configured chains.
@@ -36,7 +36,7 @@ For example, if there are only two chains configured, then Hermes will only rela
 i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
 Hermes will ignore all events that pertain to chains which are unknown (ie. not present in config.toml).
 
-To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v0.12.0/config.toml#L207-L224).
+To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v0.13.0-rc.0/config.toml#L207-L224).
 
 ## Adding private keys
 
@@ -116,6 +116,8 @@ trust_threshold = { numerator = '1', denominator = '3' }
 
 ## Update the configuration without restarting Hermes
 
+> ⚠️  This feature has been removed in Hermes v0.12.0.
+
 Before Hermes 0.6.1, the only way to get Hermes to pick up a change in the
 configuration was to stop and restart Hermes.
 
@@ -123,7 +125,7 @@ As of version 0.6.1, Hermes will react to receiving a `SIGHUP` signal
 by reloading the `[chains]` section of the configuration, and
 stopping, starting or restarting the affected workers.
 
-> ⚠️  **Warning:** the configuration reload feature only supports
+> **Warning:** the configuration reload feature only supports
 > adding, removing, or updating configuration of chains. It does
 > not support dynamically changing global features, such as the
 > filtering mechanism or logging level.

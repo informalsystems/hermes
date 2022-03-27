@@ -1,6 +1,6 @@
 [package]
 name         = "ibc"
-version      = "0.12.0"
+version      = "0.13.0-rc.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -28,12 +28,12 @@ mocks = ["tendermint-testgen", "clock", "std"]
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.16.0", path = "../proto", default-features = false }
-ics23 = { version = "0.6.7", default-features = false }
+ics23 = { version = "0.7.0", default-features = false }
 time = { version = "0.3", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1", default-features = false }
-tracing = { version = "0.1.31", default-features = false }
+tracing = { version = "0.1.32", default-features = false }
 prost = { version = "0.9", default-features = false }
 prost-types = { version = "0.9", default-features = false }
 bytes = { version = "1.1.0", default-features = false }

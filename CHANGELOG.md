@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## v0.13.0-rc.0
+
+> ⚠️  This is a release candidate and not the final release for v0.13.0.
+
+### FEATURES
+
+- [Relayer Library](relayer)
+  - Added caching layer for hermes start command
+    ([#1908](https://github.com/informalsystems/ibc-rs/issues/1908))
+
+### IMPROVEMENTS
+
+- [IBC Modules](modules)
+  - Refactored ics04_channel events
+    ([#718](https://github.com/informalsystems/ibc-rs/issues/718))
+- [Relayer Library](relayer)
+  - Fixed relayer behavior on ordered channels
+    ([#1835](https://github.com/informalsystems/ibc-rs/issues/1835))
+
 ## v0.12.0
 *February 24th, 2022*
 

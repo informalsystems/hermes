@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "0.12.0"
+version    = "0.13.0-rc.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -26,20 +26,20 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.12.0", path = "../modules", features = ["std", "clock"] }
-ibc-relayer      = { version = "0.12.0", path = "../relayer" }
+ibc              = { version = "0.13.0-rc.0", path = "../modules", features = ["std", "clock"] }
+ibc-relayer      = { version = "0.13.0-rc.0", path = "../relayer" }
 ibc-proto        = { version = "0.16.0", path = "../proto" }
-ibc-telemetry    = { version = "0.12.0", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.12.0", path = "../relayer-rest", optional = true }
+ibc-telemetry    = { version = "0.13.0-rc.0", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.13.0-rc.0", path = "../relayer-rest", optional = true }
 
 clap = { version = "3.1", features = ["cargo"] }
 clap_complete = "3.1"
 humantime = "2.1"
 serde = { version = "1.0", features = ["serde_derive"] }
 tokio = { version = "1.0", features = ["full"] }
-tracing = "0.1.31"
+tracing = "0.1.32"
 tracing-subscriber = { version = "0.3.9", features = ["fmt", "env-filter", "json"]}
-eyre = "0.6.6"
+eyre = "0.6.7"
 color-eyre = "0.6"
 oneline-eyre = "0.1"
 futures = "0.3.21"
@@ -49,7 +49,7 @@ serde_json = "1"
 prost = { version = "0.9" }
 prost-types = { version ="0.9" }
 hex = "0.4"
-crossbeam-channel = "0.5.2"
+crossbeam-channel = "0.5.4"
 subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.3"
