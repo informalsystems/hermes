@@ -92,7 +92,7 @@ mod tests {
     use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::State;
-    use crate::core::ics04_channel::handler::channel_dispatch;
+    use crate::core::ics04_channel::handler::{channel_dispatch, ChannelDispatchResult};
     use crate::core::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
     use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::core::ics04_channel::msgs::ChannelMsg;
@@ -163,7 +163,7 @@ mod tests {
             let res = channel_dispatch(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
-                Ok((proto_output, res)) => {
+                Ok(ChannelDispatchResult { output, result, .. }) => {
                     assert!(
                         test.want_pass,
                         "chan_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
@@ -172,15 +172,15 @@ mod tests {
                         test.ctx.clone()
                     );
 
-                    let proto_output = proto_output.with_result(());
+                    let proto_output = output.with_result(());
                     assert!(!proto_output.events.is_empty()); // Some events must exist.
 
                     // The object in the output is a ChannelEnd, should have init state.
-                    assert_eq!(res.channel_end.state().clone(), State::Init);
+                    assert_eq!(result.channel_end.state().clone(), State::Init);
                     let msg_init = test.msg;
 
                     if let ChannelMsg::ChannelOpenInit(msg_init) = msg_init {
-                        assert_eq!(res.port_id.clone(), msg_init.port_id.clone());
+                        assert_eq!(result.port_id.clone(), msg_init.port_id.clone());
                     }
 
                     for e in proto_output.events.iter() {
