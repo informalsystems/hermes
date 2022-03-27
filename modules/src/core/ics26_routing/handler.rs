@@ -7,7 +7,7 @@ use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
     channel_callback as ics4_callback, channel_dispatch as ics4_msg_dispatcher,
-    channel_validate as ics4_validate, recv_packet::RecvPacketResult,
+    recv_packet::RecvPacketResult, ChannelDispatchResult,
 };
 use crate::core::ics04_channel::handler::{
     packet_callback as ics4_packet_callback, packet_dispatch as ics4_packet_msg_dispatcher,
@@ -79,21 +79,22 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
-            let module_id = ics4_validate(ctx, &msg).map_err(Error::ics04_channel)?;
-            let (mut handler_builder, channel_result) =
-                ics4_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
+            let ChannelDispatchResult {
+                module_id,
+                mut output,
+                result,
+            } = ics4_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
 
             let mut module_output = HandlerOutput::builder().with_result(());
-            let cb_result =
-                ics4_callback(ctx, &module_id, &msg, channel_result, &mut module_output);
-            handler_builder.merge(module_output);
-            let channel_result = cb_result.map_err(Error::ics04_channel)?;
+            let cb_result = ics4_callback(ctx, &module_id, &msg, result, &mut module_output);
+            output.merge(module_output);
+            let result = cb_result.map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
-            ctx.store_channel_result(channel_result)
+            ctx.store_channel_result(result)
                 .map_err(Error::ics04_channel)?;
 
-            handler_builder.with_result(())
+            output.with_result(())
         }
 
         Ics20Msg(msg) => {

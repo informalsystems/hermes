@@ -46,42 +46,70 @@ pub struct ChannelResult {
     pub channel_end: ChannelEnd,
 }
 
-pub fn channel_validate<Ctx>(ctx: &Ctx, msg: &ChannelMsg) -> Result<ModuleId, Error>
-where
-    Ctx: Ics26Context,
-{
-    let module_id = msg.lookup_module(ctx)?;
-    if ctx.router().has_route(&module_id) {
-        Ok(module_id)
-    } else {
-        Err(Error::route_not_found())
-    }
+pub struct ChannelDispatchResult {
+    pub module_id: ModuleId,
+    pub output: HandlerOutputBuilder<()>,
+    pub result: ChannelResult,
 }
 
 /// General entry point for processing any type of message related to the ICS4 channel open and
 /// channel close handshake protocols.
-pub fn channel_dispatch<Ctx>(
-    ctx: &Ctx,
-    msg: &ChannelMsg,
-) -> Result<(HandlerOutputBuilder<()>, ChannelResult), Error>
+pub fn channel_dispatch<Ctx>(ctx: &Ctx, msg: &ChannelMsg) -> Result<ChannelDispatchResult, Error>
 where
-    Ctx: ChannelReader,
+    Ctx: Ics26Context,
 {
-    let output = match msg {
-        ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
-        ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process(ctx, msg),
-        ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process(ctx, msg),
-        ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process(ctx, msg),
-        ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg),
-        ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process(ctx, msg),
+    fn confirm_route_exists<Ctx: Ics26Context, Cap>(
+        ctx: &Ctx,
+        module_id: ModuleId,
+        cap: Cap,
+    ) -> Result<(ModuleId, Cap), Error> {
+        if ctx.router().has_route(&module_id) {
+            Ok((module_id, cap))
+        } else {
+            Err(Error::route_not_found())
+        }
+    }
+
+    let (module_id, output) = match msg {
+        ChannelMsg::ChannelOpenInit(msg) => ctx
+            .lookup_module_by_port(&msg.port_id)
+            .map_err(Error::ics05_port)
+            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, _)| Ok((mid, chan_open_init::process(ctx, msg)?))),
+        ChannelMsg::ChannelOpenTry(msg) => ctx
+            .lookup_module_by_port(&msg.port_id)
+            .map_err(Error::ics05_port)
+            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, _)| Ok((mid, chan_open_try::process(ctx, msg)?))),
+        ChannelMsg::ChannelOpenAck(msg) => ctx
+            .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
+            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, _)| Ok((mid, chan_open_ack::process(ctx, msg)?))),
+        ChannelMsg::ChannelOpenConfirm(msg) => ctx
+            .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
+            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, _)| Ok((mid, chan_open_confirm::process(ctx, msg)?))),
+        ChannelMsg::ChannelCloseInit(msg) => ctx
+            .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
+            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, _)| Ok((mid, chan_close_init::process(ctx, msg)?))),
+        ChannelMsg::ChannelCloseConfirm(msg) => ctx
+            .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
+            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, _)| Ok((mid, chan_close_confirm::process(ctx, msg)?))),
     }?;
+
     let HandlerOutput {
         result,
         log,
         events,
     } = output;
-    let builder = HandlerOutput::builder().with_log(log).with_events(events);
-    Ok((builder, result))
+    let output = HandlerOutput::builder().with_log(log).with_events(events);
+    Ok(ChannelDispatchResult {
+        module_id,
+        output,
+        result,
+    })
 }
 
 pub fn channel_callback<Ctx>(
