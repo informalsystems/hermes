@@ -75,28 +75,28 @@ where
             .lookup_module_by_port(&msg.port_id)
             .map_err(Error::ics05_port)
             .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
-            .and_then(|(mid, _)| Ok((mid, chan_open_init::process(ctx, msg)?))),
+            .and_then(|(mid, cap)| Ok((mid, chan_open_init::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenTry(msg) => ctx
             .lookup_module_by_port(&msg.port_id)
             .map_err(Error::ics05_port)
             .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
-            .and_then(|(mid, _)| Ok((mid, chan_open_try::process(ctx, msg)?))),
+            .and_then(|(mid, cap)| Ok((mid, chan_open_try::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenAck(msg) => ctx
             .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
             .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
-            .and_then(|(mid, _)| Ok((mid, chan_open_ack::process(ctx, msg)?))),
+            .and_then(|(mid, cap)| Ok((mid, chan_open_ack::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenConfirm(msg) => ctx
             .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
             .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
-            .and_then(|(mid, _)| Ok((mid, chan_open_confirm::process(ctx, msg)?))),
+            .and_then(|(mid, cap)| Ok((mid, chan_open_confirm::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelCloseInit(msg) => ctx
             .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
             .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
-            .and_then(|(mid, _)| Ok((mid, chan_close_init::process(ctx, msg)?))),
+            .and_then(|(mid, cap)| Ok((mid, chan_close_init::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelCloseConfirm(msg) => ctx
             .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
             .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
-            .and_then(|(mid, _)| Ok((mid, chan_close_confirm::process(ctx, msg)?))),
+            .and_then(|(mid, cap)| Ok((mid, chan_close_confirm::process(ctx, msg, cap)?))),
     }?;
 
     let HandlerOutput {

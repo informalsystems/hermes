@@ -7,6 +7,7 @@ use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
+use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
@@ -14,6 +15,7 @@ use crate::prelude::*;
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
     msg: &MsgChannelCloseConfirm,
+    _cap: ChannelCapability,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
