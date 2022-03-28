@@ -12,18 +12,22 @@ pub trait PortReader: CapabilityReader {
 
     /// Check if the specified port_id is already bounded
     fn is_bound(&self, port_id: PortId) -> bool {
-        self.get_capability(&Self::port_capability_name(port_id))
-            .is_ok()
+        self.get_port_capability(port_id).is_ok()
+    }
+
+    /// Check if the specified port_id is already bounded
+    fn get_port_capability(&self, port_id: PortId) -> Result<PortCapability, Error> {
+        CapabilityReader::get_capability(self, &self.port_capability_name(port_id)).map(Into::into)
     }
 
     /// Authenticate a capability key against a port_id by checking if the capability was previously
     /// generated and bound to the specified port
     fn authenticate(&self, port_id: PortId, capability: &PortCapability) -> bool {
-        self.authenticate_capability(&Self::port_capability_name(port_id), capability)
+        self.authenticate_capability(&self.port_capability_name(port_id), capability)
             .is_ok()
     }
 
-    fn port_capability_name(port_id: PortId) -> CapabilityName {
+    fn port_capability_name(&self, port_id: PortId) -> CapabilityName {
         PortsPath(port_id)
             .to_string()
             .parse()
@@ -37,7 +41,7 @@ pub trait PortKeeper: CapabilityKeeper + PortReader {
         if self.is_bound(port_id.clone()) {
             Err(Error::port_already_bound(port_id))
         } else {
-            self.new_capability(Self::port_capability_name(port_id))
+            self.new_capability(self.port_capability_name(port_id))
                 .map(Into::into)
         }
     }

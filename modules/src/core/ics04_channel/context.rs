@@ -11,9 +11,10 @@ use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::{error::Error, packet::Receipt};
-use crate::core::ics05_port::capabilities::ChannelCapability;
+use crate::core::ics05_port::capabilities::{CapabilityName, ChannelCapability};
 use crate::core::ics05_port::context::CapabilityReader;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics24_host::path::ChannelCapabilityPath;
 use crate::core::ics26_routing::context::ModuleId;
 use crate::prelude::*;
 use crate::timestamp::Timestamp;
@@ -113,6 +114,39 @@ pub trait ChannelReader: CapabilityReader {
         channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<(ModuleId, ChannelCapability), Error>;
+
+    /// Check if the specified port_id is already bounded
+    fn get_channel_capability(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> Result<ChannelCapability, Error> {
+        CapabilityReader::get_capability(self, &self.channel_capability_name(port_id, channel_id))
+            .map(Into::into)
+            .map_err(Error::ics05_port)
+    }
+
+    /// Authenticate a capability key against a port_id by checking if the capability was previously
+    /// generated and bound to the specified port
+    fn authenticate(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+        capability: &ChannelCapability,
+    ) -> bool {
+        self.authenticate_capability(
+            &self.channel_capability_name(port_id, channel_id),
+            capability,
+        )
+        .is_ok()
+    }
+
+    fn channel_capability_name(&self, port_id: PortId, channel_id: ChannelId) -> CapabilityName {
+        ChannelCapabilityPath(port_id, channel_id)
+            .to_string()
+            .parse()
+            .expect("ChannelEndsPath cannot be empty string")
+    }
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
