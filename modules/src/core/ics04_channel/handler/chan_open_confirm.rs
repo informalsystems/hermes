@@ -128,6 +128,7 @@ mod tests {
     use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
+    use crate::test_utils::{dummy_module_id, dummy_router};
     use crate::timestamp::ZERO_DURATION;
     use crate::Height;
 
@@ -142,7 +143,7 @@ mod tests {
         }
         let client_id = ClientId::new(ClientType::Mock, 24).unwrap();
         let conn_id = ConnectionId::new(2);
-        let context = MockContext::default();
+        let context = MockContext::default().with_router(dummy_router());
         let client_consensus_state_height = context.host_current_height().revision_height;
 
         // The connection underlying the channel we're trying to open.
@@ -175,7 +176,7 @@ mod tests {
             ctx: context
                 .with_client(&client_id, Height::new(0, client_consensus_state_height))
                 .with_connection(conn_id, conn_end)
-                .with_port_capability(msg_chan_confirm.port_id.clone())
+                .with_port_capability(msg_chan_confirm.port_id.clone(), dummy_module_id())
                 .with_channel(
                     msg_chan_confirm.port_id.clone(),
                     msg_chan_confirm.channel_id.clone(),

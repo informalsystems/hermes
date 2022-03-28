@@ -70,12 +70,12 @@ where
     let (module_id, output) = match msg {
         ChannelMsg::ChannelOpenInit(msg) => ctx
             .lookup_module_by_port(&msg.port_id)
-            .map_err(Error::ics05_port)
+            .map_err(|_| Error::no_port_capability(msg.port_id.clone()))
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_init::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenTry(msg) => ctx
             .lookup_module_by_port(&msg.port_id)
-            .map_err(Error::ics05_port)
+            .map_err(|_| Error::no_port_capability(msg.port_id.clone()))
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_try::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenAck(msg) => ctx

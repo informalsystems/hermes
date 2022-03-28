@@ -352,8 +352,8 @@ impl MockContext {
         self
     }
 
-    pub fn with_port_capability(mut self, port_id: PortId) -> Self {
-        self.add_port(port_id);
+    pub fn with_port_capability(mut self, port_id: PortId, module_id: ModuleId) -> Self {
+        self.scope_port_to_module(port_id, module_id);
         self
     }
 
@@ -522,12 +522,6 @@ impl MockContext {
             }
         }
         Ok(())
-    }
-
-    pub fn add_port(&mut self, port_id: PortId) {
-        let module_id = ModuleId::new(format!("module{}", port_id).into()).unwrap();
-        self.port_capabilities
-            .insert(port_id, (module_id, Capability::new().into()));
     }
 
     pub fn scope_port_to_module(&mut self, port_id: PortId, module_id: ModuleId) {
@@ -824,7 +818,7 @@ impl ChannelReader for MockContext {
     ) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
         self.lookup_module_by_port(port_id)
             .map(|(mid, pcap)| (mid, ChannelCapability::from(Capability::from(pcap))))
-            .map_err(Ics04Error::ics05_port)
+            .map_err(|_| Ics04Error::no_port_capability(port_id.clone()))
     }
 }
 

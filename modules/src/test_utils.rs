@@ -8,7 +8,8 @@ use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::{Module, ModuleOutput};
+use crate::core::ics26_routing::context::{Module, ModuleId, ModuleOutput, RouterBuilder};
+use crate::mock::context::{MockRouter, MockRouterBuilder};
 use crate::signer::Signer;
 
 // Needed in mocks.
@@ -62,4 +63,15 @@ impl Module for DummyModule {
     ) -> Result<Version, Error> {
         Ok(counterparty_version.clone())
     }
+}
+
+pub fn dummy_router() -> MockRouter {
+    MockRouterBuilder::default()
+        .add_route(dummy_module_id(), DummyModule::default())
+        .unwrap()
+        .build()
+}
+
+pub fn dummy_module_id() -> ModuleId {
+    "dummymodule".parse().unwrap()
 }

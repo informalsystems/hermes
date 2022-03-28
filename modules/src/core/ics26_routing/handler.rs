@@ -173,13 +173,12 @@ mod tests {
     };
 
     use crate::core::ics24_host::identifier::ConnectionId;
-    use crate::core::ics26_routing::context::{ModuleId, RouterBuilder};
     use crate::core::ics26_routing::handler::dispatch;
     use crate::core::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
-    use crate::mock::context::{MockContext, MockRouterBuilder};
+    use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::test_utils::{get_dummy_account_id, DummyModule};
+    use crate::test_utils::{dummy_module_id, dummy_router, get_dummy_account_id};
     use crate::timestamp::Timestamp;
     use crate::Height;
 
@@ -207,16 +206,8 @@ mod tests {
 
         let upgrade_client_height_second = Height::new(1, 1);
 
-        let module = DummyModule::default();
-        let module_id: ModuleId = "dummymodule".parse().unwrap();
-
-        let router = MockRouterBuilder::default()
-            .add_route(module_id.clone(), module)
-            .unwrap()
-            .build();
-
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
-        let mut ctx = MockContext::default().with_router(router);
+        let mut ctx = MockContext::default().with_router(dummy_router());
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
@@ -298,7 +289,7 @@ mod tests {
             res
         );
 
-        ctx.scope_port_to_module(msg_chan_init.port_id.clone(), module_id);
+        ctx.scope_port_to_module(msg_chan_init.port_id.clone(), dummy_module_id());
 
         // Figure out the ID of the client that was just created.
         let mut events = res.unwrap().events;

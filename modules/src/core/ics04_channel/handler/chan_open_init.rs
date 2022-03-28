@@ -101,6 +101,7 @@ mod tests {
     use crate::core::ics24_host::identifier::ConnectionId;
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
+    use crate::test_utils::{dummy_module_id, dummy_router};
 
     #[test]
     fn chan_open_init_msg_processing() {
@@ -114,7 +115,7 @@ mod tests {
         let msg_chan_init =
             MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init()).unwrap();
 
-        let context = MockContext::default();
+        let context = MockContext::default().with_router(dummy_router());
 
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_raw_msg_conn_open_init()).unwrap();
@@ -132,7 +133,9 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails because no connection exists in the context".to_string(),
-                ctx: context.clone(),
+                ctx: context
+                    .clone()
+                    .with_port_capability(msg_chan_init.port_id.clone(), dummy_module_id()),
                 msg: ChannelMsg::ChannelOpenInit(msg_chan_init.clone()),
                 want_pass: false,
             },
@@ -149,11 +152,7 @@ mod tests {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .with_connection(cid, init_conn_end)
-                    .with_port_capability(
-                        MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
-                            .unwrap()
-                            .port_id,
-                    ),
+                    .with_port_capability(msg_chan_init.port_id.clone(), dummy_module_id()),
                 msg: ChannelMsg::ChannelOpenInit(msg_chan_init),
                 want_pass: true,
             },

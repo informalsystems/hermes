@@ -136,6 +136,7 @@ mod tests {
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::prelude::*;
+    use crate::test_utils::{dummy_module_id, dummy_router};
     use crate::Height;
 
     // TODO: The tests here are very fragile and complex.
@@ -152,7 +153,7 @@ mod tests {
         let client_consensus_state_height = 10;
         let host_chain_height = Height::new(0, 35);
 
-        let context = MockContext::default();
+        let context = MockContext::default().with_router(dummy_router());
 
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_raw_msg_conn_open_init()).unwrap();
@@ -233,7 +234,7 @@ mod tests {
                         &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
-                    .with_port_capability(msg_chan_ack.port_id.clone())
+                    .with_port_capability(msg_chan_ack.port_id.clone(), dummy_module_id())
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
                         msg_chan_ack.channel_id.clone(),
@@ -268,7 +269,7 @@ mod tests {
                         &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
-                    .with_port_capability(msg_chan_ack.port_id.clone())
+                    .with_port_capability(msg_chan_ack.port_id.clone(), dummy_module_id())
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
                         msg_chan_ack.channel_id.clone(),
@@ -282,7 +283,7 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(cid.clone(), conn_end.clone())
-                    .with_port_capability(msg_chan_ack.port_id.clone())
+                    .with_port_capability(msg_chan_ack.port_id.clone(), dummy_module_id())
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
                         msg_chan_ack.channel_id.clone(),
@@ -293,13 +294,13 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context //  .clone()
+                ctx: context
                     .with_client(
                         &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid, conn_end)
-                    .with_port_capability(msg_chan_ack.port_id.clone())
+                    .with_port_capability(msg_chan_ack.port_id.clone(), dummy_module_id())
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
                         msg_chan_ack.channel_id.clone(),

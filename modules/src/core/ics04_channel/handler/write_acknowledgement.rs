@@ -91,6 +91,7 @@ mod tests {
     use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
+    use crate::test_utils::{dummy_module_id, dummy_router};
     use crate::timestamp::ZERO_DURATION;
     use crate::{core::ics04_channel::packet::Packet, events::IbcEvent};
 
@@ -104,7 +105,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let context = MockContext::default();
+        let context = MockContext::default().with_router(dummy_router());
 
         let client_height = Height::new(0, 1);
 
@@ -164,7 +165,7 @@ mod tests {
                     .clone()
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end.clone())
-                    .with_port_capability(packet.destination_port.clone())
+                    .with_port_capability(packet.destination_port.clone(), dummy_module_id())
                     .with_channel(
                         packet.destination_port.clone(),
                         packet.destination_channel.clone(),
@@ -179,7 +180,7 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(PortId::default())
+                    .with_port_capability(PortId::default(), dummy_module_id())
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end),
                 packet,
                 ack: ack_null,

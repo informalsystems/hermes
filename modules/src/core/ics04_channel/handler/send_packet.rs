@@ -130,6 +130,7 @@ mod tests {
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::prelude::*;
+    use crate::test_utils::{dummy_module_id, dummy_router};
     use crate::timestamp::Timestamp;
     use crate::timestamp::ZERO_DURATION;
 
@@ -142,7 +143,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let context = MockContext::default();
+        let context = MockContext::default().with_router(dummy_router());
 
         let timestamp = Timestamp::now().add(Duration::from_secs(10));
         //CD:TODO remove unwrap
@@ -202,7 +203,7 @@ mod tests {
                     .clone()
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end.clone())
-                    .with_port_capability(PortId::default())
+                    .with_port_capability(PortId::default(), dummy_module_id())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet,
@@ -213,7 +214,7 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(PortId::default())
+                    .with_port_capability(PortId::default(), dummy_module_id())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet: packet_old,
