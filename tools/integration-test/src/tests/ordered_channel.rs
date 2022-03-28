@@ -3,7 +3,7 @@ use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
-const TRANSFER_COUNT: u64 = 2;
+const TRANSFER_COUNT: u64 = 10;
 
 #[test]
 fn test_ordered_channel() -> Result<(), Error> {
@@ -16,8 +16,8 @@ impl TestOverrides for OrderedChannelTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         // Disabling clear_on_start should make the relayer not
         // relay any packet it missed before starting.
-        // config.mode.packets.clear_on_start = false;
-        // config.mode.packets.clear_interval = 0;
+        config.mode.packets.clear_on_start = false;
+        config.mode.packets.clear_interval = 0;
 
         for mut chain in config.chains.iter_mut() {
             // We currently need the Test key store type to persist the keys
@@ -26,9 +26,9 @@ impl TestOverrides for OrderedChannelTest {
         }
     }
 
-    // fn channel_order(&self) -> Order {
-    //     Order::Ordered
-    // }
+    fn channel_order(&self) -> Order {
+        Order::Ordered
+    }
 }
 
 impl BinaryChannelTest for OrderedChannelTest {
@@ -65,6 +65,10 @@ impl BinaryChannelTest for OrderedChannelTest {
                 amount1,
                 &denom_a,
             )?;
+
+            // Have to sleep 1 second to wait for the transfer to be
+            // committed before doing another one.
+            std::thread::sleep(Duration::from_secs(1));
         }
 
         // Fork the relayer driver with different keys, so that we can spawn
@@ -87,7 +91,7 @@ impl BinaryChannelTest for OrderedChannelTest {
         };
 
         let _relayer1 = relayer.spawn_supervisor()?;
-        // let _relayer2 = relayer2.spawn_supervisor()?;
+        let _relayer2 = relayer2.spawn_supervisor()?;
 
         sleep(Duration::from_secs(3));
 
