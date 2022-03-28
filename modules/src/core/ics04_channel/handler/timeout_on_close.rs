@@ -148,9 +148,10 @@ mod tests {
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
     use crate::core::ics04_channel::context::ChannelReader;
-    use crate::core::ics04_channel::handler::timeout_on_close::process;
+    use crate::core::ics04_channel::handler::{packet_dispatch, PacketDispatchResult};
     use crate::core::ics04_channel::msgs::timeout_on_close::test_util::get_dummy_raw_msg_timeout_on_close;
     use crate::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
+    use crate::core::ics04_channel::msgs::PacketMsg;
     use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::events::IbcEvent;
@@ -258,10 +259,10 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = process(&test.ctx, &test.msg);
+            let res = packet_dispatch(&test.ctx, &PacketMsg::ToClosePacket(test.msg.clone()));
             // Additionally check the events and the output objects in the result.
             match res {
-                Ok(proto_output) => {
+                Ok(PacketDispatchResult { output, .. }) => {
                     assert!(
                         test.want_pass,
                         "TO_on_close_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
@@ -270,6 +271,7 @@ mod tests {
                         test.ctx.clone()
                     );
 
+                    let proto_output = output.with_result(());
                     assert!(!proto_output.events.is_empty()); // Some events must exist.
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::TimeoutOnClosePacket(_)));
