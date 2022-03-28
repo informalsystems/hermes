@@ -1,7 +1,7 @@
 # CHANGELOG
 
 ## v0.13.0
-*March 28th, 2021*
+*March 28th, 2022*
 
 Hermes v0.13.0 improves performance by lowering the pressure
 on the full nodes by adding a caching layer for some queries.
@@ -14,7 +14,7 @@ ICA channels based on the port prefix.
 
 Additionally, the IBC Protocol Buffers definitions can now be used from CosmWasm.
 
-## Note for operators
+### Note for operators
 
 As of version 0.13.0, Hermes supports relaying on [Interchain Accounts][ica] channels.
 
