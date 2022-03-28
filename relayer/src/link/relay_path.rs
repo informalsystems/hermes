@@ -192,12 +192,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(|e| LinkError::signer(self.dst_chain().id(), e))
     }
 
-    pub fn dst_latest_height(&self) -> Result<Height, LinkError> {
-        self.dst_chain()
-            .query_latest_height()
-            .map_err(|e| LinkError::query(self.dst_chain().id(), e))
-    }
-
     fn unordered_channel(&self) -> bool {
         self.channel.ordering == Order::Unordered
     }

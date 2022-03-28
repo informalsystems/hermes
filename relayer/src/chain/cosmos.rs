@@ -918,7 +918,7 @@ impl CosmosSdkChain {
     /// Returns an error if the node is still syncing and has not caught up,
     /// ie. if `sync_info.catching_up` is `true`.
     fn status(&self) -> Result<status::Response, Error> {
-        let status = self
+        let mut status = self
             .block_on(self.rpc_client.status())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
@@ -929,6 +929,11 @@ impl CosmosSdkChain {
             ));
         }
 
+        let abci_status = self
+            .block_on(self.rpc_client.abci_info())
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+        status.sync_info.latest_block_height = abci_status.last_block_height;
         Ok(status)
     }
 
