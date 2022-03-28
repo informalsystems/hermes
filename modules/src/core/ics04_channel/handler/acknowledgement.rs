@@ -7,6 +7,7 @@ use crate::core::ics04_channel::handler::verify::verify_packet_acknowledgement_p
 use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use crate::core::ics04_channel::packet::{PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error};
+use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
@@ -23,6 +24,7 @@ pub struct AckPacketResult {
 pub fn process(
     ctx: &dyn ChannelReader,
     msg: &MsgAcknowledgement,
+    _cap: ChannelCapability,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 

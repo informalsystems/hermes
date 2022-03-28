@@ -7,11 +7,8 @@ use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
     channel_callback as ics4_callback, channel_dispatch as ics4_msg_dispatcher,
-    recv_packet::RecvPacketResult, ChannelDispatchResult,
-};
-use crate::core::ics04_channel::handler::{
     packet_callback as ics4_packet_callback, packet_dispatch as ics4_packet_msg_dispatcher,
-    packet_validate as ics4_packet_validate,
+    recv_packet::RecvPacketResult, ChannelDispatchResult, PacketDispatchResult,
 };
 use crate::core::ics04_channel::packet::PacketResult;
 use crate::core::ics26_routing::context::Ics26Context;
@@ -112,24 +109,26 @@ where
         }
 
         Ics4PacketMsg(msg) => {
-            let module_id = ics4_packet_validate(ctx, &msg).map_err(Error::ics04_channel)?;
-            let (mut handler_builder, packet_result) =
-                ics4_packet_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
+            let PacketDispatchResult {
+                module_id,
+                mut output,
+                result,
+            } = ics4_packet_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
 
-            if matches!(packet_result, PacketResult::Recv(RecvPacketResult::NoOp)) {
-                return Ok(handler_builder.with_result(()));
+            if matches!(result, PacketResult::Recv(RecvPacketResult::NoOp)) {
+                return Ok(output.with_result(()));
             }
 
             let mut module_output = HandlerOutput::builder().with_result(());
             let cb_result = ics4_packet_callback(ctx, &module_id, &msg, &mut module_output);
-            handler_builder.merge(module_output);
+            output.merge(module_output);
             cb_result.map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
-            ctx.store_packet_result(packet_result)
+            ctx.store_packet_result(result)
                 .map_err(Error::ics04_channel)?;
 
-            handler_builder.with_result(())
+            output.with_result(())
         }
     };
 

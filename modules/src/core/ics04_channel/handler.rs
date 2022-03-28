@@ -1,7 +1,6 @@
 //! This module implements the processing logic for ICS4 (channel) messages.
 
 use crate::core::ics04_channel::channel::ChannelEnd;
-use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::ChannelMsg;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
@@ -46,10 +45,20 @@ pub struct ChannelResult {
     pub channel_end: ChannelEnd,
 }
 
-pub struct ChannelDispatchResult {
+pub struct DispatchResult<R> {
     pub module_id: ModuleId,
     pub output: HandlerOutputBuilder<()>,
-    pub result: ChannelResult,
+    pub result: R,
+}
+
+pub type ChannelDispatchResult = DispatchResult<ChannelResult>;
+pub type PacketDispatchResult = DispatchResult<PacketResult>;
+
+fn validate_route<Ctx: Ics26Context>(ctx: &Ctx, module_id: ModuleId) -> Result<ModuleId, Error> {
+    ctx.router()
+        .has_route(&module_id)
+        .then(|| module_id)
+        .ok_or_else(Error::route_not_found)
 }
 
 /// General entry point for processing any type of message related to the ICS4 channel open and
@@ -58,44 +67,32 @@ pub fn channel_dispatch<Ctx>(ctx: &Ctx, msg: &ChannelMsg) -> Result<ChannelDispa
 where
     Ctx: Ics26Context,
 {
-    fn confirm_route_exists<Ctx: Ics26Context, Cap>(
-        ctx: &Ctx,
-        module_id: ModuleId,
-        cap: Cap,
-    ) -> Result<(ModuleId, Cap), Error> {
-        if ctx.router().has_route(&module_id) {
-            Ok((module_id, cap))
-        } else {
-            Err(Error::route_not_found())
-        }
-    }
-
     let (module_id, output) = match msg {
         ChannelMsg::ChannelOpenInit(msg) => ctx
             .lookup_module_by_port(&msg.port_id)
             .map_err(Error::ics05_port)
-            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_init::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenTry(msg) => ctx
             .lookup_module_by_port(&msg.port_id)
             .map_err(Error::ics05_port)
-            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_try::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenAck(msg) => ctx
             .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
-            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_ack::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenConfirm(msg) => ctx
             .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
-            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_confirm::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelCloseInit(msg) => ctx
             .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
-            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_close_init::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelCloseConfirm(msg) => ctx
             .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
-            .and_then(|(mid, cap)| confirm_route_exists(ctx, mid, cap))
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_close_confirm::process(ctx, msg, cap)?))),
     }?;
 
@@ -170,60 +167,43 @@ where
     Ok(result)
 }
 
-pub fn packet_validate<Ctx>(ctx: &Ctx, msg: &PacketMsg) -> Result<ModuleId, Error>
+/// Dispatcher for processing any type of message related to the ICS4 packet protocols.
+pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: &PacketMsg) -> Result<PacketDispatchResult, Error>
 where
     Ctx: Ics26Context,
 {
-    let module_id = match msg {
-        PacketMsg::RecvPacket(msg) => {
-            ctx.lookup_module_by_channel(
+    let (module_id, output) = match msg {
+        PacketMsg::RecvPacket(msg) => ctx
+            .lookup_module_by_channel(
                 &msg.packet.destination_channel,
                 &msg.packet.destination_port,
-            )?
-            .0
-        }
-        PacketMsg::AckPacket(msg) => {
-            ctx.lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)?
-                .0
-        }
-        PacketMsg::ToPacket(msg) => {
-            ctx.lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)?
-                .0
-        }
-        PacketMsg::ToClosePacket(msg) => {
-            ctx.lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)?
-                .0
-        }
-    };
-
-    if ctx.router().has_route(&module_id) {
-        Ok(module_id)
-    } else {
-        Err(Error::route_not_found())
-    }
-}
-
-/// Dispatcher for processing any type of message related to the ICS4 packet protocols.
-pub fn packet_dispatch<Ctx>(
-    ctx: &Ctx,
-    msg: &PacketMsg,
-) -> Result<(HandlerOutputBuilder<()>, PacketResult), Error>
-where
-    Ctx: ChannelReader,
-{
-    let output = match msg {
-        PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
-        PacketMsg::AckPacket(msg) => acknowledgement::process(ctx, msg),
-        PacketMsg::ToPacket(msg) => timeout::process(ctx, msg),
-        PacketMsg::ToClosePacket(msg) => timeout_on_close::process(ctx, msg),
+            )
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
+            .and_then(|(mid, cap)| Ok((mid, recv_packet::process(ctx, msg, cap)?))),
+        PacketMsg::AckPacket(msg) => ctx
+            .lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
+            .and_then(|(mid, cap)| Ok((mid, acknowledgement::process(ctx, msg, cap)?))),
+        PacketMsg::ToPacket(msg) => ctx
+            .lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
+            .and_then(|(mid, cap)| Ok((mid, timeout::process(ctx, msg, cap)?))),
+        PacketMsg::ToClosePacket(msg) => ctx
+            .lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)
+            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
+            .and_then(|(mid, cap)| Ok((mid, timeout_on_close::process(ctx, msg, cap)?))),
     }?;
     let HandlerOutput {
         result,
         log,
         events,
     } = output;
-    let builder = HandlerOutput::builder().with_log(log).with_events(events);
-    Ok((builder, result))
+    let output = HandlerOutput::builder().with_log(log).with_events(events);
+    Ok(PacketDispatchResult {
+        module_id,
+        output,
+        result,
+    })
 }
 
 pub fn packet_callback<Ctx>(
