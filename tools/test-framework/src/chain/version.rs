@@ -4,7 +4,7 @@ use tracing::debug;
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
 
-pub fn get_chain_command_version(command: &str) -> Result<Version, Error> {
+pub fn get_chain_command_version(command: &str) -> Result<Option<Version>, Error> {
     let output = simple_exec("version-command", command, &["version"])?;
 
     // gaia6 somehow outputs version string result in STDERR
@@ -21,7 +21,9 @@ pub fn get_chain_command_version(command: &str) -> Result<Version, Error> {
 
     debug!("parsing version string: {}", version_str);
 
-    let version = Version::parse(version_str).map_err(handle_generic_error)?;
+    let version = Version::parse(version_str)
+        .map_err(handle_generic_error)
+        .ok();
 
     Ok(version)
 }

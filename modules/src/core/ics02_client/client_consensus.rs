@@ -3,8 +3,8 @@ use crate::prelude::*;
 use core::convert::Infallible;
 use core::marker::{Send, Sync};
 
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
-use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 

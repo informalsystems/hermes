@@ -1,5 +1,5 @@
 /// Plan specifies information about a planned upgrade and when it should occur.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct Plan {
     /// Sets the name for the upgrade. This name will be used by the upgraded
     /// version of the software to apply any special "on-upgrade" commands during
@@ -15,7 +15,7 @@ pub struct Plan {
     /// If this field is not empty, an error will be thrown.
     #[deprecated]
     #[prost(message, optional, tag = "2")]
-    pub time: ::core::option::Option<::prost_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// The height at which the upgrade must be performed.
     /// Only used if Time is not set.
     #[prost(int64, tag = "3")]
@@ -29,11 +29,11 @@ pub struct Plan {
     /// If this field is not empty, an error will be thrown.
     #[deprecated]
     #[prost(message, optional, tag = "5")]
-    pub upgraded_client_state: ::core::option::Option<::prost_types::Any>,
+    pub upgraded_client_state: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 /// SoftwareUpgradeProposal is a gov Content type for initiating a software
 /// upgrade.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct SoftwareUpgradeProposal {
     #[prost(string, tag = "1")]
     pub title: ::prost::alloc::string::String,
@@ -44,7 +44,7 @@ pub struct SoftwareUpgradeProposal {
 }
 /// CancelSoftwareUpgradeProposal is a gov Content type for cancelling a software
 /// upgrade.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct CancelSoftwareUpgradeProposal {
     #[prost(string, tag = "1")]
     pub title: ::prost::alloc::string::String,
@@ -54,7 +54,7 @@ pub struct CancelSoftwareUpgradeProposal {
 /// ModuleVersion specifies a module and its consensus version.
 ///
 /// Since: cosmos-sdk 0.43
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct ModuleVersion {
     /// name of the app module
     #[prost(string, tag = "1")]
@@ -65,11 +65,11 @@ pub struct ModuleVersion {
 }
 /// QueryCurrentPlanRequest is the request type for the Query/CurrentPlan RPC
 /// method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct QueryCurrentPlanRequest {}
 /// QueryCurrentPlanResponse is the response type for the Query/CurrentPlan RPC
 /// method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct QueryCurrentPlanResponse {
     /// plan is the current upgrade plan.
     #[prost(message, optional, tag = "1")]
@@ -77,7 +77,7 @@ pub struct QueryCurrentPlanResponse {
 }
 /// QueryCurrentPlanRequest is the request type for the Query/AppliedPlan RPC
 /// method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct QueryAppliedPlanRequest {
     /// name is the name of the applied plan to query for.
     #[prost(string, tag = "1")]
@@ -85,7 +85,7 @@ pub struct QueryAppliedPlanRequest {
 }
 /// QueryAppliedPlanResponse is the response type for the Query/AppliedPlan RPC
 /// method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct QueryAppliedPlanResponse {
     /// height is the block height at which the plan was applied.
     #[prost(int64, tag = "1")]
@@ -93,7 +93,7 @@ pub struct QueryAppliedPlanResponse {
 }
 /// QueryUpgradedConsensusStateRequest is the request type for the Query/UpgradedConsensusState
 /// RPC method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct QueryUpgradedConsensusStateRequest {
     /// last height of the current chain must be sent in request
     /// as this is the height under which next consensus state is stored
@@ -102,7 +102,7 @@ pub struct QueryUpgradedConsensusStateRequest {
 }
 /// QueryUpgradedConsensusStateResponse is the response type for the Query/UpgradedConsensusState
 /// RPC method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct QueryUpgradedConsensusStateResponse {
     /// Since: cosmos-sdk 0.43
     #[prost(bytes = "vec", tag = "2")]
@@ -112,7 +112,7 @@ pub struct QueryUpgradedConsensusStateResponse {
 /// RPC method.
 ///
 /// Since: cosmos-sdk 0.43
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct QueryModuleVersionsRequest {
     /// module_name is a field to query a specific module
     /// consensus version from state. Leaving this empty will
@@ -124,7 +124,7 @@ pub struct QueryModuleVersionsRequest {
 /// RPC method.
 ///
 /// Since: cosmos-sdk 0.43
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct QueryModuleVersionsResponse {
     /// module_versions is a list of module names with their consensus versions.
     #[prost(message, repeated, tag = "1")]

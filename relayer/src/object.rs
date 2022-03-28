@@ -381,29 +381,6 @@ impl Object {
         .into())
     }
 
-    /// Build the Packet object associated with the given
-    /// [`Open`](ibc::core::ics04_channel::channel::State::Open) channel event.
-    pub fn packet_from_chan_open_events(
-        attributes: &Attributes,
-        src_chain: &impl ChainHandle,
-    ) -> Result<Self, ObjectError> {
-        let channel_id = attributes
-            .channel_id()
-            .ok_or_else(|| ObjectError::missing_channel_id(attributes.clone()))?;
-
-        let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, channel_id, attributes.port_id())
-                .map_err(ObjectError::supervisor)?;
-
-        Ok(Packet {
-            dst_chain_id,
-            src_chain_id: src_chain.id(),
-            src_channel_id: channel_id.clone(),
-            src_port_id: attributes.port_id().clone(),
-        }
-        .into())
-    }
-
     /// Build the object associated with the given [`SendPacket`] event.
     pub fn for_send_packet(
         e: &SendPacket,

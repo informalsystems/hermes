@@ -58,7 +58,7 @@ pub struct ChainDriver {
     */
     pub command_path: String,
 
-    pub command_version: Version,
+    pub command_version: Option<Version>,
 
     /**
        The ID of the chain.
@@ -110,8 +110,7 @@ impl ChainDriver {
     ) -> Result<Self, Error> {
         // Assume we're on Gaia 6 if we can't get a version
         // (eg. with `icad`, which returns an empty string).
-        let command_version =
-            get_chain_command_version(&command_path).unwrap_or_else(|_| Version::new(6, 0, 0));
+        let command_version = get_chain_command_version(&command_path)?;
 
         Ok(Self {
             command_path,
@@ -382,6 +381,13 @@ impl ChainDriver {
         Ok(())
     }
 
+    pub fn is_v6_or_later(&self) -> bool {
+        match &self.command_version {
+            Some(version) => version.major >= 6,
+            None => true,
+        }
+    }
+
     /**
        Start a full node by running in the background `gaiad start`.
 
@@ -408,7 +414,7 @@ impl ChainDriver {
             &format!("localhost:{}", self.grpc_web_port),
         ];
 
-        let args: Vec<&str> = if self.command_version.major >= 6 {
+        let args: Vec<&str> = if self.is_v6_or_later() {
             let mut list = base_args.to_vec();
             list.extend_from_slice(&extra_args);
             list
