@@ -7,31 +7,30 @@ use crate::prelude::*;
 
 /// A context supplying all the necessary read-only dependencies for processing any information regarding a port.
 pub trait PortReader: CapabilityReader {
-    /// Return the module_id along with the capability associated with a given port_id
-    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, PortCapability), Error>;
+    /// Return the `ModuleId` along with the `PortCapability` associated with a given `PortId`
+    fn lookup_module_by_port(&self, port_id: PortId) -> Result<(ModuleId, PortCapability), Error> {
+        CapabilityReader::lookup_module(self, &port_capability_name(port_id))
+            .map(|(module_id, capability)| (module_id, capability.into()))
+    }
 
-    /// Check if the specified port_id is already bounded
+    /// Check if the specified `PortId` is already bound
     fn is_bound(&self, port_id: PortId) -> bool {
         self.get_port_capability(port_id).is_ok()
     }
 
-    /// Check if the specified port_id is already bounded
+    /// Get the `PortCapability` associated with the specified `PortId`
     fn get_port_capability(&self, port_id: PortId) -> Result<PortCapability, Error> {
-        CapabilityReader::get_capability(self, &self.port_capability_name(port_id)).map(Into::into)
+        CapabilityReader::get_capability(self, &port_capability_name(port_id)).map(Into::into)
     }
 
-    /// Authenticate a capability key against a port_id by checking if the capability was previously
-    /// generated and bound to the specified port
-    fn authenticate(&self, port_id: PortId, capability: &PortCapability) -> bool {
-        self.authenticate_capability(&self.port_capability_name(port_id), capability)
-            .is_ok()
-    }
-
-    fn port_capability_name(&self, port_id: PortId) -> CapabilityName {
-        PortsPath(port_id)
-            .to_string()
-            .parse()
-            .expect("PortsPath cannot be empty string")
+    /// Authenticate a `PortCapability` against the specified `PortId` by checking if the capability
+    /// was previously generated and bound to the specified port
+    fn authenticate_port_capability(
+        &self,
+        port_id: PortId,
+        capability: &PortCapability,
+    ) -> Result<(), Error> {
+        self.authenticate_capability(&port_capability_name(port_id), capability)
     }
 }
 
@@ -41,7 +40,7 @@ pub trait PortKeeper: CapabilityKeeper + PortReader {
         if self.is_bound(port_id.clone()) {
             Err(Error::port_already_bound(port_id))
         } else {
-            self.new_capability(self.port_capability_name(port_id))
+            self.new_capability(port_capability_name(port_id))
                 .map(Into::into)
         }
     }
@@ -61,6 +60,9 @@ pub trait CapabilityKeeper {
 }
 
 pub trait CapabilityReader {
+    /// Find the `ModuleId` that owns this capability
+    fn lookup_module(&self, name: &CapabilityName) -> Result<(ModuleId, Capability), Error>;
+
     /// Fetch a capability which was previously claimed by specified name
     fn get_capability(&self, name: &CapabilityName) -> Result<Capability, Error>;
 
@@ -71,4 +73,14 @@ pub trait CapabilityReader {
         name: &CapabilityName,
         capability: &Capability,
     ) -> Result<(), Error>;
+
+    /// Create a new capability with the given name but don't store it.
+    fn create_capability(&self, name: CapabilityName) -> Result<Capability, Error>;
+}
+
+fn port_capability_name(port_id: PortId) -> CapabilityName {
+    PortsPath(port_id)
+        .to_string()
+        .parse()
+        .expect("PortsPath cannot be empty string")
 }

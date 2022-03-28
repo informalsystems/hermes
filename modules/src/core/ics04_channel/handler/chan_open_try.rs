@@ -9,15 +9,16 @@ use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use crate::core::ics05_port::capabilities::PortCapability;
+use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::ChannelId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Ctx: ChannelReader + PortReader>(
+    ctx: &Ctx,
     msg: &MsgChannelOpenTry,
-    _cap: PortCapability,
+    port_cap: PortCapability,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -90,7 +91,8 @@ pub(crate) fn process(
     }
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
+    ctx.authenticate_port_capability(msg.port_id.clone(), &port_cap)
+        .map_err(Error::ics05_port)?;
 
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.
@@ -127,14 +129,18 @@ pub(crate) fn process(
     // Transition the channel end to the new state & pick a version.
     new_channel_end.set_state(State::TryOpen);
 
+    let (channel_id_state, channel_cap) = if matches!(msg.previous_channel_id, None) {
+        let cap = ctx.create_channel_capability(msg.port_id.clone(), channel_id.clone())?;
+        (ChannelIdState::Generated, cap)
+    } else {
+        let cap = ctx.get_channel_capability(msg.port_id.clone(), channel_id.clone())?;
+        (ChannelIdState::Reused, cap)
+    };
+
     let result = ChannelResult {
         port_id: msg.port_id.clone(),
         channel_cap,
-        channel_id_state: if matches!(msg.previous_channel_id, None) {
-            ChannelIdState::Generated
-        } else {
-            ChannelIdState::Reused
-        },
+        channel_id_state,
         channel_id: channel_id.clone(),
         channel_end: new_channel_end,
     };

@@ -36,7 +36,8 @@ pub fn process(
         ));
     }
 
-    let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
+    // Fixme(hu55a1n1)
+    // let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
 
     // NOTE: IBC app modules might have written the acknowledgement synchronously on
     // the OnRecvPacket callback so we need to check if the acknowledgement is already

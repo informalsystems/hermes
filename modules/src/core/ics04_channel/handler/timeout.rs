@@ -25,7 +25,7 @@ pub struct TimeoutPacketResult {
 pub fn process(
     ctx: &dyn ChannelReader,
     msg: &MsgTimeout,
-    _cap: ChannelCapability,
+    channel_cap: ChannelCapability,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -38,7 +38,11 @@ pub fn process(
         return Err(Error::channel_closed(packet.source_channel.clone()));
     }
 
-    let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
+    ctx.authenticate_channel_capability(
+        packet.source_port.clone(),
+        packet.source_channel.clone(),
+        &channel_cap,
+    )?;
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),

@@ -7,20 +7,22 @@ use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::core::ics05_port::capabilities::PortCapability;
+use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::ChannelId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Ctx: ChannelReader + PortReader>(
+    ctx: &Ctx,
     msg: &MsgChannelOpenInit,
-    _cap: PortCapability,
+    port_cap: PortCapability,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
+    ctx.authenticate_port_capability(msg.port_id.clone(), &port_cap)
+        .map_err(Error::ics05_port)?;
 
     if msg.channel.connection_hops().len() != 1 {
         return Err(Error::invalid_connection_hops_length(
@@ -66,7 +68,7 @@ pub(crate) fn process(
         channel_id: chan_id.clone(),
         channel_end: new_channel_end,
         channel_id_state: ChannelIdState::Generated,
-        channel_cap,
+        channel_cap: ctx.create_channel_capability(msg.port_id.clone(), chan_id.clone())?,
     };
 
     let event_attributes = Attributes {

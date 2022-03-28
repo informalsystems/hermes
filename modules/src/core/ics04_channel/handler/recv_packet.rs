@@ -31,7 +31,7 @@ pub enum RecvPacketResult {
 pub fn process(
     ctx: &dyn ChannelReader,
     msg: &MsgRecvPacket,
-    _cap: ChannelCapability,
+    channel_cap: ChannelCapability,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -49,7 +49,11 @@ pub fn process(
         ));
     }
 
-    let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
+    ctx.authenticate_channel_capability(
+        packet.destination_port.clone(),
+        packet.destination_channel.clone(),
+        &channel_cap,
+    )?;
 
     let counterparty = Counterparty::new(
         packet.source_port.clone(),

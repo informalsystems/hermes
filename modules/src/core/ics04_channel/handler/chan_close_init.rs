@@ -13,7 +13,7 @@ use crate::handler::{HandlerOutput, HandlerResult};
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
     msg: &MsgChannelCloseInit,
-    _cap: ChannelCapability,
+    channel_cap: ChannelCapability,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -29,7 +29,8 @@ pub(crate) fn process(
     }
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
+    ctx.authenticate_channel_capability(msg.port_id.clone(), msg.channel_id.clone(), &channel_cap)?;
+
     // An OPEN IBC connection running on the local (host) chain should exist.
 
     if channel_end.connection_hops().len() != 1 {

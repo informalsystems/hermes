@@ -32,7 +32,8 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         return Err(Error::channel_closed(packet.source_channel));
     }
 
-    let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
+    // Fixme(hu55a1n1)
+    // let _channel_cap = ctx.authenticate_channel_capability(&packet.source_port)?;
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),

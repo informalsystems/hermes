@@ -18,7 +18,7 @@ use crate::prelude::*;
 pub fn process(
     ctx: &dyn ChannelReader,
     msg: &MsgTimeoutOnClose,
-    _cap: ChannelCapability,
+    channel_cap: ChannelCapability,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -27,7 +27,11 @@ pub fn process(
     let source_channel_end =
         ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
-    let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
+    ctx.authenticate_channel_capability(
+        packet.source_port.clone(),
+        packet.source_channel.clone(),
+        &channel_cap,
+    )?;
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),

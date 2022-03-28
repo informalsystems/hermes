@@ -69,29 +69,29 @@ where
 {
     let (module_id, output) = match msg {
         ChannelMsg::ChannelOpenInit(msg) => ctx
-            .lookup_module_by_port(&msg.port_id)
+            .lookup_module_by_port(msg.port_id.clone())
             .map_err(|_| Error::no_port_capability(msg.port_id.clone()))
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_init::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenTry(msg) => ctx
-            .lookup_module_by_port(&msg.port_id)
+            .lookup_module_by_port(msg.port_id.clone())
             .map_err(|_| Error::no_port_capability(msg.port_id.clone()))
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_try::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenAck(msg) => ctx
-            .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
+            .lookup_module_by_channel(msg.channel_id.clone(), msg.port_id.clone())
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_ack::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelOpenConfirm(msg) => ctx
-            .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
+            .lookup_module_by_channel(msg.channel_id.clone(), msg.port_id.clone())
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_open_confirm::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelCloseInit(msg) => ctx
-            .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
+            .lookup_module_by_channel(msg.channel_id.clone(), msg.port_id.clone())
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_close_init::process(ctx, msg, cap)?))),
         ChannelMsg::ChannelCloseConfirm(msg) => ctx
-            .lookup_module_by_channel(&msg.channel_id, &msg.port_id)
+            .lookup_module_by_channel(msg.channel_id.clone(), msg.port_id.clone())
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, chan_close_confirm::process(ctx, msg, cap)?))),
     }?;
@@ -175,21 +175,30 @@ where
     let (module_id, output) = match msg {
         PacketMsg::RecvPacket(msg) => ctx
             .lookup_module_by_channel(
-                &msg.packet.destination_channel,
-                &msg.packet.destination_port,
+                msg.packet.destination_channel.clone(),
+                msg.packet.destination_port.clone(),
             )
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, recv_packet::process(ctx, msg, cap)?))),
         PacketMsg::AckPacket(msg) => ctx
-            .lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)
+            .lookup_module_by_channel(
+                msg.packet.source_channel.clone(),
+                msg.packet.source_port.clone(),
+            )
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, acknowledgement::process(ctx, msg, cap)?))),
         PacketMsg::ToPacket(msg) => ctx
-            .lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)
+            .lookup_module_by_channel(
+                msg.packet.source_channel.clone(),
+                msg.packet.source_port.clone(),
+            )
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, timeout::process(ctx, msg, cap)?))),
         PacketMsg::ToClosePacket(msg) => ctx
-            .lookup_module_by_channel(&msg.packet.source_channel, &msg.packet.source_port)
+            .lookup_module_by_channel(
+                msg.packet.source_channel.clone(),
+                msg.packet.source_port.clone(),
+            )
             .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
             .and_then(|(mid, cap)| Ok((mid, timeout_on_close::process(ctx, msg, cap)?))),
     }?;
