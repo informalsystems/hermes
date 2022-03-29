@@ -25,7 +25,7 @@ hermes [-c CONFIG_FILE] COMMAND
 The configuration file must have one `global` section, and one `chains` section for each chain.
 
 > **Note:** As of 0.6.0, the Hermes configuration file is self-documented.
-> Please read the configuration file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.13.0-rc.0/config.toml)
+> Please read the configuration file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.13.0/config.toml)
 > itself for the most up-to-date documentation of parameters.
 
 By default, Hermes will relay on all channels available between all the configured chains.
@@ -36,7 +36,7 @@ For example, if there are only two chains configured, then Hermes will only rela
 i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
 Hermes will ignore all events that pertain to chains which are unknown (ie. not present in config.toml).
 
-To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v0.13.0-rc.0/config.toml#L207-L224).
+To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v0.13.0/config.toml#L207-L224).
 
 ## Adding private keys
 
@@ -48,70 +48,48 @@ please refer to the [Keys](./commands/keys/index.md) sections in order to learn 
 Here is a full example of a configuration file with two chains configured:
 
 ```toml
-[global]
-log_level = 'info'
+{{#include ../../config.toml}}
+```
 
-[mode]
+## Support for Interchain Accounts
 
-[mode.clients]
-enabled = true
-refresh = true
-misbehaviour = true
+As of version 0.13.0, Hermes supports relaying on [Interchain Accounts][ica] channels.
 
-[mode.connections]
-enabled = false
+If the `packet_filter` option in the chain configuration is disabled, then
+Hermes will relay on all existing and future channels, including ICA channels.
 
-[mode.channels]
-enabled = false
+There are two kinds of ICA channels:
 
-[mode.packets]
-enabled = true
-clear_interval = 100
-clear_on_start = true
-tx_confirmation = true
+1. The host channels, whose port is `icahost`
+2. The controller channels, whose port starts with `icacontroller-` followed
+   by the owner account address. [See the spec for more details][ica].
 
-[rest]
-enabled = true
-host = '127.0.0.1'
-port = 3000
+If you wish to only relay on a few specific standard channels (here `channel-0` and `channel-1`),
+but also relay on all ICA channels, you can specify the following packet filter:
 
-[telemetry]
-enabled = true
-host = '127.0.0.1'
-port = 3001
+> Note the use of wildcards in the port and channel identifiers (`['ica*', '*']`)
+> to match over all the possible ICA ports.
 
-[[chains]]
-id = 'ibc-0'
-rpc_addr = 'http://127.0.0.1:26657'
-grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://localhost:26657/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 2000000
-fee_granter = ''
-gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+```toml
+[chains.packet_filter]
+policy = 'allow'
+list = [
+  ['ica*', '*'], # allow relaying on all channels whose port starts with `ica`
+  ['transfer', 'channel-0'],
+  ['transfer', 'channel-1'],
+  # Add any other port/channel pairs you wish to relay on
+]
+```
 
-[[chains]]
-id = 'ibc-1'
-rpc_addr = 'http://127.0.0.1:26557'
-grpc_addr = 'http://127.0.0.1:9091'
-websocket_addr = 'ws://localhost:26557/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 2000000
-gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+If you wish to relay on all channels but not on ICA channels, you can use
+the following packet filter configuration:
+
+```toml
+[chains.packet_filter]
+policy = 'deny'
+list = [
+  ['ica*', '*'], # deny relaying on all channels whose port starts with `ica`
+]
 ```
 
 ## Update the configuration without restarting Hermes
@@ -197,3 +175,4 @@ on [inspecting the relayer state](help.md#inspecting-the-relayer-state).
 Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
 
 [log-level]: ./help.md#parametrizing-the-log-output-level
+[ica]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
