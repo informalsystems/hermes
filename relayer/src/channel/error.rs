@@ -82,7 +82,7 @@ define_error! {
         Submit
             { chain_id: ChainId }
             [ Error ]
-            |_| { "failed during a transaction submission step to chain '{0}'" },
+            |e| { format_args!("failed during a transaction submission step to chain '{0}'", e.chain_id) },
 
         HandshakeFinalize
             {
