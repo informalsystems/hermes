@@ -73,11 +73,10 @@ impl fmt::Display for AccountSequence {
 
 /// Uses the GRPC client to retrieve the account sequence
 pub async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAccount, Error> {
-    use crate::chain::ChainEndpoint;
     use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
     use ibc_proto::cosmos::auth::v1beta1::{EthAccount, QueryAccountRequest};
 
-    crate::telemetry!(query, chain.id(), "query_account");
+    crate::telemetry!(query, &chain.config.id, "query_account");
 
     let mut client = QueryClient::connect(chain.grpc_addr.clone())
         .await
