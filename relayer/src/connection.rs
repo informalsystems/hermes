@@ -4,8 +4,8 @@ use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::tx::TrackedMsgs;
 use crate::util::retry::RetryResult;
 use flex_error::define_error;
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use prost_types::Any;
 use serde::Serialize;
 use tracing::{error, info, warn};
 

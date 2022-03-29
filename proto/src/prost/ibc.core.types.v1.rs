@@ -1,5 +1,5 @@
 /// GenesisState defines the ibc module's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Serialize, ::serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
     /// ICS002 - Clients genesis state
     #[prost(message, optional, tag = "1")]

@@ -3,7 +3,7 @@
 Hermes accepts global options which affect all commands.
 
 ```shell
-hermes 0.13.0-rc.0
+hermes 0.13.0
 Informal Systems <hello@informal.systems>
 Implementation of `hermes`, an IBC Relayer developed in Rust.
 
