@@ -10,15 +10,12 @@ use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use super::chain::{ClientSettingsOverride, RelayerConfigOverride};
-use super::connection::{
-    run_binary_connection_test, BinaryConnectionTest, ConnectionDelayOverride,
-};
-use super::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::{RelayerConfigOverride, RunBinaryChainTest};
+use crate::framework::binary::chain::{
+    ClientSettingsOverride, RelayerConfigOverride, RunBinaryChainTest,
+};
 use crate::framework::binary::connection::{
     BinaryConnectionTest, ConnectionDelayOverride, RunBinaryConnectionTest,
 };

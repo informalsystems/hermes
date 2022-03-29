@@ -214,7 +214,9 @@ impl BinaryChainTest for ChannelExpirationTest {
                     "Trying to create new channel and worker after previous connection worker failed"
                 );
 
-                let foreign_clients_2 = ForeignClientBuilder::new(&chains.handle_a, &chains.handle_b).bootsrap()?;
+                let foreign_clients_2 = ForeignClientBuilder::new(&chains.handle_a, &chains.handle_b)
+                    .pair()
+                    .bootstrap()?;
 
                 // Need to spawn refresh client for new clients to make sure they don't expire
 

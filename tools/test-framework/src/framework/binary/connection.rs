@@ -8,15 +8,13 @@ use core::time::Duration;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use super::chain::{
-    run_binary_chain_test, BinaryChainTest, ClientSettingsOverride, RelayerConfigOverride,
-};
-use super::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
-use crate::framework::binary::chain::{BinaryChainTest, RelayerConfigOverride, RunBinaryChainTest};
+use crate::framework::binary::chain::{
+    BinaryChainTest, ClientSettingsOverride, RelayerConfigOverride, RunBinaryChainTest,
+};
 use crate::framework::binary::node::{
     run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
 };
