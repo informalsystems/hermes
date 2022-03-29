@@ -178,7 +178,7 @@ clock_drift = '5s'
 # the maximum clock drift when creating a client on this chain. Default: 10s
 # For cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
 # Note: This MUST be the same as the `max_expected_time_per_block` genesis parameter for Tendermint chains.
-max_block_time = '10s'
+max_block_time = '30s'
 
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period
@@ -244,7 +244,7 @@ gas_adjustment = 0.1
 max_msg_num = 30
 max_tx_size = 2097152
 clock_drift = '5s'
-max_block_time = '10s'
+max_block_time = '30s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
