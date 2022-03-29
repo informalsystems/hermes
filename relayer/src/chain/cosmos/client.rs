@@ -23,8 +23,8 @@ impl Settings {
     ) {
         if self.max_clock_drift.is_none() {
             self.max_clock_drift = Some(calculate_client_state_drift(
-                &src_chain_config,
-                &dst_chain_config,
+                src_chain_config,
+                dst_chain_config,
             ));
         }
     }

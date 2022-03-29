@@ -2080,9 +2080,7 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
         settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
-        let settings = match settings {
-            ClientSettings::Cosmos(s) => s,
-        };
+        let ClientSettings::Cosmos(settings) = settings;
         let max_clock_drift = settings
             .max_clock_drift
             .expect("`fill_in_from_chain_configs` should have been called");
