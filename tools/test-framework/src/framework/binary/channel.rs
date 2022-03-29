@@ -10,7 +10,7 @@ use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use super::chain::RelayerConfigOverride;
+use super::chain::{ClientSettingsOverride, RelayerConfigOverride};
 use super::connection::{
     run_binary_connection_test, BinaryConnectionTest, ConnectionDelayOverride,
 };
@@ -39,6 +39,7 @@ where
         + NodeConfigOverride
         + NodeGenesisOverride
         + RelayerConfigOverride
+        + ClientSettingsOverride
         + ConnectionDelayOverride
         + PortsOverride
         + ChannelOrderOverride
@@ -58,6 +59,7 @@ where
         + NodeConfigOverride
         + NodeGenesisOverride
         + RelayerConfigOverride
+        + ClientSettingsOverride
         + ConnectionDelayOverride
         + PortsOverride
         + ChannelOrderOverride

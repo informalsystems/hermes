@@ -6,13 +6,14 @@ use core::time::Duration;
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::PortId;
+use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::Config;
 
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
-use crate::framework::binary::chain::RelayerConfigOverride;
+use crate::framework::binary::chain::{ClientSettingsOverride, RelayerConfigOverride};
 use crate::framework::binary::channel::{
     ChannelOrderOverride, ChannelVersionOverride, PortsOverride,
 };
@@ -74,6 +75,20 @@ pub trait TestOverrides {
     */
     fn modify_relayer_config(&self, _config: &mut Config) {
         // No modification by default
+    }
+
+    /// Returns the settings for the foreign client on the first chain for the
+    /// second chain. The defaults are for a client connecting two Cosmos chains
+    /// with no custom settings.
+    fn client_settings_a_to_b(&self) -> ClientSettings {
+        ClientSettings::Cosmos(Default::default())
+    }
+
+    /// Returns the settings for the foreign client on the second chain for the
+    /// first chain. The defaults are for a client connecting two Cosmos chains
+    /// with no custom settings.
+    fn client_settings_b_to_a(&self) -> ClientSettings {
+        ClientSettings::Cosmos(Default::default())
     }
 
     /**
@@ -156,6 +171,16 @@ impl<Test: TestOverrides> NodeGenesisOverride for Test {
 impl<Test: TestOverrides> RelayerConfigOverride for Test {
     fn modify_relayer_config(&self, config: &mut Config) {
         TestOverrides::modify_relayer_config(self, config)
+    }
+}
+
+impl<Test: TestOverrides> ClientSettingsOverride for Test {
+    fn client_settings_a_to_b(&self) -> ClientSettings {
+        TestOverrides::client_settings_a_to_b(self)
+    }
+
+    fn client_settings_b_to_a(&self) -> ClientSettings {
+        TestOverrides::client_settings_b_to_a(self)
     }
 }
 

@@ -8,7 +8,9 @@ use core::time::Duration;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use super::chain::{run_binary_chain_test, BinaryChainTest, RelayerConfigOverride};
+use super::chain::{
+    run_binary_chain_test, BinaryChainTest, ClientSettingsOverride, RelayerConfigOverride,
+};
 use super::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::bootstrap::binary::connection::bootstrap_connection;
 use crate::error::Error;
@@ -33,6 +35,7 @@ where
         + NodeConfigOverride
         + NodeGenesisOverride
         + RelayerConfigOverride
+        + ClientSettingsOverride
         + ConnectionDelayOverride,
 {
     run_binary_connection_test(&RunTwoWayBinaryConnectionTest::new(test))
@@ -49,6 +52,7 @@ where
         + NodeConfigOverride
         + NodeGenesisOverride
         + RelayerConfigOverride
+        + ClientSettingsOverride
         + ConnectionDelayOverride,
 {
     run_binary_chain_test(&RunBinaryConnectionTest::new(test))

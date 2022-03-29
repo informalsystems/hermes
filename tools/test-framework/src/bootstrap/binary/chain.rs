@@ -27,99 +27,146 @@ use crate::types::tagged::*;
 use crate::types::wallet::{TestWallets, Wallet};
 use crate::util::random::random_u64_range;
 
-/**
-   Bootstraps two relayer chain handles with connected foreign clients.
-
-   Takes two [`FullNode`] values representing two different running
-   full nodes, and return a [`ConnectedChains`] that contain the given
-   full nodes together with the corresponding two [`ChainHandle`]s and
-   [`ForeignClient`]s. Also accepts an [`FnOnce`] closure that modifies
-   the relayer's [`Config`] before the chain handles are initialized.
-*/
-pub fn boostrap_chain_pair_with_nodes(
-    test_config: &TestConfig,
+/// A builder to bootstrap two relayer chain handles with connected
+/// foreign clients.
+pub struct Builder<'config> {
+    test_config: &'config TestConfig,
     node_a: FullNode,
     node_b: FullNode,
-    config_modifier: impl FnOnce(&mut Config),
-) -> Result<
-    (
-        RelayerDriver,
-        ConnectedChains<impl ChainHandle, impl ChainHandle>,
-    ),
-    Error,
-> {
-    let mut config = Config::default();
-
-    add_chain_config(&mut config, &node_a)?;
-    add_chain_config(&mut config, &node_b)?;
-
-    config_modifier(&mut config);
-
-    let config_path = test_config.chain_store_dir.join("relayer-config.toml");
-
-    save_relayer_config(&config, &config_path)?;
-
-    let config = Arc::new(RwLock::new(config));
-
-    let registry = new_registry(config.clone());
-
-    // Pass in unique closure expressions `||{}` as the first argument so that
-    // the returned chains are considered different types by Rust.
-    // See [`spawn_chain_handle`] for more details.
-    let handle_a = spawn_chain_handle(|| {}, &registry, &node_a)?;
-    let handle_b = spawn_chain_handle(|| {}, &registry, &node_b)?;
-
-    if test_config.bootstrap_with_random_ids {
-        pad_client_ids(&handle_a, &handle_b)?;
-        pad_client_ids(&handle_b, &handle_a)?;
-    }
-
-    let foreign_clients = ForeignClientBuilder::new(&handle_a, &handle_b)
-        .pair()
-        .bootstrap()?;
-
-    let relayer = RelayerDriver {
-        config_path,
-        config,
-        registry,
-        hang_on_fail: test_config.hang_on_fail,
-    };
-
-    let chains = ConnectedChains::new(
-        handle_a,
-        handle_b,
-        MonoTagged::new(node_a),
-        MonoTagged::new(node_b),
-        foreign_clients,
-    );
-
-    Ok((relayer, chains))
+    client_settings_a_to_b: ClientSettings,
+    client_settings_b_to_a: ClientSettings,
 }
 
-/**
-   Work similary to [`boostrap_chain_pair_with_nodes`], but bootstraps a
-   single chain to be connected with itself.
+impl<'config> Builder<'config> {
+    /// Initializes the builder with two [`FullNode`] values representing two different
+    /// running full nodes, to bootstrap chain A and chain B respectively.
+    pub fn with_node_pair(
+        test_config: &'config TestConfig,
+        node_a: FullNode,
+        node_b: FullNode,
+    ) -> Self {
+        Self {
+            test_config,
+            node_a,
+            node_b,
+            client_settings_a_to_b: ClientSettings::Cosmos(Default::default()),
+            client_settings_b_to_a: ClientSettings::Cosmos(Default::default()),
+        }
+    }
 
-   Self-connected chains are in fact allowed in IBC. Although we do not
-   have a clear use case for it yet, it is important to verify that
-   tests that pass with two connected chains should also pass with
-   self-connected chains.
+    /// Work similary to [`with_node_pair`][wnp], but bootstraps a
+    /// single chain to be connected with itself.
+    ///
+    /// Self-connected chains are in fact allowed in IBC. Although we do not
+    /// have a clear use case for it yet, it is important to verify that
+    /// tests that pass with two connected chains should also pass with
+    /// self-connected chains.
+    ///
+    /// [wnp]: Builder::with_node_pair
+    ///
+    pub fn self_connected(test_config: &'config TestConfig, node: FullNode) -> Self {
+        let node1 = node.clone();
+        Self::with_node_pair(test_config, node, node1)
+    }
 
-   Returns a [`ConnectedChains`] with the two underlying chains
-   being the same chain.
-*/
-pub fn boostrap_self_connected_chain(
-    test_config: &TestConfig,
-    node: FullNode,
-    config_modifier: impl FnOnce(&mut Config),
-) -> Result<
-    (
-        RelayerDriver,
-        ConnectedChains<impl ChainHandle, impl ChainHandle>,
-    ),
-    Error,
-> {
-    boostrap_chain_pair_with_nodes(test_config, node.clone(), node, config_modifier)
+    /// Overrides settings for the foreign client connecting chain A to chain B.
+    pub fn client_settings_a_to_b(mut self, settings: ClientSettings) -> Self {
+        self.client_settings_a_to_b = settings;
+        self
+    }
+
+    /// Overrides settings for the foreign client connecting chain B to chain A.
+    pub fn client_settings_b_to_a(mut self, settings: ClientSettings) -> Self {
+        self.client_settings_b_to_a = settings;
+        self
+    }
+
+    /// Bootstraps two relayer chain handles with connected foreign clients.
+    ///
+    /// Returns a tuple consisting of the [`RelayerDriver`] and a
+    /// [`ConnectedChains`] object that contains the given
+    /// full nodes together with the corresponding two [`ChainHandle`]s and
+    /// [`ForeignClient`]s.
+    pub fn bootstrap(
+        self,
+    ) -> Result<
+        (
+            RelayerDriver,
+            ConnectedChains<impl ChainHandle, impl ChainHandle>,
+        ),
+        Error,
+    > {
+        self.bootstrap_with_config(|_| {})
+    }
+
+    /// Bootstraps two relayer chain handles with connected foreign clients.
+    ///
+    /// Returns a tuple consisting of the [`RelayerDriver`] and a
+    /// [`ConnectedChains`] object that contains the given
+    /// full nodes together with the corresponding two [`ChainHandle`]s and
+    /// [`ForeignClient`]s.
+    ///
+    /// This method gives the caller a way to modify the relayer configuration
+    /// that is pre-generated from the configurations of the full nodes.
+    pub fn bootstrap_with_config(
+        self,
+        config_modifier: impl FnOnce(&mut Config),
+    ) -> Result<
+        (
+            RelayerDriver,
+            ConnectedChains<impl ChainHandle, impl ChainHandle>,
+        ),
+        Error,
+    > {
+        let mut config = Config::default();
+
+        add_chain_config(&mut config, &self.node_a)?;
+        add_chain_config(&mut config, &self.node_b)?;
+
+        config_modifier(&mut config);
+
+        let config_path = self.test_config.chain_store_dir.join("relayer-config.toml");
+
+        save_relayer_config(&config, &config_path)?;
+
+        let config = Arc::new(RwLock::new(config));
+
+        let registry = new_registry(config.clone());
+
+        // Pass in unique closure expressions `||{}` as the first argument so that
+        // the returned chains are considered different types by Rust.
+        // See [`spawn_chain_handle`] for more details.
+        let handle_a = spawn_chain_handle(|| {}, &registry, &self.node_a)?;
+        let handle_b = spawn_chain_handle(|| {}, &registry, &self.node_b)?;
+
+        if self.test_config.bootstrap_with_random_ids {
+            pad_client_ids(&handle_a, &handle_b)?;
+            pad_client_ids(&handle_b, &handle_a)?;
+        }
+
+        let foreign_clients = ForeignClientBuilder::new(&handle_a, &handle_b)
+            .client_settings(self.client_settings_a_to_b)
+            .pair()
+            .client_settings(self.client_settings_b_to_a)
+            .bootstrap()?;
+
+        let relayer = RelayerDriver {
+            config_path,
+            config,
+            registry,
+            hang_on_fail: self.test_config.hang_on_fail,
+        };
+
+        let chains = ConnectedChains::new(
+            handle_a,
+            handle_b,
+            MonoTagged::new(self.node_a),
+            MonoTagged::new(self.node_b),
+            foreign_clients,
+        );
+
+        Ok((relayer, chains))
+    }
 }
 
 pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
