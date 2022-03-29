@@ -7,7 +7,7 @@ use ibc::core::ics04_channel::Version as ChannelVersion;
 use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::{self, Config, ModeConfig};
 
-use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
+use ibc_test_framework::bootstrap::binary::chain::ForeignClientBuilder;
 use ibc_test_framework::bootstrap::binary::channel::{
     bootstrap_channel_with_chains, bootstrap_channel_with_connection,
 };
@@ -211,8 +211,9 @@ impl BinaryChainTest for ChannelExpirationTest {
                 "Trying to create new channel and worker after previous connection worker failed"
             );
 
-            let foreign_clients_2 =
-                bootstrap_foreign_client_pair(&chains.handle_a, &chains.handle_b)?;
+            let foreign_clients_2 = ForeignClientBuilder::new(&chains.handle_a, &chains.handle_b)
+                .pair()
+                .bootstrap()?;
 
             // Need to spawn refresh client for new clients to make sure they don't expire
 

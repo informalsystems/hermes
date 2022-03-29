@@ -74,7 +74,9 @@ pub fn boostrap_chain_pair_with_nodes(
         pad_client_ids(&handle_b, &handle_a)?;
     }
 
-    let foreign_clients = bootstrap_foreign_client_pair(&handle_a, &handle_b)?;
+    let foreign_clients = ForeignClientBuilder::new(&handle_a, &handle_b)
+        .pair()
+        .bootstrap()?;
 
     let relayer = RelayerDriver {
         config_path,
@@ -135,34 +137,78 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
     Ok(())
 }
 
-pub fn bootstrap_foreign_client_pair<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chain_a: &ChainA,
-    chain_b: &ChainB,
-) -> Result<ForeignClientPair<ChainA, ChainB>, Error> {
-    let client_a_to_b = bootstrap_foreign_client(chain_a, chain_b)?;
-    let client_b_to_a = bootstrap_foreign_client(chain_b, chain_a)?;
-
-    Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
+pub struct ForeignClientBuilder<'a, ChainA: ChainHandle, ChainB: ChainHandle> {
+    chain_a: &'a ChainA,
+    chain_b: &'a ChainB,
+    client_settings: ClientSettings,
 }
 
-/**
-   Bootstrap a foreign client from `ChainA` to `ChainB`, i.e. the foreign
-   client collects information from `ChainA` and submits them as transactions
-   to `ChainB`.
+pub struct ForeignClientPairBuilder<'a, ChainA: ChainHandle, ChainB: ChainHandle> {
+    a_to_b: ForeignClientBuilder<'a, ChainA, ChainB>,
+    b_to_a_client_settings: ClientSettings,
+}
 
-   The returned `ForeignClient` is tagged in contravariant ordering, i.e.
-   `ChainB` then `ChainB`, because `ForeignClient` takes the the destination
-   chain in the first position.
-*/
-pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
+impl<'a, ChainA: ChainHandle, ChainB: ChainHandle> ForeignClientBuilder<'a, ChainA, ChainB> {
+    pub fn new(chain_a: &'a ChainA, chain_b: &'a ChainB) -> Self {
+        Self {
+            chain_a,
+            chain_b,
+            client_settings: ClientSettings::Cosmos(Default::default()),
+        }
+    }
+
+    pub fn client_settings(mut self, settings: ClientSettings) -> Self {
+        self.client_settings = settings;
+        self
+    }
+
+    /// Bootstrap a foreign client from `ChainA` to `ChainB`, i.e. the foreign
+    /// client collects information from `ChainA` and submits them as transactions
+    /// to `ChainB`.
+    ///
+    /// The returned `ForeignClient` is tagged in contravariant ordering, i.e.
+    /// `ChainB` then `ChainB`, because `ForeignClient` takes the the destination
+    /// chain in the first position.
+    pub fn bootstrap(self) -> Result<ForeignClient<ChainB, ChainA>, Error> {
+        bootstrap_foreign_client(self.chain_a, self.chain_b, self.client_settings)
+    }
+
+    /// Continues the builder composition for a pair of clients in both directions.
+    pub fn pair(self) -> ForeignClientPairBuilder<'a, ChainA, ChainB> {
+        ForeignClientPairBuilder {
+            a_to_b: self,
+            b_to_a_client_settings: ClientSettings::Cosmos(Default::default()),
+        }
+    }
+}
+
+impl<'a, ChainA: ChainHandle, ChainB: ChainHandle> ForeignClientPairBuilder<'a, ChainA, ChainB> {
+    /// Overrides the settings for a client in the reverse direction (B to A).
+    pub fn client_settings(mut self, settings: ClientSettings) -> Self {
+        self.b_to_a_client_settings = settings;
+        self
+    }
+
+    pub fn bootstrap(self) -> Result<ForeignClientPair<ChainA, ChainB>, Error> {
+        let chain_a = self.a_to_b.chain_a;
+        let chain_b = self.a_to_b.chain_b;
+        let client_a_to_b =
+            bootstrap_foreign_client(chain_a, chain_b, self.a_to_b.client_settings)?;
+        let client_b_to_a =
+            bootstrap_foreign_client(chain_b, chain_a, self.b_to_a_client_settings)?;
+        Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
+    }
+}
+
+fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a: &ChainA,
     chain_b: &ChainB,
+    client_settings: ClientSettings,
 ) -> Result<ForeignClient<ChainB, ChainA>, Error> {
     let foreign_client =
         ForeignClient::restore(ClientId::default(), chain_b.clone(), chain_a.clone());
 
-    let event =
-        foreign_client.build_create_client_and_send(ClientSettings::Cosmos(Default::default()))?;
+    let event = foreign_client.build_create_client_and_send(client_settings)?;
     let client_id = extract_client_id(&event)?.clone();
 
     info!(
