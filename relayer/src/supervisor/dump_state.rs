@@ -59,9 +59,16 @@ impl fmt::Display for SupervisorState {
         writeln!(f)?;
         writeln!(f, "* Chains: {}", self.chains.iter().join(", "))?;
         for (tpe, objects) in &self.workers {
-            writeln!(f, "* {:?} workers:", tpe)?;
+            writeln!(f, "* {tpe:?} workers:")?;
             for desc in objects {
                 writeln!(f, "  - {} (id: {})", desc.object.short_name(), desc.id)?;
+                if let Some(WorkerData::Client {
+                    misbehaviour,
+                    refresh,
+                }) = desc.data
+                {
+                    writeln!(f, "    | misbehaviour: {misbehaviour}, refresh: {refresh}")?;
+                }
             }
         }
 
