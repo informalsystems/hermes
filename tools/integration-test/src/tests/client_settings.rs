@@ -1,14 +1,15 @@
 use std::time::Duration;
 
+use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use tendermint::trust_threshold::TrustThresholdFraction;
 
+use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::Height;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::cosmos;
 
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::refresh::spawn_refresh_client_tasks;
 
 /// A test to exercise customization of foreign client settings.
 #[test]
@@ -33,7 +34,7 @@ impl TestOverrides for SettingsTestOverrides {
         ClientSettings::Cosmos(cosmos::client::Settings {
             max_clock_drift: Some(Duration::from_secs(6)),
             trusting_period: Some(Duration::from_secs(340_000)),
-            trust_threshold: Some(TrustThresholdFraction::new(17, 29).unwrap()),
+            trust_threshold: Some(TrustThresholdFraction::TWO_THIRDS),
         })
     }
 }
@@ -42,19 +43,20 @@ impl BinaryChainTest for ClientSettingsTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        relayer: RelayerDriver,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let _refresh_tasks = spawn_refresh_client_tasks(&chains.foreign_clients)?;
-        let _supervisor = relayer.spawn_supervisor()?;
-        let state = chains
-            .handle_a
-            .query_client_state(chains.foreign_clients.client_a_to_b.id(), Height::zero())?;
-        let state = match state {
-            AnyClientState::Tendermint(s) => s,
-            _ => unreachable!("unexpected client state type"),
-        };
+        let client_id = chains.foreign_clients.client_a_to_b.id();
+        let state = query_client_state(chains.handle_b, client_id)?;
         assert_eq!(state.max_clock_drift, Duration::from_secs(3));
+        assert_eq!(state.trusting_period, Duration::from_secs(120_000));
+        assert_eq!(state.trust_level, TrustThreshold::new(13, 23).unwrap());
+
+        let client_id = chains.foreign_clients.client_b_to_a.id();
+        let state = query_client_state(chains.handle_a, client_id)?;
+        assert_eq!(state.max_clock_drift, Duration::from_secs(6));
+        assert_eq!(state.trusting_period, Duration::from_secs(340_000));
+        assert_eq!(state.trust_level, TrustThreshold::TWO_THIRDS);
         Ok(())
     }
 }
@@ -64,5 +66,16 @@ impl HasOverrides for ClientSettingsTest {
 
     fn get_overrides(&self) -> &SettingsTestOverrides {
         &SettingsTestOverrides
+    }
+}
+
+fn query_client_state<Chain: ChainHandle>(
+    handle: Chain,
+    id: &ClientId,
+) -> Result<TendermintClientState, Error> {
+    let state = handle.query_client_state(id, Height::zero())?;
+    match state {
+        AnyClientState::Tendermint(state) => Ok(state),
+        _ => unreachable!("unexpected client state type"),
     }
 }
