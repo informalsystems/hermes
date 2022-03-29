@@ -20,6 +20,7 @@ use crate::framework::binary::channel::{
 use crate::framework::binary::connection::ConnectionDelayOverride;
 use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
+use crate::framework::supervisor::SupervisorOverride;
 use crate::types::config::TestConfig;
 
 /**
@@ -89,6 +90,10 @@ pub trait TestOverrides {
     /// with no custom settings.
     fn client_settings_b_to_a(&self) -> ClientSettings {
         ClientSettings::Cosmos(Default::default())
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        true
     }
 
     /**
@@ -181,6 +186,12 @@ impl<Test: TestOverrides> ClientSettingsOverride for Test {
 
     fn client_settings_b_to_a(&self) -> ClientSettings {
         TestOverrides::client_settings_b_to_a(self)
+    }
+}
+
+impl<Test: TestOverrides> SupervisorOverride for Test {
+    fn should_spawn_supervisor(&self) -> bool {
+        TestOverrides::should_spawn_supervisor(self)
     }
 }
 

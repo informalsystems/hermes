@@ -15,11 +15,13 @@ use crate::framework::binary::node::{
     run_binary_node_test, run_single_node_test, BinaryNodeTest, NodeConfigOverride,
     NodeGenesisOverride,
 };
+use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::{ConnectedChains, DropChainHandle};
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
 use crate::types::single::node::FullNode;
+use crate::util::suspend::hang_on_error;
 
 /**
    Runs a test case that implements [`BinaryChainTest`], with
@@ -34,6 +36,7 @@ where
         + NodeGenesisOverride
         + RelayerConfigOverride
         + ClientSettingsOverride
+        + SupervisorOverride
         + TestConfigOverride,
 {
     run_binary_chain_test(&RunTwoWayBinaryChainTest::new(test))
@@ -50,9 +53,10 @@ where
         + NodeGenesisOverride
         + RelayerConfigOverride
         + ClientSettingsOverride
+        + SupervisorOverride
         + TestConfigOverride,
 {
-    run_binary_node_test(&RunBinaryChainTest::new(test))
+    run_binary_node_test(&RunBinaryChainTest::new(&RunWithSupervisor::new(test)))
 }
 
 /**
@@ -215,9 +219,7 @@ where
         let _drop_handle_a = DropChainHandle(chains.handle_a.clone());
         let _drop_handle_b = DropChainHandle(chains.handle_b.clone());
 
-        self.test
-            .run(config, relayer, chains)
-            .map_err(config.hang_on_error())?;
+        self.test.run(config, relayer, chains)?;
 
         Ok(())
     }
@@ -249,6 +251,30 @@ impl<'a, Test: BinaryChainTest> BinaryChainTest for RunTwoWayBinaryChainTest<'a,
         self.test.run(config, relayer, chains)?;
 
         Ok(())
+    }
+}
+
+impl<'a, Test, Overrides> BinaryChainTest for RunWithSupervisor<'a, Test>
+where
+    Test: BinaryChainTest,
+    Test: HasOverrides<Overrides = Overrides>,
+    Overrides: SupervisorOverride,
+{
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        if self.get_overrides().should_spawn_supervisor() {
+            relayer
+                .clone()
+                .with_supervisor(|| self.test.run(config, relayer, chains))
+        } else {
+            hang_on_error(config.hang_on_fail, || {
+                self.test.run(config, relayer, chains)
+            })
+        }
     }
 }
 
