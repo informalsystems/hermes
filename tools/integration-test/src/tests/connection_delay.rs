@@ -72,13 +72,13 @@ impl BinaryChannelTest for ConnectionDelayTest {
             );
 
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
-                &wallet_a.as_ref(),
+                &wallet_a.address(),
                 balance_a - a_to_b_amount,
                 &denom_a,
             )?;
 
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.as_ref(),
+                &wallet_b.address(),
                 a_to_b_amount,
                 &denom_b.as_ref(),
             )?;
