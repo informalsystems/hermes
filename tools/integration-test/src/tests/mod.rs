@@ -7,6 +7,7 @@
 
 pub mod clear_packet;
 pub mod client_expiration;
+mod client_settings;
 pub mod memo;
 pub mod supervisor;
 pub mod ternary_transfer;
