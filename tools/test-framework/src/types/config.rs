@@ -2,10 +2,8 @@
    Definition for the test configuration.
 */
 
-use core::fmt::{Debug, Display};
+use core::fmt::Debug;
 use std::path::PathBuf;
-
-use crate::util::suspend::hang_on_error;
 
 /**
    The test config to be passed to each test case. Currently this is loaded
@@ -58,14 +56,4 @@ pub struct TestConfig {
     pub hang_on_fail: bool,
 
     pub bootstrap_with_random_ids: bool,
-}
-
-impl TestConfig {
-    /**
-       Returns an error handler that will suspend indefinitely if
-       [`TestConfig::hang_on_fail`] is set to `true`.
-    */
-    pub fn hang_on_error<E: Debug + Display>(&self) -> impl FnOnce(E) -> E {
-        hang_on_error(self.hang_on_fail)
-    }
 }

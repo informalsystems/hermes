@@ -62,7 +62,7 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     use signal_hook::{consts::signal::*, iterator::Signals};
 
     let sigs = vec![
-        SIGHUP,  // Reload of configuration
+        SIGHUP,  // Reload of configuration (disabled)
         SIGUSR1, // Dump state
     ];
 
@@ -71,9 +71,12 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     std::thread::spawn(move || {
         for signal in &mut signals {
             match signal {
-                SIGHUP => warn!("configuration reloading via SIGHUP has been disabled. The signal handler will be removed in the future"),
+                SIGHUP => warn!(
+                    "configuration reloading via SIGHUP has been disabled, \
+                     the signal handler will be removed in the future"
+                ),
                 SIGUSR1 => {
-                    info!("Dumping state (triggered by SIGUSR1)");
+                    info!("dumping state (triggered by SIGUSR1)");
 
                     let (tx, rx) = crossbeam_channel::bounded(1);
                     tx_cmd.try_send(SupervisorCmd::DumpState(tx)).unwrap();

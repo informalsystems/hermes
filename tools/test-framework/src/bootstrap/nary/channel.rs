@@ -5,6 +5,7 @@
 use core::convert::TryInto;
 use core::time::Duration;
 use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 
@@ -54,6 +55,7 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
                     &DualTagged::new(port_a),
                     &DualTagged::new(port_b),
                     order,
+                    Version::ics20(),
                     bootstrap_with_random_ids,
                 )?;
 

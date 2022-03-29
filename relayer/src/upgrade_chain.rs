@@ -5,7 +5,6 @@ use core::time::Duration;
 
 use bytes::BufMut;
 use flex_error::define_error;
-use prost_types::Any;
 
 use tendermint::abci::transaction::Hash as TxHash;
 
@@ -16,6 +15,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::downcast;
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::{Plan, SoftwareUpgradeProposal};
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
 use crate::chain::tx::TrackedMsgs;

@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;

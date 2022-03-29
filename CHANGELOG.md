@@ -1,23 +1,105 @@
 # CHANGELOG
 
-## v0.13.0-rc.0
+## v0.13.0
+*March 28th, 2022*
 
-> ⚠️  This is a release candidate and not the final release for v0.13.0.
+Hermes v0.13.0 improves performance by lowering the pressure
+on the full nodes by adding a caching layer for some queries.
+It also fixes a bug which could cause an exponential slowdown
+when relaying between many chains with a low average block time.
+
+This release also add support for wildcards in port and channel identifiers
+in the packet filter configuration, which enable operators to filter
+ICA channels based on the port prefix.
+
+Additionally, the IBC Protocol Buffers definitions can now be used from CosmWasm.
+
+### Note for operators
+
+As of version 0.13.0, Hermes supports relaying on [Interchain Accounts][ica] channels.
+
+If the `packet_filter` option in the chain configuration is disabled, then
+Hermes will relay on all existing and future channels, including ICA channels.
+
+There are two kinds of ICA channels:
+
+1. The host channels, whose port is `icahost`
+2. The controller channels, whose port starts with `icacontroller-` followed
+   by the owner account address. [See the spec for more details][ica].
+
+If you wish to only relay on a few specific standard channels (here `channel-0` and `channel-1`),
+but also relay on all ICA channels, you can specify the following packet filter:
+
+> Note the use of wildcards in the port and channel identifiers (`['ica*', '*']`)
+> to match over all the possible ICA ports.
+
+```toml
+[chains.packet_filter]
+policy = 'allow'
+list = [
+  ['ica*', '*'], # allow relaying on all channels whose port starts with `ica`
+  ['transfer', 'channel-0'],
+  ['transfer', 'channel-1'],
+  # Add any other port/channel pairs you wish to relay on
+]
+```
+
+If you wish to relay on all channels but not on ICA channels, you can use
+the following packet filter configuration:
+
+```toml
+[chains.packet_filter]
+policy = 'deny'
+list = [
+  ['ica*', '*'], # deny relaying on all channels whose port starts with `ica`
+]
+```
+
+This information can also be found in the [Hermes guide][guide-ica].
+
+[ica]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
+[guide-ica]: https://hermes.informal.systems/config.html#support-for-interchain-accounts
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Fixed relayer behavior on ordered channels
+    ([#1835](https://github.com/informalsystems/ibc-rs/issues/1835))
+  - Do not spawn packet worker on chan open ack/confirm events
+    ([#1991](https://github.com/informalsystems/ibc-rs/issues/1991))
+  - Fix a bug which would cause the relayer to slow down exponentially when either
+    the average block time was low or when it was relaying on too many chains at
+    once ([#2008](https://github.com/informalsystems/ibc-rs/issues/2008))
 
 ### FEATURES
 
+- [IBC Proto](proto)
+  - Add CosmWasm support to the generated Protobuf code ([#1913](https://github.com/informalsystems/ibc-rs/issues/1913))
+    * Add a new `client` feature to gate the tonic client code, implies the `std` feature.
+    * Add a new `json-schema` feature to derive `schemars::JsonSchema` on some proto types, implies the `std` feature.
+    * Add `#[serde(default)]` to fields that might be omitted by Golang `omitempty` directive.
+    * Change serialization of byte arrays to Base64 for compatibility with Go.
+  - Derive `Serialize` and `Deserialize` for `ibc-proto::ibc::core` and `ibc_proto::ibc::applications` structs,
+    and switch to Google's Protobuf standard types instead of Prost's types.
+    ([#1988](https://github.com/informalsystems/ibc-rs/issues/1988))
 - [Relayer Library](relayer)
   - Added caching layer for hermes start command
     ([#1908](https://github.com/informalsystems/ibc-rs/issues/1908))
+  - Add support for wildcards in port and channel identifiers in the packet filter configuration,
+    which enable operators to filter ICA channels based on the port prefix
+    ([#1927](https://github.com/informalsystems/ibc-rs/issues/1927))
 
 ### IMPROVEMENTS
 
 - [IBC Modules](modules)
-  - Refactored ics04_channel events
+  - Refactored channels events in ICS 04 module
     ([#718](https://github.com/informalsystems/ibc-rs/issues/718))
+- [Integration Test Framework](relayer-cli)
+  - Split out test framework as new crate `ibc-test-framework` from `ibc-integration-test`. ([#1961](https://github.com/informalsystems/ibc-rs/pull/1961))
 - [Relayer Library](relayer)
-  - Fixed relayer behavior on ordered channels
-    ([#1835](https://github.com/informalsystems/ibc-rs/issues/1835))
+  - Add documentation for the caching layer implemented in ([#1908](https://github.com/informalsystems/ibc-rs/issues/1908))
+- [Relayer CLI](relayer-cli)
+  - Print packet data on one line ([#1559](https://github.com/informalsystems/ibc-rs/issues/1559))
 
 ## v0.12.0
 *February 24th, 2022*
