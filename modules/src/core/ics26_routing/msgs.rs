@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 
 use crate::applications::ics20_fungible_token_transfer::msgs::{transfer, transfer::MsgTransfer};
 use crate::core::ics02_client::msgs::{create_client, update_client, upgrade_client, ClientMsg};

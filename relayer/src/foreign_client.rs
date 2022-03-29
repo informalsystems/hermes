@@ -8,8 +8,8 @@ use core::{fmt, time::Duration};
 use std::thread;
 use std::time::Instant;
 
+use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
 
 use crate::chain::tx::TrackedMsgs;

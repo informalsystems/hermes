@@ -526,9 +526,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.2"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e54ea8bc3fb1ee042f5aace6e3c6e025d3874866da222930f70ce62aceba0bfa"
+checksum = "5aaa7bd5fb665c6864b5f963dd9097905c54125909c7aa94c9e18507cdbe6c53"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils 0.8.7",
@@ -1344,7 +1344,7 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.13.0-rc.0"
+version = "0.13.0"
 dependencies = [
  "bytes",
  "derive_more",
@@ -1375,13 +1375,14 @@ dependencies = [
 
 [[package]]
 name = "ibc-integration-test"
-version = "0.13.0-rc.0"
+version = "0.13.0"
 dependencies = [
  "ibc",
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-test-framework",
+ "serde",
  "serde_json",
  "tendermint",
  "tendermint-rpc",
@@ -1390,7 +1391,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "base64",
  "bytes",
@@ -1404,14 +1405,14 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.13.0-rc.0"
+version = "0.13.0"
 dependencies = [
  "anyhow",
  "async-stream",
  "bech32",
  "bitcoin",
  "bytes",
- "crossbeam-channel 0.5.2",
+ "crossbeam-channel 0.5.4",
  "dirs-next",
  "env_logger",
  "flex-error",
@@ -1432,6 +1433,7 @@ dependencies = [
  "num-rational",
  "prost",
  "prost-types",
+ "regex",
  "retry",
  "ripemd160",
  "semver",
@@ -1462,14 +1464,14 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "0.13.0-rc.0"
+version = "0.13.0"
 dependencies = [
  "abscissa_core",
  "atty",
  "clap",
  "clap_complete",
  "color-eyre",
- "crossbeam-channel 0.5.2",
+ "crossbeam-channel 0.5.4",
  "dirs-next",
  "eyre",
  "flex-error",
@@ -1505,9 +1507,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.13.0-rc.0"
+version = "0.13.0"
 dependencies = [
- "crossbeam-channel 0.5.2",
+ "crossbeam-channel 0.5.4",
  "ibc",
  "ibc-relayer",
  "rouille",
@@ -1520,9 +1522,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.13.0-rc.0"
+version = "0.13.0"
 dependencies = [
- "crossbeam-channel 0.5.2",
+ "crossbeam-channel 0.5.4",
  "ibc",
  "once_cell",
  "opentelemetry",
@@ -1533,10 +1535,10 @@ dependencies = [
 
 [[package]]
 name = "ibc-test-framework"
-version = "0.13.0-rc.0"
+version = "0.13.0"
 dependencies = [
  "color-eyre",
- "crossbeam-channel 0.5.2",
+ "crossbeam-channel 0.5.4",
  "env_logger",
  "eyre",
  "flex-error",
@@ -1656,9 +1658,9 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.10.2"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cc5937366afd3b38071f400d1ce5bd8b1d40b5083cc14e6f8dbcc4032a7f5bb"
+checksum = "19c3a5e0a0b8450278feda242592512e09f61c72e018b8cd5c859482802daf2d"
 dependencies = [
  "cfg-if 1.0.0",
  "ecdsa",
@@ -1844,11 +1846,11 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.7.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26e1a0803406a47496169480f26cab92e78936c1180ad439ee18d36478c1509c"
+checksum = "55327ce58eed74a69fd80c75da97a08fbcbf61dbcb6917fcf8b84fa6435e70bb"
 dependencies = [
- "crossbeam-channel 0.5.2",
+ "crossbeam-channel 0.5.4",
  "crossbeam-epoch 0.8.2",
  "crossbeam-utils 0.8.7",
  "num_cpus",
@@ -2028,7 +2030,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6105e89802af13fdf48c49d7646d3b533a70e536d818aae7e78ba0433d01acb8"
 dependencies = [
  "async-trait",
- "crossbeam-channel 0.5.2",
+ "crossbeam-channel 0.5.4",
  "dashmap",
  "fnv",
  "futures-channel",
@@ -2440,7 +2442,7 @@ version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d78120e2c850279833f1dd3582f730c4ab53ed95aeaaaa862a2a5c71b1656d8e"
 dependencies = [
- "crossbeam-channel 0.5.2",
+ "crossbeam-channel 0.5.4",
  "crossbeam-deque",
  "crossbeam-utils 0.8.7",
  "lazy_static",
@@ -2828,9 +2830,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.6"
+version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a3381e03edd24287172047536f20cabde766e2cd3e65e6b00fb3af51c4f38d"
+checksum = "d65bd28f48be7196d222d95b9243287f48d27aca604e08497513019ff0502cc4"
 dependencies = [
  "serde",
 ]
@@ -3357,9 +3359,9 @@ dependencies = [
 
 [[package]]
 name = "test-log"
-version = "0.2.8"
+version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb78caec569a40f42c078c798c0e35b922d9054ec28e166f0d6ac447563d91a4"
+checksum = "4235dbf7ea878b3ef12dea20a59c134b405a66aafc4fc2c7b9935916e289e735"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3412,9 +3414,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.7"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "004cbc98f30fa233c61a38bc77e96a9106e65c88f2d3bef182ae952027e5753d"
+checksum = "c2702e08a7a860f005826c6815dcac101b19b5eb330c27fe4a5928fec1d20ddd"
 dependencies = [
  "libc",
  "num_threads",
@@ -3423,9 +3425,9 @@ dependencies = [
 
 [[package]]
 name = "time-macros"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25eb0ca3468fc0acc11828786797f6ef9aa1555e4a211a60d64cc8e4d1be47d6"
+checksum = "42657b1a6f4d817cda8e7a0ace261fe0cc946cf3a80314390b22cc61ae080792"
 
 [[package]]
 name = "tiny-bip39"

@@ -42,7 +42,7 @@ pub struct Validator {
     #[prost(string, tag = "1")]
     pub address: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub pub_key: ::core::option::Option<::prost_types::Any>,
+    pub pub_key: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     #[prost(int64, tag = "3")]
     pub voting_power: i64,
     #[prost(int64, tag = "4")]
