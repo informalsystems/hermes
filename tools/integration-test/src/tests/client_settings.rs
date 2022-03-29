@@ -2,6 +2,8 @@ use std::time::Duration;
 
 use tendermint::trust_threshold::TrustThresholdFraction;
 
+use ibc::core::ics02_client::client_state::AnyClientState;
+use ibc::Height;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::cosmos;
 
@@ -45,7 +47,15 @@ impl BinaryChainTest for ClientSettingsTest {
     ) -> Result<(), Error> {
         let _refresh_tasks = spawn_refresh_client_tasks(&chains.foreign_clients)?;
         let _supervisor = relayer.spawn_supervisor()?;
-        todo!("verify that the clients are created with the expected settings")
+        let state = chains
+            .handle_a
+            .query_client_state(chains.foreign_clients.client_a_to_b.id(), Height::zero())?;
+        let state = match state {
+            AnyClientState::Tendermint(s) => s,
+            _ => unreachable!("unexpected client state type"),
+        };
+        assert_eq!(state.max_clock_drift, Duration::from_secs(3));
+        Ok(())
     }
 }
 
