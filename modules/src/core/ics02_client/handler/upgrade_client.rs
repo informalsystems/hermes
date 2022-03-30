@@ -80,12 +80,12 @@ mod tests {
 
     use core::str::FromStr;
 
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Upgrade;
     use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
     use crate::core::ics02_client::msgs::ClientMsg;
-    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics24_host::identifier::ClientId;
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
