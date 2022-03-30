@@ -66,6 +66,7 @@ pub fn process(
     });
     let event_attributes = Attributes {
         client_id,
+        height: ctx.host_height(),
         ..Default::default()
     };
 
@@ -84,6 +85,7 @@ mod tests {
     use crate::core::ics02_client::handler::ClientResult::Upgrade;
     use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
     use crate::core::ics02_client::msgs::ClientMsg;
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics24_host::identifier::ClientId;
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
@@ -120,8 +122,9 @@ mod tests {
                 assert_eq!(events.len(), 1);
                 let event = events.pop().unwrap();
                 assert!(
-                    matches!(event, IbcEvent::UpgradeClient(e) if e.client_id() == &msg.client_id)
+                    matches!(event, IbcEvent::UpgradeClient(ref e) if e.client_id() == &msg.client_id)
                 );
+                assert_eq!(event.height(), ctx.host_height());
                 assert!(log.is_empty());
                 // Check the result
                 match result {
