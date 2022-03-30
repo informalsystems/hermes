@@ -2,6 +2,8 @@
 
 use core::time::Duration;
 
+use tracing::warn;
+
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 
 use crate::config::ChainConfig;
@@ -21,11 +23,22 @@ impl Settings {
         src_chain_config: &ChainConfig,
         dst_chain_config: &ChainConfig,
     ) {
-        if self.max_clock_drift.is_none() {
-            self.max_clock_drift = Some(calculate_client_state_drift(
-                src_chain_config,
-                dst_chain_config,
-            ));
+        match self.max_clock_drift {
+            None => {
+                self.max_clock_drift = Some(calculate_client_state_drift(
+                    src_chain_config,
+                    dst_chain_config,
+                ));
+            }
+            Some(user_value) => {
+                if user_value > dst_chain_config.max_block_time {
+                    warn!(
+                        "user specified max_clock_drift ({:?}) exceeds max_block_time \
+                        of the destination chain {}",
+                        user_value, dst_chain_config.id,
+                    );
+                }
+            }
         }
     }
 }
