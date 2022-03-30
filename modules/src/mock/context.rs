@@ -683,7 +683,6 @@ impl ChannelReader for MockContext {
                 if !PortReader::authenticate(self, port_id.clone(), &key) {
                     Err(Ics04Error::invalid_port_capability())
                 } else {
-                    // FIXME(hu55a1n1): implement using separate field (e.g. `channel_capabilities`)
                     Ok(Capability::from(key).into())
                 }
             }
@@ -823,7 +822,6 @@ impl ChannelReader for MockContext {
         _channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-        // FIXME(hu55a1n1): add separate map for channel capabilities
         self.lookup_module_by_port(port_id)
             .map(|(mid, pcap)| (mid, ChannelCapability::from(Capability::from(pcap))))
             .map_err(Ics04Error::ics05_port)

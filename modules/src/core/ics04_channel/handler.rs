@@ -221,8 +221,6 @@ where
                             write_fn(cb.as_any_mut());
                         }
                     }
-
-                    // TODO(hu55a1n1): write ack
                 }
             }
         }

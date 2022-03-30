@@ -86,7 +86,6 @@ pub type WriteFn = dyn FnOnce(&mut dyn Any);
 
 pub type DeferredWriteResult<T> = (Option<Box<T>>, Option<Box<WriteFn>>);
 
-// FIXME(hu55a1n1): Define concrete type that implements `Into<AbciEvent>`?
 pub type ModuleEvent = IbcEvent;
 
 pub type ModuleOutput = HandlerOutput<(), ModuleEvent>;
