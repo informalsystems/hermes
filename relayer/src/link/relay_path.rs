@@ -1598,22 +1598,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Ok((true_res, false_res))
         }
 
-        let src_chain_time = || self.src_time_latest();
-        let src_max_block_time = || self.src_max_block_time();
-        let src_latest_height = || self.src_latest_height();
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
-                Ok(op.conn_time_delay_remaining(src_chain_time)?.is_zero()
-                    && op.conn_block_delay_remaining(src_max_block_time, src_latest_height)? == 0)
+                op.has_conn_delay_elapsed(
+                    || self.src_time_latest(),
+                    || self.src_max_block_time(),
+                    || self.src_latest_height(),
+                )
             })?;
 
-        let dst_chain_time = || self.dst_time_latest();
-        let dst_max_block_time = || self.dst_max_block_time();
-        let dst_latest_height = || self.dst_latest_height();
         let (elapsed_dst_ods, unelapsed_dst_ods) =
             partition(self.dst_operational_data.take(), |op| {
-                Ok(op.conn_time_delay_remaining(dst_chain_time)?.is_zero()
-                    && op.conn_block_delay_remaining(dst_max_block_time, dst_latest_height)? == 0)
+                op.has_conn_delay_elapsed(
+                    || self.dst_time_latest(),
+                    || self.dst_max_block_time(),
+                    || self.dst_latest_height(),
+                )
             })?;
 
         self.src_operational_data.replace(unelapsed_src_ods);
@@ -1627,27 +1627,27 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub(crate) fn fetch_scheduled_operational_data(
         &self,
     ) -> Result<Option<OperationalData>, LinkError> {
-        let (time_left, blocks_left, odata) =
+        let ((time_left, blocks_left), odata) =
             if let Some(odata) = self.src_operational_data.pop_front() {
-                let src_chain_time = || self.src_time_latest();
-                let src_block_time = || self.src_max_block_time();
-                let src_latest_height = || self.src_latest_height();
                 (
-                    odata.conn_time_delay_remaining(src_chain_time)?,
-                    odata.conn_block_delay_remaining(src_block_time, src_latest_height)?,
+                    odata.conn_delay_remaining(
+                        || self.src_time_latest(),
+                        || self.src_max_block_time(),
+                        || self.src_latest_height(),
+                    )?,
                     Some(odata),
                 )
             } else if let Some(odata) = self.dst_operational_data.pop_front() {
-                let dst_chain_time = || self.dst_time_latest();
-                let dst_block_time = || self.dst_max_block_time();
-                let dst_latest_height = || self.dst_latest_height();
                 (
-                    odata.conn_time_delay_remaining(dst_chain_time)?,
-                    odata.conn_block_delay_remaining(dst_block_time, dst_latest_height)?,
+                    odata.conn_delay_remaining(
+                        || self.dst_time_latest(),
+                        || self.dst_max_block_time(),
+                        || self.dst_latest_height(),
+                    )?,
                     Some(odata),
                 )
             } else {
-                (Duration::ZERO, 0, None)
+                ((Duration::ZERO, 0), None)
             };
 
         if let Some(odata) = odata {
@@ -1657,19 +1657,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     odata.batch.len(),
                     odata.target,
                 ),
-                (delay_time, 0) => {
+                (time_left, 0) => {
                     info!(
                         "waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
-                        delay_time,
+                        time_left,
                         odata.batch.len(),
                         odata.target,
                     );
 
                     // Wait until the delay period passes
-                    thread::sleep(delay_time);
+                    thread::sleep(time_left);
                 }
-                (Duration::ZERO, _delay_blocks) => {}
-                (_delay_time, _delay_blocks) => {}
+                (Duration::ZERO, _blocks_left) => {}
+                (_time_left, _blocks_left) => {}
             }
 
             Ok(Some(odata))

@@ -266,6 +266,38 @@ impl OperationalData {
             Ok(0)
         }
     }
+
+    pub fn has_conn_delay_elapsed<ChainTime, MaxBlockTime, LatestHeight>(
+        &self,
+        chain_time: ChainTime,
+        max_expected_time_per_block: MaxBlockTime,
+        latest_height: LatestHeight,
+    ) -> Result<bool, LinkError>
+    where
+        ChainTime: FnOnce() -> Result<Instant, LinkError>,
+        MaxBlockTime: FnOnce() -> Result<Duration, LinkError>,
+        LatestHeight: FnOnce() -> Result<Height, LinkError>,
+    {
+        Ok(self.conn_time_delay_remaining(chain_time)?.is_zero()
+            && self.conn_block_delay_remaining(max_expected_time_per_block, latest_height)? == 0)
+    }
+
+    pub fn conn_delay_remaining<ChainTime, MaxBlockTime, LatestHeight>(
+        &self,
+        chain_time: ChainTime,
+        max_expected_time_per_block: MaxBlockTime,
+        latest_height: LatestHeight,
+    ) -> Result<(Duration, u64), LinkError>
+    where
+        ChainTime: FnOnce() -> Result<Instant, LinkError>,
+        MaxBlockTime: FnOnce() -> Result<Duration, LinkError>,
+        LatestHeight: FnOnce() -> Result<Height, LinkError>,
+    {
+        Ok((
+            self.conn_time_delay_remaining(chain_time)?,
+            self.conn_block_delay_remaining(max_expected_time_per_block, latest_height)?,
+        ))
+    }
 }
 
 /// A struct that holds everything that is required to calculate and deal with the connection-delay
