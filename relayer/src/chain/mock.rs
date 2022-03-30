@@ -362,8 +362,7 @@ impl ChainEndpoint for MockChain {
             .unwrap_or_else(|| self.trusting_period());
         let trust_threshold = settings
             .trust_threshold
-            .unwrap_or(self.config.trust_threshold)
-            .into();
+            .unwrap_or(self.config.trust_threshold.into());
 
         let client_state = TendermintClientState::new(
             self.id().clone(),

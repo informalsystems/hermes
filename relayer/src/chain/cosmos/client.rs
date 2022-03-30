@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use tendermint_light_client_verifier::types::TrustThreshold;
+use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 
 use crate::config::ChainConfig;
 

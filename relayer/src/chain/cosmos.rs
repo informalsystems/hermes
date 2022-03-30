@@ -2090,8 +2090,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .unwrap_or_else(|| self.trusting_period(unbonding_period));
         let trust_threshold = settings
             .trust_threshold
-            .unwrap_or(self.config.trust_threshold)
-            .into();
+            .unwrap_or(self.config.trust_threshold.into());
 
         // Build the client state.
         ClientState::new(

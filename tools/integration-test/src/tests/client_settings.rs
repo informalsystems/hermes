@@ -69,7 +69,7 @@ impl TestOverrides for SettingsTestOverrides {
         ClientSettings::Cosmos(cosmos::client::Settings {
             max_clock_drift: Some(Duration::from_secs(3)),
             trusting_period: Some(Duration::from_secs(120_000)),
-            trust_threshold: Some(TrustThreshold::new(13, 23).unwrap().try_into().unwrap()),
+            trust_threshold: Some(TrustThreshold::new(13, 23).unwrap()),
         })
     }
 
@@ -77,7 +77,7 @@ impl TestOverrides for SettingsTestOverrides {
         ClientSettings::Cosmos(cosmos::client::Settings {
             max_clock_drift: Some(Duration::from_secs(6)),
             trusting_period: Some(Duration::from_secs(340_000)),
-            trust_threshold: Some(TrustThreshold::TWO_THIRDS.try_into().unwrap()),
+            trust_threshold: Some(TrustThreshold::TWO_THIRDS),
         })
     }
 }
