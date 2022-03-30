@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
-use tendermint::trust_threshold::TrustThresholdFraction;
 
 use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::core::ics02_client::client_state::AnyClientState;
@@ -26,7 +25,7 @@ impl TestOverrides for SettingsTestOverrides {
         ClientSettings::Cosmos(cosmos::client::Settings {
             max_clock_drift: Some(Duration::from_secs(3)),
             trusting_period: Some(Duration::from_secs(120_000)),
-            trust_threshold: Some(TrustThresholdFraction::new(13, 23).unwrap()),
+            trust_threshold: Some(TrustThreshold::new(13, 23).unwrap().try_into().unwrap()),
         })
     }
 
@@ -34,7 +33,7 @@ impl TestOverrides for SettingsTestOverrides {
         ClientSettings::Cosmos(cosmos::client::Settings {
             max_clock_drift: Some(Duration::from_secs(6)),
             trusting_period: Some(Duration::from_secs(340_000)),
-            trust_threshold: Some(TrustThresholdFraction::TWO_THIRDS),
+            trust_threshold: Some(TrustThreshold::TWO_THIRDS.try_into().unwrap()),
         })
     }
 }
@@ -74,6 +73,7 @@ fn query_client_state<Chain: ChainHandle>(
     id: &ClientId,
 ) -> Result<TendermintClientState, Error> {
     let state = handle.query_client_state(id, Height::zero())?;
+    #[allow(unreachable_patterns)]
     match state {
         AnyClientState::Tendermint(state) => Ok(state),
         _ => unreachable!("unexpected client state type"),
