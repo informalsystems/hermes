@@ -442,7 +442,7 @@ mod tests {
 
                     for e in handler_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenTryChannel(_)));
-                        assert!(e.height() == test.ctx.host_height());
+                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {
