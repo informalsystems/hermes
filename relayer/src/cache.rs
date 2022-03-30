@@ -23,6 +23,16 @@ const CHANNEL_CACHE_CAPACITY: u64 = 10_000;
 const CONNECTION_CACHE_CAPACITY: u64 = 10_000;
 const CLIENT_STATE_CACHE_CAPACITY: u64 = 10_000;
 
+/// Whether or not a result was in cache (ie. a cache hit)
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum CacheStatus {
+    Hit,
+    Miss,
+}
+
+/// Alias for a result and its cache status.
+pub type CacheResult<A, E> = Result<(A, CacheStatus), E>;
+
 /// The main cache data structure, which comprises multiple sub-caches for caching
 /// different chain components, each with different time-to-live values.
 ///
@@ -84,20 +94,20 @@ impl Cache {
         &self,
         id: &PortChannelId,
         f: F,
-    ) -> Result<ChannelEnd, E>
+    ) -> CacheResult<ChannelEnd, E>
     where
         F: FnOnce() -> Result<ChannelEnd, E>,
     {
         if let Some(chan) = self.channels.get(id) {
             // If cache hit, return it.
-            Ok(chan)
+            Ok((chan, CacheStatus::Hit))
         } else {
             // Only cache a channel end if the channel is open.
             let chan = f()?;
             if chan.state().is_open() {
                 self.channels.insert(id.clone(), chan.clone());
             }
-            Ok(chan)
+            Ok((chan, CacheStatus::Miss))
         }
     }
 
@@ -109,18 +119,18 @@ impl Cache {
         &self,
         id: &ConnectionId,
         f: F,
-    ) -> Result<ConnectionEnd, E>
+    ) -> CacheResult<ConnectionEnd, E>
     where
         F: FnOnce() -> Result<ConnectionEnd, E>,
     {
         if let Some(conn) = self.connections.get(id) {
-            Ok(conn)
+            Ok((conn, CacheStatus::Hit))
         } else {
             let conn = f()?;
             if conn.state().is_open() {
                 self.connections.insert(id.clone(), conn.clone());
             }
-            Ok(conn)
+            Ok((conn, CacheStatus::Miss))
         }
     }
 
@@ -132,16 +142,16 @@ impl Cache {
         &self,
         id: &ClientId,
         f: F,
-    ) -> Result<AnyClientState, E>
+    ) -> CacheResult<AnyClientState, E>
     where
         F: FnOnce() -> Result<AnyClientState, E>,
     {
         if let Some(state) = self.client_states.get(id) {
-            Ok(state)
+            Ok((state, CacheStatus::Hit))
         } else {
             let state = f()?;
             self.client_states.insert(id.clone(), state.clone());
-            Ok(state)
+            Ok((state, CacheStatus::Miss))
         }
     }
 
@@ -152,16 +162,16 @@ impl Cache {
     ///
     /// This value is cached with a small time-to-live so that the latest height
     /// query returns the same height if the same query is repeated within a small time frame.
-    pub fn get_or_try_update_latest_height_with<F, E>(&self, f: F) -> Result<Height, E>
+    pub fn get_or_try_update_latest_height_with<F, E>(&self, f: F) -> CacheResult<Height, E>
     where
         F: FnOnce() -> Result<Height, E>,
     {
         if let Some(height) = self.latest_height.get(&()) {
-            Ok(height)
+            Ok((height, CacheStatus::Hit))
         } else {
             let height = f()?;
             self.latest_height.insert((), height);
-            Ok(height)
+            Ok((height, CacheStatus::Miss))
         }
     }
 }
