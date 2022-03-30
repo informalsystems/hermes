@@ -285,7 +285,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
             )?;
 
             if in_cache == CacheStatus::Hit {
-                telemetry!(query_cache_hit, &self.id(), "query_connection");
+                telemetry!(query_cache_hit, &self.id(), "query_channel");
             }
 
             Ok(result)
