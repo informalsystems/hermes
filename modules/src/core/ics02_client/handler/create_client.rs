@@ -56,6 +56,7 @@ pub fn process(
 
     let event_attributes = Attributes {
         client_id,
+        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::CreateClient(event_attributes.into()));
@@ -74,6 +75,7 @@ mod tests {
         AllowUpdate, ClientState as TendermintClientState,
     };
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::ClientState;
     use crate::core::ics02_client::client_type::ClientType;
@@ -114,8 +116,9 @@ mod tests {
                 let event = events.pop().unwrap();
                 let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
                 assert!(
-                    matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                    matches!(event, IbcEvent::CreateClient(ref e) if e.client_id() == &expected_client_id)
                 );
+                assert_eq!(event.height(), ctx.host_height());
                 match result {
                     ClientResult::Create(create_result) => {
                         assert_eq!(create_result.client_type, ClientType::Mock);
@@ -204,8 +207,9 @@ mod tests {
                     assert_eq!(events.len(), 1);
                     let event = events.pop().unwrap();
                     assert!(
-                        matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                        matches!(event, IbcEvent::CreateClient(ref e) if e.client_id() == &expected_client_id)
                     );
+                    assert_eq!(event.height(), ctx.host_height());
                     match result {
                         ClientResult::Create(create_res) => {
                             assert_eq!(create_res.client_type, msg.client_state.client_type());
@@ -267,8 +271,9 @@ mod tests {
                 let event = events.pop().unwrap();
                 let expected_client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
                 assert!(
-                    matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                    matches!(event, IbcEvent::CreateClient(ref e) if e.client_id() == &expected_client_id)
                 );
+                assert_eq!(event.height(), ctx.host_height());
                 match result {
                     ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, ClientType::Tendermint);
