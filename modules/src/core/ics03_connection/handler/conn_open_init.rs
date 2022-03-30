@@ -45,6 +45,7 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         connection_id: Some(conn_id),
+        height: ctx.host_current_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenInitConnection(event_attributes.into()));
@@ -59,6 +60,7 @@ mod tests {
     use test_log::test;
 
     use crate::core::ics03_connection::connection::State;
+    use crate::core::ics03_connection::context::ConnectionReader;
     use crate::core::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::core::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -118,6 +120,7 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenInitConnection(_)));
+                        assert_eq!(e.height(), test.ctx.host_current_height());
                     }
                 }
                 Err(e) => {
