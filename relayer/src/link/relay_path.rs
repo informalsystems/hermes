@@ -1582,43 +1582,39 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // The mutable vector is then updated to the remaining unextracted elements.
         fn partition<T>(
             queue: VecDeque<T>,
-            pred: impl Fn(&T) -> bool,
-        ) -> (VecDeque<T>, VecDeque<T>) {
+            pred: impl Fn(&T) -> Result<bool, LinkError>,
+        ) -> Result<(VecDeque<T>, VecDeque<T>), LinkError> {
             let mut true_res = VecDeque::new();
             let mut false_res = VecDeque::new();
 
             for e in queue.into_iter() {
-                if pred(&e) {
+                if pred(&e)? {
                     true_res.push_back(e);
                 } else {
                     false_res.push_back(e);
                 }
             }
 
-            (true_res, false_res)
+            Ok((true_res, false_res))
         }
 
-        let src_chain_time = self.src_time_latest()?;
-        let src_max_block_time = self.src_max_block_time()?;
-        let src_latest_height = self.src_latest_height()?;
+        let src_chain_time = || self.src_time_latest();
+        let src_max_block_time = || self.src_max_block_time();
+        let src_latest_height = || self.src_latest_height();
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
-                op.conn_time_delay_elapsed(src_chain_time).is_ok()
-                    && op
-                        .conn_block_delay_elapsed(src_max_block_time, src_latest_height)
-                        .is_ok()
-            });
+                Ok(op.conn_time_delay_remaining(src_chain_time)?.is_zero()
+                    && op.conn_block_delay_remaining(src_max_block_time, src_latest_height)? == 0)
+            })?;
 
-        let dst_chain_time = self.dst_time_latest()?;
-        let dst_max_block_time = self.dst_max_block_time()?;
-        let dst_latest_height = self.dst_latest_height()?;
+        let dst_chain_time = || self.dst_time_latest();
+        let dst_max_block_time = || self.dst_max_block_time();
+        let dst_latest_height = || self.dst_latest_height();
         let (elapsed_dst_ods, unelapsed_dst_ods) =
             partition(self.dst_operational_data.take(), |op| {
-                op.conn_time_delay_elapsed(dst_chain_time).is_ok()
-                    && op
-                        .conn_block_delay_elapsed(dst_max_block_time, dst_latest_height)
-                        .is_ok()
-            });
+                Ok(op.conn_time_delay_remaining(dst_chain_time)?.is_zero()
+                    && op.conn_block_delay_remaining(dst_max_block_time, dst_latest_height)? == 0)
+            })?;
 
         self.src_operational_data.replace(unelapsed_src_ods);
         self.dst_operational_data.replace(unelapsed_dst_ods);
@@ -1633,39 +1629,35 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<Option<OperationalData>, LinkError> {
         let (time_left, blocks_left, odata) =
             if let Some(odata) = self.src_operational_data.pop_front() {
-                let src_chain_time = self.src_time_latest()?;
-                let src_block_time = self.src_max_block_time()?;
-                let src_latest_height = self.src_latest_height()?;
+                let src_chain_time = || self.src_time_latest();
+                let src_block_time = || self.src_max_block_time();
+                let src_latest_height = || self.src_latest_height();
                 (
-                    odata.conn_time_delay_elapsed(src_chain_time).err(),
-                    odata
-                        .conn_block_delay_elapsed(src_block_time, src_latest_height)
-                        .err(),
+                    odata.conn_time_delay_remaining(src_chain_time)?,
+                    odata.conn_block_delay_remaining(src_block_time, src_latest_height)?,
                     Some(odata),
                 )
             } else if let Some(odata) = self.dst_operational_data.pop_front() {
-                let dst_chain_time = self.dst_time_latest()?;
-                let dst_block_time = self.dst_max_block_time()?;
-                let dst_latest_height = self.dst_latest_height()?;
+                let dst_chain_time = || self.dst_time_latest();
+                let dst_block_time = || self.dst_max_block_time();
+                let dst_latest_height = || self.dst_latest_height();
                 (
-                    odata.conn_time_delay_elapsed(dst_chain_time).err(),
-                    odata
-                        .conn_block_delay_elapsed(dst_block_time, dst_latest_height)
-                        .err(),
+                    odata.conn_time_delay_remaining(dst_chain_time)?,
+                    odata.conn_block_delay_remaining(dst_block_time, dst_latest_height)?,
                     Some(odata),
                 )
             } else {
-                (None, None, None)
+                (Duration::ZERO, 0, None)
             };
 
         if let Some(odata) = odata {
             match (time_left, blocks_left) {
-                (None, None) => info!(
+                (Duration::ZERO, 0) => info!(
                     "ready to fetch a scheduled op. data with batch of size {} targeting {}",
                     odata.batch.len(),
                     odata.target,
                 ),
-                (Some(delay_time), _) => {
+                (delay_time, 0) => {
                     info!(
                         "waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
                         delay_time,
@@ -1676,7 +1668,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     // Wait until the delay period passes
                     thread::sleep(delay_time);
                 }
-                (None, Some(_blocks)) => {}
+                (Duration::ZERO, _delay_blocks) => {}
+                (_delay_time, _delay_blocks) => {}
             }
 
             Ok(Some(odata))

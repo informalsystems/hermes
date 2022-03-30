@@ -234,26 +234,29 @@ impl OperationalData {
         }
     }
 
-    /// Returns `Ok(())` if the connection-delay has elapsed and `Err(remaining-delay)` otherwise.
-    pub fn conn_time_delay_elapsed(&self, chain_time: Instant) -> Result<(), Duration> {
+    /// Returns `Ok(remaining-delay)` on success or `LinkError` if the input closure fails.
+    pub fn conn_time_delay_remaining(
+        &self,
+        chain_time: impl FnOnce() -> Result<Instant, LinkError>,
+    ) -> Result<Duration, LinkError> {
         if let Some(delay) = self.get_delay_if_needed() {
-            delay.conn_time_delay_elapsed(chain_time)
+            Ok(delay.conn_time_delay_remaining(chain_time()?))
         } else {
-            Ok(())
+            Ok(Duration::ZERO)
         }
     }
 
-    /// Returns `Ok(())` if the connection-delay has elapsed and `Err(remaining-delay)` otherwise.
-    pub fn conn_block_delay_elapsed(
+    /// Returns `Ok(remaining-delay)` on success or `LinkError` if an input closure fails.
+    pub fn conn_block_delay_remaining(
         &self,
-        max_expected_time_per_block: Duration,
-        latest_height: Height,
-    ) -> Result<(), u64> {
+        max_expected_time_per_block: impl FnOnce() -> Result<Duration, LinkError>,
+        latest_height: impl FnOnce() -> Result<Height, LinkError>,
+    ) -> Result<u64, LinkError> {
         if let Some(delay) = self.get_delay_if_needed() {
-            let block_delay = delay.conn_block_delay(max_expected_time_per_block);
-            delay.conn_block_delay_elapsed(block_delay, latest_height)
+            let block_delay = delay.conn_block_delay(max_expected_time_per_block()?);
+            Ok(delay.conn_block_delay_remaining(block_delay, latest_height()?))
         } else {
-            Ok(())
+            Ok(0)
         }
     }
 }
@@ -276,30 +279,30 @@ impl ConnectionDelay {
         }
     }
 
-    /// Returns `Ok(())` if the connection-delay has elapsed and `Err(remaining-delay)` otherwise.
-    fn conn_time_delay_elapsed(&self, chain_time: Instant) -> Result<(), Duration> {
+    /// Returns `remaining-delay` if connection-delay hasn't elapsed and `Duration::ZERO` otherwise.
+    fn conn_time_delay_remaining(&self, chain_time: Instant) -> Duration {
         // since chain time instant is relative to relayer's current time, it is possible that
         // `scheduled_time` is later (by nano secs) than `chain_time`, hence the call to
         // `saturating_duration_since()`.
         let elapsed = chain_time.saturating_duration_since(self.scheduled_time);
-        if elapsed > self.delay {
-            Ok(())
+        if elapsed >= self.delay {
+            Duration::ZERO
         } else {
-            Err(elapsed)
+            self.delay - elapsed
         }
     }
 
-    /// Returns `Ok(())` if the connection-delay has elapsed and `Err(remaining-delay)` otherwise.
-    fn conn_block_delay_elapsed(&self, block_delay: u64, latest_height: Height) -> Result<(), u64> {
+    /// Returns `remaining-delay` if connection-delay hasn't elapsed and `0` otherwise.
+    fn conn_block_delay_remaining(&self, block_delay: u64, latest_height: Height) -> u64 {
         let acceptable_height = self
             .update_height
             .expect("processed height not set")
             .add(block_delay);
         if latest_height >= acceptable_height {
-            Ok(())
+            0
         } else {
             debug_assert!(acceptable_height.revision_number == latest_height.revision_number);
-            Err(acceptable_height.revision_height - latest_height.revision_height)
+            acceptable_height.revision_height - latest_height.revision_height
         }
     }
 
