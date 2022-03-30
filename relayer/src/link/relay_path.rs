@@ -1601,18 +1601,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
                 op.has_conn_delay_elapsed(
-                    || self.src_time_latest(),
-                    || self.src_max_block_time(),
-                    || self.src_latest_height(),
+                    &|| self.src_time_latest(),
+                    &|| self.src_max_block_time(),
+                    &|| self.src_latest_height(),
                 )
             })?;
 
         let (elapsed_dst_ods, unelapsed_dst_ods) =
             partition(self.dst_operational_data.take(), |op| {
                 op.has_conn_delay_elapsed(
-                    || self.dst_time_latest(),
-                    || self.dst_max_block_time(),
-                    || self.dst_latest_height(),
+                    &|| self.dst_time_latest(),
+                    &|| self.dst_max_block_time(),
+                    &|| self.dst_latest_height(),
                 )
             })?;
 
@@ -1621,58 +1621,84 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok((elapsed_src_ods, elapsed_dst_ods))
     }
 
+    fn wait_for_conn_delay<ChainTime, MaxBlockTime, LatestHeight>(
+        odata: OperationalData,
+        chain_time: &ChainTime,
+        max_expected_time_per_block: &MaxBlockTime,
+        latest_height: &LatestHeight,
+    ) -> Result<OperationalData, LinkError>
+    where
+        ChainTime: Fn() -> Result<Instant, LinkError>,
+        MaxBlockTime: Fn() -> Result<Duration, LinkError>,
+        LatestHeight: Fn() -> Result<Height, LinkError>,
+    {
+        let (time_left, blocks_left) =
+            odata.conn_delay_remaining(chain_time, max_expected_time_per_block, latest_height)?;
+
+        match (time_left, blocks_left) {
+            (Duration::ZERO, 0) => {
+                info!(
+                    "ready to fetch a scheduled op. data with batch of size {} targeting {}",
+                    odata.batch.len(),
+                    odata.target,
+                );
+                Ok(odata)
+            }
+            (Duration::ZERO, blocks_left) => {
+                info!(
+                    "waiting ({:?} blocks left) for a scheduled op. data with batch of size {} targeting {}",
+                    blocks_left,
+                    odata.batch.len(),
+                    odata.target,
+                );
+
+                // Wait until the delay period passes
+                thread::sleep(blocks_left * max_expected_time_per_block()?);
+
+                Ok(odata)
+            }
+            (time_left, _) => {
+                info!(
+                    "waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
+                    time_left,
+                    odata.batch.len(),
+                    odata.target,
+                );
+
+                // Wait until the delay period passes
+                thread::sleep(time_left);
+
+                // `blocks_left` maybe non-zero, so recurse to recheck that all delays are handled.
+                Self::wait_for_conn_delay(
+                    odata,
+                    chain_time,
+                    max_expected_time_per_block,
+                    latest_height,
+                )
+            }
+        }
+    }
+
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
     /// waiting for the delay period to pass.
     /// Returns `Ok(None)` if there is no operational data scheduled.
     pub(crate) fn fetch_scheduled_operational_data(
         &self,
     ) -> Result<Option<OperationalData>, LinkError> {
-        let ((time_left, blocks_left), odata) =
-            if let Some(odata) = self.src_operational_data.pop_front() {
-                (
-                    odata.conn_delay_remaining(
-                        || self.src_time_latest(),
-                        || self.src_max_block_time(),
-                        || self.src_latest_height(),
-                    )?,
-                    Some(odata),
-                )
-            } else if let Some(odata) = self.dst_operational_data.pop_front() {
-                (
-                    odata.conn_delay_remaining(
-                        || self.dst_time_latest(),
-                        || self.dst_max_block_time(),
-                        || self.dst_latest_height(),
-                    )?,
-                    Some(odata),
-                )
-            } else {
-                ((Duration::ZERO, 0), None)
-            };
-
-        if let Some(odata) = odata {
-            match (time_left, blocks_left) {
-                (Duration::ZERO, 0) => info!(
-                    "ready to fetch a scheduled op. data with batch of size {} targeting {}",
-                    odata.batch.len(),
-                    odata.target,
-                ),
-                (time_left, 0) => {
-                    info!(
-                        "waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
-                        time_left,
-                        odata.batch.len(),
-                        odata.target,
-                    );
-
-                    // Wait until the delay period passes
-                    thread::sleep(time_left);
-                }
-                (Duration::ZERO, _blocks_left) => {}
-                (_time_left, _blocks_left) => {}
-            }
-
-            Ok(Some(odata))
+        if let Some(odata) = self.src_operational_data.pop_front() {
+            Ok(Some(Self::wait_for_conn_delay(
+                odata,
+                &|| self.src_time_latest(),
+                &|| self.src_max_block_time(),
+                &|| self.src_latest_height(),
+            )?))
+        } else if let Some(odata) = self.dst_operational_data.pop_front() {
+            Ok(Some(Self::wait_for_conn_delay(
+                odata,
+                &|| self.dst_time_latest(),
+                &|| self.dst_max_block_time(),
+                &|| self.dst_latest_height(),
+            )?))
         } else {
             Ok(None)
         }

@@ -237,10 +237,10 @@ impl OperationalData {
     /// Returns `Ok(remaining-delay)` on success or `LinkError` if the input closure fails.
     pub fn conn_time_delay_remaining<ChainTime>(
         &self,
-        chain_time: ChainTime,
+        chain_time: &ChainTime,
     ) -> Result<Duration, LinkError>
     where
-        ChainTime: FnOnce() -> Result<Instant, LinkError>,
+        ChainTime: Fn() -> Result<Instant, LinkError>,
     {
         if let Some(delay) = self.get_delay_if_needed() {
             Ok(delay.conn_time_delay_remaining(chain_time()?))
@@ -252,12 +252,12 @@ impl OperationalData {
     /// Returns `Ok(remaining-delay)` on success or `LinkError` if an input closure fails.
     pub fn conn_block_delay_remaining<MaxBlockTime, LatestHeight>(
         &self,
-        max_expected_time_per_block: MaxBlockTime,
-        latest_height: LatestHeight,
+        max_expected_time_per_block: &MaxBlockTime,
+        latest_height: &LatestHeight,
     ) -> Result<u64, LinkError>
     where
-        MaxBlockTime: FnOnce() -> Result<Duration, LinkError>,
-        LatestHeight: FnOnce() -> Result<Height, LinkError>,
+        MaxBlockTime: Fn() -> Result<Duration, LinkError>,
+        LatestHeight: Fn() -> Result<Height, LinkError>,
     {
         if let Some(delay) = self.get_delay_if_needed() {
             let block_delay = delay.conn_block_delay(max_expected_time_per_block()?);
@@ -269,14 +269,14 @@ impl OperationalData {
 
     pub fn has_conn_delay_elapsed<ChainTime, MaxBlockTime, LatestHeight>(
         &self,
-        chain_time: ChainTime,
-        max_expected_time_per_block: MaxBlockTime,
-        latest_height: LatestHeight,
+        chain_time: &ChainTime,
+        max_expected_time_per_block: &MaxBlockTime,
+        latest_height: &LatestHeight,
     ) -> Result<bool, LinkError>
     where
-        ChainTime: FnOnce() -> Result<Instant, LinkError>,
-        MaxBlockTime: FnOnce() -> Result<Duration, LinkError>,
-        LatestHeight: FnOnce() -> Result<Height, LinkError>,
+        ChainTime: Fn() -> Result<Instant, LinkError>,
+        MaxBlockTime: Fn() -> Result<Duration, LinkError>,
+        LatestHeight: Fn() -> Result<Height, LinkError>,
     {
         Ok(self.conn_time_delay_remaining(chain_time)?.is_zero()
             && self.conn_block_delay_remaining(max_expected_time_per_block, latest_height)? == 0)
@@ -284,14 +284,14 @@ impl OperationalData {
 
     pub fn conn_delay_remaining<ChainTime, MaxBlockTime, LatestHeight>(
         &self,
-        chain_time: ChainTime,
-        max_expected_time_per_block: MaxBlockTime,
-        latest_height: LatestHeight,
+        chain_time: &ChainTime,
+        max_expected_time_per_block: &MaxBlockTime,
+        latest_height: &LatestHeight,
     ) -> Result<(Duration, u64), LinkError>
     where
-        ChainTime: FnOnce() -> Result<Instant, LinkError>,
-        MaxBlockTime: FnOnce() -> Result<Duration, LinkError>,
-        LatestHeight: FnOnce() -> Result<Height, LinkError>,
+        ChainTime: Fn() -> Result<Instant, LinkError>,
+        MaxBlockTime: Fn() -> Result<Duration, LinkError>,
+        LatestHeight: Fn() -> Result<Height, LinkError>,
     {
         Ok((
             self.conn_time_delay_remaining(chain_time)?,
