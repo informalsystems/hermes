@@ -1,5 +1,6 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
+use std::convert::TryInto;
 use std::ops::Sub;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -1651,6 +1652,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     odata.batch.len(),
                     odata.target,
                 );
+
+                let blocks_left: u32 = blocks_left.try_into().expect("blocks_left > u32::MAX");
 
                 // Wait until the delay period passes
                 thread::sleep(blocks_left * max_expected_time_per_block()?);
