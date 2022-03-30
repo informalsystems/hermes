@@ -34,13 +34,14 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 
-use crate::cache::Cache;
+use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{HealthCheck, StatusResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
+use crate::telemetry;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
 #[derive(Debug, Clone)]
@@ -132,8 +133,15 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
     fn query_latest_height(&self) -> Result<Height, Error> {
         let handle = self.inner();
-        self.cache
-            .get_or_try_update_latest_height_with(|| handle.query_latest_height())
+        let (result, in_cache) = self
+            .cache
+            .get_or_try_update_latest_height_with(|| handle.query_latest_height())?;
+
+        if in_cache == CacheStatus::Hit {
+            telemetry!(query_cache_hit, &self.id(), "query_latest_height");
+        }
+
+        Ok(result)
     }
 
     fn query_clients(
@@ -151,10 +159,17 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<AnyClientState, Error> {
         let handle = self.inner();
         if height.is_zero() {
-            self.cache
+            let (result, in_cache) = self
+                .cache
                 .get_or_try_insert_client_state_with(client_id, || {
                     handle.query_client_state(client_id, height)
-                })
+                })?;
+
+            if in_cache == CacheStatus::Hit {
+                telemetry!(query_cache_hit, &self.id(), "query_client_state");
+            }
+
+            Ok(result)
         } else {
             handle.query_client_state(client_id, height)
         }
@@ -213,10 +228,17 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<ConnectionEnd, Error> {
         let handle = self.inner();
         if height.is_zero() {
-            self.cache
+            let (result, in_cache) = self
+                .cache
                 .get_or_try_insert_connection_with(connection_id, || {
                     handle.query_connection(connection_id, height)
-                })
+                })?;
+
+            if in_cache == CacheStatus::Hit {
+                telemetry!(query_cache_hit, &self.id(), "query_connection");
+            }
+
+            Ok(result)
         } else {
             handle.query_connection(connection_id, height)
         }
@@ -258,10 +280,16 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<ChannelEnd, Error> {
         let handle = self.inner();
         if height.is_zero() {
-            self.cache.get_or_try_insert_channel_with(
+            let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
                 &PortChannelId::new(channel_id.clone(), port_id.clone()),
                 || handle.query_channel(port_id, channel_id, height),
-            )
+            )?;
+
+            if in_cache == CacheStatus::Hit {
+                telemetry!(query_cache_hit, &self.id(), "query_channel");
+            }
+
+            Ok(result)
         } else {
             handle.query_channel(port_id, channel_id, height)
         }
