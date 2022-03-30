@@ -17,6 +17,10 @@ impl TestOverrides for OrderedChannelTest {
         config.mode.packets.clear_interval = 0;
     }
 
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+
     fn channel_order(&self) -> Order {
         Order::Ordered
     }
