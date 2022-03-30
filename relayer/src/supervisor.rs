@@ -561,7 +561,7 @@ fn dump_state<Chain: ChainHandle>(
 /// as a [`SupervisorState`].
 fn state<Chain: ChainHandle>(registry: &Registry<Chain>, workers: &WorkerMap) -> SupervisorState {
     let chains = registry.chains().map(|c| c.id()).collect_vec();
-    SupervisorState::new(chains, workers.objects())
+    SupervisorState::new(chains, workers.handles())
 }
 
 fn handle_rest_requests<Chain: ChainHandle>(
