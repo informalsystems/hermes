@@ -141,7 +141,7 @@ mod tests {
 
         let handler_output = channel_dispatch(
             &context,
-            ChannelMsg::ChannelCloseInit(msg_chan_close_init.clone()),
+            ChannelMsg::ChannelCloseInit(msg_chan_close_init),
         )
         .unwrap();
 

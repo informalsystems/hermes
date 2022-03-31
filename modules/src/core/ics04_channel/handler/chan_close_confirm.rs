@@ -169,7 +169,7 @@ mod tests {
 
         let handler_output = channel_dispatch(
             &context,
-            ChannelMsg::ChannelCloseConfirm(msg_chan_close_confirm.clone()),
+            ChannelMsg::ChannelCloseConfirm(msg_chan_close_confirm),
         )
         .unwrap();
 
