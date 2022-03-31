@@ -7,8 +7,6 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
-use std::sync::Arc;
-use std::sync::RwLock;
 
 use crate::bootstrap::binary::chain::{
     add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client, new_registry,
@@ -70,8 +68,6 @@ pub fn boostrap_chains_with_any_nodes(
     let config_path = test_config.chain_store_dir.join("relayer-config.toml");
 
     save_relayer_config(&config, &config_path)?;
-
-    let config = Arc::new(RwLock::new(config));
 
     let registry = new_registry(config.clone());
 

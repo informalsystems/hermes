@@ -6,15 +6,13 @@
 use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
-use ibc_relayer::config::{Config, SharedConfig};
+use ibc_relayer::config::Config;
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
 use ibc_relayer::foreign_client::{extract_client_id, ForeignClient};
 use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
 use ibc_relayer::registry::SharedRegistry;
 use std::fs;
 use std::path::Path;
-use std::sync::Arc;
-use std::sync::RwLock;
 use tracing::{debug, info};
 
 use crate::relayer::driver::RelayerDriver;
@@ -58,7 +56,7 @@ pub fn boostrap_chain_pair_with_nodes(
 
     save_relayer_config(&config, &config_path)?;
 
-    let config = Arc::new(RwLock::new(config));
+    let config = config;
 
     let registry = new_registry(config.clone());
 
@@ -263,7 +261,7 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
    Create a new [`SharedRegistry`] that uses [`CountingAndCachingChainHandle`]
    as the [`ChainHandle`] implementation.
 */
-pub fn new_registry(config: SharedConfig) -> SharedRegistry<CountingAndCachingChainHandle> {
+pub fn new_registry(config: Config) -> SharedRegistry<CountingAndCachingChainHandle> {
     <SharedRegistry<CountingAndCachingChainHandle>>::new(config)
 }
 
@@ -281,12 +279,6 @@ pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<
 /**
    Save a relayer's [`Config`] to the filesystem to make it accessible
    through external CLI.
-
-   Note that the saved config file will not be updated if the
-   [`SharedConfig`] is reloaded within the test. So test authors that
-   test on the config reloading functionality of the relayer would have to
-   call this function again to save the updated relayer config to the
-   filesystem.
 */
 pub fn save_relayer_config(config: &Config, config_path: &Path) -> Result<(), Error> {
     let config_str = toml::to_string_pretty(&config)?;

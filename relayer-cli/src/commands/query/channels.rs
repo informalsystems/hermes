@@ -50,7 +50,7 @@ fn run_query_channels<Chain: ChainHandle>(
     let config = app_config();
     let chain_id = cmd.chain_id.clone();
 
-    let mut registry = <Registry<Chain>>::from_owned((*config).clone());
+    let mut registry = <Registry<Chain>>::new((*config).clone());
     let chain = registry.get_or_spawn(&cmd.chain_id)?;
     let chain_height = chain.query_latest_height()?;
 
