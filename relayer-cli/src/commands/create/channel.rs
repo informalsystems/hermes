@@ -45,38 +45,38 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 pub struct CreateChannelCommand {
     #[clap(
         required = true,
-        help = "identifier of the side `a` chain for the new channel"
+        help = "Identifier of the side `a` chain for the new channel"
     )]
     chain_a_id: ChainId,
 
     #[clap(
         short,
         long,
-        help = "identifier of the side `b` chain for the new channel (optional)"
+        help = "Identifier of the side `b` chain for the new channel"
     )]
     chain_b_id: Option<ChainId>,
 
-    #[clap(help = "identifier of the connection on chain `a` to use in creating the new channel")]
+    /// Identifier of the connection on chain `a` to use in creating the new channel.
     connection_a: Option<ConnectionId>,
 
     #[clap(
         long,
         required = true,
-        help = "identifier of the side `a` port for the new channel"
+        help = "Identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
 
     #[clap(
         long,
         required = true,
-        help = "identifier of the side `b` port for the new channel"
+        help = "Identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
 
     #[clap(
         short,
         long,
-        help = "the channel ordering, valid options 'unordered' (default) and 'ordered'",
+        help = "The channel ordering, valid options 'unordered' (default) and 'ordered'",
         default_value_t
     )]
     order: Order,
@@ -85,13 +85,13 @@ pub struct CreateChannelCommand {
         short,
         long = "channel-version",
         alias = "version",
-        help = "the version for the new channel"
+        help = "The version for the new channel"
     )]
     version: Option<Version>,
 
     #[clap(
         long,
-        help = "indicates that a new client and connection will be created underlying the new channel"
+        help = "Indicates that a new client and connection will be created underlying the new channel"
     )]
     new_client_connection: bool,
 }
