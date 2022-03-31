@@ -26,8 +26,6 @@ struct ClientDefaultsTest;
 
 struct ClientSettingsTest;
 
-struct SettingsTestOverrides;
-
 impl TestOverrides for ClientDefaultsTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.chains[0].clock_drift = Duration::from_secs(3);
