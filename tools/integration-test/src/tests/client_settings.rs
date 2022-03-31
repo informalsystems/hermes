@@ -64,7 +64,7 @@ impl BinaryChainTest for ClientDefaultsTest {
     }
 }
 
-impl TestOverrides for SettingsTestOverrides {
+impl TestOverrides for ClientSettingsTest {
     fn client_settings_a_to_b(&self) -> ClientSettings {
         ClientSettings::Cosmos(cosmos::client::Settings {
             max_clock_drift: Some(Duration::from_secs(3)),
@@ -101,14 +101,6 @@ impl BinaryChainTest for ClientSettingsTest {
         assert_eq!(state.trusting_period, Duration::from_secs(340_000));
         assert_eq!(state.trust_level, TrustThreshold::TWO_THIRDS);
         Ok(())
-    }
-}
-
-impl HasOverrides for ClientSettingsTest {
-    type Overrides = SettingsTestOverrides;
-
-    fn get_overrides(&self) -> &SettingsTestOverrides {
-        &SettingsTestOverrides
     }
 }
 
