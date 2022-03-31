@@ -92,11 +92,19 @@ Follow the steps below to connect three chains together and relay packets betwee
     The script configures and starts three __`gaiad`__ instances, named __`ibc-0`__, and __`ibc-1`__, and __`ibc-2`__.
 
 
-3. Create a channel between `ibc-0` and `ibc-1`:
+3. Create a channel between `ibc-0` and `ibc-1`. Since this is the first time
+   we're connecting these two chains, we'll need to spin up a client and a
+   connection between them as well. The `create channel` command gives us the
+   convenient option to create a client and a connection. Keep in mind that this
+   is not the default behavior of `create channel`, but in this case we're
+   making an exception. Execute the following command:
 
     ```shell
-    hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
+    hermes create channel ibc-0 --chain-b-id ibc-1 --port-a transfer --port-b transfer --new-client-connection
     ```
+
+    Then respond 'yes' to the prompt that pops up. Once the command has run to
+    completion, you should see the following among the output logs:
 
     ```json
     (...)
@@ -154,10 +162,11 @@ Follow the steps below to connect three chains together and relay packets betwee
 
     Note that the channel identifier on both `ibc-0` and `ibc-1` is `channel-0`.
 
-5. Create a channel between `ibc-1` and `ibc-2`:
+5. Create a channel between `ibc-1` and `ibc-2` using the structure of the
+   previous invocation we used to create a channel between `ibc-0` and `ibc-1`:
 
     ```shell
-    hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
+    hermes create channel ibc-1 --chain-b-id ibc-2 --port-a transfer --port-b transfer --new-client-connection
     ```
 
     ```json
