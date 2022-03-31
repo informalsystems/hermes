@@ -8,6 +8,14 @@ use ibc_relayer::keyring::KeyEntry;
 
 use crate::types::tagged::*;
 
+pub const WALLET_COUNT: usize = 3;
+
+pub trait ValidWallet<const POS: usize> {}
+
+impl ValidWallet<0> for () {}
+impl ValidWallet<1> for () {}
+impl ValidWallet<2> for () {}
+
 /**
    Newtype wrapper for a wallet ID as identified by the chain and relayer.
 */
@@ -57,14 +65,27 @@ pub struct TestWallets {
     /// The validator wallet.
     pub validator: Wallet,
 
-    /// The relayer wallet. This is used by the relayer by default.
-    pub relayer: Wallet,
+    /// The relayer wallets used by the relayer.
+    pub relayers: [Wallet; WALLET_COUNT],
 
-    /// The first user wallet that can be used for testing.
-    pub user1: Wallet,
+    /// The user wallets that can be used for testing.
+    pub users: [Wallet; WALLET_COUNT],
+}
 
-    /// The second user wallet that can be used for testing.
-    pub user2: Wallet,
+impl TestWallets {
+    pub fn relayer_at<const POS: usize>(&self) -> &Wallet
+    where
+        (): ValidWallet<POS>,
+    {
+        &self.relayers[POS]
+    }
+
+    pub fn user_at<const POS: usize>(&self) -> &Wallet
+    where
+        (): ValidWallet<POS>,
+    {
+        &self.users[POS]
+    }
 }
 
 /**
@@ -95,13 +116,14 @@ pub trait TaggedTestWalletsExt<Chain> {
     fn validator(&self) -> MonoTagged<Chain, &Wallet>;
 
     /// Get the relayer [`Wallet`] tagged with the given `Chain`.
-    fn relayer(&self) -> MonoTagged<Chain, &Wallet>;
+    fn relayer_at<const POS: usize>(&self) -> MonoTagged<Chain, &Wallet>
+    where
+        (): ValidWallet<POS>;
 
-    /// Get the first user [`Wallet`] tagged with the given `Chain`.
-    fn user1(&self) -> MonoTagged<Chain, &Wallet>;
-
-    /// Get the second user [`Wallet`] tagged with the given `Chain`.
-    fn user2(&self) -> MonoTagged<Chain, &Wallet>;
+    /// Get the user [`Wallet`] tagged with the given `Chain`.
+    fn user_at<const POS: usize>(&self) -> MonoTagged<Chain, &Wallet>
+    where
+        (): ValidWallet<POS>;
 }
 
 impl Wallet {
@@ -148,16 +170,18 @@ impl<Chain> TaggedTestWalletsExt<Chain> for MonoTagged<Chain, TestWallets> {
         self.map_ref(|w| &w.validator)
     }
 
-    fn relayer(&self) -> MonoTagged<Chain, &Wallet> {
-        self.map_ref(|w| &w.relayer)
+    fn relayer_at<const POS: usize>(&self) -> MonoTagged<Chain, &Wallet>
+    where
+        (): ValidWallet<POS>,
+    {
+        self.map_ref(|w| &w.relayers[POS])
     }
 
-    fn user1(&self) -> MonoTagged<Chain, &Wallet> {
-        self.map_ref(|w| &w.user1)
-    }
-
-    fn user2(&self) -> MonoTagged<Chain, &Wallet> {
-        self.map_ref(|w| &w.user2)
+    fn user_at<const POS: usize>(&self) -> MonoTagged<Chain, &Wallet>
+    where
+        (): ValidWallet<POS>,
+    {
+        self.map_ref(|w| &w.users[POS])
     }
 }
 
@@ -166,16 +190,18 @@ impl<'a, Chain> TaggedTestWalletsExt<Chain> for MonoTagged<Chain, &'a TestWallet
         self.map_ref(|w| &w.validator)
     }
 
-    fn relayer(&self) -> MonoTagged<Chain, &Wallet> {
-        self.map_ref(|w| &w.relayer)
+    fn relayer_at<const POS: usize>(&self) -> MonoTagged<Chain, &Wallet>
+    where
+        (): ValidWallet<POS>,
+    {
+        self.map_ref(|w| &w.relayers[POS])
     }
 
-    fn user1(&self) -> MonoTagged<Chain, &Wallet> {
-        self.map_ref(|w| &w.user1)
-    }
-
-    fn user2(&self) -> MonoTagged<Chain, &Wallet> {
-        self.map_ref(|w| &w.user2)
+    fn user_at<const POS: usize>(&self) -> MonoTagged<Chain, &Wallet>
+    where
+        (): ValidWallet<POS>,
+    {
+        self.map_ref(|w| &w.users[POS])
     }
 }
 
@@ -183,10 +209,14 @@ impl ExportEnv for TestWallets {
     fn export_env(&self, writer: &mut impl EnvWriter) {
         self.validator
             .export_env(&mut prefix_writer("VALIDATOR", writer));
-        self.relayer
-            .export_env(&mut prefix_writer("RELAYER", writer));
-        self.user1.export_env(&mut prefix_writer("USER1", writer));
-        self.user2.export_env(&mut prefix_writer("USER2", writer));
+
+        for (i, relayer) in self.relayers.iter().enumerate() {
+            relayer.export_env(&mut prefix_writer(&format!("RELAYER{}", i), writer));
+        }
+
+        for (i, user) in self.users.iter().enumerate() {
+            user.export_env(&mut prefix_writer(&format!("USER{}", i), writer));
+        }
     }
 }
 

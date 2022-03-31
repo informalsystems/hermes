@@ -31,8 +31,8 @@ impl BinaryChannelTest for ConnectionDelayTest {
         relayer.with_supervisor(|| {
             let denom_a = chains.node_a.denom();
 
-            let wallet_a = chains.node_a.wallets().user1().cloned();
-            let wallet_b = chains.node_b.wallets().user1().cloned();
+            let wallet_a = chains.node_a.wallets().user_at::<0>().cloned();
+            let wallet_b = chains.node_b.wallets().user_at::<0>().cloned();
 
             let balance_a = chains
                 .node_a

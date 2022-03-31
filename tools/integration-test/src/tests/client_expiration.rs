@@ -305,8 +305,8 @@ impl BinaryChainTest for PacketExpirationTest {
                 chains.node_a.chain_driver().transfer_token(
                     &channels.port_a.as_ref(),
                     &channels.channel_id_a.as_ref(),
-                    &chains.node_a.wallets().user1().address(),
-                    &chains.node_b.wallets().user1().address(),
+                    &chains.node_a.wallets().user_at::<0>().address(),
+                    &chains.node_b.wallets().user_at::<0>().address(),
                     100,
                     &chains.node_a.denom(),
                 )?;
@@ -320,7 +320,7 @@ impl BinaryChainTest for PacketExpirationTest {
                 // even though the IBC transfer will fail.
 
                 let balance_b = chains.node_b.chain_driver().query_balance(
-                    &chains.node_b.wallets().user1().address(),
+                    &chains.node_b.wallets().user_at::<0>().address(),
                     &denom_b.as_ref(),
                 )?;
 
@@ -333,8 +333,8 @@ impl BinaryChainTest for PacketExpirationTest {
                 chains.node_a.chain_driver().transfer_token(
                     &channels.port_a.as_ref(),
                     &channels.channel_id_a.as_ref(),
-                    &chains.node_a.wallets().user1().address(),
-                    &chains.node_b.wallets().user1().address(),
+                    &chains.node_a.wallets().user_at::<0>().address(),
+                    &chains.node_b.wallets().user_at::<0>().address(),
                     100,
                     &chains.node_a.denom(),
                 )?;
@@ -342,7 +342,7 @@ impl BinaryChainTest for PacketExpirationTest {
                 sleep(Duration::from_secs(10));
 
                 let balance_b = chains.node_b.chain_driver().query_balance(
-                    &chains.node_b.wallets().user1().address(),
+                    &chains.node_b.wallets().user_at::<0>().address(),
                     &denom_b.as_ref(),
                 )?;
 

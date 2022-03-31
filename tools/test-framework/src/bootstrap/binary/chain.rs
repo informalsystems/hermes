@@ -21,7 +21,7 @@ use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
-use crate::types::wallet::{TestWallets, Wallet};
+use crate::types::wallet::{TestWallets, ValidWallet, Wallet};
 use crate::util::random::random_u64_range;
 
 /**
@@ -47,8 +47,8 @@ pub fn boostrap_chain_pair_with_nodes(
 > {
     let mut config = Config::default();
 
-    add_chain_config(&mut config, &node_a)?;
-    add_chain_config(&mut config, &node_b)?;
+    add_chain_config::<0>(&mut config, &node_a)?;
+    add_chain_config::<0>(&mut config, &node_b)?;
 
     config_modifier(&mut config);
 
@@ -250,9 +250,13 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
     chain: &Chain,
     wallets: &TestWallets,
 ) -> Result<(), Error> {
-    add_key_to_chain_handle(chain, &wallets.relayer)?;
-    add_key_to_chain_handle(chain, &wallets.user1)?;
-    add_key_to_chain_handle(chain, &wallets.user2)?;
+    for relayer in &wallets.relayers {
+        add_key_to_chain_handle(chain, relayer)?;
+    }
+
+    for user in &wallets.users {
+        add_key_to_chain_handle(chain, user)?;
+    }
 
     Ok(())
 }
@@ -269,7 +273,13 @@ pub fn new_registry(config: Config) -> SharedRegistry<CountingAndCachingChainHan
    Generate [`ChainConfig`](ibc_relayer::config::ChainConfig) from a running
    [`FullNode`] and add it to the relayer's [`Config`].
 */
-pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), Error> {
+pub fn add_chain_config<const WALLET_POS: usize>(
+    config: &mut Config,
+    running_node: &FullNode,
+) -> Result<(), Error>
+where
+    (): ValidWallet<WALLET_POS>,
+{
     let chain_config = running_node.generate_chain_config()?;
 
     config.chains.push(chain_config);

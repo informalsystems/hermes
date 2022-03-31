@@ -34,12 +34,12 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         let denom_a = node_a.denom();
 
-        let wallet_a1 = node_a.wallets().user1().cloned();
+        let wallet_a1 = node_a.wallets().user_at::<0>().cloned();
 
-        let wallet_b1 = node_b.wallets().user1().cloned();
-        let wallet_b2 = node_b.wallets().user2().cloned();
+        let wallet_b1 = node_b.wallets().user_at::<0>().cloned();
+        let wallet_b2 = node_b.wallets().user_at::<1>().cloned();
 
-        let wallet_c1 = node_c.wallets().user1().cloned();
+        let wallet_c1 = node_c.wallets().user_at::<0>().cloned();
 
         let balance_a = node_a
             .chain_driver()

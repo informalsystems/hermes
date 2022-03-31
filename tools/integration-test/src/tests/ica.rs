@@ -117,7 +117,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         let ica_fund = 42000;
 
         chains.node_b.chain_driver().local_transfer_token(
-            &chains.node_b.wallets().user1().address(),
+            &chains.node_b.wallets().user_at::<0>().address(),
             &ica_address.as_ref(),
             ica_fund,
             &stake_denom.as_ref(),
@@ -150,7 +150,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         let msg = MsgSend {
             tpe: "/cosmos.bank.v1beta1.MsgSend".to_string(),
             from_address: ica_address.to_string(),
-            to_address: chains.node_a.wallets().user2().address().to_string(),
+            to_address: chains.node_a.wallets().user_at::<1>().address().to_string(),
             amount: vec![Amount {
                 denom: stake_denom.to_string(),
                 amount: amount.to_string(),
@@ -246,7 +246,7 @@ fn register_interchain_account<ChainA: ChainHandle, ChainB: ChainHandle>(
     ),
     Error,
 > {
-    let wallet = chains.node_a.wallets().user1().cloned();
+    let wallet = chains.node_a.wallets().user_at::<0>().cloned();
     let handle = relayer.spawn_supervisor()?;
 
     chains

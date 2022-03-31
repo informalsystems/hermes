@@ -44,8 +44,8 @@ impl BinaryChannelTest for MemoTest {
         chains.node_a.chain_driver().transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &chains.node_a.wallets().user1().address(),
-            &chains.node_b.wallets().user1().address(),
+            &chains.node_a.wallets().user_at::<0>().address(),
+            &chains.node_b.wallets().user_at::<0>().address(),
             a_to_b_amount,
             &denom_a,
         )?;
@@ -57,7 +57,7 @@ impl BinaryChannelTest for MemoTest {
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_b.wallets().user1().address(),
+            &chains.node_b.wallets().user_at::<0>().address(),
             a_to_b_amount,
             &denom_b.as_ref(),
         )?;
@@ -65,7 +65,7 @@ impl BinaryChannelTest for MemoTest {
         let tx_info = chains
             .node_b
             .chain_driver()
-            .query_recipient_transactions(&chains.node_b.wallets().user1().address())?;
+            .query_recipient_transactions(&chains.node_b.wallets().user_at::<0>().address())?;
 
         assert_tx_memo_equals(&tx_info, self.memo.as_str())?;
 

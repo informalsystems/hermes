@@ -11,7 +11,7 @@ use crate::chain::config;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::types::single::node::FullNode;
-use crate::types::wallet::TestWallets;
+use crate::types::wallet::{TestWallets, WALLET_COUNT};
 use crate::util::random::{random_u32, random_u64_range};
 
 /**
@@ -50,28 +50,31 @@ pub fn bootstrap_single_node(
     chain_driver.update_genesis_file("genesis.json", genesis_modifier)?;
 
     let validator = chain_driver.add_random_wallet("validator")?;
-    let relayer = chain_driver.add_random_wallet("relayer")?;
-    let user1 = chain_driver.add_random_wallet("user1")?;
-    let user2 = chain_driver.add_random_wallet("user2")?;
+
+    let mut relayer_wallets = vec![];
+    let mut user_wallets = vec![];
+
+    for i in 0..WALLET_COUNT {
+        let relayer = chain_driver.add_random_wallet(&format!("relayer{}", i))?;
+        let user = chain_driver.add_random_wallet(&format!("user{}", i))?;
+
+        chain_driver.add_genesis_account(
+            &user.address,
+            &[(&stake_denom, initial_amount), (&denom, initial_amount)],
+        )?;
+
+        chain_driver.add_genesis_account(
+            &relayer.address,
+            &[(&stake_denom, initial_amount), (&denom, initial_amount)],
+        )?;
+
+        relayer_wallets.push(relayer);
+        user_wallets.push(user);
+    }
 
     chain_driver.add_genesis_account(&validator.address, &[(&stake_denom, initial_amount)])?;
 
     chain_driver.add_genesis_validator(&validator.id, &stake_denom, initial_amount)?;
-
-    chain_driver.add_genesis_account(
-        &user1.address,
-        &[(&stake_denom, initial_amount), (&denom, initial_amount)],
-    )?;
-
-    chain_driver.add_genesis_account(
-        &user2.address,
-        &[(&stake_denom, initial_amount), (&denom, initial_amount)],
-    )?;
-
-    chain_driver.add_genesis_account(
-        &relayer.address,
-        &[(&stake_denom, initial_amount), (&denom, initial_amount)],
-    )?;
 
     chain_driver.collect_gen_txs()?;
 
@@ -91,18 +94,17 @@ pub fn bootstrap_single_node(
 
     let process = chain_driver.start()?;
 
-    chain_driver.assert_eventual_wallet_amount(&relayer.address, initial_amount, &denom)?;
+    chain_driver.assert_eventual_wallet_amount(
+        &relayer_wallets[0].address,
+        initial_amount,
+        &denom,
+    )?;
 
     info!(
         "started new chain {} at with home path {} and RPC address {}.",
         chain_driver.chain_id,
         chain_driver.home_path,
         chain_driver.rpc_address(),
-    );
-
-    info!(
-        "user wallet for chain {} - id: {}, address: {}",
-        chain_driver.chain_id, user1.id.0, user1.address.0,
     );
 
     info!(
@@ -114,9 +116,8 @@ pub fn bootstrap_single_node(
 
     let wallets = TestWallets {
         validator,
-        relayer,
-        user1,
-        user2,
+        relayers: relayer_wallets.try_into().unwrap(),
+        users: user_wallets.try_into().unwrap(),
     };
 
     let node = FullNode {

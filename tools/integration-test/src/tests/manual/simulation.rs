@@ -46,7 +46,7 @@ impl BinaryChannelTest for SimulationTest {
             chains.handle_a(),
             chains.handle_b(),
             &channel,
-            &chains.node_b.wallets().user1().address(),
+            &chains.node_b.wallets().user_at::<0>().address(),
             &chains.node_a.denom(),
             9999,
             1000,

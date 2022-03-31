@@ -17,7 +17,7 @@ use crate::ibc::denom::Denom;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
 use crate::types::tagged::*;
-use crate::types::wallet::TestWallets;
+use crate::types::wallet::{TestWallets, ValidWallet};
 
 /**
    Represents a full node running as a child process managed by the test.
@@ -113,7 +113,12 @@ impl FullNode {
        Generate the relayer's chain config based on the configuration of
        the full node.
     */
-    pub fn generate_chain_config(&self) -> Result<config::ChainConfig, Error> {
+    pub fn generate_chain_config<const WALLET_POS: usize>(
+        &self,
+    ) -> Result<config::ChainConfig, Error>
+    where
+        (): ValidWallet<WALLET_POS>,
+    {
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
@@ -121,7 +126,7 @@ impl FullNode {
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
             rpc_timeout: Duration::from_secs(10),
             account_prefix: "cosmos".to_string(),
-            key_name: self.wallets.relayer.id.0.clone(),
+            key_name: self.wallets.relayer_at::<WALLET_POS>().id.0.clone(),
 
             // By default we use in-memory key store to avoid polluting
             // ~/.hermes/keys. See

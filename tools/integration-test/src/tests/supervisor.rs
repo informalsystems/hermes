@@ -81,8 +81,8 @@ impl BinaryChainTest for SupervisorTest {
 
         // Use the same wallet as the relayer to perform token transfer.
         // This will cause an account sequence mismatch error.
-        let wallet_a = chains.node_a.wallets().user1().cloned();
-        let wallet_b = chains.node_b.wallets().user1().cloned();
+        let wallet_a = chains.node_a.wallets().user_at::<0>().cloned();
+        let wallet_b = chains.node_b.wallets().user_at::<0>().cloned();
 
         let transfer_amount = 1000;
 
@@ -95,15 +95,15 @@ impl BinaryChainTest for SupervisorTest {
         // wallet to mess up the account sequence number on both sides.
 
         chains.node_a.chain_driver().local_transfer_token(
-            &chains.node_a.wallets().relayer().address(),
-            &chains.node_a.wallets().user2().address(),
+            &chains.node_a.wallets().relayer_at::<0>().address(),
+            &chains.node_a.wallets().user_at::<1>().address(),
             1000,
             &denom_a,
         )?;
 
         chains.node_b.chain_driver().local_transfer_token(
-            &chains.node_b.wallets().relayer().address(),
-            &chains.node_b.wallets().user2().address(),
+            &chains.node_b.wallets().relayer_at::<0>().address(),
+            &chains.node_b.wallets().user_at::<1>().address(),
             1000,
             &chains.node_b.denom(),
         )?;
