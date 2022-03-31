@@ -1261,7 +1261,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         };
         let res = self
             .pending_txs_src
-            .process_pending(pending::TIMEOUT, &self, resubmit)?
+            .process_pending(pending::TIMEOUT, self, resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
@@ -1275,7 +1275,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         };
         let res = self
             .pending_txs_dst
-            .process_pending(pending::TIMEOUT, &self, resubmit)?
+            .process_pending(pending::TIMEOUT, self, resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
