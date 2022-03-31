@@ -139,11 +139,8 @@ mod tests {
                 )
         };
 
-        let handler_output = channel_dispatch(
-            &context,
-            ChannelMsg::ChannelCloseInit(msg_chan_close_init),
-        )
-        .unwrap();
+        let handler_output =
+            channel_dispatch(&context, ChannelMsg::ChannelCloseInit(msg_chan_close_init)).unwrap();
 
         assert!(!handler_output.events.is_empty()); // Some events must exist.
 
