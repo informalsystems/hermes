@@ -40,7 +40,7 @@ define_error! {
 /// The purpose of this type is to avoid spawning multiple runtimes for a single `ChainId`.
 #[derive(Debug)]
 pub struct Registry<Chain: ChainHandle> {
-    config: RwArc<Config>,
+    config: Config,
     handles: HashMap<ChainId, Chain>,
     rt: Arc<TokioRuntime>,
 }
@@ -51,23 +51,13 @@ pub struct SharedRegistry<Chain: ChainHandle> {
 }
 
 impl<Chain: ChainHandle> Registry<Chain> {
-    /// Construct a new [`Registry`] using the provided shared [`Config`]
-    pub fn new(config: RwArc<Config>) -> Self {
-        Self::from_shared(config)
-    }
-
-    /// Construct a new [`Registry`] using the provided shared [`Config`]
-    pub fn from_shared(config: RwArc<Config>) -> Self {
+    /// Construct a new [`Registry`] using the provided [`Config`]
+    pub fn new(config: Config) -> Self {
         Self {
             config,
             handles: HashMap::new(),
             rt: Arc::new(TokioRuntime::new().unwrap()),
         }
-    }
-
-    /// Construct a new [`Registry`] using the provided owned [`Config`]
-    pub fn from_owned(config: Config) -> Self {
-        Self::new(Arc::new(RwLock::new(config)))
     }
 
     /// Return the size of the registry, i.e., the number of distinct chain runtimes.
@@ -121,8 +111,8 @@ impl<Chain: ChainHandle> Registry<Chain> {
 }
 
 impl<Chain: ChainHandle> SharedRegistry<Chain> {
-    pub fn new(config: RwArc<Config>) -> Self {
-        let registry = Registry::from_shared(config);
+    pub fn new(config: Config) -> Self {
+        let registry = Registry::new(config);
 
         Self {
             registry: Arc::new(RwLock::new(registry)),
@@ -153,13 +143,11 @@ impl<Chain: ChainHandle> SharedRegistry<Chain> {
 /// Spawns a chain runtime from the configuration and given a chain identifier.
 /// Returns the corresponding handle if successful.
 pub fn spawn_chain_runtime<Chain: ChainHandle>(
-    config: &RwArc<Config>,
+    config: &Config,
     chain_id: &ChainId,
     rt: Arc<TokioRuntime>,
 ) -> Result<Chain, SpawnError> {
     let chain_config = config
-        .read()
-        .expect("poisoned lock")
         .find_chain(chain_id)
         .cloned()
         .ok_or_else(|| SpawnError::missing_chain(chain_id.clone()))?;

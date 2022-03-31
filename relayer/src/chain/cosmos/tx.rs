@@ -1,10 +1,11 @@
 use ibc_proto::cosmos::tx::v1beta1::Fee;
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{Client, HttpClient, Url};
 use tonic::codegen::http::Uri;
 use tracing::{debug, error};
 
+use crate::chain::cosmos::account::{AccountNumber, AccountSequence};
 use crate::chain::cosmos::batch::batch_messages;
 use crate::chain::cosmos::encode::sign_and_encode_tx;
 use crate::chain::cosmos::estimate::estimate_tx_fees;
@@ -20,8 +21,8 @@ pub async fn send_messages_as_batches(
     rpc_address: &Url,
     grpc_address: &Uri,
     messages: Vec<Any>,
-    account_sequence: &mut u64,
-    account_number: u64,
+    account_sequence: &mut AccountSequence,
+    account_number: AccountNumber,
     key_entry: &KeyEntry,
     tx_memo: &Memo,
 ) -> Result<Vec<Response>, Error> {
@@ -64,8 +65,8 @@ pub async fn estimate_fee_and_send_tx(
     rpc_address: &Url,
     grpc_address: &Uri,
     messages: Vec<Any>,
-    account_sequence: u64,
-    account_number: u64,
+    account_sequence: AccountSequence,
+    account_number: AccountNumber,
     key_entry: &KeyEntry,
     tx_memo: &Memo,
 ) -> Result<Response, Error> {
@@ -96,13 +97,13 @@ pub async fn estimate_fee_and_send_tx(
 
 pub fn maybe_update_account_sequence(
     config: &ChainConfig,
-    account_sequence: &mut u64,
+    account_sequence: &mut AccountSequence,
     response: &Response,
 ) {
     match response.code {
         tendermint::abci::Code::Ok => {
             // A success means the account s.n. was increased
-            *account_sequence += 1;
+            account_sequence.increment_mut();
             debug!("[{}] send_tx: broadcast_tx_sync: {:?}", config.id, response);
         }
         tendermint::abci::Code::Err(code) => {
@@ -123,8 +124,8 @@ pub async fn raw_send_tx(
     rpc_client: &HttpClient,
     rpc_address: &Url,
     fee: &Fee,
-    account_sequence: u64,
-    account_number: u64,
+    account_sequence: AccountSequence,
+    account_number: AccountNumber,
     messages: Vec<Any>,
     key_entry: &KeyEntry,
     tx_memo: &Memo,

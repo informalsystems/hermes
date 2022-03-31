@@ -35,7 +35,7 @@ pub struct TxResponse {
     pub gas_used: i64,
     /// The request transaction bytes.
     #[prost(message, optional, tag = "11")]
-    pub tx: ::core::option::Option<::prost_types::Any>,
+    pub tx: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// Time of the previous block. For heights > 1, it's the weighted median of
     /// the timestamps of the valid votes in the block.LastCommit. For height == 1,
     /// it's genesis time.

@@ -9,8 +9,8 @@ use num_bigint::BigInt;
 use std::{thread, time::Instant};
 
 use bitcoin::hashes::hex::ToHex;
+use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use prost_types::Any;
 use tendermint::block::Height;
 use tendermint::consensus::Params as ConsensusParams;
 use tendermint::{
@@ -69,6 +69,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
+use crate::chain::cosmos::account::{Account, AccountNumber, AccountSequence};
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::{
@@ -88,6 +89,7 @@ use crate::light_client::{LightClient, Verified};
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::util::retry::{retry_with_index, RetryResult};
 
+pub mod account;
 pub mod batch;
 pub mod compatibility;
 pub mod encode;
@@ -103,9 +105,9 @@ pub mod version;
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 400_000;
 
-/// Upper limit on the size of transactions submitted by Hermes, expressed as a
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
+// https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
 
 // The error "incorrect account sequence" is defined as the unique error code 32 in cosmos-sdk:
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
@@ -118,7 +120,7 @@ pub struct CosmosSdkChain {
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
     /// A cached copy of the account information
-    account: Option<BaseAccount>,
+    account: Option<Account>,
 }
 
 impl CosmosSdkChain {
@@ -291,7 +293,7 @@ impl CosmosSdkChain {
     fn send_tx_with_account_sequence(
         &mut self,
         proto_msgs: Vec<Any>,
-        account_seq: u64,
+        account_seq: AccountSequence,
     ) -> Result<Response, Error> {
         debug!(
             "sending {} messages using account sequence {}",
@@ -520,11 +522,12 @@ impl CosmosSdkChain {
             "refresh: retrieved account",
         );
 
-        self.account = Some(account);
+        self.account = Some(account.into());
+
         Ok(())
     }
 
-    fn account(&mut self) -> Result<&BaseAccount, Error> {
+    fn account(&mut self) -> Result<&Account, Error> {
         if self.account == None {
             self.refresh_account()?;
         }
@@ -535,17 +538,17 @@ impl CosmosSdkChain {
             .expect("account was supposedly just cached"))
     }
 
-    fn account_number(&mut self) -> Result<u64, Error> {
-        Ok(self.account()?.account_number)
+    fn account_number(&mut self) -> Result<AccountNumber, Error> {
+        Ok(self.account()?.number)
     }
 
-    fn account_sequence(&mut self) -> Result<u64, Error> {
+    fn account_sequence(&mut self) -> Result<AccountSequence, Error> {
         Ok(self.account()?.sequence)
     }
 
     fn incr_account_sequence(&mut self) {
         if let Some(account) = &mut self.account {
-            account.sequence += 1;
+            account.sequence = account.sequence.increment();
         }
     }
 

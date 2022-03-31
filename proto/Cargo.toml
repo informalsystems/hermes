@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-proto"
-version      = "0.16.0"
+version      = "0.17.0"
 authors      = ["Informal Systems <hello@informal.systems>"]
 edition      = "2021"
 license      = "Apache-2.0"
@@ -17,6 +17,7 @@ description  = """
 [lib]
 name = "ibc_proto"
 path = "src/lib.rs"
+doctest = false
 
 [package.metadata.docs.rs]
 all-features = true

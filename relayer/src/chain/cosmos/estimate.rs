@@ -1,9 +1,10 @@
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx};
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error};
 
+use crate::chain::cosmos::account::{AccountNumber, AccountSequence};
 use crate::chain::cosmos::encode::encode_tx_to_raw;
 use crate::chain::cosmos::gas::gas_amount_to_fees;
 use crate::chain::cosmos::simulate::send_tx_simulate;
@@ -68,8 +69,8 @@ pub async fn estimate_gas(
 pub async fn estimate_tx_fees(
     config: &ChainConfig,
     grpc_address: &Uri,
-    account_sequence: u64,
-    account_number: u64,
+    account_sequence: AccountSequence,
+    account_number: AccountNumber,
     messages: Vec<Any>,
     key_entry: &KeyEntry,
     tx_memo: &Memo,

@@ -1,4 +1,4 @@
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 
 use crate::error::Error;
 

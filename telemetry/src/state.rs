@@ -53,6 +53,9 @@ pub struct TelemetryState {
 
     /// Number of queries emitted by the relayer, per chain and query type
     queries: Counter<u64>,
+
+    /// Number of cache hits for queries emitted by the relayer, per chain and query type
+    query_cache_hits: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -144,6 +147,15 @@ impl TelemetryState {
 
         self.queries.add(1, labels);
     }
+
+    pub fn query_cache_hit(&self, chain_id: &ChainId, query_type: &'static str) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("query_type", query_type),
+        ];
+
+        self.query_cache_hits.add(1, labels);
+    }
 }
 
 impl Default for TelemetryState {
@@ -189,6 +201,11 @@ impl Default for TelemetryState {
                 .with_description(
                     "Number of queries emitted by the relayer, per chain and query type",
                 )
+                .init(),
+
+            query_cache_hits: meter
+                .u64_counter("cache_hits")
+                .with_description("Number of cache hits for queries emitted by the relayer, per chain and query type")
                 .init(),
         }
     }

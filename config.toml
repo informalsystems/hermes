@@ -207,12 +207,17 @@ memo_prefix = ''
 #       - 'allow': permit relaying _only on_ the port/channel id in the list below,
 #       - 'deny': permit relaying on any channel _except for_ the list below.
 # 2. `list` - the list of channels specified by the port and channel identifiers.
+#             Optionally, each element may also contains wildcards, for eg. 'ica*'
+#             to match all identifiers starting with 'ica' or '*' to match all identifiers.
 #
-# Example configuration of a channel filter, denying packet relaying on channel with port ID 'transfer' and channel ID 'channel-0':
+# Example configuration of a channel filter, only allowing packet relaying on
+# channel with port ID 'transfer' and channel ID 'channel-0', as well as on
+# all ICA channels.
 #
 # [chains.packet_filter]
-# policy = 'deny'
+# policy = 'allow'
 # list = [
+#   ['ica*', '*'],
 #   ['transfer', 'channel-0'],
 # ]
 

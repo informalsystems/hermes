@@ -3,9 +3,10 @@ use core::str::FromStr;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use tendermint::account::Id as AccountId;
 
+use crate::chain::cosmos::account::{AccountNumber, AccountSequence};
 use crate::chain::cosmos::types::SignedTx;
 use crate::config::types::Memo;
 use crate::config::AddressType;
@@ -16,11 +17,11 @@ use crate::keyring::{sign_message, KeyEntry};
 pub fn sign_and_encode_tx(
     config: &ChainConfig,
     messages: Vec<Any>,
-    account_sequence: u64,
+    account_sequence: AccountSequence,
     key_entry: &KeyEntry,
     fee: &Fee,
     tx_memo: &Memo,
-    account_number: u64,
+    account_number: AccountNumber,
 ) -> Result<Vec<u8>, Error> {
     let signed_tx = encode_tx_to_raw(
         config,
@@ -56,13 +57,13 @@ pub fn encode_sign_doc(
     address_type: &AddressType,
     body_bytes: Vec<u8>,
     auth_info_bytes: Vec<u8>,
-    account_number: u64,
+    account_number: AccountNumber,
 ) -> Result<Vec<u8>, Error> {
     let sign_doc = SignDoc {
         body_bytes,
         auth_info_bytes,
         chain_id: chain_id.to_string(),
-        account_number,
+        account_number: account_number.to_u64(),
     };
 
     // A protobuf serialization of a SignDoc
@@ -77,7 +78,7 @@ pub fn encode_sign_doc(
 pub fn encode_signer_info(
     key_bytes: Vec<u8>,
     address_type: &AddressType,
-    sequence: u64,
+    sequence: AccountSequence,
 ) -> Result<SignerInfo, Error> {
     let pk_type = match address_type {
         AddressType::Cosmos => "/cosmos.crypto.secp256k1.PubKey".to_string(),
@@ -95,7 +96,7 @@ pub fn encode_signer_info(
     let signer_info = SignerInfo {
         public_key: Some(pk_any),
         mode_info: mode,
-        sequence,
+        sequence: sequence.to_u64(),
     };
     Ok(signer_info)
 }
@@ -111,11 +112,11 @@ pub fn encode_tx_raw(tx_raw: TxRaw) -> Result<Vec<u8>, Error> {
 pub fn encode_tx_to_raw(
     config: &ChainConfig,
     messages: Vec<Any>,
-    account_sequence: u64,
+    account_sequence: AccountSequence,
     key_entry: &KeyEntry,
     fee: &Fee,
     tx_memo: &Memo,
-    account_number: u64,
+    account_number: AccountNumber,
 ) -> Result<SignedTx, Error> {
     let key_bytes = encode_key_bytes(key_entry)?;
 

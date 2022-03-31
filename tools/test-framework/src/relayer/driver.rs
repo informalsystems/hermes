@@ -3,7 +3,7 @@
 */
 
 use ibc_relayer::chain::handle::CountingAndCachingChainHandle;
-use ibc_relayer::config::SharedConfig;
+use ibc_relayer::config::Config;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
 use std::path::PathBuf;
@@ -29,13 +29,10 @@ pub struct RelayerDriver {
     pub config_path: PathBuf,
 
     /**
-       The relayer [`Config`](ibc_relayer::config::Config) that is shared
-       with the [`Registry`](ibc_relayer::registry::Registry).
-
-       Use this shared config when spawning new supervisor using
-       [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
+       The relayer [`Config`]. Use this config when spawning new supervisor
+       using [`spawn_supervisor`](ibc_relayer::supervisor::spawn_supervisor).
     */
-    pub config: SharedConfig,
+    pub config: Config,
 
     /**
        The relayer chain [`Registry`](ibc_relayer::registry::Registry)
@@ -81,7 +78,7 @@ impl RelayerDriver {
     pub fn with_supervisor<R>(&self, cont: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
         let _handle = self.spawn_supervisor()?;
 
-        cont().map_err(hang_on_error(self.hang_on_fail))
+        hang_on_error(self.hang_on_fail, cont)
     }
 }
 

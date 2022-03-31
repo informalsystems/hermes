@@ -8,7 +8,6 @@ pub use ibc::core::ics04_channel::channel::Order;
 pub use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 pub use ibc_relayer::chain::handle::ChainHandle;
 pub use ibc_relayer::config::Config;
-pub use ibc_relayer::config::SharedConfig;
 pub use ibc_relayer::foreign_client::ForeignClient;
 pub use ibc_relayer::registry::SharedRegistry;
 pub use ibc_relayer::supervisor::SupervisorHandle;
@@ -44,6 +43,7 @@ pub use crate::framework::nary::connection::{
 };
 pub use crate::framework::nary::node::{run_nary_node_test, NaryNodeTest, RunNaryNodeTest};
 pub use crate::framework::overrides::TestOverrides;
+pub use crate::framework::supervisor::RunWithSupervisor;
 pub use crate::relayer::channel::TaggedChannelEndExt;
 pub use crate::relayer::connection::{TaggedConnectionEndExt, TaggedConnectionExt};
 pub use crate::relayer::driver::RelayerDriver;

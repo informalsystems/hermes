@@ -25,11 +25,16 @@ static INIT: Once = Once::new();
    read the environment variables and return a [`TestConfig`].
 */
 pub fn init_test() -> Result<TestConfig, Error> {
+    let no_color_log = env::var("NO_COLOR_LOG")
+        .ok()
+        .map(|val| val == "1")
+        .unwrap_or(false);
+
     INIT.call_once(|| {
-        if enable_ansi() {
+        if enable_ansi() && !no_color_log {
             color_eyre::install().unwrap();
         }
-        install_logger();
+        install_logger(!no_color_log);
     });
 
     let chain_command_path = env::var("CHAIN_COMMAND_PATH").unwrap_or_else(|_| "gaiad".to_string());
@@ -59,7 +64,7 @@ pub fn init_test() -> Result<TestConfig, Error> {
    Install the [`tracing_subscriber`] logger handlers so that logs will
    be displayed during test.
 */
-pub fn install_logger() {
+pub fn install_logger(with_color: bool) {
     // Use log level INFO by default if RUST_LOG is not set.
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
@@ -68,7 +73,9 @@ pub fn install_logger() {
         None => false,
     });
 
-    let module_filter = ts::fmt::layer().with_filter(module_filter_fn);
+    let layer = ts::fmt::layer()
+        .with_ansi(with_color)
+        .with_filter(module_filter_fn);
 
-    ts::registry().with(env_filter).with(module_filter).init();
+    ts::registry().with(env_filter).with(layer).init();
 }
