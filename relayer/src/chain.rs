@@ -38,12 +38,12 @@ use ibc_proto::ibc::core::connection::v1::{
 use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
+use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
-use crate::event::monitor::TxMonitorCmd;
+use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
-use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
 use self::client::ClientSettings;
 use self::tx::TrackedMsgs;
