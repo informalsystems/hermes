@@ -172,6 +172,9 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                     trace!("transaction is not yet committed: {} ", tx_hashes);
 
+                    // As a hacky test, set this timeout to a very small value
+                    // (or just make this an `if true` check)
+                    // do an ft transfer with a small timeout with 1 or 2 blocks
                     if submit_time.elapsed() > timeout {
                         // The submission time for the transaction has exceeded the
                         // timeout threshold. Returning Outcome::Timeout for the
@@ -182,18 +185,25 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                             Some(f) => {
                                 let new_od = relay_path
                                     .regenerate_operational_data(pending.original_od.clone());
-                                match f(new_od) {
-                                    Ok(reply) => {
+                                match new_od.map(f) {
+                                    Some(Ok(reply)) => {
                                         self.insert_new_pending_tx(reply, pending.original_od);
                                         Ok(None)
                                     }
-                                    Err(e) => {
+                                    Some(Err(e)) => {
                                         self.pending_queue.push_back(pending);
                                         Err(e)
                                     }
+                                    None => {
+                                        // No operational data was regenerated; nothing to resubmit
+                                        Ok(None)
+                                    }
                                 }
                             }
-                            None => Ok(None),
+                            None => {
+                                // The clear packet interval is 0 such that no resubmit logic was received
+                                Ok(None)
+                            }
                         }
                     } else {
                         // Reinsert the pending transaction, this time

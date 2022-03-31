@@ -527,7 +527,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ///
     /// Side effects: may schedule a new operational data targeting the source chain, comprising
     /// new timeout messages.
-    fn regenerate_operational_data(
+    pub(crate) fn regenerate_operational_data(
         &self,
         initial_odata: OperationalData,
     ) -> Option<OperationalData> {
@@ -1253,11 +1253,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         summary_src
     }
 
-    fn process_pending_txs_src(
-        &self,
-        clear_interval: u64,
-        relay_path: &RelayPath<ChainA, ChainB>,
-    ) -> Result<RelaySummary, LinkError> {
+    fn process_pending_txs_src(&self, clear_interval: u64) -> Result<RelaySummary, LinkError> {
         let resubmit = if clear_interval == 0 {
             Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
         } else {
@@ -1265,17 +1261,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         };
         let res = self
             .pending_txs_src
-            .process_pending(pending::TIMEOUT, relay_path, resubmit)?
+            .process_pending(pending::TIMEOUT, &self, resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
     }
 
-    fn process_pending_txs_dst(
-        &self,
-        clear_interval: u64,
-        relay_path: &RelayPath<ChainA, ChainB>,
-    ) -> Result<RelaySummary, LinkError> {
+    fn process_pending_txs_dst(&self, clear_interval: u64) -> Result<RelaySummary, LinkError> {
         let resubmit = if clear_interval == 0 {
             Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
         } else {
@@ -1283,7 +1275,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         };
         let res = self
             .pending_txs_dst
-            .process_pending(pending::TIMEOUT, relay_path, resubmit)?
+            .process_pending(pending::TIMEOUT, &self, resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
