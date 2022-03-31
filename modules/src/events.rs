@@ -366,6 +366,7 @@ impl IbcEvent {
             IbcEvent::WriteAcknowledgement(ev) => ev.height(),
             IbcEvent::AcknowledgePacket(ev) => ev.height(),
             IbcEvent::TimeoutPacket(ev) => ev.height(),
+            IbcEvent::TimeoutOnClosePacket(ev) => ev.height(),
             _ => unimplemented!(),
         }
     }
