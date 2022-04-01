@@ -1246,7 +1246,7 @@ mod tests {
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
-        Acknowledgement, DeferredWriteResult, Module, ModuleId, ModuleOutput, Router, RouterBuilder,
+        Acknowledgement, Module, ModuleId, ModuleOutput, OnRecvPacketAck, Router, RouterBuilder,
     };
     use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
@@ -1406,11 +1406,7 @@ mod tests {
             }
         }
 
-        impl Acknowledgement for MockAck {
-            fn success(&self) -> bool {
-                true
-            }
-        }
+        impl Acknowledgement for MockAck {}
 
         #[derive(Debug, Default)]
         struct FooModule {
@@ -1437,13 +1433,13 @@ mod tests {
                 _output: &mut ModuleOutput,
                 _packet: &Packet,
                 _relayer: &Signer,
-            ) -> DeferredWriteResult<dyn Acknowledgement> {
-                (
-                    Some(Box::new(MockAck::default())),
-                    Some(Box::new(|module| {
+            ) -> OnRecvPacketAck {
+                OnRecvPacketAck::Successful(
+                    Box::new(MockAck::default()),
+                    Box::new(|module| {
                         let module = module.downcast_mut::<FooModule>().unwrap();
                         module.counter += 1;
-                    })),
+                    }),
                 )
             }
         }
@@ -1497,12 +1493,16 @@ mod tests {
             on_recv_packet_result("foomodule"),
             on_recv_packet_result("barmodule"),
         ];
-        results.into_iter().for_each(|(mid, (ack, write_fn))| {
-            if matches!(ack, Some(ack) if ack.success()) {
-                if let Some(write_fn) = write_fn {
-                    write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut());
+        results
+            .into_iter()
+            .filter_map(|(mid, result)| match result {
+                OnRecvPacketAck::Nil(write_fn) | OnRecvPacketAck::Successful(_, write_fn) => {
+                    Some((mid, write_fn))
                 }
-            }
-        });
+                _ => None,
+            })
+            .for_each(|(mid, write_fn)| {
+                write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut())
+            });
     }
 }
