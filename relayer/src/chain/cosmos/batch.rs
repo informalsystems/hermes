@@ -18,11 +18,11 @@ pub async fn send_messages_as_batches(
     rpc_client: &HttpClient,
     rpc_address: &Url,
     grpc_address: &Uri,
-    messages: Vec<Any>,
-    account_sequence: &mut AccountSequence,
-    account_number: AccountNumber,
     key_entry: &KeyEntry,
     tx_memo: &Memo,
+    account_number: AccountNumber,
+    account_sequence: &mut AccountSequence,
+    messages: Vec<Any>,
 ) -> Result<Vec<Response>, Error> {
     let max_message_count = config.max_msg_num.0;
     let max_tx_size = config.max_tx_size.into();

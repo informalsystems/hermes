@@ -21,15 +21,15 @@ use crate::error::Error;
 
 /// Uses the GRPC client to retrieve the account sequence
 pub async fn query_account(
-    grpc_address: Uri,
-    account_address: String,
+    grpc_address: &Uri,
+    account_address: &str,
 ) -> Result<BaseAccount, Error> {
-    let mut client = QueryClient::connect(grpc_address)
+    let mut client = QueryClient::connect(grpc_address.clone())
         .await
         .map_err(Error::grpc_transport)?;
 
     let request = tonic::Request::new(QueryAccountRequest {
-        address: account_address.clone(),
+        address: account_address.to_string(),
     });
 
     let response = client.account(request).await;
@@ -37,7 +37,7 @@ pub async fn query_account(
     // Querying for an account might fail, i.e. if the account doesn't actually exist
     let resp_account = match response.map_err(Error::grpc_status)?.into_inner().account {
         Some(account) => account,
-        None => return Err(Error::empty_query_account(account_address)),
+        None => return Err(Error::empty_query_account(account_address.to_string())),
     };
 
     if resp_account.type_url == "/cosmos.auth.v1beta1.BaseAccount" {

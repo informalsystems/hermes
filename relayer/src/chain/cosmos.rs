@@ -14,7 +14,7 @@ use itertools::Itertools;
 use tendermint::block::Height;
 use tendermint::consensus::Params as ConsensusParams;
 use tendermint::{
-    abci::{Code, Event, Path as TendermintABCIPath},
+    abci::{Event, Path as TendermintABCIPath},
     node::info::TxIndexStatus,
 };
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
@@ -25,7 +25,7 @@ use tendermint_rpc::{
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, error, info, span, trace, warn, Level};
+use tracing::{info, span, trace, warn, Level};
 
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
@@ -69,13 +69,14 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::cosmos::account::{Account, AccountNumber, AccountSequence};
+use crate::chain::cosmos::account::Account;
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::{
     abci_query, fetch_version_specs, header_query, packet_query, query_account, tx_hash_query,
 };
-use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
+use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
+use crate::chain::cosmos::types::gas_config::DEFAULT_MAX_GAS;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{QueryResponse, StatusResponse};
@@ -86,7 +87,6 @@ use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
-use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::util::retry::{retry_with_index, RetryResult};
 
 pub mod account;
@@ -102,16 +102,9 @@ pub mod tx;
 pub mod types;
 pub mod version;
 
-/// Default gas limit when submitting a transaction.
-const DEFAULT_MAX_GAS: u64 = 400_000;
-
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
-
-// The error "incorrect account sequence" is defined as the unique error code 32 in cosmos-sdk:
-// https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
-pub const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
@@ -290,124 +283,31 @@ impl CosmosSdkChain {
         self.rt.block_on(f)
     }
 
-    fn send_tx_with_account_sequence(
-        &mut self,
-        proto_msgs: Vec<Any>,
-        account_seq: AccountSequence,
-    ) -> Result<Response, Error> {
-        debug!(
-            "sending {} messages using account sequence {}",
-            proto_msgs.len(),
-            account_seq,
-        );
-
-        let account_number = self.account_number()?;
-
-        self.block_on(estimate_fee_and_send_tx(
-            &self.config,
-            &self.rpc_client,
-            &self.config.rpc_addr,
-            &self.grpc_addr,
-            &self.key()?,
-            self.tx_memo(),
-            account_number,
-            account_seq,
-            proto_msgs,
-        ))
-    }
-
-    /// Try to `send_tx` with retry on account sequence error.
-    /// An account sequence error can occur if the account sequence that
-    /// the relayer caches becomes outdated. This may happen if the relayer
-    /// wallet is used concurrently elsewhere, or when tx fees are mis-configured
-    /// leading to transactions hanging in the mempool.
-    ///
-    /// Account sequence mismatch error can occur at two separate steps:
-    ///   1. as Err variant, propagated from the `estimate_gas` step.
-    ///   2. as an Ok variant, with an Code::Err response, propagated from
-    ///     the `broadcast_tx_sync` step.
-    ///
-    /// We treat both cases by re-fetching the account sequence number
-    /// from the full node.
-    /// Upon case #1, we do not retry submitting the same tx (retry happens
-    /// nonetheless at the worker `step` level). Upon case #2, we retry
-    /// submitting the same transaction.
     fn send_tx_with_account_sequence_retry(
         &mut self,
         proto_msgs: Vec<Any>,
-        retry_counter: u32,
+        retry_counter: u64,
     ) -> Result<Response, Error> {
-        let account_sequence = self.account_sequence()?;
+        let runtime = self.rt.clone();
+        let config = self.config.clone();
+        let rpc_client = self.rpc_client.clone();
+        let rpc_address = self.config.rpc_addr.clone();
+        let grpc_address = self.grpc_addr.clone();
+        let key_entry = self.key()?;
+        let memo = self.tx_memo().clone();
+        let account = self.account()?;
 
-        match self.send_tx_with_account_sequence(proto_msgs.clone(), account_sequence) {
-            // Gas estimation failed with acct. s.n. mismatch at estimate gas step.
-            // This indicates that the full node did not yet push the previous tx out of its
-            // mempool. Possible explanations: fees too low, network congested, or full node
-            // congested. Whichever the case, it is more expedient in production to drop the tx
-            // and refresh the s.n., to allow proceeding to the other transactions. A separate
-            // retry at the worker-level will handle retrying.
-            Err(e) if mismatching_account_sequence_number(&e) => {
-                warn!("failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
-                self.refresh_account()?;
-                // Note: propagating error here can lead to bug & dropped packets:
-                // https://github.com/informalsystems/ibc-rs/issues/1153
-                // But periodic packet clearing will catch any dropped packets.
-                Err(e)
-            }
-
-            // Gas estimation succeeded. Broadcasting failed with a retry-able error.
-            Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
-                if retry_counter < retry::MAX_ACCOUNT_SEQUENCE_RETRY {
-                    let retry_counter = retry_counter + 1;
-                    warn!("failed at broadcast step with incorrect account sequence. retrying ({}/{})",
-                        retry_counter, retry::MAX_ACCOUNT_SEQUENCE_RETRY);
-                    // Backoff & re-fetch the account s.n.
-                    let backoff =
-                        (retry_counter as u64) * retry::BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
-                    thread::sleep(Duration::from_millis(backoff));
-                    self.refresh_account()?;
-
-                    // Now retry.
-                    self.send_tx_with_account_sequence_retry(proto_msgs, retry_counter + 1)
-                } else {
-                    // If after the max retry we still get an account sequence mismatch error,
-                    // we ignore the error and return the original response to downstream.
-                    // We do not return an error here, because the current convention
-                    // let the caller handle error responses separately.
-                    error!("failed due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
-                    Ok(response)
-                }
-            }
-
-            // Catch-all arm for the Ok variant.
-            // This is the case when gas estimation succeeded.
-            Ok(response) => {
-                // Complete success.
-                match response.code {
-                    tendermint::abci::Code::Ok => {
-                        debug!("broadcast_tx_sync: {:?}", response);
-
-                        self.incr_account_sequence();
-                        Ok(response)
-                    }
-                    // Gas estimation succeeded, but broadcasting failed with unrecoverable error.
-                    tendermint::abci::Code::Err(code) => {
-                        // Avoid increasing the account s.n. if CheckTx failed
-                        // Log the error
-                        error!(
-                            "broadcast_tx_sync: {:?}: diagnostic: {:?}",
-                            response,
-                            sdk_error_from_tx_sync_error_code(code)
-                        );
-                        Ok(response)
-                    }
-                }
-            }
-
-            // Catch-all case for the Err variant.
-            // Gas estimation failure or other unrecoverable error, propagate.
-            Err(e) => Err(e),
-        }
+        runtime.block_on(send_tx_with_account_sequence_retry(
+            &config,
+            &rpc_client,
+            &rpc_address,
+            &grpc_address,
+            &key_entry,
+            &memo,
+            account,
+            proto_msgs,
+            retry_counter,
+        ))
     }
 
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
@@ -511,7 +411,7 @@ impl CosmosSdkChain {
     fn query_account(&self) -> Result<BaseAccount, Error> {
         crate::telemetry!(query, self.id(), "query_account");
 
-        self.block_on(query_account(self.grpc_addr.clone(), self.key()?.account))
+        self.block_on(query_account(&self.grpc_addr, &self.key()?.account))
     }
 
     fn refresh_account(&mut self) -> Result<(), Error> {
@@ -527,29 +427,15 @@ impl CosmosSdkChain {
         Ok(())
     }
 
-    fn account(&mut self) -> Result<&Account, Error> {
+    fn account(&mut self) -> Result<&mut Account, Error> {
         if self.account == None {
             self.refresh_account()?;
         }
 
         Ok(self
             .account
-            .as_ref()
+            .as_mut()
             .expect("account was supposedly just cached"))
-    }
-
-    fn account_number(&mut self) -> Result<AccountNumber, Error> {
-        Ok(self.account()?.number)
-    }
-
-    fn account_sequence(&mut self) -> Result<AccountSequence, Error> {
-        Ok(self.account()?.sequence)
-    }
-
-    fn incr_account_sequence(&mut self) {
-        if let Some(account) = &mut self.account {
-            account.sequence = account.sequence.increment();
-        }
     }
 
     /// Given a vector of `TxSyncResult` elements,
@@ -2028,18 +1914,6 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     Ok(())
-}
-
-/// Determine whether the given error yielded by `tx_simulate`
-/// indicates that the current sequence number cached in Hermes
-/// may be out-of-sync with the full node's version of the s.n.
-fn mismatching_account_sequence_number(e: &Error) -> bool {
-    use crate::error::ErrorDetail::*;
-
-    match e.detail() {
-        GrpcStatus(detail) => detail.is_account_sequence_mismatch(),
-        _ => false,
-    }
 }
 
 /// Compute the `max_clock_drift` for a (new) client state
