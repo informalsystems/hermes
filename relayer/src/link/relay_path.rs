@@ -10,7 +10,9 @@ use tracing::{debug, error, info, span, trace, warn, Level};
 use ibc::{
     core::{
         ics02_client::{
-            client_consensus::QueryClientEventRequest, events::UpdateClient as UpdateClientEvent,
+            client_consensus::QueryClientEventRequest,
+            events::ClientMisbehaviour as ClientMisbehaviourEvent,
+            events::UpdateClient as UpdateClientEvent,
         },
         ics04_channel::{
             channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
@@ -760,30 +762,31 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Loops over `tx_events` and returns a tuple of optional events where the first element is a
-    /// `ChainError` variant, the second one is an `UpdateClient` variant and the third one is any
-    /// other variant (usually `ClientMisbehaviour`). This function is essentially just an
-    /// `Iterator::find()` for multiple variants with a single pass.
+    /// `ChainError` variant, the second one is an `UpdateClient` variant and the third one is a
+    /// `ClientMisbehaviour` variant. This function is essentially just an `Iterator::find()` for
+    /// multiple variants with a single pass.
     #[inline]
     fn event_per_type(
         mut tx_events: Vec<IbcEvent>,
     ) -> (
         Option<IbcEvent>,
         Option<UpdateClientEvent>,
-        Option<IbcEvent>,
+        Option<ClientMisbehaviourEvent>,
     ) {
         let mut error = None;
         let mut update = None;
-        let mut other = None;
+        let mut misbehaviour = None;
 
         while let Some(event) = tx_events.pop() {
             match event {
                 IbcEvent::ChainError(_) => error = Some(event),
                 IbcEvent::UpdateClient(event) => update = Some(event),
-                _ => other = Some(event),
+                IbcEvent::ClientMisbehaviour(event) => misbehaviour = Some(event),
+                _ => {}
             }
         }
 
-        (error, update, other)
+        (error, update, misbehaviour)
     }
 
     /// Returns an instant (in the past) that corresponds to the block timestamp of the chain at
@@ -835,10 +838,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(LinkError::relayer)?;
         info!("result: {}", PrettyEvents(&dst_tx_events));
 
-        let (error, update, other) = Self::event_per_type(dst_tx_events);
-        match (error, update, other) {
+        let (error, update, misbehaviour) = Self::event_per_type(dst_tx_events);
+        match (error, update, misbehaviour) {
+            // All updates were successful, no errors and no misbehaviour.
             (None, Some(update_event), None) => Ok(update_event.height()),
             (Some(chain_error), _, _) => {
+                // Atleast one chain-error so retry if possible.
                 if retries_left == 0 {
                     Err(LinkError::client(ForeignClientError::chain_error_event(
                         self.dst_chain().id(),
@@ -862,13 +867,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     _ => Err(LinkError::update_client_failed()),
                 }
             }
-            (_, _, event) => {
-                if !matches!(event, Some(IbcEvent::ClientMisbehaviour(_))) && retries_left > 0 {
-                    self.do_update_client_dst(src_chain_height, tracking_id, retries_left - 1)
-                } else {
-                    Err(LinkError::update_client_failed())
-                }
-            }
+            // Atleast one misbehaviour event, so don't retry.
+            (_, _, Some(_misbehaviour)) => Err(LinkError::update_client_failed()),
         }
     }
 
@@ -904,10 +904,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(LinkError::relayer)?;
         info!("result: {}", PrettyEvents(&src_tx_events));
 
-        let (error, update, other) = Self::event_per_type(src_tx_events);
-        match (error, update, other) {
+        let (error, update, misbehaviour) = Self::event_per_type(src_tx_events);
+        match (error, update, misbehaviour) {
+            // All updates were successful, no errors and no misbehaviour.
             (None, Some(update_event), None) => Ok(update_event.height()),
             (Some(chain_error), _, _) => {
+                // Atleast one chain-error so retry if possible.
                 if retries_left == 0 {
                     Err(LinkError::client(ForeignClientError::chain_error_event(
                         self.src_chain().id(),
@@ -931,13 +933,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     _ => Err(LinkError::update_client_failed()),
                 }
             }
-            (_, _, event) => {
-                if !matches!(event, Some(IbcEvent::ClientMisbehaviour(_))) && retries_left > 0 {
-                    self.do_update_client_src(dst_chain_height, tracking_id, retries_left - 1)
-                } else {
-                    Err(LinkError::update_client_failed())
-                }
-            }
+            // Atleast one misbehaviour event, so don't retry.
+            (_, _, Some(_misbehaviour)) => Err(LinkError::update_client_failed()),
         }
     }
 
