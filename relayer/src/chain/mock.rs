@@ -353,7 +353,7 @@ impl ChainEndpoint for MockChain {
         height: Height,
         settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
-        let ClientSettings::Cosmos(settings) = settings;
+        let ClientSettings::Tendermint(settings) = settings;
         let trusting_period = settings
             .trusting_period
             .unwrap_or_else(|| self.trusting_period());

@@ -9,7 +9,7 @@ use crate::foreign_client::CreateOptions;
 /// The parameters are specialized for each supported chain type.
 #[derive(Clone, Debug)]
 pub enum ClientSettings {
-    Cosmos(cosmos::client::Settings),
+    Tendermint(cosmos::client::Settings),
 }
 
 impl ClientSettings {
@@ -21,10 +21,10 @@ impl ClientSettings {
         src_chain_config: &ChainConfig,
         dst_chain_config: &ChainConfig,
     ) -> Self {
-        // Currently, only Cosmos-to-Cosmos chain pairs are supported by
+        // Currently, only Tendermint chain pairs are supported by
         // ForeignClient::build_create_client_and_send. Support for
         // heterogeneous chains is left for future revisions.
-        ClientSettings::Cosmos(cosmos::client::Settings::for_create_command(
+        ClientSettings::Tendermint(cosmos::client::Settings::for_create_command(
             options,
             src_chain_config,
             dst_chain_config,
