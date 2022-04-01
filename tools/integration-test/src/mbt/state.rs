@@ -3,35 +3,19 @@ use serde::{Deserialize, Serialize};
 use super::itf::{Map, Set};
 
 pub type ChainId = u64;
-pub type PortId = String;
 pub type DenomId = ChainId;
-pub type ChannelId = u64;
 pub type AccountId = u64;
 pub type PacketId = u64;
 pub type Balance = u64;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ChannelEndpoint {
-    pub chain_id: ChainId,
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Channel {
-    pub source: ChannelEndpoint,
-    pub target: ChannelEndpoint,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Packet {
     pub id: PacketId,
-    pub channel: Channel,
     pub from: AccountId,
+    pub source_chain_id: ChainId,
     pub to: AccountId,
+    pub target_chain_id: ChainId,
     pub denom: DenomId,
     pub amount: Balance,
 }
@@ -47,27 +31,14 @@ pub struct LocalPackets {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Ics20 {
-    pub port_id: PortId,
-    pub escrow: Map<ChannelId, AccountId>,
-    pub channel: Map<ChainId, ChannelId>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Chain {
     pub id: ChainId,
-    pub ports: Set<PortId>,
-    pub channel: Map<ChannelId, Channel>,
-    pub active_channels: Set<ChannelId>,
     pub bank: Map<AccountId, Map<DenomId, Balance>>,
     pub supply: Map<DenomId, Balance>,
     pub local_packets: LocalPackets,
-    pub remote_packets: Map<ChannelId, Map<PacketId, Packet>>,
-    pub ics20: Ics20,
-    pub next_channel_id: ChannelId,
+    pub remote_packets: Map<ChainId, Map<PacketId, Packet>>,
+    pub escrow: Map<ChainId, Map<DenomId, Balance>>,
     pub next_packet_id: PacketId,
-    pub next_account_id: AccountId,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -81,12 +52,8 @@ pub enum Action {
         denom: DenomId,
         amount: Balance,
     },
-    CreateChannel {
-        chains: Set<ChainId>,
-    },
-    ExpireChannel {
-        chains: Set<ChainId>,
-    },
+    RestoreRelay,
+    InterruptRelay,
     IBCTransferSendPacket {
         packet: Packet,
     },

@@ -12,7 +12,7 @@ use crate::types::tagged::mono::Tagged;
 
 use super::{
     itf::InformalTrace,
-    state::{ChainId, DenomId, State},
+    state::{DenomId, State},
 };
 
 pub const CLIENT_EXPIRY: Duration = Duration::from_secs(15);
@@ -53,35 +53,6 @@ pub fn get_denom<'a, ChainX>(
         2 => chain.denom(),
         _ => unreachable!(),
     }
-}
-
-pub fn get_port_channel_id<ChainA, ChainB, ChainX, ChainY>(
-    channel: &ConnectedChannel<ChainA, ChainB>,
-    chain_id: ChainId,
-) -> (
-    DualTagged<ChainX, ChainY, &PortId>,
-    DualTagged<ChainX, ChainY, &ChannelId>,
-)
-where
-    ChainA: ChainHandle,
-    ChainB: ChainHandle,
-    ChainX: ChainHandle,
-    ChainY: ChainHandle,
-{
-    let (port_id, channel_id) = match chain_id {
-        1 => {
-            let port_id = channel.port_a.value();
-            let channel_id = channel.channel_id_a.value();
-            (port_id, channel_id)
-        }
-        2 => {
-            let port_id = channel.port_b.value();
-            let channel_id = channel.channel_id_b.value();
-            (port_id, channel_id)
-        }
-        _ => unreachable!(),
-    };
-    (DualTagged::new(port_id), DualTagged::new(channel_id))
 }
 
 pub fn wait_for_client() {

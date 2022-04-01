@@ -13,7 +13,7 @@ use crate::types::tagged::mono::Tagged;
 
 use super::state::Packet;
 
-use super::utils::{get_denom, get_port_channel_id, get_wallet, wait_for_client};
+use super::utils::{get_denom, get_wallet, wait_for_client};
 
 pub fn setup_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: &ConnectedChains<ChainA, ChainB>,
@@ -159,7 +159,7 @@ pub fn expire_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
 pub fn ibc_transfer_send_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     node_source: Tagged<ChainA, &FullNode>,
     node_target: Tagged<ChainB, &FullNode>,
-    channels: &Option<ConnectedChannel<ChainA, ChainB>>,
+    channels: &ConnectedChannel<ChainA, ChainB>,
     packet: &Packet,
 ) -> Result<(), Error> {
     let wallets_source = node_source.wallets();
@@ -170,9 +170,9 @@ pub fn ibc_transfer_send_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     let denom_source = get_denom(&node_source, packet.denom);
     let amount_source_to_target = packet.amount;
 
-    let (port_source, channel_id_source) = get_port_channel_id(
-        channels.as_ref().expect("there should be channel"),
-        packet.channel.source.chain_id,
+    let (port_source, channel_id_source) = (
+        DualTagged::new(channels.port_a.value()),
+        DualTagged::new(channels.channel_id_a.value()),
     );
 
     let balance_source = node_source
@@ -208,7 +208,7 @@ pub fn ibc_transfer_send_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
 pub fn ibc_transfer_receive_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     node_source: Tagged<ChainA, &FullNode>,
     node_target: Tagged<ChainB, &FullNode>,
-    channels: &Option<ConnectedChannel<ChainA, ChainB>>,
+    channels: &ConnectedChannel<ChainA, ChainB>,
     packet: &Packet,
 ) -> Result<(), Error> {
     let wallets_target = node_target.wallets();
@@ -217,9 +217,9 @@ pub fn ibc_transfer_receive_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     let denom_source = get_denom(&node_source, packet.denom);
     let amount_source_to_target = packet.amount;
 
-    let (port_target, channel_id_target) = get_port_channel_id(
-        channels.as_ref().expect("there should be channel"),
-        packet.channel.target.chain_id,
+    let (port_target, channel_id_target) = (
+        DualTagged::new(channels.port_b.value()),
+        DualTagged::new(channels.channel_id_b.value()),
     );
 
     let denom_target = derive_ibc_denom(&port_target, &channel_id_target, &denom_source)?;

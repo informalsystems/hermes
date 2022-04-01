@@ -1,14 +1,32 @@
----- MODULE main ----
+---- MODULE MC_Transfer ----
+EXTENDS Transfer_typedefs
 
-EXTENDS transfer
+CHAIN_IDS == {1, 2}
+N_INITIAL_ACCOUNTS == 2
+GENESIS_AMOUNT == 3
+
+VARIABLES
+    \* Interchain state
+    \* @type: CHAIN_ID -> CHAIN;
+    chains,
+    \* @type: Bool;
+    relayerRunning,
+    \* Action performed at current step
+    \* @type: [ name: Str ];
+    action,
+    \* Outcome after action performed at current step
+    \* @type: [ name: Str ];
+    outcome
+
+INSTANCE Transfer
 
 \* Trace with a LocalTransfer action
 LocalTransferTest == action.name = LocalTransferAction
 
-\* Trace with a CreateChannel action
-CreateChannelTest == action.name = CreateChannelAction
-\* Trace with an ExpireChannel action
-ExpireChannelTest == action.name = ExpireChannelAction
+\* Trace with a RestoreRelay action
+RestoreRelayTest == action.name = RestoreRelayAction
+\* Trace with an InterruptRelay action
+InterruptRelayTest == action.name = InterruptRelayAction
 
 \* Trace with an IBCTransferSendPacket action
 IBCTransferSendPacketTest == action.name = IBCTransferSendPacketAction
@@ -21,10 +39,11 @@ IBCTransferTimeoutPacketTest == action.name = IBCTransferTimeoutPacketAction
 
 \* Negate the trace predicate to find counter-example
 LocalTransferInv == ~LocalTransferTest
-CreateChannelInv == ~CreateChannelTest
-ExpireChannelInv == ~ExpireChannelTest
+RestoreRelayInv == ~RestoreRelayTest
+InterruptRelayInv == ~InterruptRelayTest
 IBCTransferSendPacketInv == ~IBCTransferSendPacketTest
 IBCTransferReceivePacketInv == ~IBCTransferReceivePacketTest
 IBCTransferAcknowledgePacketInv == ~IBCTransferAcknowledgePacketTest
 IBCTransferTimeoutPacketInv == ~IBCTransferTimeoutPacketTest
+
 ====

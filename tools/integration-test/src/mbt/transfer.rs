@@ -5,16 +5,65 @@ use ibc_relayer::config::{
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
 
 use crate::framework::binary::chain::run_self_connected_binary_chain_test;
+use crate::framework::binary::channel::RunBinaryChannelTest;
 use crate::prelude::*;
 use crate::types::tagged::mono::Tagged;
 
-use super::state::Action;
+use super::state::{Action, State};
 
 use super::utils::{get_chain, parse_itf_from_json, CLIENT_EXPIRY};
 
+fn generate_mbt_traces(
+    apalache_path: &str,
+    test_name: &str,
+    num_traces: usize,
+) -> Result<Vec<Vec<State>>, Error> {
+    let temp_dir = tempfile::TempDir::new()?;
+    let run_dir = temp_dir.path().join("run");
+    let tla_path = concat!(env!("CARGO_MANIFEST_DIR"), "/spec/MC_Transfer.tla");
+    let mut cmd = std::process::Command::new(apalache_path);
+    cmd.arg("check")
+        .arg("--init=Init")
+        .arg("--next=Next")
+        .arg(&format!("--inv={test_name}"))
+        .arg(&format!("--max-error={num_traces}"))
+        .arg(&format!(
+            "--run-dir={}",
+            run_dir.to_str().expect("no panic")
+        ))
+        .arg(&format!(
+            "--out-dir={}",
+            temp_dir.path().to_str().expect("no panic")
+        ))
+        .arg(tla_path);
+    let _ = cmd.status().expect("failed to execute process");
+
+    Ok(std::fs::read_dir(run_dir)?
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|file_path| file_path.is_file())
+        .flat_map(|file_path| {
+            file_path
+                .file_name()
+                .and_then(|file_name| file_name.to_str())
+                .and_then(|file_name| {
+                    (file_name != "counterexample.itf.json"
+                        && file_name.starts_with("counterexample")
+                        && file_name.ends_with(".itf.json"))
+                    .then(|| parse_itf_from_json(file_path.to_str().expect("should not panic")))
+                })
+        })
+        .collect())
+}
+
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
-    run_binary_chain_test(&IbcTransferMBT)
+    for test_name in &["IBCTransferReceivePacketInv", "IBCTransferTimeoutPacketInv"] {
+        for trace in generate_mbt_traces("apalache", test_name, 3)? {
+            run_binary_channel_test(&IbcTransferMBT(trace))?;
+        }
+    }
+    Ok(())
 }
 
 /**
@@ -23,10 +72,17 @@ fn test_ibc_transfer() -> Result<(), Error> {
 */
 #[test]
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
-    run_self_connected_binary_chain_test(&IbcTransferMBT)
+    for test_name in &["IBCTransferReceivePacketInv", "IBCTransferTimeoutPacketInv"] {
+        for trace in generate_mbt_traces("apalache", test_name, 3)? {
+            run_self_connected_binary_chain_test(&RunBinaryChannelTest::new(&IbcTransferMBT(
+                trace,
+            )))?;
+        }
+    }
+    Ok(())
 }
 
-pub struct IbcTransferMBT;
+pub struct IbcTransferMBT(Vec<State>);
 
 impl TestOverrides for IbcTransferMBT {
     fn modify_test_config(&self, config: &mut TestConfig) {
@@ -64,24 +120,15 @@ impl TestOverrides for IbcTransferMBT {
     }
 }
 
-impl BinaryChainTest for IbcTransferMBT {
+impl BinaryChannelTest for IbcTransferMBT {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
         chains: ConnectedChains<ChainA, ChainB>,
+        channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let itf_path = concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/spec/example/counterexample.itf.json"
-        );
-
-        let mut channels_a_b = None;
-        let mut refresh_task_a = None;
-        let mut refresh_task_b = None;
-        // no connections and channel is created at this point
-
         // relayer is spawned
-        let _supervisor = spawn_supervisor(
+        let mut supervisor = Some(spawn_supervisor(
             chains.config.clone(),
             chains.registry.clone(),
             None,
@@ -89,13 +136,13 @@ impl BinaryChainTest for IbcTransferMBT {
                 health_check: false,
                 force_full_scan: false,
             },
-        )?;
+        )?);
 
-        for state in parse_itf_from_json(itf_path) {
-            match state.action {
+        for state in &self.0 {
+            match &state.action {
                 Action::Null => {
                     info!("[Init] Setting up chains");
-                    super::handlers::setup_chains(&chains)?;
+                    // super::handlers::setup_chains(&chains)?;
                     info!("[Init] Done");
                 }
                 Action::LocalTransfer {
@@ -106,51 +153,64 @@ impl BinaryChainTest for IbcTransferMBT {
                     amount,
                 } => {
                     info!("[LocalTransfer] Init");
-                    let node: Tagged<ChainA, _> = get_chain(&chains, chain_id);
-                    super::handlers::local_transfer_handler(node, source, target, denom, amount)?;
+                    let node: Tagged<ChainA, _> = get_chain(&chains, *chain_id);
+                    super::handlers::local_transfer_handler(
+                        node, *source, *target, *denom, *amount,
+                    )?;
                     info!("[LocalTransfer] Done");
                 }
-                Action::CreateChannel { chains: chain_pair } => {
-                    assert_eq!(chain_pair.0.len(), 2);
-                    assert!(chain_pair.0.contains(&1));
-                    assert!(chain_pair.0.contains(&2));
-                    info!("[CreateChannel] between {:?}", chain_pair.0);
+                Action::RestoreRelay => {
+                    // assert_eq!(chain_pair.0.len(), 2);
+                    // assert!(chain_pair.0.contains(&1));
+                    // assert!(chain_pair.0.contains(&2));
+                    // info!("[CreateChannel] between {:?}", chain_pair.0);
 
-                    super::handlers::create_channel(
-                        &chains.handle_a,
-                        &chains.handle_b,
-                        &mut channels_a_b,
-                        &mut refresh_task_a,
-                        &mut refresh_task_b,
-                    )?;
+                    // // super::handlers::create_channel(
+                    // //     &chains.handle_a,
+                    // //     &chains.handle_b,
+                    // //     &mut channels_a_b,
+                    // //     &mut refresh_task_a,
+                    // //     &mut refresh_task_b,
+                    // // )?;
 
-                    info!("[CreateChannel] Done");
+                    if supervisor.is_none() {
+                        supervisor = Some(spawn_supervisor(
+                            chains.config.clone(),
+                            chains.registry.clone(),
+                            None,
+                            SupervisorOptions {
+                                health_check: false,
+                                force_full_scan: false,
+                            },
+                        )?);
+                    }
+
+                    info!("[RestoreRelay] Done");
                 }
-                Action::ExpireChannel { chains: chain_pair } => {
-                    assert_eq!(chain_pair.0.len(), 2);
-                    assert!(chain_pair.0.contains(&1));
-                    assert!(chain_pair.0.contains(&2));
-                    info!("[ExpireChannel] between {:?}", chain_pair.0);
+                Action::InterruptRelay => {
+                    // assert_eq!(chain_pair.0.len(), 2);
+                    // assert!(chain_pair.0.contains(&1));
+                    // assert!(chain_pair.0.contains(&2));
+                    // info!("[ExpireChannel] between {:?}", chain_pair.0);
 
-                    super::handlers::expire_channel(
-                        &mut channels_a_b,
-                        &mut refresh_task_a,
-                        &mut refresh_task_b,
-                    )?;
-                    info!("[ExpireChannel] Done");
+                    // // super::handlers::expire_channel(
+                    // //     &mut channels_a_b,
+                    // //     &mut refresh_task_a,
+                    // //     &mut refresh_task_b,
+                    // // )?;
+                    supervisor.take().expect("one").shutdown();
+
+                    info!("[InterruptRelay] Done");
                 }
                 Action::IBCTransferSendPacket { packet } => {
                     info!("[IBCTransferSendPacket] {:?}", packet);
 
-                    match (
-                        packet.channel.source.chain_id,
-                        packet.channel.target.chain_id,
-                    ) {
+                    match (packet.source_chain_id, packet.target_chain_id) {
                         (1, 2) => {
                             assert!(
                                 super::utils::get_committed_packets_at_src(
                                     &chains.handle_a,
-                                    channels_a_b.as_ref().expect("one channel")
+                                    &channels
                                 )?
                                 .is_empty(),
                                 "no packets present"
@@ -159,14 +219,14 @@ impl BinaryChainTest for IbcTransferMBT {
                             super::handlers::ibc_transfer_send_packet(
                                 chains.node_a.as_ref(),
                                 chains.node_b.as_ref(),
-                                &channels_a_b,
-                                &packet,
+                                &channels,
+                                packet,
                             )?;
 
                             assert_eq!(
                                 super::utils::get_committed_packets_at_src(
                                     &chains.handle_a,
-                                    channels_a_b.as_ref().expect("one channel")
+                                    &channels,
                                 )?
                                 .len(),
                                 1,
@@ -177,7 +237,7 @@ impl BinaryChainTest for IbcTransferMBT {
                             assert!(
                                 super::utils::get_committed_packets_at_src(
                                     &chains.handle_b,
-                                    &channels_a_b.as_ref().expect("one channel").clone().flip()
+                                    &channels.clone().flip()
                                 )?
                                 .is_empty(),
                                 "no packets present"
@@ -186,13 +246,14 @@ impl BinaryChainTest for IbcTransferMBT {
                             super::handlers::ibc_transfer_send_packet(
                                 chains.node_b.as_ref(),
                                 chains.node_a.as_ref(),
-                                &channels_a_b.clone().map(|x| x.flip()),
-                                &packet,
+                                &channels.clone().flip(),
+                                packet,
                             )?;
+
                             assert_eq!(
                                 super::utils::get_committed_packets_at_src(
                                     &chains.handle_b,
-                                    &channels_a_b.as_ref().expect("one channel").clone().flip()
+                                    &channels.clone().flip()
                                 )?
                                 .len(),
                                 1,
@@ -206,21 +267,18 @@ impl BinaryChainTest for IbcTransferMBT {
                 }
                 Action::IBCTransferReceivePacket { packet } => {
                     info!("[IBCTransferReceivePacket] {:?}", packet);
-                    match (
-                        packet.channel.source.chain_id,
-                        packet.channel.target.chain_id,
-                    ) {
+                    match (packet.source_chain_id, packet.target_chain_id) {
                         (1, 2) => {
                             super::handlers::ibc_transfer_receive_packet(
                                 chains.node_a.as_ref(),
                                 chains.node_b.as_ref(),
-                                &channels_a_b,
-                                &packet,
+                                &channels,
+                                packet,
                             )?;
                             assert_eq!(
                                 super::utils::get_acknowledged_packets_at_dst(
                                     &chains.handle_b,
-                                    &channels_a_b.as_ref().expect("one channel").clone().flip()
+                                    &channels.clone().flip()
                                 )?
                                 .len(),
                                 1,
@@ -231,13 +289,13 @@ impl BinaryChainTest for IbcTransferMBT {
                             super::handlers::ibc_transfer_receive_packet(
                                 chains.node_b.as_ref(),
                                 chains.node_a.as_ref(),
-                                &channels_a_b.clone().map(|x| x.flip()),
-                                &packet,
+                                &channels.clone().flip(),
+                                packet,
                             )?;
                             assert_eq!(
                                 super::utils::get_acknowledged_packets_at_dst(
                                     &chains.handle_a,
-                                    channels_a_b.as_ref().expect("one channel")
+                                    &channels
                                 )?
                                 .len(),
                                 1,
@@ -252,15 +310,12 @@ impl BinaryChainTest for IbcTransferMBT {
                 Action::IBCTransferAcknowledgePacket { packet } => {
                     info!("[IBCTransferAcknowledgePacket] {:?}", packet);
                     super::utils::wait_for_client();
-                    match (
-                        packet.channel.source.chain_id,
-                        packet.channel.target.chain_id,
-                    ) {
+                    match (packet.source_chain_id, packet.target_chain_id) {
                         (1, 2) => {
                             assert!(
                                 super::utils::get_committed_packets_at_src(
                                     &chains.handle_a,
-                                    channels_a_b.as_ref().expect("one channel")
+                                    &channels
                                 )?
                                 .is_empty(),
                                 "commitment is completed"
@@ -270,7 +325,7 @@ impl BinaryChainTest for IbcTransferMBT {
                             assert!(
                                 super::utils::get_committed_packets_at_src(
                                     &chains.handle_b,
-                                    &channels_a_b.as_ref().expect("one channel").clone().flip()
+                                    &channels.clone().flip()
                                 )?
                                 .is_empty(),
                                 "commitment is completed"
@@ -284,10 +339,7 @@ impl BinaryChainTest for IbcTransferMBT {
                 Action::IBCTransferTimeoutPacket { packet } => {
                     info!("[IBCTransferTimeoutPacket] {:?}", packet);
 
-                    match (
-                        packet.channel.source.chain_id,
-                        packet.channel.target.chain_id,
-                    ) {
+                    match (packet.source_chain_id, packet.target_chain_id) {
                         (1, 2) => {}
                         (2, 1) => {}
                         _ => unreachable!(),

@@ -1,6 +1,23 @@
 # ICS20 Specification
 
-Modify main.tla with desired `Invariant` predicate. Then execute,
+Add desired `Invariant` predicate in `MC_Transfer.tla`. Then execute,
+```sh
+apalache check --inv=Invariant --run-dir=run MC_Transfer.tla
 ```
-apalache check --inv=Invariant --run-dir=run main.tla
+
+Provided invariants to pass,
+
+```
+LocalTransferInv
+RestoreRelayInv
+InterruptRelayInv
+IBCTransferSendPacketInv
+IBCTransferReceivePacketInv
+IBCTransferAcknowledgePacketInv
+IBCTransferTimeoutPacketInv
+```
+
+
+```sh
+apalache check --inv=IBCTransferTimeoutPacketInv --run-dir=run MC_Transfer.tla
 ```
