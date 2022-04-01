@@ -5,11 +5,12 @@
 
 use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::ClientId;
-use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use ibc_relayer::config::{Config, SharedConfig};
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
-use ibc_relayer::foreign_client::{extract_client_id, ForeignClient};
+use ibc_relayer::foreign_client::{
+    extract_client_id, CreateOptions as ClientOptions, ForeignClient,
+};
 use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
 use ibc_relayer::registry::SharedRegistry;
 use std::fs;
@@ -33,8 +34,8 @@ pub struct Builder<'config> {
     test_config: &'config TestConfig,
     node_a: FullNode,
     node_b: FullNode,
-    client_settings_a_to_b: ClientSettings,
-    client_settings_b_to_a: ClientSettings,
+    client_options_a_to_b: ClientOptions,
+    client_options_b_to_a: ClientOptions,
 }
 
 impl<'config> Builder<'config> {
@@ -49,8 +50,8 @@ impl<'config> Builder<'config> {
             test_config,
             node_a,
             node_b,
-            client_settings_a_to_b: ClientSettings::Cosmos(Default::default()),
-            client_settings_b_to_a: ClientSettings::Cosmos(Default::default()),
+            client_options_a_to_b: Default::default(),
+            client_options_b_to_a: Default::default(),
         }
     }
 
@@ -69,15 +70,15 @@ impl<'config> Builder<'config> {
         Self::with_node_pair(test_config, node, node1)
     }
 
-    /// Overrides settings for the foreign client connecting chain A to chain B.
-    pub fn client_settings_a_to_b(mut self, settings: ClientSettings) -> Self {
-        self.client_settings_a_to_b = settings;
+    /// Overrides options for the foreign client connecting chain A to chain B.
+    pub fn client_options_a_to_b(mut self, options: ClientOptions) -> Self {
+        self.client_options_a_to_b = options;
         self
     }
 
-    /// Overrides settings for the foreign client connecting chain B to chain A.
-    pub fn client_settings_b_to_a(mut self, settings: ClientSettings) -> Self {
-        self.client_settings_b_to_a = settings;
+    /// Overrides options for the foreign client connecting chain B to chain A.
+    pub fn client_options_b_to_a(mut self, options: ClientOptions) -> Self {
+        self.client_options_b_to_a = options;
         self
     }
 
@@ -145,9 +146,9 @@ impl<'config> Builder<'config> {
         }
 
         let foreign_clients = ForeignClientBuilder::new(&handle_a, &handle_b)
-            .client_settings(self.client_settings_a_to_b)
+            .client_options(self.client_options_a_to_b)
             .pair()
-            .client_settings(self.client_settings_b_to_a)
+            .client_options(self.client_options_b_to_a)
             .bootstrap()?;
 
         let relayer = RelayerDriver {
@@ -178,7 +179,7 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     for i in 0..random_u64_range(1, 6) {
         debug!("creating new client id {} on chain {}", i + 1, chain_b.id());
-        foreign_client.build_create_client_and_send(ClientSettings::Cosmos(Default::default()))?;
+        foreign_client.build_create_client_and_send(Default::default())?;
     }
 
     Ok(())
@@ -187,12 +188,12 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
 pub struct ForeignClientBuilder<'a, ChainA: ChainHandle, ChainB: ChainHandle> {
     chain_a: &'a ChainA,
     chain_b: &'a ChainB,
-    client_settings: ClientSettings,
+    client_options: ClientOptions,
 }
 
 pub struct ForeignClientPairBuilder<'a, ChainA: ChainHandle, ChainB: ChainHandle> {
     a_to_b: ForeignClientBuilder<'a, ChainA, ChainB>,
-    b_to_a_client_settings: ClientSettings,
+    b_to_a_client_options: ClientOptions,
 }
 
 impl<'a, ChainA: ChainHandle, ChainB: ChainHandle> ForeignClientBuilder<'a, ChainA, ChainB> {
@@ -200,12 +201,12 @@ impl<'a, ChainA: ChainHandle, ChainB: ChainHandle> ForeignClientBuilder<'a, Chai
         Self {
             chain_a,
             chain_b,
-            client_settings: ClientSettings::Cosmos(Default::default()),
+            client_options: Default::default(),
         }
     }
 
-    pub fn client_settings(mut self, settings: ClientSettings) -> Self {
-        self.client_settings = settings;
+    pub fn client_options(mut self, settings: ClientOptions) -> Self {
+        self.client_options = settings;
         self
     }
 
@@ -217,32 +218,30 @@ impl<'a, ChainA: ChainHandle, ChainB: ChainHandle> ForeignClientBuilder<'a, Chai
     /// `ChainB` then `ChainB`, because `ForeignClient` takes the the destination
     /// chain in the first position.
     pub fn bootstrap(self) -> Result<ForeignClient<ChainB, ChainA>, Error> {
-        bootstrap_foreign_client(self.chain_a, self.chain_b, self.client_settings)
+        bootstrap_foreign_client(self.chain_a, self.chain_b, self.client_options)
     }
 
     /// Continues the builder composition for a pair of clients in both directions.
     pub fn pair(self) -> ForeignClientPairBuilder<'a, ChainA, ChainB> {
         ForeignClientPairBuilder {
             a_to_b: self,
-            b_to_a_client_settings: ClientSettings::Cosmos(Default::default()),
+            b_to_a_client_options: Default::default(),
         }
     }
 }
 
 impl<'a, ChainA: ChainHandle, ChainB: ChainHandle> ForeignClientPairBuilder<'a, ChainA, ChainB> {
     /// Overrides the settings for a client in the reverse direction (B to A).
-    pub fn client_settings(mut self, settings: ClientSettings) -> Self {
-        self.b_to_a_client_settings = settings;
+    pub fn client_options(mut self, settings: ClientOptions) -> Self {
+        self.b_to_a_client_options = settings;
         self
     }
 
     pub fn bootstrap(self) -> Result<ForeignClientPair<ChainA, ChainB>, Error> {
         let chain_a = self.a_to_b.chain_a;
         let chain_b = self.a_to_b.chain_b;
-        let client_a_to_b =
-            bootstrap_foreign_client(chain_a, chain_b, self.a_to_b.client_settings)?;
-        let client_b_to_a =
-            bootstrap_foreign_client(chain_b, chain_a, self.b_to_a_client_settings)?;
+        let client_a_to_b = bootstrap_foreign_client(chain_a, chain_b, self.a_to_b.client_options)?;
+        let client_b_to_a = bootstrap_foreign_client(chain_b, chain_a, self.b_to_a_client_options)?;
         Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
     }
 }
@@ -250,12 +249,12 @@ impl<'a, ChainA: ChainHandle, ChainB: ChainHandle> ForeignClientPairBuilder<'a, 
 fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a: &ChainA,
     chain_b: &ChainB,
-    client_settings: ClientSettings,
+    client_options: ClientOptions,
 ) -> Result<ForeignClient<ChainB, ChainA>, Error> {
     let foreign_client =
         ForeignClient::restore(ClientId::default(), chain_b.clone(), chain_a.clone());
 
-    let event = foreign_client.build_create_client_and_send(client_settings)?;
+    let event = foreign_client.build_create_client_and_send(client_options)?;
     let client_id = extract_client_id(&event)?.clone();
 
     info!(

@@ -2081,24 +2081,18 @@ impl ChainEndpoint for CosmosSdkChain {
         settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
         let ClientSettings::Cosmos(settings) = settings;
-        let max_clock_drift = settings
-            .max_clock_drift
-            .expect("`fill_in_from_chain_configs` should have been called");
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = settings
             .trusting_period
             .unwrap_or_else(|| self.trusting_period(unbonding_period));
-        let trust_threshold = settings
-            .trust_threshold
-            .unwrap_or(self.config.trust_threshold.into());
 
         // Build the client state.
         ClientState::new(
             self.id().clone(),
-            trust_threshold,
+            settings.trust_threshold,
             trusting_period,
             unbonding_period,
-            max_clock_drift,
+            settings.max_clock_drift,
             height,
             self.config.proof_specs.clone(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],

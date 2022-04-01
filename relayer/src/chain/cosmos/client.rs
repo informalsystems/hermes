@@ -7,29 +7,24 @@ use tracing::warn;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 
 use crate::config::ChainConfig;
+use crate::foreign_client::CreateOptions;
 
-/// Cosmos-specific client parameters for the `build_create_client` operation.
-/// If set, the options override the defaults taken from the source chain configuration.
+/// Cosmos-specific client parameters for the `build_client_state` operation.
 #[derive(Clone, Debug, Default)]
 pub struct Settings {
-    pub max_clock_drift: Option<Duration>,
+    pub max_clock_drift: Duration,
     pub trusting_period: Option<Duration>,
-    pub trust_threshold: Option<TrustThreshold>,
+    pub trust_threshold: TrustThreshold,
 }
 
 impl Settings {
-    pub fn fill_in_from_chain_configs(
-        &mut self,
+    pub fn for_create_command(
+        options: CreateOptions,
         src_chain_config: &ChainConfig,
         dst_chain_config: &ChainConfig,
-    ) {
-        match self.max_clock_drift {
-            None => {
-                self.max_clock_drift = Some(calculate_client_state_drift(
-                    src_chain_config,
-                    dst_chain_config,
-                ));
-            }
+    ) -> Self {
+        let max_clock_drift = match options.max_clock_drift {
+            None => calculate_client_state_drift(src_chain_config, dst_chain_config),
             Some(user_value) => {
                 if user_value > dst_chain_config.max_block_time {
                     warn!(
@@ -38,7 +33,16 @@ impl Settings {
                         user_value, dst_chain_config.id,
                     );
                 }
+                user_value
             }
+        };
+        let trust_threshold = options
+            .trust_threshold
+            .unwrap_or(src_chain_config.trust_threshold.into());
+        Settings {
+            max_clock_drift,
+            trusting_period: options.trusting_period,
+            trust_threshold,
         }
     }
 }

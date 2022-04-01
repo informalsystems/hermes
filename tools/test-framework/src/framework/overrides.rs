@@ -6,14 +6,14 @@ use core::time::Duration;
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::PortId;
-use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::Config;
+use ibc_relayer::foreign_client::CreateOptions as ClientOptions;
 
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
-use crate::framework::binary::chain::{ClientSettingsOverride, RelayerConfigOverride};
+use crate::framework::binary::chain::{ClientOptionsOverride, RelayerConfigOverride};
 use crate::framework::binary::channel::{
     ChannelOrderOverride, ChannelVersionOverride, PortsOverride,
 };
@@ -81,15 +81,15 @@ pub trait TestOverrides {
     /// Returns the settings for the foreign client on the first chain for the
     /// second chain. The defaults are for a client connecting two Cosmos chains
     /// with no custom settings.
-    fn client_settings_a_to_b(&self) -> ClientSettings {
-        ClientSettings::Cosmos(Default::default())
+    fn client_options_a_to_b(&self) -> ClientOptions {
+        Default::default()
     }
 
     /// Returns the settings for the foreign client on the second chain for the
     /// first chain. The defaults are for a client connecting two Cosmos chains
     /// with no custom settings.
-    fn client_settings_b_to_a(&self) -> ClientSettings {
-        ClientSettings::Cosmos(Default::default())
+    fn client_options_b_to_a(&self) -> ClientOptions {
+        Default::default()
     }
 
     fn should_spawn_supervisor(&self) -> bool {
@@ -179,13 +179,13 @@ impl<Test: TestOverrides> RelayerConfigOverride for Test {
     }
 }
 
-impl<Test: TestOverrides> ClientSettingsOverride for Test {
-    fn client_settings_a_to_b(&self) -> ClientSettings {
-        TestOverrides::client_settings_a_to_b(self)
+impl<Test: TestOverrides> ClientOptionsOverride for Test {
+    fn client_options_a_to_b(&self) -> ClientOptions {
+        TestOverrides::client_options_a_to_b(self)
     }
 
-    fn client_settings_b_to_a(&self) -> ClientSettings {
-        TestOverrides::client_settings_b_to_a(self)
+    fn client_options_b_to_a(&self) -> ClientOptions {
+        TestOverrides::client_options_b_to_a(self)
     }
 }
 

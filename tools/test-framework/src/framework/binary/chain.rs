@@ -3,9 +3,9 @@
    together with the relayer setup with chain handles and foreign clients.
 */
 
-use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
+use ibc_relayer::foreign_client::CreateOptions as ClientOptions;
 use tracing::info;
 
 use crate::bootstrap::binary::chain::Builder;
@@ -35,7 +35,7 @@ where
     Overrides: NodeConfigOverride
         + NodeGenesisOverride
         + RelayerConfigOverride
-        + ClientSettingsOverride
+        + ClientOptionsOverride
         + SupervisorOverride
         + TestConfigOverride,
 {
@@ -52,7 +52,7 @@ where
     Overrides: NodeConfigOverride
         + NodeGenesisOverride
         + RelayerConfigOverride
-        + ClientSettingsOverride
+        + ClientOptionsOverride
         + SupervisorOverride
         + TestConfigOverride,
 {
@@ -71,7 +71,7 @@ where
     Overrides: NodeConfigOverride
         + NodeGenesisOverride
         + RelayerConfigOverride
-        + ClientSettingsOverride
+        + ClientOptionsOverride
         + TestConfigOverride,
 {
     run_single_node_test(&RunBinaryChainTest::new(test))
@@ -122,13 +122,13 @@ pub trait RelayerConfigOverride {
 ///
 /// [`TestOverrides`]: crate::framework::overrides::TestOverrides
 ///
-pub trait ClientSettingsOverride {
-    fn client_settings_a_to_b(&self) -> ClientSettings {
-        ClientSettings::Cosmos(Default::default())
+pub trait ClientOptionsOverride {
+    fn client_options_a_to_b(&self) -> ClientOptions {
+        Default::default()
     }
 
-    fn client_settings_b_to_a(&self) -> ClientSettings {
-        ClientSettings::Cosmos(Default::default())
+    fn client_options_b_to_a(&self) -> ClientOptions {
+        Default::default()
     }
 }
 
@@ -199,13 +199,13 @@ impl<'a, Test, Overrides> BinaryNodeTest for RunBinaryChainTest<'a, Test>
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride + ClientSettingsOverride,
+    Overrides: RelayerConfigOverride + ClientOptionsOverride,
 {
     fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
         let overrides = self.test.get_overrides();
         let (relayer, chains) = Builder::with_node_pair(config, node_a, node_b)
-            .client_settings_a_to_b(overrides.client_settings_a_to_b())
-            .client_settings_b_to_a(overrides.client_settings_b_to_a())
+            .client_options_a_to_b(overrides.client_options_a_to_b())
+            .client_options_b_to_a(overrides.client_options_b_to_a())
             .bootstrap_with_config(|config| {
                 overrides.modify_relayer_config(config);
             })?;

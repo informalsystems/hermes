@@ -5,8 +5,7 @@ use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::Height;
-use ibc_relayer::chain::client::ClientSettings;
-use ibc_relayer::chain::cosmos;
+use ibc_relayer::foreign_client::CreateOptions;
 
 use ibc_test_framework::prelude::*;
 
@@ -18,13 +17,13 @@ fn test_client_defaults() -> Result<(), Error> {
 
 /// A test to exercise customization of foreign client settings.
 #[test]
-fn test_client_settings() -> Result<(), Error> {
-    run_binary_chain_test(&ClientSettingsTest)
+fn test_client_options() -> Result<(), Error> {
+    run_binary_chain_test(&ClientOptionsTest)
 }
 
 struct ClientDefaultsTest;
 
-struct ClientSettingsTest;
+struct ClientOptionsTest;
 
 impl TestOverrides for ClientDefaultsTest {
     fn modify_relayer_config(&self, config: &mut Config) {
@@ -62,25 +61,25 @@ impl BinaryChainTest for ClientDefaultsTest {
     }
 }
 
-impl TestOverrides for ClientSettingsTest {
-    fn client_settings_a_to_b(&self) -> ClientSettings {
-        ClientSettings::Cosmos(cosmos::client::Settings {
+impl TestOverrides for ClientOptionsTest {
+    fn client_options_a_to_b(&self) -> CreateOptions {
+        CreateOptions {
             max_clock_drift: Some(Duration::from_secs(3)),
             trusting_period: Some(Duration::from_secs(120_000)),
             trust_threshold: Some(TrustThreshold::new(13, 23).unwrap()),
-        })
+        }
     }
 
-    fn client_settings_b_to_a(&self) -> ClientSettings {
-        ClientSettings::Cosmos(cosmos::client::Settings {
+    fn client_options_b_to_a(&self) -> CreateOptions {
+        CreateOptions {
             max_clock_drift: Some(Duration::from_secs(6)),
             trusting_period: Some(Duration::from_secs(340_000)),
             trust_threshold: Some(TrustThreshold::TWO_THIRDS),
-        })
+        }
     }
 }
 
-impl BinaryChainTest for ClientSettingsTest {
+impl BinaryChainTest for ClientOptionsTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
