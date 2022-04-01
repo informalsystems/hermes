@@ -17,11 +17,11 @@ use crate::keyring::KeyEntry;
 pub async fn estimate_tx_fees(
     config: &ChainConfig,
     grpc_address: &Uri,
-    account_sequence: AccountSequence,
-    account_number: AccountNumber,
-    messages: Vec<Any>,
     key_entry: &KeyEntry,
     tx_memo: &Memo,
+    account_number: AccountNumber,
+    account_sequence: AccountSequence,
+    messages: Vec<Any>,
 ) -> Result<Fee, Error> {
     let gas_config = GasConfig::from_chain_config(config);
 
@@ -32,12 +32,12 @@ pub async fn estimate_tx_fees(
 
     let signed_tx = sign_tx(
         config,
-        messages,
-        account_sequence,
         key_entry,
-        &gas_config.max_fee,
         tx_memo,
         account_number,
+        account_sequence,
+        messages,
+        &gas_config.max_fee,
     )?;
 
     let tx = Tx {
@@ -46,15 +46,15 @@ pub async fn estimate_tx_fees(
         signatures: signed_tx.signatures,
     };
 
-    let estimated_fee = estimate_fee_with_tx(&gas_config, &config.id, grpc_address, tx).await?;
+    let estimated_fee = estimate_fee_with_tx(&gas_config, grpc_address, &config.id, tx).await?;
 
     Ok(estimated_fee)
 }
 
 async fn estimate_fee_with_tx(
     gas_config: &GasConfig,
-    chain_id: &ChainId,
     grpc_address: &Uri,
+    chain_id: &ChainId,
     tx: Tx,
 ) -> Result<Fee, Error> {
     let estimated_gas = estimate_gas_with_tx(gas_config, grpc_address, tx).await?;
@@ -89,7 +89,7 @@ async fn estimate_gas_with_tx(
     grpc_address: &Uri,
     tx: Tx,
 ) -> Result<u64, Error> {
-    let simulated_gas = send_tx_simulate(tx, grpc_address)
+    let simulated_gas = send_tx_simulate(grpc_address, tx)
         .await
         .map(|sr| sr.gas_info);
 

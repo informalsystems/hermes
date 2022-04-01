@@ -4,7 +4,7 @@ use tonic::codegen::http::Uri;
 
 use crate::error::Error;
 
-pub async fn send_tx_simulate(tx: Tx, grpc_address: &Uri) -> Result<SimulateResponse, Error> {
+pub async fn send_tx_simulate(grpc_address: &Uri, tx: Tx) -> Result<SimulateResponse, Error> {
     crate::time!("send_tx_simulate");
 
     // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.

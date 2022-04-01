@@ -17,56 +17,56 @@ pub async fn estimate_fee_and_send_tx(
     rpc_client: &HttpClient,
     rpc_address: &Url,
     grpc_address: &Uri,
-    messages: Vec<Any>,
-    account_sequence: AccountSequence,
-    account_number: AccountNumber,
     key_entry: &KeyEntry,
     tx_memo: &Memo,
+    account_number: AccountNumber,
+    account_sequence: AccountSequence,
+    messages: Vec<Any>,
 ) -> Result<Response, Error> {
     let fee = estimate_tx_fees(
         config,
         grpc_address,
-        account_sequence,
-        account_number,
-        messages.clone(),
         key_entry,
         tx_memo,
+        account_number,
+        account_sequence,
+        messages.clone(),
     )
     .await?;
 
-    raw_send_tx(
+    send_tx_with_fee(
         config,
         rpc_client,
         rpc_address,
-        &fee,
-        account_sequence,
-        account_number,
-        messages,
         key_entry,
         tx_memo,
+        account_number,
+        account_sequence,
+        messages,
+        &fee,
     )
     .await
 }
 
-pub async fn raw_send_tx(
+pub async fn send_tx_with_fee(
     config: &ChainConfig,
     rpc_client: &HttpClient,
     rpc_address: &Url,
-    fee: &Fee,
-    account_sequence: AccountSequence,
-    account_number: AccountNumber,
-    messages: Vec<Any>,
     key_entry: &KeyEntry,
     tx_memo: &Memo,
+    account_number: AccountNumber,
+    account_sequence: AccountSequence,
+    messages: Vec<Any>,
+    fee: &Fee,
 ) -> Result<Response, Error> {
     let tx_bytes = sign_and_encode_tx(
         config,
-        messages,
-        account_sequence,
         key_entry,
-        fee,
         tx_memo,
         account_number,
+        account_sequence,
+        messages,
+        fee,
     )?;
 
     let response = broadcast_tx_sync(rpc_client, rpc_address, tx_bytes).await?;

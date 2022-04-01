@@ -16,21 +16,21 @@ use crate::keyring::{sign_message, KeyEntry};
 
 pub fn sign_and_encode_tx(
     config: &ChainConfig,
-    messages: Vec<Any>,
-    account_sequence: AccountSequence,
     key_entry: &KeyEntry,
-    fee: &Fee,
     tx_memo: &Memo,
     account_number: AccountNumber,
+    account_sequence: AccountSequence,
+    messages: Vec<Any>,
+    fee: &Fee,
 ) -> Result<Vec<u8>, Error> {
     let signed_tx = sign_tx(
         config,
-        messages,
-        account_sequence,
         key_entry,
-        fee,
         tx_memo,
         account_number,
+        account_sequence,
+        messages,
+        fee,
     )?;
 
     let tx_raw = TxRaw {
@@ -44,16 +44,16 @@ pub fn sign_and_encode_tx(
 
 pub fn sign_tx(
     config: &ChainConfig,
-    messages: Vec<Any>,
-    account_sequence: AccountSequence,
     key_entry: &KeyEntry,
-    fee: &Fee,
     tx_memo: &Memo,
     account_number: AccountNumber,
+    account_sequence: AccountSequence,
+    messages: Vec<Any>,
+    fee: &Fee,
 ) -> Result<SignedTx, Error> {
     let key_bytes = encode_key_bytes(key_entry)?;
 
-    let signer = encode_signer_info(key_bytes, &config.address_type, account_sequence)?;
+    let signer = encode_signer_info(&config.address_type, account_sequence, key_bytes)?;
 
     let (body, body_bytes) = tx_body_and_bytes(messages, tx_memo)?;
 
@@ -63,9 +63,9 @@ pub fn sign_tx(
         &config.id,
         key_entry,
         &config.address_type,
-        body_bytes.clone(),
-        auth_info_bytes.clone(),
         account_number,
+        auth_info_bytes.clone(),
+        body_bytes.clone(),
     )?;
 
     Ok(SignedTx {
@@ -90,9 +90,9 @@ fn encode_sign_doc(
     chain_id: &ChainId,
     key: &KeyEntry,
     address_type: &AddressType,
-    body_bytes: Vec<u8>,
-    auth_info_bytes: Vec<u8>,
     account_number: AccountNumber,
+    auth_info_bytes: Vec<u8>,
+    body_bytes: Vec<u8>,
 ) -> Result<Vec<u8>, Error> {
     let sign_doc = SignDoc {
         body_bytes,
@@ -111,9 +111,9 @@ fn encode_sign_doc(
 }
 
 fn encode_signer_info(
-    key_bytes: Vec<u8>,
     address_type: &AddressType,
     sequence: AccountSequence,
+    key_bytes: Vec<u8>,
 ) -> Result<SignerInfo, Error> {
     let pk_type = match address_type {
         AddressType::Cosmos => "/cosmos.crypto.secp256k1.PubKey".to_string(),

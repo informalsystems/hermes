@@ -308,11 +308,11 @@ impl CosmosSdkChain {
             &self.rpc_client,
             &self.config.rpc_addr,
             &self.grpc_addr,
-            proto_msgs,
-            account_seq,
-            account_number,
             &self.key()?,
             self.tx_memo(),
+            account_number,
+            account_seq,
+            proto_msgs,
         ))
     }
 

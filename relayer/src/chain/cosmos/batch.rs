@@ -41,11 +41,11 @@ pub async fn send_messages_as_batches(
             rpc_client,
             rpc_address,
             grpc_address,
-            batch,
-            *account_sequence,
-            account_number,
             key_entry,
             tx_memo,
+            account_number,
+            *account_sequence,
+            batch,
         )
         .await?;
 
