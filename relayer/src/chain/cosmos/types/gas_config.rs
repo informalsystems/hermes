@@ -9,12 +9,15 @@ const DEFAULT_MAX_GAS: u64 = 400_000;
 /// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
+const DEFAULT_FEE_GRANTER: &str = "";
+
 pub struct GasConfig {
     pub default_gas: u64,
     pub max_gas: u64,
     pub gas_adjustment: f64,
     pub gas_price: GasPrice,
     pub max_fee: Fee,
+    pub fee_granter: String,
 }
 
 impl GasConfig {
@@ -25,6 +28,7 @@ impl GasConfig {
             gas_adjustment: gas_adjustment_from_config(config),
             gas_price: config.gas_price.clone(),
             max_fee: max_fee_from_config(config),
+            fee_granter: fee_granter_from_config(config),
         }
     }
 }
@@ -45,14 +49,23 @@ pub fn gas_adjustment_from_config(config: &ChainConfig) -> f64 {
         .unwrap_or(DEFAULT_GAS_PRICE_ADJUSTMENT)
 }
 
+pub fn fee_granter_from_config(config: &ChainConfig) -> String {
+    config
+        .fee_granter
+        .as_deref()
+        .unwrap_or(DEFAULT_FEE_GRANTER)
+        .to_string()
+}
+
 pub fn max_fee_from_config(config: &ChainConfig) -> Fee {
-    let gas_limit = max_gas_from_config(config);
-    let amount = calculate_fee(gas_limit, &config.gas_price);
+    let max_gas = max_gas_from_config(config);
+    let max_fee_in_coins = calculate_fee(max_gas, &config.gas_price);
+    let fee_granter = fee_granter_from_config(config);
 
     Fee {
-        amount: vec![amount],
-        gas_limit,
+        amount: vec![max_fee_in_coins],
+        gas_limit: max_gas,
         payer: "".to_string(),
-        granter: "".to_string(),
+        granter: fee_granter,
     }
 }

@@ -1,14 +1,16 @@
+use ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::tx::v1beta1::{SimulateRequest, SimulateResponse, Tx};
 use tonic::codegen::http::Uri;
 
 use crate::error::Error;
 
 pub async fn send_tx_simulate(tx: Tx, grpc_address: &Uri) -> Result<SimulateResponse, Error> {
-    use ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
+    crate::time!("send_tx_simulate");
 
     // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
     let mut tx_bytes = vec![];
-    prost::Message::encode(&tx, &mut tx_bytes).unwrap(); // FIXME: Handle error here
+    prost::Message::encode(&tx, &mut tx_bytes)
+        .map_err(|e| Error::protobuf_encode(String::from("Transaction"), e))?;
 
     #[allow(deprecated)]
     let req = SimulateRequest {
