@@ -8,13 +8,14 @@ use super::error::Error;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum ClientType {
     Tendermint = 1,
-
+    Beefy = 2,
     #[cfg(any(test, feature = "mocks"))]
     Mock = 9999,
 }
 
 impl ClientType {
     const TENDERMINT_STR: &'static str = "07-tendermint";
+    const BEEFY_STR: &'static str = "11-beefy";
 
     #[cfg_attr(not(test), allow(dead_code))]
     const MOCK_STR: &'static str = "9999-mock";
@@ -23,7 +24,7 @@ impl ClientType {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Tendermint => Self::TENDERMINT_STR,
-
+            Self::Beefy => Self::BEEFY_STR,
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock => Self::MOCK_STR,
         }
@@ -42,10 +43,9 @@ impl core::str::FromStr for ClientType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             Self::TENDERMINT_STR => Ok(Self::Tendermint),
-
+            Self::BEEFY_STR => Ok(Self::Beefy),
             #[cfg(any(test, feature = "mocks"))]
             Self::MOCK_STR => Ok(Self::Mock),
-
             _ => Err(Error::unknown_client_type(s.to_string())),
         }
     }

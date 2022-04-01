@@ -180,6 +180,10 @@ define_error! {
             [ Ics07Error ]
             | _ | { "tendermint error" },
 
+         Beefy
+            [ Ics011Error ]
+            | _ | { "tendermint error" },
+
         InvalidPacketTimestamp
             [ crate::timestamp::ParseTimestampError ]
             | _ | { "invalid packet timeout timestamp value" },

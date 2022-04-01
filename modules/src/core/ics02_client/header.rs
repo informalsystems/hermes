@@ -6,6 +6,7 @@ use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
+use crate::clients::ics11_beefy::header::{decode_header as decode_beefy_header, BeefyHeader};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 #[cfg(any(test, feature = "mocks"))]
@@ -15,6 +16,7 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
+pub const BEEFY_HEADER_TYPE_URL: &str = "/ibc.lightclients.beefy.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 /// Abstract of consensus state update information
@@ -36,7 +38,8 @@ pub trait Header: Clone + core::fmt::Debug + Send + Sync {
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
     Tendermint(TendermintHeader),
-
+    #[serde(skip)]
+    Beefy(BeefyHeader),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockHeader),
 }
@@ -45,7 +48,7 @@ impl Header for AnyHeader {
     fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(header) => header.client_type(),
-
+            Self::Beefy(header) => header.client_type(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.client_type(),
         }
@@ -54,7 +57,7 @@ impl Header for AnyHeader {
     fn height(&self) -> Height {
         match self {
             Self::Tendermint(header) => header.height(),
-
+            Self::Beefy(header) => Default::default(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.height(),
         }
@@ -63,6 +66,7 @@ impl Header for AnyHeader {
     fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(header) => header.timestamp(),
+            Self::Beefy(header) => Default::default(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.timestamp(),
         }
@@ -99,6 +103,11 @@ impl TryFrom<Any> for AnyHeader {
                 Ok(AnyHeader::Tendermint(val))
             }
 
+            BEEFY_HEADER_TYPE_URL => {
+                let val = decode_beefy_header(&raw.value).map_err(Error::beefy)?;
+                Ok(AnyHeader::Beefy(val))
+            }
+
             #[cfg(any(test, feature = "mocks"))]
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
                 MockHeader::decode_vec(&raw.value).map_err(Error::invalid_raw_header)?,
@@ -118,6 +127,14 @@ impl From<AnyHeader> for Any {
                     .encode_vec()
                     .expect("encoding to `Any` from `AnyHeader::Tendermint`"),
             },
+
+            AnyHeader::Beefy(header) => Any {
+                type_url: BEEFY_HEADER_TYPE_URL.to_string(),
+                value: header
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyHeader::Beefy`"),
+            },
+
             #[cfg(any(test, feature = "mocks"))]
             AnyHeader::Mock(header) => Any {
                 type_url: MOCK_HEADER_TYPE_URL.to_string(),

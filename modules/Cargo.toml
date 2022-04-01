@@ -18,7 +18,19 @@ all-features = true
 
 [features]
 default = ["std"]
-std = ["flex-error/std", "flex-error/eyre_tracer", "ibc-proto/std", "clock"]
+std = [
+    "flex-error/std",
+    "flex-error/eyre_tracer",
+    "ibc-proto/std",
+    "clock",
+    "beefy-client/std",
+    "sp-runtime/std",
+    "sp-core/std",
+    "codec/std",
+    "pallet-mmr-primitives/std",
+    "beefy-primitives/std",
+    "sp-trie/std"
+]
 clock = ["tendermint/clock", "time/std"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
@@ -41,9 +53,16 @@ safe-regex = { version = "0.2.5", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 sha2 = { version = "0.10.2", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
-num-traits = { version = "0.2.15", default-features = false }
-derive_more = { version = "0.99.17", default-features = false, features = ["from", "into", "display"] }
+num-traits = { version = "0.2.14", default-features = false }
+derive_more = { version = "0.99.17", default-features = false, features = ["from", "display"] }
 uint = { version = "0.9", default-features = false }
+beefy-client = { package = "beefy-generic-client",  git = "https://github.com/ComposableFi/beefy-client", branch = "david/verify_parachain_headers", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false }
+pallet-mmr-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false }
+beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false }
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false }
+sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.23.7"
