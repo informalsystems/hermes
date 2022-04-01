@@ -235,7 +235,7 @@ impl OperationalData {
     }
 
     /// Returns `Ok(remaining-delay)` on success or `LinkError` if the input closure fails.
-    pub fn conn_time_delay_remaining<ChainTime>(
+    fn conn_time_delay_remaining<ChainTime>(
         &self,
         chain_time: &ChainTime,
     ) -> Result<Duration, LinkError>
@@ -250,7 +250,7 @@ impl OperationalData {
     }
 
     /// Returns `Ok(remaining-delay)` on success or `LinkError` if an input closure fails.
-    pub fn conn_block_delay_remaining<MaxBlockTime, LatestHeight>(
+    fn conn_block_delay_remaining<MaxBlockTime, LatestHeight>(
         &self,
         max_expected_time_per_block: &MaxBlockTime,
         latest_height: &LatestHeight,
