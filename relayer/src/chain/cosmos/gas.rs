@@ -23,23 +23,6 @@ pub fn gas_amount_to_fees(config: &GasConfig, gas_amount: u64) -> Fee {
     }
 }
 
-/// Adjusts the fee based on the configured `gas_adjustment` to prevent out of gas errors.
-/// The actual gas cost, when a transaction is executed, may be slightly higher than the
-/// one returned by the simulation.
-pub fn adjust_gas_with_simulated_fees(config: &GasConfig, gas_amount: u64) -> u64 {
-    let gas_adjustment = config.gas_adjustment;
-
-    assert!(gas_adjustment <= 1.0);
-
-    let (_, digits) = mul_ceil(gas_amount, gas_adjustment).to_u64_digits();
-    assert!(digits.len() == 1);
-
-    let adjustment = digits[0];
-    let gas = gas_amount.checked_add(adjustment).unwrap_or(u64::MAX);
-
-    min(gas, config.max_gas)
-}
-
 pub fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
     let fee_amount = mul_ceil(adjusted_gas_amount, gas_price.price);
 
@@ -56,6 +39,23 @@ pub fn mul_ceil(a: u64, f: f64) -> BigInt {
     let a = BigInt::from(a);
     let f = BigRational::from_float(f).expect("f is finite");
     (f * a).ceil().to_integer()
+}
+
+/// Adjusts the fee based on the configured `gas_adjustment` to prevent out of gas errors.
+/// The actual gas cost, when a transaction is executed, may be slightly higher than the
+/// one returned by the simulation.
+fn adjust_gas_with_simulated_fees(config: &GasConfig, gas_amount: u64) -> u64 {
+    let gas_adjustment = config.gas_adjustment;
+
+    assert!(gas_adjustment <= 1.0);
+
+    let (_, digits) = mul_ceil(gas_amount, gas_adjustment).to_u64_digits();
+    assert!(digits.len() == 1);
+
+    let adjustment = digits[0];
+    let gas = gas_amount.checked_add(adjustment).unwrap_or(u64::MAX);
+
+    min(gas, config.max_gas)
 }
 
 impl fmt::Display for PrettyFee<'_> {

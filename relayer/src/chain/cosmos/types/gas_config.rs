@@ -33,23 +33,23 @@ impl GasConfig {
     }
 }
 
-pub fn default_gas_from_config(config: &ChainConfig) -> u64 {
+fn default_gas_from_config(config: &ChainConfig) -> u64 {
     config
         .default_gas
         .unwrap_or_else(|| max_gas_from_config(config))
 }
 
-pub fn max_gas_from_config(config: &ChainConfig) -> u64 {
+fn max_gas_from_config(config: &ChainConfig) -> u64 {
     config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
 }
 
-pub fn gas_adjustment_from_config(config: &ChainConfig) -> f64 {
+fn gas_adjustment_from_config(config: &ChainConfig) -> f64 {
     config
         .gas_adjustment
         .unwrap_or(DEFAULT_GAS_PRICE_ADJUSTMENT)
 }
 
-pub fn fee_granter_from_config(config: &ChainConfig) -> String {
+fn fee_granter_from_config(config: &ChainConfig) -> String {
     config
         .fee_granter
         .as_deref()
@@ -57,7 +57,7 @@ pub fn fee_granter_from_config(config: &ChainConfig) -> String {
         .to_string()
 }
 
-pub fn max_fee_from_config(config: &ChainConfig) -> Fee {
+fn max_fee_from_config(config: &ChainConfig) -> Fee {
     let max_gas = max_gas_from_config(config);
     let max_fee_in_coins = calculate_fee(max_gas, &config.gas_price);
     let fee_granter = fee_granter_from_config(config);

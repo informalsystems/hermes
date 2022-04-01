@@ -5,7 +5,7 @@ use tonic::codegen::http::Uri;
 use tracing::{debug, error, span, warn, Level};
 
 use crate::chain::cosmos::account::{AccountNumber, AccountSequence};
-use crate::chain::cosmos::encode::encode_tx_to_raw;
+use crate::chain::cosmos::encode::sign_tx;
 use crate::chain::cosmos::gas::{gas_amount_to_fees, PrettyFee};
 use crate::chain::cosmos::simulate::send_tx_simulate;
 use crate::chain::cosmos::types::GasConfig;
@@ -30,7 +30,7 @@ pub async fn estimate_tx_fees(
         PrettyFee(&gas_config.max_fee)
     );
 
-    let signed_tx = encode_tx_to_raw(
+    let signed_tx = sign_tx(
         config,
         messages,
         account_sequence,
@@ -46,18 +46,18 @@ pub async fn estimate_tx_fees(
         signatures: signed_tx.signatures,
     };
 
-    let estimated_fee = estimate_fee_with_raw_tx(&gas_config, &config.id, grpc_address, tx).await?;
+    let estimated_fee = estimate_fee_with_tx(&gas_config, &config.id, grpc_address, tx).await?;
 
     Ok(estimated_fee)
 }
 
-pub async fn estimate_fee_with_raw_tx(
+async fn estimate_fee_with_tx(
     gas_config: &GasConfig,
     chain_id: &ChainId,
     grpc_address: &Uri,
     tx: Tx,
 ) -> Result<Fee, Error> {
-    let estimated_gas = estimate_gas_with_raw_tx(gas_config, grpc_address, tx).await?;
+    let estimated_gas = estimate_gas_with_tx(gas_config, grpc_address, tx).await?;
 
     if estimated_gas > gas_config.max_gas {
         debug!(
@@ -84,7 +84,7 @@ pub async fn estimate_fee_with_raw_tx(
     Ok(adjusted_fee)
 }
 
-pub async fn estimate_gas_with_raw_tx(
+async fn estimate_gas_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,
     tx: Tx,
@@ -134,100 +134,6 @@ pub async fn estimate_gas_with_raw_tx(
             // Propagate the error, the retrying mechanism at caller may catch & retry.
             Err(e)
         }
-    }
-
-    // let estimated_gas = match response {
-    //     Ok(response) => {
-    //         let m_gas_info = response.gas_info;
-
-    //         debug!(
-    //             "[{}] send_tx: tx simulation successful, simulated gas: {:?}",
-    //             chain_id, m_gas_info,
-    //         );
-
-    //         match m_gas_info {
-    //             Some(gas) => gas.gas_used,
-    //             None => gas_config.default_gas,
-    //         }
-    //     }
-    //     Err(e) => {
-    //         error!(
-    //             "[{}] send_tx: failed to estimate gas, falling back on default gas, error: {}",
-    //             chain_id,
-    //             e.detail()
-    //         );
-
-    //         gas_config.default_gas
-    //     }
-    // };
-
-    // if estimated_gas > gas_config.max_gas {
-    //     debug!(
-    //         estimated = ?estimated_gas,
-    //         max = ?gas_config.max_gas,
-    //         "[{}] send_tx: estimated gas is higher than max gas",
-    //         chain_id,
-    //     );
-
-    //     Err(Error::tx_simulate_gas_estimate_exceeded(
-    //         chain_id.clone(),
-    //         estimated_gas,
-    //         gas_config.max_gas,
-    //     ))
-    // } else {
-    //     Ok(gas_amount_to_fees(gas_config, estimated_gas))
-    // }
-}
-
-pub async fn estimate_gas(
-    chain_id: &ChainId,
-    tx: Tx,
-    grpc_address: &Uri,
-    default_gas: u64,
-    max_gas: u64,
-) -> Result<u64, Error> {
-    let response = send_tx_simulate(tx, grpc_address).await;
-
-    let estimated_gas = match response {
-        Ok(response) => {
-            let m_gas_info = response.gas_info;
-
-            debug!(
-                "[{}] send_tx: tx simulation successful, simulated gas: {:?}",
-                chain_id, m_gas_info,
-            );
-
-            match m_gas_info {
-                Some(gas) => gas.gas_used,
-                None => default_gas,
-            }
-        }
-        Err(e) => {
-            error!(
-                "[{}] send_tx: failed to estimate gas, falling back on default gas, error: {}",
-                chain_id,
-                e.detail()
-            );
-
-            default_gas
-        }
-    };
-
-    if estimated_gas > max_gas {
-        debug!(
-            estimated = ?estimated_gas,
-            max = ?max_gas,
-            "[{}] send_tx: estimated gas is higher than max gas",
-            chain_id,
-        );
-
-        Err(Error::tx_simulate_gas_estimate_exceeded(
-            chain_id.clone(),
-            estimated_gas,
-            max_gas,
-        ))
-    } else {
-        Ok(estimated_gas)
     }
 }
 
