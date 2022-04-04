@@ -19,7 +19,6 @@ use tendermint::{
 };
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
-use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };
@@ -30,13 +29,10 @@ use tracing::{info, span, trace, warn, Level};
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc::core::ics02_client::client_consensus::{
-    AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
-};
+use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error as ClientError;
-use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest,
@@ -50,7 +46,7 @@ use ibc::core::ics24_host::path::{
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
-use ibc::events::{from_tx_response_event, IbcEvent};
+use ibc::events::IbcEvent;
 use ibc::query::QueryBlockRequest;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
@@ -70,13 +66,14 @@ use ibc_proto::ibc::core::connection::v1::{
 
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
+use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{
-    abci_query, fetch_version_specs, get_or_fetch_account, header_query, packet_query,
-    tx_hash_query,
+    abci_query, fetch_version_specs, get_or_fetch_account, packet_query,
 };
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas_config::DEFAULT_MAX_GAS;
+use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{QueryResponse, StatusResponse};
@@ -99,6 +96,7 @@ pub mod simulate;
 pub mod tx;
 pub mod types;
 pub mod version;
+pub mod wait;
 
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
@@ -430,50 +428,47 @@ impl CosmosSdkChain {
         thread::sleep(Duration::from_millis(200));
 
         let start = Instant::now();
-        let result = retry_with_index(
-            retry::wait_for_block_commits(self.config.rpc_timeout),
-            |index| {
-                if all_tx_results_found(&tx_sync_results) {
-                    trace!(
-                        id = %self.id(),
-                        "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
-                        tx_sync_results.len(),
-                        index,
-                        start.elapsed().as_millis()
-                    );
+        let result = retry_with_index(wait_for_block_commits(self.config.rpc_timeout), |index| {
+            if all_tx_results_found(&tx_sync_results) {
+                trace!(
+                    id = %self.id(),
+                    "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
+                    tx_sync_results.len(),
+                    index,
+                    start.elapsed().as_millis()
+                );
 
-                    // All transactions confirmed
-                    return RetryResult::Ok(());
-                }
+                // All transactions confirmed
+                return RetryResult::Ok(());
+            }
 
-                for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
-                    // If this transaction was not committed, determine whether it was because it failed
-                    // or because it hasn't been committed yet.
-                    if empty_event_present(events) {
-                        // If the transaction failed, replace the events with an error,
-                        // so that we don't attempt to resolve the transaction later on.
-                        if response.code.value() != 0 {
-                            *events = vec![IbcEvent::ChainError(format!(
+            for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
+                // If this transaction was not committed, determine whether it was because it failed
+                // or because it hasn't been committed yet.
+                if empty_event_present(events) {
+                    // If the transaction failed, replace the events with an error,
+                    // so that we don't attempt to resolve the transaction later on.
+                    if response.code.value() != 0 {
+                        *events = vec![IbcEvent::ChainError(format!(
                                 "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
                                 self.id(), response.hash, response.code, response.log
                             ))];
 
-                            // Otherwise, try to resolve transaction hash to the corresponding events.
-                        } else if let Ok(events_per_tx) =
-                            self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
-                        {
-                            // If we get events back, progress was made, so we replace the events
-                            // with the new ones. in both cases we will check in the next iteration
-                            // whether or not the transaction was fully committed.
-                            if !events_per_tx.is_empty() {
-                                *events = events_per_tx;
-                            }
+                        // Otherwise, try to resolve transaction hash to the corresponding events.
+                    } else if let Ok(events_per_tx) =
+                        self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
+                    {
+                        // If we get events back, progress was made, so we replace the events
+                        // with the new ones. in both cases we will check in the next iteration
+                        // whether or not the transaction was fully committed.
+                        if !events_per_tx.is_empty() {
+                            *events = events_per_tx;
                         }
                     }
                 }
-                RetryResult::Retry(index)
-            },
-        );
+            }
+            RetryResult::Retry(index)
+        });
 
         match result {
             // All transactions confirmed
@@ -1364,99 +1359,12 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_txs");
         crate::telemetry!(query, self.id(), "query_txs");
 
-        match request {
-            QueryTxRequest::Packet(request) => {
-                crate::time!("query_txs: query packet events");
-
-                let mut result: Vec<IbcEvent> = vec![];
-
-                for seq in &request.sequences {
-                    // query first (and only) Tx that includes the event specified in the query request
-                    let response = self
-                        .block_on(self.rpc_client.tx_search(
-                            packet_query(&request, *seq),
-                            false,
-                            1,
-                            1, // get only the first Tx matching the query
-                            Order::Ascending,
-                        ))
-                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-                    assert!(
-                        response.txs.len() <= 1,
-                        "packet_from_tx_search_response: unexpected number of txs"
-                    );
-
-                    if response.txs.is_empty() {
-                        continue;
-                    }
-
-                    if let Some(event) = packet_from_tx_search_response(
-                        self.id(),
-                        &request,
-                        *seq,
-                        response.txs[0].clone(),
-                    ) {
-                        result.push(event);
-                    }
-                }
-                Ok(result)
-            }
-
-            QueryTxRequest::Client(request) => {
-                crate::time!("query_txs: single client update event");
-
-                // query the first Tx that includes the event matching the client request
-                // Note: it is possible to have multiple Tx-es for same client and consensus height.
-                // In this case it must be true that the client updates were performed with tha
-                // same header as the first one, otherwise a subsequent transaction would have
-                // failed on chain. Therefore only one Tx is of interest and current API returns
-                // the first one.
-                let mut response = self
-                    .block_on(self.rpc_client.tx_search(
-                        header_query(&request),
-                        false,
-                        1,
-                        1, // get only the first Tx matching the query
-                        Order::Ascending,
-                    ))
-                    .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-                if response.txs.is_empty() {
-                    return Ok(vec![]);
-                }
-
-                // the response must include a single Tx as specified in the query.
-                assert!(
-                    response.txs.len() <= 1,
-                    "packet_from_tx_search_response: unexpected number of txs"
-                );
-
-                let tx = response.txs.remove(0);
-                let event = update_client_from_tx_search_response(self.id(), &request, tx);
-
-                Ok(event.into_iter().collect())
-            }
-
-            QueryTxRequest::Transaction(tx) => {
-                let mut response = self
-                    .block_on(self.rpc_client.tx_search(
-                        tx_hash_query(&tx),
-                        false,
-                        1,
-                        1, // get only the first Tx matching the query
-                        Order::Ascending,
-                    ))
-                    .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-                if response.txs.is_empty() {
-                    Ok(vec![])
-                } else {
-                    let tx = response.txs.remove(0);
-                    Ok(all_ibc_events_from_tx_search_response(self.id(), tx))
-                }
-            }
-        }
+        self.block_on(query_txs(
+            self.id(),
+            &self.rpc_client,
+            &self.config.rpc_addr,
+            request,
+        ))
     }
 
     fn query_blocks(
@@ -1701,88 +1609,6 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok((target, supporting))
     }
-}
-
-// Extract the packet events from the query_txs RPC response. For any given
-// packet query, there is at most one Tx matching such query. Moreover, a Tx may
-// contain several events, but a single one must match the packet query.
-// For example, if we're querying for the packet with sequence 3 and this packet
-// was committed in some Tx along with the packet with sequence 4, the response
-// will include both packets. For this reason, we iterate all packets in the Tx,
-// searching for those that match (which must be a single one).
-fn packet_from_tx_search_response(
-    chain_id: &ChainId,
-    request: &QueryPacketEventDataRequest,
-    seq: Sequence,
-    response: ResultTx,
-) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
-        return None;
-    }
-
-    response
-        .tx_result
-        .events
-        .into_iter()
-        .find_map(|ev| filter_matching_event(ev, request, seq))
-}
-
-// Extracts from the Tx the update client event for the requested client and height.
-// Note: in the Tx, there may have been multiple events, some of them may be
-// for update of other clients that are not relevant to the request.
-// For example, if we're querying for a transaction that includes the update for client X at
-// consensus height H, it is possible that the transaction also includes an update client
-// for client Y at consensus height H'. This is the reason the code iterates all event fields in the
-// returned Tx to retrieve the relevant ones.
-// Returns `None` if no matching event was found.
-fn update_client_from_tx_search_response(
-    chain_id: &ChainId,
-    request: &QueryClientEventRequest,
-    response: ResultTx,
-) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
-        return None;
-    }
-
-    response
-        .tx_result
-        .events
-        .into_iter()
-        .filter(|event| event.type_str == request.event_id.as_str())
-        .flat_map(|event| ClientEvents::try_from_tx(&event))
-        .flat_map(|event| match event {
-            IbcEvent::UpdateClient(mut update) => {
-                update.common.height = height;
-                Some(update)
-            }
-            _ => None,
-        })
-        .find(|update| {
-            update.common.client_id == request.client_id
-                && update.common.consensus_height == request.consensus_height
-        })
-        .map(IbcEvent::UpdateClient)
-}
-
-fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx) -> Vec<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    let deliver_tx_result = response.tx_result;
-    if deliver_tx_result.code.is_err() {
-        return vec![IbcEvent::ChainError(format!(
-            "deliver_tx for {} reports error: code={:?}, log={:?}",
-            response.hash, deliver_tx_result.code, deliver_tx_result.log
-        ))];
-    }
-
-    let mut result = vec![];
-    for event in deliver_tx_result.events {
-        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
-            result.push(ibc_ev);
-        }
-    }
-    result
 }
 
 fn filter_matching_event(

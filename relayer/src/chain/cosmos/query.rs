@@ -21,6 +21,8 @@ use crate::chain::cosmos::version::Specs;
 use crate::chain::QueryResponse;
 use crate::error::Error;
 
+pub mod tx;
+
 pub async fn get_or_fetch_account<'a>(
     grpc_address: &Uri,
     account_address: &str,

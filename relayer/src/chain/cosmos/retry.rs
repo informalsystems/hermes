@@ -17,7 +17,6 @@ use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
-use crate::util::retry::Fixed;
 
 // Maximum number of retries for send_tx in the case of
 // an account sequence mismatch at broadcast step.
@@ -180,14 +179,8 @@ fn do_send_tx_with_account_sequence_retry<'a>(
     })
 }
 
-pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
-    let backoff_millis = 300; // The periodic backoff
-    let count: usize = (max_total_wait.as_millis() / backoff_millis as u128) as usize;
-    Fixed::from_millis(backoff_millis).take(count)
-}
-
 /// Determine whether the given error yielded by `tx_simulate`
-/// indicates that the current sequence number cached in Hermes
+/// indicates hat the current sequence number cached in Hermes
 /// may be out-of-sync with the full node's version of the s.n.
 fn mismatching_account_sequence_number(e: &Error) -> bool {
     use crate::error::ErrorDetail::*;
