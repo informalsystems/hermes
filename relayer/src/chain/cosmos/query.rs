@@ -14,10 +14,48 @@ use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::block::Height;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{Client, HttpClient, Url};
+use tracing::info;
 
+use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::version::Specs;
 use crate::chain::QueryResponse;
 use crate::error::Error;
+
+pub async fn get_or_fetch_account<'a>(
+    grpc_address: &Uri,
+    account_address: &str,
+    m_account: &'a mut Option<Account>,
+) -> Result<&'a mut Account, Error> {
+    match m_account {
+        Some(account) => Ok(account),
+        None => {
+            let account = query_account(grpc_address, account_address).await?;
+            *m_account = Some(account.into());
+
+            Ok(m_account
+                .as_mut()
+                .expect("account was supposedly just cached"))
+        }
+    }
+}
+
+pub async fn refresh_account<'a>(
+    grpc_address: &Uri,
+    account_address: &str,
+    m_account: &'a mut Account,
+) -> Result<(), Error> {
+    let account = query_account(grpc_address, account_address).await?;
+
+    info!(
+        sequence = %account.sequence,
+        number = %account.account_number,
+        "refresh: retrieved account",
+    );
+
+    *m_account = account.into();
+
+    Ok(())
+}
 
 /// Uses the GRPC client to retrieve the account sequence
 pub async fn query_account(

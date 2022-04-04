@@ -1,3 +1,4 @@
+pub mod account;
 pub mod gas_config;
 pub mod signed_tx;
 

@@ -9,9 +9,9 @@ use tendermint_rpc::{HttpClient, Url};
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, warn};
 
-use crate::chain::cosmos::account::Account;
-use crate::chain::cosmos::query::query_account;
+use crate::chain::cosmos::query::refresh_account;
 use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
+use crate::chain::cosmos::types::account::Account;
 use crate::config::types::Memo;
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -47,7 +47,32 @@ pub const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
 /// Upon case #1, we do not retry submitting the same tx (retry happens
 /// nonetheless at the worker `step` level). Upon case #2, we retry
 /// submitting the same transaction.
-pub fn send_tx_with_account_sequence_retry<'a>(
+pub async fn send_tx_with_account_sequence_retry(
+    config: &ChainConfig,
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    grpc_address: &Uri,
+    key_entry: &KeyEntry,
+    tx_memo: &Memo,
+    account: &mut Account,
+    messages: Vec<Any>,
+    retry_counter: u64,
+) -> Result<Response, Error> {
+    do_send_tx_with_account_sequence_retry(
+        config,
+        rpc_client,
+        rpc_address,
+        grpc_address,
+        key_entry,
+        tx_memo,
+        account,
+        messages,
+        retry_counter,
+    )
+    .await
+}
+
+fn do_send_tx_with_account_sequence_retry<'a>(
     config: &'a ChainConfig,
     rpc_client: &'a HttpClient,
     rpc_address: &'a Url,
@@ -81,7 +106,7 @@ pub fn send_tx_with_account_sequence_retry<'a>(
             // retry at the worker-level will handle retrying.
             Err(e) if mismatching_account_sequence_number(&e) => {
                 warn!("failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
-                refresh_account(grpc_address, key_entry, account).await?;
+                refresh_account(grpc_address, &key_entry.account, account).await?;
                 // Note: propagating error here can lead to bug & dropped packets:
                 // https://github.com/informalsystems/ibc-rs/issues/1153
                 // But periodic packet clearing will catch any dropped packets.
@@ -98,10 +123,10 @@ pub fn send_tx_with_account_sequence_retry<'a>(
                     let backoff = retry_counter * BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
 
                     thread::sleep(Duration::from_millis(backoff));
-                    refresh_account(grpc_address, key_entry, account).await?;
+                    refresh_account(grpc_address, &key_entry.account, account).await?;
 
                     // Now retry.
-                    send_tx_with_account_sequence_retry(
+                    do_send_tx_with_account_sequence_retry(
                         config,
                         rpc_client,
                         rpc_address,
@@ -153,18 +178,6 @@ pub fn send_tx_with_account_sequence_retry<'a>(
             Err(e) => Err(e),
         }
     })
-}
-
-async fn refresh_account(
-    grpc_address: &Uri,
-    key_entry: &KeyEntry,
-    account: &mut Account,
-) -> Result<(), Error> {
-    *account = query_account(grpc_address, &key_entry.account)
-        .await?
-        .into();
-
-    Ok(())
 }
 
 pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {

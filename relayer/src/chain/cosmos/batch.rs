@@ -2,15 +2,13 @@ use ibc_proto::google::protobuf::Any;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{HttpClient, Url};
 use tonic::codegen::http::Uri;
-use tracing::{debug, error};
 
-use crate::chain::cosmos::account::{AccountNumber, AccountSequence};
-use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
+use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
+use crate::chain::cosmos::types::account::Account;
 use crate::config::types::Memo;
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
-use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 
 // TODO: use this in send_messages_and_wait_commit
 pub async fn send_messages_as_batches(
@@ -20,8 +18,7 @@ pub async fn send_messages_as_batches(
     grpc_address: &Uri,
     key_entry: &KeyEntry,
     tx_memo: &Memo,
-    account_number: AccountNumber,
-    account_sequence: &mut AccountSequence,
+    account: &mut Account,
     messages: Vec<Any>,
 ) -> Result<Vec<Response>, Error> {
     let max_message_count = config.max_msg_num.0;
@@ -36,20 +33,18 @@ pub async fn send_messages_as_batches(
     let mut responses = Vec::new();
 
     for batch in batches {
-        let response = estimate_fee_and_send_tx(
+        let response = send_tx_with_account_sequence_retry(
             config,
             rpc_client,
             rpc_address,
             grpc_address,
             key_entry,
             tx_memo,
-            account_number,
-            *account_sequence,
+            account,
             batch,
+            0,
         )
         .await?;
-
-        maybe_update_account_sequence(config, account_sequence, &response);
 
         responses.push(response);
     }
@@ -95,28 +90,4 @@ fn message_size(message: &Any) -> Result<usize, Error> {
         .map_err(|e| Error::protobuf_encode("Message".into(), e))?;
 
     Ok(buf.len())
-}
-
-pub fn maybe_update_account_sequence(
-    config: &ChainConfig,
-    account_sequence: &mut AccountSequence,
-    response: &Response,
-) {
-    match response.code {
-        tendermint::abci::Code::Ok => {
-            // A success means the account s.n. was increased
-            account_sequence.increment_mut();
-            debug!("[{}] send_tx: broadcast_tx_sync: {:?}", config.id, response);
-        }
-        tendermint::abci::Code::Err(code) => {
-            // Avoid increasing the account s.n. if CheckTx failed
-            // Log the error
-            error!(
-                "[{}] send_tx: broadcast_tx_sync: {:?}: diagnostic: {:?}",
-                config.id,
-                response,
-                sdk_error_from_tx_sync_error_code(code)
-            );
-        }
-    }
 }

@@ -55,7 +55,6 @@ use ibc::query::QueryBlockRequest;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-use ibc_proto::cosmos::auth::v1beta1::BaseAccount;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -69,18 +68,18 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::cosmos::account::Account;
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::{
-    abci_query, fetch_version_specs, header_query, packet_query, query_account, tx_hash_query,
+    abci_query, fetch_version_specs, get_or_fetch_account, header_query, packet_query,
+    tx_hash_query,
 };
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
+use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas_config::DEFAULT_MAX_GAS;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{QueryResponse, StatusResponse};
-use crate::config::types::Memo;
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
@@ -89,7 +88,6 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::util::retry::{retry_with_index, RetryResult};
 
-pub mod account;
 pub mod batch;
 pub mod compatibility;
 pub mod encode;
@@ -283,38 +281,40 @@ impl CosmosSdkChain {
         self.rt.block_on(f)
     }
 
-    fn send_tx_with_account_sequence_retry(
+    async fn send_tx_with_account_sequence_retry(
         &mut self,
         proto_msgs: Vec<Any>,
         retry_counter: u64,
     ) -> Result<Response, Error> {
-        let runtime = self.rt.clone();
-        let config = self.config.clone();
-        let rpc_client = self.rpc_client.clone();
-        let rpc_address = self.config.rpc_addr.clone();
-        let grpc_address = self.grpc_addr.clone();
         let key_entry = self.key()?;
-        let memo = self.tx_memo().clone();
-        let account = self.account()?;
 
-        runtime.block_on(send_tx_with_account_sequence_retry(
-            &config,
-            &rpc_client,
-            &rpc_address,
-            &grpc_address,
+        let account =
+            get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
+
+        send_tx_with_account_sequence_retry(
+            &self.config,
+            &self.rpc_client,
+            &self.config.rpc_addr,
+            &self.grpc_addr,
             &key_entry,
-            &memo,
+            &self.config.memo_prefix,
             account,
             proto_msgs,
             retry_counter,
-        ))
+        )
+        .await
     }
 
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
         let _span = span!(Level::ERROR, "send_tx", id = %self.id()).entered();
 
-        self.send_tx_with_account_sequence_retry(proto_msgs, 0)
+        let runtime = self.rt.clone();
+
+        runtime.block_on(async {
+            self.send_tx_with_account_sequence_retry(proto_msgs, 0)
+                .await
+        })
     }
 
     /// The default amount of gas the relayer is willing to pay for a transaction,
@@ -408,36 +408,6 @@ impl CosmosSdkChain {
             .map_err(Error::key_base)
     }
 
-    fn query_account(&self) -> Result<BaseAccount, Error> {
-        crate::telemetry!(query, self.id(), "query_account");
-
-        self.block_on(query_account(&self.grpc_addr, &self.key()?.account))
-    }
-
-    fn refresh_account(&mut self) -> Result<(), Error> {
-        let account = self.query_account()?;
-        info!(
-            sequence = %account.sequence,
-            number = %account.account_number,
-            "refresh: retrieved account",
-        );
-
-        self.account = Some(account.into());
-
-        Ok(())
-    }
-
-    fn account(&mut self) -> Result<&mut Account, Error> {
-        if self.account == None {
-            self.refresh_account()?;
-        }
-
-        Ok(self
-            .account
-            .as_mut()
-            .expect("account was supposedly just cached"))
-    }
-
     /// Given a vector of `TxSyncResult` elements,
     /// each including a transaction response hash for one or more messages, periodically queries the chain
     /// with the transaction hashes to get the list of IbcEvents included in those transactions.
@@ -517,11 +487,6 @@ impl CosmosSdkChain {
         self.config
             .trusting_period
             .unwrap_or(2 * unbonding_period / 3)
-    }
-
-    /// Returns the preconfigured memo to be used for every submitted transaction
-    fn tx_memo(&self) -> &Memo {
-        &self.config.memo_prefix
     }
 
     /// Query the chain status via an RPC query.

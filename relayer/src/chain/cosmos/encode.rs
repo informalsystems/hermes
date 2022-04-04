@@ -6,7 +6,7 @@ use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInf
 use ibc_proto::google::protobuf::Any;
 use tendermint::account::Id as AccountId;
 
-use crate::chain::cosmos::account::{AccountNumber, AccountSequence};
+use crate::chain::cosmos::types::account::{AccountNumber, AccountSequence};
 use crate::chain::cosmos::types::SignedTx;
 use crate::config::types::Memo;
 use crate::config::AddressType;

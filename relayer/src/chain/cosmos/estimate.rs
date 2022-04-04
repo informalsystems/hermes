@@ -4,10 +4,10 @@ use ibc_proto::google::protobuf::Any;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, span, warn, Level};
 
-use crate::chain::cosmos::account::{AccountNumber, AccountSequence};
 use crate::chain::cosmos::encode::sign_tx;
 use crate::chain::cosmos::gas::{gas_amount_to_fees, PrettyFee};
 use crate::chain::cosmos::simulate::send_tx_simulate;
+use crate::chain::cosmos::types::account::{AccountNumber, AccountSequence};
 use crate::chain::cosmos::types::GasConfig;
 use crate::config::types::Memo;
 use crate::config::ChainConfig;

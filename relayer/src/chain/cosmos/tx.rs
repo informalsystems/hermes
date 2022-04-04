@@ -4,9 +4,9 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{Client, HttpClient, Url};
 use tonic::codegen::http::Uri;
 
-use crate::chain::cosmos::account::{AccountNumber, AccountSequence};
 use crate::chain::cosmos::encode::sign_and_encode_tx;
 use crate::chain::cosmos::estimate::estimate_tx_fees;
+use crate::chain::cosmos::types::account::{AccountNumber, AccountSequence};
 use crate::config::types::Memo;
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -48,7 +48,7 @@ pub async fn estimate_fee_and_send_tx(
     .await
 }
 
-pub async fn send_tx_with_fee(
+async fn send_tx_with_fee(
     config: &ChainConfig,
     rpc_client: &HttpClient,
     rpc_address: &Url,
@@ -75,7 +75,7 @@ pub async fn send_tx_with_fee(
 }
 
 /// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
-pub async fn broadcast_tx_sync(
+async fn broadcast_tx_sync(
     rpc_client: &HttpClient,
     rpc_address: &Url,
     data: Vec<u8>,
