@@ -777,7 +777,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         header: &AnyHeader,
     ) -> Result<(), ForeignClientError> {
         // Get latest height and time on destination chain
-        let mut status = self.dst_chain().query_status().map_err(|e| {
+        let mut status = self.dst_chain().query_application_status().map_err(|e| {
             ForeignClientError::client_update(
                 self.dst_chain.id(),
                 "failed querying latest status of the destination chain".to_string(),
@@ -803,7 +803,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             let target_dst_height = status.height.increment();
             loop {
                 thread::sleep(Duration::from_millis(300));
-                status = self.dst_chain().query_status().map_err(|e| {
+                status = self.dst_chain().query_application_status().map_err(|e| {
                     ForeignClientError::client_update(
                         self.dst_chain.id(),
                         "failed querying latest status of the destination chain".to_string(),

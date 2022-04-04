@@ -127,8 +127,8 @@ where
         self.value().ibc_version()
     }
 
-    fn query_status(&self) -> Result<StatusResponse, Error> {
-        self.value().query_status()
+    fn query_application_status(&self) -> Result<StatusResponse, Error> {
+        self.value().query_application_status()
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {

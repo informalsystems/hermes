@@ -125,8 +125,8 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_status(&self) -> Result<StatusResponse, Error> {
-        self.inner().query_status()
+    fn query_application_status(&self) -> Result<StatusResponse, Error> {
+        self.inner().query_application_status()
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {

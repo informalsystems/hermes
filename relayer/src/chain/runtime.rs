@@ -303,8 +303,8 @@ where
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryStatus { reply_to }) => {
-                            self.query_status(reply_to)?
+                        Ok(ChainRequest::QueryApplicationStatus { reply_to }) => {
+                            self.query_application_status(reply_to)?
                         }
 
                         Ok(ChainRequest::QueryClients { request, reply_to }) => {
@@ -461,9 +461,9 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_status(&self, reply_to: ReplyTo<StatusResponse>) -> Result<(), Error> {
-        let latest_timestamp = self.chain.query_status();
-        reply_to.send(latest_timestamp).map_err(Error::send)
+    fn query_application_status(&self, reply_to: ReplyTo<StatusResponse>) -> Result<(), Error> {
+        let application_status = self.chain.query_application_status();
+        reply_to.send(application_status).map_err(Error::send)
     }
 
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {

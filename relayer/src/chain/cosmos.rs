@@ -200,7 +200,7 @@ impl CosmosSdkChain {
         }
 
         // Get the latest height and convert to tendermint Height
-        let latest_height = Height::try_from(self.query_latest_height()?.revision_height)
+        let latest_height = Height::try_from(self.query_chain_latest_height()?.revision_height)
             .map_err(Error::invalid_height)?;
 
         // Check on the configured max_tx_size against the consensus parameters at latest height
@@ -917,8 +917,8 @@ impl CosmosSdkChain {
     ///
     /// Returns an error if the node is still syncing and has not caught up,
     /// ie. if `sync_info.catching_up` is `true`.
-    fn status(&self) -> Result<status::Response, Error> {
-        let mut status = self
+    fn chain_status(&self) -> Result<status::Response, Error> {
+        let status = self
             .block_on(self.rpc_client.status())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
@@ -929,20 +929,15 @@ impl CosmosSdkChain {
             ));
         }
 
-        let abci_status = self
-            .block_on(self.rpc_client.abci_info())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-        status.sync_info.latest_block_height = abci_status.last_block_height;
         Ok(status)
     }
 
     /// Query the chain's latest height
-    pub fn query_latest_height(&self) -> Result<ICSHeight, Error> {
+    pub fn query_chain_latest_height(&self) -> Result<ICSHeight, Error> {
         crate::time!("query_latest_height");
         crate::telemetry!(query, self.id(), "query_latest_height");
 
-        let status = self.status()?;
+        let status = self.chain_status()?;
 
         Ok(ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
@@ -1236,17 +1231,35 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|_| Error::ics02(ClientError::empty_prefix()))
     }
 
-    /// Query the chain status
-    fn query_status(&self) -> Result<StatusResponse, Error> {
-        crate::time!("query_status");
-        crate::telemetry!(query, self.id(), "query_status");
+    /// Query the application status
+    fn query_application_status(&self) -> Result<StatusResponse, Error> {
+        crate::time!("query_application_status");
+        crate::telemetry!(query, self.id(), "query_application_status");
 
-        let status = self.status()?;
+        // query the chain status
+        let status = self.chain_status()?;
 
-        let time = status.sync_info.latest_block_time;
+        // query the application status
+        let abci_status = self
+            .block_on(self.rpc_client.abci_info())
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+        // has the application been updated with latest block?
+        let time = if abci_status.last_block_height == status.sync_info.latest_block_height {
+            // yes, use the chain latest block time
+            status.sync_info.latest_block_time
+        } else {
+            // no, retrieve the time of the header at application latest height
+            self.block_on(self.rpc_client.commit(abci_status.last_block_height))
+                .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
+                .signed_header
+                .header
+                .time
+        };
+
         let height = ICSHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
-            revision_height: u64::from(status.sync_info.latest_block_height),
+            revision_height: u64::from(abci_status.last_block_height),
         };
 
         Ok(StatusResponse {
@@ -2433,7 +2446,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         return Err(Error::no_historical_entries(chain_id.clone()));
     }
 
-    let status = chain.status()?;
+    let status = chain.chain_status()?;
 
     // Check that transaction indexing is enabled
     if status.node_info.other.tx_index != TxIndexStatus::On {
