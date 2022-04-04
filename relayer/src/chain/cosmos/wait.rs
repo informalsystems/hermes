@@ -1,5 +1,3 @@
-use core::future::Future;
-use core::pin::Pin;
 use core::time::Duration;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
@@ -34,37 +32,18 @@ pub async fn wait_for_block_commits(
     start_time: &Instant,
     tx_sync_results: &mut Vec<TxSyncResult>,
 ) -> Result<(), Error> {
-    do_wait_for_block_commits(
-        chain_id,
-        rpc_client,
-        rpc_address,
-        rpc_timeout,
-        start_time,
-        tx_sync_results,
-    )
-    .await
-}
+    let hashes = tx_sync_results
+        .iter()
+        .map(|res| res.response.hash.to_string())
+        .join(", ");
 
-pub fn do_wait_for_block_commits<'a>(
-    chain_id: &'a ChainId,
-    rpc_client: &'a HttpClient,
-    rpc_address: &'a Url,
-    rpc_timeout: &'a Duration,
-    start_time: &'a Instant,
-    tx_sync_results: &'a mut Vec<TxSyncResult>,
-) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'a>> {
-    Box::pin(async move {
-        let hashes = tx_sync_results
-            .iter()
-            .map(|res| res.response.hash.to_string())
-            .join(", ");
+    info!(
+        id = %chain_id,
+        "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
+        hashes
+    );
 
-        info!(
-            id = %chain_id,
-            "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
-            hashes
-        );
-
+    loop {
         let elapsed = start_time.elapsed();
 
         if all_tx_results_found(tx_sync_results) {
@@ -75,54 +54,59 @@ pub fn do_wait_for_block_commits<'a>(
                 elapsed.as_millis(),
             );
 
-            Ok(())
+            return Ok(());
         } else if &elapsed > rpc_timeout {
-            Err(Error::tx_no_confirmation())
+            return Err(Error::tx_no_confirmation());
         } else {
             thread::sleep(WAIT_BACKOFF);
 
-            for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
-                // If this transaction was not committed, determine whether it was because it failed
-                // or because it hasn't been committed yet.
-                if empty_event_present(events) {
-                    // If the transaction failed, replace the events with an error,
-                    // so that we don't attempt to resolve the transaction later on.
-                    if response.code.value() != 0 {
-                        *events = vec![IbcEvent::ChainError(format!(
-                                "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                                chain_id, response.hash, response.code, response.log
-                            ))];
-
-                        // Otherwise, try to resolve transaction hash to the corresponding events.
-                    } else if let Ok(events_per_tx) = query_txs(
-                        chain_id,
-                        rpc_client,
-                        rpc_address,
-                        QueryTxRequest::Transaction(QueryTxHash(response.hash)),
-                    )
-                    .await
-                    {
-                        // If we get events back, progress was made, so we replace the events
-                        // with the new ones. in both cases we will check in the next iteration
-                        // whether or not the transaction was fully committed.
-                        if !events_per_tx.is_empty() {
-                            *events = events_per_tx;
-                        }
-                    }
-                }
+            for tx_sync_result in tx_sync_results.iter_mut() {
+                // ignore error
+                let _ =
+                    update_tx_sync_result(chain_id, rpc_client, rpc_address, tx_sync_result).await;
             }
-
-            do_wait_for_block_commits(
-                chain_id,
-                rpc_client,
-                rpc_address,
-                rpc_timeout,
-                start_time,
-                tx_sync_results,
-            )
-            .await
         }
-    })
+    }
+}
+
+async fn update_tx_sync_result(
+    chain_id: &ChainId,
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    tx_sync_result: &mut TxSyncResult,
+) -> Result<(), Error> {
+    let TxSyncResult { response, events } = tx_sync_result;
+
+    // If this transaction was not committed, determine whether it was because it failed
+    // or because it hasn't been committed yet.
+    if empty_event_present(events) {
+        // If the transaction failed, replace the events with an error,
+        // so that we don't attempt to resolve the transaction later on.
+        if response.code.value() != 0 {
+            *events = vec![IbcEvent::ChainError(format!(
+                "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                chain_id, response.hash, response.code, response.log
+            ))];
+        }
+
+        // Otherwise, try to resolve transaction hash to the corresponding events.
+        let events_per_tx = query_txs(
+            chain_id,
+            rpc_client,
+            rpc_address,
+            QueryTxRequest::Transaction(QueryTxHash(response.hash)),
+        )
+        .await?;
+
+        // If we get events back, progress was made, so we replace the events
+        // with the new ones. in both cases we will check in the next iteration
+        // whether or not the transaction was fully committed.
+        if !events_per_tx.is_empty() {
+            *events = events_per_tx;
+        }
+    }
+
+    Ok(())
 }
 
 fn empty_event_present(events: &[IbcEvent]) -> bool {
