@@ -47,14 +47,14 @@ pub struct CreateChannelCommand {
         required = true,
         help = "Identifier of the side `a` chain for the new channel"
     )]
-    chain_a_id: ChainId,
+    chain_a: ChainId,
 
     #[clap(
         short,
         long,
         help = "Identifier of the side `b` chain for the new channel"
     )]
-    chain_b_id: Option<ChainId>,
+    chain_b: Option<ChainId>,
 
     /// Identifier of the connection on chain `a` to use in creating the new channel.
     connection_a: Option<ConnectionId>,
