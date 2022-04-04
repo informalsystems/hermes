@@ -45,19 +45,19 @@ num-traits = { version = "0.2.14", default-features = false }
 derive_more = { version = "0.99.17", default-features = false, features = ["from", "display"] }
 
 [dependencies.tendermint]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "=0.23.5"
+version = "=0.23.6"
 optional = true
 default-features = false
 
@@ -67,8 +67,8 @@ tracing-subscriber = { version = "0.3.9", features = ["fmt", "env-filter", "json
 test-log = { version = "0.2.10", features = ["trace"] }
 modelator = "0.4.2"
 sha2 = { version = "0.10.2" }
-tendermint-rpc = { version = "=0.23.5", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.23.5" } # Needed for generating (synthetic) light blocks.
+tendermint-rpc = { version = "=0.23.6", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "=0.23.6" } # Needed for generating (synthetic) light blocks.
 
 [[test]]
 name = "mbt"

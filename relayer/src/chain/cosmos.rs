@@ -304,7 +304,7 @@ impl CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_consensus_params");
 
         Ok(self
-            .block_on(self.rpc_client.genesis())
+            .block_on(self.rpc_client.genesis::<serde_json::Value>())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
             .consensus_params)
     }
