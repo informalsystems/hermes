@@ -12,8 +12,6 @@ use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
 use tracing::{debug, error, info, trace, warn};
 
-use crate::chain::tx::TrackedMsgs;
-use crate::error::Error as RelayerError;
 use flex_error::define_error;
 use ibc::core::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
@@ -28,6 +26,7 @@ use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
 use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
+use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::downcast;
 use ibc::events::{IbcEvent, WithBlockDataType};
@@ -36,9 +35,11 @@ use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
-use tendermint_light_client_verifier::types::TrustThreshold;
 
+use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
+use crate::chain::tx::TrackedMsgs;
+use crate::error::Error as RelayerError;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
@@ -277,6 +278,17 @@ impl HasExpiredOrFrozenError for ForeignClientError {
     }
 }
 
+/// User-supplied options for the [`ForeignClient::build_create_client`] operation.
+///
+/// Currently, the parameters are specific to the Tendermint-based chains.
+/// A future revision will bring differentiated options for other chain types.
+#[derive(Debug, Default)]
+pub struct CreateOptions {
+    pub max_clock_drift: Option<Duration>,
+    pub trusting_period: Option<Duration>,
+    pub trust_threshold: Option<TrustThreshold>,
+}
+
 #[derive(Clone, Debug)]
 pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
     /// The identifier of this client. The host chain determines this id upon client creation,
@@ -288,16 +300,6 @@ pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
 
     /// A handle to the chain whose headers this client is verifying, aka the source chain.
     pub src_chain: SrcChain,
-}
-
-/// Optional onfiguration parameters for the
-/// CreateClient command. If set the options override the defaults
-/// taken from the configuration of the destination chain.
-#[derive(Debug, Default)]
-pub struct CreateParams {
-    pub clock_drift: Option<Duration>,
-    pub trusting_period: Option<Duration>,
-    pub trust_threshold: Option<TrustThreshold>,
 }
 
 /// Used in Output messages.
@@ -498,7 +500,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Lower-level interface for preparing a message to create a client.
     pub fn build_create_client(
         &self,
-        params: &CreateParams,
+        options: CreateOptions,
     ) -> Result<MsgCreateAnyClient, ForeignClientError> {
         // Get signer
         let signer = self.dst_chain.get_signer().map_err(|e| {
@@ -521,29 +523,27 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let mut config = self.dst_chain.config().map_err(|e| {
+        // Calculate client state settings from the chain configurations and
+        // optional user overrides.
+        let src_config = self.src_chain.config().map_err(|e| {
             ForeignClientError::client_create(
                 self.src_chain.id(),
-                format!(
-                    "failed while querying dst chain ({}) for its configuration",
-                    self.dst_chain.id()
-                ),
+                "failed while querying the source chain for configuration".to_string(),
                 e,
             )
         })?;
-        if let Some(d) = params.clock_drift {
-            config.clock_drift = d;
-        }
-        if let Some(p) = params.trusting_period {
-            config.trusting_period = Some(p);
-        }
-        if let Some(t) = params.trust_threshold {
-            config.trust_threshold = t;
-        }
+        let dst_config = self.dst_chain.config().map_err(|e| {
+            ForeignClientError::client_create(
+                self.dst_chain.id(),
+                "failed while querying the destination chain for configuration".to_string(),
+                e,
+            )
+        })?;
+        let settings = ClientSettings::for_create_command(options, &src_config, &dst_config);
 
         let client_state = self
             .src_chain
-            .build_client_state(latest_height, config)
+            .build_client_state(latest_height, settings)
             .map_err(|e| {
                 ForeignClientError::client_create(
                     self.src_chain.id(),
@@ -579,9 +579,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Returns the identifier of the newly created client.
     pub fn build_create_client_and_send(
         &self,
-        params: &CreateParams,
+        options: CreateOptions,
     ) -> Result<IbcEvent, ForeignClientError> {
-        let new_msg = self.build_create_client(params)?;
+        let new_msg = self.build_create_client(options)?;
 
         let res = self
             .dst_chain
@@ -604,7 +604,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
     fn create(&mut self) -> Result<(), ForeignClientError> {
         let event = self
-            .build_create_client_and_send(&CreateParams::default())
+            .build_create_client_and_send(CreateOptions::default())
             .map_err(|e| {
                 error!("[{}]  failed CreateClient: {}", self, e);
                 e
@@ -1464,7 +1464,7 @@ mod test {
         let b_client = ForeignClient::restore(ClientId::default(), b_chain, a_chain);
 
         // Create the client on chain a
-        let res = a_client.build_create_client_and_send(&Default::default());
+        let res = a_client.build_create_client_and_send(Default::default());
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain a) with error {:?}",
@@ -1473,7 +1473,7 @@ mod test {
         assert!(matches!(res.unwrap(), IbcEvent::CreateClient(_)));
 
         // Create the client on chain b
-        let res = b_client.build_create_client_and_send(&Default::default());
+        let res = b_client.build_create_client_and_send(Default::default());
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain b) with error {:?}",

@@ -19,23 +19,22 @@ use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
+use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::Sequence;
-
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
 use crate::core::ics23_commitment::merkle::{apply_prefix, MerkleProof};
 use crate::core::ics24_host::identifier::ConnectionId;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
-use crate::core::ics24_host::Path;
-use crate::prelude::*;
-use crate::Height;
-
 use crate::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
+use crate::core::ics24_host::Path;
 use crate::downcast;
+use crate::prelude::*;
+use crate::Height;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TendermintClient {
@@ -313,7 +312,7 @@ impl ClientDef for TendermintClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        ack: Vec<u8>,
+        ack: Acknowledgement,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
@@ -329,7 +328,7 @@ impl ClientDef for TendermintClient {
             proof,
             root,
             ack_path,
-            ack,
+            ack.into_bytes(),
         )
     }
 

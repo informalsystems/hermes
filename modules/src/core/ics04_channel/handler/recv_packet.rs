@@ -13,7 +13,7 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
-pub struct RecvPacketResult {
+pub struct RecvPacketSuccess {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub seq: Sequence,
@@ -21,7 +21,13 @@ pub struct RecvPacketResult {
     pub receipt: Option<Receipt>,
 }
 
-pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
+#[derive(Clone, Debug)]
+pub enum RecvPacketResult {
+    Success(RecvPacketSuccess),
+    NoOp,
+}
+
+pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
@@ -87,20 +93,26 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         let next_seq_recv = ctx
             .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
-        if packet.sequence != next_seq_recv {
+        if packet.sequence < next_seq_recv {
+            output.emit(IbcEvent::ReceivePacket(ReceivePacket {
+                height: Height::zero(),
+                packet: msg.packet.clone(),
+            }));
+            return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
+        } else if packet.sequence != next_seq_recv {
             return Err(Error::invalid_packet_sequence(
                 packet.sequence,
                 next_seq_recv,
             ));
         }
 
-        PacketResult::Recv(RecvPacketResult {
+        PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
             port_id: packet.source_port.clone(),
             channel_id: packet.source_channel.clone(),
             seq: packet.sequence,
             seq_number: next_seq_recv.increment(),
             receipt: None,
-        })
+        }))
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
             packet.source_port.clone(),
@@ -109,16 +121,22 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
 
         match packet_rec {
-            Ok(_receipt) => return Err(Error::packet_already_received(packet.sequence)),
+            Ok(_receipt) => {
+                output.emit(IbcEvent::ReceivePacket(ReceivePacket {
+                    height: Height::zero(),
+                    packet: msg.packet.clone(),
+                }));
+                return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
+            }
             Err(e) if e.detail() == Error::packet_receipt_not_found(packet.sequence).detail() => {
                 // store a receipt that does not contain any data
-                PacketResult::Recv(RecvPacketResult {
+                PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
                     port_id: packet.source_port.clone(),
                     channel_id: packet.source_channel.clone(),
                     seq: packet.sequence,
                     seq_number: 1.into(),
                     receipt: Some(Receipt::Ok),
-                })
+                }))
             }
             Err(_) => return Err(Error::implementation_specific()),
         }
@@ -128,7 +146,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     output.emit(IbcEvent::ReceivePacket(ReceivePacket {
         height: Height::zero(),
-        packet: msg.packet,
+        packet: msg.packet.clone(),
     }));
 
     Ok(output.with_result(result))
@@ -277,7 +295,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = process(&test.ctx, test.msg.clone());
+            let res = process(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {

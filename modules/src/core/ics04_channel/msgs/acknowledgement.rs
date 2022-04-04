@@ -12,13 +12,33 @@ use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 
+/// A generic Acknowledgement type that modules may interpret as they like.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Acknowledgement(Vec<u8>);
+
+impl Acknowledgement {
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.0
+    }
+
+    pub fn from_bytes(bytes: Vec<u8>) -> Self {
+        bytes.into()
+    }
+}
+
+impl From<Vec<u8>> for Acknowledgement {
+    fn from(bytes: Vec<u8>) -> Self {
+        Self(bytes)
+    }
+}
+
 ///
 /// Message definition for packet acknowledgements.
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgAcknowledgement {
     pub packet: Packet,
-    pub acknowledgement: Vec<u8>, // TODO(romac): Introduce a newtype for this
+    pub acknowledgement: Acknowledgement,
     pub proofs: Proofs,
     pub signer: Signer,
 }
@@ -26,7 +46,7 @@ pub struct MsgAcknowledgement {
 impl MsgAcknowledgement {
     pub fn new(
         packet: Packet,
-        acknowledgement: Vec<u8>,
+        acknowledgement: Acknowledgement,
         proofs: Proofs,
         signer: Signer,
     ) -> MsgAcknowledgement {
@@ -36,6 +56,14 @@ impl MsgAcknowledgement {
             proofs,
             signer,
         }
+    }
+
+    pub fn acknowledgement(&self) -> &Acknowledgement {
+        &self.acknowledgement
+    }
+
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
     }
 }
 
@@ -78,7 +106,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
                 .packet
                 .ok_or_else(Error::missing_packet)?
                 .try_into()?,
-            acknowledgement: raw_msg.acknowledgement,
+            acknowledgement: raw_msg.acknowledgement.into(),
             signer: raw_msg.signer.into(),
             proofs,
         })
@@ -89,7 +117,7 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
     fn from(domain_msg: MsgAcknowledgement) -> Self {
         RawMsgAcknowledgement {
             packet: Some(domain_msg.packet.into()),
-            acknowledgement: domain_msg.acknowledgement,
+            acknowledgement: domain_msg.acknowledgement.into_bytes(),
             signer: domain_msg.signer.to_string(),
             proof_height: Some(domain_msg.proofs.height().into()),
             proof_acked: domain_msg.proofs.object_proof().clone().into(),

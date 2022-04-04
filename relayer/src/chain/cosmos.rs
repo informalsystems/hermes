@@ -11,7 +11,6 @@ use std::{thread, time::Instant};
 use bitcoin::hashes::hex::ToHex;
 use ibc_proto::google::protobuf::Any;
 use tendermint::block::Height;
-use tendermint::consensus::Params as ConsensusParams;
 use tendermint::{
     abci::{Event, Path as TendermintABCIPath},
     node::info::TxIndexStatus,
@@ -63,6 +62,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
+use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::tx::query_txs;
@@ -84,6 +84,7 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 
 pub mod batch;
+pub mod client;
 pub mod compatibility;
 pub mod encode;
 pub mod estimate;
@@ -257,18 +258,6 @@ impl CosmosSdkChain {
         crate::time!("historical_entries");
 
         self.query_staking_params().map(|p| p.historical_entries)
-    }
-
-    /// Query the consensus parameters via an RPC query
-    /// Specific to the SDK and used only for Tendermint client create
-    pub fn query_consensus_params(&self) -> Result<ConsensusParams, Error> {
-        crate::time!("query_consensus_params");
-        crate::telemetry!(query, self.id(), "query_consensus_params");
-
-        Ok(self
-            .block_on(self.rpc_client.genesis())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
-            .consensus_params)
     }
 
     /// Run a future to completion on the Tokio runtime.
@@ -1498,19 +1487,21 @@ impl ChainEndpoint for CosmosSdkChain {
     fn build_client_state(
         &self,
         height: ICSHeight,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
+        let ClientSettings::Tendermint(settings) = settings;
         let unbonding_period = self.unbonding_period()?;
-
-        let max_clock_drift = calculate_client_state_drift(self.config(), &dst_config);
+        let trusting_period = settings
+            .trusting_period
+            .unwrap_or_else(|| self.trusting_period(unbonding_period));
 
         // Build the client state.
         ClientState::new(
             self.id().clone(),
-            self.config.trust_threshold.into(),
-            self.trusting_period(unbonding_period),
+            settings.trust_threshold,
+            trusting_period,
             unbonding_period,
-            max_clock_drift,
+            settings.max_clock_drift,
             height,
             self.config.proof_specs.clone(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
@@ -1635,20 +1626,6 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     Ok(())
-}
-
-/// Compute the `max_clock_drift` for a (new) client state
-/// as a function of the configuration of the source chain
-/// and the destination chain configuration.
-///
-/// The client state clock drift must account for destination
-/// chain block frequency and clock drift on source and dest.
-/// https://github.com/informalsystems/ibc-rs/issues/1445
-fn calculate_client_state_drift(
-    src_chain_config: &ChainConfig,
-    dst_chain_config: &ChainConfig,
-) -> Duration {
-    src_chain_config.clock_drift + dst_chain_config.clock_drift + dst_chain_config.max_block_time
 }
 
 #[cfg(test)]
