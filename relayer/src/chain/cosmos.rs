@@ -14,13 +14,10 @@ use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
+use tendermint::abci::{Code, Event, Path as TendermintABCIPath};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
-use tendermint::consensus::Params as ConsensusParams;
-use tendermint::{
-    abci::{Code, Event, Path as TendermintABCIPath},
-    node::info::TxIndexStatus,
-};
+use tendermint::node::info::TxIndexStatus;
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
@@ -295,18 +292,6 @@ impl CosmosSdkChain {
         crate::time!("historical_entries");
 
         self.query_staking_params().map(|p| p.historical_entries)
-    }
-
-    /// Query the consensus parameters via an RPC query
-    /// Specific to the SDK and used only for Tendermint client create
-    pub fn query_consensus_params(&self) -> Result<ConsensusParams, Error> {
-        crate::time!("query_consensus_params");
-        crate::telemetry!(query, self.id(), "query_consensus_params");
-
-        Ok(self
-            .block_on(self.rpc_client.genesis::<serde_json::Value>())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
-            .consensus_params)
     }
 
     /// Run a future to completion on the Tokio runtime.
