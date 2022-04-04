@@ -65,6 +65,8 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+    use crate::core::ics03_connection::context::ConnectionReader;
+    use crate::core::ics03_connection::version::Version;
     use crate::prelude::*;
 
     use test_log::test;
@@ -84,24 +86,41 @@ mod tests {
             name: String,
             ctx: MockContext,
             msg: ConnectionMsg,
+            expected_versions: Vec<Version>,
             want_pass: bool,
         }
 
-        let msg_conn_init =
+        let msg_conn_init_default =
             MsgConnectionOpenInit::try_from(get_dummy_raw_msg_conn_open_init()).unwrap();
-        let context = MockContext::default();
+        let msg_conn_init_no_version = MsgConnectionOpenInit {
+            version: None,
+            ..msg_conn_init_default.clone()
+        };
+        let default_context = MockContext::default();
+        let good_context = default_context
+            .clone()
+            .with_client(&msg_conn_init_default.client_id, Height::new(0, 10));
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails because no client exists in the context".to_string(),
-                ctx: context.clone(),
-                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init.clone()),
+                ctx: default_context.clone(),
+                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_default.clone()),
+                expected_versions: vec![msg_conn_init_default.version.clone().unwrap()],
                 want_pass: false,
             },
             Test {
+                name: "No version in MsgConnectionOpenInit msg".to_string(),
+                ctx: good_context.clone(),
+                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_no_version),
+                expected_versions: good_context.get_compatible_versions(),
+                want_pass: true,
+            },
+            Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(&msg_conn_init.client_id, Height::new(0, 10)),
-                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init.clone()),
+                ctx: good_context.clone(),
+                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_default.clone()),
+                expected_versions: vec![msg_conn_init_default.version.clone().unwrap()],
                 want_pass: true,
             },
         ]
@@ -113,14 +132,6 @@ mod tests {
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
-                    assert!(
-                        test.want_pass,
-                        "conn_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
-                        test.name,
-                        test.msg.clone(),
-                        test.ctx.clone()
-                    );
-
                     assert!(!proto_output.events.is_empty()); // Some events must exist.
 
                     // The object in the output is a ConnectionEnd, should have init state.
@@ -130,6 +141,17 @@ mod tests {
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenInitConnection(_)));
                     }
+
+                    assert_eq!(res.connection_end.versions(), test.expected_versions);
+
+                    // This needs to be last
+                    assert!(
+                        test.want_pass,
+                        "conn_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        test.name,
+                        test.msg.clone(),
+                        test.ctx.clone()
+                    );
                 }
                 Err(e) => {
                     assert!(
