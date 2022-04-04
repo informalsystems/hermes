@@ -172,9 +172,6 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                     trace!("transaction is not yet committed: {} ", tx_hashes);
 
-                    // As a hacky test, set this timeout to a very small value
-                    // (or just make this an `if true` check)
-                    // do an ft transfer with a small timeout with 1 or 2 blocks
                     if submit_time.elapsed() > timeout {
                         // The submission time for the transaction has exceeded the
                         // timeout threshold. Returning Outcome::Timeout for the
