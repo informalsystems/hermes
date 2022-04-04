@@ -57,7 +57,6 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         return Err(Error::frozen_client(connection_end.client_id().clone()));
     }
 
-    // check if packet height is newer than the height of the latest client state on the receiving chain
     let latest_height = client_state.latest_height();
 
     if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
@@ -67,17 +66,13 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         ));
     }
 
-    //check if packet timestamp is newer than the timestamp of the latest consensus state of the receiving chain
     let consensus_state = ctx.client_consensus_state(&client_id, latest_height)?;
-
     let latest_timestamp = consensus_state.timestamp();
-
     let packet_timestamp = packet.timeout_timestamp;
     if let Expiry::Expired = latest_timestamp.check_expiry(&packet_timestamp) {
         return Err(Error::low_packet_timestamp());
     }
 
-    // check sequence number
     let next_seq_send =
         ctx.get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
