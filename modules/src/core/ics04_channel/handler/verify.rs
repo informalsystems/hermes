@@ -5,6 +5,7 @@ use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
+use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::{Packet, Sequence};
 use crate::prelude::*;
 use crate::proofs::Proofs;
@@ -99,7 +100,7 @@ pub fn verify_packet_acknowledgement_proofs(
     ctx: &dyn ChannelReader,
     height: Height,
     packet: &Packet,
-    acknowledgement: Vec<u8>,
+    acknowledgement: Acknowledgement,
     connection_end: &ConnectionEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {

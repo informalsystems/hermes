@@ -5,10 +5,10 @@ use core::marker::PhantomData;
 pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
 
 #[derive(Clone, Debug)]
-pub struct HandlerOutput<T> {
+pub struct HandlerOutput<T, Event = IbcEvent> {
     pub result: T,
     pub log: Vec<String>,
-    pub events: Vec<IbcEvent>,
+    pub events: Vec<Event>,
 }
 
 impl<T> HandlerOutput<T> {
@@ -57,5 +57,15 @@ impl<T> HandlerOutputBuilder<T> {
             log: self.log,
             events: self.events,
         }
+    }
+
+    pub fn merge(&mut self, other: HandlerOutput<()>) {
+        let HandlerOutput {
+            mut log,
+            mut events,
+            ..
+        } = other;
+        self.log.append(&mut log);
+        self.events.append(&mut events);
     }
 }

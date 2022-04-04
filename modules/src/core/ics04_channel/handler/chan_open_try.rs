@@ -15,7 +15,7 @@ use crate::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
-    msg: MsgChannelOpenTry,
+    msg: &MsgChannelOpenTry,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -165,7 +165,7 @@ mod tests {
     use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, State};
-    use crate::core::ics04_channel::handler::{channel_dispatch, ChannelResult};
+    use crate::core::ics04_channel::handler::channel_dispatch;
     use crate::core::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::core::ics04_channel::msgs::ChannelMsg;
@@ -420,25 +420,25 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = channel_dispatch(&test.ctx, test.msg.clone());
+            let res = channel_dispatch(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
-                Ok(handler_output) => {
+                Ok((proto_output, res)) => {
                     assert!(
                         test.want_pass,
                         "chan_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
-                        test.msg.clone(),
+                        test.msg,
                         test.ctx.clone()
                     );
 
-                    assert!(!handler_output.events.is_empty()); // Some events must exist.
+                    let proto_output = proto_output.with_result(());
+                    assert!(!proto_output.events.is_empty()); // Some events must exist.
 
                     // The object in the output is a channel end, should have TryOpen state.
-                    let res: ChannelResult = handler_output.result;
                     assert_eq!(res.channel_end.state().clone(), State::TryOpen);
 
-                    for e in handler_output.events.iter() {
+                    for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenTryChannel(_)));
                     }
                 }
