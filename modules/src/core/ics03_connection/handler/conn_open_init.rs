@@ -20,11 +20,22 @@ pub(crate) fn process(
     // An IBC client running on the local (host) chain should exist.
     ctx.client_state(&msg.client_id)?;
 
+    let versions = match msg.version {
+        Some(version) => {
+            if ctx.get_compatible_versions().contains(&version) {
+                Ok(vec![version])
+            } else {
+                Err(Error::version_not_supported(version))
+            }
+        }
+        None => Ok(ctx.get_compatible_versions()),
+    }?;
+
     let new_connection_end = ConnectionEnd::new(
         State::Init,
         msg.client_id.clone(),
         msg.counterparty.clone(),
-        ctx.get_compatible_versions(),
+        versions,
         msg.delay_period,
     );
 
