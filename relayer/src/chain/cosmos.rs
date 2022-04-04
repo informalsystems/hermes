@@ -10,7 +10,6 @@ use std::{thread, time::Instant};
 
 use bitcoin::hashes::hex::ToHex;
 use ibc_proto::google::protobuf::Any;
-use itertools::Itertools;
 use tendermint::block::Height;
 use tendermint::consensus::Params as ConsensusParams;
 use tendermint::{
@@ -24,7 +23,7 @@ use tendermint_rpc::{
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{info, span, trace, warn, Level};
+use tracing::{span, warn, Level};
 
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
@@ -48,7 +47,7 @@ use ibc::core::ics24_host::path::{
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::events::IbcEvent;
 use ibc::query::QueryBlockRequest;
-use ibc::query::{QueryTxHash, QueryTxRequest};
+use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
@@ -73,7 +72,7 @@ use crate::chain::cosmos::query::{
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas_config::DEFAULT_MAX_GAS;
-use crate::chain::cosmos::wait::wait_for_block_commits;
+use crate::chain::cosmos::wait::{wait_for_block_commits, TxSyncResult};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{QueryResponse, StatusResponse};
@@ -83,7 +82,6 @@ use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
-use crate::util::retry::{retry_with_index, RetryResult};
 
 pub mod batch;
 pub mod compatibility;
@@ -413,69 +411,18 @@ impl CosmosSdkChain {
         &self,
         mut tx_sync_results: Vec<TxSyncResult>,
     ) -> Result<Vec<TxSyncResult>, Error> {
-        let hashes = tx_sync_results
-            .iter()
-            .map(|res| res.response.hash.to_string())
-            .join(", ");
+        let runtime = self.rt.clone();
 
-        info!(
-            id = %self.id(),
-            "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
-            hashes
-        );
+        runtime.block_on(wait_for_block_commits(
+            self.id(),
+            &self.rpc_client,
+            &self.config.rpc_addr,
+            &self.config.rpc_timeout,
+            &Instant::now(),
+            &mut tx_sync_results,
+        ))?;
 
-        // Wait a little bit initially
-        thread::sleep(Duration::from_millis(200));
-
-        let start = Instant::now();
-        let result = retry_with_index(wait_for_block_commits(self.config.rpc_timeout), |index| {
-            if all_tx_results_found(&tx_sync_results) {
-                trace!(
-                    id = %self.id(),
-                    "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
-                    tx_sync_results.len(),
-                    index,
-                    start.elapsed().as_millis()
-                );
-
-                // All transactions confirmed
-                return RetryResult::Ok(());
-            }
-
-            for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
-                // If this transaction was not committed, determine whether it was because it failed
-                // or because it hasn't been committed yet.
-                if empty_event_present(events) {
-                    // If the transaction failed, replace the events with an error,
-                    // so that we don't attempt to resolve the transaction later on.
-                    if response.code.value() != 0 {
-                        *events = vec![IbcEvent::ChainError(format!(
-                                "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                                self.id(), response.hash, response.code, response.log
-                            ))];
-
-                        // Otherwise, try to resolve transaction hash to the corresponding events.
-                    } else if let Ok(events_per_tx) =
-                        self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
-                    {
-                        // If we get events back, progress was made, so we replace the events
-                        // with the new ones. in both cases we will check in the next iteration
-                        // whether or not the transaction was fully committed.
-                        if !events_per_tx.is_empty() {
-                            *events = events_per_tx;
-                        }
-                    }
-                }
-            }
-            RetryResult::Retry(index)
-        });
-
-        match result {
-            // All transactions confirmed
-            Ok(()) => Ok(tx_sync_results),
-            // Did not find confirmation
-            Err(_) => Err(Error::tx_no_confirmation()),
-        }
+        Ok(tx_sync_results)
     }
 
     fn trusting_period(&self, unbonding_period: Duration) -> Duration {
@@ -515,16 +462,6 @@ impl CosmosSdkChain {
             revision_height: u64::from(status.sync_info.latest_block_height),
         })
     }
-}
-
-fn empty_event_present(events: &[IbcEvent]) -> bool {
-    events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
-}
-
-fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
-    tx_sync_results
-        .iter()
-        .all(|r| !empty_event_present(&r.events))
 }
 
 impl ChainEndpoint for CosmosSdkChain {
@@ -1655,13 +1592,6 @@ fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
         .split('-')
         .last()
         .and_then(|e| e.parse::<u64>().ok())
-}
-
-pub struct TxSyncResult {
-    // the broadcast_tx_sync response
-    response: Response,
-    // the events generated by a Tx once executed
-    events: Vec<IbcEvent>,
 }
 
 fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
