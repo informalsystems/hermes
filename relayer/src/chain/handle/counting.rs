@@ -35,6 +35,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use tracing::debug;
 
+use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{HealthCheck, StatusResponse};
@@ -337,10 +338,10 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        options: ClientSettings,
     ) -> Result<AnyClientState, Error> {
         self.inc_metric("build_client_state");
-        self.inner().build_client_state(height, dst_config)
+        self.inner().build_client_state(height, options)
     }
 
     /// Constructs a consensus state at the given height
