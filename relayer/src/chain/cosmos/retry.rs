@@ -20,15 +20,15 @@ use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 
 // Maximum number of retries for send_tx in the case of
 // an account sequence mismatch at broadcast step.
-pub const MAX_ACCOUNT_SEQUENCE_RETRY: u64 = 1;
+const MAX_ACCOUNT_SEQUENCE_RETRY: u64 = 1;
 
 // Backoff multiplier to apply while retrying in the case
 // of account sequence mismatch.
-pub const BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY: u64 = 300;
+const BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY: u64 = 300;
 
 // The error "incorrect account sequence" is defined as the unique error code 32 in cosmos-sdk:
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
-pub const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
+const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
 
 /// Try to `send_tx` with retry on account sequence error.
 /// An account sequence error can occur if the account sequence that
