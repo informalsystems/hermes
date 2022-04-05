@@ -106,7 +106,7 @@ define_error! {
 
         NoEventInResponse
             |_| {
-                format!("no recognized event in query tx response")
+                "no recognized event in query tx response"
             },
 
         InvalidChannelState
