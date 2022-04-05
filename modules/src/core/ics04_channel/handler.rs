@@ -7,7 +7,9 @@ use crate::core::ics04_channel::msgs::ChannelMsg;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::core::ics26_routing::context::{Ics26Context, ModuleId, ModuleOutput, Router};
+use crate::core::ics26_routing::context::{
+    Ics26Context, ModuleId, ModuleOutput, OnRecvPacketAck, Router,
+};
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 
 pub mod acknowledgement;
@@ -212,18 +214,12 @@ where
 
     match msg {
         PacketMsg::RecvPacket(msg) => {
-            let (ack, write_fn) = cb.on_recv_packet(module_output, &msg.packet, &msg.signer);
-            match ack {
-                None => {}
-                Some(ack) => {
-                    if ack.success() {
-                        if let Some(write_fn) = write_fn {
-                            write_fn(cb.as_any_mut());
-                        }
-                    }
-
-                    // TODO(hu55a1n1): write ack
+            let result = cb.on_recv_packet(module_output, &msg.packet, &msg.signer);
+            match result {
+                OnRecvPacketAck::Nil(write_fn) | OnRecvPacketAck::Successful(_, write_fn) => {
+                    write_fn(cb.as_any_mut());
                 }
+                OnRecvPacketAck::Failed(_) => {}
             }
         }
         PacketMsg::AckPacket(msg) => cb.on_acknowledgement_packet(

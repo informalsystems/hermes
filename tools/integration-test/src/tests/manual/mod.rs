@@ -7,8 +7,8 @@
     are only enabled when the `"manual"` feature flag is enabled manually.
 
     Any tests that require manual verification should be placed here.
-    It is also fine to use [`suspend`](crate::suspend) inside the manual test,
-    as the CI is not going to run the test.
+    It is also fine to use [`suspend`](ibc_test_framework::util::suspend::suspend)
+    inside the manual test, as the CI is not going to run the test.
 */
 
 pub mod simulation;

@@ -39,8 +39,4 @@ impl AsRef<[u8]> for Acknowledgement {
     }
 }
 
-impl AckTrait for Acknowledgement {
-    fn success(&self) -> bool {
-        matches!(self, Self::Success(_))
-    }
-}
+impl AckTrait for Acknowledgement {}

@@ -21,7 +21,7 @@ pub struct InterchainAccountPacketData {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CosmosTx {
     #[prost(message, repeated, tag = "1")]
-    pub messages: ::prost::alloc::vec::Vec<::prost_types::Any>,
+    pub messages: ::prost::alloc::vec::Vec<super::super::super::super::google::protobuf::Any>,
 }
 /// Type defines a classification of message issued from a controller chain to its associated interchain accounts
 /// host

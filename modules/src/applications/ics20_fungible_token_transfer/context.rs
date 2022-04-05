@@ -10,7 +10,7 @@ use crate::core::ics05_port::capabilities::{Capability, ChannelCapability};
 use crate::core::ics05_port::context::{PortKeeper, PortReader};
 use crate::core::ics05_port::error::Error as PortError;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::{Acknowledgement, DeferredWriteResult};
+use crate::core::ics26_routing::context::OnRecvPacketAck;
 use crate::prelude::*;
 use crate::signer::Signer;
 
@@ -180,8 +180,8 @@ pub fn on_recv_packet(
     _ctx: &impl Ics20Context,
     _packet: &Packet,
     _relayer: &Signer,
-) -> DeferredWriteResult<dyn Acknowledgement> {
-    (None, None)
+) -> OnRecvPacketAck {
+    OnRecvPacketAck::Nil(Box::new(|_| {}))
 }
 
 pub fn on_acknowledgement_packet(

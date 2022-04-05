@@ -1,8 +1,6 @@
-use alloc::sync::Arc;
 use ibc_relayer::supervisor::SupervisorOptions;
 use std::error::Error;
 use std::io;
-use std::sync::RwLock;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
@@ -31,7 +29,6 @@ pub struct StartCmd {
 impl Runnable for StartCmd {
     fn run(&self) {
         let config = (*app_config()).clone();
-        let config = Arc::new(RwLock::new(config));
 
         let supervisor_handle = make_supervisor::<CachingChainHandle>(config, self.full_scan)
             .unwrap_or_else(|e| {
@@ -62,7 +59,7 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     use signal_hook::{consts::signal::*, iterator::Signals};
 
     let sigs = vec![
-        SIGHUP,  // Reload of configuration
+        SIGHUP,  // Reload of configuration (disabled)
         SIGUSR1, // Dump state
     ];
 
@@ -71,9 +68,12 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     std::thread::spawn(move || {
         for signal in &mut signals {
             match signal {
-                SIGHUP => warn!("configuration reloading via SIGHUP has been disabled. The signal handler will be removed in the future"),
+                SIGHUP => warn!(
+                    "configuration reloading via SIGHUP has been disabled, \
+                     the signal handler will be removed in the future"
+                ),
                 SIGUSR1 => {
-                    info!("Dumping state (triggered by SIGUSR1)");
+                    info!("dumping state (triggered by SIGUSR1)");
 
                     let (tx, rx) = crossbeam_channel::bounded(1);
                     tx_cmd.try_send(SupervisorCmd::DumpState(tx)).unwrap();
@@ -103,8 +103,8 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
 }
 
 #[cfg(feature = "rest-server")]
-fn spawn_rest_server(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
-    let rest = config.read().expect("poisoned lock").rest.clone();
+fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
+    let rest = config.rest.clone();
 
     if rest.enabled {
         let rest_config = ibc_relayer_rest::Config::new(rest.host, rest.port);
@@ -117,8 +117,8 @@ fn spawn_rest_server(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
 }
 
 #[cfg(not(feature = "rest-server"))]
-fn spawn_rest_server(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
-    let rest = config.read().expect("poisoned lock").rest.clone();
+fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
+    let rest = config.rest.clone();
 
     if rest.enabled {
         warn!(
@@ -133,12 +133,10 @@ fn spawn_rest_server(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
 }
 
 #[cfg(feature = "telemetry")]
-fn spawn_telemetry_server(
-    config: &Arc<RwLock<Config>>,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+fn spawn_telemetry_server(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
     let state = ibc_telemetry::global();
 
-    let telemetry = config.read().expect("poisoned lock").telemetry.clone();
+    let telemetry = config.telemetry.clone();
     if telemetry.enabled {
         match ibc_telemetry::spawn((telemetry.host, telemetry.port), state.clone()) {
             Ok((addr, _)) => {
@@ -172,7 +170,7 @@ fn spawn_telemetry_server(
 }
 
 fn make_supervisor<Chain: ChainHandle>(
-    config: Arc<RwLock<Config>>,
+    config: Config,
     force_full_scan: bool,
 ) -> Result<SupervisorHandle, Box<dyn Error + Send + Sync>> {
     let registry = SharedRegistry::<Chain>::new(config.clone());

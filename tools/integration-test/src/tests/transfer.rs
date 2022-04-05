@@ -1,8 +1,6 @@
-use crate::framework::binary::chain::run_self_connected_binary_chain_test;
-use crate::framework::binary::channel::RunBinaryChannelTest;
-use crate::ibc::denom::derive_ibc_denom;
-use crate::prelude::*;
-use crate::util::random::random_u64_range;
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::util::random::random_u64_range;
 
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
@@ -15,7 +13,28 @@ fn test_ibc_transfer() -> Result<(), Error> {
 */
 #[test]
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
-    run_self_connected_binary_chain_test(&RunBinaryChannelTest::new(&IbcTransferTest))
+    run_self_connected_binary_chain_test(&RunBinaryConnectionTest::new(&RunBinaryChannelTest::new(
+        &RunWithSupervisor::new(&IbcTransferTest),
+    )))
+}
+
+/**
+   Run the IBC transfer test as an N-ary chain test case with SIZE=2.
+
+   The work on N-ary chain is currently still work in progress, so we put
+   this behind the "experimental" feature flag so that normal developers
+   are not obligated to understand how this test works yet.
+*/
+#[test]
+fn test_nary_ibc_transfer() -> Result<(), Error> {
+    run_binary_as_nary_channel_test(&IbcTransferTest)
+}
+
+#[test]
+fn test_self_connected_nary_ibc_transfer() -> Result<(), Error> {
+    run_self_connected_nary_chain_test(&RunNaryConnectionTest::new(&RunNaryChannelTest::new(
+        &RunBinaryAsNaryChannelTest::new(&IbcTransferTest),
+    )))
 }
 
 pub struct IbcTransferTest;
@@ -26,6 +45,7 @@ impl BinaryChannelTest for IbcTransferTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -71,13 +91,13 @@ impl BinaryChannelTest for IbcTransferTest {
         );
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &wallet_a.as_ref(),
+            &wallet_a.address(),
             balance_a - a_to_b_amount,
             &denom_a,
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.as_ref(),
+            &wallet_b.address(),
             a_to_b_amount,
             &denom_b.as_ref(),
         )?;
@@ -113,13 +133,13 @@ impl BinaryChannelTest for IbcTransferTest {
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.as_ref(),
+            &wallet_b.address(),
             a_to_b_amount - b_to_a_amount,
             &denom_b.as_ref(),
         )?;
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &wallet_c.as_ref(),
+            &wallet_c.address(),
             balance_c + b_to_a_amount,
             &denom_a,
         )?;

@@ -122,7 +122,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
                 .previous_channel_id
                 .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             channel: Some(domain_msg.channel.into()),
-            counterparty_version: domain_msg.counterparty_version.into(),
+            counterparty_version: domain_msg.counterparty_version.to_string(),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: domain_msg.signer.to_string(),

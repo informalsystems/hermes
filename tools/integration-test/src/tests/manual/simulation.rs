@@ -14,8 +14,8 @@
 use core::time::Duration;
 use ibc_relayer::config::{types::MaxMsgNum, Config};
 
-use crate::prelude::*;
-use crate::relayer::transfer::tx_raw_ft_transfer;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::transfer::tx_raw_ft_transfer;
 
 #[test]
 fn test_simulation() -> Result<(), Error> {
@@ -38,6 +38,7 @@ impl BinaryChannelTest for SimulationTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -53,6 +54,6 @@ impl BinaryChannelTest for SimulationTest {
             MAX_MSGS,
         )?;
 
-        crate::suspend()
+        suspend()
     }
 }

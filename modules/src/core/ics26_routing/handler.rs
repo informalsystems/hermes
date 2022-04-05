@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
@@ -391,6 +391,11 @@ mod tests {
             Test {
                 name: "Re-Receive packet".to_string(),
                 msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
+                want_pass: true,
+            },
+            Test {
+                name: "Packet send".to_string(),
+                msg: Ics26Envelope::Ics20Msg(msg_transfer_two),
                 want_pass: true,
             },
             Test {

@@ -76,15 +76,16 @@ impl Borrow<str> for ModuleId {
 }
 
 /// Types implementing this trait are expected to implement `From<GenericAcknowledgement>`
-pub trait Acknowledgement: AsRef<[u8]> {
-    fn success(&self) -> bool;
-}
+pub trait Acknowledgement: AsRef<[u8]> {}
 
 pub type WriteFn = dyn FnOnce(&mut dyn Any);
 
-pub type DeferredWriteResult<T> = (Option<Box<T>>, Option<Box<WriteFn>>);
+pub enum OnRecvPacketAck {
+    Nil(Box<WriteFn>),
+    Successful(Box<dyn Acknowledgement>, Box<WriteFn>),
+    Failed(Box<dyn Acknowledgement>),
+}
 
-// FIXME(hu55a1n1): Define concrete type that implements `Into<AbciEvent>`?
 pub type ModuleEvent = IbcEvent;
 
 pub type ModuleOutput = HandlerOutput<(), ModuleEvent>;
@@ -160,8 +161,8 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _output: &mut ModuleOutput,
         _packet: &Packet,
         _relayer: &Signer,
-    ) -> DeferredWriteResult<dyn Acknowledgement> {
-        (None, None)
+    ) -> OnRecvPacketAck {
+        OnRecvPacketAck::Nil(Box::new(|_| {}))
     }
 
     fn on_acknowledgement_packet(

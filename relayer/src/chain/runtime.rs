@@ -44,7 +44,7 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    chain::StatusResponse,
+    chain::{client::ClientSettings, StatusResponse},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -283,8 +283,8 @@ where
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildClientState { height, dst_config, reply_to }) => {
-                            self.build_client_state(height, dst_config, reply_to)?
+                        Ok(ChainRequest::BuildClientState { height, settings, reply_to }) => {
+                            self.build_client_state(height, settings, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
@@ -411,6 +411,10 @@ where
                             self.query_blocks(request, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryHostConsensusState { height, reply_to }) => {
+                            self.query_host_consensus_state(height, reply_to)?
+                        },
+
                         Err(e) => error!("received error via chain request channel: {}", e),
                     }
                 },
@@ -524,12 +528,12 @@ where
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
         let client_state = self
             .chain
-            .build_client_state(height, dst_config)
+            .build_client_state(height, settings)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(client_state).map_err(Error::send)
@@ -865,6 +869,21 @@ where
         reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_blocks(request);
+
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_host_consensus_state(
+        &self,
+        height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .query_host_consensus_state(height)
+            .map(|h| h.wrap_any());
 
         reply_to.send(result).map_err(Error::send)?;
 

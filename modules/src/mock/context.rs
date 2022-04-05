@@ -10,7 +10,7 @@ use core::fmt::Debug;
 use core::ops::{Add, Sub};
 use core::time::Duration;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use sha2::Digest;
 use tracing::debug;
 
@@ -680,7 +680,6 @@ impl ChannelReader for MockContext {
                 if !PortReader::authenticate(self, port_id.clone(), &key) {
                     Err(Ics04Error::invalid_port_capability())
                 } else {
-                    // FIXME(hu55a1n1): implement using separate field (e.g. `channel_capabilities`)
                     Ok(Capability::from(key).into())
                 }
             }
@@ -820,7 +819,6 @@ impl ChannelReader for MockContext {
         _channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-        // FIXME(hu55a1n1): add separate map for channel capabilities
         self.lookup_module_by_port(port_id)
             .map(|(mid, pcap)| (mid, ChannelCapability::from(Capability::from(pcap))))
             .map_err(Ics04Error::ics05_port)
@@ -1245,7 +1243,7 @@ mod tests {
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
-        Acknowledgement, DeferredWriteResult, Module, ModuleId, ModuleOutput, Router, RouterBuilder,
+        Acknowledgement, Module, ModuleId, ModuleOutput, OnRecvPacketAck, Router, RouterBuilder,
     };
     use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
@@ -1405,11 +1403,7 @@ mod tests {
             }
         }
 
-        impl Acknowledgement for MockAck {
-            fn success(&self) -> bool {
-                true
-            }
-        }
+        impl Acknowledgement for MockAck {}
 
         #[derive(Debug, Default)]
         struct FooModule {
@@ -1436,13 +1430,13 @@ mod tests {
                 _output: &mut ModuleOutput,
                 _packet: &Packet,
                 _relayer: &Signer,
-            ) -> DeferredWriteResult<dyn Acknowledgement> {
-                (
-                    Some(Box::new(MockAck::default())),
-                    Some(Box::new(|module| {
+            ) -> OnRecvPacketAck {
+                OnRecvPacketAck::Successful(
+                    Box::new(MockAck::default()),
+                    Box::new(|module| {
                         let module = module.downcast_mut::<FooModule>().unwrap();
                         module.counter += 1;
-                    })),
+                    }),
                 )
             }
         }
@@ -1496,12 +1490,16 @@ mod tests {
             on_recv_packet_result("foomodule"),
             on_recv_packet_result("barmodule"),
         ];
-        results.into_iter().for_each(|(mid, (ack, write_fn))| {
-            if matches!(ack, Some(ack) if ack.success()) {
-                if let Some(write_fn) = write_fn {
-                    write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut());
+        results
+            .into_iter()
+            .filter_map(|(mid, result)| match result {
+                OnRecvPacketAck::Nil(write_fn) | OnRecvPacketAck::Successful(_, write_fn) => {
+                    Some((mid, write_fn))
                 }
-            }
-        });
+                _ => None,
+            })
+            .for_each(|(mid, write_fn)| {
+                write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut())
+            });
     }
 }

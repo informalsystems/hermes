@@ -54,7 +54,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
 
     fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
-        let prost_types::Timestamp { seconds, nanos } = raw
+        let ibc_proto::google::protobuf::Timestamp { seconds, nanos } = raw
             .timestamp
             .ok_or_else(|| Error::invalid_raw_consensus_state("missing timestamp".into()))?;
         // FIXME: shunts like this are necessary due to
@@ -84,7 +84,7 @@ impl From<ConsensusState> for RawConsensusState {
         // FIXME: shunts like this are necessary due to
         // https://github.com/informalsystems/tendermint-rs/issues/1053
         let tpb::Timestamp { seconds, nanos } = value.timestamp.into();
-        let timestamp = prost_types::Timestamp { seconds, nanos };
+        let timestamp = ibc_proto::google::protobuf::Timestamp { seconds, nanos };
 
         RawConsensusState {
             timestamp: Some(timestamp),

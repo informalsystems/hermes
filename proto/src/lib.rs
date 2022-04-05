@@ -8,7 +8,9 @@
 #![allow(clippy::large_enum_variant)]
 #![allow(rustdoc::bare_urls)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.16.0")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.17.0")]
+
+pub mod google;
 
 extern crate alloc;
 
@@ -16,6 +18,7 @@ extern crate alloc;
 #[macro_use]
 extern crate core as std;
 
+#[macro_export]
 macro_rules! include_proto {
     ($path:literal) => {
         include!(concat!("prost/", $path));

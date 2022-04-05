@@ -7,7 +7,7 @@ use std::sync::RwLock;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use itertools::Itertools;
-use tracing::{debug, error, error_span, info, trace, warn};
+use tracing::{error, error_span, info, trace, warn};
 
 use ibc::{
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
@@ -17,7 +17,7 @@ use ibc::{
 
 use crate::{
     chain::{handle::ChainHandle, HealthCheck},
-    config::{ChainConfig, Config, SharedConfig},
+    config::Config,
     event::{
         self,
         monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
@@ -29,7 +29,6 @@ use crate::{
     util::{
         lock::LockExt,
         task::{spawn_background_task, Next, TaskError, TaskHandle},
-        try_recv_multiple,
     },
     worker::WorkerMap,
 };
@@ -47,7 +46,7 @@ pub mod scan;
 pub mod spawn;
 
 pub mod cmd;
-use cmd::{CmdEffect, ConfigUpdate, SupervisorCmd};
+use cmd::SupervisorCmd;
 
 use self::{scan::ChainScanner, spawn::SpawnContext};
 
@@ -79,12 +78,12 @@ pub struct SupervisorOptions {
 
 /**
    Spawn a supervisor for testing purpose using the provided
-   [`SharedConfig`] and [`SharedRegistry`]. Returns a
+   [`Config`] and [`SharedRegistry`]. Returns a
    [`SupervisorHandle`] that stops the supervisor when the
    value is dropped.
 */
 pub fn spawn_supervisor(
-    config: SharedConfig,
+    config: Config,
     registry: SharedRegistry<impl ChainHandle>,
     rest_rx: Option<rest::Receiver>,
     options: SupervisorOptions,
@@ -121,21 +120,21 @@ impl SupervisorHandle {
 }
 
 pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
-    config: Arc<RwLock<Config>>,
+    config: Config,
     registry: SharedRegistry<Chain>,
     rest_rx: Option<rest::Receiver>,
     cmd_rx: Receiver<SupervisorCmd>,
     options: SupervisorOptions,
 ) -> Result<Vec<TaskHandle>, Error> {
     if options.health_check {
-        health_check(&config.acquire_read(), &mut registry.write());
+        health_check(&config, &mut registry.write());
     }
 
     let workers = Arc::new(RwLock::new(WorkerMap::new()));
     let client_state_filter = Arc::new(RwLock::new(FilterPolicy::default()));
 
     let scan = chain_scanner(
-        &config.acquire_read(),
+        &config,
         &mut registry.write(),
         &mut client_state_filter.acquire_write(),
         if options.force_full_scan {
@@ -149,36 +148,22 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     info!("Scanned chains:");
     info!("{}", scan);
 
-    spawn_context(
-        &config.acquire_read(),
-        &mut registry.write(),
-        &mut workers.acquire_write(),
-    )
-    .spawn_workers(scan);
+    spawn_context(&config, &mut registry.write(), &mut workers.acquire_write()).spawn_workers(scan);
 
-    let subscriptions = Arc::new(RwLock::new(init_subscriptions(
-        &config.acquire_read(),
-        &mut registry.write(),
-    )?));
+    let subscriptions = init_subscriptions(&config, &mut registry.write())?;
 
-    let batch_task = spawn_batch_worker(
-        config.clone(),
-        registry.clone(),
-        client_state_filter.clone(),
-        workers.clone(),
-        subscriptions.clone(),
-    );
-
-    let cmd_task = spawn_cmd_worker(
-        config.clone(),
+    let batch_tasks = spawn_batch_workers(
+        &config,
         registry.clone(),
         client_state_filter,
         workers.clone(),
         subscriptions,
-        cmd_rx,
     );
 
-    let mut tasks = vec![batch_task, cmd_task];
+    let cmd_task = spawn_cmd_worker(registry.clone(), workers.clone(), cmd_rx);
+
+    let mut tasks = vec![cmd_task];
+    tasks.extend(batch_tasks);
 
     if let Some(rest_rx) = rest_rx {
         let rest_task = spawn_rest_worker(config, registry, workers, rest_rx);
@@ -188,80 +173,70 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     Ok(tasks)
 }
 
-fn spawn_batch_worker<Chain: ChainHandle>(
-    config: Arc<RwLock<Config>>,
+fn spawn_batch_workers<Chain: ChainHandle>(
+    config: &Config,
     registry: SharedRegistry<Chain>,
     client_state_filter: Arc<RwLock<FilterPolicy>>,
     workers: Arc<RwLock<WorkerMap>>,
-    subscriptions: Arc<RwLock<Vec<(Chain, Subscription)>>>,
-) -> TaskHandle {
-    spawn_background_task(
-        tracing::Span::none(),
-        Some(Duration::from_millis(500)),
-        move || -> Result<Next, TaskError<Infallible>> {
-            if let Some((chain, batch)) = try_recv_multiple(&subscriptions.acquire_read()) {
-                handle_batch(
-                    &config.acquire_read(),
-                    &mut registry.write(),
-                    &mut client_state_filter.acquire_write(),
-                    &mut workers.acquire_write(),
-                    chain.clone(),
-                    batch,
-                );
-            }
+    subscriptions: Vec<(Chain, Subscription)>,
+) -> Vec<TaskHandle> {
+    let mut handles = Vec::with_capacity(subscriptions.len());
 
-            Ok(Next::Continue)
-        },
-    )
+    for (chain, subscription) in subscriptions {
+        let config = config.clone();
+        let registry = registry.clone();
+        let client_state_filter = client_state_filter.clone();
+        let workers = workers.clone();
+
+        let handle = spawn_background_task(
+            tracing::Span::none(),
+            Some(Duration::from_millis(5)),
+            move || -> Result<Next, TaskError<Infallible>> {
+                if let Ok(batch) = subscription.try_recv() {
+                    handle_batch(
+                        &config,
+                        &mut registry.write(),
+                        &mut client_state_filter.acquire_write(),
+                        &mut workers.acquire_write(),
+                        chain.clone(),
+                        batch,
+                    );
+                }
+
+                Ok(Next::Continue)
+            },
+        );
+
+        handles.push(handle);
+    }
+
+    handles
 }
 
 pub fn spawn_cmd_worker<Chain: ChainHandle>(
-    config: Arc<RwLock<Config>>,
     registry: SharedRegistry<Chain>,
-    client_state_filter: Arc<RwLock<FilterPolicy>>,
     workers: Arc<RwLock<WorkerMap>>,
-    subscriptions: Arc<RwLock<Vec<(Chain, Subscription)>>>,
     cmd_rx: Receiver<SupervisorCmd>,
 ) -> TaskHandle {
     spawn_background_task(
         error_span!("cmd"),
         Some(Duration::from_millis(500)),
-        move || {
+        move || -> Result<Next, TaskError<Infallible>> {
             if let Ok(cmd) = cmd_rx.try_recv() {
                 match cmd {
-                    SupervisorCmd::UpdateConfig(update) => {
-                        let effect = update_config(
-                            &mut config.acquire_write(),
-                            &mut registry.write(),
-                            &mut workers.acquire_write(),
-                            &mut client_state_filter.acquire_write(),
-                            *update,
-                        );
-
-                        if let CmdEffect::ConfigChanged = effect {
-                            let new_subscriptions =
-                                init_subscriptions(&config.acquire_read(), &mut registry.write());
-                            match new_subscriptions {
-                                Ok(subs) => {
-                                    *subscriptions.acquire_write() = subs;
-                                }
-                                Err(Error(ErrorDetail::NoChainsAvailable(_), _)) => (),
-                                Err(e) => return Err(TaskError::Fatal(e)),
-                            }
-                        }
-                    }
                     SupervisorCmd::DumpState(reply_to) => {
                         dump_state(&registry.read(), &workers.acquire_read(), reply_to);
                     }
                 }
             }
+
             Ok(Next::Continue)
         },
     )
 }
 
 pub fn spawn_rest_worker<Chain: ChainHandle>(
-    config: Arc<RwLock<Config>>,
+    config: Config,
     registry: SharedRegistry<Chain>,
     workers: Arc<RwLock<WorkerMap>>,
     rest_rx: rest::Receiver,
@@ -270,12 +245,7 @@ pub fn spawn_rest_worker<Chain: ChainHandle>(
         error_span!("rest"),
         Some(Duration::from_millis(500)),
         move || -> Result<Next, TaskError<Infallible>> {
-            handle_rest_requests(
-                &config.acquire_read(),
-                &registry.read(),
-                &workers.acquire_read(),
-                &rest_rx,
-            );
+            handle_rest_requests(&config, &registry.read(), &workers.acquire_read(), &rest_rx);
 
             Ok(Next::Continue)
         },
@@ -298,7 +268,8 @@ fn channel_filter_enabled(_config: &Config) -> bool {
     true
 }
 
-fn relay_packets_on_channel(
+/// Whether or not the given channel is allowed by the filter policy, if any.
+fn is_channel_allowed(
     config: &Config,
     chain_id: &ChainId,
     port_id: &PortId,
@@ -312,6 +283,8 @@ fn relay_packets_on_channel(
     config.packets_on_channel_allowed(chain_id, port_id, channel_id)
 }
 
+/// Whether or not the relayer should relay packets
+/// or complete handshakes for the given [`Object`].
 fn relay_on_object<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -324,14 +297,24 @@ fn relay_on_object<Chain: ChainHandle>(
         return true;
     }
 
-    // First, apply the channel filter
-    if let Object::Packet(u) = object {
-        if !relay_packets_on_channel(config, chain_id, u.src_port_id(), u.src_channel_id()) {
-            return false;
+    // First, apply the channel filter on packets and channel workers
+    match object {
+        Object::Packet(p) => {
+            if !is_channel_allowed(config, chain_id, p.src_port_id(), p.src_channel_id()) {
+                // Forbid relaying packets on that channel
+                return false;
+            }
         }
-    }
+        Object::Channel(c) => {
+            if !is_channel_allowed(config, chain_id, c.src_port_id(), c.src_channel_id()) {
+                // Forbid completing handshake for that channel
+                return false;
+            }
+        }
+        _ => (),
+    };
 
-    // Second, apply the client filter
+    // Then, apply the client filter
     let client_filter_outcome = match object {
         Object::Client(client) => client_state_filter.control_client_object(registry, client),
         Object::Connection(conn) => client_state_filter.control_conn_object(registry, conn),
@@ -430,10 +413,6 @@ pub fn collect_events(
                     Object::client_from_chan_open_events(&attributes, src_chain).ok()
                 });
 
-                collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::packet_from_chan_open_events(&attributes, src_chain).ok()
-                });
-
                 // If handshake message relaying is enabled create worker to send the MsgChannelOpenConfirm message
                 collect_event(&mut collected, event, mode.channels.enabled, || {
                     Object::channel_from_chan_open_events(&attributes, src_chain).ok()
@@ -444,10 +423,6 @@ pub fn collect_events(
                 // Create client worker here as channel end must be opened
                 collect_event(&mut collected, event, mode.clients.enabled, || {
                     Object::client_from_chan_open_events(&attributes, src_chain).ok()
-                });
-
-                collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::packet_from_chan_open_events(&attributes, src_chain).ok()
                 });
             }
             IbcEvent::SendPacket(ref packet) => {
@@ -576,7 +551,7 @@ fn dump_state<Chain: ChainHandle>(
 /// as a [`SupervisorState`].
 fn state<Chain: ChainHandle>(registry: &Registry<Chain>, workers: &WorkerMap) -> SupervisorState {
     let chains = registry.chains().map(|c| c.id()).collect_vec();
-    SupervisorState::new(chains, workers.objects())
+    SupervisorState::new(chains, workers.handles())
 }
 
 fn handle_rest_requests<Chain: ChainHandle>(
@@ -686,8 +661,11 @@ fn handle_batch<Chain: ChainHandle>(
 
     match batch.deref() {
         Ok(batch) => {
-            let _ = process_batch(config, registry, client_state_filter, workers, chain, batch)
-                .map_err(|e| error!("[{}] error during batch processing: {}", chain_id, e));
+            if let Err(e) =
+                process_batch(config, registry, client_state_filter, workers, chain, batch)
+            {
+                error!("[{}] error during batch processing: {}", chain_id, e);
+            }
         }
         Err(EventError(EventErrorDetail::SubscriptionCancelled(_), _)) => {
             warn!(chain.id = %chain_id, "event subscription was cancelled, clearing pending packets");
@@ -701,141 +679,6 @@ fn handle_batch<Chain: ChainHandle>(
         }
         Err(e) => {
             error!("[{}] error in receiving event batch: {}", chain_id, e)
-        }
-    }
-}
-
-/// Remove the given chain to the configuration and spawn the associated workers.
-/// Will not have any effect if the chain was not already present in the config.
-///
-/// If the removal had any effect, returns [`CmdEffect::ConfigChanged`] as
-/// subscriptions need to be reset to take into account the newly added chain.
-fn remove_chain<Chain: ChainHandle>(
-    config: &mut Config,
-    registry: &mut Registry<Chain>,
-    workers: &mut WorkerMap,
-    id: &ChainId,
-) -> CmdEffect {
-    if !config.has_chain(id) {
-        info!(chain = %id, "skipping removal of non-existing chain");
-        return CmdEffect::Nothing;
-    }
-
-    info!(chain = %id, "removing existing chain");
-    config.chains.retain(|c| &c.id != id);
-
-    debug!(chain = %id, "shutting down workers");
-    let mut ctx = spawn_context(config, registry, workers);
-    ctx.shutdown_workers_for_chain(id);
-
-    debug!(chain = %id, "shutting down chain runtime");
-    registry.shutdown(id);
-
-    CmdEffect::ConfigChanged
-}
-
-/// Add the given chain to the configuration and spawn the associated workers.
-/// Will not have any effect if the chain is already present in the config.
-///
-/// If the addition had any effect, returns [`CmdEffect::ConfigChanged`] as
-/// subscriptions need to be reset to take into account the newly added chain.
-fn add_chain<Chain: ChainHandle>(
-    config: &mut Config,
-    registry: &mut Registry<Chain>,
-    workers: &mut WorkerMap,
-    client_state_filter: &mut FilterPolicy,
-    chain_config: ChainConfig,
-) -> CmdEffect {
-    let id = chain_config.id.clone();
-
-    if config.has_chain(&id) {
-        info!(chain = %id, "skipping addition of already existing chain");
-        return CmdEffect::Nothing;
-    }
-
-    info!(chain = %id, "adding new chain");
-
-    config.chains.push(chain_config.clone());
-
-    debug!(chain = %id, "spawning chain runtime");
-
-    if let Err(e) = registry.spawn(&id) {
-        error!(
-            "failed to add chain {} because of failure to spawn the chain runtime: {}",
-            id, e
-        );
-
-        // Remove the newly added config
-        config.chains.retain(|c| c.id != id);
-
-        return CmdEffect::Nothing;
-    }
-
-    debug!(chain = %id, "scanning chain");
-
-    let scan_result = chain_scanner(config, registry, client_state_filter, ScanMode::Auto)
-        .scan_chain(&chain_config);
-
-    let scan = match scan_result {
-        Ok(scan) => scan,
-        Err(e) => {
-            error!("failed to scan chain {}: {}", id, e);
-
-            // Remove the newly added config
-            config.chains.retain(|c| c.id != id);
-
-            return CmdEffect::Nothing;
-        }
-    };
-
-    debug!(chain = %id, "spawning workers");
-
-    let mut ctx = spawn_context(config, registry, workers);
-    ctx.spawn_workers_for_chain(scan);
-
-    CmdEffect::ConfigChanged
-}
-
-/// Update the given chain configuration, by removing it with
-/// [`Supervisor::remove_chain`] and adding the updated
-/// chain config with [`Supervisor::remove_chain`].
-///
-/// If the update had any effect, returns [`CmdEffect::ConfigChanged`] as
-/// subscriptions need to be reset to take into account the newly added chain.
-fn update_chain<Chain: ChainHandle>(
-    config: &mut Config,
-    registry: &mut Registry<Chain>,
-    workers: &mut WorkerMap,
-    client_state_filter: &mut FilterPolicy,
-    chain_config: ChainConfig,
-) -> CmdEffect {
-    info!(chain = %chain_config.id, "updating existing chain");
-
-    let removed = remove_chain(config, registry, workers, &chain_config.id);
-
-    let added = add_chain(config, registry, workers, client_state_filter, chain_config);
-
-    removed.or(added)
-}
-
-/// Apply the given configuration update.
-///
-/// Returns an [`CmdEffect`] which instructs the caller as to
-/// whether or not the event subscriptions needs to be reset or not.
-fn update_config<Chain: ChainHandle>(
-    config: &mut Config,
-    registry: &mut Registry<Chain>,
-    workers: &mut WorkerMap,
-    client_state_filter: &mut FilterPolicy,
-    update: ConfigUpdate,
-) -> CmdEffect {
-    match update {
-        ConfigUpdate::Add(chain_config) => {
-            add_chain(config, registry, workers, client_state_filter, chain_config)
-        }
-        ConfigUpdate::Remove(id) => remove_chain(config, registry, workers, &id),
-        ConfigUpdate::Update(chain_config) => {
-            update_chain(config, registry, workers, client_state_filter, chain_config)
         }
     }
 }
