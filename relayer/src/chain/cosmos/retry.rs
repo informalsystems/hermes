@@ -9,7 +9,7 @@ use tendermint_rpc::{HttpClient, Url};
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, warn};
 
-use crate::chain::cosmos::query::refresh_account;
+use crate::chain::cosmos::query::account::refresh_account;
 use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
 use crate::chain::cosmos::types::account::Account;
 use crate::config::types::Memo;
