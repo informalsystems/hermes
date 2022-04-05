@@ -335,6 +335,11 @@ pub enum ChainRequest {
         request: QueryBlockRequest,
         reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     },
+
+    QueryHostConsensusState {
+        height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
+    },
 }
 
 pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
@@ -562,4 +567,6 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
 }

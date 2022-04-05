@@ -411,6 +411,10 @@ where
                             self.query_blocks(request, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryHostConsensusState { height, reply_to }) => {
+                            self.query_host_consensus_state(height, reply_to)?
+                        },
+
                         Err(e) => error!("received error via chain request channel: {}", e),
                     }
                 },
@@ -865,6 +869,21 @@ where
         reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_blocks(request);
+
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_host_consensus_state(
+        &self,
+        height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .query_host_consensus_state(height)
+            .map(|h| h.wrap_any());
 
         reply_to.send(result).map_err(Error::send)?;
 
