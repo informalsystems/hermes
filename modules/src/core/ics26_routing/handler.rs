@@ -394,11 +394,6 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Packet send".to_string(),
-                msg: Ics26Envelope::Ics20Msg(msg_transfer_two),
-                want_pass: true,
-            },
-            Test {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
