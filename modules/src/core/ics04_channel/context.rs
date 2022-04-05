@@ -104,13 +104,7 @@ pub trait ChannelReader: CapabilityReader {
     /// Calculates the block delay period using the connection's delay period and the maximum
     /// expected time per block.
     fn block_delay(&self, delay_period_time: Duration) -> u64 {
-        let expected_time_per_block = self.max_expected_time_per_block();
-        if expected_time_per_block.is_zero() {
-            return 0;
-        }
-
-        FloatCore::ceil(delay_period_time.as_secs_f64() / expected_time_per_block.as_secs_f64())
-            as u64
+        calculate_block_delay(delay_period_time, self.max_expected_time_per_block())
     }
 
     /// Return the module_id along with the capability associated with a given (channel-id, port_id)
@@ -294,4 +288,16 @@ pub trait ChannelKeeper {
     /// Increases the counter which keeps track of how many channels have been created.
     /// Should never fail.
     fn increase_channel_counter(&mut self);
+}
+
+pub fn calculate_block_delay(
+    delay_period_time: Duration,
+    max_expected_time_per_block: Duration,
+) -> u64 {
+    if max_expected_time_per_block.is_zero() {
+        return 0;
+    }
+
+    FloatCore::ceil(delay_period_time.as_secs_f64() / max_expected_time_per_block.as_secs_f64())
+        as u64
 }
