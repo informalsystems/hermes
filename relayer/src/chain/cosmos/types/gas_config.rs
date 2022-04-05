@@ -4,7 +4,7 @@ use crate::chain::cosmos::calculate_fee;
 use crate::config::{ChainConfig, GasPrice};
 
 /// Default gas limit when submitting a transaction.
-pub const DEFAULT_MAX_GAS: u64 = 400_000;
+const DEFAULT_MAX_GAS: u64 = 400_000;
 
 /// Fraction of the estimated gas to add to the estimated gas amount when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
@@ -33,13 +33,13 @@ impl GasConfig {
     }
 }
 
-fn default_gas_from_config(config: &ChainConfig) -> u64 {
+pub fn default_gas_from_config(config: &ChainConfig) -> u64 {
     config
         .default_gas
         .unwrap_or_else(|| max_gas_from_config(config))
 }
 
-fn max_gas_from_config(config: &ChainConfig) -> u64 {
+pub fn max_gas_from_config(config: &ChainConfig) -> u64 {
     config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
 }
 

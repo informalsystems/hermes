@@ -94,7 +94,7 @@ pub async fn send_batched_messages_and_wait_check_tx(
     Ok(responses)
 }
 
-pub async fn send_messages_as_batches(
+async fn send_messages_as_batches(
     config: &ChainConfig,
     rpc_client: &HttpClient,
     rpc_address: &Url,

@@ -72,7 +72,7 @@ use crate::chain::cosmos::query::{
     abci_query, fetch_version_specs, get_or_fetch_account, packet_query,
 };
 use crate::chain::cosmos::types::account::Account;
-use crate::chain::cosmos::types::gas_config::DEFAULT_MAX_GAS;
+use crate::chain::cosmos::types::gas_config::{default_gas_from_config, max_gas_from_config};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{QueryResponse, StatusResponse};
@@ -151,14 +151,17 @@ impl CosmosSdkChain {
             );
         }
 
+        let max_gas = max_gas_from_config(&self.config);
+        let default_gas = default_gas_from_config(&self.config);
+
         // If the default gas is strictly greater than the max gas and the tx simulation fails,
         // Hermes won't be able to ever submit that tx because the gas amount wanted will be
         // greater than the max gas.
-        if self.default_gas() > self.max_gas() {
+        if default_gas > max_gas {
             return Err(Error::config_validation_default_gas_too_high(
                 self.id().clone(),
-                self.default_gas(),
-                self.max_gas(),
+                default_gas,
+                max_gas,
             ));
         }
 
@@ -199,10 +202,12 @@ impl CosmosSdkChain {
                 .try_into()
                 .expect("cannot over or underflow because it is positive");
 
-            if self.max_gas() > consensus_max_gas {
+            let max_gas = max_gas_from_config(&self.config);
+
+            if max_gas > consensus_max_gas {
                 return Err(Error::config_validation_max_gas_too_high(
                     self.id().clone(),
-                    self.max_gas(),
+                    max_gas,
                     result.consensus_params.block.max_gas,
                 ));
             }
@@ -264,17 +269,6 @@ impl CosmosSdkChain {
     fn block_on<F: Future>(&self, f: F) -> F::Output {
         crate::time!("block_on");
         self.rt.block_on(f)
-    }
-
-    /// The default amount of gas the relayer is willing to pay for a transaction,
-    /// when it cannot simulate the tx and therefore estimate the gas amount needed.
-    fn default_gas(&self) -> u64 {
-        self.config.default_gas.unwrap_or_else(|| self.max_gas())
-    }
-
-    /// The maximum amount of gas the relayer is willing to pay for a transaction
-    fn max_gas(&self) -> u64 {
-        self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
     /// The maximum size of any transaction sent by the relayer to this chain
