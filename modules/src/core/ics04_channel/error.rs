@@ -2,6 +2,7 @@ use super::packet::Sequence;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics03_connection::error as connection_error;
 use crate::core::ics04_channel::channel::State;
+use crate::core::ics05_port::error as port_error;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::prelude::*;
@@ -18,6 +19,10 @@ define_error! {
         Ics03Connection
             [ connection_error::Error ]
             | _ | { "ics03 connection error" },
+
+        Ics05Port
+            [ port_error::Error ]
+            | _ | { "ics05 port error" },
 
         UnknownState
             { state: i32 }
@@ -87,13 +92,6 @@ define_error! {
         MissingPacket
             | _ | { "there is no packet in this message" },
 
-        PacketAlreadyReceived
-            { sequence: Sequence }
-            | e | {
-                format_args!(
-                    "Packet with the sequence number {0} has been already received",
-                    e.sequence)
-            },
         MissingChannelId
             | _ | { "missing channel id" },
 
@@ -344,6 +342,9 @@ define_error! {
                     "Processed height for the client {0} at height {1} not found",
                     e.client_id, e.height)
             },
+
+        RouteNotFound
+            | _ | { "route not found" },
 
         ImplementationSpecific
             | _ | { "implementation specific error" },

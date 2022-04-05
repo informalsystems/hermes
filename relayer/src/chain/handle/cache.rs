@@ -35,6 +35,7 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 
 use crate::cache::{Cache, CacheStatus};
+use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{HealthCheck, StatusResponse};
@@ -341,9 +342,9 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<AnyClientState, Error> {
-        self.inner().build_client_state(height, dst_config)
+        self.inner().build_client_state(height, settings)
     }
 
     /// Constructs a consensus state at the given height
@@ -439,5 +440,9 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
         self.inner().query_blocks(request)
+    }
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
+        self.inner.query_host_consensus_state(height)
     }
 }

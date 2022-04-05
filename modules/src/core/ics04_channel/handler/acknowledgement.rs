@@ -21,7 +21,7 @@ pub struct AckPacketResult {
 
 pub fn process(
     ctx: &dyn ChannelReader,
-    msg: MsgAcknowledgement,
+    msg: &MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -237,7 +237,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = process(&test.ctx, test.msg.clone());
+            let res = process(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {

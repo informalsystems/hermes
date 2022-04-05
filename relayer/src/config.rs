@@ -7,7 +7,6 @@ pub mod types;
 
 use alloc::collections::BTreeMap;
 use core::{fmt, time::Duration};
-use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
@@ -63,7 +62,7 @@ pub mod default {
     }
 
     pub fn max_block_time() -> Duration {
-        Duration::from_secs(10)
+        Duration::from_secs(30)
     }
 
     pub fn connection_delay() -> Duration {
@@ -85,8 +84,6 @@ pub struct Config {
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
 }
-
-pub type SharedConfig = Arc<RwLock<Config>>;
 
 impl Config {
     pub fn has_chain(&self, id: &ChainId) -> bool {

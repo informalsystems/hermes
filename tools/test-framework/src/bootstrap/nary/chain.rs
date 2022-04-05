@@ -7,12 +7,10 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
-use std::sync::Arc;
-use std::sync::RwLock;
 
 use crate::bootstrap::binary::chain::{
-    add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client, new_registry,
-    save_relayer_config,
+    add_chain_config, add_keys_to_chain_handle, new_registry, save_relayer_config,
+    ForeignClientBuilder,
 };
 use crate::error::{handle_generic_error, Error};
 use crate::relayer::driver::RelayerDriver;
@@ -71,8 +69,6 @@ pub fn boostrap_chains_with_any_nodes(
 
     save_relayer_config(&config, &config_path)?;
 
-    let config = Arc::new(RwLock::new(config));
-
     let registry = new_registry(config.clone());
 
     let mut chain_handles = Vec::new();
@@ -88,7 +84,7 @@ pub fn boostrap_chains_with_any_nodes(
         let mut foreign_clients_b = Vec::new();
 
         for handle_b in chain_handles.iter() {
-            let foreign_client = bootstrap_foreign_client(handle_a, handle_b)?;
+            let foreign_client = ForeignClientBuilder::new(handle_a, handle_b).bootstrap()?;
             foreign_clients_b.push(foreign_client);
         }
 

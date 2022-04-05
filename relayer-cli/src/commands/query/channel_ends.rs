@@ -70,7 +70,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let port_id = cmd.port_id.clone();
     let channel_id = cmd.channel_id.clone();
 
-    let mut registry = <Registry<Chain>>::from_owned((*config).clone());
+    let mut registry = <Registry<Chain>>::new((*config).clone());
     let chain = registry.get_or_spawn(&chain_id)?;
 
     let chain_height = match cmd.height {

@@ -62,7 +62,7 @@ uint = "0.9"
 humantime = "2.1.0"
 nanoid = "0.4.0"
 regex = "1.5.5"
-moka = "0.8.0"
+moka = "0.8.1"
 
 [dependencies.num-bigint]
 version = "0.4"
@@ -73,31 +73,31 @@ version = "0.4.0"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "=0.23.5"
+version = "=0.23.6"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.5"
+version = "=0.23.6"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.23.5"
+version = "=0.23.6"
 
 [dev-dependencies]
 ibc = { version = "0.13.0", path = "../modules", features = ["mocks"] }
 serial_test = "0.6.0"
 env_logger = "0.9.0"
-tracing-subscriber = { version = "0.3.9", features = ["fmt", "env-filter", "json"] }
+tracing-subscriber = { version = "0.3.10", features = ["fmt", "env-filter", "json"] }
 test-log = { version = "0.2.10", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.5" }
+tendermint-testgen = { version = "=0.23.6" }

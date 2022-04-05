@@ -4,10 +4,8 @@ use ibc::{
         ics04_channel::channel::State as ChannelState,
         ics24_host::identifier::{ChannelId, PortChannelId, PortId},
     },
-    events::IbcEvent,
     Height,
 };
-use tracing::error_span;
 
 use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::handle::ChainHandle;
@@ -15,6 +13,7 @@ use crate::channel::{Channel, ChannelSide};
 use crate::link::error::LinkError;
 use crate::link::relay_path::RelayPath;
 
+pub mod cli;
 pub mod error;
 pub mod operational_data;
 mod pending;
@@ -193,57 +192,5 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         // Some of the checks and initializations may be redundant;
         // going slowly, but reliably.
         Link::new_from_opts(chain_b, chain_a, opts, with_tx_confirmation)
-    }
-
-    /// Implements the `packet-recv` CLI
-    pub fn build_and_send_recv_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
-        let _span = error_span!(
-            "PacketRecvCmd",
-            src_chain = %self.a_to_b.src_chain().id(),
-            src_port = %self.a_to_b.src_port_id(),
-            src_channel = %self.a_to_b.src_channel_id(),
-            dst_chain = %self.a_to_b.dst_chain().id(),
-        )
-        .entered();
-
-        self.a_to_b.build_recv_packet_and_timeout_msgs(None)?;
-
-        let mut results = vec![];
-
-        // Block waiting for all of the scheduled data (until `None` is returned)
-        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
-            let mut last_res = self
-                .a_to_b
-                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
-            results.append(&mut last_res.events);
-        }
-
-        Ok(results)
-    }
-
-    /// Implements the `packet-ack` CLI
-    pub fn build_and_send_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
-        let _span = error_span!(
-            "PacketAckCmd",
-            src_chain = %self.a_to_b.src_chain().id(),
-            src_port = %self.a_to_b.src_port_id(),
-            src_channel = %self.a_to_b.src_channel_id(),
-            dst_chain = %self.a_to_b.dst_chain().id(),
-        )
-        .entered();
-
-        self.a_to_b.build_packet_ack_msgs(None)?;
-
-        let mut results = vec![];
-
-        // Block waiting for all of the scheduled data
-        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
-            let mut last_res = self
-                .a_to_b
-                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
-            results.append(&mut last_res.events);
-        }
-
-        Ok(results)
     }
 }

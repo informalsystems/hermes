@@ -13,7 +13,7 @@ use crate::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
-    msg: MsgChannelCloseConfirm,
+    msg: &MsgChannelCloseConfirm,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -22,7 +22,7 @@ pub(crate) fn process(
 
     // Validate that the channel end is in a state where it can be closed.
     if channel_end.state_matches(&State::Closed) {
-        return Err(Error::channel_closed(msg.channel_id));
+        return Err(Error::channel_closed(msg.channel_id.clone()));
     }
 
     // Channel capabilities
@@ -88,7 +88,7 @@ pub(crate) fn process(
     };
 
     let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id),
+        channel_id: Some(msg.channel_id.clone()),
         height: ctx.host_height(),
         ..Default::default()
     };
@@ -167,11 +167,13 @@ mod tests {
                 chan_end,
             );
 
-        let handler_output = channel_dispatch(
+        let (handler_output_builder, _) = channel_dispatch(
             &context,
-            ChannelMsg::ChannelCloseConfirm(msg_chan_close_confirm),
+            &ChannelMsg::ChannelCloseConfirm(msg_chan_close_confirm),
         )
         .unwrap();
+
+        let handler_output = handler_output_builder.with_result(());
 
         assert!(!handler_output.events.is_empty()); // Some events must exist.
 

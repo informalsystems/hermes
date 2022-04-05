@@ -14,13 +14,10 @@ use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
+use tendermint::abci::{Code, Event, Path as TendermintABCIPath};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
-use tendermint::consensus::Params as ConsensusParams;
-use tendermint::{
-    abci::{Code, Event, Path as TendermintABCIPath},
-    node::info::TxIndexStatus,
-};
+use tendermint::node::info::TxIndexStatus;
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
@@ -79,7 +76,6 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::{cosmos::account::query_account, QueryResponse, StatusResponse};
 use crate::config::types::Memo;
 use crate::config::{AddressType, ChainConfig, GasPrice};
 use crate::error::Error;
@@ -95,11 +91,13 @@ use ibc::core::ics24_host::path::{
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
 
-use self::account::{Account, AccountNumber, AccountSequence};
-
-use super::{tx::TrackedMsgs, ChainEndpoint, HealthCheck};
+use self::account::{query_account, Account, AccountNumber, AccountSequence};
+use super::client::ClientSettings;
+use super::tx::TrackedMsgs;
+use super::{ChainEndpoint, HealthCheck, QueryResponse, StatusResponse};
 
 pub mod account;
+pub mod client;
 pub mod compatibility;
 pub mod version;
 
@@ -295,18 +293,6 @@ impl CosmosSdkChain {
         crate::time!("historical_entries");
 
         self.query_staking_params().map(|p| p.historical_entries)
-    }
-
-    /// Query the consensus parameters via an RPC query
-    /// Specific to the SDK and used only for Tendermint client create
-    pub fn query_consensus_params(&self) -> Result<ConsensusParams, Error> {
-        crate::time!("query_consensus_params");
-        crate::telemetry!(query, self.id(), "query_consensus_params");
-
-        Ok(self
-            .block_on(self.rpc_client.genesis())
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
-            .consensus_params)
     }
 
     /// Run a future to completion on the Tokio runtime.
@@ -1948,6 +1934,20 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
+    fn query_host_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error> {
+        let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
+
+        // TODO(hu55a1n1): use the `/header` RPC endpoint instead when we move to tendermint v0.35.x
+        let rpc_call = match height.value() {
+            0 => self.rpc_client.latest_block(),
+            _ => self.rpc_client.block(height),
+        };
+        let response = self
+            .block_on(rpc_call)
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        Ok(response.block.header.into())
+    }
+
     fn proven_client_state(
         &self,
         client_id: &ClientId,
@@ -2077,19 +2077,21 @@ impl ChainEndpoint for CosmosSdkChain {
     fn build_client_state(
         &self,
         height: ICSHeight,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
+        let ClientSettings::Tendermint(settings) = settings;
         let unbonding_period = self.unbonding_period()?;
-
-        let max_clock_drift = calculate_client_state_drift(self.config(), &dst_config);
+        let trusting_period = settings
+            .trusting_period
+            .unwrap_or_else(|| self.trusting_period(unbonding_period));
 
         // Build the client state.
         ClientState::new(
             self.id().clone(),
-            self.config.trust_threshold.into(),
-            self.trusting_period(unbonding_period),
+            settings.trust_threshold,
+            trusting_period,
             unbonding_period,
-            max_clock_drift,
+            settings.max_clock_drift,
             height,
             self.config.proof_specs.clone(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
@@ -2548,20 +2550,6 @@ fn mul_ceil(a: u64, f: f64) -> BigInt {
     let a = BigInt::from(a);
     let f = BigRational::from_float(f).expect("f is finite");
     (f * a).ceil().to_integer()
-}
-
-/// Compute the `max_clock_drift` for a (new) client state
-/// as a function of the configuration of the source chain
-/// and the destination chain configuration.
-///
-/// The client state clock drift must account for destination
-/// chain block frequency and clock drift on source and dest.
-/// https://github.com/informalsystems/ibc-rs/issues/1445
-fn calculate_client_state_drift(
-    src_chain_config: &ChainConfig,
-    dst_chain_config: &ChainConfig,
-) -> Duration {
-    src_chain_config.clock_drift + dst_chain_config.clock_drift + dst_chain_config.max_block_time
 }
 
 #[cfg(test)]
