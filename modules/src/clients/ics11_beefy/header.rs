@@ -30,10 +30,10 @@ use ibc_proto::ibc::lightclients::beefy::v1::{
 };
 use pallet_mmr_primitives::{BatchProof, Proof};
 use sp_core::H256;
-use sp_runtime::generic::Header as SubstrateHeader;
+use sp_runtime::generic::{Header as SubstrateHeader, UncheckedExtrinsic};
 use sp_runtime::traits::{BlakeTwo256, SaturatedConversion};
 use sp_runtime::Digest;
-use sp_trie::TrieDBMut;
+use sp_trie::{StorageProof, Trie, TrieDBMut};
 
 /// Beefy consensus header
 #[derive(Clone, PartialEq, Eq)]
@@ -46,7 +46,7 @@ pub struct BeefyHeader {
 
 #[derive(Clone, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct ParachainHeader {
-    pub parachain_header: SubstrateHeader<u32, H256>,
+    pub parachain_header: SubstrateHeader<u32, BlakeTwo256>,
     /// Reconstructed mmr leaf
     pub partial_mmr_leaf: PartialMmrLeaf,
     /// parachain id
@@ -381,7 +381,9 @@ impl From<BeefyHeader> for RawBeefyHeader {
 
 impl Protobuf<RawBeefyHeader> for BeefyHeader {}
 
-pub fn decode_parachain_header(raw_header: Vec<u8>) -> Result<SubstrateHeader<u32, H256>, Error> {
+pub fn decode_parachain_header(
+    raw_header: Vec<u8>,
+) -> Result<SubstrateHeader<u32, BlakeTwo256>, Error> {
     SubstrateHeader::decode(&mut &*raw_header)
         .map_err(|_| Error::invalid_header("failed to decode parachain header"))
 }
@@ -392,11 +394,24 @@ pub fn decode_header<B: Buf>(buf: B) -> Result<Header, Error> {
         .try_into()
 }
 
-pub fn decode_timestamp_extrinsic(header: ParachainHeader) -> Result<u64, Error> {
-    let mut db = sp_trie::MemoryDB::<BlakeTwo256>::default();
-    let mut root = Default::default();
+pub fn decode_timestamp_extrinsic(header: &ParachainHeader) -> Result<u64, Error> {
+    let proof = header.extrinsic_proof.clone();
+    let extrinsic_root = header.parachain_header.extrinsics_root;
+    let db = StorageProof::new(proof).into_memory_db::<BlakeTwo256>();
+    let trie =
+        sp_trie::TrieDB::<sp_trie::LayoutV0<BlakeTwo256>>::new(&db, &extrinsic_root).unwrap();
+    // Timestamp extrinsic should be the first inherent and hence the first extrinsic
+    let key = codec::Compact(0u32).encode();
+    let ext_bytes = trie
+        .get(&key)
+        .map_err(|_| Error::timestamp_extrinsic())?
+        .ok_or(Error::timestamp_extrinsic())?;
 
-    Ok(0)
+    // Decoding from the [2..] because the timestamp inmherent has two extra bytes before the call that represents the
+    // call length and the extrinsic version.
+    let (_, _, timestamp): (u8, u8, codec::Compact<u64>) =
+        codec::Decode::decode(&mut &*ext_bytes[2..]).map_err(|_| Error::timestamp_extrinsic())?;
+    Ok(timestamp.into())
 }
 
 #[cfg(test)]

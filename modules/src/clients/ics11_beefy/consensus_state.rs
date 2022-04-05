@@ -19,11 +19,13 @@ use ibc_proto::ibc::lightclients::beefy::v1::{
 
 use crate::clients::ics11_beefy::error::Error;
 use crate::clients::ics11_beefy::header::{
-    decode_parachain_header, merge_leaf_version, split_leaf_version, ParachainHeader,
+    decode_parachain_header, decode_timestamp_extrinsic, merge_leaf_version, split_leaf_version,
+    ParachainHeader,
 };
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
+use crate::timestamp::Timestamp;
 
 pub const IBC_CONSENSUS_ID: [u8; 4] = *b"/IBC";
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -131,8 +133,6 @@ impl TryFrom<RawConsensusState> for ConsensusState {
 
 impl From<ConsensusState> for RawConsensusState {
     fn from(value: ConsensusState) -> Self {
-        // FIXME: shunts like this are necessary due to
-        // https://github.com/informalsystems/tendermint-rs/issues/1053
         let tpb::Timestamp { seconds, nanos } = value.timestamp.into();
         let timestamp = ibc_proto::google::protobuf::Timestamp { seconds, nanos };
 
@@ -206,38 +206,18 @@ impl From<ParachainHeader> for ConsensusState {
                 .unwrap_or_default()
         };
 
+        let timestamp = decode_timestamp_extrinsic(&header).unwrap_or_default();
+        let duration = core::time::Duration::from_millis(timestamp);
+        let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
+            .unwrap_or_default();
+
         Self {
             root,
-            timestamp: header.time,
-            next_validators_hash: header.next_validators_hash,
+            timestamp: timestamp.into(),
+            parachain_header: header,
         }
     }
 }
 
-impl From<Header> for ConsensusState {
-    fn from(header: Header) -> Self {
-        Self::from(header.signed_header.header)
-    }
-}
-
 #[cfg(test)]
-mod tests {
-    use tendermint_rpc::endpoint::abci_query::AbciQuery;
-    use test_log::test;
-
-    use crate::test::test_serialization_roundtrip;
-
-    #[test]
-    fn serialization_roundtrip_no_proof() {
-        let json_data =
-            include_str!("../../../tests/support/query/serialization/consensus_state.json");
-        test_serialization_roundtrip::<AbciQuery>(json_data);
-    }
-
-    #[test]
-    fn serialization_roundtrip_with_proof() {
-        let json_data =
-            include_str!("../../../tests/support/query/serialization/consensus_state_proof.json");
-        test_serialization_roundtrip::<AbciQuery>(json_data);
-    }
-}
+mod tests {}

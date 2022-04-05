@@ -7,6 +7,7 @@ use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::{Timestamp, TimestampOverflowError};
 use beefy_client::error::BeefyClientError;
+use codec::Error as ScaleCodecError;
 use sp_core::H256;
 
 use crate::Height;
@@ -16,11 +17,19 @@ define_error! {
     Error {
         InvalidAddress
             |_| { "invalid address" },
-
+        InvalidMmrUpdate
+            { reason: String }
+            |e| { "invalid address {}", e.reason },
+        InvalidCommitmentRoot
+            |_| { "invalid commitment root" }
+        TimestampExtrinsic
+            |_| { "error decoding timestamp extrinsic" },
         InvalidHeader
             { reason: String }
             |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },
-
+        ImplementationSpecific
+            { reason: String }
+            |e| { format_args!("Implementation specific error: {}", e.reason) },
         Validation
             { reason: String }
             |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },
@@ -68,6 +77,9 @@ define_error! {
             { reason: String }
             | e | { format_args!("invalid raw misbehaviour: {}", e.reason) },
 
+        ScaleDecode
+            [ TraceError<ScaleCodecError> ]
+            | _ | { "Scale decode error" },
         Decode
             [ TraceError<prost::DecodeError> ]
             | _ | { "decode error" },
@@ -79,15 +91,6 @@ define_error! {
             }
             | e | {
                 format_args!("header timestamp {0} must be greater than current client consensus state timestamp {1}", e.low, e.high)
-            },
-
-        HeaderTimestampOutsideTrustingTime
-            {
-                low: String,
-                high: String
-            }
-            | e | {
-                format_args!("header timestamp {0} is outside the trusting period w.r.t. consensus state timestamp {1}", e.low, e.high)
             },
 
         HeaderTimestampTooHigh
