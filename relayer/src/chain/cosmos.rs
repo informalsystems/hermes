@@ -9,7 +9,6 @@ use num_bigint::BigInt;
 use std::thread;
 
 use bitcoin::hashes::hex::ToHex;
-use ibc_proto::google::protobuf::Any;
 use tendermint::block::Height;
 use tendermint::{
     abci::{Event, Path as TendermintABCIPath},
@@ -63,14 +62,15 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::chain::client::ClientSettings;
-use crate::chain::cosmos::batch::send_batched_messages_and_wait_commit;
+use crate::chain::cosmos::batch::{
+    send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
+};
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{
     abci_query, fetch_version_specs, get_or_fetch_account, packet_query,
 };
-use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas_config::DEFAULT_MAX_GAS;
 use crate::chain::tx::TrackedMsgs;
@@ -266,42 +266,6 @@ impl CosmosSdkChain {
         self.rt.block_on(f)
     }
 
-    async fn send_tx_with_account_sequence_retry(
-        &mut self,
-        proto_msgs: Vec<Any>,
-        retry_counter: u64,
-    ) -> Result<Response, Error> {
-        let key_entry = self.key()?;
-
-        let account =
-            get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
-
-        send_tx_with_account_sequence_retry(
-            &self.config,
-            &self.rpc_client,
-            &self.config.rpc_addr,
-            &self.grpc_addr,
-            &key_entry,
-            &self.config.memo_prefix,
-            account,
-            proto_msgs,
-            retry_counter,
-        )
-        .await
-    }
-
-    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
-        crate::time!("send_tx");
-        let _span = span!(Level::ERROR, "send_tx", id = %self.id()).entered();
-
-        let runtime = self.rt.clone();
-
-        runtime.block_on(async {
-            self.send_tx_with_account_sequence_retry(proto_msgs, 0)
-                .await
-        })
-    }
-
     /// The default amount of gas the relayer is willing to pay for a transaction,
     /// when it cannot simulate the tx and therefore estimate the gas amount needed.
     fn default_gas(&self) -> u64 {
@@ -311,11 +275,6 @@ impl CosmosSdkChain {
     /// The maximum amount of gas the relayer is willing to pay for a transaction
     fn max_gas(&self) -> u64 {
         self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
-    }
-
-    /// The maximum number of messages included in a transaction
-    fn max_msg_num(&self) -> usize {
-        self.config.max_msg_num.into()
     }
 
     /// The maximum size of any transaction sent by the relayer to this chain
@@ -448,6 +407,35 @@ impl CosmosSdkChain {
             get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
 
         send_batched_messages_and_wait_commit(
+            &self.config,
+            &self.rpc_client,
+            &self.config.rpc_addr,
+            &self.grpc_addr,
+            &key_entry,
+            &self.config.memo_prefix,
+            account,
+            proto_msgs,
+        )
+        .await
+    }
+
+    async fn do_send_messages_and_wait_check_tx(
+        &mut self,
+        tracked_msgs: TrackedMsgs,
+    ) -> Result<Vec<Response>, Error> {
+        crate::time!("send_messages_and_wait_check_tx");
+
+        let span = span!(Level::DEBUG, "send_tx_check", id = %tracked_msgs.tracking_id());
+        let _enter = span.enter();
+
+        let proto_msgs = tracked_msgs.msgs;
+
+        let key_entry = self.key()?;
+
+        let account =
+            get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
+
+        send_batched_messages_and_wait_check_tx(
             &self.config,
             &self.rpc_client,
             &self.config.rpc_addr,
@@ -597,41 +585,9 @@ impl ChainEndpoint for CosmosSdkChain {
         &mut self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<Response>, Error> {
-        crate::time!("send_messages_and_wait_check_tx");
+        let runtime = self.rt.clone();
 
-        let span = span!(Level::DEBUG, "send_tx_check", id = %tracked_msgs.tracking_id());
-        let _enter = span.enter();
-
-        let proto_msgs = tracked_msgs.messages();
-
-        if proto_msgs.is_empty() {
-            return Ok(vec![]);
-        }
-        let mut responses = vec![];
-
-        let mut n = 0;
-        let mut size = 0;
-        let mut msg_batch = vec![];
-        for msg in proto_msgs.iter() {
-            msg_batch.push(msg.clone());
-            let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf)
-                .map_err(|e| Error::protobuf_encode(String::from("Messages"), e))?;
-            n += 1;
-            size += buf.len();
-            if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                // Send the tx and enqueue the resulting response
-                responses.push(self.send_tx(msg_batch)?);
-                n = 0;
-                size = 0;
-                msg_batch = vec![];
-            }
-        }
-        if !msg_batch.is_empty() {
-            responses.push(self.send_tx(msg_batch)?);
-        }
-
-        Ok(responses)
+        runtime.block_on(self.do_send_messages_and_wait_check_tx(tracked_msgs))
     }
 
     /// Get the account for the signer
