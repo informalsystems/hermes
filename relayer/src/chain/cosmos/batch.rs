@@ -1,16 +1,60 @@
+use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{HttpClient, Url};
 use tonic::codegen::http::Uri;
 
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
+use crate::chain::cosmos::types::tx_sync::TxSyncResult;
+use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::config::types::Memo;
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
-// TODO: use this in send_messages_and_wait_commit
+pub async fn send_batched_messages_and_wait_commit(
+    config: &ChainConfig,
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    grpc_address: &Uri,
+    key_entry: &KeyEntry,
+    tx_memo: &Memo,
+    account: &mut Account,
+    messages: Vec<Any>,
+) -> Result<Vec<IbcEvent>, Error> {
+    if messages.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut tx_sync_results = send_messages_as_batches(
+        config,
+        rpc_client,
+        rpc_address,
+        grpc_address,
+        key_entry,
+        tx_memo,
+        account,
+        messages,
+    )
+    .await?;
+
+    wait_for_block_commits(
+        &config.id,
+        rpc_client,
+        rpc_address,
+        &config.rpc_timeout,
+        &mut tx_sync_results,
+    )
+    .await?;
+
+    let events = tx_sync_results
+        .into_iter()
+        .flat_map(|el| el.events)
+        .collect();
+
+    Ok(events)
+}
+
 pub async fn send_messages_as_batches(
     config: &ChainConfig,
     rpc_client: &HttpClient,
@@ -20,19 +64,21 @@ pub async fn send_messages_as_batches(
     tx_memo: &Memo,
     account: &mut Account,
     messages: Vec<Any>,
-) -> Result<Vec<Response>, Error> {
-    let max_message_count = config.max_msg_num.0;
-    let max_tx_size = config.max_tx_size.into();
-
+) -> Result<Vec<TxSyncResult>, Error> {
     if messages.is_empty() {
         return Ok(Vec::new());
     }
 
+    let max_message_count = config.max_msg_num.0;
+    let max_tx_size = config.max_tx_size.into();
+
     let batches = batch_messages(messages, max_message_count, max_tx_size)?;
 
-    let mut responses = Vec::new();
+    let mut tx_sync_results = Vec::new();
 
     for batch in batches {
+        let events_per_tx = vec![IbcEvent::default(); batch.len()];
+
         let response = send_tx_with_account_sequence_retry(
             config,
             rpc_client,
@@ -46,13 +92,18 @@ pub async fn send_messages_as_batches(
         )
         .await?;
 
-        responses.push(response);
+        let tx_sync_result = TxSyncResult {
+            response,
+            events: events_per_tx,
+        };
+
+        tx_sync_results.push(tx_sync_result);
     }
 
-    Ok(responses)
+    Ok(tx_sync_results)
 }
 
-pub fn batch_messages(
+fn batch_messages(
     messages: Vec<Any>,
     max_message_count: usize,
     max_tx_size: usize,

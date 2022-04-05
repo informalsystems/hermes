@@ -6,7 +6,7 @@ use core::{
     time::Duration,
 };
 use num_bigint::BigInt;
-use std::{thread, time::Instant};
+use std::thread;
 
 use bitcoin::hashes::hex::ToHex;
 use ibc_proto::google::protobuf::Any;
@@ -63,6 +63,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::batch::send_batched_messages_and_wait_commit;
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::tx::query_txs;
@@ -72,7 +73,6 @@ use crate::chain::cosmos::query::{
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas_config::DEFAULT_MAX_GAS;
-use crate::chain::cosmos::wait::{wait_for_block_commits, TxSyncResult};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{QueryResponse, StatusResponse};
@@ -393,27 +393,6 @@ impl CosmosSdkChain {
             .map_err(Error::key_base)
     }
 
-    /// Given a vector of `TxSyncResult` elements,
-    /// each including a transaction response hash for one or more messages, periodically queries the chain
-    /// with the transaction hashes to get the list of IbcEvents included in those transactions.
-    pub fn wait_for_block_commits(
-        &self,
-        mut tx_sync_results: Vec<TxSyncResult>,
-    ) -> Result<Vec<TxSyncResult>, Error> {
-        let runtime = self.rt.clone();
-
-        runtime.block_on(wait_for_block_commits(
-            self.id(),
-            &self.rpc_client,
-            &self.config.rpc_addr,
-            &self.config.rpc_timeout,
-            &Instant::now(),
-            &mut tx_sync_results,
-        ))?;
-
-        Ok(tx_sync_results)
-    }
-
     fn trusting_period(&self, unbonding_period: Duration) -> Duration {
         self.config
             .trusting_period
@@ -450,6 +429,35 @@ impl CosmosSdkChain {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
             revision_height: u64::from(status.sync_info.latest_block_height),
         })
+    }
+
+    async fn do_send_messages_and_wait_commit(
+        &mut self,
+        tracked_msgs: TrackedMsgs,
+    ) -> Result<Vec<IbcEvent>, Error> {
+        crate::time!("send_messages_and_wait_commit");
+
+        let _span =
+            span!(Level::DEBUG, "send_tx_commit", id = %tracked_msgs.tracking_id()).entered();
+
+        let proto_msgs = tracked_msgs.msgs;
+
+        let key_entry = self.key()?;
+
+        let account =
+            get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
+
+        send_batched_messages_and_wait_commit(
+            &self.config,
+            &self.rpc_client,
+            &self.config.rpc_addr,
+            &self.grpc_addr,
+            &key_entry,
+            &self.config.memo_prefix,
+            account,
+            proto_msgs,
+        )
+        .await
     }
 }
 
@@ -580,57 +588,9 @@ impl ChainEndpoint for CosmosSdkChain {
         &mut self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
-        crate::time!("send_messages_and_wait_commit");
+        let runtime = self.rt.clone();
 
-        let _span =
-            span!(Level::DEBUG, "send_tx_commit", id = %tracked_msgs.tracking_id()).entered();
-
-        let proto_msgs = tracked_msgs.messages();
-
-        if proto_msgs.is_empty() {
-            return Ok(vec![]);
-        }
-        let mut tx_sync_results = vec![];
-
-        let mut n = 0;
-        let mut size = 0;
-        let mut msg_batch = vec![];
-        for msg in proto_msgs.iter() {
-            msg_batch.push(msg.clone());
-            let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf)
-                .map_err(|e| Error::protobuf_encode(String::from("Message"), e))?;
-            n += 1;
-            size += buf.len();
-            if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                let events_per_tx = vec![IbcEvent::default(); msg_batch.len()];
-                let tx_sync_result = self.send_tx(msg_batch)?;
-                tx_sync_results.push(TxSyncResult {
-                    response: tx_sync_result,
-                    events: events_per_tx,
-                });
-                n = 0;
-                size = 0;
-                msg_batch = vec![];
-            }
-        }
-        if !msg_batch.is_empty() {
-            let events_per_tx = vec![IbcEvent::default(); msg_batch.len()];
-            let tx_sync_result = self.send_tx(msg_batch)?;
-            tx_sync_results.push(TxSyncResult {
-                response: tx_sync_result,
-                events: events_per_tx,
-            });
-        }
-
-        let tx_sync_results = self.wait_for_block_commits(tx_sync_results)?;
-
-        let events = tx_sync_results
-            .into_iter()
-            .flat_map(|el| el.events)
-            .collect();
-
-        Ok(events)
+        runtime.block_on(self.do_send_messages_and_wait_commit(tracked_msgs))
     }
 
     fn send_messages_and_wait_check_tx(
