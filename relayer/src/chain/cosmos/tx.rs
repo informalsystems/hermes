@@ -6,7 +6,7 @@ use tonic::codegen::http::Uri;
 
 use crate::chain::cosmos::encode::sign_and_encode_tx;
 use crate::chain::cosmos::estimate::estimate_tx_fees;
-use crate::chain::cosmos::types::account::{AccountNumber, AccountSequence};
+use crate::chain::cosmos::types::account::Account;
 use crate::config::types::Memo;
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -15,35 +15,24 @@ use crate::keyring::KeyEntry;
 pub async fn estimate_fee_and_send_tx(
     config: &ChainConfig,
     rpc_client: &HttpClient,
-    rpc_address: &Url,
     grpc_address: &Uri,
     key_entry: &KeyEntry,
+    account: &Account,
     tx_memo: &Memo,
-    account_number: AccountNumber,
-    account_sequence: AccountSequence,
     messages: Vec<Any>,
 ) -> Result<Response, Error> {
     let fee = estimate_tx_fees(
         config,
         grpc_address,
         key_entry,
+        account,
         tx_memo,
-        account_number,
-        account_sequence,
         messages.clone(),
     )
     .await?;
 
     send_tx_with_fee(
-        config,
-        rpc_client,
-        rpc_address,
-        key_entry,
-        tx_memo,
-        account_number,
-        account_sequence,
-        messages,
-        &fee,
+        config, rpc_client, key_entry, account, tx_memo, messages, &fee,
     )
     .await
 }
@@ -51,25 +40,15 @@ pub async fn estimate_fee_and_send_tx(
 async fn send_tx_with_fee(
     config: &ChainConfig,
     rpc_client: &HttpClient,
-    rpc_address: &Url,
     key_entry: &KeyEntry,
+    account: &Account,
     tx_memo: &Memo,
-    account_number: AccountNumber,
-    account_sequence: AccountSequence,
     messages: Vec<Any>,
     fee: &Fee,
 ) -> Result<Response, Error> {
-    let tx_bytes = sign_and_encode_tx(
-        config,
-        key_entry,
-        tx_memo,
-        account_number,
-        account_sequence,
-        messages,
-        fee,
-    )?;
+    let tx_bytes = sign_and_encode_tx(config, key_entry, account, tx_memo, messages, fee)?;
 
-    let response = broadcast_tx_sync(rpc_client, rpc_address, tx_bytes).await?;
+    let response = broadcast_tx_sync(rpc_client, &config.rpc_addr, tx_bytes).await?;
 
     Ok(response)
 }

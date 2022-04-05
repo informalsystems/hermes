@@ -19,8 +19,8 @@ pub async fn send_batched_messages_and_wait_commit(
     rpc_address: &Url,
     grpc_address: &Uri,
     key_entry: &KeyEntry,
-    tx_memo: &Memo,
     account: &mut Account,
+    tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<IbcEvent>, Error> {
     if messages.is_empty() {
@@ -30,11 +30,10 @@ pub async fn send_batched_messages_and_wait_commit(
     let mut tx_sync_results = send_messages_as_batches(
         config,
         rpc_client,
-        rpc_address,
         grpc_address,
         key_entry,
-        tx_memo,
         account,
+        tx_memo,
         messages,
     )
     .await?;
@@ -59,11 +58,10 @@ pub async fn send_batched_messages_and_wait_commit(
 pub async fn send_batched_messages_and_wait_check_tx(
     config: &ChainConfig,
     rpc_client: &HttpClient,
-    rpc_address: &Url,
     grpc_address: &Uri,
     key_entry: &KeyEntry,
-    tx_memo: &Memo,
     account: &mut Account,
+    tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<Response>, Error> {
     if messages.is_empty() {
@@ -78,11 +76,10 @@ pub async fn send_batched_messages_and_wait_check_tx(
         let response = send_tx_with_account_sequence_retry(
             config,
             rpc_client,
-            rpc_address,
             grpc_address,
             key_entry,
-            tx_memo,
             account,
+            tx_memo,
             batch,
             0,
         )
@@ -97,11 +94,10 @@ pub async fn send_batched_messages_and_wait_check_tx(
 async fn send_messages_as_batches(
     config: &ChainConfig,
     rpc_client: &HttpClient,
-    rpc_address: &Url,
     grpc_address: &Uri,
     key_entry: &KeyEntry,
-    tx_memo: &Memo,
     account: &mut Account,
+    tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<TxSyncResult>, Error> {
     if messages.is_empty() {
@@ -118,11 +114,10 @@ async fn send_messages_as_batches(
         let response = send_tx_with_account_sequence_retry(
             config,
             rpc_client,
-            rpc_address,
             grpc_address,
             key_entry,
-            tx_memo,
             account,
+            tx_memo,
             batch,
             0,
         )

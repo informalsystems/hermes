@@ -6,7 +6,7 @@ use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInf
 use ibc_proto::google::protobuf::Any;
 use tendermint::account::Id as AccountId;
 
-use crate::chain::cosmos::types::account::{AccountNumber, AccountSequence};
+use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
 use crate::chain::cosmos::types::tx::SignedTx;
 use crate::config::types::Memo;
 use crate::config::AddressType;
@@ -17,21 +17,12 @@ use crate::keyring::{sign_message, KeyEntry};
 pub fn sign_and_encode_tx(
     config: &ChainConfig,
     key_entry: &KeyEntry,
+    account: &Account,
     tx_memo: &Memo,
-    account_number: AccountNumber,
-    account_sequence: AccountSequence,
     messages: Vec<Any>,
     fee: &Fee,
 ) -> Result<Vec<u8>, Error> {
-    let signed_tx = sign_tx(
-        config,
-        key_entry,
-        tx_memo,
-        account_number,
-        account_sequence,
-        messages,
-        fee,
-    )?;
+    let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
 
     let tx_raw = TxRaw {
         body_bytes: signed_tx.body_bytes,
@@ -45,15 +36,14 @@ pub fn sign_and_encode_tx(
 pub fn sign_tx(
     config: &ChainConfig,
     key_entry: &KeyEntry,
+    account: &Account,
     tx_memo: &Memo,
-    account_number: AccountNumber,
-    account_sequence: AccountSequence,
     messages: Vec<Any>,
     fee: &Fee,
 ) -> Result<SignedTx, Error> {
     let key_bytes = encode_key_bytes(key_entry)?;
 
-    let signer = encode_signer_info(&config.address_type, account_sequence, key_bytes)?;
+    let signer = encode_signer_info(&config.address_type, account.sequence, key_bytes)?;
 
     let (body, body_bytes) = tx_body_and_bytes(messages, tx_memo)?;
 
@@ -63,7 +53,7 @@ pub fn sign_tx(
         &config.id,
         key_entry,
         &config.address_type,
-        account_number,
+        account.number,
         auth_info_bytes.clone(),
         body_bytes.clone(),
     )?;

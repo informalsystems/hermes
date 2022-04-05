@@ -7,7 +7,7 @@ use tracing::{debug, error, span, warn, Level};
 use crate::chain::cosmos::encode::sign_tx;
 use crate::chain::cosmos::gas::{gas_amount_to_fees, PrettyFee};
 use crate::chain::cosmos::simulate::send_tx_simulate;
-use crate::chain::cosmos::types::account::{AccountNumber, AccountSequence};
+use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::Memo;
 use crate::config::ChainConfig;
@@ -18,9 +18,8 @@ pub async fn estimate_tx_fees(
     config: &ChainConfig,
     grpc_address: &Uri,
     key_entry: &KeyEntry,
+    account: &Account,
     tx_memo: &Memo,
-    account_number: AccountNumber,
-    account_sequence: AccountSequence,
     messages: Vec<Any>,
 ) -> Result<Fee, Error> {
     let gas_config = GasConfig::from_chain_config(config);
@@ -33,9 +32,8 @@ pub async fn estimate_tx_fees(
     let signed_tx = sign_tx(
         config,
         key_entry,
+        account,
         tx_memo,
-        account_number,
-        account_sequence,
         messages,
         &gas_config.max_fee,
     )?;

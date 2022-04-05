@@ -405,8 +405,8 @@ impl CosmosSdkChain {
             &self.config.rpc_addr,
             &self.grpc_addr,
             &key_entry,
-            &self.config.memo_prefix,
             account,
+            &self.config.memo_prefix,
             proto_msgs,
         )
         .await
@@ -431,11 +431,10 @@ impl CosmosSdkChain {
         send_batched_messages_and_wait_check_tx(
             &self.config,
             &self.rpc_client,
-            &self.config.rpc_addr,
             &self.grpc_addr,
             &key_entry,
-            &self.config.memo_prefix,
             account,
+            &self.config.memo_prefix,
             proto_msgs,
         )
         .await

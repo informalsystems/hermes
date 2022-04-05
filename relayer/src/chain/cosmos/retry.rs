@@ -5,7 +5,7 @@ use ibc_proto::google::protobuf::Any;
 use std::thread;
 use tendermint::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::{HttpClient, Url};
+use tendermint_rpc::HttpClient;
 use tonic::codegen::http::Uri;
 use tracing::{debug, error, warn};
 
@@ -49,22 +49,20 @@ const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
 pub async fn send_tx_with_account_sequence_retry(
     config: &ChainConfig,
     rpc_client: &HttpClient,
-    rpc_address: &Url,
     grpc_address: &Uri,
     key_entry: &KeyEntry,
-    tx_memo: &Memo,
     account: &mut Account,
+    tx_memo: &Memo,
     messages: Vec<Any>,
     retry_counter: u64,
 ) -> Result<Response, Error> {
     do_send_tx_with_account_sequence_retry(
         config,
         rpc_client,
-        rpc_address,
         grpc_address,
         key_entry,
-        tx_memo,
         account,
+        tx_memo,
         messages,
         retry_counter,
     )
@@ -74,11 +72,10 @@ pub async fn send_tx_with_account_sequence_retry(
 fn do_send_tx_with_account_sequence_retry<'a>(
     config: &'a ChainConfig,
     rpc_client: &'a HttpClient,
-    rpc_address: &'a Url,
     grpc_address: &'a Uri,
     key_entry: &'a KeyEntry,
-    tx_memo: &'a Memo,
     account: &'a mut Account,
+    tx_memo: &'a Memo,
     messages: Vec<Any>,
     retry_counter: u64,
 ) -> Pin<Box<dyn Future<Output = Result<Response, Error>> + 'a>> {
@@ -86,12 +83,10 @@ fn do_send_tx_with_account_sequence_retry<'a>(
         let tx_result = estimate_fee_and_send_tx(
             config,
             rpc_client,
-            rpc_address,
             grpc_address,
             key_entry,
+            account,
             tx_memo,
-            account.number,
-            account.sequence,
             messages.clone(),
         )
         .await;
@@ -128,11 +123,10 @@ fn do_send_tx_with_account_sequence_retry<'a>(
                     do_send_tx_with_account_sequence_retry(
                         config,
                         rpc_client,
-                        rpc_address,
                         grpc_address,
                         key_entry,
-                        tx_memo,
                         account,
+                        tx_memo,
                         messages,
                         retry_counter + 1,
                     )
