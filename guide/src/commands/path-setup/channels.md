@@ -23,7 +23,7 @@ POSITIONAL ARGUMENTS:
     <CONNECTION_A>    Identifier of the connection on chain `a` to use in creating the new channel
 
 FLAGS:
-    -c, --chain-b-id <CHAIN_B_ID>      Identifier of the side `b` chain for the new channel
+    -c, --chain-b <CHAIN_B_ID>         Identifier of the side `b` chain for the new channel
     -h, --help                         Print help information
         --new-client-connection        Indicates that a new client and connection will be created
                                        underlying the new channel
@@ -213,7 +213,7 @@ pops up notifying you that a new client and a new connection will be initialized
 as part of the process:
 
 ```shell
-hermes create channel ibc-0 --chain-b-id ibc-1 --port-a transfer --port-b transfer -o unordered --new-client-connection
+hermes create channel ibc-0 --chain-b ibc-1 --port-a transfer --port-b transfer -o unordered --new-client-connection
 ```
 
 ```json

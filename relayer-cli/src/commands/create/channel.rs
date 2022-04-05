@@ -100,7 +100,7 @@ impl Runnable for CreateChannelCommand {
     fn run(&self) {
         match &self.connection_a {
             Some(conn) => self.run_reusing_connection(conn),
-            None => match &self.chain_b_id {
+            None => match &self.chain_b {
                 Some(chain_b) => {
                     if self.new_client_connection {
                         match Confirm::new()
@@ -145,10 +145,10 @@ impl Runnable for CreateChannelCommand {
 
 impl CreateChannelCommand {
     /// Creates a new channel, as well as a new underlying connection and clients.
-    fn run_using_new_connection(&self, chain_b_id: &ChainId) {
+    fn run_using_new_connection(&self, chain_b: &ChainId) {
         let config = app_config();
 
-        let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
+        let chains = ChainHandlePair::spawn(&config, &self.chain_a, chain_b)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         info!(
@@ -179,28 +179,28 @@ impl CreateChannelCommand {
     }
 
     /// Creates a new channel, reusing an already existing connection and its clients.
-    fn run_reusing_connection(&self, connection_a_id: &ConnectionId) {
+    fn run_reusing_connection(&self, connection_a: &ConnectionId) {
         let config = app_config();
 
         // Validate & spawn runtime for side a.
-        let chain_a = spawn_chain_runtime(&config, &self.chain_a_id)
+        let chain_a = spawn_chain_runtime(&config, &self.chain_a)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Query the connection end.
         let height = Height::new(chain_a.id().version(), 0);
         let conn_end = chain_a
-            .query_connection(connection_a_id, height)
+            .query_connection(connection_a, height)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Query the client state, obtain the identifier of chain b.
-        let chain_b_id = chain_a
+        let chain_b = chain_a
             .query_client_state(conn_end.client_id(), height)
             .map(|cs| cs.chain_id())
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Spawn the runtime for side b.
         let chain_b =
-            spawn_chain_runtime(&config, &chain_b_id).unwrap_or_else(exit_with_unrecoverable_error);
+            spawn_chain_runtime(&config, &chain_b).unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the foreign client handles.
         let client_a = ForeignClient::find(chain_b.clone(), chain_a.clone(), conn_end.client_id())
@@ -208,7 +208,7 @@ impl CreateChannelCommand {
         let client_b = ForeignClient::find(chain_a, chain_b, conn_end.counterparty().client_id())
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let identified_end = IdentifiedConnectionEnd::new(connection_a_id.clone(), conn_end);
+        let identified_end = IdentifiedConnectionEnd::new(connection_a.clone(), conn_end);
 
         let connection = Connection::find(client_a, client_b, &identified_end)
             .unwrap_or_else(exit_with_unrecoverable_error);
