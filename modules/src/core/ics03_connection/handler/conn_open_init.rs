@@ -104,7 +104,7 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails because no client exists in the context".to_string(),
-                ctx: default_context.clone(),
+                ctx: default_context,
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_default.clone()),
                 expected_versions: vec![msg_conn_init_default.version.clone().unwrap()],
                 want_pass: false,
@@ -118,9 +118,9 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: good_context.clone(),
+                ctx: good_context,
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_default.clone()),
-                expected_versions: vec![msg_conn_init_default.version.clone().unwrap()],
+                expected_versions: vec![msg_conn_init_default.version.unwrap()],
                 want_pass: true,
             },
         ]
