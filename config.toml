@@ -175,7 +175,7 @@ clock_drift = '5s'
 
 # Specify the maximum time per block for this chain.
 # The block time together with the clock drift are added to the source drift to estimate
-# the maximum clock drift when creating a client on this chain. Default: 10s
+# the maximum clock drift when creating a client on this chain. Default: 30s
 # For cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
 # Note: This MUST be the same as the `max_expected_time_per_block` genesis parameter for Tendermint chains.
 max_block_time = '30s'
