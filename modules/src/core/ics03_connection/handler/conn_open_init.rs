@@ -80,6 +80,8 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::Height;
 
+    use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
+
     #[test]
     fn conn_open_init_msg_processing() {
         struct Test {
@@ -96,6 +98,13 @@ mod tests {
             version: None,
             ..msg_conn_init_default.clone()
         };
+        let msg_conn_init_bad_version = MsgConnectionOpenInit {
+            version: Version::try_from(RawVersion {
+                identifier: "random identifier 424242".to_string(),
+                features: vec![],
+            }).unwrap().into(),
+            ..msg_conn_init_default.clone()
+        };
         let default_context = MockContext::default();
         let good_context = default_context
             .clone()
@@ -107,6 +116,13 @@ mod tests {
                 ctx: default_context,
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_default.clone()),
                 expected_versions: vec![msg_conn_init_default.version.clone().unwrap()],
+                want_pass: false,
+            },
+            Test {
+                name: "Incompatible version in MsgConnectionOpenInit msg".to_string(),
+                ctx: good_context.clone(),
+                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_bad_version),
+                expected_versions: vec![],
                 want_pass: false,
             },
             Test {
