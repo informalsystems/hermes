@@ -5,7 +5,7 @@ use ibc_proto::cosmos::tx::v1beta1::Fee;
 use num_bigint::BigInt;
 use num_rational::BigRational;
 
-use crate::chain::cosmos::types::GasConfig;
+use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::GasPrice;
 
 pub struct PrettyFee<'a>(pub &'a Fee);

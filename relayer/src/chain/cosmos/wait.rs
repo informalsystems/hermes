@@ -9,7 +9,7 @@ use tendermint_rpc::{HttpClient, Url};
 use tracing::{info, trace};
 
 use crate::chain::cosmos::query::tx::query_txs;
-use crate::chain::cosmos::types::tx_sync::TxSyncResult;
+use crate::chain::cosmos::types::tx::TxSyncResult;
 use crate::error::Error;
 
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);

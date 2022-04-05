@@ -7,7 +7,7 @@ use ibc_proto::google::protobuf::Any;
 use tendermint::account::Id as AccountId;
 
 use crate::chain::cosmos::types::account::{AccountNumber, AccountSequence};
-use crate::chain::cosmos::types::SignedTx;
+use crate::chain::cosmos::types::tx::SignedTx;
 use crate::config::types::Memo;
 use crate::config::AddressType;
 use crate::config::ChainConfig;

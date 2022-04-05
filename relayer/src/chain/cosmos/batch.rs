@@ -6,7 +6,7 @@ use tonic::codegen::http::Uri;
 
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
-use crate::chain::cosmos::types::tx_sync::TxSyncResult;
+use crate::chain::cosmos::types::tx::TxSyncResult;
 use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::config::types::Memo;
 use crate::config::ChainConfig;
