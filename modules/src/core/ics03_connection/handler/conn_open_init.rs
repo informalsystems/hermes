@@ -102,7 +102,9 @@ mod tests {
             version: Version::try_from(RawVersion {
                 identifier: "random identifier 424242".to_string(),
                 features: vec![],
-            }).unwrap().into(),
+            })
+            .unwrap()
+            .into(),
             ..msg_conn_init_default.clone()
         };
         let default_context = MockContext::default();
