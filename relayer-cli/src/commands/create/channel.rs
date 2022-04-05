@@ -129,15 +129,13 @@ impl Runnable for CreateChannelCommand {
                         }
                     } else {
                         Output::error(
-                                "The `--new-client-connection` flag is required if invoking with `<chain-b-id>`".to_string()
+                                "The `--new-client-connection` flag is required if invoking with `<chain-b>`".to_string()
                             )
                             .exit();
                     }
                 }
-                None => {
-                    Output::error("Missing one of `<chain-b-id>` or `<connection-a>`".to_string())
-                        .exit()
-                }
+                None => Output::error("Missing one of `<chain-b>` or `<connection-a>`".to_string())
+                    .exit(),
             },
         }
     }
