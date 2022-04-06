@@ -66,10 +66,6 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics03_connection::context::ConnectionReader;
-    use crate::core::ics03_connection::version::Version;
-    use crate::prelude::*;
-
     use test_log::test;
 
     use crate::core::ics03_connection::connection::State;
@@ -78,8 +74,10 @@ mod tests {
     use crate::core::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::core::ics03_connection::msgs::ConnectionMsg;
+    use crate::core::ics03_connection::version::Version;
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
+    use crate::prelude::*;
     use crate::Height;
 
     use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
