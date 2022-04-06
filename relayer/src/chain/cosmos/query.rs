@@ -17,6 +17,7 @@ use crate::chain::QueryResponse;
 use crate::error::Error;
 
 pub mod account;
+pub mod status;
 pub mod tx;
 
 pub fn packet_query(request: &QueryPacketEventDataRequest, seq: Sequence) -> Query {

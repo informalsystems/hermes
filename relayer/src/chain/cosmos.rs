@@ -68,13 +68,14 @@ use crate::chain::cosmos::batch::{
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
+use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
-use crate::chain::{QueryResponse, StatusResponse};
+use crate::chain::{ChainStatus, QueryResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
@@ -91,6 +92,7 @@ pub mod gas;
 pub mod query;
 pub mod retry;
 pub mod simulate;
+pub mod transfer;
 pub mod tx;
 pub mod types;
 pub mod version;
@@ -375,12 +377,13 @@ impl CosmosSdkChain {
         crate::time!("query_latest_height");
         crate::telemetry!(query, self.id(), "query_latest_height");
 
-        let status = self.status()?;
+        let status = self.rt.block_on(query_status(
+            self.id(),
+            &self.rpc_client,
+            &self.config.rpc_addr,
+        ))?;
 
-        Ok(ICSHeight {
-            revision_number: ChainId::chain_version(status.node_info.network.as_str()),
-            revision_height: u64::from(status.sync_info.latest_block_height),
-        })
+        Ok(status.height)
     }
 
     async fn do_send_messages_and_wait_commit(
@@ -637,22 +640,15 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     /// Query the chain status
-    fn query_status(&self) -> Result<StatusResponse, Error> {
+    fn query_status(&self) -> Result<ChainStatus, Error> {
         crate::time!("query_status");
         crate::telemetry!(query, self.id(), "query_status");
 
-        let status = self.status()?;
-
-        let time = status.sync_info.latest_block_time;
-        let height = ICSHeight {
-            revision_number: ChainId::chain_version(status.node_info.network.as_str()),
-            revision_height: u64::from(status.sync_info.latest_block_height),
-        };
-
-        Ok(StatusResponse {
-            height,
-            timestamp: time.into(),
-        })
+        self.rt.block_on(query_status(
+            self.id(),
+            &self.rpc_client,
+            &self.config.rpc_addr,
+        ))
     }
 
     fn query_clients(
