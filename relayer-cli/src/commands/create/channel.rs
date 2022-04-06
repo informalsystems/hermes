@@ -129,7 +129,7 @@ impl Runnable for CreateChannelCommand {
                         }
                     } else {
                         Output::error(
-                                "The `--new-client-connection` flag is required if invoking with `<chain-b>`".to_string()
+                                "The `--new-client-connection` flag is required if invoking with `--chain-b`".to_string()
                             )
                             .exit();
                     }
