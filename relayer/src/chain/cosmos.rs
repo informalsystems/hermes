@@ -869,18 +869,16 @@ impl CosmosSdkChain {
                             ))];
 
                             // Otherwise, try to resolve transaction hash to the corresponding events.
-                        } else if let Ok(events_per_tx) =
-                            self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
+                        } else if let Ok((events_per_tx, cosmos_events_per_tx)) =
+                            self.query_extended_events_for_tx(QueryTxHash(response.hash))
                         {
                             // If we get events back, progress was made, so we replace the events
                             // with the new ones. in both cases we will check in the next iteration
                             // whether or not the transaction was fully committed.
+                            // Either IBC or Cosmos-specific events can qualify as a commit.
                             if !events_per_tx.is_empty() {
                                 *events = events_per_tx;
                             }
-                        } else if let Ok(cosmos_events_per_tx) =
-                            self.query_cosmos_events_for_tx(QueryTxHash(response.hash))
-                        {
                             if !cosmos_events_per_tx.is_empty() {
                                 *cosmos_events = cosmos_events_per_tx;
                             }
@@ -942,8 +940,12 @@ impl CosmosSdkChain {
         })
     }
 
-    /// This function queries transactions for Cosmos-specific events matching a tx hash.
-    fn query_cosmos_events_for_tx(&self, tx: QueryTxHash) -> Result<Vec<CosmosEvent>, Error> {
+    /// Queries the node for both IBC and Cosmos-specific events
+    /// matching a tx hash.
+    fn query_extended_events_for_tx(
+        &self,
+        tx: QueryTxHash,
+    ) -> Result<(Vec<IbcEvent>, Vec<CosmosEvent>), Error> {
         crate::time!("query_cosmos_events_for_tx");
         crate::telemetry!(query, self.id(), "query_cosmos_events_for_tx");
 
@@ -958,10 +960,12 @@ impl CosmosSdkChain {
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         if response.txs.is_empty() {
-            Ok(vec![])
+            Ok((vec![], vec![]))
         } else {
             let tx = response.txs.remove(0);
-            Ok(all_cosmos_events_from_tx_search_response(self.id(), &tx))
+            let ibc_events = all_ibc_events_from_tx_search_response(self.id(), &tx);
+            let cosmos_events = all_cosmos_events_from_tx_search_response(self.id(), &tx);
+            Ok((ibc_events, cosmos_events))
         }
     }
 
