@@ -793,7 +793,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         let new_msg = MsgConnectionOpenInit {
             client_id: self.dst_client_id().clone(),
             counterparty,
-            version,
+            version: Some(version),
             delay_period: self.delay_period,
             signer,
         };
