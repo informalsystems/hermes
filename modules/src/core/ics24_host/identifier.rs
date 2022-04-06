@@ -362,11 +362,6 @@ impl ChannelId {
     const fn prefix() -> &'static str {
         "channel-"
     }
-
-    fn is_valid_fmt(chan_id_str: &str) -> bool {
-        let re = safe_regex::regex!(br"^channel-[0-9]{1,20}$");
-        re.is_match(chan_id_str.as_bytes())
-    }
 }
 
 /// This implementation provides a `to_string` method.
@@ -380,17 +375,10 @@ impl FromStr for ChannelId {
     type Err = ValidationError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !Self::is_valid_fmt(s) {
-            return Err(ValidationError::channel_id_invalid_format());
-        }
-
-        let counter = {
-            let s = s
-                .strip_prefix(Self::prefix())
-                .expect("missing prefix although `is_valid_fmt()`");
-            u64::from_str(s).map_err(ValidationError::channel_id_parse_failure)?
-        };
-
+        let s = s
+            .strip_prefix(Self::prefix())
+            .ok_or_else(|| ValidationError::channel_id_invalid_format())?;
+        let counter = u64::from_str(s).map_err(ValidationError::channel_id_parse_failure)?;
         Ok(Self(counter))
     }
 }
