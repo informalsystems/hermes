@@ -1112,10 +1112,10 @@ mod tests {
         let attributes = Attributes {
             height: Height::default(),
             port_id: "test_port".parse().unwrap(),
-            channel_id: Some("test_channel".parse().unwrap()),
+            channel_id: Some("channel-0".parse().unwrap()),
             connection_id: "test_connection".parse().unwrap(),
             counterparty_port_id: "counterparty_test_port".parse().unwrap(),
-            counterparty_channel_id: Some("counterparty_test_channel".parse().unwrap()),
+            counterparty_channel_id: Some("channel-1".parse().unwrap()),
         };
         let mut abci_events = vec![];
         let open_init = OpenInit::try_from(attributes.clone()).unwrap();
@@ -1164,9 +1164,9 @@ mod tests {
         let packet = Packet {
             sequence: Sequence::from(10),
             source_port: "a_test_port".parse().unwrap(),
-            source_channel: "a_test_channel".parse().unwrap(),
+            source_channel: "channel-0".parse().unwrap(),
             destination_port: "b_test_port".parse().unwrap(),
-            destination_channel: "b_test_channel".parse().unwrap(),
+            destination_channel: "channel-1".parse().unwrap(),
             data: "test_data".as_bytes().to_vec(),
             timeout_height: Height::new(1, 10),
             timeout_timestamp: Timestamp::now(),
