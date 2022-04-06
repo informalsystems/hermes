@@ -55,10 +55,27 @@ impl ClientState {
         authority_set: BeefyNextAuthoritySet<H256>,
         next_authority_set: BeefyNextAuthoritySet<H256>,
     ) -> Result<ClientState, Error> {
-        // Basic validation for the latest beefy height parameter.
-        if latest_beefy_height < 0 || latest_para_height < 0 {
+        if chain_id.version() <= 0 {
+            return Err(Error::validation(
+                "ClientState Chain id version must be the parachain id which cannot be less or equal to zero ".to_string(),
+            ));
+        }
+
+        if latest_beefy_height < 0 {
             return Err(Error::validation(
                 "ClientState latest beefy height and latest parachain height must be greater than or equal to zero".to_string(),
+            ));
+        }
+
+        if beefy_activation_block > latest_beefy_height {
+            return Err(Error::validation(
+                "ClientState beefy activation block cannot be greater than latest_beefy_height".to_string(),
+            ));
+        }
+
+        if authority_set.id >= next_authority_set.id {
+            return Err(Error::validation(
+                "ClientState next authority set id must be greater than current authority set id".to_string(),
             ));
         }
 
@@ -143,9 +160,9 @@ impl ClientState {
 
     /// Verify that the client is at a sufficient height and unfrozen at the given height
     pub fn verify_height(&self, height: Height) -> Result<(), Error> {
-        if (self.latest_beefy_height as u64) < height.revision_height {
+        if (self.latest_height() as u64) < height.revision_height {
             return Err(Error::insufficient_height(
-                self.latest_beefy_height(),
+                self.latest_height(),
                 height,
             ));
         }
