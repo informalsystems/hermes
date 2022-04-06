@@ -377,7 +377,7 @@ impl FromStr for ChannelId {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s
             .strip_prefix(Self::prefix())
-            .ok_or_else(|| ValidationError::channel_id_invalid_format())?;
+            .ok_or_else(ValidationError::channel_id_invalid_format)?;
         let counter = u64::from_str(s).map_err(ValidationError::channel_id_parse_failure)?;
         Ok(Self(counter))
     }
