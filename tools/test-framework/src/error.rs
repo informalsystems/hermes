@@ -7,7 +7,7 @@ use ibc_relayer::channel::error::ChannelError;
 use ibc_relayer::connection::ConnectionError;
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::supervisor::error::Error as SupervisorError;
-use ibc_relayer::transfer::PacketError;
+use ibc_relayer::transfer::TransferError;
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
 define_error! {
@@ -45,8 +45,8 @@ define_error! {
             [ ConnectionError ]
             | _ | { "connection error"},
 
-        Packet
-            [ PacketError ]
+        Transfer
+            [ TransferError ]
             | _ | { "packet error"},
     }
 }
@@ -98,8 +98,8 @@ impl From<ConnectionError> for Error {
     }
 }
 
-impl From<PacketError> for Error {
-    fn from(e: PacketError) -> Self {
-        Error::packet(e)
+impl From<TransferError> for Error {
+    fn from(e: TransferError) -> Self {
+        Error::transfer(e)
     }
 }

@@ -92,7 +92,6 @@ pub mod gas;
 pub mod query;
 pub mod retry;
 pub mod simulate;
-pub mod transfer;
 pub mod tx;
 pub mod types;
 pub mod version;

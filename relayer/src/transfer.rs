@@ -13,11 +13,12 @@ use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
+use crate::chain::ChainStatus;
 use crate::error::Error;
 use crate::util::bigint::U256;
 
 define_error! {
-    PacketError {
+    TransferError {
         Relayer
             [ Error ]
             |_| { "relayer error" },
@@ -51,6 +52,9 @@ define_error! {
                 format!("internal error, expected IBCEvent::ChainError, got {:?}",
                     e.event)
             },
+
+        ZeroTimeout
+            | _ | { "packet timeout height and packet timeout timestamp cannot both be 0" },
     }
 }
 
@@ -71,6 +75,57 @@ impl FromStr for Amount {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum TransferTimeout {
+    Height(Height),
+    Timestamp(Timestamp),
+    HeightAndTimestamp(Height, Timestamp),
+}
+
+impl TransferTimeout {
+    pub fn new(
+        timeout_height_offset: u64,
+        timeout: Duration,
+        destination_chain_status: &ChainStatus,
+    ) -> Result<Self, TransferError> {
+        let offset_is_zero = timeout_height_offset == 0;
+        let timeout_is_zero = timeout == Duration::ZERO;
+
+        let timeout_height = destination_chain_status.height.add(timeout_height_offset);
+
+        let timeout_timestamp = (destination_chain_status.timestamp + timeout)
+            .map_err(TransferError::timestamp_overflow)?;
+
+        if offset_is_zero && timeout_is_zero {
+            Err(TransferError::zero_timeout())
+        } else if timeout_is_zero {
+            // timeout height offset is non zero
+            Ok(Self::Height(timeout_height))
+        } else if offset_is_zero {
+            // timeout is non zero
+            Ok(Self::Timestamp(timeout_timestamp))
+        } else {
+            Ok(Self::HeightAndTimestamp(timeout_height, timeout_timestamp))
+        }
+    }
+
+    pub fn timeout_timestamp(&self) -> Timestamp {
+        match self {
+            Self::Height(_) => Timestamp::none(),
+            Self::Timestamp(timestamp) => *timestamp,
+            Self::HeightAndTimestamp(_, timestamp) => *timestamp,
+        }
+    }
+
+    pub fn timeout_height(&self) -> Height {
+        match self {
+            Self::Height(height) => *height,
+            Self::Timestamp(_) => Height::zero(),
+            Self::HeightAndTimestamp(height, _) => *height,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct TransferOptions {
     pub packet_src_port_id: PortId,
@@ -79,7 +134,7 @@ pub struct TransferOptions {
     pub denom: String,
     pub receiver: Option<String>,
     pub timeout_height_offset: u64,
-    pub timeout_seconds: Duration,
+    pub timeout_duration: Duration,
     pub number_msgs: usize,
 }
 
@@ -87,28 +142,23 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     packet_src_chain: &SrcChain, // the chain whose account is debited
     packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
     opts: &TransferOptions,
-) -> Result<Vec<IbcEvent>, PacketError> {
+) -> Result<Vec<IbcEvent>, TransferError> {
     let receiver = match &opts.receiver {
-        None => packet_dst_chain.get_signer().map_err(PacketError::key)?,
+        None => packet_dst_chain.get_signer().map_err(TransferError::key)?,
         Some(r) => r.clone().into(),
     };
 
-    let sender = packet_src_chain.get_signer().map_err(PacketError::key)?;
+    let sender = packet_src_chain.get_signer().map_err(TransferError::key)?;
 
-    let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
-        Timestamp::none()
-    } else {
-        (Timestamp::now() + opts.timeout_seconds).map_err(PacketError::timestamp_overflow)?
-    };
+    let chain_status = packet_dst_chain
+        .query_status()
+        .map_err(TransferError::relayer)?;
 
-    let timeout_height = if opts.timeout_height_offset == 0 {
-        Height::zero()
-    } else {
-        packet_dst_chain
-            .query_latest_height()
-            .map_err(PacketError::relayer)?
-            .add(opts.timeout_height_offset)
-    };
+    let timeout = TransferTimeout::new(
+        opts.timeout_height_offset,
+        opts.timeout_duration,
+        &chain_status,
+    )?;
 
     let msg = MsgTransfer {
         source_port: opts.packet_src_port_id.clone(),
@@ -119,8 +169,8 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         }),
         sender,
         receiver,
-        timeout_height,
-        timeout_timestamp,
+        timeout_height: timeout.timeout_height(),
+        timeout_timestamp: timeout.timeout_timestamp(),
     };
 
     let raw_msg = msg.to_any();
@@ -128,7 +178,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
 
     let events = packet_src_chain
         .send_messages_and_wait_commit(TrackedMsgs::new(msgs, "ft-transfer"))
-        .map_err(|e| PacketError::submit(packet_src_chain.id(), e))?;
+        .map_err(|e| TransferError::submit(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction
     let result = events
@@ -139,7 +189,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         None => Ok(events),
         Some(err) => {
             if let IbcEvent::ChainError(err) = err {
-                Err(PacketError::tx_response(err.clone()))
+                Err(TransferError::tx_response(err.clone()))
             } else {
                 panic!(
                     "internal error, expected IBCEvent::ChainError, got {:?}",
