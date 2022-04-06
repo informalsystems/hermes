@@ -256,7 +256,7 @@ impl From<Attributes> for Vec<Tag> {
         if let Some(channel_id) = a.channel_id {
             let channel_id = Tag {
                 key: CHANNEL_ID_ATTRIBUTE_KEY.parse().unwrap(),
-                value: channel_id.as_str().parse().unwrap(),
+                value: channel_id.to_string().parse().unwrap(),
             };
             attributes.push(channel_id);
         }
@@ -273,7 +273,7 @@ impl From<Attributes> for Vec<Tag> {
         if let Some(channel_id) = a.counterparty_channel_id {
             let channel_id = Tag {
                 key: COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY.parse().unwrap(),
-                value: channel_id.as_str().parse().unwrap(),
+                value: channel_id.to_string().parse().unwrap(),
             };
             attributes.push(channel_id);
         }

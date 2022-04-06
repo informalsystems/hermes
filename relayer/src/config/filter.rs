@@ -201,11 +201,11 @@ impl<T> FilterPattern<T> {
     /// wildcard matching if the filter is a `Pattern`.
     pub fn matches(&self, value: &T) -> bool
     where
-        T: PartialEq + AsRef<str>,
+        T: PartialEq + ToString,
     {
         match self {
             FilterPattern::Exact(v) => value == v,
-            FilterPattern::Wildcard(regex) => regex.is_match(value.as_ref()),
+            FilterPattern::Wildcard(regex) => regex.is_match(&value.to_string()),
         }
     }
 
@@ -230,14 +230,14 @@ impl<T: fmt::Display> fmt::Display for FilterPattern<T> {
 
 impl<T> Serialize for FilterPattern<T>
 where
-    T: AsRef<str>,
+    T: ToString,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match self {
-            FilterPattern::Exact(e) => serializer.serialize_str(e.as_ref()),
+            FilterPattern::Exact(e) => serializer.serialize_str(&e.to_string()),
             FilterPattern::Wildcard(t) => serializer.serialize_str(&t.to_string()),
         }
     }

@@ -120,7 +120,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
             port_id: domain_msg.port_id.to_string(),
             previous_channel_id: domain_msg
                 .previous_channel_id
-                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
+                .map_or_else(|| "".to_string(), |v| v.to_string()),
             channel: Some(domain_msg.channel.into()),
             counterparty_version: domain_msg.counterparty_version.to_string(),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
