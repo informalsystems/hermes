@@ -40,12 +40,14 @@ use crate::core::ics24_host::path::{
 };
 use crate::downcast;
 
+pub trait BeefyLCStore: StorageRead + StorageWrite + Clone {}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct BeefyClient<Store: StorageRead + StorageWrite + Clone> {
+pub struct BeefyClient<Store: BeefyLCStore> {
     store: Store,
 }
 
-impl<Store: StorageRead + StorageWrite + Clone> ClientDef for BeefyClient<Store> {
+impl<Store: BeefyLCStore> ClientDef for BeefyClient<Store> {
     type Header = BeefyHeader;
     type ClientState = ClientState;
     type ConsensusState = ConsensusState;
@@ -439,7 +441,7 @@ impl<Store: StorageRead + StorageWrite + Clone> ClientDef for BeefyClient<Store>
 }
 
 fn verify_membership(
-    client_state: &ClientState,
+    _client_state: &ClientState,
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
