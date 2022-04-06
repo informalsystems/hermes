@@ -348,7 +348,7 @@ impl ChannelId {
     /// ```
     /// # use ibc::core::ics24_host::identifier::ChannelId;
     /// let chan_id = ChannelId::new(27);
-    /// assert_eq!(&chan_id, "channel-27");
+    /// assert_eq!(chan_id.to_string(), "channel-27");
     /// ```
     pub fn new(counter: u64) -> Self {
         Self(counter)
