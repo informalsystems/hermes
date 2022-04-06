@@ -1,14 +1,13 @@
-use crate::prelude::*;
-
 use core::convert::{From, Infallible};
 use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
-use serde::{Deserialize, Serialize};
 
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics24_host::error::ValidationError;
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use super::validate::*;
+use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics24_host::error::ValidationError;
+use crate::prelude::*;
 
 /// This type is subject to future changes.
 ///
@@ -336,7 +335,7 @@ impl Default for PortId {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ChannelId(u64);
 
 impl ChannelId {
@@ -386,6 +385,26 @@ impl FromStr for ChannelId {
 impl Default for ChannelId {
     fn default() -> Self {
         Self::new(0)
+    }
+}
+
+impl Serialize for ChannelId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.collect_str(self)
+    }
+}
+
+impl<'de> Deserialize<'de> for ChannelId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(de::Error::custom)
     }
 }
 
