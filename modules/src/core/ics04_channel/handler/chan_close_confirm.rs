@@ -18,11 +18,11 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Retrieve the old channel end and validate it against the message.
-    let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id.clone()))?;
+    let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id))?;
 
     // Validate that the channel end is in a state where it can be closed.
     if channel_end.state_matches(&State::Closed) {
-        return Err(Error::channel_closed(msg.channel_id.clone()));
+        return Err(Error::channel_closed(msg.channel_id));
     }
 
     // Channel capabilities
@@ -47,8 +47,7 @@ pub(crate) fn process(
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.
 
-    let expected_counterparty =
-        Counterparty::new(msg.port_id.clone(), Some(msg.channel_id.clone()));
+    let expected_counterparty = Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
 
     let counterparty = conn.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
@@ -81,14 +80,14 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id.clone(),
-        channel_id: msg.channel_id.clone(),
+        channel_id: msg.channel_id,
         channel_id_state: ChannelIdState::Reused,
         channel_cap,
         channel_end,
     };
 
     let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id.clone()),
+        channel_id: Some(msg.channel_id),
         height: ctx.host_height(),
         ..Default::default()
     };
@@ -151,7 +150,7 @@ mod tests {
             Order::default(),
             Counterparty::new(
                 msg_chan_close_confirm.port_id.clone(),
-                Some(msg_chan_close_confirm.channel_id.clone()),
+                Some(msg_chan_close_confirm.channel_id),
             ),
             vec![conn_id.clone()],
             Version::default(),
@@ -163,7 +162,7 @@ mod tests {
             .with_port_capability(msg_chan_close_confirm.port_id.clone())
             .with_channel(
                 msg_chan_close_confirm.port_id.clone(),
-                msg_chan_close_confirm.channel_id.clone(),
+                msg_chan_close_confirm.channel_id,
                 chan_end,
             );
 

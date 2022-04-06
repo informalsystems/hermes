@@ -136,7 +136,7 @@ impl TxIcs20MsgTransferCmd {
 
         let opts = TransferOptions {
             packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id.clone(),
+            packet_src_channel_id: self.src_channel_id,
             amount: self.amount,
             denom,
             receiver: self.receiver.clone(),
