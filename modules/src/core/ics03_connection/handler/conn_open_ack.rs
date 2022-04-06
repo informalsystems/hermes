@@ -82,6 +82,7 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         connection_id: Some(result.connection_id.clone()),
+        height: ctx.host_current_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenAckConnection(event_attributes.into()));
@@ -97,6 +98,7 @@ mod tests {
     use test_log::test;
 
     use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
+    use crate::core::ics03_connection::context::ConnectionReader;
     use crate::core::ics03_connection::error;
     use crate::core::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::core::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_raw_msg_conn_open_ack;
@@ -238,6 +240,7 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenAckConnection(_)));
+                        assert_eq!(e.height(), test.ctx.host_current_height());
                     }
                 }
                 Err(e) => {

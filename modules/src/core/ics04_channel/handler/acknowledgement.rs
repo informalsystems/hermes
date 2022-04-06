@@ -1,4 +1,3 @@
-use crate::core::ics02_client::height::Height;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
@@ -112,7 +111,7 @@ pub fn process(
     output.log("success: packet ack");
 
     output.emit(IbcEvent::AcknowledgePacket(AcknowledgePacket {
-        height: Height::zero(),
+        height: ctx.host_height(),
         packet: packet.clone(),
     }));
 
@@ -254,6 +253,7 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::AcknowledgePacket(_)));
+                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

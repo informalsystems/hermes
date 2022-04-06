@@ -69,6 +69,7 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         channel_id: Some(chan_id),
+        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenInitChannel(
@@ -92,6 +93,7 @@ mod tests {
     use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::State;
+    use crate::core::ics04_channel::context::ChannelReader;
     use crate::core::ics04_channel::handler::channel_dispatch;
     use crate::core::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
     use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
@@ -185,6 +187,7 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenInitChannel(_)));
+                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {
