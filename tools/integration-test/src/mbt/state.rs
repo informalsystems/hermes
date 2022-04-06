@@ -45,6 +45,7 @@ pub struct Chain {
 #[serde(tag = "name")]
 pub enum Action {
     Null,
+    #[serde(rename_all = "camelCase")]
     LocalTransfer {
         chain_id: ChainId,
         source: AccountId,

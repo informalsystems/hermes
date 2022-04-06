@@ -143,7 +143,7 @@ LocalTransferNext ==
                     ]
                 /\ action' = [
                         name |-> LocalTransferAction,
-                        chain |-> chainId,
+                        chainId |-> chainId,
                         source |-> source,
                         target |-> target,
                         denom |-> denom,
@@ -184,7 +184,7 @@ IBCTransferSendPacket(sourceChain, source, targetChain, target, denom, amount) =
             ![source] = AddOrUpdateEntry(@, denom, GetDenomFromBank(@, denom) - amount)
         ],
         !.escrow = [@ EXCEPT
-            ![target] = AddOrUpdateEntry(@, denom, GetDenomFromBank(@, denom) + amount)
+            ![targetChain.id] = AddOrUpdateEntry(@, denom, GetDenomFromBank(@, denom) + amount)
         ],
         !.localPackets = [@ EXCEPT
             !.list = AddOrUpdateEntry(@,
@@ -235,6 +235,7 @@ TransformDenom(denom, targetChainId) ==
 IBCTransferReceivePacket(packet) ==
     LET
     targetChainId == packet.targetChainId
+    sourceChainId == packet.sourceChainId
     destination == packet.to
     denom == TransformDenom(packet.denom, targetChainId)
     amount == packet.amount
@@ -246,19 +247,22 @@ IBCTransferReceivePacket(packet) ==
             ![destination] = AddOrUpdateEntry(@, denom, GetDenomFromBank(@, denom) + amount)
         ],
         !.supply = AddOrUpdateEntry(@, denom, GetDenomFromBank(@, denom) + amount),
-        !.remotePackets = [@ EXCEPT
-            ![targetChainId] = AddOrUpdateEntry(@,
+        !.remotePackets = AddOrUpdateEntry(
+            @,
+            sourceChainId,
+            AddOrUpdateEntry(
+                IF sourceChainId \in DOMAIN @ THEN @[sourceChainId] ELSE SetAsFun({}),
                 packet.id,
                 packet
             )
-        ]
+        )
     ]
 
 \* Checks if the packet is not processed by the targetChain
 \* @type: (PACKET, CHAIN) => Bool;
 IBCTransferReceivePacketCondition(packet, targetChain) ==
     /\ relayerRunning
-    /\ packet.id \notin DOMAIN targetChain.remotePackets[packet.targetChainId]
+    /\ packet.id \notin DOMAIN targetChain.remotePackets[packet.sourceChainId]
 
 \* Next operator for IBCTransferReceivePacket
 IBCTransferReceivePacketNext ==
@@ -270,7 +274,7 @@ IBCTransferReceivePacketNext ==
             IN
             /\ IBCTransferReceivePacketCondition(packet, targetChain)
             /\ chains' = [chains EXCEPT
-                    ![targetChain.id] = IBCTransferReceivePacket(packet)
+                    ![packet.targetChainId] = IBCTransferReceivePacket(packet)
                 ]
             /\ action' = [
                     name |-> IBCTransferReceivePacketAction,
@@ -311,7 +315,7 @@ IBCTransferTimeoutPacket(packet) ==
 \* @type: (PACKET, CHAIN) => Bool;
 IBCTransferTimeoutPacketCondition(packet, targetChain) ==
     /\ ~relayerRunning
-    /\ packet.id \notin DOMAIN targetChain.remotePackets[packet.targetChainId]
+    /\ packet.id \notin DOMAIN targetChain.remotePackets[packet.sourceChainId]
 
 \* Next operator for IBCTransferTimeoutPacket
 IBCTransferTimeoutPacketNext ==
@@ -350,7 +354,7 @@ IBCTransferAcknowledgePacket(packet) ==
 \* @type: (PACKET, CHAIN) => Bool;
 IBCTransferAcknowledgePacketCondition(packet, targetChain) ==
     /\ relayerRunning
-    /\ packet.id \in DOMAIN targetChain.remotePackets[packet.targetChainId]
+    /\ packet.id \in DOMAIN targetChain.remotePackets[packet.sourceChainId]
 
 \* Next operator for IBCTransferAcknowledgePacket
 IBCTransferAcknowledgePacketNext ==

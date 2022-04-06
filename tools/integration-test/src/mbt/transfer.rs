@@ -13,6 +13,14 @@ use super::state::{Action, State};
 
 use super::utils::{get_chain, parse_itf_from_json, CLIENT_EXPIRY};
 
+const TEST_NAMES: &[&str] = &[
+    "LocalTransferInv",
+    "IBCTransferAcknowledgePacketInv",
+    "IBCTransferTimeoutPacketInv",
+];
+const NUM_TRACES_PER_TEST: usize = 2;
+const APALACHE_EXEC: &str = "apalache-mc";
+
 fn generate_mbt_traces(
     apalache_path: &str,
     test_name: &str,
@@ -58,8 +66,8 @@ fn generate_mbt_traces(
 
 #[test]
 fn test_ibc_transfer() -> Result<(), Error> {
-    for test_name in &["IBCTransferReceivePacketInv", "IBCTransferTimeoutPacketInv"] {
-        for trace in generate_mbt_traces("apalache", test_name, 3)? {
+    for test_name in TEST_NAMES {
+        for trace in generate_mbt_traces(APALACHE_EXEC, test_name, NUM_TRACES_PER_TEST)? {
             run_binary_channel_test(&IbcTransferMBT(trace))?;
         }
     }
@@ -72,8 +80,8 @@ fn test_ibc_transfer() -> Result<(), Error> {
 */
 #[test]
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
-    for test_name in &["IBCTransferReceivePacketInv", "IBCTransferTimeoutPacketInv"] {
-        for trace in generate_mbt_traces("apalache", test_name, 3)? {
+    for test_name in TEST_NAMES {
+        for trace in generate_mbt_traces(APALACHE_EXEC, test_name, NUM_TRACES_PER_TEST)? {
             run_self_connected_binary_chain_test(&RunBinaryChannelTest::new(&IbcTransferMBT(
                 trace,
             )))?;
