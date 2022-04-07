@@ -150,14 +150,15 @@ impl FromStr for Wildcard {
     type Err = regex::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let regex = regex::escape(s).replace("\\*", "(?:.*)").parse()?;
-        Ok(Self(regex))
+        let escaped = regex::escape(s).replace("\\*", "(?:.*)");
+        format!("^{escaped}$").parse().map(Self)
     }
 }
 
 impl fmt::Display for Wildcard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = self.0.to_string().replace("(?:.*)", "*");
+        let s = s.trim_start_matches('^').trim_end_matches('$');
         write!(f, "{}", s)
     }
 }
@@ -463,5 +464,32 @@ mod tests {
             &PortId::from_str("ica").unwrap(),
             &ChannelId::from_str("channel1").unwrap()
         ));
+    }
+
+    #[test]
+    fn packet_filter_regex() {
+        let allow_policy = r#"
+            policy = 'allow'
+            list = [
+              ['transfer*', 'channel-1'],
+            ]
+            "#;
+
+        let pf: PacketFilter = toml::from_str(allow_policy).expect("could not parse filter policy");
+
+        assert!(!pf.is_allowed(
+            &PortId::from_str("ft-transfer").unwrap(),
+            &ChannelId::from_str("channel-1").unwrap()
+        ));
+        assert!(!pf.is_allowed(
+            &PortId::from_str("ft-transfer-port").unwrap(),
+            &ChannelId::from_str("channel-1").unwrap()
+        ));
+    }
+
+    #[test]
+    fn to_string_wildcards() {
+        let wildcard = "ica*".parse::<Wildcard>().unwrap();
+        assert_eq!(wildcard.to_string(), "ica*".to_string());
     }
 }
