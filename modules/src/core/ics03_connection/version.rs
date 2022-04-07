@@ -1,3 +1,5 @@
+use core::fmt::Display;
+
 use crate::prelude::*;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
@@ -61,6 +63,12 @@ impl Default for Version {
                 Order::Unordered.as_str().to_owned(),
             ],
         }
+    }
+}
+
+impl Display for Version {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.identifier)
     }
 }
 

@@ -62,7 +62,7 @@ pub mod default {
     }
 
     pub fn max_block_time() -> Duration {
-        Duration::from_secs(10)
+        Duration::from_secs(30)
     }
 
     pub fn connection_delay() -> Duration {
