@@ -42,11 +42,13 @@ fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     }
 }
 
+/// Spawns a packet worker task in the background that handles the work of
+/// processing pending txs between `ChainA` and `ChainB`.
 pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: Packet,
     // Mutex is used to prevent race condition between the packet workers
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
-    clear_interval: u64,
+    do_resubmit: bool,
 ) -> TaskHandle {
     let span = {
         let relay_path = &link.lock().unwrap().a_to_b;
@@ -70,7 +72,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             .execute_schedule()
             .map_err(handle_link_error_in_task)?;
 
-        let summary = relay_path.process_pending_txs(clear_interval);
+        let summary = relay_path.process_pending_txs(do_resubmit);
 
         if !summary.is_empty() {
             trace!("Packet worker produced relay summary: {:?}", summary);
@@ -203,7 +205,8 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
     }
 
-    let summary = link.a_to_b.process_pending_txs(clear_interval);
+    let do_resubmit = clear_interval == 0;
+    let summary = link.a_to_b.process_pending_txs(do_resubmit);
 
     if !summary.is_empty() {
         trace!("produced relay summary: {:?}", summary);

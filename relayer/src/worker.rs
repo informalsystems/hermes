@@ -111,6 +111,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 Ok(link) => {
                     let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
                     let link = Arc::new(Mutex::new(link));
+                    let do_resubmit = packets_config.clear_interval == 0;
                     let packet_task = packet::spawn_packet_cmd_worker(
                         cmd_rx,
                         link.clone(),
@@ -120,11 +121,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     );
                     task_handles.push(packet_task);
 
-                    let link_task = packet::spawn_packet_worker(
-                        path.clone(),
-                        link,
-                        packets_config.clear_interval,
-                    );
+                    let link_task = packet::spawn_packet_worker(path.clone(), link, do_resubmit);
                     task_handles.push(link_task);
                     Some(cmd_tx)
                 }

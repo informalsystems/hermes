@@ -1227,20 +1227,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(())
     }
 
-    pub fn process_pending_txs(&self, clear_interval: u64) -> RelaySummary {
+    /// Kicks off the process of relaying pending txs to the source and destination chains.
+    ///
+    /// Packet resubmission is enabled when the clear interval for packets is 0. Otherwise,
+    /// when the packet clear interval is > 0, the relayer will periodically clear unsent packets
+    /// such that resubmitting packets is not necessary.
+    pub fn process_pending_txs(&self, do_resubmit: bool) -> RelaySummary {
         if !self.confirm_txes {
             return RelaySummary::empty();
         }
 
         let mut summary_src = self
-            .process_pending_txs_src(clear_interval)
+            .process_pending_txs_src(do_resubmit)
             .unwrap_or_else(|e| {
                 error!("error processing pending events in source chain: {}", e);
                 RelaySummary::empty()
             });
 
         let summary_dst = self
-            .process_pending_txs_dst(clear_interval)
+            .process_pending_txs_dst(do_resubmit)
             .unwrap_or_else(|e| {
                 error!(
                     "error processing pending events in destination chain: {}",
@@ -1253,8 +1258,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         summary_src
     }
 
-    fn process_pending_txs_src(&self, clear_interval: u64) -> Result<RelaySummary, LinkError> {
-        let resubmit = if clear_interval == 0 {
+    fn process_pending_txs_src(&self, do_resubmit: bool) -> Result<RelaySummary, LinkError> {
+        let resubmit = if do_resubmit {
             Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
         } else {
             None
@@ -1267,8 +1272,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(res)
     }
 
-    fn process_pending_txs_dst(&self, clear_interval: u64) -> Result<RelaySummary, LinkError> {
-        let resubmit = if clear_interval == 0 {
+    fn process_pending_txs_dst(&self, do_resubmit: bool) -> Result<RelaySummary, LinkError> {
+        let resubmit = if do_resubmit {
             Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
         } else {
             None
