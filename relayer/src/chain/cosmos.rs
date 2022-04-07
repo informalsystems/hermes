@@ -949,7 +949,7 @@ impl CosmosSdkChain {
         crate::time!("query_cosmos_events_for_tx");
         crate::telemetry!(query, self.id(), "query_cosmos_events_for_tx");
 
-        let mut response = self
+        let response = self
             .block_on(self.rpc_client.tx_search(
                 tx_hash_query(&tx),
                 false,
@@ -959,13 +959,13 @@ impl CosmosSdkChain {
             ))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-        if response.txs.is_empty() {
-            Ok((vec![], vec![]))
-        } else {
-            let tx = response.txs.remove(0);
-            let ibc_events = all_ibc_events_from_tx_search_response(self.id(), &tx);
-            let cosmos_events = all_cosmos_events_from_tx_search_response(self.id(), &tx);
-            Ok((ibc_events, cosmos_events))
+        match response.txs.into_iter().next() {
+            None => Ok((vec![], vec![])),
+            Some(tx) => {
+                let ibc_events = all_ibc_events_from_tx_search_response(self.id(), &tx);
+                let cosmos_events = all_cosmos_events_from_tx_search_response(self.id(), &tx);
+                Ok((ibc_events, cosmos_events))
+            }
         }
     }
 
@@ -1859,17 +1859,15 @@ impl ChainEndpoint for CosmosSdkChain {
                         "packet_from_tx_search_response: unexpected number of txs"
                     );
 
-                    if response.txs.is_empty() {
-                        continue;
-                    }
-
-                    if let Some(event) = packet_from_tx_search_response(
-                        self.id(),
-                        &request,
-                        *seq,
-                        response.txs[0].clone(),
-                    ) {
-                        result.push(event);
+                    match response.txs.into_iter().next() {
+                        None => continue,
+                        Some(tx) => {
+                            if let Some(event) =
+                                packet_from_tx_search_response(self.id(), &request, *seq, tx)
+                            {
+                                result.push(event);
+                            }
+                        }
                     }
                 }
                 Ok(result)
@@ -1884,7 +1882,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 // same header as the first one, otherwise a subsequent transaction would have
                 // failed on chain. Therefore only one Tx is of interest and current API returns
                 // the first one.
-                let mut response = self
+                let response = self
                     .block_on(self.rpc_client.tx_search(
                         header_query(&request),
                         false,
@@ -1894,24 +1892,23 @@ impl ChainEndpoint for CosmosSdkChain {
                     ))
                     .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-                if response.txs.is_empty() {
-                    return Ok(vec![]);
-                }
-
                 // the response must include a single Tx as specified in the query.
                 assert!(
                     response.txs.len() <= 1,
                     "packet_from_tx_search_response: unexpected number of txs"
                 );
 
-                let tx = response.txs.remove(0);
-                let event = update_client_from_tx_search_response(self.id(), &request, tx);
-
-                Ok(event.into_iter().collect())
+                match response.txs.into_iter().next() {
+                    None => Ok(vec![]),
+                    Some(tx) => {
+                        let event = update_client_from_tx_search_response(self.id(), &request, tx);
+                        Ok(event.into_iter().collect())
+                    }
+                }
             }
 
             QueryTxRequest::Transaction(tx) => {
-                let mut response = self
+                let response = self
                     .block_on(self.rpc_client.tx_search(
                         tx_hash_query(&tx),
                         false,
@@ -1921,11 +1918,9 @@ impl ChainEndpoint for CosmosSdkChain {
                     ))
                     .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-                if response.txs.is_empty() {
-                    Ok(vec![])
-                } else {
-                    let tx = response.txs.remove(0);
-                    Ok(all_ibc_events_from_tx_search_response(self.id(), &tx))
+                match response.txs.into_iter().next() {
+                    None => Ok(vec![]),
+                    Some(tx) => Ok(all_ibc_events_from_tx_search_response(self.id(), &tx)),
                 }
             }
         }
