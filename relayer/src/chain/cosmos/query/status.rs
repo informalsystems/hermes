@@ -5,6 +5,10 @@ use tendermint_rpc::{Client, HttpClient, Url};
 use crate::chain::ChainStatus;
 use crate::error::Error;
 
+/// Query the chain status via an RPC query.
+///
+/// Returns an error if the node is still syncing and has not caught up,
+/// ie. if `sync_info.catching_up` is `true`.
 pub async fn query_status(
     chain_id: &ChainId,
     rpc_client: &HttpClient,

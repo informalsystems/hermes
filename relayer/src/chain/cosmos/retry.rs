@@ -7,7 +7,7 @@ use tendermint::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::HttpClient;
 use tonic::codegen::http::Uri;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, span, warn, Level};
 
 use crate::chain::cosmos::query::account::refresh_account;
 use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
@@ -56,6 +56,10 @@ pub async fn send_tx_with_account_sequence_retry(
     messages: Vec<Any>,
     retry_counter: u64,
 ) -> Result<Response, Error> {
+    crate::time!("send_tx_with_account_sequence_retry");
+    let _span =
+        span!(Level::ERROR, "send_tx_with_account_sequence_retry", id = %config.id).entered();
+
     do_send_tx_with_account_sequence_retry(
         config,
         rpc_client,
@@ -83,6 +87,12 @@ fn do_send_tx_with_account_sequence_retry<'a>(
     retry_counter: u64,
 ) -> Pin<Box<dyn Future<Output = Result<Response, Error>> + 'a>> {
     Box::pin(async move {
+        debug!(
+            "sending {} messages using account sequence {}",
+            messages.len(),
+            account.sequence,
+        );
+
         let tx_result = estimate_fee_and_send_tx(
             config,
             rpc_client,

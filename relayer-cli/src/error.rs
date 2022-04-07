@@ -71,7 +71,7 @@ define_error! {
 
         Transfer
             [ TransferError ]
-            |_| { "packet error" },
+            |_| { "transfer error" },
 
         Channel
             [ ChannelError ]

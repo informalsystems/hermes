@@ -82,6 +82,14 @@ async fn estimate_fee_with_tx(
     Ok(adjusted_fee)
 }
 
+/// Try to simulate the given tx in order to estimate how much gas will be needed to submit it.
+///
+/// It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
+/// they do not individually verify. For example for the following batch:
+/// [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
+///
+/// If the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check.
+/// In this case we use the `default_gas` param.
 async fn estimate_gas_with_tx(
     gas_config: &GasConfig,
     grpc_address: &Uri,

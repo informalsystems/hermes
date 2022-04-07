@@ -13,6 +13,7 @@ pub struct PrettyFee<'a>(pub &'a Fee);
 pub fn gas_amount_to_fees(config: &GasConfig, gas_amount: u64) -> Fee {
     let adjusted_gas_limit = adjust_gas_with_simulated_fees(config, gas_amount);
 
+    // The fee in coins based on gas amount
     let amount = calculate_fee(adjusted_gas_limit, &config.gas_price);
 
     Fee {

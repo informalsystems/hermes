@@ -33,22 +33,27 @@ impl GasConfig {
     }
 }
 
+/// The default amount of gas the relayer is willing to pay for a transaction,
+/// when it cannot simulate the tx and therefore estimate the gas amount needed.
 pub fn default_gas_from_config(config: &ChainConfig) -> u64 {
     config
         .default_gas
         .unwrap_or_else(|| max_gas_from_config(config))
 }
 
+/// The maximum amount of gas the relayer is willing to pay for a transaction
 pub fn max_gas_from_config(config: &ChainConfig) -> u64 {
     config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
 }
 
+/// The gas price adjustment
 fn gas_adjustment_from_config(config: &ChainConfig) -> f64 {
     config
         .gas_adjustment
         .unwrap_or(DEFAULT_GAS_PRICE_ADJUSTMENT)
 }
 
+/// Get the fee granter address
 fn fee_granter_from_config(config: &ChainConfig) -> String {
     config
         .fee_granter
@@ -59,7 +64,10 @@ fn fee_granter_from_config(config: &ChainConfig) -> String {
 
 fn max_fee_from_config(config: &ChainConfig) -> Fee {
     let max_gas = max_gas_from_config(config);
+
+    // The maximum fee the relayer pays for a transaction
     let max_fee_in_coins = calculate_fee(max_gas, &config.gas_price);
+
     let fee_granter = fee_granter_from_config(config);
 
     Fee {

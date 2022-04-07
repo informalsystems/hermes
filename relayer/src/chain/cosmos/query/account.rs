@@ -7,6 +7,9 @@ use tracing::info;
 use crate::chain::cosmos::types::account::Account;
 use crate::error::Error;
 
+/// Get a `&mut Account` from an `&mut Option<Account>` if it is `Some(Account)`.
+/// Otherwise query for the account information, update the `Option` to `Some`,
+/// and return the underlying `&mut` reference.
 pub async fn get_or_fetch_account<'a>(
     grpc_address: &Uri,
     account_address: &str,
@@ -25,6 +28,8 @@ pub async fn get_or_fetch_account<'a>(
     }
 }
 
+/// Refresh the account sequence behind the `&mut Account` by refetching the
+/// account and updating the `&mut` reference.
 pub async fn refresh_account<'a>(
     grpc_address: &Uri,
     account_address: &str,
