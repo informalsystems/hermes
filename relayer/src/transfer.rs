@@ -85,15 +85,15 @@ pub enum TransferTimeout {
 impl TransferTimeout {
     pub fn new(
         timeout_height_offset: u64,
-        timeout: Duration,
+        timeout_duration: Duration,
         destination_chain_status: &ChainStatus,
     ) -> Result<Self, TransferError> {
         let offset_is_zero = timeout_height_offset == 0;
-        let timeout_is_zero = timeout == Duration::ZERO;
+        let timeout_is_zero = timeout_duration == Duration::ZERO;
 
         let timeout_height = destination_chain_status.height.add(timeout_height_offset);
 
-        let timeout_timestamp = (destination_chain_status.timestamp + timeout)
+        let timeout_timestamp = (destination_chain_status.timestamp + timeout_duration)
             .map_err(TransferError::timestamp_overflow)?;
 
         if offset_is_zero && timeout_is_zero {

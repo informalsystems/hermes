@@ -21,7 +21,7 @@ pub mod status;
 pub mod tx;
 
 pub fn packet_query(request: &QueryPacketEventDataRequest, seq: Sequence) -> Query {
-    tendermint_rpc::query::Query::eq(
+    Query::eq(
         format!("{}.packet_src_channel", request.event_id.as_str()),
         request.source_channel_id.to_string(),
     )
@@ -44,7 +44,7 @@ pub fn packet_query(request: &QueryPacketEventDataRequest, seq: Sequence) -> Que
 }
 
 pub fn header_query(request: &QueryClientEventRequest) -> Query {
-    tendermint_rpc::query::Query::eq(
+    Query::eq(
         format!("{}.client_id", request.event_id.as_str()),
         request.client_id.to_string(),
     )
@@ -58,7 +58,7 @@ pub fn header_query(request: &QueryClientEventRequest) -> Query {
 }
 
 pub fn tx_hash_query(request: &QueryTxHash) -> Query {
-    tendermint_rpc::query::Query::eq("tx.hash", request.0.to_string())
+    Query::eq("tx.hash", request.0.to_string())
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.

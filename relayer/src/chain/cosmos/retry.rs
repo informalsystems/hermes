@@ -69,6 +69,9 @@ pub async fn send_tx_with_account_sequence_retry(
     .await
 }
 
+// We have to do explicit return of `Box<dyn Future>` because Rust
+// do not currently support recursive async functions behind the
+// `async fn` syntactic sugar.
 fn do_send_tx_with_account_sequence_retry<'a>(
     config: &'a ChainConfig,
     rpc_client: &'a HttpClient,
