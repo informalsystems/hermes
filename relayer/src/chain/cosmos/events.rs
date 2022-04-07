@@ -1,4 +1,4 @@
-//! Extension events specific to chains followed via Cosmos SDK.
+//! Extension events specific to chains built on the Cosmos SDK.
 
 use serde_derive::Serialize;
 
