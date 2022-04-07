@@ -3,8 +3,6 @@ use std::thread::sleep;
 
 use ibc::core::ics03_connection::connection::State as ConnectionState;
 use ibc::core::ics04_channel::channel::State as ChannelState;
-use ibc::core::ics04_channel::Version as ChannelVersion;
-use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::{self, Config, ModeConfig};
 
 use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
@@ -140,7 +138,7 @@ impl BinaryChainTest for ChannelExpirationTest {
         let connection = {
             let _refresh_tasks = spawn_refresh_client_tasks(&chains.foreign_clients)?;
 
-            bootstrap_connection(&chains.foreign_clients, default_connection_delay(), false)?
+            bootstrap_connection(&chains.foreign_clients, Default::default())?
         };
 
         wait_for_client_expiry();
@@ -284,10 +282,8 @@ impl BinaryChainTest for PacketExpirationTest {
                 &chains,
                 &PortId::transfer(),
                 &PortId::transfer(),
-                Order::Unordered,
-                ChannelVersion::ics20(),
-                default_connection_delay(),
-                false,
+                Default::default(),
+                Default::default(),
             )?
         };
 
@@ -369,14 +365,14 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
         let connection = {
             let _refresh_tasks = spawn_refresh_client_tasks(&chains.foreign_clients)?;
 
-            bootstrap_connection(&chains.foreign_clients, default_connection_delay(), false)?
+            bootstrap_connection(&chains.foreign_clients, Default::default())?
         };
 
         wait_for_client_expiry();
 
         info!("trying to bootstrap connection after IBC client is expired");
 
-        let res = bootstrap_connection(&chains.foreign_clients, default_connection_delay(), false);
+        let res = bootstrap_connection(&chains.foreign_clients, Default::default());
 
         match res {
             Ok(_) => {
@@ -399,9 +395,7 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
             connection,
             &DualTagged::new(&PortId::transfer()),
             &DualTagged::new(&PortId::transfer()),
-            Order::Unordered,
-            ChannelVersion::ics20(),
-            false,
+            Default::default(),
         );
 
         match res {

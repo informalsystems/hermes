@@ -9,7 +9,9 @@ use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 
-use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
+use crate::bootstrap::binary::channel::{
+    bootstrap_channel_with_connection, BootstrapChannelOptions,
+};
 use crate::bootstrap::nary::connection::bootstrap_connections_dynamic;
 use crate::error::{handle_generic_error, Error};
 use crate::types::binary::channel::ConnectedChannel;
@@ -54,9 +56,11 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
                     connection.clone(),
                     &DualTagged::new(port_a),
                     &DualTagged::new(port_b),
-                    order,
-                    Version::ics20(),
-                    bootstrap_with_random_ids,
+                    BootstrapChannelOptions {
+                        order,
+                        version: Version::ics20(),
+                        bootstrap_with_random_ids,
+                    },
                 )?;
 
                 channels_b.push(channel);

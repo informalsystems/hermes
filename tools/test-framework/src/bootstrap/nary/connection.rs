@@ -7,7 +7,7 @@ use core::time::Duration;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::bootstrap::binary::connection::bootstrap_connection;
+use crate::bootstrap::binary::connection::{bootstrap_connection, BootstrapConnectionOptions};
 use crate::error::Error;
 use crate::types::binary::connection::ConnectedConnection;
 use crate::types::binary::foreign_client::ForeignClientPair;
@@ -41,8 +41,10 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
 
                 let connection = bootstrap_connection(
                     &foreign_clients,
-                    connection_delay,
-                    bootstrap_with_random_ids,
+                    BootstrapConnectionOptions {
+                        connection_delay,
+                        bootstrap_with_random_ids,
+                    },
                 )?;
 
                 connections_b.push(connection);

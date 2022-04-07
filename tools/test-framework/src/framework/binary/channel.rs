@@ -10,7 +10,9 @@ use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use crate::bootstrap::binary::channel::bootstrap_channel_with_connection;
+use crate::bootstrap::binary::channel::{
+    bootstrap_channel_with_connection, BootstrapChannelOptions,
+};
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::{
@@ -205,9 +207,11 @@ where
             connection,
             &DualTagged::new(port_a).as_ref(),
             &DualTagged::new(port_b).as_ref(),
-            order,
-            version,
-            config.bootstrap_with_random_ids,
+            BootstrapChannelOptions {
+                order,
+                version,
+                bootstrap_with_random_ids: config.bootstrap_with_random_ids,
+            },
         )?;
 
         let env_path = config.chain_store_dir.join("binary-channels.env");

@@ -8,7 +8,7 @@ use core::time::Duration;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
-use crate::bootstrap::binary::connection::bootstrap_connection;
+use crate::bootstrap::binary::connection::{bootstrap_connection, BootstrapConnectionOptions};
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::TestConfigOverride;
@@ -158,8 +158,10 @@ where
 
         let connection = bootstrap_connection(
             &chains.foreign_clients,
-            connection_delay,
-            config.bootstrap_with_random_ids,
+            BootstrapConnectionOptions {
+                connection_delay,
+                bootstrap_with_random_ids: config.bootstrap_with_random_ids,
+            },
         )?;
 
         let env_path = config.chain_store_dir.join("binary-connections.env");
