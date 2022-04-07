@@ -10,6 +10,7 @@ use ibc::Height;
 // Event type strings
 const SUBMIT_PROPOSAL_EVENT: &str = "submit_proposal";
 
+/// Variants that encode the possible message types sent via Cosmos SDK modules
 #[derive(Debug, Serialize)]
 pub enum CosmosEvent {
     SubmitProposal(SubmitProposal),
