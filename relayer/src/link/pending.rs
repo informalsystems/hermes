@@ -133,7 +133,12 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         Ok(Some(all_events))
     }
 
-    /// Try and process one pending transaction if available.
+    /// Try and process one pending transaction within the given timeout duration if one
+    /// is available.
+    ///
+    /// A `resubmit` closure is provided when the clear interval for packets is 0. If this closure
+    /// is provided, the pending transactions that fail to process within the given timeout duration
+    /// are resubmitted following the logic specified by the closure.
     pub fn process_pending<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         timeout: Duration,
@@ -180,6 +185,9 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                         match resubmit {
                             Some(f) => {
+                                // The pending tx needs to be resubmitted. This involves replacing the tx's
+                                // stale operational data with a fresh copy and then applying the `resubmit`
+                                // closure to it.
                                 let new_od = relay_path
                                     .regenerate_operational_data(pending.original_od.clone());
                                 match new_od.map(f) {
