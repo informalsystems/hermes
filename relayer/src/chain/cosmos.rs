@@ -816,7 +816,7 @@ impl CosmosSdkChain {
         Ok(signed)
     }
 
-    /// Given a vector of `TxSyncResult` elements,
+    /// Given a vector of [`TxSyncResult`] elements,
     /// each including a transaction response hash for one or more messages, periodically queries the chain
     /// with the transaction hashes to get the list of IbcEvents included in those transactions.
     fn wait_for_block_commits(
