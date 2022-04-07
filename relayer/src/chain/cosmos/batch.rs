@@ -1,5 +1,6 @@
 use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
+use prost::Message;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{HttpClient, Url};
 use tonic::codegen::http::Uri;
@@ -146,7 +147,7 @@ fn batch_messages(config: &ChainConfig, messages: Vec<Any>) -> Result<Vec<Vec<An
 
     for message in messages.into_iter() {
         current_count += 1;
-        current_size += message_size(&message)?;
+        current_size += message.encoded_len();
         current_batch.push(message);
 
         if current_count >= max_message_count || current_size >= max_tx_size {
@@ -162,13 +163,4 @@ fn batch_messages(config: &ChainConfig, messages: Vec<Any>) -> Result<Vec<Vec<An
     }
 
     Ok(batches)
-}
-
-fn message_size(message: &Any) -> Result<usize, Error> {
-    let mut buf = Vec::new();
-
-    prost::Message::encode(message, &mut buf)
-        .map_err(|e| Error::protobuf_encode("Message".into(), e))?;
-
-    Ok(buf.len())
 }
