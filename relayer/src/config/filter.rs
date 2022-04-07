@@ -137,28 +137,35 @@ impl Serialize for ChannelFilters {
 
 /// Newtype wrapper for expressing wildcard patterns compiled to a [`regex::Regex`].
 #[derive(Clone, Debug)]
-pub struct Wildcard(regex::Regex);
+pub struct Wildcard {
+    pattern: String,
+    regex: regex::Regex,
+}
 
 impl Wildcard {
+    pub fn new(pattern: String) -> Result<Self, regex::Error> {
+        let escaped = regex::escape(&pattern).replace("\\*", "(?:.*)");
+        let regex = format!("^{escaped}$").parse()?;
+        Ok(Self { pattern, regex })
+    }
+
     #[inline]
     pub fn is_match(&self, text: &str) -> bool {
-        self.0.is_match(text)
+        self.regex.is_match(text)
     }
 }
 
 impl FromStr for Wildcard {
     type Err = regex::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let regex = regex::escape(s).replace("\\*", "(?:.*)").parse()?;
-        Ok(Self(regex))
+    fn from_str(pattern: &str) -> Result<Self, Self::Err> {
+        Self::new(pattern.to_string())
     }
 }
 
 impl fmt::Display for Wildcard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = self.0.to_string().replace("(?:.*)", "*");
-        write!(f, "{}", s)
+        write!(f, "{}", self.pattern)
     }
 }
 
@@ -167,13 +174,13 @@ impl Serialize for Wildcard {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        serializer.serialize_str(&self.pattern)
     }
 }
 
 impl PartialEq for Wildcard {
     fn eq(&self, other: &Self) -> bool {
-        self.to_string() == other.to_string()
+        self.pattern == other.pattern
     }
 }
 
@@ -463,5 +470,32 @@ mod tests {
             &PortId::from_str("ica").unwrap(),
             &ChannelId::from_str("channel-1").unwrap()
         ));
+    }
+
+    #[test]
+    fn packet_filter_regex() {
+        let allow_policy = r#"
+            policy = 'allow'
+            list = [
+              ['transfer*', 'channel-1'],
+            ]
+            "#;
+
+        let pf: PacketFilter = toml::from_str(allow_policy).expect("could not parse filter policy");
+
+        assert!(!pf.is_allowed(
+            &PortId::from_str("ft-transfer").unwrap(),
+            &ChannelId::from_str("channel-1").unwrap()
+        ));
+        assert!(!pf.is_allowed(
+            &PortId::from_str("ft-transfer-port").unwrap(),
+            &ChannelId::from_str("channel-1").unwrap()
+        ));
+    }
+
+    #[test]
+    fn to_string_wildcards() {
+        let wildcard = "ica*".parse::<Wildcard>().unwrap();
+        assert_eq!(wildcard.to_string(), "ica*".to_string());
     }
 }
