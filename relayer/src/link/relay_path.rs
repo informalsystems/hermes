@@ -517,8 +517,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(S::Reply::empty())
     }
 
-    /// Helper for managing retries of the `relay_from_operational_data` method.
-    /// Expects as input the initial operational data that failed to send.
+    /// Generates fresh operational data for a tx given the initial operational data
+    /// that failed to send.
     ///
     /// Return value:
     ///   - `Some(..)`: a new operational data from which to retry sending,
