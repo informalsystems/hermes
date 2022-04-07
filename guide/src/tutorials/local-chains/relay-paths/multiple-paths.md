@@ -92,11 +92,19 @@ Follow the steps below to connect three chains together and relay packets betwee
     The script configures and starts three __`gaiad`__ instances, named __`ibc-0`__, and __`ibc-1`__, and __`ibc-2`__.
 
 
-3. Create a channel between `ibc-0` and `ibc-1`:
+3. Create a channel between `ibc-0` and `ibc-1`. Since this is the first time
+   we're connecting these two chains, we'll need to spin up a client and a
+   connection between them as well. The `create channel` command gives us the
+   convenient option to create a client and a connection. Keep in mind that this
+   is not the default behavior of `create channel`, but in this case we're
+   making an exception. Execute the following command:
 
     ```shell
-    hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
+    hermes create channel ibc-0 --chain-b-id ibc-1 --port-a transfer --port-b transfer --new-client-connection
     ```
+
+    Then respond 'yes' to the prompt that pops up. Once the command has run to
+    completion, you should see the following among the output logs:
 
     ```json
     (...)
@@ -154,10 +162,11 @@ Follow the steps below to connect three chains together and relay packets betwee
 
     Note that the channel identifier on both `ibc-0` and `ibc-1` is `channel-0`.
 
-5. Create a channel between `ibc-1` and `ibc-2`:
+4. Create a channel between `ibc-1` and `ibc-2` using the structure of the
+   previous invocation we used to create a channel between `ibc-0` and `ibc-1`:
 
     ```shell
-    hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
+    hermes create channel ibc-1 --chain-b-id ibc-2 --port-a transfer --port-b transfer --new-client-connection
     ```
 
     ```json
@@ -216,7 +225,7 @@ Follow the steps below to connect three chains together and relay packets betwee
 
     Note that the channel identifier on `ibc-1` is `channel-1`, and on `ibc-2` it is `channel-0`.
 
-3. Start Hermes using the `start` command:
+5. Start Hermes using the `start` command:
 
     ```shell
     hermes start
@@ -225,7 +234,7 @@ Follow the steps below to connect three chains together and relay packets betwee
    Hermes will first relay the pending packets that have not been relayed and then
    start passive relaying by listening to and acting on packet events.
 
-4. In a separate terminal, use the `ft-transfer` command to send:
+6. In a separate terminal, use the `ft-transfer` command to send:
 
     - Two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
 
@@ -273,7 +282,7 @@ Follow the steps below to connect three chains together and relay packets betwee
       ]
       ```
 
-5. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packets` are sent out.
+7. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packets` are sent out.
 
     ```text
     (...)
@@ -303,7 +312,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     (...)
     ```
 
-5. Query the unreceived packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
+8. Query the unreceived packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
 
     ```shell
     hermes query packet unreceived-packets ibc-1 transfer channel-0
