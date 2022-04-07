@@ -13,6 +13,7 @@ const SUBMIT_PROPOSAL_EVENT: &str = "submit_proposal";
 /// Variants that encode the possible message types sent via Cosmos SDK modules
 #[derive(Debug, Serialize)]
 pub enum CosmosEvent {
+    /// An event sent via the governance module indicating a new governance proposal was submitted
     SubmitProposal(SubmitProposal),
 
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
