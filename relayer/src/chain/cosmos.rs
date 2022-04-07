@@ -873,7 +873,7 @@ impl CosmosSdkChain {
                             self.query_extended_events_for_tx(QueryTxHash(response.hash))
                         {
                             // If we get events back, progress was made, so we replace the events
-                            // with the new ones. in both cases we will check in the next iteration
+                            // with the new ones. In both cases we will check in the next iteration
                             // whether or not the transaction was fully committed.
                             // Either IBC or Cosmos-specific events can qualify as a commit.
                             if !events_per_tx.is_empty() {
