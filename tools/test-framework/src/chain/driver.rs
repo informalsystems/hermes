@@ -35,16 +35,16 @@ pub mod tagged;
 pub mod transfer;
 
 /**
-    Number of times (seconds) to try and query a wallet to reach the
-    target amount, as used by [`assert_eventual_wallet_amount`].
+   Number of times (seconds) to try and query a wallet to reach the
+   target amount, as used by [`assert_eventual_wallet_amount`].
 
-    We set this to around 60 seconds to make sure that the tests still
-    pass in slower environments like the CI.
+   We set this to around 60 seconds to make sure that the tests still
+   pass in slower environments like the CI.
 
-    If you encounter retry error, try increasing this constant. If the
-    test is taking much longer to reach eventual consistency, it might
-    be indication of some underlying performance issues.
- */
+   If you encounter retry error, try increasing this constant. If the
+   test is taking much longer to reach eventual consistency, it might
+   be indication of some underlying performance issues.
+*/
 const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 60;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
