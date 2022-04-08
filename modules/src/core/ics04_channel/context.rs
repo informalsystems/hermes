@@ -23,7 +23,7 @@ use crate::Height;
 use super::packet::{PacketResult, Sequence};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
-pub trait ChannelReader: CapabilityReader {
+pub trait ChannelReader {
     /// Returns the ChannelEnd for the given `port_id` and `chan_id`.
     fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Error>;
 
@@ -105,56 +105,11 @@ pub trait ChannelReader: CapabilityReader {
     fn block_delay(&self, delay_period_time: Duration) -> u64 {
         calculate_block_delay(delay_period_time, self.max_expected_time_per_block())
     }
-
-    /// Return the `ModuleId` along with the `ChannelCapability` associated with a given
-    /// `PortId`-`ChannelId`
-    fn lookup_module_by_channel(
-        &self,
-        channel_id: ChannelId,
-        port_id: PortId,
-    ) -> Result<(ModuleId, ChannelCapability), Error> {
-        CapabilityReader::lookup_module(self, &channel_capability_name(port_id, channel_id))
-            .map(|(module_id, capability)| (module_id, capability.into()))
-            .map_err(Error::ics05_port)
-    }
-
-    /// Get the `ChannelCapability` associated with the specified `PortId`-`ChannelId`
-    fn get_channel_capability(
-        &self,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> Result<ChannelCapability, Error> {
-        CapabilityReader::get_capability(self, &channel_capability_name(port_id, channel_id))
-            .map(Into::into)
-            .map_err(Error::ics05_port)
-    }
-
-    /// Authenticate a `ChannelCapability` against the specified `PortId`-`ChannelId` by checking if
-    /// the capability was previously generated and bound to the specified port/channel
-    fn authenticate_channel_capability(
-        &self,
-        port_id: PortId,
-        channel_id: ChannelId,
-        capability: &ChannelCapability,
-    ) -> Result<(), Error> {
-        self.authenticate_capability(&channel_capability_name(port_id, channel_id), capability)
-            .map_err(Error::ics05_port)
-    }
-
-    fn create_channel_capability(
-        &self,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> Result<ChannelCapability, Error> {
-        self.create_capability(channel_capability_name(port_id, channel_id))
-            .map(Into::into)
-            .map_err(Error::ics05_port)
-    }
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ChannelMsg`.
-pub trait ChannelKeeper: CapabilityKeeper {
+pub trait ChannelKeeper {
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
         // The handler processed this channel & some modifications occurred, store the new end.
         self.store_channel(
@@ -177,7 +132,6 @@ pub trait ChannelKeeper: CapabilityKeeper {
             self.store_next_sequence_send((result.port_id.clone(), result.channel_id), 1.into())?;
             self.store_next_sequence_recv((result.port_id.clone(), result.channel_id), 1.into())?;
             self.store_next_sequence_ack((result.port_id.clone(), result.channel_id), 1.into())?;
-            self.store_channel_capability(result.port_id, result.channel_id)?;
         }
 
         Ok(())
@@ -316,6 +270,71 @@ pub trait ChannelKeeper: CapabilityKeeper {
     /// Increases the counter which keeps track of how many channels have been created.
     /// Should never fail.
     fn increase_channel_counter(&mut self);
+}
+
+pub trait ChannelCapabilityReader {
+    /// Associated `CapacilityReader`, usually scoped
+    type CapabilityReader: CapabilityReader;
+
+    /// Return a reference to the scoped channel capability reader
+    fn capability_reader(&self) -> &Self::CapabilityReader;
+
+    /// Return the `ModuleId` along with the `ChannelCapability` associated with a given
+    /// `PortId`-`ChannelId`
+    fn lookup_module_by_channel(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+    ) -> Result<(ModuleId, ChannelCapability), Error> {
+        self.capability_reader()
+            .lookup_module(&channel_capability_name(port_id, channel_id))
+            .map(|(module_id, capability)| (module_id, capability.into()))
+            .map_err(Error::ics05_port)
+    }
+
+    /// Get the `ChannelCapability` associated with the specified `PortId`-`ChannelId`
+    fn get_channel_capability(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> Result<ChannelCapability, Error> {
+        self.capability_reader()
+            .get_capability(&channel_capability_name(port_id, channel_id))
+            .map(Into::into)
+            .map_err(Error::ics05_port)
+    }
+
+    /// Authenticate a `ChannelCapability` against the specified `PortId`-`ChannelId` by checking if
+    /// the capability was previously generated and bound to the specified port/channel
+    fn authenticate_channel_capability(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+        capability: &ChannelCapability,
+    ) -> Result<(), Error> {
+        self.capability_reader()
+            .authenticate_capability(&channel_capability_name(port_id, channel_id), capability)
+            .map_err(Error::ics05_port)
+    }
+
+    fn create_channel_capability(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> Result<ChannelCapability, Error> {
+        self.capability_reader()
+            .create_capability(channel_capability_name(port_id, channel_id))
+            .map(Into::into)
+            .map_err(Error::ics05_port)
+    }
+}
+
+pub trait ChannelCapabilityKeeper {
+    /// Associated `CapabilityKeeper`, usually scoped
+    type CapabilityKeeper: CapabilityKeeper;
+
+    /// Return a reference to the scoped channel capability keeper
+    fn capability_keeper(&mut self) -> &mut Self::CapabilityKeeper;
 
     /// Create a new capability associated with the given `PortId`-`ChannelId`
     fn store_channel_capability(
@@ -323,7 +342,8 @@ pub trait ChannelKeeper: CapabilityKeeper {
         port_id: PortId,
         channel_id: ChannelId,
     ) -> Result<ChannelCapability, Error> {
-        self.new_capability(channel_capability_name(port_id, channel_id))
+        self.capability_keeper()
+            .new_capability(channel_capability_name(port_id, channel_id))
             .map(Into::into)
             .map_err(Error::ics05_port)
     }

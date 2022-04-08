@@ -6,10 +6,17 @@ use crate::core::ics26_routing::context::ModuleId;
 use crate::prelude::*;
 
 /// A context supplying all the necessary read-only dependencies for processing any information regarding a port.
-pub trait PortReader: CapabilityReader {
+pub trait PortCapabilityReader {
+    /// Associated `CapacilityReader`, usually scoped
+    type CapabilityReader: CapabilityReader;
+
+    /// Return a reference to the scoped port capability reader
+    fn capability_reader(&self) -> &Self::CapabilityReader;
+
     /// Return the `ModuleId` along with the `PortCapability` associated with a given `PortId`
     fn lookup_module_by_port(&self, port_id: PortId) -> Result<(ModuleId, PortCapability), Error> {
-        CapabilityReader::lookup_module(self, &port_capability_name(port_id))
+        self.capability_reader()
+            .lookup_module(&port_capability_name(port_id))
             .map(|(module_id, capability)| (module_id, capability.into()))
     }
 
@@ -20,7 +27,9 @@ pub trait PortReader: CapabilityReader {
 
     /// Get the `PortCapability` associated with the specified `PortId`
     fn get_port_capability(&self, port_id: PortId) -> Result<PortCapability, Error> {
-        CapabilityReader::get_capability(self, &port_capability_name(port_id)).map(Into::into)
+        self.capability_reader()
+            .get_capability(&port_capability_name(port_id))
+            .map(Into::into)
     }
 
     /// Authenticate a `PortCapability` against the specified `PortId` by checking if the capability
@@ -30,17 +39,25 @@ pub trait PortReader: CapabilityReader {
         port_id: PortId,
         capability: &PortCapability,
     ) -> Result<(), Error> {
-        self.authenticate_capability(&port_capability_name(port_id), capability)
+        self.capability_reader()
+            .authenticate_capability(&port_capability_name(port_id), capability)
     }
 }
 
-pub trait PortKeeper: CapabilityKeeper + PortReader {
+pub trait PortCapabilityKeeper: PortCapabilityReader {
+    /// Associated `CapabilityKeeper`, usually scoped
+    type CapabilityKeeper: CapabilityKeeper;
+
+    /// Return a reference to the scoped port capability keeper
+    fn capability_keeper(&mut self) -> &mut Self::CapabilityKeeper;
+
     /// Binds to a port and returns the associated capability
     fn bind_port(&mut self, port_id: PortId) -> Result<PortCapability, Error> {
         if self.is_bound(port_id.clone()) {
             Err(Error::port_already_bound(port_id))
         } else {
-            self.new_capability(port_capability_name(port_id))
+            self.capability_keeper()
+                .new_capability(port_capability_name(port_id))
                 .map(Into::into)
         }
     }
