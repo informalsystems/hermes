@@ -88,6 +88,8 @@ where
             let result = cb_result.map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
+            ctx.store_channel_capability(result.port_id.clone(), result.channel_id)
+                .map_err(Error::ics04_channel)?;
             ctx.store_channel_result(result)
                 .map_err(Error::ics04_channel)?;
 
