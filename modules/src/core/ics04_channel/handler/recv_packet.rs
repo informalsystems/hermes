@@ -32,29 +32,24 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
 
     let packet = &msg.packet;
 
-    let dest_channel_end = ctx.channel_end(&(
-        packet.destination_port.clone(),
-        packet.destination_channel.clone(),
-    ))?;
+    let dest_channel_end =
+        ctx.channel_end(&(packet.destination_port.clone(), packet.destination_channel))?;
 
     if !dest_channel_end.state_matches(&State::Open) {
         return Err(Error::invalid_channel_state(
-            packet.source_channel.clone(),
+            packet.source_channel,
             dest_channel_end.state,
         ));
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
 
-    let counterparty = Counterparty::new(
-        packet.source_port.clone(),
-        Some(packet.source_channel.clone()),
-    );
+    let counterparty = Counterparty::new(packet.source_port.clone(), Some(packet.source_channel));
 
     if !dest_channel_end.counterparty_matches(&counterparty) {
         return Err(Error::invalid_packet_counterparty(
             packet.source_port.clone(),
-            packet.source_channel.clone(),
+            packet.source_channel,
         ));
     }
 
@@ -88,8 +83,8 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
     )?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
-        let next_seq_recv = ctx
-            .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+        let next_seq_recv =
+            ctx.get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel))?;
 
         if packet.sequence < next_seq_recv {
             output.emit(IbcEvent::ReceivePacket(ReceivePacket {
@@ -106,7 +101,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
 
         PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
             port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel.clone(),
+            channel_id: packet.source_channel,
             seq: packet.sequence,
             seq_number: next_seq_recv.increment(),
             receipt: None,
@@ -114,7 +109,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
             packet.source_port.clone(),
-            packet.source_channel.clone(),
+            packet.source_channel,
             packet.sequence,
         ));
 
@@ -130,7 +125,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
                 // store a receipt that does not contain any data
                 PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
                     port_id: packet.source_port.clone(),
-                    channel_id: packet.source_channel.clone(),
+                    channel_id: packet.source_channel,
                     seq: packet.sequence,
                     seq_number: 1.into(),
                     receipt: Some(Receipt::Ok),
@@ -212,10 +207,7 @@ mod tests {
         let dest_channel_end = ChannelEnd::new(
             State::Open,
             Order::default(),
-            Counterparty::new(
-                packet.source_port.clone(),
-                Some(packet.source_channel.clone()),
-            ),
+            Counterparty::new(packet.source_port.clone(), Some(packet.source_channel)),
             vec![ConnectionId::default()],
             Version::ics20(),
         );
@@ -259,12 +251,12 @@ mod tests {
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
                         packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
+                        packet.destination_channel,
                         dest_channel_end.clone(),
                     )
                     .with_send_sequence(
                         packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
+                        packet.destination_channel,
                         1.into(),
                     )
                     .with_height(host_height)

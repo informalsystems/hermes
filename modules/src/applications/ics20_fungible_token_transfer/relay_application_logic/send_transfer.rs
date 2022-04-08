@@ -15,7 +15,7 @@ where
     Ctx: Ics20Context,
 {
     let source_channel_end = ctx
-        .channel_end(&(msg.source_port.clone(), msg.source_channel.clone()))
+        .channel_end(&(msg.source_port.clone(), msg.source_channel))
         .map_err(Error::ics04_channel)?;
 
     let destination_port = source_channel_end.counterparty().port_id().clone();
@@ -23,15 +23,12 @@ where
         .counterparty()
         .channel_id()
         .ok_or_else(|| {
-            Error::destination_channel_not_found(
-                msg.source_port.clone(),
-                msg.source_channel.clone(),
-            )
+            Error::destination_channel_not_found(msg.source_port.clone(), msg.source_channel)
         })?;
 
     // get the next sequence
     let sequence = ctx
-        .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel.clone()))
+        .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel))
         .map_err(Error::ics04_channel)?;
 
     //TODO: Application LOGIC.
@@ -41,7 +38,7 @@ where
         source_port: msg.source_port,
         source_channel: msg.source_channel,
         destination_port,
-        destination_channel: destination_channel.clone(),
+        destination_channel: *destination_channel,
         data: vec![0],
         timeout_height: msg.timeout_height,
         timeout_timestamp: msg.timeout_timestamp,

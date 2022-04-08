@@ -99,15 +99,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_chain_id = src_chain.id();
         let dst_chain_id = dst_chain.id();
 
-        let src_channel_id = channel
+        let src_channel_id = *channel
             .src_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?
-            .clone();
+            .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?;
 
-        let dst_channel_id = channel
+        let dst_channel_id = *channel
             .dst_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(dst_chain.id()))?
-            .clone();
+            .ok_or_else(|| LinkError::missing_channel_id(dst_chain.id()))?;
 
         let src_port_id = channel.src_port_id().clone();
         let dst_port_id = channel.dst_port_id().clone();
@@ -115,9 +113,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(Self {
             channel,
 
-            src_channel_id: src_channel_id.clone(),
+            src_channel_id,
             src_port_id: src_port_id.clone(),
-            dst_channel_id: dst_channel_id.clone(),
+            dst_channel_id,
             dst_port_id: dst_port_id.clone(),
 
             src_operational_data: Queue::new(),
@@ -275,7 +273,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: self.dst_channel_id().clone(),
+            channel_id: *self.dst_channel_id(),
             proofs,
             signer: self.dst_signer()?,
         };
@@ -983,9 +981,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let mut query = QueryPacketEventDataRequest {
             event_id: WithBlockDataType::SendPacket,
             source_port_id: self.src_port_id().clone(),
-            source_channel_id: src_channel_id.clone(),
+            source_channel_id: *src_channel_id,
             destination_port_id: self.dst_port_id().clone(),
-            destination_channel_id: dst_channel_id.clone(),
+            destination_channel_id: *dst_channel_id,
             sequences,
             height: query_height,
         };
@@ -1098,9 +1096,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
                 event_id: WithBlockDataType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
-                source_channel_id: dst_channel_id.clone(),
+                source_channel_id: *dst_channel_id,
                 destination_port_id: self.src_port_id().clone(),
-                destination_channel_id: src_channel_id.clone(),
+                destination_channel_id: *src_channel_id,
                 sequences,
                 height: query_height,
             }))

@@ -33,7 +33,7 @@ pub fn transfer_token(
         "ibc-transfer",
         "transfer",
         port_id.as_str(),
-        channel_id.as_str(),
+        &channel_id.to_string(),
         &recipient.0,
         &format!("{}{}", amount, denom),
         "--from",
