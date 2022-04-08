@@ -22,7 +22,7 @@ pub async fn wait_for_block_commits(
     rpc_client: &HttpClient,
     rpc_address: &Url,
     rpc_timeout: &Duration,
-    tx_sync_results: &mut Vec<TxSyncResult>,
+    tx_sync_results: &mut [TxSyncResult],
 ) -> Result<(), Error> {
     let start_time = Instant::now();
 
