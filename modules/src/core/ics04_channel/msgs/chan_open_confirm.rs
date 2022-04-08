@@ -164,7 +164,7 @@ mod tests {
             Test {
                 name: "Correct channel identifier".to_string(),
                 raw: RawMsgChannelOpenConfirm {
-                    channel_id: "channelid34".to_string(),
+                    channel_id: "channel-34".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,
@@ -180,7 +180,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 raw: RawMsgChannelOpenConfirm {
-                    channel_id: "abcdefghijklmnoasdfasdfasdfasdfasdgsdghasdfasdfasdfasdfadsfasgdasdfasdfasfdpqrstu".to_string(),
+                    channel_id: "channel-12839128379182739812739879".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
