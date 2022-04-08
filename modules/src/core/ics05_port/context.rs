@@ -101,3 +101,56 @@ fn port_capability_name(port_id: PortId) -> CapabilityName {
         .parse()
         .expect("PortsPath cannot be empty string")
 }
+
+pub struct ScopedCapabilityReader<CR, M> {
+    capability_reader: CR,
+    module_id: M,
+}
+
+impl<CR: CapabilityReader, M: ToString> CapabilityReader for ScopedCapabilityReader<CR, M> {
+    fn lookup_module(&self, name: &CapabilityName) -> Result<(ModuleId, Capability), Error> {
+        self.capability_reader
+            .lookup_module(&name.prefixed_with(self.module_id.to_string()))
+    }
+
+    fn get_capability(&self, name: &CapabilityName) -> Result<Capability, Error> {
+        self.capability_reader
+            .get_capability(&name.prefixed_with(self.module_id.to_string()))
+    }
+
+    fn authenticate_capability(
+        &self,
+        name: &CapabilityName,
+        capability: &Capability,
+    ) -> Result<(), Error> {
+        self.capability_reader
+            .authenticate_capability(&name.prefixed_with(self.module_id.to_string()), capability)
+    }
+
+    fn create_capability(&self, name: CapabilityName) -> Result<Capability, Error> {
+        self.capability_reader
+            .create_capability(name.prefixed_with(self.module_id.to_string()))
+    }
+}
+
+pub struct ScopedCapabilityKeeper<CK, M> {
+    capability_keeper: CK,
+    module_id: M,
+}
+
+impl<CK: CapabilityKeeper, M: ToString> CapabilityKeeper for ScopedCapabilityKeeper<CK, M> {
+    fn new_capability(&mut self, name: CapabilityName) -> Result<Capability, Error> {
+        self.capability_keeper
+            .new_capability(name.prefixed_with(self.module_id.to_string()))
+    }
+
+    fn claim_capability(&mut self, name: CapabilityName, capability: Capability) {
+        self.capability_keeper
+            .claim_capability(name.prefixed_with(self.module_id.to_string()), capability)
+    }
+
+    fn release_capability(&mut self, name: CapabilityName, capability: Capability) {
+        self.capability_keeper
+            .release_capability(name.prefixed_with(self.module_id.to_string()), capability)
+    }
+}

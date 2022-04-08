@@ -92,6 +92,11 @@ impl CapabilityName {
             Err(InvalidCapabilityName)
         }
     }
+
+    pub(crate) fn prefixed_with(&self, mut prefix: String) -> Self {
+        prefix.push_str(&self.0);
+        Self(prefix)
+    }
 }
 
 impl fmt::Display for CapabilityName {
