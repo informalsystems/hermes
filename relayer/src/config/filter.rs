@@ -208,11 +208,11 @@ impl<T> FilterPattern<T> {
     /// wildcard matching if the filter is a `Pattern`.
     pub fn matches(&self, value: &T) -> bool
     where
-        T: PartialEq + AsRef<str>,
+        T: PartialEq + ToString,
     {
         match self {
             FilterPattern::Exact(v) => value == v,
-            FilterPattern::Wildcard(regex) => regex.is_match(value.as_ref()),
+            FilterPattern::Wildcard(regex) => regex.is_match(&value.to_string()),
         }
     }
 
@@ -237,14 +237,14 @@ impl<T: fmt::Display> fmt::Display for FilterPattern<T> {
 
 impl<T> Serialize for FilterPattern<T>
 where
-    T: AsRef<str>,
+    T: ToString,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match self {
-            FilterPattern::Exact(e) => serializer.serialize_str(e.as_ref()),
+            FilterPattern::Exact(e) => serializer.serialize_str(&e.to_string()),
             FilterPattern::Wildcard(t) => serializer.serialize_str(&t.to_string()),
         }
     }
@@ -376,7 +376,7 @@ mod tests {
               ['ica*', '*'],
               ['transfer', 'channel-0'],
               ['transfer*', 'channel-1'],
-              ['ft-transfer', 'network-0'],
+              ['ft-transfer', 'channel-2'],
             ]
             "#;
 
@@ -393,7 +393,7 @@ mod tests {
                     ),
                     (
                         &PortId::from_str("ft-transfer").unwrap(),
-                        &ChannelId::from_str("network-0").unwrap()
+                        &ChannelId::from_str("channel-2").unwrap()
                     )
                 ]
             );
@@ -411,7 +411,7 @@ mod tests {
               ['ica*', '*'],
               ['transfer', 'channel-0'],
               ['transfer*', 'channel-1'],
-              ['ft-transfer', 'network-0'],
+              ['ft-transfer', 'channel-2'],
             ]
             "#;
 
@@ -419,11 +419,11 @@ mod tests {
 
         assert!(!pf.is_allowed(
             &PortId::from_str("ft-transfer").unwrap(),
-            &ChannelId::from_str("network-0").unwrap()
+            &ChannelId::from_str("channel-2").unwrap()
         ));
         assert!(pf.is_allowed(
             &PortId::from_str("ft-transfer").unwrap(),
-            &ChannelId::from_str("network-1").unwrap()
+            &ChannelId::from_str("channel-1").unwrap()
         ));
         assert!(pf.is_allowed(
             &PortId::from_str("transfer").unwrap(),
@@ -444,7 +444,7 @@ mod tests {
               ['ica*', '*'],
               ['transfer', 'channel-0'],
               ['transfer*', 'channel-1'],
-              ['ft-transfer', 'network-0'],
+              ['ft-transfer', 'channel-2'],
             ]
             "#;
 
@@ -452,11 +452,11 @@ mod tests {
 
         assert!(pf.is_allowed(
             &PortId::from_str("ft-transfer").unwrap(),
-            &ChannelId::from_str("network-0").unwrap()
+            &ChannelId::from_str("channel-2").unwrap()
         ));
         assert!(!pf.is_allowed(
             &PortId::from_str("ft-transfer").unwrap(),
-            &ChannelId::from_str("network-1").unwrap()
+            &ChannelId::from_str("channel-1").unwrap()
         ));
         assert!(!pf.is_allowed(
             &PortId::from_str("transfer-1").unwrap(),
@@ -468,7 +468,7 @@ mod tests {
         ));
         assert!(pf.is_allowed(
             &PortId::from_str("ica").unwrap(),
-            &ChannelId::from_str("channel1").unwrap()
+            &ChannelId::from_str("channel-1").unwrap()
         ));
     }
 

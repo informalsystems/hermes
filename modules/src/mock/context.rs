@@ -642,10 +642,7 @@ impl ChannelReader for MockContext {
     fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
         match self.channels.get(pcid) {
             Some(channel_end) => Ok(channel_end.clone()),
-            None => Err(Ics04Error::channel_not_found(
-                pcid.0.clone(),
-                pcid.1.clone(),
-            )),
+            None => Err(Ics04Error::channel_not_found(pcid.0.clone(), pcid.1)),
         }
     }
 
