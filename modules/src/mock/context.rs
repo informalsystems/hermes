@@ -26,15 +26,22 @@ use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics03_connection::error::Error as Ics03Error;
 use crate::core::ics04_channel::channel::ChannelEnd;
-use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
+use crate::core::ics04_channel::context::{
+    ChannelCapabilityKeeper, ChannelCapabilityReader, ChannelKeeper, ChannelReader,
+};
 use crate::core::ics04_channel::error::Error as Ics04Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
 use crate::core::ics05_port::capabilities::{Capability, CapabilityName, PortCapability};
-use crate::core::ics05_port::context::{CapabilityKeeper, CapabilityReader, PortReader};
+use crate::core::ics05_port::context::{
+    CapabilityKeeper, CapabilityReader, PortCapabilityReader, ScopedCapabilityKeeper,
+    ScopedCapabilityReader,
+};
 use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::{Ics26Context, Module, ModuleId, Router, RouterBuilder};
+use crate::core::ics26_routing::context::{
+    CoreModuleId, Ics26Context, Module, ModuleId, Router, RouterBuilder,
+};
 use crate::core::ics26_routing::handler::{deliver, dispatch};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
 use crate::events::IbcEvent;
@@ -592,7 +599,27 @@ impl Router for MockRouter {
     }
 }
 
+impl ChannelCapabilityKeeper for MockContext {
+    type CapabilityKeeper =
+        ScopedCapabilityKeeper<<Self as Ics26Context>::CapabilityKeeper, CoreModuleId>;
+
+    fn capability_keeper(&mut self) -> &mut Self::CapabilityKeeper {
+        todo!()
+    }
+}
+
+impl ChannelCapabilityReader for MockContext {
+    type CapabilityReader =
+        ScopedCapabilityReader<<Self as Ics26Context>::CapabilityReader, CoreModuleId>;
+
+    fn capability_reader(&self) -> &Self::CapabilityReader {
+        todo!()
+    }
+}
+
 impl Ics26Context for MockContext {
+    type CapabilityReader = MockOCap;
+    type CapabilityKeeper = MockOCap;
     type Router = MockRouter;
 
     fn router(&self) -> &Self::Router {
@@ -602,11 +629,20 @@ impl Ics26Context for MockContext {
     fn router_mut(&mut self) -> &mut Self::Router {
         &mut self.router
     }
+
+    fn capability_reader(&self) -> &ScopedCapabilityReader<MockOCap, CoreModuleId> {
+        todo!()
+    }
+
+    fn capability_keeper(&mut self) -> &mut ScopedCapabilityKeeper<MockOCap, CoreModuleId> {
+        todo!()
+    }
 }
 
-impl Ics20Context for MockContext {}
+#[derive(Clone, Debug, Default)]
+pub struct MockOCap;
 
-impl CapabilityReader for MockContext {
+impl CapabilityReader for MockOCap {
     fn lookup_module(&self, _name: &CapabilityName) -> Result<(ModuleId, Capability), Ics05Error> {
         todo!()
     }
@@ -620,7 +656,7 @@ impl CapabilityReader for MockContext {
         _name: &CapabilityName,
         _capability: &Capability,
     ) -> Result<(), Ics05Error> {
-        Ok(())
+        todo!()
     }
 
     fn create_capability(&self, _name: CapabilityName) -> Result<Capability, Ics05Error> {
@@ -628,7 +664,7 @@ impl CapabilityReader for MockContext {
     }
 }
 
-impl CapabilityKeeper for MockContext {
+impl CapabilityKeeper for MockOCap {
     fn new_capability(&mut self, _name: CapabilityName) -> Result<Capability, Ics05Error> {
         todo!()
     }
@@ -642,7 +678,15 @@ impl CapabilityKeeper for MockContext {
     }
 }
 
-impl PortReader for MockContext {}
+impl Ics20Context for MockContext {}
+
+impl PortCapabilityReader for MockContext {
+    type CapabilityReader = ScopedCapabilityReader<MockOCap, CoreModuleId>;
+
+    fn capability_reader(&self) -> &Self::CapabilityReader {
+        todo!()
+    }
+}
 
 impl ChannelReader for MockContext {
     fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
