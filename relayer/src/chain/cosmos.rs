@@ -988,11 +988,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_channel");
         crate::telemetry!(query, self.id(), "query_channel");
 
-        let res = self.query(
-            ChannelEndsPath(port_id.clone(), channel_id.clone()),
-            height,
-            false,
-        )?;
+        let res = self.query(ChannelEndsPath(port_id.clone(), *channel_id), height, false)?;
         let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok(channel_end)
@@ -1344,11 +1340,7 @@ impl ChainEndpoint for CosmosSdkChain {
         channel_id: &ChannelId,
         height: ICSHeight,
     ) -> Result<(ChannelEnd, MerkleProof), Error> {
-        let res = self.query(
-            ChannelEndsPath(port_id.clone(), channel_id.clone()),
-            height,
-            true,
-        )?;
+        let res = self.query(ChannelEndsPath(port_id.clone(), *channel_id), height, true)?;
 
         let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
 

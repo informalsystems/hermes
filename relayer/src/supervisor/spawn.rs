@@ -259,7 +259,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
                     let path_object = Object::Packet(Packet {
                         dst_chain_id: counterparty_chain.id(),
                         src_chain_id: chain.id(),
-                        src_channel_id: channel_scan.id().clone(),
+                        src_channel_id: *channel_scan.id(),
                         src_port_id: channel_scan.channel.port_id.clone(),
                     });
 
@@ -283,7 +283,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             let channel_object = Object::Channel(Channel {
                 dst_chain_id: counterparty_chain.id(),
                 src_chain_id: chain.id(),
-                src_channel_id: channel_scan.id().clone(),
+                src_channel_id: *channel_scan.id(),
                 src_port_id: channel_scan.channel.port_id,
             });
 

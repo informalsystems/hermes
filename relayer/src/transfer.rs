@@ -162,7 +162,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
 
     let msg = MsgTransfer {
         source_port: opts.packet_src_port_id.clone(),
-        source_channel: opts.packet_src_channel_id.clone(),
+        source_channel: opts.packet_src_channel_id,
         token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
             denom: opts.denom.clone(),
             amount: opts.amount.to_string(),

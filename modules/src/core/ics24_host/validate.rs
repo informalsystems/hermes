@@ -67,19 +67,11 @@ pub fn validate_port_identifier(id: &str) -> Result<(), Error> {
     validate_identifier(id, 2, 128)
 }
 
-/// Default validator function for Channel identifiers.
-///
-/// A valid Identifier must be between 10-64 characters and only contain lowercase
-/// alphabetic characters,
-pub fn validate_channel_identifier(id: &str) -> Result<(), Error> {
-    validate_identifier(id, 8, 64)
-}
-
 #[cfg(test)]
 mod tests {
     use crate::core::ics24_host::validate::{
-        validate_channel_identifier, validate_client_identifier, validate_connection_identifier,
-        validate_identifier, validate_port_identifier,
+        validate_client_identifier, validate_connection_identifier, validate_identifier,
+        validate_port_identifier,
     };
     use test_log::test;
 
@@ -127,22 +119,6 @@ mod tests {
         // invalid max client id (test string length is 65)
         let id = validate_client_identifier(
             "f0isrs5enif9e4td3r2jcbxoevhz6u1fthn4aforq7ams52jn5m48eiesfht9ckpn",
-        );
-        assert!(id.is_err())
-    }
-
-    #[test]
-    fn parse_invalid_channel_id_min() {
-        // invalid min channel id
-        let id = validate_channel_identifier("channel");
-        assert!(id.is_err())
-    }
-
-    #[test]
-    fn parse_channel_id_max() {
-        // invalid max channel id (test string length is 65)
-        let id = validate_channel_identifier(
-            "hlkbzrbmrh0rjrh8f8a8d9lmtjuhww7a9ev3blskc58amhwfq07zwp1xevxz1p098",
         );
         assert!(id.is_err())
     }
