@@ -1,12 +1,19 @@
 use crate::prelude::*;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
-use crate::core::ics04_channel::handler::channel_dispatch as ics4_msg_dispatcher;
-use crate::core::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
+use crate::core::ics04_channel::handler::{
+    channel_callback as ics4_callback, channel_dispatch as ics4_msg_dispatcher,
+    channel_validate as ics4_validate, recv_packet::RecvPacketResult,
+};
+use crate::core::ics04_channel::handler::{
+    packet_callback as ics4_packet_callback, packet_dispatch as ics4_packet_msg_dispatcher,
+    packet_validate as ics4_packet_validate,
+};
+use crate::core::ics04_channel::packet::PacketResult;
 use crate::core::ics26_routing::context::Ics26Context;
 use crate::core::ics26_routing::error::Error;
 use crate::core::ics26_routing::msgs::Ics26Envelope::{
@@ -14,28 +21,20 @@ use crate::core::ics26_routing::msgs::Ics26Envelope::{
 };
 use crate::{events::IbcEvent, handler::HandlerOutput};
 
-/// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
-/// info or signature checks here.
-/// Returns a vector of all events that got generated as a byproduct of processing `messages`.
-pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error>
+/// Mimics the DeliverTx ABCI interface, but for a single message and at a slightly lower level.
+/// No need for authentication info or signature checks here.
+/// Returns a vector of all events that got generated as a byproduct of processing `message`.
+pub fn deliver<Ctx>(ctx: &mut Ctx, message: Any) -> Result<(Vec<IbcEvent>, Vec<String>), Error>
 where
     Ctx: Ics26Context,
 {
-    // A buffer for all the events, to be used as return value.
-    let mut res: Vec<IbcEvent> = Vec::new();
+    // Decode the proto message into a domain message, creating an ICS26 envelope.
+    let envelope = decode(message)?;
 
-    for any_msg in messages {
-        // Decode the proto message into a domain message, creating an ICS26 envelope.
-        let envelope = decode(any_msg)?;
+    // Process the envelope, and accumulate any events that were generated.
+    let output = dispatch(ctx, envelope)?;
 
-        // Process the envelope, and accumulate any events that were generated.
-        let mut output = dispatch(ctx, envelope)?;
-
-        // TODO: output.log and output.result are discarded
-        res.append(&mut output.events);
-    }
-
-    Ok(res)
+    Ok((output.events, output.log))
 }
 
 /// Attempts to convert a message into a [Ics26Envelope] message
@@ -46,6 +45,8 @@ pub fn decode(message: Any) -> Result<Ics26Envelope, Error> {
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.
 /// Returns a handler output with empty result of type `HandlerOutput<()>` which contains the log
 /// and events produced after processing the input `msg`.
+/// If this method returns an error, the runtime is expected to rollback all state modifications to
+/// the `Ctx` caused by all messages from the transaction that this `msg` is a part of.
 pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, Error>
 where
     Ctx: Ics26Context,
@@ -53,6 +54,7 @@ where
     let output = match msg {
         Ics2Msg(msg) => {
             let handler_output = ics2_msg_dispatcher(ctx, msg).map_err(Error::ics02_client)?;
+
             // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
                 .map_err(Error::ics02_client)?;
@@ -77,16 +79,21 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
-            let handler_output = ics4_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
+            let module_id = ics4_validate(ctx, &msg).map_err(Error::ics04_channel)?;
+            let (mut handler_builder, channel_result) =
+                ics4_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
+
+            let mut module_output = HandlerOutput::builder().with_result(());
+            let cb_result =
+                ics4_callback(ctx, &module_id, &msg, channel_result, &mut module_output);
+            handler_builder.merge(module_output);
+            let channel_result = cb_result.map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
-            ctx.store_channel_result(handler_output.result)
+            ctx.store_channel_result(channel_result)
                 .map_err(Error::ics04_channel)?;
 
-            HandlerOutput::builder()
-                .with_log(handler_output.log)
-                .with_events(handler_output.events)
-                .with_result(())
+            handler_builder.with_result(())
         }
 
         Ics20Msg(msg) => {
@@ -104,17 +111,24 @@ where
         }
 
         Ics4PacketMsg(msg) => {
-            let handler_output =
-                ics04_packet_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
+            let module_id = ics4_packet_validate(ctx, &msg).map_err(Error::ics04_channel)?;
+            let (mut handler_builder, packet_result) =
+                ics4_packet_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
+
+            if matches!(packet_result, PacketResult::Recv(RecvPacketResult::NoOp)) {
+                return Ok(handler_builder.with_result(()));
+            }
+
+            let mut module_output = HandlerOutput::builder().with_result(());
+            let cb_result = ics4_packet_callback(ctx, &module_id, &msg, &mut module_output);
+            handler_builder.merge(module_output);
+            cb_result.map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
-            ctx.store_packet_result(handler_output.result)
+            ctx.store_packet_result(packet_result)
                 .map_err(Error::ics04_channel)?;
 
-            HandlerOutput::builder()
-                .with_log(handler_output.log)
-                .with_events(handler_output.events)
-                .with_result(())
+            handler_builder.with_result(())
         }
     };
 
@@ -159,12 +173,13 @@ mod tests {
     };
 
     use crate::core::ics24_host::identifier::ConnectionId;
+    use crate::core::ics26_routing::context::{ModuleId, RouterBuilder};
     use crate::core::ics26_routing::handler::dispatch;
     use crate::core::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
-    use crate::mock::context::MockContext;
+    use crate::mock::context::{MockContext, MockRouterBuilder};
     use crate::mock::header::MockHeader;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::{get_dummy_account_id, DummyModule};
     use crate::timestamp::Timestamp;
     use crate::Height;
 
@@ -192,8 +207,16 @@ mod tests {
 
         let upgrade_client_height_second = Height::new(1, 1);
 
+        let module = DummyModule::default();
+        let module_id: ModuleId = "dummymodule".parse().unwrap();
+
+        let router = MockRouterBuilder::default()
+            .add_route(module_id.clone(), module)
+            .unwrap()
+            .build();
+
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
-        let mut ctx = MockContext::default();
+        let mut ctx = MockContext::default().with_router(router);
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
@@ -275,7 +298,7 @@ mod tests {
             res
         );
 
-        ctx.add_port(msg_chan_init.port_id.clone());
+        ctx.scope_port_to_module(msg_chan_init.port_id.clone(), module_id);
 
         // Figure out the ID of the client that was just created.
         let mut events = res.unwrap().events;
@@ -390,7 +413,7 @@ mod tests {
             Test {
                 name: "Re-Receive packet".to_string(),
                 msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Packet send".to_string(),

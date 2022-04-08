@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
 
-use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
@@ -15,7 +14,6 @@ use ibc::core::ics02_client::client_state::{
 use ibc::core::ics02_client::header::Header;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::core::ics04_channel;
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
@@ -37,18 +35,20 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
-use crate::chain::handle::requests::AppVersion;
+use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
-use crate::event::monitor::TxMonitorCmd;
+use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
-use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
+use self::client::ClientSettings;
 use self::tx::TrackedMsgs;
 
+pub mod client;
 pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
@@ -126,7 +126,7 @@ pub trait ChainEndpoint: Sized {
     fn keybase_mut(&mut self) -> &mut KeyRing;
 
     /// Sends one or more transactions with `msgs` to chain and
-    // synchronously wait for it to be committed.
+    /// synchronously wait for it to be committed.
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
@@ -146,6 +146,9 @@ pub trait ChainEndpoint: Sized {
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
     fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
+
+    /// Return the version of the IBC protocol that this chain is running, if known.
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
     // Queries
 
@@ -232,8 +235,6 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error>;
 
-    fn query_app_version(&self, request: AppVersion) -> Result<ics04_channel::Version, Error>;
-
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
@@ -270,6 +271,8 @@ pub trait ChainEndpoint: Sized {
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+
+    fn query_host_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error>;
 
     // Provable queries
     fn proven_client_state(
@@ -310,7 +313,7 @@ pub trait ChainEndpoint: Sized {
     fn build_client_state(
         &self,
         height: ICSHeight,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<Self::ClientState, Error>;
 
     fn build_consensus_state(

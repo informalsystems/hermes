@@ -7,9 +7,9 @@ resolver = "2"
 [dependencies]
 ibc = { path = "../../modules", default-features = false }
 ibc-proto = { path = "../../proto", default-features = false }
-tendermint = { version = "0.23.5", default-features = false }
-tendermint-proto = { version = "0.23.5", default-features = false }
-tendermint-light-client-verifier = { version = "0.23.5", default-features = false }
+tendermint = { version = "0.23.6", default-features = false }
+tendermint-proto = { version = "0.23.6", default-features = false }
+tendermint-light-client-verifier = { version = "0.23.6", default-features = false }
 
 sp-core = { version = "5.0.0", default-features = false, optional = true }
 sp-io = { version = "5.0.0", default-features = false, optional = true }

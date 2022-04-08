@@ -1,9 +1,9 @@
 use ibc_relayer::config::{types::Memo, Config};
 use serde_json as json;
 
-use crate::ibc::denom::derive_ibc_denom;
-use crate::prelude::*;
-use crate::util::random::{random_string, random_u64_range};
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::util::random::{random_string, random_u64_range};
 
 #[test]
 fn test_memo() -> Result<(), Error> {
@@ -28,6 +28,7 @@ impl BinaryChannelTest for MemoTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -56,7 +57,7 @@ impl BinaryChannelTest for MemoTest {
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &chains.node_b.wallets().user1(),
+            &chains.node_b.wallets().user1().address(),
             a_to_b_amount,
             &denom_b.as_ref(),
         )?;

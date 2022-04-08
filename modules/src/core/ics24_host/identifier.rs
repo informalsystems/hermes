@@ -1,14 +1,13 @@
-use crate::prelude::*;
-
 use core::convert::{From, Infallible};
 use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
-use serde::{Deserialize, Serialize};
 
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics24_host::error::ValidationError;
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use super::validate::*;
+use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics24_host::error::ValidationError;
+use crate::prelude::*;
 
 /// This type is subject to future changes.
 ///
@@ -324,14 +323,20 @@ impl FromStr for PortId {
     }
 }
 
+impl AsRef<str> for PortId {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
 impl Default for PortId {
     fn default() -> Self {
         "defaultPort".to_string().parse().unwrap()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct ChannelId(String);
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ChannelId(u64);
 
 impl ChannelId {
     /// Builds a new channel identifier. Like client and connection identifiers, channel ids are
@@ -343,32 +348,25 @@ impl ChannelId {
     /// ```
     /// # use ibc::core::ics24_host::identifier::ChannelId;
     /// let chan_id = ChannelId::new(27);
-    /// assert_eq!(&chan_id, "channel-27");
+    /// assert_eq!(chan_id.to_string(), "channel-27");
     /// ```
     pub fn new(counter: u64) -> Self {
-        let id = format!("{}-{}", Self::prefix(), counter);
-        Self::from_str(id.as_str()).unwrap()
+        Self(counter)
     }
 
-    pub fn prefix() -> &'static str {
-        "channel"
+    pub fn counter(&self) -> u64 {
+        self.0
     }
 
-    /// Get this identifier as a borrowed `&str`
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
-    /// Get this identifier as a borrowed byte slice
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+    const fn prefix() -> &'static str {
+        "channel-"
     }
 }
 
 /// This implementation provides a `to_string` method.
 impl Display for ChannelId {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0)
+        write!(f, "{}{}", Self::prefix(), self.0)
     }
 }
 
@@ -376,7 +374,11 @@ impl FromStr for ChannelId {
     type Err = ValidationError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        validate_channel_identifier(s).map(|_| Self(s.to_string()))
+        let s = s
+            .strip_prefix(Self::prefix())
+            .ok_or_else(ValidationError::channel_id_invalid_format)?;
+        let counter = u64::from_str(s).map_err(ValidationError::channel_id_parse_failure)?;
+        Ok(Self(counter))
     }
 }
 
@@ -386,10 +388,23 @@ impl Default for ChannelId {
     }
 }
 
-/// Equality check against string literal (satisfies &ChannelId == &str).
-impl PartialEq<str> for ChannelId {
-    fn eq(&self, other: &str) -> bool {
-        self.as_str().eq(other)
+impl Serialize for ChannelId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.collect_str(self)
+    }
+}
+
+impl<'de> Deserialize<'de> for ChannelId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(de::Error::custom)
     }
 }
 

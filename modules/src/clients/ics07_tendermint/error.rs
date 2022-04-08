@@ -160,14 +160,18 @@ define_error! {
                 current_time: Timestamp,
                 earliest_time: Timestamp,
             }
-            |_| { "not enough time elapsed, current timestamp {0} is still less than earliest acceptable timestamp {1}" },
+            | e | {
+                format_args!("not enough time elapsed, current timestamp {0} is still less than earliest acceptable timestamp {1}", e.current_time, e.earliest_time)
+            },
 
         NotEnoughBlocksElapsed
             {
                 current_height: Height,
                 earliest_height: Height,
             }
-            |_| { "not enough blocks elapsed, current height {0} is still less than earliest acceptable height {1}" },
+            | e | {
+                format_args!("not enough blocks elapsed, current height {0} is still less than earliest acceptable height {1}", e.current_height, e.earliest_height)
+            },
 
         InvalidHeaderHeight
             { height: Height }

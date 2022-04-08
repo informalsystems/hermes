@@ -2,10 +2,12 @@
 //! version field of a channel end.
 //!
 
+use core::convert::Infallible;
 use core::fmt;
+use core::str::FromStr;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::applications::{ics20_fungible_token_transfer, ics27_interchain_accounts};
+use crate::applications::ics20_fungible_token_transfer;
 use crate::prelude::*;
 
 /// The version field for a `ChannelEnd`.
@@ -17,37 +19,30 @@ use crate::prelude::*;
 pub struct Version(String);
 
 impl Version {
-    pub fn ics20() -> Self {
-        Self(ics20_fungible_token_transfer::VERSION.to_string())
+    pub fn new(v: String) -> Self {
+        Self(v)
     }
 
-    pub fn ics27() -> Self {
-        Self(ics27_interchain_accounts::VERSION.to_string())
+    pub fn ics20() -> Self {
+        Self::new(ics20_fungible_token_transfer::VERSION.to_string())
     }
 
     pub fn empty() -> Self {
-        Self("".to_string())
-    }
-}
-
-impl From<Version> for String {
-    fn from(domain_version: Version) -> Self {
-        domain_version.0
+        Self::new("".to_string())
     }
 }
 
 impl From<String> for Version {
-    fn from(raw_version: String) -> Self {
-        // Version validation: nothing specific.
-        Self(raw_version)
+    fn from(s: String) -> Self {
+        Self::new(s)
     }
 }
 
-impl From<&str> for Version {
-    fn from(raw_version: &str) -> Self {
-        Self {
-            0: raw_version.into(),
-        }
+impl FromStr for Version {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::new(s.to_string()))
     }
 }
 

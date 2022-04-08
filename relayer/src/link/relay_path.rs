@@ -1,14 +1,19 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
-use std::thread;
-use std::time::Instant;
+use std::ops::Sub;
+use std::time::{Duration, Instant};
 
+use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use prost_types::Any;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use ibc::{
     core::{
+        ics02_client::{
+            client_consensus::QueryClientEventRequest,
+            events::ClientMisbehaviour as ClientMisbehaviourEvent,
+            events::UpdateClient as UpdateClientEvent,
+        },
         ics04_channel::{
             channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
             events::{SendPacket, WriteAcknowledgement},
@@ -24,7 +29,7 @@ use ibc::{
     events::{IbcEvent, PrettyEvents, WithBlockDataType},
     query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
-    timestamp::ZERO_DURATION,
+    timestamp::Timestamp,
     tx_msg::Msg,
     Height,
 };
@@ -70,8 +75,8 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // mostly timeout packet messages.
     // The operational data targeting the destination chain
     // comprises mostly RecvPacket and Ack msgs.
-    src_operational_data: Queue<OperationalData>,
-    dst_operational_data: Queue<OperationalData>,
+    pub(crate) src_operational_data: Queue<OperationalData>,
+    pub(crate) dst_operational_data: Queue<OperationalData>,
 
     // Toggle for the transaction confirmation mechanism.
     confirm_txes: bool,
@@ -94,15 +99,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_chain_id = src_chain.id();
         let dst_chain_id = dst_chain.id();
 
-        let src_channel_id = channel
+        let src_channel_id = *channel
             .src_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?
-            .clone();
+            .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?;
 
-        let dst_channel_id = channel
+        let dst_channel_id = *channel
             .dst_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(dst_chain.id()))?
-            .clone();
+            .ok_or_else(|| LinkError::missing_channel_id(dst_chain.id()))?;
 
         let src_port_id = channel.src_port_id().clone();
         let dst_port_id = channel.dst_port_id().clone();
@@ -110,9 +113,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(Self {
             channel,
 
-            src_channel_id: src_channel_id.clone(),
+            src_channel_id,
             src_port_id: src_port_id.clone(),
-            dst_channel_id: dst_channel_id.clone(),
+            dst_channel_id,
             dst_port_id: dst_port_id.clone(),
 
             src_operational_data: Queue::new(),
@@ -177,7 +180,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.dst_chain()
             .query_channel(self.dst_port_id(), self.dst_channel_id(), height)
-            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
+            .map_err(|e| LinkError::channel(ChannelError::query(self.dst_chain().id(), e)))
     }
 
     fn src_signer(&self) -> Result<Signer, LinkError> {
@@ -192,10 +195,50 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(|e| LinkError::signer(self.dst_chain().id(), e))
     }
 
-    pub fn dst_latest_height(&self) -> Result<Height, LinkError> {
+    pub(crate) fn src_latest_height(&self) -> Result<Height, LinkError> {
+        self.src_chain()
+            .query_latest_height()
+            .map_err(|e| LinkError::query(self.src_chain().id(), e))
+    }
+
+    pub(crate) fn dst_latest_height(&self) -> Result<Height, LinkError> {
         self.dst_chain()
             .query_latest_height()
             .map_err(|e| LinkError::query(self.dst_chain().id(), e))
+    }
+
+    fn src_time_at_height(&self, height: Height) -> Result<Instant, LinkError> {
+        Self::chain_time_at_height(self.src_chain(), height)
+    }
+
+    fn dst_time_at_height(&self, height: Height) -> Result<Instant, LinkError> {
+        Self::chain_time_at_height(self.dst_chain(), height)
+    }
+
+    pub(crate) fn src_time_latest(&self) -> Result<Instant, LinkError> {
+        self.src_time_at_height(Height::zero())
+    }
+
+    pub(crate) fn dst_time_latest(&self) -> Result<Instant, LinkError> {
+        self.dst_time_at_height(Height::zero())
+    }
+
+    pub(crate) fn src_max_block_time(&self) -> Result<Duration, LinkError> {
+        // TODO(hu55a1n1): Ideally, we should get the `max_expected_time_per_block` using the
+        // `/genesis` endpoint once it is working in tendermint-rs.
+        Ok(self
+            .src_chain()
+            .config()
+            .map_err(LinkError::relayer)?
+            .max_block_time)
+    }
+
+    pub(crate) fn dst_max_block_time(&self) -> Result<Duration, LinkError> {
+        Ok(self
+            .dst_chain()
+            .config()
+            .map_err(LinkError::relayer)?
+            .max_block_time)
     }
 
     fn unordered_channel(&self) -> bool {
@@ -230,7 +273,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: self.dst_channel_id().clone(),
+            channel_id: *self.dst_channel_id(),
             proofs,
             signer: self.dst_signer()?,
         };
@@ -372,12 +415,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_latest_height,
             OperationalDataTarget::Source,
             events.tracking_id(),
+            self.channel.connection_delay,
         );
         // Operational data targeting the destination chain (e.g., SendPacket messages)
         let mut dst_od = OperationalData::new(
             src_height,
             OperationalDataTarget::Destination,
             events.tracking_id(),
+            self.channel.connection_delay,
         );
 
         for event in input {
@@ -479,12 +524,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let mut odata = initial_od;
 
         for i in 0..MAX_RETRIES {
-            debug!(
-                "delayed by: {:?} [try {}/{}]",
-                odata.scheduled_time.elapsed(),
-                i + 1,
-                MAX_RETRIES
-            );
+            debug!("[try {}/{}]", i + 1, MAX_RETRIES);
 
             // Consume the operational data by attempting to send its messages
             match self.send_from_operational_data::<S>(odata.clone()) {
@@ -693,103 +733,207 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         self.recv_packet_acknowledged_on_src(&rp.packet)
     }
 
-    /// Returns `true` if the delay for this relaying path is zero.
-    /// Conversely, returns `false` if the delay is non-zero.
-    pub fn zero_delay(&self) -> bool {
-        self.channel.connection_delay == ZERO_DURATION
+    /// Returns the `processed_height` for the consensus state at specified height
+    fn update_height(
+        chain: &impl ChainHandle,
+        client_id: ClientId,
+        consensus_height: Height,
+    ) -> Result<Height, LinkError> {
+        let events = chain
+            .query_txs(QueryTxRequest::Client(QueryClientEventRequest {
+                height: Height::zero(),
+                event_id: WithBlockDataType::UpdateClient,
+                client_id,
+                consensus_height,
+            }))
+            .map_err(|e| LinkError::query(chain.id(), e))?;
+
+        // The handler may treat redundant updates as no-ops and emit `UpdateClient` events for them
+        // but the `processed_height` is the height at which the first `UpdateClient` event for this
+        // consensus state/height was emitted. We expect that these events are received in the exact
+        // same order in which they were emitted.
+        match events.first() {
+            Some(IbcEvent::UpdateClient(event)) => Ok(event.height()),
+            Some(event) => Err(LinkError::unexpected_event(event.clone())),
+            None => Err(LinkError::unexpected_event(IbcEvent::default())),
+        }
+    }
+
+    /// Loops over `tx_events` and returns a tuple of optional events where the first element is a
+    /// `ChainError` variant, the second one is an `UpdateClient` variant and the third one is a
+    /// `ClientMisbehaviour` variant. This function is essentially just an `Iterator::find()` for
+    /// multiple variants with a single pass.
+    #[inline]
+    fn event_per_type(
+        mut tx_events: Vec<IbcEvent>,
+    ) -> (
+        Option<IbcEvent>,
+        Option<UpdateClientEvent>,
+        Option<ClientMisbehaviourEvent>,
+    ) {
+        let mut error = None;
+        let mut update = None;
+        let mut misbehaviour = None;
+
+        while let Some(event) = tx_events.pop() {
+            match event {
+                IbcEvent::ChainError(_) => error = Some(event),
+                IbcEvent::UpdateClient(event) => update = Some(event),
+                IbcEvent::ClientMisbehaviour(event) => misbehaviour = Some(event),
+                _ => {}
+            }
+        }
+
+        (error, update, misbehaviour)
+    }
+
+    /// Returns an instant (in the past) that corresponds to the block timestamp of the chain at
+    /// specified height (relative to the relayer's current time). If the timestamp is in the future
+    /// wrt the relayer's current time, we simply return the current relayer time.
+    fn chain_time_at_height(
+        chain: &impl ChainHandle,
+        height: Height,
+    ) -> Result<Instant, LinkError> {
+        let chain_time = chain
+            .query_host_consensus_state(height)
+            .map_err(LinkError::relayer)?
+            .timestamp();
+        let duration = Timestamp::now()
+            .duration_since(&chain_time)
+            .unwrap_or_default();
+        Ok(Instant::now().sub(duration))
     }
 
     /// Handles updating the client on the destination chain
+    /// Returns the height at which the client update was processed
     fn update_client_dst(
         &self,
         src_chain_height: Height,
         tracking_id: &str,
-    ) -> Result<(), LinkError> {
-        // Handle the update on the destination chain
-        // Check if a consensus state at update_height exists on destination chain already
-        if self
+    ) -> Result<Height, LinkError> {
+        self.do_update_client_dst(src_chain_height, tracking_id, MAX_RETRIES)
+    }
+
+    /// Perform actual update_client_dst with retries.
+    ///
+    /// Note that the retry is only performed in the case when there
+    /// is a ChainError event. It would return error immediately if
+    /// there are other errors returned from calls such as
+    /// build_update_client_on_dst.
+    fn do_update_client_dst(
+        &self,
+        src_chain_height: Height,
+        tracking_id: &str,
+        retries_left: usize,
+    ) -> Result<Height, LinkError> {
+        info!( "sending update_client to client hosted on source chain for height {} (retries left: {})", src_chain_height, retries_left );
+
+        let dst_update = self.build_update_client_on_dst(src_chain_height)?;
+        let tm = TrackedMsgs::new(dst_update, tracking_id);
+        let dst_tx_events = self
             .dst_chain()
-            .proven_client_consensus(self.dst_client_id(), src_chain_height, Height::zero())
-            .is_ok()
-        {
-            return Ok(());
-        }
+            .send_messages_and_wait_commit(tm)
+            .map_err(LinkError::relayer)?;
+        info!("result: {}", PrettyEvents(&dst_tx_events));
 
-        let mut dst_err_ev = None;
-        for i in 0..MAX_RETRIES {
-            let dst_update = self.build_update_client_on_dst(src_chain_height)?;
-            info!(
-                "sending updateClient to client hosted on destination chain for height {} [try {}/{}]",
-                src_chain_height,
-                i + 1, MAX_RETRIES,
-            );
-
-            let tm = TrackedMsgs::new(dst_update, tracking_id);
-
-            let dst_tx_events = self
-                .dst_chain()
-                .send_messages_and_wait_commit(tm)
-                .map_err(LinkError::relayer)?;
-            info!("result: {}", PrettyEvents(&dst_tx_events));
-
-            dst_err_ev = dst_tx_events
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
-
-            if dst_err_ev.is_none() {
-                return Ok(());
+        let (error, update, misbehaviour) = Self::event_per_type(dst_tx_events);
+        match (error, update, misbehaviour) {
+            // All updates were successful, no errors and no misbehaviour.
+            (None, Some(update_event), None) => Ok(update_event.height()),
+            (Some(chain_error), _, _) => {
+                // Atleast one chain-error so retry if possible.
+                if retries_left == 0 {
+                    Err(LinkError::client(ForeignClientError::chain_error_event(
+                        self.dst_chain().id(),
+                        chain_error,
+                    )))
+                } else {
+                    self.do_update_client_dst(src_chain_height, tracking_id, retries_left - 1)
+                }
             }
+            (None, None, None) => {
+                // `tm` was empty and update wasn't required
+                match Self::update_height(
+                    self.dst_chain(),
+                    self.dst_client_id().clone(),
+                    src_chain_height,
+                ) {
+                    Ok(update_height) => Ok(update_height),
+                    Err(_) if retries_left > 0 => {
+                        self.do_update_client_dst(src_chain_height, tracking_id, retries_left - 1)
+                    }
+                    _ => Err(LinkError::update_client_failed()),
+                }
+            }
+            // Atleast one misbehaviour event, so don't retry.
+            (_, _, Some(_misbehaviour)) => Err(LinkError::update_client_failed()),
         }
-
-        Err(LinkError::client(ForeignClientError::chain_error_event(
-            self.dst_chain().id(),
-            dst_err_ev.unwrap(),
-        )))
     }
 
     /// Handles updating the client on the source chain
+    /// Returns the height at which the client update was processed
     fn update_client_src(
         &self,
         dst_chain_height: Height,
         tracking_id: &str,
-    ) -> Result<(), LinkError> {
-        if self
+    ) -> Result<Height, LinkError> {
+        self.do_update_client_src(dst_chain_height, tracking_id, MAX_RETRIES)
+    }
+
+    /// Perform actual update_client_src with retries.
+    ///
+    /// Note that the retry is only performed in the case when there
+    /// is a ChainError event. It would return error immediately if
+    /// there are other errors returned from calls such as
+    /// build_update_client_on_src.
+    fn do_update_client_src(
+        &self,
+        dst_chain_height: Height,
+        tracking_id: &str,
+        retries_left: usize,
+    ) -> Result<Height, LinkError> {
+        info!( "sending update_client to client hosted on source chain for height {} (retries left: {})", dst_chain_height, retries_left );
+
+        let src_update = self.build_update_client_on_src(dst_chain_height)?;
+        let tm = TrackedMsgs::new(src_update, tracking_id);
+        let src_tx_events = self
             .src_chain()
-            .proven_client_consensus(self.src_client_id(), dst_chain_height, Height::zero())
-            .is_ok()
-        {
-            return Ok(());
-        }
+            .send_messages_and_wait_commit(tm)
+            .map_err(LinkError::relayer)?;
+        info!("result: {}", PrettyEvents(&src_tx_events));
 
-        let mut src_err_ev = None;
-        for _ in 0..MAX_RETRIES {
-            let src_update = self.build_update_client_on_src(dst_chain_height)?;
-            info!(
-                "sending updateClient to client hosted on source chain for height {}",
-                dst_chain_height,
-            );
-
-            let tm = TrackedMsgs::new(src_update, tracking_id);
-
-            let src_tx_events = self
-                .src_chain()
-                .send_messages_and_wait_commit(tm)
-                .map_err(LinkError::relayer)?;
-            info!("result: {}", PrettyEvents(&src_tx_events));
-
-            src_err_ev = src_tx_events
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
-
-            if src_err_ev.is_none() {
-                return Ok(());
+        let (error, update, misbehaviour) = Self::event_per_type(src_tx_events);
+        match (error, update, misbehaviour) {
+            // All updates were successful, no errors and no misbehaviour.
+            (None, Some(update_event), None) => Ok(update_event.height()),
+            (Some(chain_error), _, _) => {
+                // Atleast one chain-error so retry if possible.
+                if retries_left == 0 {
+                    Err(LinkError::client(ForeignClientError::chain_error_event(
+                        self.src_chain().id(),
+                        chain_error,
+                    )))
+                } else {
+                    self.do_update_client_src(dst_chain_height, tracking_id, retries_left - 1)
+                }
             }
+            (None, None, None) => {
+                // `tm` was empty and update wasn't required
+                match Self::update_height(
+                    self.src_chain(),
+                    self.src_client_id().clone(),
+                    dst_chain_height,
+                ) {
+                    Ok(update_height) => Ok(update_height),
+                    Err(_) if retries_left > 0 => {
+                        self.do_update_client_src(dst_chain_height, tracking_id, retries_left - 1)
+                    }
+                    _ => Err(LinkError::update_client_failed()),
+                }
+            }
+            // Atleast one misbehaviour event, so don't retry.
+            (_, _, Some(_misbehaviour)) => Err(LinkError::update_client_failed()),
         }
-
-        Err(LinkError::client(ForeignClientError::chain_error_event(
-            self.src_chain().id(),
-            src_err_ev.unwrap(),
-        )))
     }
 
     /// Returns relevant packet events for building RecvPacket and timeout messages.
@@ -837,9 +981,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let mut query = QueryPacketEventDataRequest {
             event_id: WithBlockDataType::SendPacket,
             source_port_id: self.src_port_id().clone(),
-            source_channel_id: src_channel_id.clone(),
+            source_channel_id: *src_channel_id,
             destination_port_id: self.dst_port_id().clone(),
-            destination_channel_id: dst_channel_id.clone(),
+            destination_channel_id: *dst_channel_id,
             sequences,
             height: query_height,
         };
@@ -952,9 +1096,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
                 event_id: WithBlockDataType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
-                source_channel_id: dst_channel_id.clone(),
+                source_channel_id: *dst_channel_id,
                 destination_port_id: self.src_port_id().clone(),
-                destination_channel_id: src_channel_id.clone(),
+                destination_channel_id: *src_channel_id,
                 sequences,
                 height: query_height,
             }))
@@ -1076,7 +1220,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let msg = MsgAcknowledgement::new(
             packet,
-            event.ack.clone(),
+            event.ack.clone().into(),
             proofs.clone(),
             self.dst_signer()?,
         );
@@ -1209,7 +1353,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Retains the operational data as pending, and associates it
     /// with one or more transaction hash(es).
     pub fn execute_schedule(&self) -> Result<(), LinkError> {
-        let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
+        let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data()?;
 
         for od in dst_ods {
             let reply =
@@ -1320,6 +1464,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                                         dst_current_height,
                                         OperationalDataTarget::Source,
                                         &odata.tracking_id,
+                                        self.channel.connection_delay,
                                     )
                                 })
                                 .push(TransitMessage {
@@ -1387,22 +1532,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
-        if !self.zero_delay() {
-            debug!("connection delay is non-zero: updating client");
+        // If the connection-delay must be taken into account, set the `scheduled_time` to an
+        // instant in the past, i.e. when this client update was first processed (`processed_time`)
+        let scheduled_time = if od.conn_delay_needed() {
+            debug!("connection delay must be taken into account: updating client");
             let target_height = od.proofs_height.increment();
             match od.target {
                 OperationalDataTarget::Source => {
-                    self.update_client_src(target_height, &od.tracking_id)?
+                    let update_height = self.update_client_src(target_height, &od.tracking_id)?;
+                    od.set_update_height(update_height);
+                    self.src_time_at_height(update_height)?
                 }
                 OperationalDataTarget::Destination => {
-                    self.update_client_dst(target_height, &od.tracking_id)?
+                    let update_height = self.update_client_dst(target_height, &od.tracking_id)?;
+                    od.set_update_height(update_height);
+                    self.dst_time_at_height(update_height)?
                 }
-            };
+            }
         } else {
-            debug!("connection delay is zero: client update message will be prepended later");
-        }
+            debug!(
+                "connection delay need not be taken into account: client update message will be \
+            prepended later"
+            );
+            Instant::now()
+        };
 
-        od.scheduled_time = Instant::now();
+        od.set_scheduled_time(scheduled_time);
 
         match od.target {
             OperationalDataTarget::Source => self.src_operational_data.push_back(od),
@@ -1413,88 +1568,51 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Pulls out the operational elements with elapsed delay period and that can
-    /// now be processed. Does not block: if no OD fulfilled the delay period (or none is
-    /// scheduled), returns immediately with `vec![]`.
+    /// now be processed.
     fn try_fetch_scheduled_operational_data(
         &self,
-    ) -> (VecDeque<OperationalData>, VecDeque<OperationalData>) {
+    ) -> Result<(VecDeque<OperationalData>, VecDeque<OperationalData>), LinkError> {
         // Extracts elements from a Vec when the predicate returns true.
         // The mutable vector is then updated to the remaining unextracted elements.
         fn partition<T>(
             queue: VecDeque<T>,
-            pred: impl Fn(&T) -> bool,
-        ) -> (VecDeque<T>, VecDeque<T>) {
+            pred: impl Fn(&T) -> Result<bool, LinkError>,
+        ) -> Result<(VecDeque<T>, VecDeque<T>), LinkError> {
             let mut true_res = VecDeque::new();
             let mut false_res = VecDeque::new();
 
             for e in queue.into_iter() {
-                if pred(&e) {
+                if pred(&e)? {
                     true_res.push_back(e);
                 } else {
                     false_res.push_back(e);
                 }
             }
 
-            (true_res, false_res)
+            Ok((true_res, false_res))
         }
 
-        let connection_delay = self.channel.connection_delay;
         let (elapsed_src_ods, unelapsed_src_ods) =
             partition(self.src_operational_data.take(), |op| {
-                op.scheduled_time.elapsed() > connection_delay
-            });
-
-        self.src_operational_data.replace(unelapsed_src_ods);
+                op.has_conn_delay_elapsed(
+                    &|| self.src_time_latest(),
+                    &|| self.src_max_block_time(),
+                    &|| self.src_latest_height(),
+                )
+            })?;
 
         let (elapsed_dst_ods, unelapsed_dst_ods) =
             partition(self.dst_operational_data.take(), |op| {
-                op.scheduled_time.elapsed() > connection_delay
-            });
+                op.has_conn_delay_elapsed(
+                    &|| self.dst_time_latest(),
+                    &|| self.dst_max_block_time(),
+                    &|| self.dst_latest_height(),
+                )
+            })?;
 
+        self.src_operational_data.replace(unelapsed_src_ods);
         self.dst_operational_data.replace(unelapsed_dst_ods);
-
-        (elapsed_src_ods, elapsed_dst_ods)
-    }
-
-    /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
-    /// waiting for the delay period to pass.
-    /// Returns `None` if there is no operational data scheduled.
-    pub(crate) fn fetch_scheduled_operational_data(&self) -> Option<OperationalData> {
-        let odata = self
-            .src_operational_data
-            .pop_front()
-            .or_else(|| self.dst_operational_data.pop_front());
-
-        if let Some(odata) = odata {
-            // Check if the delay period did not completely elapse
-            let delay_left = self
-                .channel
-                .connection_delay
-                .checked_sub(odata.scheduled_time.elapsed());
-
-            match delay_left {
-                None => info!(
-                    "ready to fetch a scheduled op. data with batch of size {} targeting {}",
-                    odata.batch.len(),
-                    odata.target,
-                ),
-                Some(delay_left) => {
-                    info!(
-                        "waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
-                        delay_left,
-                        odata.batch.len(),
-                        odata.target,
-                    );
-
-                    // Wait until the delay period passes
-                    thread::sleep(delay_left);
-                }
-            }
-
-            Some(odata)
-        } else {
-            None
-        }
+        Ok((elapsed_src_ods, elapsed_dst_ods))
     }
 
     fn restore_src_client(&self) -> ForeignClient<ChainA, ChainB> {

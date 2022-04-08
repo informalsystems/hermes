@@ -4,8 +4,8 @@ use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::tx::TrackedMsgs;
 use crate::util::retry::RetryResult;
 use flex_error::define_error;
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use prost_types::Any;
 use serde::Serialize;
 use tracing::{error, info, warn};
 
@@ -74,7 +74,7 @@ define_error! {
             }
             [ ForeignClientError ]
             |e| {
-                format!("failed during an operation on client ({0}) hosted by chain ({1})",
+                format!("failed during an operation on client '{0}' hosted by chain '{1}'",
                     e.client_id, e.chain_id)
             },
 
@@ -82,7 +82,7 @@ define_error! {
             { chain_id: ChainId }
             [ RelayerError ]
             |e| {
-                format!("failed during a transaction submission step to chain id {0}",
+                format!("failed during a transaction submission step to chain '{0}'",
                     e.chain_id)
             },
 
@@ -138,7 +138,7 @@ define_error! {
 
         MaxRetry
             |_| {
-                format!("Failed to finish connection handshake in {:?} iterations",
+                format!("failed to finish connection handshake in {:?} iterations",
                     MAX_RETRIES)
             },
 
@@ -511,7 +511,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             counter += 1;
             match self.flipped().build_conn_init_and_send() {
                 Err(e) => {
-                    error!("Failed ConnInit {:?}: {}", self.a_side, e);
+                    error!("failed ConnInit {:?}: {}", self.a_side, e);
                     continue;
                 }
                 Ok(result) => {
@@ -528,7 +528,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             counter += 1;
             match self.build_conn_try_and_send() {
                 Err(e) => {
-                    error!("Failed ConnTry {:?}: {}", self.b_side, e);
+                    error!("failed ConnTry {:?}: {}", self.b_side, e);
                     continue;
                 }
                 Ok(result) => {
@@ -564,7 +564,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                     // Ack to a_chain
                     match self.flipped().build_conn_ack_and_send() {
-                        Err(e) => error!("Failed ConnAck {:?}: {}", self.a_side, e),
+                        Err(e) => error!("failed ConnAck {:?}: {}", self.a_side, e),
                         Ok(event) => {
                             println!("{}  {} => {:#?}\n", done, self.a_side.chain.id(), event)
                         }
@@ -573,7 +573,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 (State::Open, State::TryOpen) => {
                     // Confirm to b_chain
                     match self.build_conn_confirm_and_send() {
-                        Err(e) => error!("Failed ConnConfirm {:?}: {}", self.b_side, e),
+                        Err(e) => error!("failed ConnConfirm {:?}: {}", self.b_side, e),
                         Ok(event) => {
                             println!("{}  {} => {:#?}\n", done, self.b_side.chain.id(), event)
                         }
@@ -582,7 +582,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 (State::TryOpen, State::Open) => {
                     // Confirm to a_chain
                     match self.flipped().build_conn_confirm_and_send() {
-                        Err(e) => error!("Failed ConnConfirm {:?}: {}", self.a_side, e),
+                        Err(e) => error!("failed ConnConfirm {:?}: {}", self.a_side, e),
                         Ok(event) => {
                             println!("{}  {} => {:#?}\n", done, self.a_side.chain.id(), event)
                         }
@@ -793,7 +793,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         let new_msg = MsgConnectionOpenInit {
             client_id: self.dst_client_id().clone(),
             counterparty,
-            version,
+            version: Some(version),
             delay_period: self.delay_period,
             signer,
         };

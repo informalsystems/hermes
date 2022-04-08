@@ -1,6 +1,8 @@
 use core::fmt;
 use core::mem;
 use crossbeam_channel::Sender;
+use serde::Deserialize;
+use serde::Serialize;
 use tracing::{debug, trace};
 
 use ibc::{
@@ -15,9 +17,16 @@ use crate::{event::monitor::EventBatch, object::Object};
 
 use super::{WorkerCmd, WorkerId};
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum WorkerData {
+    Client { misbehaviour: bool, refresh: bool },
+}
+
 pub struct WorkerHandle {
     id: WorkerId,
     object: Object,
+    data: Option<WorkerData>,
     tx: RwArc<Option<Sender<WorkerCmd>>>,
     task_handles: Vec<TaskHandle>,
 }
@@ -26,12 +35,14 @@ impl WorkerHandle {
     pub fn new(
         id: WorkerId,
         object: Object,
+        data: Option<WorkerData>,
         tx: Option<Sender<WorkerCmd>>,
         task_handles: Vec<TaskHandle>,
     ) -> Self {
         Self {
             id,
             object,
+            data,
             tx: <RwArc<_>>::new_lock(tx),
             task_handles,
         }
@@ -114,6 +125,11 @@ impl WorkerHandle {
     /// Get a reference to the worker's object.
     pub fn object(&self) -> &Object {
         &self.object
+    }
+
+    /// Get a reference to the worker handle's data.
+    pub fn data(&self) -> Option<&WorkerData> {
+        self.data.as_ref()
     }
 }
 

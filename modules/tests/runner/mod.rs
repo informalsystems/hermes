@@ -363,7 +363,7 @@ impl IbcTestRunner {
                     MsgConnectionOpenInit {
                         client_id: Self::client_id(client_id),
                         counterparty: Self::counterparty(counterparty_client_id, None),
-                        version: Self::version(),
+                        version: Some(Self::version()),
                         delay_period: Self::delay_period(),
                         signer: Self::signer(),
                     },

@@ -9,7 +9,7 @@ use ibc::events::IbcEvent;
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
-use ibc_relayer::foreign_client::{CreateParams, ForeignClient};
+use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use tendermint_light_client_verifier::types::TrustThreshold;
 
 use crate::application::app_config;
@@ -25,13 +25,15 @@ pub struct TxCreateClientCmd {
     #[clap(required = true, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    /// Override the default clock drift specified in the configuration.
+    /// The maximum allowed clock drift for this client.
     ///
     /// The clock drift is a correction parameter. It helps deal with clocks
     /// that are only approximately synchronized between the source and destination chains
     /// of this client.
     /// The destination chain for this client uses the clock drift parameter when deciding
     /// to accept or reject a new header (originating from the source chain) for this client.
+    /// If this option is not specified, a suitable clock drift value is derived from the chain
+    /// configurations.
     #[clap(short = 'd', long)]
     clock_drift: Option<humantime::Duration>,
 
@@ -67,15 +69,15 @@ impl Runnable for TxCreateClientCmd {
 
         let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
 
-        let params = CreateParams {
-            clock_drift: self.clock_drift.map(Into::into),
+        let options = CreateOptions {
+            max_clock_drift: self.clock_drift.map(Into::into),
             trusting_period: self.trusting_period.map(Into::into),
-            trust_threshold: self.trust_threshold,
+            trust_threshold: self.trust_threshold.map(Into::into),
         };
 
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client
-            .build_create_client_and_send(&params)
+            .build_create_client_and_send(options)
             .map_err(Error::foreign_client);
 
         match res {

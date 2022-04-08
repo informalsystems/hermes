@@ -135,7 +135,7 @@ pub fn channel_connection_client(
     if channel_end.state_matches(&State::Uninitialized) {
         return Err(Error::channel_uninitialized(
             port_id.clone(),
-            channel_id.clone(),
+            *channel_id,
             chain.id(),
         ));
     }
@@ -143,7 +143,7 @@ pub fn channel_connection_client(
     let connection_id = channel_end
         .connection_hops()
         .first()
-        .ok_or_else(|| Error::missing_connection_hops(channel_id.clone(), chain.id()))?;
+        .ok_or_else(|| Error::missing_connection_hops(*channel_id, chain.id()))?;
 
     let connection_end = chain
         .query_connection(connection_id, Height::zero())
@@ -152,7 +152,7 @@ pub fn channel_connection_client(
     if !connection_end.is_open() {
         return Err(Error::connection_not_open(
             connection_id.clone(),
-            channel_id.clone(),
+            *channel_id,
             chain.id(),
         ));
     }
@@ -164,7 +164,7 @@ pub fn channel_connection_client(
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
     let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
-    let channel = IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end);
+    let channel = IdentifiedChannelEnd::new(port_id.clone(), *channel_id, channel_end);
 
     Ok(ChannelConnectionClient::new(channel, connection, client))
 }
@@ -230,7 +230,7 @@ pub fn channel_on_destination(
             )
             .map(|c| IdentifiedChannelEnd {
                 port_id: channel.channel_end.counterparty().port_id().clone(),
-                channel_id: remote_channel_id.clone(),
+                channel_id: *remote_channel_id,
                 channel_end: c,
             })
             .map_err(Error::relayer)?;

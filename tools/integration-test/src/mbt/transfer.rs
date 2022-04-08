@@ -2,12 +2,11 @@ use ibc_relayer::config::{
     Channels as ConfigChannels, Clients as ConfigClients, Connections as ConfigConnections,
     ModeConfig, Packets as ConfigPackets,
 };
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
 
-use crate::framework::binary::chain::run_self_connected_binary_chain_test;
-use crate::framework::binary::channel::RunBinaryChannelTest;
-use crate::prelude::*;
-use crate::types::tagged::mono::Tagged;
+use ibc_test_framework::framework::binary::chain::run_self_connected_binary_chain_test;
+use ibc_test_framework::framework::binary::channel::RunBinaryChannelTest;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::types::tagged::mono::Tagged;
 
 use super::state::{Action, State};
 
@@ -82,9 +81,9 @@ fn test_ibc_transfer() -> Result<(), Error> {
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
     for test_name in TEST_NAMES {
         for trace in generate_mbt_traces(APALACHE_EXEC, test_name, NUM_TRACES_PER_TEST)? {
-            run_self_connected_binary_chain_test(&RunBinaryChannelTest::new(&IbcTransferMBT(
-                trace,
-            )))?;
+            run_self_connected_binary_chain_test(&RunBinaryConnectionTest::new(
+                &RunBinaryChannelTest::new(&IbcTransferMBT(trace)),
+            ))?;
         }
     }
     Ok(())
@@ -119,12 +118,8 @@ impl TestOverrides for IbcTransferMBT {
         }
     }
 
-    fn spawn_supervisor(
-        &self,
-        _config: &SharedConfig,
-        _registry: &SharedRegistry<impl ChainHandle>,
-    ) -> Result<Option<SupervisorHandle>, Error> {
-        Ok(None)
+    fn should_spawn_supervisor(&self) -> bool {
+        false
     }
 }
 
@@ -132,19 +127,12 @@ impl BinaryChannelTest for IbcTransferMBT {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         // relayer is spawned
-        let mut supervisor = Some(spawn_supervisor(
-            chains.config.clone(),
-            chains.registry.clone(),
-            None,
-            SupervisorOptions {
-                health_check: false,
-                force_full_scan: false,
-            },
-        )?);
+        let mut supervisor = Some(relayer.spawn_supervisor()?);
 
         for state in &self.0 {
             match &state.action {
@@ -182,15 +170,7 @@ impl BinaryChannelTest for IbcTransferMBT {
                     // // )?;
 
                     if supervisor.is_none() {
-                        supervisor = Some(spawn_supervisor(
-                            chains.config.clone(),
-                            chains.registry.clone(),
-                            None,
-                            SupervisorOptions {
-                                health_check: false,
-                                force_full_scan: false,
-                            },
-                        )?);
+                        supervisor = Some(relayer.spawn_supervisor()?);
                     }
 
                     info!("[RestoreRelay] Done");

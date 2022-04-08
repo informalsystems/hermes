@@ -1,4 +1,5 @@
 use crate::core::ics02_client::error as client_error;
+use crate::core::ics03_connection::version::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::ProofError;
@@ -66,6 +67,12 @@ define_error! {
         NoCommonVersion
             | _ | { "no common version" },
 
+        VersionNotSupported
+            {
+                version: Version,
+            }
+            | e | { format_args!("version \"{}\" not supported", e.version) },
+
         InvalidAddress
             | _ | { "invalid address" },
 
@@ -125,10 +132,6 @@ define_error! {
 
         ConnectionVerificationFailure
             | _ | { "the connection proof verification failed" },
-
-        MissingLocalConsensusState
-            { height: Height }
-            | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
 
         ConsensusStateVerificationFailure
             { height: Height }

@@ -6,9 +6,9 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
-use crate::ibc::denom::Denom;
-use crate::prelude::*;
-use crate::types::tagged::mono::Tagged;
+use ibc_test_framework::ibc::denom::Denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::types::tagged::mono::Tagged;
 
 use super::{
     itf::InformalTrace,

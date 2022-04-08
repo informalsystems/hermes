@@ -19,7 +19,6 @@ use ibc::{
             version::Version,
         },
         ics04_channel::{
-            self,
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
@@ -45,8 +44,7 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    chain::handle::requests::AppVersion,
-    chain::StatusResponse,
+    chain::{client::ClientSettings, StatusResponse},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -272,12 +270,12 @@ where
                             self.get_key(reply_to)?
                         }
 
-                        Ok(ChainRequest::AppVersion { request, reply_to }) => {
-                            self.app_version(request, reply_to)?
-                        }
-
                         Ok(ChainRequest::AddKey { key_name, key, reply_to }) => {
                             self.add_key(key_name, key, reply_to)?
+                        }
+
+                        Ok(ChainRequest::IbcVersion { reply_to }) => {
+                            self.ibc_version(reply_to)?
                         }
 
 
@@ -285,8 +283,8 @@ where
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildClientState { height, dst_config, reply_to }) => {
-                            self.build_client_state(height, dst_config, reply_to)?
+                        Ok(ChainRequest::BuildClientState { height, settings, reply_to }) => {
+                            self.build_client_state(height, settings, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
@@ -413,6 +411,10 @@ where
                             self.query_blocks(request, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryHostConsensusState { height, reply_to }) => {
+                            self.query_host_consensus_state(height, reply_to)?
+                        },
+
                         Err(e) => error!("received error via chain request channel: {}", e),
                     }
                 },
@@ -483,15 +485,6 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn app_version(
-        &self,
-        request: AppVersion,
-        reply_to: ReplyTo<ics04_channel::Version>,
-    ) -> Result<(), Error> {
-        let result = self.chain.query_app_version(request);
-        reply_to.send(result).map_err(Error::send)
-    }
-
     fn add_key(
         &mut self,
         key_name: String,
@@ -499,6 +492,11 @@ where
         reply_to: ReplyTo<()>,
     ) -> Result<(), Error> {
         let result = self.chain.add_key(&key_name, key);
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn ibc_version(&mut self, reply_to: ReplyTo<Option<semver::Version>>) -> Result<(), Error> {
+        let result = self.chain.ibc_version();
         reply_to.send(result).map_err(Error::send)
     }
 
@@ -530,12 +528,12 @@ where
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
         let client_state = self
             .chain
-            .build_client_state(height, dst_config)
+            .build_client_state(height, settings)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(client_state).map_err(Error::send)
@@ -871,6 +869,21 @@ where
         reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_blocks(request);
+
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_host_consensus_state(
+        &self,
+        height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .query_host_consensus_state(height)
+            .map(|h| h.wrap_any());
 
         reply_to.send(result).map_err(Error::send)?;
 

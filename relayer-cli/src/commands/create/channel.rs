@@ -1,10 +1,10 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use clap::AppSettings;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -18,7 +18,7 @@ use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
 #[derive(Clone, Command, Debug, Parser)]
-#[clap(setting(AppSettings::DisableVersionFlag))]
+#[clap(disable_version_flag = true)]
 pub struct CreateChannelCommand {
     #[clap(
         required = true,
@@ -64,7 +64,7 @@ pub struct CreateChannelCommand {
         alias = "version",
         help = "the version for the new channel"
     )]
-    version: Option<String>,
+    version: Option<Version>,
 }
 
 impl Runnable for CreateChannelCommand {
@@ -91,8 +91,6 @@ impl CreateChannelCommand {
 
         let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
-
-        // let version = self.chain_a_id.version();
 
         info!(
             "Creating new clients, new connection, and a new channel with order {}",

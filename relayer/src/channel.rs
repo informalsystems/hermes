@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
@@ -24,7 +24,6 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
-use crate::channel::version::ResolveContext;
 use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
@@ -34,7 +33,7 @@ use crate::util::retry::{retry_count, RetryResult};
 use crate::util::task::Next;
 
 pub mod error;
-mod version;
+pub mod version;
 
 mod retry_strategy {
     use core::time::Duration;
@@ -121,6 +120,10 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
         self.channel_id.as_ref()
     }
 
+    pub fn version(&self) -> Option<&Version> {
+        self.version.as_ref()
+    }
+
     pub fn map_chain<ChainB: ChainHandle>(
         self,
         mapper: impl Fn(Chain) -> ChainB,
@@ -152,7 +155,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         ordering: Order,
         a_port: PortId,
         b_port: PortId,
-        version: Option<String>,
+        version: Option<Version>,
     ) -> Result<Self, ChannelError> {
         let src_connection_id = connection
             .src_connection_id()
@@ -160,9 +163,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let dst_connection_id = connection
             .dst_connection_id()
             .ok_or_else(|| ChannelError::missing_local_connection(connection.dst_chain().id()))?;
-
-        // Convert the raw version into our domain type.
-        let domain_version = version.map(Into::into);
 
         let mut channel = Self {
             ordering,
@@ -172,7 +172,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 src_connection_id.clone(),
                 a_port,
                 Default::default(),
-                domain_version.clone(),
+                version.clone(),
             ),
             b_side: ChannelSide::new(
                 connection.dst_chain(),
@@ -180,7 +180,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 dst_connection_id.clone(),
                 b_port,
                 Default::default(),
-                domain_version,
+                version,
             ),
             connection_delay: connection.delay_period,
         };
@@ -196,11 +196,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         channel_open_event: IbcEvent,
     ) -> Result<Channel<ChainA, ChainB>, ChannelError> {
         let channel_event_attributes = channel_open_event
+            .clone()
             .channel_attributes()
-            .ok_or_else(|| ChannelError::invalid_event(channel_open_event.clone()))?;
+            .ok_or_else(|| ChannelError::invalid_event(channel_open_event))?;
 
         let port_id = channel_event_attributes.port_id.clone();
-        let channel_id = channel_event_attributes.channel_id.clone();
+        let channel_id = channel_event_attributes.channel_id;
 
         let connection_id = channel_event_attributes.connection_id.clone();
         let connection = chain
@@ -233,7 +234,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 connection.counterparty().client_id().clone(),
                 counterparty_connection_id.clone(),
                 channel_event_attributes.counterparty_port_id.clone(),
-                channel_event_attributes.counterparty_channel_id.clone(),
+                channel_event_attributes.counterparty_channel_id,
                 None,
             ),
             connection_delay: connection.delay_period(),
@@ -254,7 +255,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
             ChannelError::supervisor(SupervisorError::missing_connection_hops(
-                channel.src_channel_id.clone(),
+                channel.src_channel_id,
                 chain.id(),
             ))
         })?;
@@ -269,7 +270,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .cloned()
             .ok_or_else(|| {
                 ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
-                    channel.src_channel_id.clone(),
+                    channel.src_channel_id,
                     chain.id(),
                     a_connection.counterparty().clone(),
                 ))
@@ -282,7 +283,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_connection.client_id().clone(),
                 a_connection_id.clone(),
                 channel.src_port_id.clone(),
-                Some(channel.src_channel_id.clone()),
+                Some(channel.src_channel_id),
                 None,
             ),
             b_side: ChannelSide::new(
@@ -290,7 +291,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_connection.counterparty().client_id().clone(),
                 b_connection_id.clone(),
                 a_channel.remote.port_id.clone(),
-                a_channel.remote.channel_id.clone(),
+                a_channel.remote.channel_id,
                 None,
             ),
             connection_delay: a_connection.delay_period(),
@@ -382,7 +383,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         info!("done {} => {:#?}\n", self.src_chain().id(), event);
 
         let channel_id = extract_channel_id(&event)?;
-        self.a_side.channel_id = Some(channel_id.clone());
+        self.a_side.channel_id = Some(*channel_id);
         info!("successfully opened init channel");
 
         Ok(())
@@ -398,7 +399,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             from_retry_error(
                 err,
-                format!("Failed to finish channel open init for {:?}", self),
+                format!("failed to finish channel open init for {:?}", self),
             )
         })?;
 
@@ -412,7 +413,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         })?;
 
         let channel_id = extract_channel_id(&event)?;
-        self.b_side.channel_id = Some(channel_id.clone());
+        self.b_side.channel_id = Some(*channel_id);
 
         println!("done {} => {:#?}\n", self.dst_chain().id(), event);
         Ok(())
@@ -435,7 +436,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             from_retry_error(
                 err,
-                format!("Failed to finish channel open try for {:?}", self),
+                format!("failed to finish channel open try for {:?}", self),
             )
         })?;
 
@@ -480,7 +481,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .map_err(|e| {
                     ChannelError::handshake_finalize(
                         channel.src_port_id().clone(),
-                        src_channel_id.clone(),
+                        *src_channel_id,
                         channel.src_chain().id(),
                         e,
                     )
@@ -492,7 +493,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .map_err(|e| {
                     ChannelError::handshake_finalize(
                         channel.dst_port_id().clone(),
-                        dst_channel_id.clone(),
+                        *dst_channel_id,
                         channel.dst_chain().id(),
                         e,
                     )
@@ -609,7 +610,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             error!("failed to open channel after {} retries", err);
             from_retry_error(
                 err,
-                format!("Failed to finish channel handshake for {:?}", self),
+                format!("failed to finish channel handshake for {:?}", self),
             )
         })?;
 
@@ -631,14 +632,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let channel_deps =
             channel_connection_client(self.src_chain(), self.src_port_id(), channel_id)
-                .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))?;
+                .map_err(|e| ChannelError::query_channel(*channel_id, e))?;
 
         channel_state_on_destination(
             &channel_deps.channel,
             &channel_deps.connection,
             self.dst_chain(),
         )
-        .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))
+        .map_err(|e| ChannelError::query_channel(*channel_id, e))
     }
 
     pub fn handshake_step(
@@ -673,7 +674,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     );
                     RetryResult::Err(index)
                 } else {
-                    error!("Failed Chan{:?} with error: {}", state, e);
+                    error!("failed Chan{:?} with error: {}", state, e);
                     RetryResult::Retry(index)
                 }
             }
@@ -717,7 +718,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
-        let version = version::resolve(ResolveContext::ChanOpenInit, self)?;
+        // If the user supplied a version, use that.
+        // Otherwise, either use the version defined for the `transfer`
+        // or an empty version if the port is non-standard.
+        let version = self
+            .dst_version()
+            .cloned()
+            .or_else(|| version::default_by_port(self.dst_port_id()))
+            .unwrap_or_else(|| {
+                warn!(
+                    chain = %self.dst_chain().id(),
+                    channel = ?self.dst_channel_id(),
+                    port = %self.dst_port_id(),
+                    "no version specified for the channel, falling back on empty version"
+                );
+
+                Version::empty()
+            });
 
         let channel = ChannelEnd::new(
             State::Init,
@@ -816,7 +833,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         check_destination_channel_state(
-            dst_channel_id.clone(),
+            *dst_channel_id,
             dst_channel,
             dst_expected_channel.clone(),
         )?;
@@ -842,7 +859,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.dst_port_id().clone(),
                 self.src_chain().id(),
                 src_channel.counterparty().port_id.clone(),
-                src_channel_id.clone(),
+                *src_channel_id,
             ));
         }
 
@@ -867,7 +884,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
-        let version = version::resolve(ResolveContext::ChanOpenTry, self)?;
+        // Re-use the version that was either set on ChanOpenInit or overwritten by the application.
+        let version = src_channel.version().clone();
 
         let channel = ChannelEnd::new(
             State::TryOpen,
@@ -884,9 +902,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         let previous_channel_id = if src_channel.counterparty().channel_id.is_none() {
-            self.b_side.channel_id.clone()
+            self.b_side.channel_id
         } else {
-            src_channel.counterparty().channel_id.clone()
+            src_channel.counterparty().channel_id
         };
 
         // Build the domain type message
@@ -976,8 +994,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelOpenAck {
             port_id: self.dst_port_id().clone(),
-            channel_id: dst_channel_id.clone(),
-            counterparty_channel_id: src_channel_id.clone(),
+            channel_id: *dst_channel_id,
+            counterparty_channel_id: *src_channel_id,
             counterparty_version: src_channel.version().clone(),
             proofs,
             signer,
@@ -1076,7 +1094,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelOpenConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: dst_channel_id.clone(),
+            channel_id: *dst_channel_id,
             proofs,
             signer,
         };
@@ -1145,7 +1163,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseInit {
             port_id: self.dst_port_id().clone(),
-            channel_id: dst_channel_id.clone(),
+            channel_id: *dst_channel_id,
             signer,
         };
 
@@ -1224,7 +1242,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: dst_channel_id.clone(),
+            channel_id: *dst_channel_id,
             proofs,
             signer,
         };

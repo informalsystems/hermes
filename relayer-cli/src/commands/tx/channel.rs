@@ -174,7 +174,7 @@ impl Runnable for TxRawChanOpenTryCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        Some(self.src_chan_id.clone()),
+                        Some(self.src_chan_id),
                         None,
                     ),
                     b_side: ChannelSide::new(
@@ -182,7 +182,7 @@ impl Runnable for TxRawChanOpenTryCmd {
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        self.dst_chan_id.clone(),
+                        self.dst_chan_id,
                         None,
                     ),
                 }
@@ -242,7 +242,7 @@ impl Runnable for TxRawChanOpenAckCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        Some(self.src_chan_id.clone()),
+                        Some(self.src_chan_id),
                         None,
                     ),
                     b_side: ChannelSide::new(
@@ -250,7 +250,7 @@ impl Runnable for TxRawChanOpenAckCmd {
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        Some(self.dst_chan_id.clone()),
+                        Some(self.dst_chan_id),
                         None,
                     ),
                 }
@@ -310,7 +310,7 @@ impl Runnable for TxRawChanOpenConfirmCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        Some(self.src_chan_id.clone()),
+                        Some(self.src_chan_id),
                         None,
                     ),
                     b_side: ChannelSide::new(
@@ -318,7 +318,7 @@ impl Runnable for TxRawChanOpenConfirmCmd {
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        Some(self.dst_chan_id.clone()),
+                        Some(self.dst_chan_id),
                         None,
                     ),
                 }
@@ -378,7 +378,7 @@ impl Runnable for TxRawChanCloseInitCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        Some(self.src_chan_id.clone()),
+                        Some(self.src_chan_id),
                         None,
                     ),
                     b_side: ChannelSide::new(
@@ -386,7 +386,7 @@ impl Runnable for TxRawChanCloseInitCmd {
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        Some(self.dst_chan_id.clone()),
+                        Some(self.dst_chan_id),
                         None,
                     ),
                 }
@@ -446,7 +446,7 @@ impl Runnable for TxRawChanCloseConfirmCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        Some(self.src_chan_id.clone()),
+                        Some(self.src_chan_id),
                         None,
                     ),
                     b_side: ChannelSide::new(
@@ -454,7 +454,7 @@ impl Runnable for TxRawChanCloseConfirmCmd {
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        Some(self.dst_chan_id.clone()),
+                        Some(self.dst_chan_id),
                         None,
                     ),
                 }

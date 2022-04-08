@@ -284,11 +284,12 @@ checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 
 [[package]]
 name = "crypto-common"
-version = "0.1.1"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "683d6b536309245c849479fba3da410962a43ed8e51c26b729208ec0ac2798d0"
+checksum = "57952ca27b5e3606ff4dd79b0020231aaf9d6aa76dc05fd30137538c50bd3ce8"
 dependencies = [
  "generic-array 0.14.5",
+ "typenum",
 ]
 
 [[package]]
@@ -368,13 +369,12 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.10.1"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b697d66081d42af4fba142d56918a3cb21dc8eb63372c6b85d14f44fb9c5979b"
+checksum = "f2fb860ca6fafa5552fb6d0e816a69c8e49f0908bf524e30a90d97c85892d506"
 dependencies = [
  "block-buffer 0.10.1",
  "crypto-common",
- "generic-array 0.14.5",
 ]
 
 [[package]]
@@ -698,7 +698,7 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.11.1"
+version = "0.13.0"
 dependencies = [
  "bytes",
  "derive_more",
@@ -712,7 +712,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "sha2 0.10.1",
+ "sha2 0.10.2",
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
@@ -723,8 +723,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.15.0"
+version = "0.17.0"
 dependencies = [
+ "base64",
  "bytes",
  "prost",
  "prost-types",
@@ -734,9 +735,9 @@ dependencies = [
 
 [[package]]
 name = "ics23"
-version = "0.6.7"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce15e4758c46a0453bdf4b3b1dfcce70c43f79d1943c2ee0635b77eb2e7aa233"
+checksum = "9d454cc0a22bd556cc3d3c69f9d75a392a36244634840697a4b9eb81bc5c8ae0"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1646,13 +1647,13 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99c3bd8169c58782adad9290a9af5939994036b76187f7b4f0e6de91dbbfc0ec"
+checksum = "55deaec60f81eefe3cce0dc50bda92d6d8e88f2a27df7c5033b42afeb1ed2676"
 dependencies = [
  "cfg-if",
  "cpufeatures",
- "digest 0.10.1",
+ "digest 0.10.3",
 ]
 
 [[package]]
@@ -1756,7 +1757,7 @@ dependencies = [
  "schnorrkel",
  "secrecy",
  "serde",
- "sha2 0.10.1",
+ "sha2 0.10.2",
  "sp-core-hashing",
  "sp-debug-derive",
  "sp-externalities",
@@ -2088,8 +2089,9 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "tendermint"
-version = "0.23.5"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#235480171081fed74de7b3d3c19911304df29831"
+version = "0.23.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16a3d617db287955b07e4bf1523b831bf5055e7d3ceab8504174181df40cb143"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2116,8 +2118,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-verifier"
-version = "0.23.5"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#235480171081fed74de7b3d3c19911304df29831"
+version = "0.23.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26787f3d9a6dc1c5e1e5661d7d70bb53613852b01545730df082128fd98e6529"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -2128,8 +2131,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.5"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#235480171081fed74de7b3d3c19911304df29831"
+version = "0.23.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8a65da26cc1f24cd53f40d1267372c22d6ce727d9fd40c6c61b879b26154994"
 dependencies = [
  "bytes",
  "flex-error",
@@ -2243,9 +2247,9 @@ dependencies = [
 
 [[package]]
 name = "tracing"
-version = "0.1.30"
+version = "0.1.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d8d93354fe2a8e50d5953f5ae2e47a3fc2ef03292e7ea46e3cc38f549525fb9"
+checksum = "4a1bdf54a7c28a2bbf701e1d2233f6c77f473486b94bee4f9678da5a148dca7f"
 dependencies = [
  "cfg-if",
  "pin-project-lite",
@@ -2255,9 +2259,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.19"
+version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8276d9a4a3a558d7b7ad5303ad50b53d58264641b82914b7ada36bd762e7a716"
+checksum = "2e65ce065b4b5c53e73bb28912318cb8c9e9ad3921f1d669eb0e68b4c8143a2b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2533,3 +2537,18 @@ dependencies = [
  "syn",
  "synstructure",
 ]
+
+[[patch.unused]]
+name = "tendermint"
+version = "0.23.5"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#235480171081fed74de7b3d3c19911304df29831"
+
+[[patch.unused]]
+name = "tendermint-light-client-verifier"
+version = "0.23.5"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#235480171081fed74de7b3d3c19911304df29831"
+
+[[patch.unused]]
+name = "tendermint-proto"
+version = "0.23.5"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#235480171081fed74de7b3d3c19911304df29831"

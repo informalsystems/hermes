@@ -1,4 +1,3 @@
-use crate::core::ics02_client::height::Height;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{Counterparty, Order, State};
 use crate::core::ics04_channel::context::ChannelReader;
@@ -11,9 +10,10 @@ use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Expiry;
+use crate::Height;
 
 #[derive(Clone, Debug)]
-pub struct RecvPacketResult {
+pub struct RecvPacketSuccess {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub seq: Sequence,
@@ -21,34 +21,35 @@ pub struct RecvPacketResult {
     pub receipt: Option<Receipt>,
 }
 
-pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
+#[derive(Clone, Debug)]
+pub enum RecvPacketResult {
+    Success(RecvPacketSuccess),
+    NoOp,
+}
+
+pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
 
-    let dest_channel_end = ctx.channel_end(&(
-        packet.destination_port.clone(),
-        packet.destination_channel.clone(),
-    ))?;
+    let dest_channel_end =
+        ctx.channel_end(&(packet.destination_port.clone(), packet.destination_channel))?;
 
     if !dest_channel_end.state_matches(&State::Open) {
         return Err(Error::invalid_channel_state(
-            packet.source_channel.clone(),
+            packet.source_channel,
             dest_channel_end.state,
         ));
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
 
-    let counterparty = Counterparty::new(
-        packet.source_port.clone(),
-        Some(packet.source_channel.clone()),
-    );
+    let counterparty = Counterparty::new(packet.source_port.clone(), Some(packet.source_channel));
 
     if !dest_channel_end.counterparty_matches(&counterparty) {
         return Err(Error::invalid_packet_counterparty(
             packet.source_port.clone(),
-            packet.source_channel.clone(),
+            packet.source_channel,
         ));
     }
 
@@ -60,7 +61,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
     }
 
-    // Check if packet height is newer than the height of the local host chain
     let latest_height = ctx.host_height();
     if (!packet.timeout_height.is_zero()) && (packet.timeout_height <= latest_height) {
         return Err(Error::low_packet_height(
@@ -69,7 +69,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
     }
 
-    // Check if packet timestamp is newer than the local host chain timestamp
     let latest_timestamp = ctx.host_timestamp();
     if let Expiry::Expired = latest_timestamp.check_expiry(&packet.timeout_timestamp) {
         return Err(Error::low_packet_timestamp());
@@ -84,41 +83,53 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     )?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
-        let next_seq_recv = ctx
-            .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+        let next_seq_recv =
+            ctx.get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel))?;
 
-        if packet.sequence != next_seq_recv {
+        if packet.sequence < next_seq_recv {
+            output.emit(IbcEvent::ReceivePacket(ReceivePacket {
+                height: Height::zero(),
+                packet: msg.packet.clone(),
+            }));
+            return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
+        } else if packet.sequence != next_seq_recv {
             return Err(Error::invalid_packet_sequence(
                 packet.sequence,
                 next_seq_recv,
             ));
         }
 
-        PacketResult::Recv(RecvPacketResult {
+        PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
             port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel.clone(),
+            channel_id: packet.source_channel,
             seq: packet.sequence,
             seq_number: next_seq_recv.increment(),
             receipt: None,
-        })
+        }))
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
             packet.source_port.clone(),
-            packet.source_channel.clone(),
+            packet.source_channel,
             packet.sequence,
         ));
 
         match packet_rec {
-            Ok(_receipt) => return Err(Error::packet_already_received(packet.sequence)),
+            Ok(_receipt) => {
+                output.emit(IbcEvent::ReceivePacket(ReceivePacket {
+                    height: Height::zero(),
+                    packet: msg.packet.clone(),
+                }));
+                return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
+            }
             Err(e) if e.detail() == Error::packet_receipt_not_found(packet.sequence).detail() => {
                 // store a receipt that does not contain any data
-                PacketResult::Recv(RecvPacketResult {
+                PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
                     port_id: packet.source_port.clone(),
-                    channel_id: packet.source_channel.clone(),
+                    channel_id: packet.source_channel,
                     seq: packet.sequence,
                     seq_number: 1.into(),
                     receipt: Some(Receipt::Ok),
-                })
+                }))
             }
             Err(_) => return Err(Error::implementation_specific()),
         }
@@ -127,8 +138,8 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     output.log("success: packet receive");
 
     output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-        height: Height::zero(),
-        packet: msg.packet,
+        height: ctx.host_height(),
+        packet: msg.packet.clone(),
     }));
 
     Ok(output.with_result(result))
@@ -136,6 +147,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
 #[cfg(test)]
 mod tests {
+    use crate::core::ics04_channel::context::ChannelReader;
     use crate::prelude::*;
 
     use test_log::test;
@@ -195,10 +207,7 @@ mod tests {
         let dest_channel_end = ChannelEnd::new(
             State::Open,
             Order::default(),
-            Counterparty::new(
-                packet.source_port.clone(),
-                Some(packet.source_channel.clone()),
-            ),
+            Counterparty::new(packet.source_port.clone(), Some(packet.source_channel)),
             vec![ConnectionId::default()],
             Version::ics20(),
         );
@@ -242,12 +251,12 @@ mod tests {
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
                         packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
+                        packet.destination_channel,
                         dest_channel_end.clone(),
                     )
                     .with_send_sequence(
                         packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
+                        packet.destination_channel,
                         1.into(),
                     )
                     .with_height(host_height)
@@ -277,7 +286,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = process(&test.ctx, test.msg.clone());
+            let res = process(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
@@ -293,6 +302,7 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::ReceivePacket(_)));
+                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

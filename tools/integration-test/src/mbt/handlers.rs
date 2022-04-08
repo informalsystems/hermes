@@ -1,15 +1,17 @@
 use ibc_relayer::util::task::TaskHandle;
 use ibc_relayer::worker::client::spawn_refresh_client;
 
-use crate::bootstrap::binary::chain::bootstrap_foreign_client;
-use crate::bootstrap::binary::connection::bootstrap_connection;
-use crate::ibc::denom::derive_ibc_denom;
-use crate::prelude::*;
-use crate::relayer::channel::{assert_eventually_channel_established, init_channel};
-use crate::relayer::connection::{assert_eventually_connection_established, init_connection};
-use crate::types::binary::client::ConnectedClients;
-use crate::types::binary::connection::ConnectedConnection;
-use crate::types::tagged::mono::Tagged;
+use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
+use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::channel::{assert_eventually_channel_established, init_channel};
+use ibc_test_framework::relayer::connection::{
+    assert_eventually_connection_established, init_connection,
+};
+use ibc_test_framework::types::binary::client::ClientIdPair;
+use ibc_test_framework::types::binary::connection::ConnectedConnection;
+use ibc_test_framework::types::tagged::mono::Tagged;
 
 use super::state::Packet;
 
@@ -19,13 +21,13 @@ pub fn setup_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: &ConnectedChains<ChainA, ChainB>,
 ) -> Result<(), Error> {
     {
-        let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
+        let _refresh_task_a = spawn_refresh_client(chains.foreign_clients.client_b_to_a.clone())
             .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
+        let _refresh_task_b = spawn_refresh_client(chains.foreign_clients.client_a_to_b.clone())
             .ok_or_else(|| eyre!("expect refresh task spawned"))?;
 
-        bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?;
+        bootstrap_connection(&chains.foreign_clients, Default::default())?;
     };
 
     wait_for_client();
@@ -66,24 +68,24 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     let port_a = tagged_transfer_port();
     let port_b = tagged_transfer_port();
 
-    let client_b_to_a_2 = bootstrap_foreign_client(chain_handle_b, chain_handle_a)?;
-    let client_a_to_b_2 = bootstrap_foreign_client(chain_handle_a, chain_handle_b)?;
+    let clients2 =
+        bootstrap_foreign_client_pair(chain_handle_b, chain_handle_a, Default::default())?;
 
     *refresh_task_a = Some(
-        spawn_refresh_client(client_b_to_a_2.clone())
+        spawn_refresh_client(clients2.client_b_to_a.clone())
             .ok_or_else(|| eyre!("expect refresh task spawned"))?,
     );
 
     *refresh_task_b = Some(
-        spawn_refresh_client(client_a_to_b_2.clone())
+        spawn_refresh_client(clients2.client_a_to_b.clone())
             .ok_or_else(|| eyre!("expect refresh task spawned"))?,
     );
 
     let (connection_id_b, new_connection_b) = init_connection(
         chain_handle_a,
         chain_handle_b,
-        &client_b_to_a_2.tagged_client_id(),
-        &client_a_to_b_2.tagged_client_id(),
+        &clients2.client_a_to_b.tagged_client_id(),
+        &clients2.client_b_to_a.tagged_client_id(),
     )?;
 
     let connection_id_a = assert_eventually_connection_established(
@@ -95,8 +97,8 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     let (channel_id_b_2, channel_b_2) = init_channel(
         chain_handle_a,
         chain_handle_b,
-        &client_b_to_a_2.tagged_client_id(),
-        &client_a_to_b_2.tagged_client_id(),
+        &clients2.client_a_to_b.tagged_client_id(),
+        &clients2.client_b_to_a.tagged_client_id(),
         &connection_id_a.as_ref(),
         &connection_id_b.as_ref(),
         &port_a.as_ref(),
@@ -110,17 +112,17 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         &port_b.as_ref(),
     )?;
 
-    let new_connected_clients = ConnectedClients {
-        client_id_a: DualTagged::new(client_b_to_a_2.id),
-        client_id_b: DualTagged::new(client_a_to_b_2.id),
-    };
+    let client_ids = ClientIdPair::new(
+        clients2.client_a_to_b.tagged_client_id().cloned(),
+        clients2.client_b_to_a.tagged_client_id().cloned(),
+    );
 
-    let new_connected_connection = ConnectedConnection {
-        client: new_connected_clients,
-        connection: new_connection_b.flipped(),
+    let new_connected_connection = ConnectedConnection::new(
+        client_ids,
+        new_connection_b.flipped(),
         connection_id_a,
         connection_id_b,
-    };
+    );
 
     let connected_channel = ConnectedChannel {
         connection: new_connected_connection,
@@ -197,7 +199,7 @@ pub fn ibc_transfer_send_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     )?;
 
     node_source.chain_driver().assert_eventual_wallet_amount(
-        &wallet_source,
+        &wallet_source.address(),
         balance_source - amount_source_to_target,
         &denom_source,
     )?;
@@ -234,7 +236,7 @@ pub fn ibc_transfer_receive_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     );
 
     node_target.chain_driver().assert_eventual_wallet_amount(
-        &wallet_target,
+        &wallet_target.address(),
         amount_source_to_target,
         &denom_target.as_ref(),
     )?;
