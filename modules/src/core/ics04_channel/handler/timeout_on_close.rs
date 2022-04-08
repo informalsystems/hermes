@@ -8,15 +8,17 @@ use crate::core::ics04_channel::handler::verify::{
 use crate::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use crate::core::ics04_channel::packet::PacketResult;
 use crate::core::ics04_channel::{
-    context::ChannelReader, error::Error, handler::timeout::TimeoutPacketResult,
+    context::{ChannelCapabilityReader, ChannelReader},
+    error::Error,
+    handler::timeout::TimeoutPacketResult,
 };
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader>(
+    ctx: &Ctx,
     msg: &MsgTimeoutOnClose,
     channel_cap: ChannelCapability,
 ) -> HandlerResult<PacketResult, Error> {

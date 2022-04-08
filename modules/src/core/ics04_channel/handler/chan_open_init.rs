@@ -1,19 +1,19 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenInit`.
 
 use crate::core::ics04_channel::channel::{ChannelEnd, State};
-use crate::core::ics04_channel::context::ChannelReader;
+use crate::core::ics04_channel::context::{ChannelCapabilityReader, ChannelReader};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::core::ics05_port::capabilities::PortCapability;
-use crate::core::ics05_port::context::PortReader;
+use crate::core::ics05_port::context::PortCapabilityReader;
 use crate::core::ics24_host::identifier::ChannelId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Ctx: ChannelReader + PortReader>(
+pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader + PortCapabilityReader>(
     ctx: &Ctx,
     msg: &MsgChannelOpenInit,
     port_cap: PortCapability,

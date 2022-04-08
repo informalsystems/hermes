@@ -1,12 +1,13 @@
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
+use crate::core::ics04_channel::context::{ChannelCapabilityReader, ChannelReader};
+use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::TimeoutPacket;
 use crate::core::ics04_channel::handler::verify::{
     verify_next_sequence_recv, verify_packet_receipt_absence,
 };
 use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::core::ics04_channel::packet::{PacketResult, Sequence};
-use crate::core::ics04_channel::{context::ChannelReader, error::Error};
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::IbcEvent;
@@ -22,8 +23,8 @@ pub struct TimeoutPacketResult {
     pub channel: Option<ChannelEnd>,
 }
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader>(
+    ctx: &Ctx,
     msg: &MsgTimeout,
     channel_cap: ChannelCapability,
 ) -> HandlerResult<PacketResult, Error> {
