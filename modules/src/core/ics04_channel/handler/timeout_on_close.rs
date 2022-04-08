@@ -25,23 +25,23 @@ pub fn process(
     let packet = &msg.packet;
 
     let source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel))?;
 
     ctx.authenticate_channel_capability(
         packet.source_port.clone(),
-        packet.source_channel.clone(),
+        packet.source_channel,
         &channel_cap,
     )?;
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
-        Some(packet.destination_channel.clone()),
+        Some(packet.destination_channel),
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
         return Err(Error::invalid_packet_counterparty(
             packet.destination_port.clone(),
-            packet.destination_channel.clone(),
+            packet.destination_channel,
         ));
     }
 
@@ -50,7 +50,7 @@ pub fn process(
     //verify the packet was sent, check the store
     let packet_commitment = ctx.get_packet_commitment(&(
         packet.source_port.clone(),
-        packet.source_channel.clone(),
+        packet.source_channel,
         packet.sequence,
     ))?;
 
@@ -63,10 +63,8 @@ pub fn process(
         return Err(Error::incorrect_packet_commitment(packet.sequence));
     }
 
-    let expected_counterparty = Counterparty::new(
-        packet.source_port.clone(),
-        Some(packet.source_channel.clone()),
-    );
+    let expected_counterparty =
+        Counterparty::new(packet.source_port.clone(), Some(packet.source_channel));
 
     let counterparty = connection_end.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
@@ -110,7 +108,7 @@ pub fn process(
 
         PacketResult::Timeout(TimeoutPacketResult {
             port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel.clone(),
+            channel_id: packet.source_channel,
             seq: packet.sequence,
             channel: Some(source_channel_end),
         })
@@ -125,7 +123,7 @@ pub fn process(
 
         PacketResult::Timeout(TimeoutPacketResult {
             port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel.clone(),
+            channel_id: packet.source_channel,
             seq: packet.sequence,
             channel: None,
         })
@@ -134,7 +132,7 @@ pub fn process(
     output.log("success: packet timeout ");
 
     output.emit(IbcEvent::TimeoutOnClosePacket(TimeoutOnClosePacket {
-        height: Default::default(),
+        height: ctx.host_height(),
         packet: packet.clone(),
     }));
 
@@ -200,7 +198,7 @@ mod tests {
             Order::Ordered,
             Counterparty::new(
                 packet.destination_port.clone(),
-                Some(packet.destination_channel.clone()),
+                Some(packet.destination_channel),
             ),
             vec![ConnectionId::default()],
             Version::ics20(),
@@ -252,7 +250,7 @@ mod tests {
                     )
                     .with_packet_commitment(
                         msg.packet.source_port.clone(),
-                        msg.packet.source_channel.clone(),
+                        msg.packet.source_channel,
                         msg.packet.sequence,
                         data,
                     ),
@@ -280,6 +278,7 @@ mod tests {
                     assert!(!proto_output.events.is_empty()); // Some events must exist.
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::TimeoutOnClosePacket(_)));
+                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

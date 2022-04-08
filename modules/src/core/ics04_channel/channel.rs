@@ -292,7 +292,7 @@ impl From<Counterparty> for RawCounterparty {
             port_id: value.port_id.as_str().to_string(),
             channel_id: value
                 .channel_id
-                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
+                .map_or_else(|| "".to_string(), |v| v.to_string()),
         }
     }
 }

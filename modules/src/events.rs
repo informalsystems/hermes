@@ -349,6 +349,7 @@ impl IbcEvent {
             IbcEvent::NewBlock(bl) => bl.height(),
             IbcEvent::CreateClient(ev) => ev.height(),
             IbcEvent::UpdateClient(ev) => ev.height(),
+            IbcEvent::UpgradeClient(ev) => ev.height(),
             IbcEvent::ClientMisbehaviour(ev) => ev.height(),
             IbcEvent::OpenInitConnection(ev) => ev.height(),
             IbcEvent::OpenTryConnection(ev) => ev.height(),
@@ -365,6 +366,7 @@ impl IbcEvent {
             IbcEvent::WriteAcknowledgement(ev) => ev.height(),
             IbcEvent::AcknowledgePacket(ev) => ev.height(),
             IbcEvent::TimeoutPacket(ev) => ev.height(),
+            IbcEvent::TimeoutOnClosePacket(ev) => ev.height(),
             _ => unimplemented!(),
         }
     }
