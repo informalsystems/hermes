@@ -5,21 +5,32 @@ use core::any::Any;
 use core::fmt::Debug;
 use core::{fmt, str::FromStr};
 
+use derive_more::Display;
+
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
-use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
+use crate::core::ics04_channel::context::{
+    ChannelCapabilityKeeper, ChannelCapabilityReader, ChannelKeeper, ChannelReader,
+};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
-use crate::core::ics05_port::context::PortReader;
+use crate::core::ics05_port::context::{
+    CapabilityKeeper, CapabilityReader, PortCapabilityReader, ScopedCapabilityKeeper,
+    ScopedCapabilityReader,
+};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::IbcEvent;
 use crate::handler::HandlerOutput;
 use crate::signer::Signer;
+
+#[derive(Display)]
+#[display(fmt = "core")]
+pub struct CoreModuleId;
 
 /// This trait captures all the functional dependencies (i.e., context) which the ICS26 module
 /// requires to be able to dispatch and process IBC messages. In other words, this is the
@@ -31,14 +42,38 @@ pub trait Ics26Context:
     + ConnectionKeeper
     + ChannelKeeper
     + ChannelReader
-    + PortReader
-    + Ics20Context
+    + ChannelCapabilityKeeper<
+        CapabilityKeeper = ScopedCapabilityKeeper<
+            <Self as Ics26Context>::CapabilityKeeper,
+            CoreModuleId,
+        >,
+    > + ChannelCapabilityReader<
+        CapabilityReader = ScopedCapabilityReader<
+            <Self as Ics26Context>::CapabilityReader,
+            CoreModuleId,
+        >,
+    > + PortCapabilityReader<
+        CapabilityReader = ScopedCapabilityReader<
+            <Self as Ics26Context>::CapabilityReader,
+            CoreModuleId,
+        >,
+    > + Ics20Context
 {
+    type CapabilityReader: CapabilityReader;
+    type CapabilityKeeper: CapabilityKeeper;
     type Router: Router;
 
     fn router(&self) -> &Self::Router;
 
     fn router_mut(&mut self) -> &mut Self::Router;
+
+    fn capability_reader(
+        &self,
+    ) -> &ScopedCapabilityReader<<Self as Ics26Context>::CapabilityReader, CoreModuleId>;
+
+    fn capability_keeper(
+        &mut self,
+    ) -> &mut ScopedCapabilityKeeper<<Self as Ics26Context>::CapabilityKeeper, CoreModuleId>;
 }
 
 #[derive(Debug, PartialEq)]
