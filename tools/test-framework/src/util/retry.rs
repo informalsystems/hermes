@@ -3,7 +3,6 @@
 */
 
 use core::time::Duration;
-use eyre::eyre;
 use std::thread::sleep;
 use tracing::{debug, info};
 
@@ -35,9 +34,5 @@ pub fn assert_eventually_succeed<R>(
         }
     }
 
-    Err(Error::generic(eyre!(
-        "Expected task to eventually succeeed, but failed after {} attempts: {}",
-        attempts,
-        task_name
-    )))
+    Err(Error::retry(task_name.to_string(), attempts))
 }
