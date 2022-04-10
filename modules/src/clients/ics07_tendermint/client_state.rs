@@ -2,6 +2,7 @@ use crate::prelude::*;
 
 use core::convert::{TryFrom, TryInto};
 use core::time::Duration;
+use tracing::warn;
 
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_verifier::options::Options;

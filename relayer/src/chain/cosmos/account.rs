@@ -2,6 +2,7 @@ use core::fmt;
 
 use ibc_proto::cosmos::auth::v1beta1::BaseAccount;
 use prost::Message;
+use tonic::metadata::MetadataValue;
 
 use crate::error::Error;
 
@@ -82,9 +83,13 @@ pub async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<Ba
         .await
         .map_err(Error::grpc_transport)?;
 
-    let request = tonic::Request::new(QueryAccountRequest {
+    let mut request = tonic::Request::new(QueryAccountRequest {
         address: address.clone(),
     });
+    request.metadata_mut().insert(
+        "authorization",
+        MetadataValue::from_str("Auth-Header").unwrap(),
+    );
 
     let response = client.account(request).await;
 
