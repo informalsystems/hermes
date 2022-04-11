@@ -74,7 +74,7 @@ jobs:
         run: |
           nix shell github:informalsystems/cosmos.nix#${{ matrix.gaiad }} -c cargo \
             test -p ibc-integration-test --no-fail-fast -- \
-            --nocapture
+            --nocapture --test-threads=2
 
   ibc-go-integration-test:
     runs-on: ubuntu-latest
@@ -110,7 +110,7 @@ jobs:
           CHAIN_COMMAND_PATH: simd
         run: |
           nix shell github:informalsystems/cosmos.nix#${{ matrix.simapp }} -c cargo \
-            test -p ibc-integration-test --no-fail-fast -- --nocapture
+            test -p ibc-integration-test --no-fail-fast -- --nocapture --test-threads=2
 
   ordered-channel-test:
     runs-on: ubuntu-latest
