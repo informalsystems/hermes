@@ -32,10 +32,7 @@ use crate::core::ics04_channel::context::{
 use crate::core::ics04_channel::error::Error as Ics04Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
 use crate::core::ics05_port::capabilities::{Capability, CapabilityName, PortCapability};
-use crate::core::ics05_port::context::{
-    CapabilityKeeper, CapabilityReader, PortCapabilityReader, ScopedCapabilityKeeper,
-    ScopedCapabilityReader,
-};
+use crate::core::ics05_port::context::{CapabilityKeeper, CapabilityReader, PortCapabilityReader};
 use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -128,6 +125,9 @@ pub struct MockContext {
 
     /// ICS26 router impl
     router: MockRouter,
+
+    /// Object capabilites impl
+    ocap: MockOCap,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -216,6 +216,7 @@ impl MockContext {
             channel_ids_counter: 0,
             block_time,
             router: Default::default(),
+            ocap: Default::default(),
         }
     }
 
@@ -599,27 +600,74 @@ impl Router for MockRouter {
     }
 }
 
-impl ChannelCapabilityKeeper for MockContext {
-    type CapabilityKeeper =
-        ScopedCapabilityKeeper<<Self as Ics26Context>::CapabilityKeeper, CoreModuleId>;
+impl CapabilityKeeper<CoreModuleId> for MockContext {
+    fn module_id(&self) -> CoreModuleId {
+        CoreModuleId
+    }
 
-    fn capability_keeper(&mut self) -> &mut Self::CapabilityKeeper {
-        todo!()
+    fn new_capability(&mut self, name: CapabilityName) -> Result<Capability, Ics05Error> {
+        self.ocap.new_capability(
+            name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
+        )
+    }
+
+    fn claim_capability(&mut self, name: CapabilityName, capability: Capability) {
+        self.ocap.claim_capability(
+            name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
+            capability,
+        )
+    }
+
+    fn release_capability(&mut self, name: CapabilityName, capability: Capability) {
+        self.ocap.release_capability(
+            name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
+            capability,
+        )
     }
 }
 
-impl ChannelCapabilityReader for MockContext {
-    type CapabilityReader =
-        ScopedCapabilityReader<<Self as Ics26Context>::CapabilityReader, CoreModuleId>;
+impl CapabilityReader<CoreModuleId> for MockContext {
+    fn module_id(&self) -> CoreModuleId {
+        CoreModuleId
+    }
 
-    fn capability_reader(&self) -> &Self::CapabilityReader {
-        todo!()
+    fn lookup_module(&self, name: &CapabilityName) -> Result<(ModuleId, Capability), Ics05Error> {
+        self.ocap.lookup_module(
+            &name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
+        )
+    }
+
+    fn get_capability(&self, name: &CapabilityName) -> Result<Capability, Ics05Error> {
+        self.ocap.get_capability(
+            &name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
+        )
+    }
+
+    fn authenticate_capability(
+        &self,
+        name: &CapabilityName,
+        capability: &Capability,
+    ) -> Result<(), Ics05Error> {
+        self.ocap.authenticate_capability(
+            &name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
+            capability,
+        )
+    }
+
+    fn create_capability(&self, name: CapabilityName) -> Result<Capability, Ics05Error> {
+        self.ocap.create_capability(
+            name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
+        )
     }
 }
+
+impl ChannelCapabilityKeeper<CoreModuleId> for MockContext {}
+
+impl ChannelCapabilityReader<CoreModuleId> for MockContext {}
+
+impl PortCapabilityReader<CoreModuleId> for MockContext {}
 
 impl Ics26Context for MockContext {
-    type CapabilityReader = MockOCap;
-    type CapabilityKeeper = MockOCap;
     type Router = MockRouter;
 
     fn router(&self) -> &Self::Router {
@@ -629,20 +677,12 @@ impl Ics26Context for MockContext {
     fn router_mut(&mut self) -> &mut Self::Router {
         &mut self.router
     }
-
-    fn capability_reader(&self) -> &ScopedCapabilityReader<MockOCap, CoreModuleId> {
-        todo!()
-    }
-
-    fn capability_keeper(&mut self) -> &mut ScopedCapabilityKeeper<MockOCap, CoreModuleId> {
-        todo!()
-    }
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct MockOCap;
 
-impl CapabilityReader for MockOCap {
+impl MockOCap {
     fn lookup_module(&self, _name: &CapabilityName) -> Result<(ModuleId, Capability), Ics05Error> {
         todo!()
     }
@@ -662,9 +702,7 @@ impl CapabilityReader for MockOCap {
     fn create_capability(&self, _name: CapabilityName) -> Result<Capability, Ics05Error> {
         todo!()
     }
-}
 
-impl CapabilityKeeper for MockOCap {
     fn new_capability(&mut self, _name: CapabilityName) -> Result<Capability, Ics05Error> {
         todo!()
     }
@@ -679,14 +717,6 @@ impl CapabilityKeeper for MockOCap {
 }
 
 impl Ics20Context for MockContext {}
-
-impl PortCapabilityReader for MockContext {
-    type CapabilityReader = ScopedCapabilityReader<MockOCap, CoreModuleId>;
-
-    fn capability_reader(&self) -> &Self::CapabilityReader {
-        todo!()
-    }
-}
 
 impl ChannelReader for MockContext {
     fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
