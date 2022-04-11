@@ -9,11 +9,14 @@ use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::core::ics05_port::capabilities::PortCapability;
 use crate::core::ics05_port::context::PortCapabilityReader;
 use crate::core::ics24_host::identifier::ChannelId;
+use crate::core::ics26_routing::context::CoreModuleId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader + PortCapabilityReader>(
+pub(crate) fn process<
+    Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId> + PortCapabilityReader<CoreModuleId>,
+>(
     ctx: &Ctx,
     msg: &MsgChannelOpenInit,
     port_cap: PortCapability,

@@ -8,6 +8,7 @@ use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::core::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::core::ics26_routing::context::CoreModuleId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Expiry;
@@ -28,7 +29,7 @@ pub enum RecvPacketResult {
     NoOp,
 }
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader>(
+pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
     ctx: &Ctx,
     msg: &MsgRecvPacket,
     channel_cap: ChannelCapability,

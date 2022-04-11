@@ -10,6 +10,7 @@ use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::core::ics04_channel::packet::{PacketResult, Sequence};
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::core::ics26_routing::context::CoreModuleId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
@@ -23,7 +24,7 @@ pub struct TimeoutPacketResult {
     pub channel: Option<ChannelEnd>,
 }
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader>(
+pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
     ctx: &Ctx,
     msg: &MsgTimeout,
     channel_cap: ChannelCapability,

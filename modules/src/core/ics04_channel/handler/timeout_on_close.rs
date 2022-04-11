@@ -13,11 +13,12 @@ use crate::core::ics04_channel::{
     handler::timeout::TimeoutPacketResult,
 };
 use crate::core::ics05_port::capabilities::ChannelCapability;
+use crate::core::ics26_routing::context::CoreModuleId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader>(
+pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
     ctx: &Ctx,
     msg: &MsgTimeoutOnClose,
     channel_cap: ChannelCapability,
