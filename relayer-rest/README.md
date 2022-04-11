@@ -6,7 +6,7 @@
 [![End to End testing][e2e-image]][e2e-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
-![Rust 1.58+][rustc-version]
+![Rust 1.60+][rustc-version]
 
 This is the repository for the IBC REST server for use in the Hermes IBC relayer.
 
@@ -39,4 +39,4 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
-[rustc-version]: https://img.shields.io/badge/rustc-1.58+-blue.svg
+[rustc-version]: https://img.shields.io/badge/rustc-1.60+-blue.svg

@@ -48,6 +48,19 @@ define_error! {
         Transfer
             [ TransferError ]
             | _ | { "transfer error"},
+
+        Retry
+            {
+                task_name: String,
+                attempts: u16,
+            }
+            | e | {
+                format_args!(
+                    "Expected task to eventually succeeed, but failed after {} attempts: {}",
+                    e.attempts,
+                    e.task_name
+                )
+            },
     }
 }
 
