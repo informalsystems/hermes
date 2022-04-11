@@ -99,6 +99,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature = "manual")]
     fn parse_itf() {
         use super::super::itf::InformalTrace;
         use super::super::state::State;
