@@ -26,7 +26,7 @@ use crate::handler::HandlerOutput;
 use crate::signer::Signer;
 
 #[derive(Display, Default)]
-#[display(fmt = "core")]
+#[display(fmt = "ibc")]
 pub struct CoreModuleId;
 impl From<CoreModuleId> for ModuleId {
     fn from(core: CoreModuleId) -> Self {
