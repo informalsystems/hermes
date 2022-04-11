@@ -78,6 +78,7 @@ fn test_ibc_transfer() -> Result<(), Error> {
    chain that is connected to itself.
 */
 #[test]
+#[cfg(feature = "manual")]
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
     for test_name in TEST_NAMES {
         for trace in generate_mbt_traces(APALACHE_EXEC, test_name, NUM_TRACES_PER_TEST)? {
