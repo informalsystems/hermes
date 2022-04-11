@@ -1290,6 +1290,8 @@ mod tests {
     use test_log::test;
 
     use alloc::str::FromStr;
+    use alloc::sync::Arc;
+    use std::sync::Mutex;
 
     use crate::core::ics04_channel::channel::{Counterparty, Order};
     use crate::core::ics04_channel::error::Error;
@@ -1301,8 +1303,8 @@ mod tests {
     use crate::core::ics26_routing::context::{
         Acknowledgement, Module, ModuleId, ModuleOutput, OnRecvPacketAck, Router, RouterBuilder,
     };
-    use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
+    use crate::mock::context::{MockContext, MockOCap};
     use crate::mock::host::HostType;
     use crate::prelude::*;
     use crate::signer::Signer;
@@ -1498,7 +1500,15 @@ mod tests {
         }
 
         #[derive(Debug, Default)]
-        struct BarModule;
+        struct BarModule {
+            _ocap: Arc<Mutex<MockOCap>>,
+        }
+
+        impl BarModule {
+            fn new(_ocap: Arc<Mutex<MockOCap>>) -> Self {
+                Self { _ocap }
+            }
+        }
 
         impl Module for BarModule {
             fn on_chan_open_try(
@@ -1516,10 +1526,12 @@ mod tests {
             }
         }
 
+        let ocap = Arc::new(Mutex::new(MockOCap::default()));
+
         let r = MockRouterBuilder::default()
             .add_route("foomodule".parse().unwrap(), FooModule::default())
             .unwrap()
-            .add_route("barmodule".parse().unwrap(), BarModule::default())
+            .add_route("barmodule".parse().unwrap(), BarModule::new(ocap.clone()))
             .unwrap()
             .build();
 
@@ -1529,7 +1541,8 @@ mod tests {
             1,
             Height::new(1, 1),
         )
-        .with_router(r);
+        .with_router(r)
+        .with_ocap(ocap);
 
         let mut on_recv_packet_result = |module_id: &'static str| {
             let module_id = ModuleId::from_str(module_id).unwrap();
