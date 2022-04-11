@@ -28,9 +28,14 @@ use crate::events::IbcEvent;
 use crate::handler::HandlerOutput;
 use crate::signer::Signer;
 
-#[derive(Display)]
+#[derive(Display, Default)]
 #[display(fmt = "core")]
 pub struct CoreModuleId;
+impl From<CoreModuleId> for ModuleId {
+    fn from(core: CoreModuleId) -> Self {
+        Self(core.to_string())
+    }
+}
 
 /// This trait captures all the functional dependencies (i.e., context) which the ICS26 module
 /// requires to be able to dispatch and process IBC messages. In other words, this is the
