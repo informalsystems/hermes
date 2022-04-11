@@ -818,7 +818,8 @@ impl CosmosSdkChain {
 
     /// Given a vector of [`TxSyncResult`] elements,
     /// each including a transaction response hash for one or more messages, periodically queries the chain
-    /// with the transaction hashes to get the list of IbcEvents included in those transactions.
+    /// with the transaction hashes to get the lists of [`IbcEvent`] and [`CosmosEvent`]
+    /// included in those transactions.
     fn wait_for_block_commits(
         &self,
         mut tx_sync_results: Vec<TxSyncResult>,
@@ -853,31 +854,31 @@ impl CosmosSdkChain {
 
                 for TxSyncResult {
                     response,
-                    ibc_events: events,
+                    ibc_events,
                     cosmos_events,
                 } in tx_sync_results.iter_mut()
                 {
                     // If this transaction was not committed, determine whether it was because it failed
                     // or because it hasn't been committed yet.
-                    if events.is_empty() && cosmos_events.is_empty() {
+                    if ibc_events.is_empty() && cosmos_events.is_empty() {
                         // If the transaction failed, replace the events with an error,
                         // so that we don't attempt to resolve the transaction later on.
                         if response.code.value() != 0 {
-                            *events = vec![IbcEvent::ChainError(format!(
+                            *ibc_events = vec![IbcEvent::ChainError(format!(
                                 "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
                                 self.id(), response.hash, response.code, response.log
                             ))];
 
                             // Otherwise, try to resolve transaction hash to the corresponding events.
-                        } else if let Ok((events_per_tx, cosmos_events_per_tx)) =
+                        } else if let Ok((ibc_events_per_tx, cosmos_events_per_tx)) =
                             self.query_extended_events_for_tx(QueryTxHash(response.hash))
                         {
                             // If we get events back, progress was made, so we replace the events
                             // with the new ones. In both cases we will check in the next iteration
                             // whether or not the transaction was fully committed.
                             // Either IBC or Cosmos-specific events can qualify as a commit.
-                            if !events_per_tx.is_empty() {
-                                *events = events_per_tx;
+                            if !ibc_events_per_tx.is_empty() {
+                                *ibc_events = ibc_events_per_tx;
                             }
                             if !cosmos_events_per_tx.is_empty() {
                                 *cosmos_events = cosmos_events_per_tx;
