@@ -999,7 +999,14 @@ impl CosmosSdkChain {
 
         let events = tx_sync_results
             .into_iter()
-            .flat_map(|el| el.cosmos_events)
+            .flat_map(|el| match el.ibc_events.into_iter().next() {
+                Some(IbcEvent::ChainError(e)) => {
+                    // HACK: wait_for_block_commits only reports deliver_tx
+                    // errors via IbcEvent. Recast the message as a CosmosEvent error.
+                    vec![CosmosEvent::ChainError(e)]
+                }
+                _ => el.cosmos_events,
+            })
             .collect();
 
         Ok(events)
