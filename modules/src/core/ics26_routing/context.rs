@@ -19,10 +19,7 @@ use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as Generi
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
-use crate::core::ics05_port::context::{
-    CapabilityKeeper, CapabilityReader, PortCapabilityReader, ScopedCapabilityKeeper,
-    ScopedCapabilityReader,
-};
+use crate::core::ics05_port::context::PortCapabilityReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::IbcEvent;
 use crate::handler::HandlerOutput;
@@ -47,38 +44,16 @@ pub trait Ics26Context:
     + ConnectionKeeper
     + ChannelKeeper
     + ChannelReader
-    + ChannelCapabilityKeeper<
-        CapabilityKeeper = ScopedCapabilityKeeper<
-            <Self as Ics26Context>::CapabilityKeeper,
-            CoreModuleId,
-        >,
-    > + ChannelCapabilityReader<
-        CapabilityReader = ScopedCapabilityReader<
-            <Self as Ics26Context>::CapabilityReader,
-            CoreModuleId,
-        >,
-    > + PortCapabilityReader<
-        CapabilityReader = ScopedCapabilityReader<
-            <Self as Ics26Context>::CapabilityReader,
-            CoreModuleId,
-        >,
-    > + Ics20Context
+    + ChannelCapabilityKeeper<CoreModuleId>
+    + ChannelCapabilityReader<CoreModuleId>
+    + PortCapabilityReader<CoreModuleId>
+    + Ics20Context
 {
-    type CapabilityReader: CapabilityReader;
-    type CapabilityKeeper: CapabilityKeeper;
     type Router: Router;
 
     fn router(&self) -> &Self::Router;
 
     fn router_mut(&mut self) -> &mut Self::Router;
-
-    fn capability_reader(
-        &self,
-    ) -> &ScopedCapabilityReader<<Self as Ics26Context>::CapabilityReader, CoreModuleId>;
-
-    fn capability_keeper(
-        &mut self,
-    ) -> &mut ScopedCapabilityKeeper<<Self as Ics26Context>::CapabilityKeeper, CoreModuleId>;
 }
 
 #[derive(Debug, PartialEq)]
@@ -94,6 +69,10 @@ impl ModuleId {
         } else {
             Err(InvalidModuleId)
         }
+    }
+
+    pub fn into_string(self) -> String {
+        self.0
     }
 }
 
