@@ -9,6 +9,7 @@ use core::cmp::min;
 use core::fmt::Debug;
 use core::ops::{Add, Sub};
 use core::time::Duration;
+use std::sync::Mutex;
 
 use ibc_proto::google::protobuf::Any;
 use sha2::Digest;
@@ -127,7 +128,7 @@ pub struct MockContext {
     router: MockRouter,
 
     /// Object capabilites impl
-    ocap: MockOCap,
+    ocap: Arc<Mutex<MockOCap>>,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -456,6 +457,10 @@ impl MockContext {
         Self { router, ..self }
     }
 
+    pub fn with_ocap(self, ocap: Arc<Mutex<MockOCap>>) -> Self {
+        Self { ocap, ..self }
+    }
+
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     pub fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
@@ -606,20 +611,20 @@ impl CapabilityKeeper<CoreModuleId> for MockContext {
     }
 
     fn new_capability(&mut self, name: CapabilityName) -> Result<Capability, Ics05Error> {
-        self.ocap.new_capability(
+        self.ocap.lock().unwrap().new_capability(
             name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
         )
     }
 
     fn claim_capability(&mut self, name: CapabilityName, capability: Capability) {
-        self.ocap.claim_capability(
+        self.ocap.lock().unwrap().claim_capability(
             name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
             capability,
         )
     }
 
     fn release_capability(&mut self, name: CapabilityName, capability: Capability) {
-        self.ocap.release_capability(
+        self.ocap.lock().unwrap().release_capability(
             name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
             capability,
         )
@@ -632,13 +637,13 @@ impl CapabilityReader<CoreModuleId> for MockContext {
     }
 
     fn lookup_module(&self, name: &CapabilityName) -> Result<(ModuleId, Capability), Ics05Error> {
-        self.ocap.lookup_module(
+        self.ocap.lock().unwrap().lookup_module(
             &name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
         )
     }
 
     fn get_capability(&self, name: &CapabilityName) -> Result<Capability, Ics05Error> {
-        self.ocap.get_capability(
+        self.ocap.lock().unwrap().get_capability(
             &name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
         )
     }
@@ -648,14 +653,14 @@ impl CapabilityReader<CoreModuleId> for MockContext {
         name: &CapabilityName,
         capability: &Capability,
     ) -> Result<(), Ics05Error> {
-        self.ocap.authenticate_capability(
+        self.ocap.lock().unwrap().authenticate_capability(
             &name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
             capability,
         )
     }
 
     fn create_capability(&self, name: CapabilityName) -> Result<Capability, Ics05Error> {
-        self.ocap.create_capability(
+        self.ocap.lock().unwrap().create_capability(
             name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
         )
     }
@@ -679,16 +684,17 @@ impl Ics26Context for MockContext {
     }
 }
 
+/// A dummy OCap system that performs no authentication.
 #[derive(Clone, Debug, Default)]
 pub struct MockOCap;
 
 impl MockOCap {
     fn lookup_module(&self, _name: &CapabilityName) -> Result<(ModuleId, Capability), Ics05Error> {
-        todo!()
+        Ok((CoreModuleId.into(), Capability::default()))
     }
 
     fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, Ics05Error> {
-        todo!()
+        Ok(Capability::default())
     }
 
     fn authenticate_capability(
@@ -696,24 +702,20 @@ impl MockOCap {
         _name: &CapabilityName,
         _capability: &Capability,
     ) -> Result<(), Ics05Error> {
-        todo!()
+        Ok(())
     }
 
     fn create_capability(&self, _name: CapabilityName) -> Result<Capability, Ics05Error> {
-        todo!()
+        Ok(Capability::default())
     }
 
     fn new_capability(&mut self, _name: CapabilityName) -> Result<Capability, Ics05Error> {
-        todo!()
+        Ok(Capability::default())
     }
 
-    fn claim_capability(&mut self, _name: CapabilityName, _capability: Capability) {
-        todo!()
-    }
+    fn claim_capability(&mut self, _name: CapabilityName, _capability: Capability) {}
 
-    fn release_capability(&mut self, _name: CapabilityName, _capability: Capability) {
-        todo!()
-    }
+    fn release_capability(&mut self, _name: CapabilityName, _capability: Capability) {}
 }
 
 impl Ics20Context for MockContext {}
