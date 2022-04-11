@@ -969,14 +969,21 @@ impl CosmosSdkChain {
         }
     }
 
-    /// A Cosmos-specific variant of `send_messages_and_wait_commit`,
-    /// expecting a Cosmos event in response to the message committed as a
-    /// transaction.
+    /// Sends a single message in a transaction and queries the chain node
+    /// until a Cosmos-specific event is received in response to the transaction.
+    ///
+    /// This method is only used for certain operations involving messages
+    /// specific to the Cosmos SDK, such as the API defined in the
+    /// [`upgrade_chain`] module. For operations with the IBC protocol proper, use the
+    /// [`ChainEndpoint::send_messages_and_wait_commit`] method.
+    ///
+    /// [`upgrade_chain`]: crate::upgrade_chain
+    ///
     pub fn send_message_and_wait_commit_cosmos(
         &mut self,
         msg: Any,
     ) -> Result<Vec<CosmosEvent>, Error> {
-        crate::time!("send_messages_and_wait_commit_cosmos");
+        crate::time!("send_message_and_wait_commit_cosmos");
 
         let _span = span!(Level::DEBUG, "send_tx_commit_cosmos").entered();
 
