@@ -6,17 +6,10 @@ use crate::core::ics26_routing::context::ModuleId;
 use crate::prelude::*;
 
 /// A context supplying all the necessary read-only dependencies for processing any information regarding a port.
-pub trait PortCapabilityReader {
-    /// Associated `CapacilityReader`, usually scoped
-    type CapabilityReader: CapabilityReader;
-
-    /// Return a reference to the scoped port capability reader
-    fn capability_reader(&self) -> &Self::CapabilityReader;
-
+pub trait PortCapabilityReader<M: Into<ModuleId>>: CapabilityReader<M> {
     /// Return the `ModuleId` along with the `PortCapability` associated with a given `PortId`
     fn lookup_module_by_port(&self, port_id: PortId) -> Result<(ModuleId, PortCapability), Error> {
-        self.capability_reader()
-            .lookup_module(&port_capability_name(port_id))
+        self.lookup_module(&port_capability_name(port_id))
             .map(|(module_id, capability)| (module_id, capability.into()))
     }
 
@@ -27,8 +20,7 @@ pub trait PortCapabilityReader {
 
     /// Get the `PortCapability` associated with the specified `PortId`
     fn get_port_capability(&self, port_id: PortId) -> Result<PortCapability, Error> {
-        self.capability_reader()
-            .get_capability(&port_capability_name(port_id))
+        self.get_capability(&port_capability_name(port_id))
             .map(Into::into)
     }
 
@@ -39,31 +31,28 @@ pub trait PortCapabilityReader {
         port_id: PortId,
         capability: &PortCapability,
     ) -> Result<(), Error> {
-        self.capability_reader()
-            .authenticate_capability(&port_capability_name(port_id), capability)
+        self.authenticate_capability(&port_capability_name(port_id), capability)
     }
 }
 
-pub trait PortCapabilityKeeper: PortCapabilityReader {
-    /// Associated `CapabilityKeeper`, usually scoped
-    type CapabilityKeeper: CapabilityKeeper;
-
-    /// Return a reference to the scoped port capability keeper
-    fn capability_keeper(&mut self) -> &mut Self::CapabilityKeeper;
-
+pub trait PortCapabilityKeeper<M: Into<ModuleId>>:
+    PortCapabilityReader<M> + CapabilityKeeper<M>
+{
     /// Binds to a port and returns the associated capability
     fn bind_port(&mut self, port_id: PortId) -> Result<PortCapability, Error> {
         if self.is_bound(port_id.clone()) {
             Err(Error::port_already_bound(port_id))
         } else {
-            self.capability_keeper()
-                .new_capability(port_capability_name(port_id))
+            self.new_capability(port_capability_name(port_id))
                 .map(Into::into)
         }
     }
 }
 
-pub trait CapabilityKeeper {
+pub trait CapabilityKeeper<M: Into<ModuleId>> {
+    /// The `ModuleId` that this `CapabilityKeeper` is scoped to
+    fn module_id(&self) -> M;
+
     /// Create a new capability with the given name.
     /// Return an error if the capability was already taken.
     fn new_capability(&mut self, name: CapabilityName) -> Result<Capability, Error>;
@@ -76,7 +65,10 @@ pub trait CapabilityKeeper {
     fn release_capability(&mut self, name: CapabilityName, capability: Capability);
 }
 
-pub trait CapabilityReader {
+pub trait CapabilityReader<M: Into<ModuleId>> {
+    /// The `ModuleId` that this `CapabilityReader` is scoped to
+    fn module_id(&self) -> M;
+
     /// Find the `ModuleId` that owns this capability
     fn lookup_module(&self, name: &CapabilityName) -> Result<(ModuleId, Capability), Error>;
 
@@ -100,57 +92,4 @@ fn port_capability_name(port_id: PortId) -> CapabilityName {
         .to_string()
         .parse()
         .expect("PortsPath cannot be empty string")
-}
-
-pub struct ScopedCapabilityReader<CR, M> {
-    capability_reader: CR,
-    module_id: M,
-}
-
-impl<CR: CapabilityReader, M: ToString> CapabilityReader for ScopedCapabilityReader<CR, M> {
-    fn lookup_module(&self, name: &CapabilityName) -> Result<(ModuleId, Capability), Error> {
-        self.capability_reader
-            .lookup_module(&name.prefixed_with(self.module_id.to_string()))
-    }
-
-    fn get_capability(&self, name: &CapabilityName) -> Result<Capability, Error> {
-        self.capability_reader
-            .get_capability(&name.prefixed_with(self.module_id.to_string()))
-    }
-
-    fn authenticate_capability(
-        &self,
-        name: &CapabilityName,
-        capability: &Capability,
-    ) -> Result<(), Error> {
-        self.capability_reader
-            .authenticate_capability(&name.prefixed_with(self.module_id.to_string()), capability)
-    }
-
-    fn create_capability(&self, name: CapabilityName) -> Result<Capability, Error> {
-        self.capability_reader
-            .create_capability(name.prefixed_with(self.module_id.to_string()))
-    }
-}
-
-pub struct ScopedCapabilityKeeper<CK, M> {
-    capability_keeper: CK,
-    module_id: M,
-}
-
-impl<CK: CapabilityKeeper, M: ToString> CapabilityKeeper for ScopedCapabilityKeeper<CK, M> {
-    fn new_capability(&mut self, name: CapabilityName) -> Result<Capability, Error> {
-        self.capability_keeper
-            .new_capability(name.prefixed_with(self.module_id.to_string()))
-    }
-
-    fn claim_capability(&mut self, name: CapabilityName, capability: Capability) {
-        self.capability_keeper
-            .claim_capability(name.prefixed_with(self.module_id.to_string()), capability)
-    }
-
-    fn release_capability(&mut self, name: CapabilityName, capability: Capability) {
-        self.capability_keeper
-            .release_capability(name.prefixed_with(self.module_id.to_string()), capability)
-    }
 }
