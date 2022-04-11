@@ -76,10 +76,9 @@ impl FromStr for Amount {
 }
 
 #[derive(Copy, Clone)]
-pub enum TransferTimeout {
-    Height(Height),
-    Timestamp(Timestamp),
-    HeightAndTimestamp(Height, Timestamp),
+pub struct TransferTimeout {
+    pub timeout_height: Height,
+    pub timeout_timestamp: Timestamp,
 }
 
 impl TransferTimeout {
@@ -88,41 +87,15 @@ impl TransferTimeout {
         timeout_duration: Duration,
         destination_chain_status: &ChainStatus,
     ) -> Result<Self, TransferError> {
-        let offset_is_zero = timeout_height_offset == 0;
-        let timeout_is_zero = timeout_duration == Duration::ZERO;
-
         let timeout_height = destination_chain_status.height.add(timeout_height_offset);
 
         let timeout_timestamp = (destination_chain_status.timestamp + timeout_duration)
             .map_err(TransferError::timestamp_overflow)?;
 
-        if offset_is_zero && timeout_is_zero {
-            Err(TransferError::zero_timeout())
-        } else if timeout_is_zero {
-            // timeout height offset is non zero
-            Ok(Self::Height(timeout_height))
-        } else if offset_is_zero {
-            // timeout is non zero
-            Ok(Self::Timestamp(timeout_timestamp))
-        } else {
-            Ok(Self::HeightAndTimestamp(timeout_height, timeout_timestamp))
-        }
-    }
-
-    pub fn timeout_timestamp(&self) -> Timestamp {
-        match self {
-            Self::Height(_) => Timestamp::none(),
-            Self::Timestamp(timestamp) => *timestamp,
-            Self::HeightAndTimestamp(_, timestamp) => *timestamp,
-        }
-    }
-
-    pub fn timeout_height(&self) -> Height {
-        match self {
-            Self::Height(height) => *height,
-            Self::Timestamp(_) => Height::zero(),
-            Self::HeightAndTimestamp(height, _) => *height,
-        }
+        Ok(TransferTimeout {
+            timeout_height,
+            timeout_timestamp,
+        })
     }
 }
 
@@ -169,8 +142,8 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         }),
         sender,
         receiver,
-        timeout_height: timeout.timeout_height(),
-        timeout_timestamp: timeout.timeout_timestamp(),
+        timeout_height: timeout.timeout_height,
+        timeout_timestamp: timeout.timeout_timestamp,
     };
 
     let raw_msg = msg.to_any();
