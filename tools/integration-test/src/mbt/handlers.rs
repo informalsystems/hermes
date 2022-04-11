@@ -69,7 +69,7 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     let port_b = tagged_transfer_port();
 
     let clients2 =
-        bootstrap_foreign_client_pair(chain_handle_b, chain_handle_a, Default::default())?;
+        bootstrap_foreign_client_pair(chain_handle_a, chain_handle_b, Default::default())?;
 
     *refresh_task_a = Some(
         spawn_refresh_client(clients2.client_b_to_a.clone())
@@ -84,8 +84,8 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     let (connection_id_b, new_connection_b) = init_connection(
         chain_handle_a,
         chain_handle_b,
-        &clients2.client_a_to_b.tagged_client_id(),
         &clients2.client_b_to_a.tagged_client_id(),
+        &clients2.client_a_to_b.tagged_client_id(),
     )?;
 
     let connection_id_a = assert_eventually_connection_established(
@@ -97,8 +97,8 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     let (channel_id_b_2, channel_b_2) = init_channel(
         chain_handle_a,
         chain_handle_b,
-        &clients2.client_a_to_b.tagged_client_id(),
         &clients2.client_b_to_a.tagged_client_id(),
+        &clients2.client_a_to_b.tagged_client_id(),
         &connection_id_a.as_ref(),
         &connection_id_b.as_ref(),
         &port_a.as_ref(),
@@ -113,8 +113,8 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     )?;
 
     let client_ids = ClientIdPair::new(
-        clients2.client_a_to_b.tagged_client_id().cloned(),
         clients2.client_b_to_a.tagged_client_id().cloned(),
+        clients2.client_a_to_b.tagged_client_id().cloned(),
     );
 
     let new_connected_connection = ConnectedConnection::new(
