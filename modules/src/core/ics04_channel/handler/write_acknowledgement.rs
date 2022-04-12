@@ -20,7 +20,7 @@ pub struct WriteAckPacketResult {
     pub ack: Vec<u8>,
 }
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
+pub fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
     ctx: &Ctx,
     packet: Packet,
     ack: Vec<u8>,
