@@ -82,15 +82,33 @@ pub struct TransferTimeout {
 }
 
 impl TransferTimeout {
+    /**
+       Construct the transfer timeout parameters from the given timeout
+       height offset, timeout duration, and the latest chain status
+       containing the latest time of the destination chain.
+
+       The height offset and duration are optional, with zero indicating
+       that the packet do not get expired at the given height or time.
+       If both height offset and duration are zero, then the packet will
+       never expire.
+    */
     pub fn new(
         timeout_height_offset: u64,
         timeout_duration: Duration,
         destination_chain_status: &ChainStatus,
     ) -> Result<Self, TransferError> {
-        let timeout_height = destination_chain_status.height.add(timeout_height_offset);
+        let timeout_height = if timeout_height_offset == 0 {
+            Height::zero()
+        } else {
+            destination_chain_status.height.add(timeout_height_offset)
+        };
 
-        let timeout_timestamp = (destination_chain_status.timestamp + timeout_duration)
-            .map_err(TransferError::timestamp_overflow)?;
+        let timeout_timestamp = if timeout_duration == Duration::ZERO {
+            Timestamp::none()
+        } else {
+            (destination_chain_status.timestamp + timeout_duration)
+                .map_err(TransferError::timestamp_overflow)?
+        };
 
         Ok(TransferTimeout {
             timeout_height,
