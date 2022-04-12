@@ -37,12 +37,40 @@ pub enum ChannelIdState {
 }
 
 #[derive(Clone, Debug)]
-pub struct ChannelResult {
+pub struct ChannelResult<C: Capability> {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub channel_id_state: ChannelIdState,
-    pub channel_cap: Capability,
+    pub channel_cap: C,
     pub channel_end: ChannelEnd,
+}
+
+pub struct ChannelResultSansCap {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub channel_id_state: ChannelIdState,
+    pub channel_end: ChannelEnd,
+}
+
+impl<Cap: Capability> ChannelResult<Cap> {
+    pub(crate) fn destructure(self) -> (ChannelResultSansCap, Cap) {
+        let ChannelResult {
+            port_id,
+            channel_id,
+            channel_id_state,
+            channel_cap,
+            channel_end,
+        } = self;
+        (
+            ChannelResultSansCap {
+                port_id,
+                channel_id,
+                channel_id_state,
+                channel_end,
+            },
+            channel_cap,
+        )
+    }
 }
 
 pub struct DispatchResult<R> {
@@ -51,7 +79,7 @@ pub struct DispatchResult<R> {
     pub result: R,
 }
 
-pub type ChannelDispatchResult = DispatchResult<ChannelResult>;
+pub type ChannelDispatchResult<C> = DispatchResult<ChannelResult<C>>;
 pub type PacketDispatchResult = DispatchResult<PacketResult>;
 
 fn validate_route<Ctx: Ics26Context>(ctx: &Ctx, module_id: ModuleId) -> Result<ModuleId, Error> {
@@ -63,9 +91,13 @@ fn validate_route<Ctx: Ics26Context>(ctx: &Ctx, module_id: ModuleId) -> Result<M
 
 /// General entry point for processing any type of message related to the ICS4 channel open and
 /// channel close handshake protocols.
-pub fn channel_dispatch<Ctx>(ctx: &Ctx, msg: &ChannelMsg) -> Result<ChannelDispatchResult, Error>
+pub fn channel_dispatch<Ctx, Cap>(
+    ctx: &Ctx,
+    msg: &ChannelMsg,
+) -> Result<ChannelDispatchResult<Cap>, Error>
 where
-    Ctx: Ics26Context,
+    Ctx: Ics26Context<Capability = Cap>,
+    Cap: Capability,
 {
     let (module_id, output) = match msg {
         ChannelMsg::ChannelOpenInit(msg) => ctx
@@ -109,15 +141,16 @@ where
     })
 }
 
-pub fn channel_callback<Ctx>(
+pub fn channel_callback<Ctx, Cap>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
     msg: &ChannelMsg,
-    mut result: ChannelResult,
+    mut result: ChannelResult<Cap>,
     module_output: &mut ModuleOutput,
-) -> Result<ChannelResult, Error>
+) -> Result<ChannelResult<Cap>, Error>
 where
     Ctx: Ics26Context,
+    Cap: Capability,
 {
     let cb = ctx
         .router_mut()

@@ -4,31 +4,8 @@ use crate::prelude::*;
 use alloc::borrow::Cow;
 use core::{fmt, str::FromStr};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
-pub struct Capability {
-    index: u64,
-}
-
-impl Capability {
-    pub fn new(index: u64) -> Capability {
-        Self { index }
-    }
-
-    pub fn index(&self) -> u64 {
-        self.index
-    }
-}
-
-impl Default for Capability {
-    fn default() -> Self {
-        Self::new(0)
-    }
-}
-
-impl From<u64> for Capability {
-    fn from(index: u64) -> Self {
-        Self { index }
-    }
+pub trait Capability {
+    fn index(&self) -> u64;
 }
 
 #[derive(Debug, PartialEq)]

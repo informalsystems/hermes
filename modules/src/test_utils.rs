@@ -10,7 +10,7 @@ use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{Module, ModuleId, ModuleOutput, RouterBuilder};
-use crate::mock::context::{MockOCap, MockRouter, MockRouterBuilder};
+use crate::mock::context::{MockCapability, MockOCap, MockRouter, MockRouterBuilder};
 use crate::prelude::*;
 use crate::signer::Signer;
 
@@ -67,7 +67,7 @@ impl Module for DummyModule {
         _connection_hops: &[ConnectionId],
         port_id: &PortId,
         channel_id: &ChannelId,
-        channel_cap: &Capability,
+        channel_cap: &dyn Capability,
         _counterparty: &Counterparty,
         _version: &Version,
     ) -> Result<(), Error> {
@@ -77,7 +77,7 @@ impl Module for DummyModule {
             .claim_capability(
                 dummy_module_id(),
                 channel_capability_name(port_id.clone(), *channel_id),
-                channel_cap.clone().into(),
+                MockCapability::new(channel_cap.index()),
             )
             .map_err(Error::ics05_port)
     }
@@ -89,7 +89,7 @@ impl Module for DummyModule {
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _channel_cap: &Capability,
+        _channel_cap: &dyn Capability,
         _counterparty: &Counterparty,
         counterparty_version: &Version,
     ) -> Result<Version, Error> {

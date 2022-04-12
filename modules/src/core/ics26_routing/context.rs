@@ -44,11 +44,12 @@ pub trait Ics26Context:
     + ConnectionKeeper
     + ChannelKeeper
     + ChannelReader
-    + ChannelCapabilityKeeper<CoreModuleId>
-    + ChannelCapabilityReader<CoreModuleId>
-    + PortCapabilityReader<CoreModuleId>
+    + ChannelCapabilityKeeper<CoreModuleId, Capability = <Self as Ics26Context>::Capability>
+    + ChannelCapabilityReader<CoreModuleId, Capability = <Self as Ics26Context>::Capability>
+    + PortCapabilityReader<CoreModuleId, Capability = <Self as Ics26Context>::Capability>
     + Ics20Context
 {
+    type Capability: Capability;
     type Router: Router;
 
     fn router(&self) -> &Self::Router;
@@ -120,7 +121,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _channel_cap: &Capability,
+        _channel_cap: &dyn Capability,
         _counterparty: &Counterparty,
         _version: &Version,
     ) -> Result<(), Error> {
@@ -135,7 +136,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _channel_cap: &Capability,
+        _channel_cap: &dyn Capability,
         _counterparty: &Counterparty,
         _counterparty_version: &Version,
     ) -> Result<Version, Error>;

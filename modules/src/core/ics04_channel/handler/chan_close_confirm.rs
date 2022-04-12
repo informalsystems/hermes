@@ -13,11 +13,15 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
+pub(crate) fn process<Ctx, Cap>(
     ctx: &Ctx,
     msg: &MsgChannelCloseConfirm,
-    channel_cap: Capability,
-) -> HandlerResult<ChannelResult, Error> {
+    channel_cap: Cap,
+) -> HandlerResult<ChannelResult<Cap>, Error>
+where
+    Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId, Capability = Cap>,
+    Cap: Capability,
+{
     let mut output = HandlerOutput::builder();
 
     // Retrieve the old channel end and validate it against the message.

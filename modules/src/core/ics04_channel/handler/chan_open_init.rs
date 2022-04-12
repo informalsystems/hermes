@@ -14,13 +14,17 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<
-    Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId> + PortCapabilityReader<CoreModuleId>,
->(
+pub(crate) fn process<Ctx, Cap>(
     ctx: &Ctx,
     msg: &MsgChannelOpenInit,
-    port_cap: Capability,
-) -> HandlerResult<ChannelResult, Error> {
+    port_cap: Cap,
+) -> HandlerResult<ChannelResult<Cap>, Error>
+where
+    Ctx: ChannelReader
+        + ChannelCapabilityReader<CoreModuleId, Capability = Cap>
+        + PortCapabilityReader<CoreModuleId>,
+    Cap: Capability,
+{
     let mut output = HandlerOutput::builder();
 
     // Channel capabilities

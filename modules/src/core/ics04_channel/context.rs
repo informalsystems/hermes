@@ -9,9 +9,9 @@ use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
-use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
+use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResultSansCap};
 use crate::core::ics04_channel::{error::Error, packet::Receipt};
-use crate::core::ics05_port::capabilities::{Capability, CapabilityName};
+use crate::core::ics05_port::capabilities::CapabilityName;
 use crate::core::ics05_port::context::{CapabilityKeeper, CapabilityReader};
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics24_host::path::ChannelCapabilityPath;
@@ -110,7 +110,7 @@ pub trait ChannelReader {
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ChannelMsg`.
 pub trait ChannelKeeper {
-    fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
+    fn store_channel_result(&mut self, result: ChannelResultSansCap) -> Result<(), Error> {
         // The handler processed this channel & some modifications occurred, store the new end.
         self.store_channel(
             (result.port_id.clone(), result.channel_id),
@@ -279,7 +279,7 @@ pub trait ChannelCapabilityReader<M: Into<ModuleId>>: CapabilityReader<M> {
         &self,
         channel_id: ChannelId,
         port_id: PortId,
-    ) -> Result<(ModuleId, Capability), Error> {
+    ) -> Result<(ModuleId, Self::Capability), Error> {
         self.lookup_module(&channel_capability_name(port_id, channel_id))
             .map_err(Error::ics05_port)
     }
@@ -289,7 +289,7 @@ pub trait ChannelCapabilityReader<M: Into<ModuleId>>: CapabilityReader<M> {
         &self,
         port_id: PortId,
         channel_id: ChannelId,
-    ) -> Result<Capability, Error> {
+    ) -> Result<Self::Capability, Error> {
         self.get_capability(&channel_capability_name(port_id, channel_id))
             .map_err(Error::ics05_port)
     }
@@ -300,7 +300,7 @@ pub trait ChannelCapabilityReader<M: Into<ModuleId>>: CapabilityReader<M> {
         &self,
         port_id: PortId,
         channel_id: ChannelId,
-        capability: &Capability,
+        capability: &Self::Capability,
     ) -> Result<(), Error> {
         self.authenticate_capability(&channel_capability_name(port_id, channel_id), capability)
             .map_err(Error::ics05_port)
@@ -310,7 +310,7 @@ pub trait ChannelCapabilityReader<M: Into<ModuleId>>: CapabilityReader<M> {
         &self,
         port_id: PortId,
         channel_id: ChannelId,
-    ) -> Result<Capability, Error> {
+    ) -> Result<Self::Capability, Error> {
         self.create_capability(channel_capability_name(port_id, channel_id))
             .map_err(Error::ics05_port)
     }
@@ -322,7 +322,7 @@ pub trait ChannelCapabilityKeeper<M: Into<ModuleId>>: CapabilityKeeper<M> {
         &mut self,
         port_id: PortId,
         channel_id: ChannelId,
-        channel_cap: Capability,
+        channel_cap: Self::Capability,
     ) -> Result<(), Error> {
         self.claim_capability(channel_capability_name(port_id, channel_id), channel_cap)
             .map(Into::into)

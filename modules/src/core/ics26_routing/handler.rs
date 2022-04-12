@@ -86,15 +86,11 @@ where
             let cb_result = ics4_callback(ctx, &module_id, &msg, result, &mut module_output);
             output.merge(module_output);
 
-            let result = cb_result.map_err(Error::ics04_channel)?;
+            let (result, cap) = cb_result.map_err(Error::ics04_channel)?.destructure();
 
             // Apply any results to the host chain store.
-            ctx.store_channel_capability(
-                result.port_id.clone(),
-                result.channel_id,
-                result.channel_cap.clone(),
-            )
-            .map_err(Error::ics04_channel)?;
+            ctx.store_channel_capability(result.port_id.clone(), result.channel_id, cap)
+                .map_err(Error::ics04_channel)?;
             ctx.store_channel_result(result)
                 .map_err(Error::ics04_channel)?;
 

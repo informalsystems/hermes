@@ -11,11 +11,15 @@ use crate::core::ics26_routing::context::CoreModuleId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
+pub(crate) fn process<Ctx, Cap>(
     ctx: &Ctx,
     msg: &MsgChannelCloseInit,
-    channel_cap: Capability,
-) -> HandlerResult<ChannelResult, Error> {
+    channel_cap: Cap,
+) -> HandlerResult<ChannelResult<Cap>, Error>
+where
+    Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId, Capability = Cap>,
+    Cap: Capability,
+{
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end and validate it against the message.

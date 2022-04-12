@@ -20,12 +20,16 @@ pub struct WriteAckPacketResult {
     pub ack: Vec<u8>,
 }
 
-pub fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
+pub fn process<Ctx, Cap>(
     ctx: &Ctx,
     packet: Packet,
     ack: Vec<u8>,
-    channel_cap: Capability,
-) -> HandlerResult<PacketResult, Error> {
+    channel_cap: Cap,
+) -> HandlerResult<PacketResult, Error>
+where
+    Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId, Capability = Cap>,
+    Cap: Capability,
+{
     let mut output = HandlerOutput::builder();
 
     let dest_channel_end =
@@ -94,9 +98,8 @@ mod tests {
     use crate::core::ics04_channel::handler::write_acknowledgement::process;
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::core::ics04_channel::Version;
-    use crate::core::ics05_port::capabilities::Capability;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-    use crate::mock::context::MockContext;
+    use crate::mock::context::{MockCapability, MockContext};
     use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
     use crate::{core::ics04_channel::packet::Packet, events::IbcEvent};
@@ -199,7 +202,7 @@ mod tests {
                 .ctx
                 .lookup_module_by_channel(ChannelId::default(), PortId::default())
                 .map(|(_, cap)| cap)
-                .unwrap_or_else(|_| Capability::new(0).into());
+                .unwrap_or_else(|_| MockCapability::new(0).into());
 
             let res = process(
                 &test.ctx,

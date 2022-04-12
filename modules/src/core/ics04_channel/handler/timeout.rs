@@ -24,11 +24,15 @@ pub struct TimeoutPacketResult {
     pub channel: Option<ChannelEnd>,
 }
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
+pub(crate) fn process<Ctx, Cap>(
     ctx: &Ctx,
     msg: &MsgTimeout,
-    channel_cap: Capability,
-) -> HandlerResult<PacketResult, Error> {
+    channel_cap: Cap,
+) -> HandlerResult<PacketResult, Error>
+where
+    Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId, Capability = Cap>,
+    Cap: Capability,
+{
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
