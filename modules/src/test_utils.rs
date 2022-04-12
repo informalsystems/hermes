@@ -1,15 +1,17 @@
 #![allow(dead_code)]
 
-use crate::prelude::*;
+use std::sync::{Arc, Mutex};
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
 use crate::core::ics04_channel::channel::{Counterparty, Order};
+use crate::core::ics04_channel::context::channel_capability_name;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{Module, ModuleId, ModuleOutput, RouterBuilder};
-use crate::mock::context::{MockRouter, MockRouterBuilder};
+use crate::mock::context::{MockOCap, MockRouter, MockRouterBuilder};
+use crate::prelude::*;
 use crate::signer::Signer;
 
 // Needed in mocks.
@@ -46,10 +48,40 @@ pub fn get_dummy_bech32_account() -> String {
     "cosmos1wxeyh7zgn4tctjzs0vtqpc6p5cxq5t2muzl7ng".to_string()
 }
 
-#[derive(Debug, Default)]
-pub struct DummyModule;
+#[derive(Debug)]
+pub struct DummyModule {
+    ocap: Arc<Mutex<MockOCap>>,
+}
+
+impl DummyModule {
+    fn new(ocap: Arc<Mutex<MockOCap>>) -> Self {
+        Self { ocap }
+    }
+}
 
 impl Module for DummyModule {
+    fn on_chan_open_init(
+        &mut self,
+        _output: &mut ModuleOutput,
+        _order: Order,
+        _connection_hops: &[ConnectionId],
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        channel_cap: &ChannelCapability,
+        _counterparty: &Counterparty,
+        _version: &Version,
+    ) -> Result<(), Error> {
+        self.ocap
+            .lock()
+            .unwrap()
+            .claim_capability(
+                dummy_module_id(),
+                channel_capability_name(port_id.clone(), channel_id.clone()),
+                channel_cap.clone().into(),
+            )
+            .map_err(Error::ics05_port)
+    }
+
     fn on_chan_open_try(
         &mut self,
         _output: &mut ModuleOutput,
@@ -65,9 +97,9 @@ impl Module for DummyModule {
     }
 }
 
-pub fn dummy_router() -> MockRouter {
+pub fn dummy_router(ocap: Arc<Mutex<MockOCap>>) -> MockRouter {
     MockRouterBuilder::default()
-        .add_route(dummy_module_id(), DummyModule::default())
+        .add_route(dummy_module_id(), DummyModule::new(ocap))
         .unwrap()
         .build()
 }

@@ -85,11 +85,16 @@ where
             let mut module_output = HandlerOutput::builder().with_result(());
             let cb_result = ics4_callback(ctx, &module_id, &msg, result, &mut module_output);
             output.merge(module_output);
+
             let result = cb_result.map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
-            ctx.store_channel_capability(result.port_id.clone(), result.channel_id)
-                .map_err(Error::ics04_channel)?;
+            ctx.store_channel_capability(
+                result.port_id.clone(),
+                result.channel_id,
+                result.channel_cap.clone(),
+            )
+            .map_err(Error::ics04_channel)?;
             ctx.store_channel_result(result)
                 .map_err(Error::ics04_channel)?;
 
@@ -139,13 +144,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use std::sync::{Arc, Mutex};
 
     use test_log::test;
 
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
     use crate::events::IbcEvent;
+    use crate::prelude::*;
     use crate::{
         applications::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer,
         core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof,
@@ -174,11 +180,11 @@ mod tests {
         ChannelMsg, PacketMsg,
     };
 
-    use crate::core::ics24_host::identifier::ConnectionId;
+    use crate::core::ics24_host::identifier::{ChannelId, ConnectionId};
     use crate::core::ics26_routing::handler::dispatch;
     use crate::core::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
-    use crate::mock::context::MockContext;
+    use crate::mock::context::{MockContext, MockOCap};
     use crate::mock::header::MockHeader;
     use crate::test_utils::{dummy_module_id, dummy_router, get_dummy_account_id};
     use crate::timestamp::Timestamp;
@@ -208,8 +214,12 @@ mod tests {
 
         let upgrade_client_height_second = Height::new(1, 1);
 
+        let ocap = Arc::new(Mutex::new(MockOCap::default()));
+
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
-        let mut ctx = MockContext::default().with_router(dummy_router());
+        let mut ctx = MockContext::default()
+            .with_router(dummy_router(ocap.clone()))
+            .with_ocap(ocap);
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
@@ -254,8 +264,13 @@ mod tests {
         let mut incorrect_msg_chan_init = msg_chan_init.clone();
         incorrect_msg_chan_init.channel.connection_hops = vec![ConnectionId::new(590)];
 
-        let msg_chan_try =
-            MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(client_height)).unwrap();
+        let msg_chan_try = {
+            let mut msg =
+                MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(client_height))
+                    .unwrap();
+            msg.previous_channel_id = Some(ChannelId::new(0));
+            msg
+        };
 
         let msg_chan_ack =
             MsgChannelOpenAck::try_from(get_dummy_raw_msg_chan_open_ack(client_height)).unwrap();
