@@ -59,10 +59,18 @@ pub trait CapabilityKeeper<M: Into<ModuleId>> {
 
     /// Claim the specified capability using the specified name.
     /// Return an error if the capability was already taken.
-    fn claim_capability(&mut self, name: CapabilityName, capability: Capability);
+    fn claim_capability(
+        &mut self,
+        name: CapabilityName,
+        capability: Capability,
+    ) -> Result<(), Error>;
 
     /// Release a previously claimed or created capability
-    fn release_capability(&mut self, name: CapabilityName, capability: Capability);
+    fn release_capability(
+        &mut self,
+        name: CapabilityName,
+        capability: Capability,
+    ) -> Result<(), Error>;
 }
 
 pub trait CapabilityReader<M: Into<ModuleId>> {
@@ -87,7 +95,7 @@ pub trait CapabilityReader<M: Into<ModuleId>> {
     fn create_capability(&self, name: CapabilityName) -> Result<Capability, Error>;
 }
 
-fn port_capability_name(port_id: PortId) -> CapabilityName {
+pub(crate) fn port_capability_name(port_id: PortId) -> CapabilityName {
     PortsPath(port_id)
         .to_string()
         .parse()
