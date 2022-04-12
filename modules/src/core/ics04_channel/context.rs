@@ -325,14 +325,18 @@ pub trait ChannelCapabilityKeeper<M: Into<ModuleId>>: CapabilityKeeper<M> {
         &mut self,
         port_id: PortId,
         channel_id: ChannelId,
-    ) -> Result<ChannelCapability, Error> {
-        self.new_capability(channel_capability_name(port_id, channel_id))
-            .map(Into::into)
-            .map_err(Error::ics05_port)
+        channel_cap: ChannelCapability,
+    ) -> Result<(), Error> {
+        self.claim_capability(
+            channel_capability_name(port_id, channel_id),
+            channel_cap.into(),
+        )
+        .map(Into::into)
+        .map_err(Error::ics05_port)
     }
 }
 
-fn channel_capability_name(port_id: PortId, channel_id: ChannelId) -> CapabilityName {
+pub(crate) fn channel_capability_name(port_id: PortId, channel_id: ChannelId) -> CapabilityName {
     ChannelCapabilityPath(port_id, channel_id)
         .to_string()
         .parse()
