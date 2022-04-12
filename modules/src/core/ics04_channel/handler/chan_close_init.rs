@@ -99,7 +99,6 @@ mod tests {
     use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 
     use crate::mock::context::MockContext;
-    use crate::test_utils::dummy_module_id;
     use crate::timestamp::ZERO_DURATION;
 
     #[test]
@@ -136,7 +135,6 @@ mod tests {
             default_context
                 .with_client(&client_id, client_consensus_state_height)
                 .with_connection(conn_id, conn_end)
-                .with_port_capability(msg_chan_close_init.port_id.clone(), dummy_module_id())
                 .with_channel(
                     msg_chan_close_init.port_id.clone(),
                     msg_chan_close_init.channel_id,

@@ -251,7 +251,8 @@ mod tests {
                         msg_chan_ack.port_id.clone(),
                         msg_chan_ack.channel_id,
                         chan_end.clone(),
-                    ),
+                    )
+                    .without_ocap(),
                 msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
                 want_pass: false,
             },
