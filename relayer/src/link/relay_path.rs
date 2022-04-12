@@ -59,6 +59,27 @@ use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
 
+/// Whether or not to resubmit packets when pending transactions
+/// fail to process within the given timeout duration.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Resubmit {
+    Yes,
+    No,
+}
+
+impl Resubmit {
+    /// Packet resubmission is enabled when the clear interval for packets is 0. Otherwise,
+    /// when the packet clear interval is > 0, the relayer will periodically clear unsent packets
+    /// such that resubmitting packets is not necessary.
+    pub fn from_clear_interval(clear_interval: u64) -> Self {
+        if clear_interval == 0 {
+            Self::Yes
+        } else {
+            Self::No
+        }
+    }
+}
+
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
 
@@ -1373,58 +1394,54 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     /// Kicks off the process of relaying pending txs to the source and destination chains.
     ///
-    /// Packet resubmission is enabled when the clear interval for packets is 0. Otherwise,
-    /// when the packet clear interval is > 0, the relayer will periodically clear unsent packets
-    /// such that resubmitting packets is not necessary.
-    pub fn process_pending_txs(&self, do_resubmit: bool) -> RelaySummary {
+    /// See [`Resubmit::from_clear_interval`] for more info about the `resubmit` parameter.
+    pub fn process_pending_txs(&self, resubmit: Resubmit) -> RelaySummary {
         if !self.confirm_txes {
             return RelaySummary::empty();
         }
 
-        let mut summary_src = self
-            .process_pending_txs_src(do_resubmit)
-            .unwrap_or_else(|e| {
-                error!("error processing pending events in source chain: {}", e);
-                RelaySummary::empty()
-            });
+        let mut summary_src = self.process_pending_txs_src(resubmit).unwrap_or_else(|e| {
+            error!("error processing pending events in source chain: {}", e);
+            RelaySummary::empty()
+        });
 
-        let summary_dst = self
-            .process_pending_txs_dst(do_resubmit)
-            .unwrap_or_else(|e| {
-                error!(
-                    "error processing pending events in destination chain: {}",
-                    e
-                );
-                RelaySummary::empty()
-            });
+        let summary_dst = self.process_pending_txs_dst(resubmit).unwrap_or_else(|e| {
+            error!(
+                "error processing pending events in destination chain: {}",
+                e
+            );
+            RelaySummary::empty()
+        });
 
         summary_src.extend(summary_dst);
         summary_src
     }
 
-    fn process_pending_txs_src(&self, do_resubmit: bool) -> Result<RelaySummary, LinkError> {
-        let resubmit = if do_resubmit {
+    fn process_pending_txs_src(&self, resubmit: Resubmit) -> Result<RelaySummary, LinkError> {
+        let do_resubmit = if resubmit == Resubmit::Yes {
             Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
         } else {
             None
         };
+
         let res = self
             .pending_txs_src
-            .process_pending(pending::TIMEOUT, self, resubmit)?
+            .process_pending(pending::TIMEOUT, self, do_resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
     }
 
-    fn process_pending_txs_dst(&self, do_resubmit: bool) -> Result<RelaySummary, LinkError> {
-        let resubmit = if do_resubmit {
+    fn process_pending_txs_dst(&self, resubmit: Resubmit) -> Result<RelaySummary, LinkError> {
+        let do_resubmit = if resubmit == Resubmit::Yes {
             Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
         } else {
             None
         };
+
         let res = self
             .pending_txs_dst
-            .process_pending(pending::TIMEOUT, self, resubmit)?
+            .process_pending(pending::TIMEOUT, self, do_resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
