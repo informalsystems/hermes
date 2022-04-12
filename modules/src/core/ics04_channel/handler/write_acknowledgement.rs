@@ -1,8 +1,11 @@
 use crate::core::ics04_channel::channel::State;
+use crate::core::ics04_channel::context::ChannelCapabilityReader;
 use crate::core::ics04_channel::events::WriteAcknowledgement;
 use crate::core::ics04_channel::packet::{Packet, PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error};
+use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::core::ics26_routing::context::CoreModuleId;
 use crate::prelude::*;
 use crate::{
     events::IbcEvent,
@@ -17,10 +20,11 @@ pub struct WriteAckPacketResult {
     pub ack: Vec<u8>,
 }
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
+    ctx: &Ctx,
     packet: Packet,
     ack: Vec<u8>,
+    channel_cap: ChannelCapability,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -34,8 +38,11 @@ pub fn process(
         ));
     }
 
-    // Fixme(hu55a1n1)
-    // let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
+    ctx.authenticate_channel_capability(
+        packet.source_port.clone(),
+        packet.source_channel,
+        &channel_cap,
+    )?;
 
     // NOTE: IBC app modules might have written the acknowledgement synchronously on
     // the OnRecvPacket callback so we need to check if the acknowledgement is already
