@@ -61,7 +61,6 @@ pub struct UpgradePlanOptions {
     pub upgraded_chain_id: ChainId,
     pub upgraded_unbonding_period: Option<Duration>,
     pub upgrade_plan_name: String,
-    pub legacy: bool,
 }
 
 pub fn build_and_send_ibc_upgrade_proposal(

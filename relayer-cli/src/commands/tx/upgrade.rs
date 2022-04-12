@@ -104,7 +104,6 @@ impl TxIbcUpgradeChainCmd {
                 .upgrade_name
                 .clone()
                 .unwrap_or_else(|| "plan".to_string()),
-            legacy: self.legacy,
         };
 
         Ok(opts)
