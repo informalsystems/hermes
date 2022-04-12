@@ -74,7 +74,6 @@ impl<Cap: Capability> ChannelResult<Cap> {
 }
 
 pub struct DispatchResult<R> {
-    pub module_id: ModuleId,
     pub output: HandlerOutputBuilder<()>,
     pub result: R,
 }
@@ -82,11 +81,17 @@ pub struct DispatchResult<R> {
 pub type ChannelDispatchResult<C> = DispatchResult<ChannelResult<C>>;
 pub type PacketDispatchResult = DispatchResult<PacketResult>;
 
-fn validate_route<Ctx: Ics26Context>(ctx: &Ctx, module_id: ModuleId) -> Result<ModuleId, Error> {
-    ctx.router()
-        .has_route(&module_id)
-        .then(|| module_id)
-        .ok_or_else(Error::route_not_found)
+pub fn channel_validate<Ctx, Cap>(ctx: &Ctx, msg: &ChannelMsg) -> Result<(ModuleId, Cap), Error>
+where
+    Ctx: Ics26Context<Capability = Cap>,
+    Cap: Capability,
+{
+    let (module_id, cap) = msg.lookup_module(ctx)?;
+    if ctx.router().has_route(&module_id) {
+        Ok((module_id, cap))
+    } else {
+        Err(Error::route_not_found())
+    }
 }
 
 /// General entry point for processing any type of message related to the ICS4 channel open and
@@ -94,38 +99,19 @@ fn validate_route<Ctx: Ics26Context>(ctx: &Ctx, module_id: ModuleId) -> Result<M
 pub fn channel_dispatch<Ctx, Cap>(
     ctx: &Ctx,
     msg: &ChannelMsg,
+    cap: Cap,
 ) -> Result<ChannelDispatchResult<Cap>, Error>
 where
     Ctx: Ics26Context<Capability = Cap>,
     Cap: Capability,
 {
-    let (module_id, output) = match msg {
-        ChannelMsg::ChannelOpenInit(msg) => ctx
-            .lookup_module_by_port(msg.port_id.clone())
-            .map_err(|_| Error::no_port_capability(msg.port_id.clone()))
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, chan_open_init::process(ctx, msg, cap)?))),
-        ChannelMsg::ChannelOpenTry(msg) => ctx
-            .lookup_module_by_port(msg.port_id.clone())
-            .map_err(|_| Error::no_port_capability(msg.port_id.clone()))
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, chan_open_try::process(ctx, msg, cap)?))),
-        ChannelMsg::ChannelOpenAck(msg) => ctx
-            .lookup_module_by_channel(msg.channel_id, msg.port_id.clone())
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, chan_open_ack::process(ctx, msg, cap)?))),
-        ChannelMsg::ChannelOpenConfirm(msg) => ctx
-            .lookup_module_by_channel(msg.channel_id, msg.port_id.clone())
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, chan_open_confirm::process(ctx, msg, cap)?))),
-        ChannelMsg::ChannelCloseInit(msg) => ctx
-            .lookup_module_by_channel(msg.channel_id, msg.port_id.clone())
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, chan_close_init::process(ctx, msg, cap)?))),
-        ChannelMsg::ChannelCloseConfirm(msg) => ctx
-            .lookup_module_by_channel(msg.channel_id, msg.port_id.clone())
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, chan_close_confirm::process(ctx, msg, cap)?))),
+    let output = match msg {
+        ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg, cap),
+        ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process(ctx, msg, cap),
+        ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process(ctx, msg, cap),
+        ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process(ctx, msg, cap),
+        ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg, cap),
+        ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process(ctx, msg, cap),
     }?;
 
     let HandlerOutput {
@@ -134,11 +120,7 @@ where
         events,
     } = output;
     let output = HandlerOutput::builder().with_log(log).with_events(events);
-    Ok(ChannelDispatchResult {
-        module_id,
-        output,
-        result,
-    })
+    Ok(ChannelDispatchResult { output, result })
 }
 
 pub fn channel_callback<Ctx, Cap>(
@@ -200,31 +182,34 @@ where
     Ok(result)
 }
 
-/// Dispatcher for processing any type of message related to the ICS4 packet protocols.
-pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: &PacketMsg) -> Result<PacketDispatchResult, Error>
+pub fn packet_validate<Ctx, Cap>(ctx: &Ctx, msg: &PacketMsg) -> Result<(ModuleId, Cap), Error>
 where
-    Ctx: Ics26Context,
+    Ctx: Ics26Context<Capability = Cap>,
+    Cap: Capability,
 {
-    let (module_id, output) = match msg {
-        PacketMsg::RecvPacket(msg) => ctx
-            .lookup_module_by_channel(
-                msg.packet.destination_channel,
-                msg.packet.destination_port.clone(),
-            )
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, recv_packet::process(ctx, msg, cap)?))),
-        PacketMsg::AckPacket(msg) => ctx
-            .lookup_module_by_channel(msg.packet.source_channel, msg.packet.source_port.clone())
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, acknowledgement::process(ctx, msg, cap)?))),
-        PacketMsg::ToPacket(msg) => ctx
-            .lookup_module_by_channel(msg.packet.source_channel, msg.packet.source_port.clone())
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, timeout::process(ctx, msg, cap)?))),
-        PacketMsg::ToClosePacket(msg) => ctx
-            .lookup_module_by_channel(msg.packet.source_channel, msg.packet.source_port.clone())
-            .and_then(|(mid, cap)| Ok((validate_route(ctx, mid)?, cap)))
-            .and_then(|(mid, cap)| Ok((mid, timeout_on_close::process(ctx, msg, cap)?))),
+    let (module_id, cap) = msg.lookup_module(ctx)?;
+    if ctx.router().has_route(&module_id) {
+        Ok((module_id, cap))
+    } else {
+        Err(Error::route_not_found())
+    }
+}
+
+/// Dispatcher for processing any type of message related to the ICS4 packet protocols.
+pub fn packet_dispatch<Ctx, Cap>(
+    ctx: &Ctx,
+    msg: &PacketMsg,
+    cap: Cap,
+) -> Result<PacketDispatchResult, Error>
+where
+    Ctx: Ics26Context<Capability = Cap>,
+    Cap: Capability,
+{
+    let output = match msg {
+        PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg, cap),
+        PacketMsg::AckPacket(msg) => acknowledgement::process(ctx, msg, cap),
+        PacketMsg::ToPacket(msg) => timeout::process(ctx, msg, cap),
+        PacketMsg::ToClosePacket(msg) => timeout_on_close::process(ctx, msg, cap),
     }?;
     let HandlerOutput {
         result,
@@ -232,11 +217,7 @@ where
         events,
     } = output;
     let output = HandlerOutput::builder().with_log(log).with_events(events);
-    Ok(PacketDispatchResult {
-        module_id,
-        output,
-        result,
-    })
+    Ok(PacketDispatchResult { output, result })
 }
 
 pub fn packet_callback<Ctx>(

@@ -1,6 +1,7 @@
 //! Message definitions for all ICS4 domain types: channel open & close handshake datagrams, as well
 //! as packets.
 
+use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use crate::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use crate::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
@@ -11,6 +12,8 @@ use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
+use crate::core::ics05_port::capabilities::Capability;
+use crate::core::ics26_routing::context::{Ics26Context, ModuleId};
 
 // Opening handshake messages.
 pub mod chan_open_ack;
@@ -39,10 +42,66 @@ pub enum ChannelMsg {
     ChannelCloseConfirm(MsgChannelCloseConfirm),
 }
 
+impl ChannelMsg {
+    pub(super) fn lookup_module<Ctx, Cap>(&self, ctx: &Ctx) -> Result<(ModuleId, Cap), Error>
+    where
+        Ctx: Ics26Context<Capability = Cap>,
+        Cap: Capability,
+    {
+        match self {
+            ChannelMsg::ChannelOpenInit(msg) => ctx
+                .lookup_module_by_port(msg.port_id.clone())
+                .map_err(|_| Error::no_port_capability(msg.port_id.clone())),
+            ChannelMsg::ChannelOpenTry(msg) => ctx
+                .lookup_module_by_port(msg.port_id.clone())
+                .map_err(|_| Error::no_port_capability(msg.port_id.clone())),
+            ChannelMsg::ChannelOpenAck(msg) => {
+                ctx.lookup_module_by_channel(msg.channel_id, msg.port_id.clone())
+            }
+            ChannelMsg::ChannelOpenConfirm(msg) => {
+                ctx.lookup_module_by_channel(msg.channel_id, msg.port_id.clone())
+            }
+            ChannelMsg::ChannelCloseInit(msg) => {
+                ctx.lookup_module_by_channel(msg.channel_id, msg.port_id.clone())
+            }
+            ChannelMsg::ChannelCloseConfirm(msg) => {
+                ctx.lookup_module_by_channel(msg.channel_id, msg.port_id.clone())
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum PacketMsg {
     RecvPacket(MsgRecvPacket),
     AckPacket(MsgAcknowledgement),
     ToPacket(MsgTimeout),
     ToClosePacket(MsgTimeoutOnClose),
+}
+
+impl PacketMsg {
+    pub(super) fn lookup_module<Ctx, Cap>(&self, ctx: &Ctx) -> Result<(ModuleId, Cap), Error>
+    where
+        Ctx: Ics26Context<Capability = Cap>,
+        Cap: Capability,
+    {
+        match self {
+            PacketMsg::RecvPacket(msg) => ctx.lookup_module_by_channel(
+                msg.packet.destination_channel,
+                msg.packet.destination_port.clone(),
+            ),
+            PacketMsg::AckPacket(msg) => ctx.lookup_module_by_channel(
+                msg.packet.source_channel,
+                msg.packet.source_port.clone(),
+            ),
+            PacketMsg::ToPacket(msg) => ctx.lookup_module_by_channel(
+                msg.packet.source_channel,
+                msg.packet.source_port.clone(),
+            ),
+            PacketMsg::ToClosePacket(msg) => ctx.lookup_module_by_channel(
+                msg.packet.source_channel,
+                msg.packet.source_port.clone(),
+            ),
+        }
+    }
 }
