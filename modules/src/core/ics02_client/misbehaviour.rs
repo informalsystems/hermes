@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;

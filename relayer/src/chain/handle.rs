@@ -51,11 +51,20 @@ use crate::{
     keyring::KeyEntry,
 };
 
-use super::{tx::TrackedMsgs, HealthCheck, StatusResponse};
+use super::client::ClientSettings;
+use super::tx::TrackedMsgs;
+use super::{HealthCheck, StatusResponse};
 
-mod prod;
+mod base;
+mod cache;
+mod counting;
 
-pub use prod::ProdChainHandle;
+pub use base::BaseChainHandle;
+pub use counting::CountingChainHandle;
+
+pub type CachingChainHandle = cache::CachingChainHandle<BaseChainHandle>;
+pub type CountingAndCachingChainHandle =
+    cache::CachingChainHandle<CountingChainHandle<BaseChainHandle>>;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
@@ -158,7 +167,7 @@ pub enum ChainRequest {
 
     BuildClientState {
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
         reply_to: ReplyTo<AnyClientState>,
     },
 
@@ -326,6 +335,11 @@ pub enum ChainRequest {
         request: QueryBlockRequest,
         reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     },
+
+    QueryHostConsensusState {
+        height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
+    },
 }
 
 pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
@@ -486,7 +500,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<AnyClientState, Error>;
 
     /// Constructs a consensus state at the given height
@@ -553,4 +567,6 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
 }

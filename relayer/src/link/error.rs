@@ -143,7 +143,9 @@ define_error! {
                     e.channel_id, e.chain_id)
             },
 
-    }
+        UpdateClientFailed
+             |_| { "failed to update client" },
+   }
 }
 
 impl HasExpiredOrFrozenError for LinkErrorDetail {

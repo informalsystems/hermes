@@ -1,24 +1,26 @@
 use core::time::Duration;
-use ibc::core::ics03_connection::connection::State as ConnectionState;
-use ibc::core::ics04_channel::channel::State as ChannelState;
-use ibc_relayer::config::{self, Config, ModeConfig};
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
-use ibc_relayer::worker::client::spawn_refresh_client;
 use std::thread::sleep;
 
-use crate::bootstrap::binary::chain::bootstrap_foreign_client;
-use crate::bootstrap::binary::channel::{
+use ibc::core::ics03_connection::connection::State as ConnectionState;
+use ibc::core::ics04_channel::channel::State as ChannelState;
+use ibc::core::ics04_channel::Version as ChannelVersion;
+use ibc_relayer::config::default::connection_delay as default_connection_delay;
+use ibc_relayer::config::{self, Config, ModeConfig};
+
+use ibc_test_framework::bootstrap::binary::chain::ForeignClientBuilder;
+use ibc_test_framework::bootstrap::binary::channel::{
     bootstrap_channel_with_chains, bootstrap_channel_with_connection,
 };
-use crate::bootstrap::binary::connection::bootstrap_connection;
-use crate::ibc::denom::derive_ibc_denom;
-use crate::prelude::*;
-use crate::relayer::channel::{
+use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, init_channel, query_channel_end,
 };
-use crate::relayer::connection::{
+use ibc_test_framework::relayer::connection::{
     assert_eventually_connection_established, init_connection, query_connection_end,
 };
+use ibc_test_framework::relayer::refresh::spawn_refresh_client_tasks;
 
 // The cosmos ChainHandle handles requests in serial, and a refresh client
 // request may get blocked by other operations and cause the refresh to fail
@@ -123,12 +125,8 @@ impl TestOverrides for ExpirationTestOverrides {
         }
     }
 
-    fn spawn_supervisor(
-        &self,
-        _config: &SharedConfig,
-        _registry: &SharedRegistry<impl ChainHandle>,
-    ) -> Result<Option<SupervisorHandle>, Error> {
-        Ok(None)
+    fn should_spawn_supervisor(&self) -> bool {
+        false
     }
 }
 
@@ -136,152 +134,137 @@ impl BinaryChainTest for ChannelExpirationTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let connection = {
-            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_tasks = spawn_refresh_client_tasks(&chains.foreign_clients)?;
 
-            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
-
-            bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?
+            bootstrap_connection(&chains.foreign_clients, default_connection_delay(), false)?
         };
 
         wait_for_client_expiry();
 
-        let _supervisor = spawn_supervisor(
-            chains.config.clone(),
-            chains.registry.clone(),
-            None,
-            SupervisorOptions {
-                health_check: false,
-                force_full_scan: false,
-            },
-        )?;
-
-        let port_a = tagged_transfer_port();
-        let port_b = tagged_transfer_port();
-
-        {
-            info!("Trying to create connection and channel after client is expired");
-
-            let (connection_id_b, _) = init_connection(
-                &chains.handle_a,
-                &chains.handle_b,
-                &chains.client_b_to_a.tagged_client_id(),
-                &chains.client_a_to_b.tagged_client_id(),
-            )?;
-
-            let (channel_id_b, _) = init_channel(
-                &chains.handle_a,
-                &chains.handle_b,
-                &chains.client_id_a(),
-                &chains.client_id_b(),
-                &connection.connection_id_a.as_ref(),
-                &connection.connection_id_b.as_ref(),
-                &port_a.as_ref(),
-                &port_b.as_ref(),
-            )?;
-
-            info!("Sleeping for 10 seconds to make sure that connection and channel fails to establish");
-
-            sleep(Duration::from_secs(10));
+        relayer.with_supervisor(|| {
+            let port_a = tagged_transfer_port();
+            let port_b = tagged_transfer_port();
 
             {
-                let connection_end_b =
-                    query_connection_end(&chains.handle_b, &connection_id_b.as_ref())?;
+                info!("Trying to create connection and channel after client is expired");
 
-                assert_eq(
-                    "connection end status should remain init",
-                    connection_end_b.value().state(),
-                    &ConnectionState::Init,
+                let (connection_id_b, _) = init_connection(
+                    &chains.handle_a,
+                    &chains.handle_b,
+                    &chains.client_id_a(),
+                    &chains.client_id_b(),
                 )?;
 
-                assert_eq(
-                    "connection end should not have counterparty",
-                    &connection_end_b.tagged_counterparty_connection_id(),
-                    &None,
+                let (channel_id_b, _) = init_channel(
+                    &chains.handle_a,
+                    &chains.handle_b,
+                    &chains.client_id_a(),
+                    &chains.client_id_b(),
+                    &connection.connection_id_a.as_ref(),
+                    &connection.connection_id_b.as_ref(),
+                    &port_a.as_ref(),
+                    &port_b.as_ref(),
                 )?;
+
+                info!("Sleeping for 10 seconds to make sure that connection and channel fails to establish");
+
+                sleep(Duration::from_secs(10));
+
+                {
+                    let connection_end_b =
+                        query_connection_end(&chains.handle_b, &connection_id_b.as_ref())?;
+
+                    assert_eq(
+                        "connection end status should remain init",
+                        connection_end_b.value().state(),
+                        &ConnectionState::Init,
+                    )?;
+
+                    assert_eq(
+                        "connection end should not have counterparty",
+                        &connection_end_b.tagged_counterparty_connection_id(),
+                        &None,
+                    )?;
+                }
+
+                {
+                    let channel_end_b =
+                        query_channel_end(&chains.handle_b, &channel_id_b.as_ref(), &port_b.as_ref())?;
+
+                    assert_eq(
+                        "channel end status should remain init",
+                        channel_end_b.value().state(),
+                        &ChannelState::Init,
+                    )?;
+
+                    assert_eq(
+                        "channel end should not have counterparty",
+                        &channel_end_b.tagged_counterparty_channel_id(),
+                        &None,
+                    )?;
+                }
             }
 
             {
-                let channel_end_b =
-                    query_channel_end(&chains.handle_b, &channel_id_b.as_ref(), &port_b.as_ref())?;
+                info!(
+                    "Trying to create new channel and worker after previous connection worker failed"
+                );
 
-                assert_eq(
-                    "channel end status should remain init",
-                    channel_end_b.value().state(),
-                    &ChannelState::Init,
+                let foreign_clients_2 = ForeignClientBuilder::new(&chains.handle_a, &chains.handle_b)
+                    .pair()
+                    .bootstrap()?;
+
+                // Need to spawn refresh client for new clients to make sure they don't expire
+
+                let _refresh_tasks = spawn_refresh_client_tasks(&foreign_clients_2)?;
+
+                let (connection_id_b, _) = init_connection(
+                    &chains.handle_a,
+                    &chains.handle_b,
+                    &foreign_clients_2.client_b_to_a.tagged_client_id(),
+                    &foreign_clients_2.client_a_to_b.tagged_client_id(),
                 )?;
 
-                assert_eq(
-                    "channel end should not have counterparty",
-                    &channel_end_b.tagged_counterparty_channel_id(),
-                    &None,
+                let connection_id_a = assert_eventually_connection_established(
+                    &chains.handle_b,
+                    &chains.handle_a,
+                    &connection_id_b.as_ref(),
+                )?;
+
+                let (channel_id_b_2, _) = init_channel(
+                    &chains.handle_a,
+                    &chains.handle_b,
+                    &foreign_clients_2.client_b_to_a.tagged_client_id(),
+                    &foreign_clients_2.client_a_to_b.tagged_client_id(),
+                    &connection_id_a.as_ref(),
+                    &connection_id_b.as_ref(),
+                    &port_a.as_ref(),
+                    &port_b.as_ref(),
+                )?;
+
+                // At this point the misbehavior task may raise error, because it
+                // try to check on a client update event that is already expired.
+                // This happens because the misbehavior task is only started when
+                // there is at least one channel in it, _not_ when the client
+                // is created.
+                //
+                // Source of error:
+                // https://github.com/informalsystems/tendermint-rs/blob/c45ea8c82773de1946f7ae2eece13150f07ca5fe/light-client/src/light_client.rs#L216-L222
+
+                assert_eventually_channel_established(
+                    &chains.handle_b,
+                    &chains.handle_a,
+                    &channel_id_b_2.as_ref(),
+                    &port_b.as_ref(),
                 )?;
             }
-        }
 
-        {
-            info!(
-                "Trying to create new channel and worker after previous connection worker failed"
-            );
-
-            let client_b_to_a_2 = bootstrap_foreign_client(&chains.handle_b, &chains.handle_a)?;
-
-            let client_a_to_b_2 = bootstrap_foreign_client(&chains.handle_a, &chains.handle_b)?;
-
-            // Need to spawn refresh client for new clients to make sure they don't expire
-
-            let _refresh_task_a = spawn_refresh_client(client_b_to_a_2.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
-
-            let _refresh_task_b = spawn_refresh_client(client_a_to_b_2.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
-
-            let (connection_id_b, _) = init_connection(
-                &chains.handle_a,
-                &chains.handle_b,
-                &client_b_to_a_2.tagged_client_id(),
-                &client_a_to_b_2.tagged_client_id(),
-            )?;
-
-            let connection_id_a = assert_eventually_connection_established(
-                &chains.handle_b,
-                &chains.handle_a,
-                &connection_id_b.as_ref(),
-            )?;
-
-            let (channel_id_b_2, _) = init_channel(
-                &chains.handle_a,
-                &chains.handle_b,
-                &client_b_to_a_2.tagged_client_id(),
-                &client_a_to_b_2.tagged_client_id(),
-                &connection_id_a.as_ref(),
-                &connection_id_b.as_ref(),
-                &port_a.as_ref(),
-                &port_b.as_ref(),
-            )?;
-
-            // At this point the misbehavior task may raise error, because it
-            // try to check on a client update event that is already expired.
-            // This happens because the misbehavior task is only started when
-            // there is at least one channel in it, _not_ when the client
-            // is created.
-            //
-            // Source of error:
-            // https://github.com/informalsystems/tendermint-rs/blob/c45ea8c82773de1946f7ae2eece13150f07ca5fe/light-client/src/light_client.rs#L216-L222
-
-            assert_eventually_channel_established(
-                &chains.handle_b,
-                &chains.handle_a,
-                &channel_id_b_2.as_ref(),
-                &port_b.as_ref(),
-            )?;
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 }
 
@@ -289,95 +272,86 @@ impl BinaryChainTest for PacketExpirationTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let channels = {
-            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
-
-            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_tasks = spawn_refresh_client_tasks(&chains.foreign_clients)?;
 
             bootstrap_channel_with_chains(
                 &chains,
                 &PortId::transfer(),
                 &PortId::transfer(),
                 Order::Unordered,
+                ChannelVersion::ics20(),
+                default_connection_delay(),
                 false,
             )?
         };
 
         wait_for_client_expiry();
 
-        let _supervisor = spawn_supervisor(
-            chains.config.clone(),
-            chains.registry.clone(),
-            None,
-            SupervisorOptions {
-                health_check: false,
-                force_full_scan: false,
-            },
-        )?;
+        relayer.with_supervisor(|| {
+            let denom_a = chains.node_a.denom();
 
-        let denom_a = chains.node_a.denom();
-
-        let denom_b = derive_ibc_denom(
-            &channels.port_b.as_ref(),
-            &channels.channel_id_b.as_ref(),
-            &denom_a,
-        )?;
-
-        {
-            info!("sending first IBC transfer after client is expired. this should cause packet worker to fail");
-
-            chains.node_a.chain_driver().transfer_token(
-                &channels.port_a.as_ref(),
-                &channels.channel_id_a.as_ref(),
-                &chains.node_a.wallets().user1().address(),
-                &chains.node_b.wallets().user1().address(),
-                100,
-                &chains.node_a.denom(),
+            let denom_b = derive_ibc_denom(
+                &channels.port_b.as_ref(),
+                &channels.channel_id_b.as_ref(),
+                &denom_a,
             )?;
 
-            sleep(Duration::from_secs(10));
+            {
+                info!("sending first IBC transfer after client is expired. this should cause packet worker to fail");
 
-            // We cannot check for the sender's balance, because
-            // on Gaia v6 the transaction would just fail on expired client,
-            // and the fund is not deducted from the user wallet.
-            // But on Gaia v4 and v5 the fund will still be deducted
-            // even though the IBC transfer will fail.
+                chains.node_a.chain_driver().transfer_token(
+                    &channels.port_a.as_ref(),
+                    &channels.channel_id_a.as_ref(),
+                    &chains.node_a.wallets().user1().address(),
+                    &chains.node_b.wallets().user1().address(),
+                    100,
+                    &chains.node_a.denom(),
+                )?;
 
-            let balance_b = chains.node_b.chain_driver().query_balance(
-                &chains.node_b.wallets().user1().address(),
-                &denom_b.as_ref(),
-            )?;
+                sleep(Duration::from_secs(10));
 
-            assert_eq("balance on wallet B should remain zero", &balance_b, &0)?;
-        }
+                // We cannot check for the sender's balance, because
+                // on Gaia v6 the transaction would just fail on expired client,
+                // and the fund is not deducted from the user wallet.
+                // But on Gaia v4 and v5 the fund will still be deducted
+                // even though the IBC transfer will fail.
 
-        {
-            info!("sending a second IBC transfer. there should be no log from packet worker from this point on");
+                let balance_b = chains.node_b.chain_driver().query_balance(
+                    &chains.node_b.wallets().user1().address(),
+                    &denom_b.as_ref(),
+                )?;
 
-            chains.node_a.chain_driver().transfer_token(
-                &channels.port_a.as_ref(),
-                &channels.channel_id_a.as_ref(),
-                &chains.node_a.wallets().user1().address(),
-                &chains.node_b.wallets().user1().address(),
-                100,
-                &chains.node_a.denom(),
-            )?;
+                assert_eq("balance on wallet B should remain zero", &balance_b, &0)?;
+            }
 
-            sleep(Duration::from_secs(10));
+            {
+                info!("sending a second IBC transfer. there should be no log from packet worker from this point on");
 
-            let balance_b = chains.node_b.chain_driver().query_balance(
-                &chains.node_b.wallets().user1().address(),
-                &denom_b.as_ref(),
-            )?;
+                chains.node_a.chain_driver().transfer_token(
+                    &channels.port_a.as_ref(),
+                    &channels.channel_id_a.as_ref(),
+                    &chains.node_a.wallets().user1().address(),
+                    &chains.node_b.wallets().user1().address(),
+                    100,
+                    &chains.node_a.denom(),
+                )?;
 
-            assert_eq("balance on wallet B should remain zero", &balance_b, &0)?;
-        }
+                sleep(Duration::from_secs(10));
 
-        Ok(())
+                let balance_b = chains.node_b.chain_driver().query_balance(
+                    &chains.node_b.wallets().user1().address(),
+                    &denom_b.as_ref(),
+                )?;
+
+                assert_eq("balance on wallet B should remain zero", &balance_b, &0)?;
+            }
+
+            Ok(())
+        })
     }
 }
 
@@ -385,25 +359,23 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         // Create a connection before the IBC client expires, so that we can try create
         // new channel with the connection after the client expired.
         let connection = {
-            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_tasks = spawn_refresh_client_tasks(&chains.foreign_clients)?;
 
-            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
-
-            bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false)?
+            bootstrap_connection(&chains.foreign_clients, default_connection_delay(), false)?
         };
 
         wait_for_client_expiry();
 
         info!("trying to bootstrap connection after IBC client is expired");
 
-        let res = bootstrap_connection(&chains.client_b_to_a, &chains.client_a_to_b, false);
+        let res = bootstrap_connection(&chains.foreign_clients, default_connection_delay(), false);
+
         match res {
             Ok(_) => {
                 return Err(Error::generic(eyre!(
@@ -426,6 +398,7 @@ impl BinaryChainTest for CreateOnExpiredClientTest {
             &DualTagged::new(&PortId::transfer()),
             &DualTagged::new(&PortId::transfer()),
             Order::Unordered,
+            ChannelVersion::ics20(),
             false,
         );
 
@@ -451,6 +424,7 @@ impl BinaryChainTest for MisbehaviorExpirationTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         /*
@@ -481,14 +455,11 @@ impl BinaryChainTest for MisbehaviorExpirationTest {
         */
 
         {
-            let _refresh_task_a = spawn_refresh_client(chains.client_b_to_a.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
-
-            let _refresh_task_b = spawn_refresh_client(chains.client_a_to_b.clone())
-                .ok_or_else(|| eyre!("expect refresh task spawned"))?;
+            let _refresh_tasks = spawn_refresh_client_tasks(&chains.foreign_clients)?;
 
             // build a client header that will be expired
             chains
+                .foreign_clients
                 .client_b_to_a
                 .build_latest_update_client_and_send()
                 .map_err(handle_generic_error)?;
@@ -501,6 +472,7 @@ impl BinaryChainTest for MisbehaviorExpirationTest {
         // Calling detect_misbehaviour_and_submit_evidence(None) will always produce error logs
         for _ in 0..3 {
             let misbehavior_result = chains
+                .foreign_clients
                 .client_b_to_a
                 .detect_misbehaviour_and_submit_evidence(None);
 

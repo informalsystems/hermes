@@ -441,7 +441,7 @@ fn stream_batches(
             .copied()
             .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
 
-        let mut events = events.into_iter().map(|(_, e)| e).collect();
+        let mut events = events.into_iter().map(|(_, e)| e).collect::<Vec<_>>();
         sort_events(&mut events);
 
         EventBatch {
@@ -454,7 +454,7 @@ fn stream_batches(
 
 /// Sort the given events by putting the NewBlock event first,
 /// and leaving the other events as is.
-fn sort_events(events: &mut Vec<IbcEvent>) {
+fn sort_events(events: &mut [IbcEvent]) {
     events.sort_by(|a, b| match (a, b) {
         (IbcEvent::NewBlock(_), _) => Ordering::Less,
         _ => Ordering::Equal,

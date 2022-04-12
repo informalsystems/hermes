@@ -1,8 +1,6 @@
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
-
-use crate::ibc::denom::derive_ibc_denom;
-use crate::prelude::*;
-use crate::util::random::random_u64_range;
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::util::random::random_u64_range;
 
 #[test]
 fn test_clear_packet() -> Result<(), Error> {
@@ -18,13 +16,13 @@ impl TestOverrides for ClearPacketTest {
         config.mode.packets.clear_interval = 0;
     }
 
-    // Do not start supervisor at the beginning of test
-    fn spawn_supervisor(
-        &self,
-        _config: &SharedConfig,
-        _registry: &SharedRegistry<impl ChainHandle>,
-    ) -> Result<Option<SupervisorHandle>, Error> {
-        Ok(None)
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+
+    // Unordered channel: will permit gaps in the sequence of relayed packets
+    fn channel_order(&self) -> Order {
+        Order::Unordered
     }
 }
 
@@ -32,6 +30,7 @@ impl BinaryChannelTest for ClearPacketTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -64,56 +63,48 @@ impl BinaryChannelTest for ClearPacketTest {
         sleep(Duration::from_secs(1));
 
         // Spawn the supervisor only after the first IBC trasnfer
-        let _supervisor = spawn_supervisor(
-            chains.config.clone(),
-            chains.registry.clone(),
-            None,
-            SupervisorOptions {
-                health_check: false,
-                force_full_scan: false,
-            },
-        )?;
+        relayer.with_supervisor(|| {
+            sleep(Duration::from_secs(1));
 
-        sleep(Duration::from_secs(1));
+            let amount2 = random_u64_range(1000, 5000);
 
-        let amount2 = random_u64_range(1000, 5000);
+            info!(
+                "Performing IBC transfer with amount {}, which should be relayed",
+                amount2
+            );
 
-        info!(
-            "Performing IBC transfer with amount {}, which should be relayed",
-            amount2
-        );
+            chains.node_a.chain_driver().transfer_token(
+                &channel.port_a.as_ref(),
+                &channel.channel_id_a.as_ref(),
+                &wallet_a.address(),
+                &wallet_b.address(),
+                amount2,
+                &denom_a,
+            )?;
 
-        chains.node_a.chain_driver().transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            &wallet_a.address(),
-            &wallet_b.address(),
-            amount2,
-            &denom_a,
-        )?;
+            sleep(Duration::from_secs(1));
 
-        sleep(Duration::from_secs(1));
+            let denom_b = derive_ibc_denom(
+                &channel.port_b.as_ref(),
+                &channel.channel_id_b.as_ref(),
+                &denom_a,
+            )?;
 
-        let denom_b = derive_ibc_denom(
-            &channel.port_b.as_ref(),
-            &channel.channel_id_b.as_ref(),
-            &denom_a,
-        )?;
+            // Wallet on chain A should have both amount deducted.
+            chains.node_a.chain_driver().assert_eventual_wallet_amount(
+                &wallet_a.address(),
+                balance_a - amount1 - amount2,
+                &denom_a,
+            )?;
 
-        // Wallet on chain A should have both amount deducted.
-        chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &wallet_a.as_ref(),
-            balance_a - amount1 - amount2,
-            &denom_a,
-        )?;
+            // Wallet on chain B should only receive the second IBC transfer
+            chains.node_b.chain_driver().assert_eventual_wallet_amount(
+                &wallet_b.address(),
+                amount2,
+                &denom_b.as_ref(),
+            )?;
 
-        // Wallet on chain B should only receive the second IBC transfer
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.as_ref(),
-            amount2,
-            &denom_b.as_ref(),
-        )?;
-
-        Ok(())
+            Ok(())
+        })
     }
 }

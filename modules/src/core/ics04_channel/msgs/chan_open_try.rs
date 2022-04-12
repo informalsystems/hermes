@@ -120,9 +120,9 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
             port_id: domain_msg.port_id.to_string(),
             previous_channel_id: domain_msg
                 .previous_channel_id
-                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
+                .map_or_else(|| "".to_string(), |v| v.to_string()),
             channel: Some(domain_msg.channel.into()),
-            counterparty_version: domain_msg.counterparty_version.into(),
+            counterparty_version: domain_msg.counterparty_version.to_string(),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: domain_msg.signer.to_string(),
@@ -211,7 +211,7 @@ mod tests {
             Test {
                 name: "Correct channel identifier".to_string(),
                 raw: RawMsgChannelOpenTry {
-                    previous_channel_id: "channelid34".to_string(),
+                    previous_channel_id: "channel-34".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,
@@ -227,7 +227,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 raw: RawMsgChannelOpenTry {
-                    previous_channel_id: "abcdefghijkasdfasdfasdfasgdasdgasdfasdfadflmnoasdasdasdfasdfasdfasdfadadgadgadsfpqrstu".to_string(),
+                    previous_channel_id: "channel-12839128379182739812739879".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

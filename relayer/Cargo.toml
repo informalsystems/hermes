@@ -1,13 +1,13 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.12.0-rc.0"
+version      = "0.13.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/ibc-rs"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.58"
+rust-version = "1.60"
 description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
@@ -21,25 +21,25 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.12.0-rc.0", path = "../modules", features = ["std", "clock"] }
-ibc-proto     = { version = "0.16.0-rc.0", path = "../proto", default-features = false, features = ["std", "tonic"] }
-ibc-telemetry = { version = "0.12.0-rc.0", path = "../telemetry", optional = true }
+ibc           = { version = "0.13.0", path = "../modules" }
+ibc-proto     = { version = "0.17.0", path = "../proto" }
+ibc-telemetry = { version = "0.13.0", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
-humantime-serde = "1.0.0"
+humantime-serde = "1.1.1"
 serde = "1.0"
 serde_derive = "1.0"
 thiserror = "1.0.30"
 toml = "0.5"
-tracing = "0.1.31"
+tracing = "0.1.33"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
 bytes = "1.1.0"
 prost = { version = "0.9" }
 prost-types = { version = "0.9" }
 futures = "0.3.21"
-crossbeam-channel = "0.5.2"
-k256 = { version = "0.10.2", features = ["ecdsa-core", "ecdsa", "sha256"]}
+crossbeam-channel = "0.5.4"
+k256 = { version = "0.10.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
 bitcoin = { version = "=0.27", features = ["use-serde"] }
 tiny-bip39 = "0.8.0"
@@ -52,7 +52,7 @@ itertools = "0.10.3"
 tonic = { version = "0.6", features = ["tls", "tls-roots"] }
 dirs-next = "2.0.0"
 retry = { version = "1.3.1", default-features = false }
-async-stream = "0.3.2"
+async-stream = "0.3.3"
 http = "0.2.6"
 flex-error = { version = "0.4.4", default-features = false }
 signature = "1.4.0"
@@ -61,6 +61,8 @@ semver = "1.0"
 uint = "0.9"
 humantime = "2.1.0"
 nanoid = "0.4.0"
+regex = "1.5.5"
+moka = "0.8.1"
 
 [dependencies.num-bigint]
 version = "0.4"
@@ -71,31 +73,31 @@ version = "0.4.0"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "=0.23.5"
+version = "=0.23.6"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.5"
+version = "=0.23.6"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.23.5"
+version = "=0.23.6"
 
 [dev-dependencies]
-ibc = { version = "0.12.0-rc.0", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.13.0", path = "../modules", features = ["mocks"] }
 serial_test = "0.6.0"
 env_logger = "0.9.0"
-tracing-subscriber = { version = "0.3.9", features = ["fmt", "env-filter", "json"] }
-test-log = { version = "0.2.8", features = ["trace"] }
+tracing-subscriber = { version = "0.3.11", features = ["fmt", "env-filter", "json"] }
+test-log = { version = "0.2.10", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.5" }
+tendermint-testgen = { version = "=0.23.6" }

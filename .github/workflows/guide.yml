@@ -9,6 +9,8 @@ on:
   pull_request:
     paths:
       - guide/**
+  release:
+    types: [created]
 
 jobs:
   guide:
@@ -50,10 +52,10 @@ jobs:
           cd guide
           mdbook build
 
-      # Only deploy guide when pushing to master
+      # Only deploy guide when releasing a new version of Hermes
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        if: github.event_name == 'release' && github.event.action == 'created'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./guide/book

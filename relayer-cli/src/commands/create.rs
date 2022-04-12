@@ -18,6 +18,8 @@ pub enum CreateCmds {
     /// Create a new connection between two chains
     Connection(CreateConnectionCommand),
 
-    /// Create a new channel between two chains
+    /// Create a new channel between two chains using a pre-existing connection.
+    /// Alternatively, create a new client and a new connection underlying
+    /// the new channel if a pre-existing connection is not provided.
     Channel(CreateChannelCommand),
 }

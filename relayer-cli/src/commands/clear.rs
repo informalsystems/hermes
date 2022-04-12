@@ -3,7 +3,7 @@ use abscissa_core::{Command, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
-use ibc_relayer::chain::handle::ProdChainHandle;
+use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
 
@@ -37,7 +37,7 @@ impl Runnable for ClearPacketsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains = match spawn_chain_counterparty::<ProdChainHandle>(
+        let chains = match spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
@@ -52,7 +52,7 @@ impl Runnable for ClearPacketsCmd {
         // Construct links in both directions.
         let opts = LinkParameters {
             src_port_id: self.port_id.clone(),
-            src_channel_id: self.channel_id.clone(),
+            src_channel_id: self.channel_id,
         };
         let fwd_link = match Link::new_from_opts(chains.src.clone(), chains.dst, opts, false) {
             Ok(link) => link,

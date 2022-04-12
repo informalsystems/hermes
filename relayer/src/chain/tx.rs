@@ -1,4 +1,4 @@
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 
 /// A wrapper over a vector of proto-encoded messages
 /// (`Vec<Any>`), which has an associated tracking

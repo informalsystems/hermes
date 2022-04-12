@@ -1,9 +1,13 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+use console::style;
+use dialoguer::Confirm;
+
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::Order;
+use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -16,43 +20,63 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
+static PROMPT: &str = "Are you sure you want a new connection & clients to be created? Hermes will use default security parameters.";
+static HINT: &str = "Consider using the default invocation\n\nhermes create channel --port-a <PORT-ID> --port-b <PORT-ID> <CHAIN-A-ID> <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
+
+/// The data structure that represents all the possible options when invoking
+/// the `create channel` CLI command.
+///
+/// There are two possible ways to invoke this command:
+///
+/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Connection-ID>` is the default
+/// way in which this command should be used, specifying a `Connection-ID` for this new channel
+/// to re-use. The command expects that `Connection-ID` is associated with chain A.
+///
+/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Chain-B-ID> --new-client-connection`
+/// to indicate that a new connection/client pair is being created as part of this new channel.
+/// This brings up an interactive yes/no prompt to ensure that the operator at least
+/// considers the fact that they're initializing a new connection with the channel.
+///
+/// Note that `Connection-ID`s have to be considered based off of the chain's perspective. Although
+/// chain A and chain B might refer to the connection with different names, they are actually referring
+/// to the same connection.
 #[derive(Clone, Command, Debug, Parser)]
 #[clap(disable_version_flag = true)]
 pub struct CreateChannelCommand {
     #[clap(
         required = true,
-        help = "identifier of the side `a` chain for the new channel"
+        help = "Identifier of the side `a` chain for the new channel"
     )]
-    chain_a_id: ChainId,
-
-    #[clap(help = "identifier of the side `b` chain for the new channel (optional)")]
-    chain_b_id: Option<ChainId>,
+    chain_a: ChainId,
 
     #[clap(
         short,
         long,
-        help = "identifier of the connection on chain `a` to use in creating the new channel"
+        help = "Identifier of the side `b` chain for the new channel"
     )]
+    chain_b: Option<ChainId>,
+
+    /// Identifier of the connection on chain `a` to use in creating the new channel.
     connection_a: Option<ConnectionId>,
 
     #[clap(
         long,
         required = true,
-        help = "identifier of the side `a` port for the new channel"
+        help = "Identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
 
     #[clap(
         long,
         required = true,
-        help = "identifier of the side `b` port for the new channel"
+        help = "Identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
 
     #[clap(
         short,
         long,
-        help = "the channel ordering, valid options 'unordered' (default) and 'ordered'",
+        help = "The channel ordering, valid options 'unordered' (default) and 'ordered'",
         default_value_t
     )]
     order: Order,
@@ -61,34 +85,68 @@ pub struct CreateChannelCommand {
         short,
         long = "channel-version",
         alias = "version",
-        help = "the version for the new channel"
+        help = "The version for the new channel"
     )]
-    version: Option<String>,
+    version: Option<Version>,
+
+    #[clap(
+        long,
+        help = "Indicates that a new client and connection will be created underlying the new channel"
+    )]
+    new_client_connection: bool,
 }
 
 impl Runnable for CreateChannelCommand {
     fn run(&self) {
-        match &self.chain_b_id {
-            None => self.run_reusing_connection(),
-            Some(chain_b) => self.run_using_new_connection(chain_b),
+        match &self.connection_a {
+            Some(conn) => self.run_reusing_connection(conn),
+            None => match &self.chain_b {
+                Some(chain_b) => {
+                    if self.new_client_connection {
+                        match Confirm::new()
+                            .with_prompt(format!(
+                                "{}: {}\n{}: {}",
+                                style("WARN").yellow(),
+                                PROMPT,
+                                style("Hint").cyan(),
+                                HINT
+                            ))
+                            .interact()
+                        {
+                            Ok(confirm) => {
+                                if confirm {
+                                    self.run_using_new_connection(chain_b);
+                                } else {
+                                    Output::error("You elected not to create new clients and connections. Please re-invoke `create channel` with a pre-existing connection ID".to_string()).exit();
+                                }
+                            }
+                            Err(e) => {
+                                Output::error(format!(
+                                    "An error occurred while waiting for user input: {}",
+                                    e
+                                ));
+                            }
+                        }
+                    } else {
+                        Output::error(
+                                "The `--new-client-connection` flag is required if invoking with `--chain-b`".to_string()
+                            )
+                            .exit();
+                    }
+                }
+                None => Output::error("Missing one of `<chain-b>` or `<connection-a>`".to_string())
+                    .exit(),
+            },
         }
     }
 }
 
 impl CreateChannelCommand {
-    // Creates a new channel, as well as a new underlying connection and clients.
-    fn run_using_new_connection(&self, chain_b_id: &ChainId) {
+    /// Creates a new channel, as well as a new underlying connection and clients.
+    fn run_using_new_connection(&self, chain_b: &ChainId) {
         let config = app_config();
 
-        // Bail with an explicit error. The user might be expecting to use this connection.
-        if self.connection_a.is_some() {
-            Output::error(
-                "Option `<connection-a>` is incompatible with `<chain-b-id>`".to_string(),
-            )
-            .exit();
-        }
-
-        let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
+        let chains = ChainHandlePair::spawn(&config, &self.chain_a, chain_b)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         info!(
@@ -118,39 +176,29 @@ impl CreateChannelCommand {
         Output::success(channel).exit();
     }
 
-    // Creates a new channel, reusing an already existing connection and its clients.
-    fn run_reusing_connection(&self) {
+    /// Creates a new channel, reusing an already existing connection and its clients.
+    fn run_reusing_connection(&self, connection_a: &ConnectionId) {
         let config = app_config();
 
         // Validate & spawn runtime for side a.
-        let chain_a = spawn_chain_runtime(&config, &self.chain_a_id)
+        let chain_a = spawn_chain_runtime(&config, &self.chain_a)
             .unwrap_or_else(exit_with_unrecoverable_error);
-
-        // Unwrap the identifier of the connection on side a.
-        let connection_a_id = match &self.connection_a {
-            Some(c) => c,
-            None => Output::error(
-                "Option `--connection-a` is necessary when <chain-b-id> argument is missing"
-                    .to_string(),
-            )
-            .exit(),
-        };
 
         // Query the connection end.
         let height = Height::new(chain_a.id().version(), 0);
         let conn_end = chain_a
-            .query_connection(connection_a_id, height)
+            .query_connection(connection_a, height)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Query the client state, obtain the identifier of chain b.
-        let chain_b_id = chain_a
+        let chain_b = chain_a
             .query_client_state(conn_end.client_id(), height)
             .map(|cs| cs.chain_id())
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Spawn the runtime for side b.
         let chain_b =
-            spawn_chain_runtime(&config, &chain_b_id).unwrap_or_else(exit_with_unrecoverable_error);
+            spawn_chain_runtime(&config, &chain_b).unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the foreign client handles.
         let client_a = ForeignClient::find(chain_b.clone(), chain_a.clone(), conn_end.client_id())
@@ -158,7 +206,7 @@ impl CreateChannelCommand {
         let client_b = ForeignClient::find(chain_a, chain_b, conn_end.counterparty().client_id())
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let identified_end = IdentifiedConnectionEnd::new(connection_a_id.clone(), conn_end);
+        let identified_end = IdentifiedConnectionEnd::new(connection_a.clone(), conn_end);
 
         let connection = Connection::find(client_a, client_b, &identified_end)
             .unwrap_or_else(exit_with_unrecoverable_error);

@@ -1,15 +1,12 @@
 //! Relayer configuration
 
-mod error;
-mod proof_specs;
-pub mod reload;
+pub mod error;
+pub mod filter;
+pub mod proof_specs;
 pub mod types;
 
 use alloc::collections::BTreeMap;
-use alloc::collections::BTreeSet;
 use core::{fmt, time::Duration};
-use itertools::Itertools;
-use std::sync::{Arc, RwLock};
 use std::{fs, fs::File, io::Write, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
@@ -23,6 +20,8 @@ use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::keyring::Store;
 
 pub use error::Error;
+
+pub use filter::PacketFilter;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -39,64 +38,6 @@ impl GasPrice {
 impl fmt::Display for GasPrice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.price, self.denom)
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(
-    rename_all = "lowercase",
-    tag = "policy",
-    content = "list",
-    deny_unknown_fields
-)]
-pub enum PacketFilter {
-    Allow(ChannelsSpec),
-    Deny(ChannelsSpec),
-    AllowAll,
-}
-
-impl Default for PacketFilter {
-    /// By default, allows all channels & ports.
-    fn default() -> Self {
-        Self::AllowAll
-    }
-}
-
-impl PacketFilter {
-    /// Returns true if the packets can be relayed on the channel with [`PortId`] and [`ChannelId`],
-    /// false otherwise.
-    pub fn is_allowed(&self, port_id: &PortId, channel_id: &ChannelId) -> bool {
-        match self {
-            PacketFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
-            PacketFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
-            PacketFilter::AllowAll => true,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ChannelsSpec(BTreeSet<(PortId, ChannelId)>);
-
-impl ChannelsSpec {
-    pub fn contains(&self, channel_port: &(PortId, ChannelId)) -> bool {
-        self.0.contains(channel_port)
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &(PortId, ChannelId)> {
-        self.0.iter()
-    }
-}
-
-impl fmt::Display for ChannelsSpec {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.iter()
-                .map(|(pid, cid)| format!("{}/{}", pid, cid))
-                .join(", ")
-        )
     }
 }
 
@@ -121,7 +62,7 @@ pub mod default {
     }
 
     pub fn max_block_time() -> Duration {
-        Duration::from_secs(10)
+        Duration::from_secs(30)
     }
 
     pub fn connection_delay() -> Duration {
@@ -143,8 +84,6 @@ pub struct Config {
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
 }
-
-pub type SharedConfig = Arc<RwLock<Config>>;
 
 impl Config {
     pub fn has_chain(&self, id: &ChainId) -> bool {
@@ -465,9 +404,9 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = load(path);
-        println!("{:?}", config);
-        assert!(config.is_ok());
+        let config = load(path).expect("could not parse config");
+
+        dbg!(config);
     }
 
     #[test]

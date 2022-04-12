@@ -1,5 +1,3 @@
-#![allow(unused_imports)]
-
 use core::fmt;
 use std::collections::BTreeMap;
 
@@ -26,12 +24,9 @@ use crate::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
     },
-    config::{ChainConfig, ChannelsSpec, Config, ModeConfig, PacketFilter},
-    object::{Channel, Client, Connection, Object, Packet},
-    registry::{Registry, SharedRegistry},
+    config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
+    registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
-    supervisor::error::Error as SupervisorError,
-    worker::WorkerMap,
 };
 
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
@@ -305,7 +300,9 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         match self.use_allow_list(chain_config) {
             Some(spec) if self.scan_mode == ScanMode::Auto => {
-                info!("chain uses an allow list, skipping scan for fast startup");
+                info!(
+                    "chain uses an allow list (without wildcards), skipping scan for fast startup"
+                );
                 info!("allowed ports/channels: {}", spec);
 
                 self.query_allowed_channels(&chain, spec, &mut scan)?;
@@ -322,12 +319,12 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     pub fn query_allowed_channels(
         &mut self,
         chain: &Chain,
-        spec: &ChannelsSpec,
+        filters: &ChannelFilters,
         scan: &mut ChainScan,
     ) -> Result<(), Error> {
         info!("querying allowed channels...");
 
-        for (port_id, channel_id) in spec.iter() {
+        for (port_id, channel_id) in filters.iter_exact() {
             let result = scan_allowed_channel(self.registry, chain, port_id, channel_id);
 
             match result {
@@ -352,7 +349,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
                     connection_scan
                         .channels
-                        .entry(channel.channel_id.clone())
+                        .entry(channel.channel_id)
                         .or_insert_with(|| ChannelScan::new(channel, counterparty_channel));
                 }
                 Err(e) => error!(channel = %channel_id, "failed to scan channel, reason: {}", e),
@@ -488,7 +485,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                     counterparty,
                 };
 
-                (scan.id().clone(), scan)
+                (*scan.id(), scan)
             })
             .collect();
 
@@ -524,13 +521,13 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         true
     }
 
-    fn use_allow_list<'b>(&self, chain_config: &'b ChainConfig) -> Option<&'b ChannelsSpec> {
+    fn use_allow_list<'b>(&self, chain_config: &'b ChainConfig) -> Option<&'b ChannelFilters> {
         if !self.filtering_enabled() {
             return None;
         }
 
         match chain_config.packet_filter {
-            PacketFilter::Allow(ref spec) => Some(spec),
+            PacketFilter::Allow(ref filters) if filters.is_exact() => Some(filters),
             _ => None,
         }
     }
@@ -626,7 +623,7 @@ fn scan_allowed_channel<Chain: ChainHandle>(
     {
         return Err(Error::uninitialized_channel(
             port_id.clone(),
-            channel_id.clone(),
+            *channel_id,
             chain.id(),
         ));
     }
@@ -711,7 +708,7 @@ fn query_channel<Chain: ChainHandle>(
 
     Ok(IdentifiedChannelEnd::new(
         port_id.clone(),
-        channel_id.clone(),
+        *channel_id,
         channel_end,
     ))
 }
@@ -726,11 +723,7 @@ fn query_connection_for_channel<Chain: ChainHandle>(
         .first()
         .cloned()
         .ok_or_else(|| {
-            Error::missing_connection_hop(
-                channel.port_id.clone(),
-                channel.channel_id.clone(),
-                chain.id(),
-            )
+            Error::missing_connection_hop(channel.port_id.clone(), channel.channel_id, chain.id())
         })?;
 
     query_connection(chain, &connection_id)

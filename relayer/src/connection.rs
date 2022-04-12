@@ -4,8 +4,8 @@ use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::tx::TrackedMsgs;
 use crate::util::retry::RetryResult;
 use flex_error::define_error;
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use prost_types::Any;
 use serde::Serialize;
 use tracing::{error, info, warn};
 
@@ -74,7 +74,7 @@ define_error! {
             }
             [ ForeignClientError ]
             |e| {
-                format!("failed during an operation on client ({0}) hosted by chain ({1})",
+                format!("failed during an operation on client '{0}' hosted by chain '{1}'",
                     e.client_id, e.chain_id)
             },
 
@@ -82,7 +82,7 @@ define_error! {
             { chain_id: ChainId }
             [ RelayerError ]
             |e| {
-                format!("failed during a transaction submission step to chain id {0}",
+                format!("failed during a transaction submission step to chain '{0}'",
                     e.chain_id)
             },
 
@@ -793,7 +793,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         let new_msg = MsgConnectionOpenInit {
             client_id: self.dst_client_id().clone(),
             counterparty,
-            version,
+            version: Some(version),
             delay_period: self.delay_period,
             signer,
         };

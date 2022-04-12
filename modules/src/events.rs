@@ -349,6 +349,7 @@ impl IbcEvent {
             IbcEvent::NewBlock(bl) => bl.height(),
             IbcEvent::CreateClient(ev) => ev.height(),
             IbcEvent::UpdateClient(ev) => ev.height(),
+            IbcEvent::UpgradeClient(ev) => ev.height(),
             IbcEvent::ClientMisbehaviour(ev) => ev.height(),
             IbcEvent::OpenInitConnection(ev) => ev.height(),
             IbcEvent::OpenTryConnection(ev) => ev.height(),
@@ -365,6 +366,7 @@ impl IbcEvent {
             IbcEvent::WriteAcknowledgement(ev) => ev.height(),
             IbcEvent::AcknowledgePacket(ev) => ev.height(),
             IbcEvent::TimeoutPacket(ev) => ev.height(),
+            IbcEvent::TimeoutOnClosePacket(ev) => ev.height(),
             _ => unimplemented!(),
         }
     }
@@ -423,12 +425,12 @@ impl IbcEvent {
         }
     }
 
-    pub fn channel_attributes(&self) -> Option<&ChannelAttributes> {
+    pub fn channel_attributes(self) -> Option<ChannelAttributes> {
         match self {
-            IbcEvent::OpenInitChannel(ev) => Some(ev.attributes()),
-            IbcEvent::OpenTryChannel(ev) => Some(ev.attributes()),
-            IbcEvent::OpenAckChannel(ev) => Some(ev.attributes()),
-            IbcEvent::OpenConfirmChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenInitChannel(ev) => Some(ev.into()),
+            IbcEvent::OpenTryChannel(ev) => Some(ev.into()),
+            IbcEvent::OpenAckChannel(ev) => Some(ev.into()),
+            IbcEvent::OpenConfirmChannel(ev) => Some(ev.into()),
             _ => None,
         }
     }

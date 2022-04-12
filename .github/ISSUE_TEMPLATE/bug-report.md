@@ -10,21 +10,18 @@ v    Before smashing the submit button please review the template.
 v    Please also ensure that this is not a duplicate issue :)  
 ☺ > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > >  -->
 
-## Crate
-
-<!-- Which crate does this bug concern? -->
-
 ## Summary of Bug
 
-<!-- Concisely describe the issue -->
+<!-- Describe the issue you're encountering -->
 
 ## Version
 
-<!-- git commit hash or release version -->
+<!-- `hermes version`, ibc-rs release version, or git commit hash -->
 
 ## Steps to Reproduce
 
-<!-- What commands in order should someone run to reproduce your problem? -->
+<!-- What commands should someone run to reproduce your problem? -->
+<!-- Attach logs here if you have them. -->
 
 ## Acceptance Criteria
 

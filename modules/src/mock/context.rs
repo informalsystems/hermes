@@ -3,11 +3,14 @@
 use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap;
+use alloc::sync::Arc;
+use core::borrow::Borrow;
 use core::cmp::min;
+use core::fmt::Debug;
 use core::ops::{Add, Sub};
 use core::time::Duration;
 
-use prost_types::Any;
+use ibc_proto::google::protobuf::Any;
 use sha2::Digest;
 use tracing::debug;
 
@@ -26,13 +29,15 @@ use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error as Ics04Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
-use crate::core::ics05_port::capabilities::{Capability, CapabilityName};
+use crate::core::ics05_port::capabilities::{
+    Capability, CapabilityName, ChannelCapability, PortCapability,
+};
 use crate::core::ics05_port::context::{CapabilityReader, PortReader};
 use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::Ics26Context;
+use crate::core::ics26_routing::context::{Ics26Context, Module, ModuleId, Router, RouterBuilder};
 use crate::core::ics26_routing::handler::{deliver, dispatch};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
 use crate::events::IbcEvent;
@@ -106,7 +111,7 @@ pub struct MockContext {
     packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     /// Maps ports to their capabilities
-    port_capabilities: BTreeMap<PortId, Capability>,
+    port_capabilities: BTreeMap<PortId, (ModuleId, PortCapability)>,
 
     /// Constant-size commitments to packets data fields
     packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
@@ -116,6 +121,9 @@ pub struct MockContext {
 
     /// Average time duration between blocks
     block_time: Duration,
+
+    /// ICS26 router impl
+    router: MockRouter,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -152,7 +160,7 @@ impl MockContext {
 
         assert_ne!(
             latest_height.revision_height, 0,
-            "The chain must have a non-zero max_history_size"
+            "The chain must have a non-zero revision_height"
         );
 
         // Compute the number of blocks to store.
@@ -203,6 +211,7 @@ impl MockContext {
             connection_ids_counter: 0,
             channel_ids_counter: 0,
             block_time,
+            router: Default::default(),
         }
     }
 
@@ -344,7 +353,7 @@ impl MockContext {
     }
 
     pub fn with_port_capability(mut self, port_id: PortId) -> Self {
-        self.port_capabilities.insert(port_id, Capability::new());
+        self.add_port(port_id);
         self
     }
 
@@ -438,6 +447,10 @@ impl MockContext {
         }
     }
 
+    pub fn with_router(self, router: MockRouter) -> Self {
+        Self { router, ..self }
+    }
+
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     pub fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
@@ -512,7 +525,14 @@ impl MockContext {
     }
 
     pub fn add_port(&mut self, port_id: PortId) {
-        self.port_capabilities.insert(port_id, Capability::new());
+        let module_id = ModuleId::new(format!("module{}", port_id).into()).unwrap();
+        self.port_capabilities
+            .insert(port_id, (module_id, Capability::new().into()));
+    }
+
+    pub fn scope_port_to_module(&mut self, port_id: PortId, module_id: ModuleId) {
+        self.port_capabilities
+            .insert(port_id, (module_id, Capability::new().into()));
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
@@ -550,7 +570,48 @@ impl MockContext {
     }
 }
 
-impl Ics26Context for MockContext {}
+#[derive(Default)]
+pub struct MockRouterBuilder(MockRouter);
+
+impl RouterBuilder for MockRouterBuilder {
+    type Router = MockRouter;
+
+    fn add_route(mut self, module_id: ModuleId, module: impl Module) -> Result<Self, String> {
+        match self.0 .0.insert(module_id, Arc::new(module)) {
+            None => Ok(self),
+            Some(_) => Err("Duplicate module_id".to_owned()),
+        }
+    }
+
+    fn build(self) -> Self::Router {
+        self.0
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct MockRouter(BTreeMap<ModuleId, Arc<dyn Module>>);
+
+impl Router for MockRouter {
+    fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module> {
+        self.0.get_mut(module_id.borrow()).and_then(Arc::get_mut)
+    }
+
+    fn has_route(&self, module_id: &impl Borrow<ModuleId>) -> bool {
+        self.0.get(module_id.borrow()).is_some()
+    }
+}
+
+impl Ics26Context for MockContext {
+    type Router = MockRouter;
+
+    fn router(&self) -> &Self::Router {
+        &self.router
+    }
+
+    fn router_mut(&mut self) -> &mut Self::Router {
+        &mut self.router
+    }
+}
 
 impl Ics20Context for MockContext {}
 
@@ -569,14 +630,9 @@ impl CapabilityReader for MockContext {
 }
 
 impl PortReader for MockContext {
-    type ModuleId = ();
-
-    fn lookup_module_by_port(
-        &self,
-        port_id: &PortId,
-    ) -> Result<(Self::ModuleId, Capability), Error> {
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, PortCapability), Error> {
         match self.port_capabilities.get(port_id) {
-            Some(mod_cap) => Ok(((), mod_cap.clone())),
+            Some((mod_id, mod_cap)) => Ok((mod_id.clone(), mod_cap.clone())),
             None => Err(Ics05Error::unknown_port(port_id.clone())),
         }
     }
@@ -586,10 +642,7 @@ impl ChannelReader for MockContext {
     fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
         match self.channels.get(pcid) {
             Some(channel_end) => Ok(channel_end.clone()),
-            None => Err(Ics04Error::channel_not_found(
-                pcid.0.clone(),
-                pcid.1.clone(),
-            )),
+            None => Err(Ics04Error::channel_not_found(pcid.0.clone(), pcid.1)),
         }
     }
 
@@ -621,13 +674,13 @@ impl ChannelReader for MockContext {
             .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics04Error> {
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
         match PortReader::lookup_module_by_port(self, port_id) {
             Ok((_, key)) => {
                 if !PortReader::authenticate(self, port_id.clone(), &key) {
                     Err(Ics04Error::invalid_port_capability())
                 } else {
-                    Ok(key)
+                    Ok(Capability::from(key).into())
                 }
             }
             Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
@@ -759,6 +812,16 @@ impl ChannelReader for MockContext {
 
     fn max_expected_time_per_block(&self) -> Duration {
         self.block_time
+    }
+
+    fn lookup_module_by_channel(
+        &self,
+        _channel_id: &ChannelId,
+        port_id: &PortId,
+    ) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
+        self.lookup_module_by_port(port_id)
+            .map(|(mid, pcap)| (mid, ChannelCapability::from(Capability::from(pcap))))
+            .map_err(Ics04Error::ics05_port)
     }
 }
 
@@ -1152,10 +1215,13 @@ impl Ics18Context for MockContext {
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Ics18Error> {
         // Forward call to Ics26 delivery method.
-        let events = deliver(self, msgs).map_err(Ics18Error::transaction_failed)?;
-
+        let mut all_events = vec![];
+        for msg in msgs {
+            let (mut events, _) = deliver(self, msg).map_err(Ics18Error::transaction_failed)?;
+            all_events.append(&mut events);
+        }
         self.advance_host_chain_height(); // Advance chain height
-        Ok(events)
+        Ok(all_events)
     }
 
     fn signer(&self) -> Signer {
@@ -1165,12 +1231,26 @@ impl Ics18Context for MockContext {
 
 #[cfg(test)]
 mod tests {
+    use test_log::test;
+
+    use alloc::str::FromStr;
+
+    use crate::core::ics04_channel::channel::{Counterparty, Order};
+    use crate::core::ics04_channel::error::Error;
+    use crate::core::ics04_channel::packet::Packet;
+    use crate::core::ics04_channel::Version;
+    use crate::core::ics05_port::capabilities::ChannelCapability;
     use crate::core::ics24_host::identifier::ChainId;
+    use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+    use crate::core::ics26_routing::context::{
+        Acknowledgement, Module, ModuleId, ModuleOutput, OnRecvPacketAck, Router, RouterBuilder,
+    };
     use crate::mock::context::MockContext;
+    use crate::mock::context::MockRouterBuilder;
     use crate::mock::host::HostType;
     use crate::prelude::*;
+    use crate::signer::Signer;
     use crate::Height;
-    use test_log::test;
 
     #[test]
     fn test_history_manipulation() {
@@ -1310,5 +1390,116 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn test_router() {
+        #[derive(Default)]
+        struct MockAck(Vec<u8>);
+
+        impl AsRef<[u8]> for MockAck {
+            fn as_ref(&self) -> &[u8] {
+                self.0.as_slice()
+            }
+        }
+
+        impl Acknowledgement for MockAck {}
+
+        #[derive(Debug, Default)]
+        struct FooModule {
+            counter: usize,
+        }
+
+        impl Module for FooModule {
+            fn on_chan_open_try(
+                &mut self,
+                _output: &mut ModuleOutput,
+                _order: Order,
+                _connection_hops: &[ConnectionId],
+                _port_id: &PortId,
+                _channel_id: &ChannelId,
+                _channel_cap: &ChannelCapability,
+                _counterparty: &Counterparty,
+                counterparty_version: &Version,
+            ) -> Result<Version, Error> {
+                Ok(counterparty_version.clone())
+            }
+
+            fn on_recv_packet(
+                &self,
+                _output: &mut ModuleOutput,
+                _packet: &Packet,
+                _relayer: &Signer,
+            ) -> OnRecvPacketAck {
+                OnRecvPacketAck::Successful(
+                    Box::new(MockAck::default()),
+                    Box::new(|module| {
+                        let module = module.downcast_mut::<FooModule>().unwrap();
+                        module.counter += 1;
+                    }),
+                )
+            }
+        }
+
+        #[derive(Debug, Default)]
+        struct BarModule;
+
+        impl Module for BarModule {
+            fn on_chan_open_try(
+                &mut self,
+                _output: &mut ModuleOutput,
+                _order: Order,
+                _connection_hops: &[ConnectionId],
+                _port_id: &PortId,
+                _channel_id: &ChannelId,
+                _channel_cap: &ChannelCapability,
+                _counterparty: &Counterparty,
+                counterparty_version: &Version,
+            ) -> Result<Version, Error> {
+                Ok(counterparty_version.clone())
+            }
+        }
+
+        let r = MockRouterBuilder::default()
+            .add_route("foomodule".parse().unwrap(), FooModule::default())
+            .unwrap()
+            .add_route("barmodule".parse().unwrap(), BarModule::default())
+            .unwrap()
+            .build();
+
+        let mut ctx = MockContext::new(
+            ChainId::new("mockgaia".to_string(), 1),
+            HostType::Mock,
+            1,
+            Height::new(1, 1),
+        )
+        .with_router(r);
+
+        let mut on_recv_packet_result = |module_id: &'static str| {
+            let module_id = ModuleId::from_str(module_id).unwrap();
+            let m = ctx.router.get_route_mut(&module_id).unwrap();
+            let result = m.on_recv_packet(
+                &mut ModuleOutput::builder().with_result(()),
+                &Packet::default(),
+                &Signer::new(""),
+            );
+            (module_id, result)
+        };
+
+        let results = vec![
+            on_recv_packet_result("foomodule"),
+            on_recv_packet_result("barmodule"),
+        ];
+        results
+            .into_iter()
+            .filter_map(|(mid, result)| match result {
+                OnRecvPacketAck::Nil(write_fn) | OnRecvPacketAck::Successful(_, write_fn) => {
+                    Some((mid, write_fn))
+                }
+                _ => None,
+            })
+            .for_each(|(mid, write_fn)| {
+                write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut())
+            });
     }
 }

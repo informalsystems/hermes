@@ -1,9 +1,11 @@
-use crate::ibc::denom::derive_ibc_denom;
 use ibc_relayer::config::{self, Config, ModeConfig};
+use ibc_test_framework::ibc::denom::derive_ibc_denom;
 
-use crate::prelude::*;
-use crate::relayer::channel::{assert_eventually_channel_established, init_channel};
-use crate::relayer::connection::{assert_eventually_connection_established, init_connection};
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::channel::{assert_eventually_channel_established, init_channel};
+use ibc_test_framework::relayer::connection::{
+    assert_eventually_connection_established, init_connection,
+};
 
 #[test]
 fn test_supervisor() -> Result<(), Error> {
@@ -36,13 +38,14 @@ impl BinaryChainTest for SupervisorTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let (connection_id_b, _) = init_connection(
             &chains.handle_a,
             &chains.handle_b,
-            &chains.client_b_to_a.tagged_client_id(),
-            &chains.client_a_to_b.tagged_client_id(),
+            &chains.foreign_clients.client_id_a(),
+            &chains.foreign_clients.client_id_b(),
         )?;
 
         let connection_id_a = assert_eventually_connection_established(
@@ -128,13 +131,13 @@ impl BinaryChainTest for SupervisorTest {
         );
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &wallet_a.as_ref(),
+            &wallet_a.address(),
             balance_a - transfer_amount,
             &denom_a,
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.as_ref(),
+            &wallet_b.address(),
             transfer_amount,
             &denom_b.as_ref(),
         )?;
