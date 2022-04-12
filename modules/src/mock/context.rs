@@ -143,6 +143,43 @@ impl Default for MockContext {
             5,
             Height::new(0, 5),
         )
+        .with_router(dummy_router(ocap.clone()))
+        .with_ocap(ocap)
+        .with_port_capability(PortId::default(), dummy_module_id())
+    }
+}
+
+impl Clone for MockContext {
+    fn clone(&self) -> Self {
+        let ocap = Arc::new(Mutex::new(MockOCap::default()));
+        Self {
+            host_chain_type: self.host_chain_type.clone(),
+            host_chain_id: self.host_chain_id.clone(),
+            max_history_size: self.max_history_size.clone(),
+            history: self.history.clone(),
+            clients: self.clients.clone(),
+            client_processed_times: self.client_processed_times.clone(),
+            client_processed_heights: self.client_processed_heights.clone(),
+            client_ids_counter: self.client_ids_counter.clone(),
+            client_connections: self.client_connections.clone(),
+            connections: self.connections.clone(),
+            connection_ids_counter: self.connection_ids_counter.clone(),
+            connection_channels: self.connection_channels.clone(),
+            channel_ids_counter: self.channel_ids_counter.clone(),
+            channels: self.channels.clone(),
+            next_sequence_send: self.next_sequence_send.clone(),
+            next_sequence_recv: self.next_sequence_recv.clone(),
+            next_sequence_ack: self.next_sequence_ack.clone(),
+            packet_acknowledgement: self.packet_acknowledgement.clone(),
+            packet_commitment: self.packet_commitment.clone(),
+            packet_receipt: self.packet_receipt.clone(),
+            block_time: self.block_time.clone(),
+            router: self.router.clone(),
+            ocap: Arc::new(Mutex::new(Default::default())),
+        }
+        .with_router(dummy_router(ocap.clone()))
+        .with_ocap(ocap)
+        .with_port_capability(PortId::default(), dummy_module_id())
     }
 }
 
