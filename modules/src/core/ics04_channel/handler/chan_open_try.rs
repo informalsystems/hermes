@@ -136,7 +136,7 @@ where
     // Transition the channel end to the new state & pick a version.
     new_channel_end.set_state(State::TryOpen);
 
-    let (channel_id_state, channel_cap) = if matches!(msg.previous_channel_id, None) {
+    let (channel_id_state, channel_cap) = if msg.previous_channel_id.is_none() {
         let cap = ctx.create_channel_capability(msg.port_id.clone(), channel_id)?;
         (ChannelIdState::Generated, cap)
     } else {
