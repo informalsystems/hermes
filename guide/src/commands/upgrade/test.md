@@ -54,8 +54,8 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     hermes tx raw upgrade-chain ibc-0 ibc-1 07-tendermint-0 10000000 300
     ```
 
-    ```shell
-    Success: []
+    ```text
+    Success: transaction::Hash(CE98D8D98091BA8016BD852D18056E54C4CB3C4525E7F40DD3C40B4FD0F2482B)
     ```
 
     Note that the height offset should be picked such that the proposal plan height is reached after the `200s` voting period.
