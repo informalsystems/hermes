@@ -98,7 +98,9 @@ mod tests {
     use crate::core::ics04_channel::channel::{
         ChannelEnd, Counterparty, Order, State as ChannelState,
     };
-    use crate::core::ics04_channel::handler::{channel_dispatch, ChannelDispatchResult};
+    use crate::core::ics04_channel::handler::{
+        channel_dispatch, channel_validate, ChannelDispatchResult,
+    };
     use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 
@@ -146,8 +148,10 @@ mod tests {
                 )
         };
 
-        let ChannelDispatchResult { output, .. } =
-            channel_dispatch(&context, &ChannelMsg::ChannelCloseInit(msg_chan_close_init)).unwrap();
+        let msg = ChannelMsg::ChannelCloseInit(msg_chan_close_init);
+        let ChannelDispatchResult { output, .. } = channel_validate(&context, &msg)
+            .and_then(|(_, cap)| channel_dispatch(&context, &msg, cap))
+            .unwrap();
         let handler_output = output.with_result(());
 
         assert!(!handler_output.events.is_empty()); // Some events must exist.

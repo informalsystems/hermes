@@ -180,7 +180,9 @@ mod tests {
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, State};
     use crate::core::ics04_channel::context::ChannelReader;
-    use crate::core::ics04_channel::handler::{channel_dispatch, ChannelDispatchResult};
+    use crate::core::ics04_channel::handler::{
+        channel_dispatch, channel_validate, ChannelDispatchResult,
+    };
     use crate::core::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::core::ics04_channel::msgs::ChannelMsg;
@@ -423,7 +425,9 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = channel_dispatch(&test.ctx, &test.msg);
+            let res = channel_validate(&test.ctx, &test.msg)
+                .and_then(|(_, cap)| channel_dispatch(&test.ctx, &test.msg, cap));
+
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(ChannelDispatchResult { output, result, .. }) => {

@@ -141,7 +141,9 @@ mod tests {
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
     use crate::core::ics04_channel::context::ChannelReader;
-    use crate::core::ics04_channel::handler::{packet_dispatch, PacketDispatchResult};
+    use crate::core::ics04_channel::handler::{
+        packet_dispatch, packet_validate, PacketDispatchResult,
+    };
     use crate::core::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
     use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
     use crate::core::ics04_channel::msgs::PacketMsg;
@@ -248,7 +250,9 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = packet_dispatch(&test.ctx, &PacketMsg::AckPacket(test.msg.clone()));
+            let msg = PacketMsg::AckPacket(test.msg.clone());
+            let res = packet_validate(&test.ctx, &msg)
+                .and_then(|(_, cap)| packet_dispatch(&test.ctx, &msg, cap));
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(PacketDispatchResult { output, .. }) => {
