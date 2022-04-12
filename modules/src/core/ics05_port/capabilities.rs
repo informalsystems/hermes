@@ -51,14 +51,14 @@ impl<T: CapabilityMarker> From<Capability> for TypedCapability<T> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Capability {
     index: u64,
 }
 
 impl Capability {
-    pub fn new() -> Capability {
-        Self { index: 0x0 }
+    pub fn new(index: u64) -> Capability {
+        Self { index }
     }
 
     pub fn index(&self) -> u64 {
@@ -68,7 +68,7 @@ impl Capability {
 
 impl Default for Capability {
     fn default() -> Self {
-        Self::new()
+        Self::new(0)
     }
 }
 
