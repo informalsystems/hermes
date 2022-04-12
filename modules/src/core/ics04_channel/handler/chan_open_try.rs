@@ -164,8 +164,6 @@ pub(crate) fn process<
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
-
     use test_log::test;
 
     use crate::core::ics02_client::client_type::ClientType;
@@ -186,7 +184,7 @@ mod tests {
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId};
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
-    use crate::test_utils::{dummy_module_id, dummy_router};
+    use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
     use crate::Height;
 
@@ -206,8 +204,7 @@ mod tests {
         let client_id = ClientId::new(ClientType::Mock, 45).unwrap();
 
         // The context. We'll reuse this same one across all tests.
-        let context = MockContext::default().with_router(dummy_router());
-
+        let context = MockContext::default();
         // This is the connection underlying the channel we're trying to open.
         let conn_end = ConnectionEnd::new(
             ConnectionState::Open,
@@ -267,9 +264,7 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails because no channel is preloaded in the context".to_string(),
-                ctx: context
-                    .clone()
-                    .with_port_capability(msg.port_id.clone(), dummy_module_id()),
+                ctx: context.clone(),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
                 match_error: {
@@ -288,9 +283,7 @@ mod tests {
             },
             Test {
                 name: "Processing fails because no connection exists in the context".to_string(),
-                ctx: context
-                    .clone()
-                    .with_port_capability(msg.port_id.clone(), dummy_module_id()),
+                ctx: context.clone(),
                 msg: ChannelMsg::ChannelOpenTry(msg_vanilla.clone()),
                 want_pass: false,
                 match_error: {
@@ -315,7 +308,8 @@ mod tests {
                     .to_string(),
                 ctx: context
                     .clone()
-                    .with_connection(conn_id.clone(), conn_end.clone()),
+                    .with_connection(conn_id.clone(), conn_end.clone())
+                    .without_ocap(),
                 msg: ChannelMsg::ChannelOpenTry(msg_vanilla.clone()),
                 want_pass: false,
                 match_error: {
@@ -336,7 +330,6 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port_capability(msg.port_id.clone(), dummy_module_id())
                     .with_channel(msg.port_id.clone(), chan_id, incorrect_chan_end_ver),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
@@ -357,7 +350,6 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port_capability(msg.port_id.clone(), dummy_module_id())
                     .with_channel(msg.port_id.clone(), chan_id, incorrect_chan_end_hops),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
@@ -378,7 +370,6 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port_capability(msg.port_id.clone(), dummy_module_id())
                     .with_channel(msg.port_id.clone(), chan_id, correct_chan_end.clone()),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
@@ -408,7 +399,6 @@ mod tests {
                     .clone()
                     .with_client(&client_id, Height::new(0, proof_height))
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port_capability(msg.port_id.clone(), dummy_module_id())
                     .with_channel(msg.port_id.clone(), chan_id, correct_chan_end),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: true,
@@ -419,8 +409,7 @@ mod tests {
                     .to_string(),
                 ctx: context
                     .with_client(&client_id, Height::new(0, proof_height))
-                    .with_connection(conn_id, conn_end)
-                    .with_port_capability(msg.port_id, dummy_module_id()),
+                    .with_connection(conn_id, conn_end),
                 msg: ChannelMsg::ChannelOpenTry(msg_vanilla),
                 want_pass: true,
                 match_error: Box::new(|_| {}),

@@ -146,7 +146,6 @@ mod tests {
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::prelude::*;
-    use crate::test_utils::{dummy_module_id, dummy_router};
     use crate::timestamp::ZERO_DURATION;
 
     #[test]
@@ -158,8 +157,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let context = MockContext::default().with_router(dummy_router());
-
+        let context = MockContext::default();
         let client_height = Height::new(0, Height::default().revision_height + 2);
 
         let msg = MsgAcknowledgement::try_from(get_dummy_raw_msg_acknowledgement(
@@ -222,7 +220,6 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(packet.destination_port.clone(), dummy_module_id())
                     .with_channel(
                         packet.source_port.clone(),
                         packet.source_channel,

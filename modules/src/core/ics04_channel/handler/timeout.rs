@@ -171,7 +171,6 @@ mod tests {
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::prelude::*;
-    use crate::test_utils::{dummy_module_id, dummy_router};
     use crate::timestamp::ZERO_DURATION;
 
     #[test]
@@ -183,8 +182,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let context = MockContext::default().with_router(dummy_router());
-
+        let context = MockContext::default();
         let height = Height::default().revision_height + 2;
         let timeout_timestamp = 5;
 
@@ -246,7 +244,6 @@ mod tests {
                     ChannelId::default(),
                     source_channel_end.clone(),
                 )
-                .with_port_capability(packet.destination_port.clone(), dummy_module_id())
                 .with_connection(ConnectionId::default(), connection_end.clone()),
                 msg: msg.clone(),
                 want_pass: false,
@@ -260,7 +257,6 @@ mod tests {
                     source_channel_end.clone(),
                 )
                 .with_client(&ClientId::default(), client_height)
-                .with_port_capability(packet.destination_port.clone(), dummy_module_id())
                 .with_connection(ConnectionId::default(), connection_end.clone()),
                 msg,
                 want_pass: false,
@@ -270,7 +266,6 @@ mod tests {
                 ctx: context.clone()
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end.clone())
-                    .with_port_capability(packet.destination_port.clone(), dummy_module_id())
                     .with_channel(
                         packet.source_port.clone(),
                         packet.source_channel,
@@ -290,7 +285,6 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(packet.destination_port.clone(), dummy_module_id())
                     .with_channel(
                         packet.source_port.clone(),
                         packet.source_channel,

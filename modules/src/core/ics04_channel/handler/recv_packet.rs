@@ -157,9 +157,6 @@ pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::context::ChannelReader;
-    use crate::prelude::*;
-
     use test_log::test;
 
     use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -167,6 +164,7 @@ mod tests {
     use crate::core::ics03_connection::connection::State as ConnectionState;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
+    use crate::core::ics04_channel::context::ChannelReader;
     use crate::core::ics04_channel::handler::{packet_dispatch, PacketDispatchResult};
     use crate::core::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
     use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
@@ -174,8 +172,9 @@ mod tests {
     use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
+    use crate::prelude::*;
     use crate::relayer::ics18_relayer::context::Ics18Context;
-    use crate::test_utils::{dummy_module_id, dummy_router, get_dummy_account_id};
+    use crate::test_utils::get_dummy_account_id;
     use crate::timestamp::Timestamp;
     use crate::timestamp::ZERO_DURATION;
     use crate::{core::ics04_channel::packet::Packet, events::IbcEvent};
@@ -189,10 +188,8 @@ mod tests {
             want_pass: bool,
         }
 
-        let context = MockContext::default().with_router(dummy_router());
-
+        let context = MockContext::default();
         let host_height = context.query_latest_height().increment();
-
         let client_height = host_height.increment();
 
         let msg =
@@ -245,11 +242,7 @@ mod tests {
             Test {
                 name: "Processing fails because the port does not have a capability associated"
                     .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    dest_channel_end.clone(),
-                ),
+                ctx: context.clone(),
                 msg: msg.clone(),
                 want_pass: false,
             },
@@ -259,7 +252,6 @@ mod tests {
                     .clone()
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end.clone())
-                    .with_port_capability(packet.destination_port.clone(), dummy_module_id())
                     .with_channel(
                         packet.destination_port.clone(),
                         packet.destination_channel,
@@ -285,7 +277,6 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(PortId::default(), dummy_module_id())
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into())
                     .with_height(host_height),
