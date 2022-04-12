@@ -53,13 +53,14 @@ use crate::mock::host::{HostBlock, HostType};
 use crate::relayer::ics18_relayer::context::Ics18Context;
 use crate::relayer::ics18_relayer::error::Error as Ics18Error;
 use crate::signer::Signer;
+use crate::test_utils::{dummy_module_id, dummy_router};
 use crate::timestamp::Timestamp;
 use crate::Height;
 
 pub const DEFAULT_BLOCK_TIME_SECS: u64 = 3;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct MockContext {
     /// The type of host chain underlying this mock context.
     host_chain_type: HostType,
@@ -137,6 +138,7 @@ pub struct MockContext {
 /// creation of new domain objects.
 impl Default for MockContext {
     fn default() -> Self {
+        let ocap = Arc::new(Mutex::new(MockOCap::default()));
         Self::new(
             ChainId::new("mockgaia".to_string(), 0),
             HostType::Mock,
@@ -397,6 +399,23 @@ impl MockContext {
 
     pub fn with_port_capability(mut self, port_id: PortId, module_id: ModuleId) -> Self {
         self.scope_port_to_module(port_id, module_id);
+        self
+    }
+
+    pub fn with_fresh_ocap(mut self) -> Self {
+        {
+            let mut ocap = self.ocap.lock().unwrap();
+            let _ = core::mem::replace(&mut *ocap, Default::default());
+        }
+        self.scope_port_to_module(PortId::default(), dummy_module_id());
+        self
+    }
+
+    pub fn without_ocap(self) -> Self {
+        {
+            let mut ocap = self.ocap.lock().unwrap();
+            let _ = core::mem::replace(&mut *ocap, Default::default());
+        }
         self
     }
 
