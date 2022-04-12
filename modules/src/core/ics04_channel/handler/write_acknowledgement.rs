@@ -202,14 +202,9 @@ mod tests {
                 .ctx
                 .lookup_module_by_channel(ChannelId::default(), PortId::default())
                 .map(|(_, cap)| cap)
-                .unwrap_or_else(|_| MockCapability::new(0).into());
+                .unwrap_or_else(|_| MockCapability::new(0));
 
-            let res = process(
-                &test.ctx,
-                test.packet.clone(),
-                test.ack,
-                channel_cap.clone(),
-            );
+            let res = process(&test.ctx, test.packet.clone(), test.ack, channel_cap);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
