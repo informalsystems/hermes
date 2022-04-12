@@ -180,7 +180,7 @@ jobs:
     strategy:
       matrix:
         gaiad:
-          - gaia7
+          - gaia6
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
@@ -208,7 +208,7 @@ jobs:
         run: |
           nix shell \
             github:informalsystems/cosmos.nix#${{ matrix.gaiad }} \
-            github:informalsystems/cosmos.nix/soares/apalache#apalache \
+            github:informalsystems/cosmos.nix#apalache \
             -c cargo \
             test -p ibc-integration-test --features mbt --no-fail-fast -- \
             --nocapture --test-threads=1 mbt

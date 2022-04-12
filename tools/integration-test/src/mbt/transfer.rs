@@ -3,8 +3,6 @@ use ibc_relayer::config::{
     ModeConfig, Packets as ConfigPackets,
 };
 
-use ibc_test_framework::framework::binary::chain::run_self_connected_binary_chain_test;
-use ibc_test_framework::framework::binary::channel::RunBinaryChannelTest;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::types::tagged::mono::Tagged;
 
@@ -80,6 +78,9 @@ fn test_ibc_transfer() -> Result<(), Error> {
 #[test]
 #[cfg(feature = "manual")]
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
+    use ibc_test_framework::framework::binary::chain::run_self_connected_binary_chain_test;
+    use ibc_test_framework::framework::binary::channel::RunBinaryChannelTest;
+
     for test_name in TEST_NAMES {
         for trace in generate_mbt_traces(APALACHE_EXEC, test_name, NUM_TRACES_PER_TEST)? {
             run_self_connected_binary_chain_test(&RunBinaryConnectionTest::new(
