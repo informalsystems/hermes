@@ -202,7 +202,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
       - env:
-          RUST_LOG: info
+          RUST_LOG: debug
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
         run: |
