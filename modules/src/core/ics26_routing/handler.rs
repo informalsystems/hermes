@@ -6,8 +6,8 @@ use crate::applications::ics20_fungible_token_transfer::relay_application_logic:
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
-    channel_callback as ics4_callback, channel_dispatch as ics4_msg_dispatcher,
-    channel_validate as ics4_validate, packet_callback as ics4_packet_callback,
+    channel_callback as ics4_msg_callback, channel_dispatch as ics4_msg_dispatcher,
+    channel_validate as ics4_msg_validate, packet_callback as ics4_packet_callback,
     packet_dispatch as ics4_packet_msg_dispatcher, packet_validate as ics4_packet_validate,
     recv_packet::RecvPacketResult, ChannelDispatchResult, PacketDispatchResult,
 };
@@ -77,14 +77,13 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
-            let (module_id, cap) = ics4_validate(ctx, &msg).map_err(Error::ics04_channel)?;
+            let (module_id, cap) = ics4_msg_validate(ctx, &msg).map_err(Error::ics04_channel)?;
             let ChannelDispatchResult { mut output, result } =
                 ics4_msg_dispatcher(ctx, &msg, cap).map_err(Error::ics04_channel)?;
 
             let mut module_output = HandlerOutput::builder().with_result(());
-            let cb_result = ics4_callback(ctx, &module_id, &msg, result, &mut module_output);
+            let cb_result = ics4_msg_callback(ctx, &module_id, &msg, result, &mut module_output);
             output.merge(module_output);
-
             let (result, cap) = cb_result.map_err(Error::ics04_channel)?.destructure();
 
             // Apply any results to the host chain store.
