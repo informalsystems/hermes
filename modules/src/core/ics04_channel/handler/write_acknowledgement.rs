@@ -183,7 +183,6 @@ mod tests {
             Test {
                 name: "Zero ack".to_string(),
                 ctx: context
-                    .clone()
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end),

@@ -155,19 +155,19 @@ impl Clone for MockContext {
     fn clone(&self) -> Self {
         let ocap = Arc::new(Mutex::new(MockOCap::default()));
         Self {
-            host_chain_type: self.host_chain_type.clone(),
+            host_chain_type: self.host_chain_type,
             host_chain_id: self.host_chain_id.clone(),
-            max_history_size: self.max_history_size.clone(),
+            max_history_size: self.max_history_size,
             history: self.history.clone(),
             clients: self.clients.clone(),
             client_processed_times: self.client_processed_times.clone(),
             client_processed_heights: self.client_processed_heights.clone(),
-            client_ids_counter: self.client_ids_counter.clone(),
+            client_ids_counter: self.client_ids_counter,
             client_connections: self.client_connections.clone(),
             connections: self.connections.clone(),
-            connection_ids_counter: self.connection_ids_counter.clone(),
+            connection_ids_counter: self.connection_ids_counter,
             connection_channels: self.connection_channels.clone(),
-            channel_ids_counter: self.channel_ids_counter.clone(),
+            channel_ids_counter: self.channel_ids_counter,
             channels: self.channels.clone(),
             next_sequence_send: self.next_sequence_send.clone(),
             next_sequence_recv: self.next_sequence_recv.clone(),
@@ -175,7 +175,7 @@ impl Clone for MockContext {
             packet_acknowledgement: self.packet_acknowledgement.clone(),
             packet_commitment: self.packet_commitment.clone(),
             packet_receipt: self.packet_receipt.clone(),
-            block_time: self.block_time.clone(),
+            block_time: self.block_time,
             router: self.router.clone(),
             ocap: Arc::new(Mutex::new(Default::default())),
         }
@@ -402,19 +402,16 @@ impl MockContext {
         self
     }
 
-    pub fn with_fresh_ocap(mut self) -> Self {
-        {
-            let mut ocap = self.ocap.lock().unwrap();
-            let _ = core::mem::replace(&mut *ocap, Default::default());
-        }
-        self.scope_port_to_module(PortId::default(), dummy_module_id());
-        self
+    pub fn with_fresh_ocap(self) -> Self {
+        let mut ctx = self.without_ocap();
+        ctx.scope_port_to_module(PortId::default(), dummy_module_id());
+        ctx
     }
 
     pub fn without_ocap(self) -> Self {
         {
             let mut ocap = self.ocap.lock().unwrap();
-            let _ = core::mem::replace(&mut *ocap, Default::default());
+            let _ = core::mem::take(&mut *ocap);
         }
         self
     }
@@ -808,7 +805,7 @@ impl MockOCap {
         name: CapabilityName,
     ) -> Result<Capability, Ics05Error> {
         if self.get_capability(module_id, &name).is_ok() {
-            return Err(Ics05Error::capability_already_taken(name));
+            Err(Ics05Error::capability_already_taken(name))
         } else {
             Ok(Capability::new(self.index))
         }

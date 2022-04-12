@@ -400,7 +400,7 @@ mod tests {
                     .with_client(&client_id, Height::new(0, proof_height))
                     .with_connection(conn_id.clone(), conn_end.clone())
                     .with_channel(msg.port_id.clone(), chan_id, correct_chan_end),
-                msg: ChannelMsg::ChannelOpenTry(msg.clone()),
+                msg: ChannelMsg::ChannelOpenTry(msg),
                 want_pass: true,
                 match_error: Box::new(|_| {}),
             },

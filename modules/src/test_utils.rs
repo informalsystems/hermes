@@ -76,7 +76,7 @@ impl Module for DummyModule {
             .unwrap()
             .claim_capability(
                 dummy_module_id(),
-                channel_capability_name(port_id.clone(), channel_id.clone()),
+                channel_capability_name(port_id.clone(), *channel_id),
                 channel_cap.clone().into(),
             )
             .map_err(Error::ics05_port)
