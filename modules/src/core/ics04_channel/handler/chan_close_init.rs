@@ -6,7 +6,7 @@ use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use crate::core::ics05_port::capabilities::ChannelCapability;
+use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics26_routing::context::CoreModuleId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
@@ -14,7 +14,7 @@ use crate::handler::{HandlerOutput, HandlerResult};
 pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
     ctx: &Ctx,
     msg: &MsgChannelCloseInit,
-    channel_cap: ChannelCapability,
+    channel_cap: Capability,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 

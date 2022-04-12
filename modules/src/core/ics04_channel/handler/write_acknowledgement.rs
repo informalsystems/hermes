@@ -3,7 +3,7 @@ use crate::core::ics04_channel::context::ChannelCapabilityReader;
 use crate::core::ics04_channel::events::WriteAcknowledgement;
 use crate::core::ics04_channel::packet::{Packet, PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error};
-use crate::core::ics05_port::capabilities::ChannelCapability;
+use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::CoreModuleId;
 use crate::prelude::*;
@@ -24,7 +24,7 @@ pub fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
     ctx: &Ctx,
     packet: Packet,
     ack: Vec<u8>,
-    channel_cap: ChannelCapability,
+    channel_cap: Capability,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 

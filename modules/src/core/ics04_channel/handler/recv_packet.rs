@@ -6,7 +6,7 @@ use crate::core::ics04_channel::events::ReceivePacket;
 use crate::core::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::core::ics04_channel::packet::{PacketResult, Receipt, Sequence};
-use crate::core::ics05_port::capabilities::ChannelCapability;
+use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::CoreModuleId;
 use crate::events::IbcEvent;
@@ -32,7 +32,7 @@ pub enum RecvPacketResult {
 pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
     ctx: &Ctx,
     msg: &MsgRecvPacket,
-    channel_cap: ChannelCapability,
+    channel_cap: Capability,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 

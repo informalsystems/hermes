@@ -6,7 +6,7 @@ use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use crate::core::ics05_port::capabilities::PortCapability;
+use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics05_port::context::PortCapabilityReader;
 use crate::core::ics24_host::identifier::ChannelId;
 use crate::core::ics26_routing::context::CoreModuleId;
@@ -19,7 +19,7 @@ pub(crate) fn process<
 >(
     ctx: &Ctx,
     msg: &MsgChannelOpenInit,
-    port_cap: PortCapability,
+    port_cap: Capability,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 

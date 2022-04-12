@@ -2,54 +2,7 @@
 
 use crate::prelude::*;
 use alloc::borrow::Cow;
-use core::marker::PhantomData;
-use core::ops::{Deref, DerefMut};
 use core::{fmt, str::FromStr};
-
-pub type PortCapability = TypedCapability<PortCapabilityType>;
-
-pub type ChannelCapability = TypedCapability<ChannelCapabilityType>;
-
-pub trait CapabilityMarker {}
-
-#[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
-pub struct PortCapabilityType;
-
-impl CapabilityMarker for PortCapabilityType {}
-
-#[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
-pub struct ChannelCapabilityType;
-
-impl CapabilityMarker for ChannelCapabilityType {}
-
-#[derive(Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
-pub struct TypedCapability<T: CapabilityMarker>(Capability, PhantomData<T>);
-
-impl<T: CapabilityMarker> Deref for TypedCapability<T> {
-    type Target = Capability;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T: CapabilityMarker> DerefMut for TypedCapability<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<T: CapabilityMarker> From<TypedCapability<T>> for Capability {
-    fn from(cap: TypedCapability<T>) -> Self {
-        cap.0
-    }
-}
-
-impl<T: CapabilityMarker> From<Capability> for TypedCapability<T> {
-    fn from(cap: Capability) -> Self {
-        TypedCapability(cap, PhantomData)
-    }
-}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Capability {
@@ -91,11 +44,6 @@ impl CapabilityName {
         } else {
             Err(InvalidCapabilityName)
         }
-    }
-
-    pub fn prefixed_with(&self, mut prefix: String) -> Self {
-        prefix.push_str(&self.0);
-        Self(prefix)
     }
 }
 

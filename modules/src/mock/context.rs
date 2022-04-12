@@ -1434,7 +1434,7 @@ mod tests {
     use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::packet::Packet;
     use crate::core::ics04_channel::Version;
-    use crate::core::ics05_port::capabilities::ChannelCapability;
+    use crate::core::ics05_port::capabilities::Capability;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
@@ -1613,7 +1613,7 @@ mod tests {
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
                 _channel_id: &ChannelId,
-                _channel_cap: &ChannelCapability,
+                _channel_cap: &Capability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
             ) -> Result<Version, Error> {
@@ -1655,7 +1655,7 @@ mod tests {
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
                 _channel_id: &ChannelId,
-                _channel_cap: &ChannelCapability,
+                _channel_cap: &Capability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
             ) -> Result<Version, Error> {

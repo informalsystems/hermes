@@ -18,7 +18,7 @@ use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
-use crate::core::ics05_port::capabilities::ChannelCapability;
+use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics05_port::context::PortCapabilityReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::IbcEvent;
@@ -120,7 +120,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _channel_cap: &ChannelCapability,
+        _channel_cap: &Capability,
         _counterparty: &Counterparty,
         _version: &Version,
     ) -> Result<(), Error> {
@@ -135,7 +135,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _channel_cap: &ChannelCapability,
+        _channel_cap: &Capability,
         _counterparty: &Counterparty,
         _counterparty_version: &Version,
     ) -> Result<Version, Error>;

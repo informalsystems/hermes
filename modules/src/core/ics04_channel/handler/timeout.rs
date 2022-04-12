@@ -8,7 +8,7 @@ use crate::core::ics04_channel::handler::verify::{
 };
 use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::core::ics04_channel::packet::{PacketResult, Sequence};
-use crate::core::ics05_port::capabilities::ChannelCapability;
+use crate::core::ics05_port::capabilities::Capability;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::CoreModuleId;
 use crate::events::IbcEvent;
@@ -27,7 +27,7 @@ pub struct TimeoutPacketResult {
 pub(crate) fn process<Ctx: ChannelReader + ChannelCapabilityReader<CoreModuleId>>(
     ctx: &Ctx,
     msg: &MsgTimeout,
-    channel_cap: ChannelCapability,
+    channel_cap: Capability,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
