@@ -1,4 +1,6 @@
+use crate::core::ics05_port::capabilities::CapabilityName;
 use crate::core::ics24_host::identifier::PortId;
+
 use flex_error::define_error;
 
 define_error! {
@@ -15,6 +17,20 @@ define_error! {
         ModuleNotFound
             { port_id: PortId }
             | e | { format_args!("could not retrieve module from port '{0}'", e.port_id) },
+
+        CapabilityAlreadyTaken
+            { capability_name: CapabilityName }
+            | e | { format_args!("capability for '{0}' is already taken", e.capability_name) },
+
+        CapabilityMismatch
+            { capability_name: CapabilityName }
+            | e | { format_args!("capability name '{0}' not mapped to given capability", e.capability_name) },
+
+        CapabilityMappingNotFound
+            | _ | { "capability mapping was not found" },
+
+        CapabilityNotOwned
+            | _ | { "capability isn't owned by any module" },
 
         ImplementationSpecific
             | _ | { "implementation specific error" },
