@@ -28,12 +28,16 @@ use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader}
 use crate::core::ics03_connection::error::Error as Ics03Error;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::{
-    ChannelCapabilityKeeper, ChannelCapabilityReader, ChannelKeeper, ChannelReader,
+    channel_capability_name, ChannelCapabilityKeeper, ChannelCapabilityReader, ChannelKeeper,
+    ChannelReader,
 };
 use crate::core::ics04_channel::error::Error as Ics04Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
-use crate::core::ics05_port::capabilities::{Capability, CapabilityName, PortCapability};
-use crate::core::ics05_port::context::{CapabilityKeeper, CapabilityReader, PortCapabilityReader};
+use crate::core::ics05_port::capabilities::{Capability, CapabilityName};
+use crate::core::ics05_port::context::{
+    port_capability_name, CapabilityKeeper, CapabilityReader, PortCapabilityKeeper,
+    PortCapabilityReader,
+};
 use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -111,9 +115,6 @@ pub struct MockContext {
     next_sequence_ack: BTreeMap<(PortId, ChannelId), Sequence>,
 
     packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
-
-    // Fixme(hu55a1n1)
-    capabilities: BTreeMap<PortId, (ModuleId, PortCapability)>,
 
     /// Constant-size commitments to packets data fields
     packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
@@ -209,7 +210,6 @@ impl MockContext {
             next_sequence_send: Default::default(),
             next_sequence_recv: Default::default(),
             next_sequence_ack: Default::default(),
-            capabilities: Default::default(),
             packet_commitment: Default::default(),
             packet_receipt: Default::default(),
             packet_acknowledgement: Default::default(),
@@ -371,7 +371,27 @@ impl MockContext {
         channel_end: ChannelEnd,
     ) -> Self {
         let mut channels = self.channels.clone();
-        channels.insert((port_id, chan_id), channel_end);
+        channels.insert((port_id.clone(), chan_id), channel_end);
+        let (module_id, _) = self
+            .lookup_module_by_port(port_id.clone())
+            .unwrap_or((CoreModuleId.into(), Capability::default().into()));
+
+        {
+            let mut ocap = self.ocap.lock().unwrap();
+
+            let capability = ocap
+                .new_capability(
+                    CoreModuleId.into(),
+                    channel_capability_name(port_id.clone(), chan_id),
+                )
+                .unwrap();
+            ocap.claim_capability(
+                module_id,
+                channel_capability_name(port_id, chan_id),
+                capability,
+            )
+            .unwrap();
+        }
         Self { channels, ..self }
     }
 
@@ -535,8 +555,12 @@ impl MockContext {
     }
 
     pub fn scope_port_to_module(&mut self, port_id: PortId, module_id: ModuleId) {
-        self.capabilities
-            .insert(port_id, (module_id, Capability::new().into()));
+        let capability = self.bind_port(port_id.clone()).unwrap();
+        self.ocap
+            .lock()
+            .unwrap()
+            .claim_capability(module_id, port_capability_name(port_id), capability.into())
+            .unwrap();
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
@@ -611,23 +635,28 @@ impl CapabilityKeeper<CoreModuleId> for MockContext {
     }
 
     fn new_capability(&mut self, name: CapabilityName) -> Result<Capability, Ics05Error> {
-        self.ocap.lock().unwrap().new_capability(
-            name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
-        )
+        let module_id: ModuleId = CapabilityKeeper::module_id(self).into();
+        self.ocap.lock().unwrap().new_capability(module_id, name)
     }
 
-    fn claim_capability(&mut self, name: CapabilityName, capability: Capability) {
-        self.ocap.lock().unwrap().claim_capability(
-            name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
-            capability,
-        )
+    fn claim_capability(
+        &mut self,
+        name: CapabilityName,
+        capability: Capability,
+    ) -> Result<(), Ics05Error> {
+        let module_id: ModuleId = CapabilityKeeper::module_id(self).into();
+        self.ocap
+            .lock()
+            .unwrap()
+            .claim_capability(module_id, name, capability)
     }
 
-    fn release_capability(&mut self, name: CapabilityName, capability: Capability) {
-        self.ocap.lock().unwrap().release_capability(
-            name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
-            capability,
-        )
+    fn release_capability(
+        &mut self,
+        _name: CapabilityName,
+        _capability: Capability,
+    ) -> Result<(), Ics05Error> {
+        todo!()
     }
 }
 
@@ -637,15 +666,13 @@ impl CapabilityReader<CoreModuleId> for MockContext {
     }
 
     fn lookup_module(&self, name: &CapabilityName) -> Result<(ModuleId, Capability), Ics05Error> {
-        self.ocap.lock().unwrap().lookup_module(
-            &name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
-        )
+        let module_id = CapabilityReader::module_id(self).into();
+        self.ocap.lock().unwrap().lookup_module(module_id, name)
     }
 
     fn get_capability(&self, name: &CapabilityName) -> Result<Capability, Ics05Error> {
-        self.ocap.lock().unwrap().get_capability(
-            &name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
-        )
+        let module_id = CapabilityReader::module_id(self).into();
+        self.ocap.lock().unwrap().get_capability(module_id, name)
     }
 
     fn authenticate_capability(
@@ -653,22 +680,24 @@ impl CapabilityReader<CoreModuleId> for MockContext {
         name: &CapabilityName,
         capability: &Capability,
     ) -> Result<(), Ics05Error> {
-        self.ocap.lock().unwrap().authenticate_capability(
-            &name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
-            capability,
-        )
+        let module_id = CapabilityReader::module_id(self).into();
+        self.ocap
+            .lock()
+            .unwrap()
+            .authenticate_capability(module_id, name, capability)
     }
 
     fn create_capability(&self, name: CapabilityName) -> Result<Capability, Ics05Error> {
-        self.ocap.lock().unwrap().create_capability(
-            name.prefixed_with(ModuleId::from(CapabilityReader::module_id(self)).into_string()),
-        )
+        let module_id = CapabilityReader::module_id(self).into();
+        self.ocap.lock().unwrap().create_capability(module_id, name)
     }
 }
 
 impl ChannelCapabilityKeeper<CoreModuleId> for MockContext {}
 
 impl ChannelCapabilityReader<CoreModuleId> for MockContext {}
+
+impl PortCapabilityKeeper<CoreModuleId> for MockContext {}
 
 impl PortCapabilityReader<CoreModuleId> for MockContext {}
 
@@ -686,36 +715,91 @@ impl Ics26Context for MockContext {
 
 /// A dummy OCap system that performs no authentication.
 #[derive(Clone, Debug, Default)]
-pub struct MockOCap;
+pub struct MockOCap {
+    index: u64,
+    owner_map: BTreeMap<u64, Vec<ModuleId>>,
+    fwd_map: BTreeMap<(ModuleId, Capability), CapabilityName>,
+    rev_map: BTreeMap<(ModuleId, CapabilityName), Capability>,
+}
 
 impl MockOCap {
-    fn lookup_module(&self, _name: &CapabilityName) -> Result<(ModuleId, Capability), Ics05Error> {
-        Ok((CoreModuleId.into(), Capability::default()))
-    }
-
-    fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, Ics05Error> {
-        Ok(Capability::default())
+    fn get_capability(
+        &self,
+        module_id: ModuleId,
+        name: &CapabilityName,
+    ) -> Result<Capability, Ics05Error> {
+        self.rev_map
+            .get(&(module_id, name.clone()))
+            .ok_or_else(Ics05Error::capability_mapping_not_found)
+            .map(Clone::clone)
     }
 
     fn authenticate_capability(
         &self,
-        _name: &CapabilityName,
-        _capability: &Capability,
+        module_id: ModuleId,
+        name: &CapabilityName,
+        capability: &Capability,
     ) -> Result<(), Ics05Error> {
+        match self.fwd_map.get(&(module_id, *capability)) {
+            Some(stored_name) if stored_name == name => Ok(()),
+            _ => Err(Ics05Error::capability_mismatch(name.clone())),
+        }
+    }
+
+    fn create_capability(
+        &self,
+        module_id: ModuleId,
+        name: CapabilityName,
+    ) -> Result<Capability, Ics05Error> {
+        if self.get_capability(module_id, &name).is_ok() {
+            return Err(Ics05Error::capability_already_taken(name));
+        } else {
+            Ok(Capability::new(self.index))
+        }
+    }
+
+    fn new_capability(
+        &mut self,
+        module_id: ModuleId,
+        name: CapabilityName,
+    ) -> Result<Capability, Ics05Error> {
+        let capability = self.create_capability(module_id.clone(), name.clone())?;
+        self.claim_capability(module_id, name, capability)?;
+        self.index += 1;
+        Ok(capability)
+    }
+
+    pub(crate) fn claim_capability(
+        &mut self,
+        module_id: ModuleId,
+        name: CapabilityName,
+        capability: Capability,
+    ) -> Result<(), Ics05Error> {
+        self.owner_map
+            .entry(capability.index())
+            .or_insert(vec![])
+            .push(module_id.clone());
+        self.fwd_map
+            .insert((module_id.clone(), capability), name.clone());
+        self.rev_map.insert((module_id, name), capability);
         Ok(())
     }
 
-    fn create_capability(&self, _name: CapabilityName) -> Result<Capability, Ics05Error> {
-        Ok(Capability::default())
+    fn lookup_module(
+        &self,
+        module_id: ModuleId,
+        name: &CapabilityName,
+    ) -> Result<(ModuleId, Capability), Ics05Error> {
+        let capability = self.get_capability(module_id, name)?;
+        let owner = match self.owner_map.get(&capability.index()) {
+            Some(owners) if owners.len() == 2 && owners[0] == CoreModuleId.into() => {
+                owners[1].clone()
+            }
+            Some(owners) if !owners.is_empty() => owners[0].clone(),
+            _ => return Err(Ics05Error::capability_not_owned()),
+        };
+        Ok((owner, capability))
     }
-
-    fn new_capability(&mut self, _name: CapabilityName) -> Result<Capability, Ics05Error> {
-        Ok(Capability::default())
-    }
-
-    fn claim_capability(&mut self, _name: CapabilityName, _capability: Capability) {}
-
-    fn release_capability(&mut self, _name: CapabilityName, _capability: Capability) {}
 }
 
 impl Ics20Context for MockContext {}
