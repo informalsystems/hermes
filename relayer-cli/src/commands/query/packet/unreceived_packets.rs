@@ -1,9 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use serde::Serialize;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::Height;
 use ibc_relayer::chain::counterparty::unreceived_packets;
 use ibc_relayer::chain::handle::BaseChainHandle;
 
@@ -11,12 +9,6 @@ use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
-
-#[derive(Serialize, Debug)]
-struct PacketSeqs {
-    height: Height,
-    seqs: Vec<u64>,
-}
 
 /// This command does the following:
 /// 1. queries the chain to get its counterparty chain, channel and port identifiers (needed in 2)
