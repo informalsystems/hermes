@@ -670,11 +670,7 @@ fn handle_batch<Chain: ChainHandle>(
             if let Err(e) =
                 process_batch(config, registry, client_state_filter, workers, chain, batch)
             {
-                if e.log_as_debug() {
-                    debug!("[{}] error during batch processing: {}", chain_id, e);
-                } else {
-                    error!("[{}] error during batch processing: {}", chain_id, e);
-                }
+                error!("[{}] error during batch processing: {}", chain_id, e);
             }
         }
         Err(EventError(EventErrorDetail::SubscriptionCancelled(_), _)) => {
