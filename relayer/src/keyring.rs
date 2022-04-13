@@ -360,31 +360,40 @@ impl KeyRing {
     ) -> Result<Vec<u8>, Error> {
         let key = self.get_key(key_name)?;
 
-        let private_key_bytes = key.private_key.private_key.to_bytes();
-        match address_type {
-            AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
-                let hash = keccak256_hash(msg.as_slice());
-                let s = Secp256k1::signing_only();
-                // SAFETY: hash is 32 bytes, as expected in `Message::from_slice` -- see `keccak256_hash`, hence `unwrap`
-                let sign_msg = Message::from_slice(hash.as_slice()).unwrap();
-                let key = SecretKey::from_slice(private_key_bytes.as_slice())
-                    .map_err(Error::invalid_key_raw)?;
-                let (_, sig_bytes) = s.sign_recoverable(&sign_msg, &key).serialize_compact();
-                Ok(sig_bytes.to_vec())
-            }
-            AddressType::Cosmos | AddressType::Ethermint { .. } => {
-                let signing_key = SigningKey::from_bytes(private_key_bytes.as_slice())
-                    .map_err(Error::invalid_key)?;
-                let signature: Signature = signing_key.sign(&msg);
-                Ok(signature.as_ref().to_vec())
-            }
-        }
+        sign_message(&key, msg, address_type)
     }
 
     pub fn account_prefix(&self) -> &str {
         match self {
             KeyRing::Memory(m) => &m.account_prefix,
             KeyRing::Test(d) => &d.account_prefix,
+        }
+    }
+}
+
+/// Sign a message
+pub fn sign_message(
+    key: &KeyEntry,
+    msg: Vec<u8>,
+    address_type: &AddressType,
+) -> Result<Vec<u8>, Error> {
+    let private_key_bytes = key.private_key.private_key.to_bytes();
+    match address_type {
+        AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
+            let hash = keccak256_hash(msg.as_slice());
+            let s = Secp256k1::signing_only();
+            // SAFETY: hash is 32 bytes, as expected in `Message::from_slice` -- see `keccak256_hash`, hence `unwrap`
+            let sign_msg = Message::from_slice(hash.as_slice()).unwrap();
+            let key = SecretKey::from_slice(private_key_bytes.as_slice())
+                .map_err(Error::invalid_key_raw)?;
+            let (_, sig_bytes) = s.sign_recoverable(&sign_msg, &key).serialize_compact();
+            Ok(sig_bytes.to_vec())
+        }
+        AddressType::Cosmos | AddressType::Ethermint { .. } => {
+            let signing_key =
+                SigningKey::from_bytes(private_key_bytes.as_slice()).map_err(Error::invalid_key)?;
+            let signature: Signature = signing_key.sign(&msg);
+            Ok(signature.as_ref().to_vec())
         }
     }
 }
