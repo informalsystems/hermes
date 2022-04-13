@@ -21,18 +21,22 @@ Follow these steps to run the e2e test locally:
 
 __Note__: This assumes you are running this the first time, if not, please ensure you follow the steps to [clean up the containers](#cleaning-up) before running it again.
 
-1. Clone the `ibc-rs` repo
+1. Clone the `ibc-rs` repo.
 
-
-2. Go into the repository folder
+2. Go into the repository folder:
 
     `cd ibc-rs`
 
+3. Build the current up-to-date relayer container image. Make sure you have a
+   copy of the `hermes` binary in the root of the repo, as the docker script
+   expects this. If you don't, you can run `cp ./target/debug/hermes .`. This
+   command might take a few minutes since it will do a fresh compile and build
+   of all modules:
 
-3. Build the relayer container image (this might take a few minutes since it will do a fresh compile and build of all modules)
+    `docker-compose -f ci/docker-compose-gaia-current.yml build relayer`
 
-    `docker-compose -f ci/docker-compose.yml build relayer`
-
+> Note: If you're looking to test on a legacy version of gaia, run:
+> `docker-compose -f ci/docker-compose-gaia-legacy.yml build relayer`
 
 4. Run all the containers (two containers, one for each chain and one for the relayer)
 
@@ -198,13 +202,13 @@ __Note__: This will generate the files for the chains in the `/ci/chains/gaia` f
 
 
 5. Update the release for Docker Compose. If this new release should be the default release for running the end to end (e2e) test you need to update the release version in the `docker-compose.yml` file in the `ci` folder of the repository. Open the file and change the release version in all the places required (image name and RELEASE variables. For example, if current release is `v4.0.0` and the new one is `v5.0.0` just do a find and replace with these two values.
-   
+
 Change the version in the image for ibc-0 and ibc-1 services:
-   
+
    ```
    image: "informaldev/ibc-0:v4.0.0"
    ```
-   
+
 And in the relayer service:
 
    ```
@@ -214,7 +218,7 @@ And in the relayer service:
 
 6. Update the CI workflow
 
-There are currently two CI workflows, for running the E2E tests against two versions of gaiad: 
+There are currently two CI workflows, for running the E2E tests against two versions of gaiad:
    - current release: `.github\workflows\e2e-gaia-current-release.yaml`, and
    - future release: `.github\workflows\e2e-gaia-future-release.yaml`.
 
