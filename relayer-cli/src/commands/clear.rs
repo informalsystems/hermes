@@ -52,7 +52,7 @@ impl Runnable for ClearPacketsCmd {
         // Construct links in both directions.
         let opts = LinkParameters {
             src_port_id: self.port_id.clone(),
-            src_channel_id: self.channel_id.clone(),
+            src_channel_id: self.channel_id,
         };
         let fwd_link = match Link::new_from_opts(chains.src.clone(), chains.dst, opts, false) {
             Ok(link) => link,

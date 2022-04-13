@@ -18,12 +18,12 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end and validate it against the message.
-    let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id.clone()))?;
+    let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id))?;
 
     // Validate that the channel end is in a state where it can be confirmed.
     if !channel_end.state_matches(&State::TryOpen) {
         return Err(Error::invalid_channel_state(
-            msg.channel_id.clone(),
+            msg.channel_id,
             channel_end.state,
         ));
     }
@@ -50,8 +50,7 @@ pub(crate) fn process(
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.
 
-    let expected_counterparty =
-        Counterparty::new(msg.port_id.clone(), Some(msg.channel_id.clone()));
+    let expected_counterparty = Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
 
     let connection_counterparty = conn.counterparty();
     let ccid = connection_counterparty.connection_id().ok_or_else(|| {
@@ -85,14 +84,15 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id.clone(),
-        channel_id: msg.channel_id.clone(),
+        channel_id: msg.channel_id,
         channel_id_state: ChannelIdState::Reused,
         channel_cap,
         channel_end,
     };
 
     let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id.clone()),
+        channel_id: Some(msg.channel_id),
+        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenConfirmChannel(
@@ -118,6 +118,7 @@ mod tests {
     use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
+    use crate::core::ics04_channel::context::ChannelReader;
     use crate::core::ics04_channel::handler::channel_dispatch;
     use crate::core::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
     use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
@@ -162,7 +163,7 @@ mod tests {
             Order::default(),
             Counterparty::new(
                 msg_chan_confirm.port_id.clone(),
-                Some(msg_chan_confirm.channel_id.clone()),
+                Some(msg_chan_confirm.channel_id),
             ),
             vec![conn_id.clone()],
             Version::default(),
@@ -176,7 +177,7 @@ mod tests {
                 .with_port_capability(msg_chan_confirm.port_id.clone())
                 .with_channel(
                     msg_chan_confirm.port_id.clone(),
-                    msg_chan_confirm.channel_id.clone(),
+                    msg_chan_confirm.channel_id,
                     chan_end,
                 ),
             msg: ChannelMsg::ChannelOpenConfirm(msg_chan_confirm),
@@ -207,6 +208,7 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenConfirmChannel(_)));
+                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

@@ -12,7 +12,7 @@ The provided instructions will install all the Rust toolchain including `rustc`,
 
 ### Version requirements
 
-Hermes is developed and tested using the latest version of Rust, `1.58` at
+Hermes is developed and tested using the latest version of Rust, `1.60` at
 the moment. To check that your toolchain is up-to-date run:
 
 ```shell

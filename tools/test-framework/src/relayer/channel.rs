@@ -23,8 +23,7 @@ impl<ChainA, ChainB> TaggedChannelEndExt<ChainA, ChainB>
     for DualTagged<ChainA, ChainB, ChannelEnd>
 {
     fn tagged_counterparty_channel_id(&self) -> Option<TaggedChannelId<ChainB, ChainA>> {
-        self.contra_map(|c| c.counterparty().channel_id.clone())
-            .transpose()
+        self.contra_map(|c| c.counterparty().channel_id).transpose()
     }
 
     fn tagged_counterparty_port_id(&self) -> TaggedPortId<ChainB, ChainA> {
@@ -65,7 +64,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     let event = channel.build_chan_open_init_and_send()?;
 
-    let channel_id = extract_channel_id(&event)?.clone();
+    let channel_id = *extract_channel_id(&event)?;
 
     let channel2 = Channel::restore_from_event(handle_b.clone(), handle_a.clone(), event)?;
 

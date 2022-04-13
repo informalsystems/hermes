@@ -9,7 +9,7 @@ readme       = "README.md"
 categories   = ["cryptography::cryptocurrencies", "encoding", "no-std"]
 keywords     = ["blockchain", "cosmos", "tendermint", "ibc", "proto"]
 exclude      = ["definitions"]
-rust-version = "1.58"
+rust-version = "1.60"
 description  = """
     ibc-proto provides Cosmos SDK & IBC Protocol Buffers definitions
 """
