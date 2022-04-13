@@ -38,7 +38,7 @@ use tracing::debug;
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
-use crate::chain::{HealthCheck, StatusResponse};
+use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::util::lock::LockExt;
@@ -155,7 +155,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_status(&self) -> Result<StatusResponse, Error> {
+    fn query_status(&self) -> Result<ChainStatus, Error> {
         self.inc_metric("query_status");
         self.inner().query_status()
     }
