@@ -42,7 +42,7 @@ use crate::chain::counterparty::{
 };
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
-use crate::chain::StatusResponse;
+use crate::chain::ChainStatus;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
@@ -1317,7 +1317,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn build_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
-        dst_info: &StatusResponse,
+        dst_info: &ChainStatus,
     ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
         if self
@@ -1335,7 +1335,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn build_recv_or_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
-        dst_info: &StatusResponse,
+        dst_info: &ChainStatus,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
         if timeout.is_some() {

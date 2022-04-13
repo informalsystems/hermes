@@ -9,8 +9,8 @@ use ibc_proto::google::protobuf::Any;
 /// by sharing the same `tracking_id`.
 #[derive(Debug, Clone)]
 pub struct TrackedMsgs {
-    msgs: Vec<Any>,
-    tracking_id: String,
+    pub msgs: Vec<Any>,
+    pub tracking_id: String,
 }
 
 impl TrackedMsgs {
