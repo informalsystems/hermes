@@ -361,7 +361,7 @@ pub fn unreceived_packets_sequences(
 
 /// Returns the sequences of the written acknowledgments on a given chain and channel (port_id + channel_id), out of
 /// the commitments still present on the counterparty chain.
-pub fn packet_acknowledgedgments(
+fn packet_acknowledgements(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
@@ -408,7 +408,7 @@ pub fn unreceived_acknowledgements_sequences(
     // get the packet commitments on the destination chain
 
     // get the packet acknowledgments on counterparty chain
-    let (acks_on_counterparty, counterparty_height) = packet_acknowledgedgments(
+    let (acks_on_counterparty, counterparty_height) = packet_acknowledgements(
         counterparty_chain,
         counterparty_port_id,
         counterparty_channel_id,
@@ -470,7 +470,7 @@ pub fn acknowledgements_on_chain(
         .as_ref()
         .ok_or_else(Error::missing_counterparty_channel_id)?;
 
-    let (sequences, height) = packet_acknowledgedgments(
+    let (sequences, height) = packet_acknowledgements(
         chain,
         &channel.port_id,
         &channel.channel_id,
