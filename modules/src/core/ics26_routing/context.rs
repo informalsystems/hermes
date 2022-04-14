@@ -116,6 +116,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _channel_id: &ChannelId,
         _channel_cap: &ChannelCapability,
         _counterparty: &Counterparty,
+        _version: &Version,
         _counterparty_version: &Version,
     ) -> Result<Version, Error>;
 

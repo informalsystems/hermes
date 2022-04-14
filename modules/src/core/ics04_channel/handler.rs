@@ -119,6 +119,7 @@ where
                 &result.channel_id,
                 &result.channel_cap,
                 msg.channel.counterparty(),
+                msg.channel.version(),
                 &msg.counterparty_version,
             )?;
             result.channel_end.version = version;

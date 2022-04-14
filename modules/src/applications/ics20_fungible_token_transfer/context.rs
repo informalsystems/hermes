@@ -138,6 +138,7 @@ pub fn on_chan_open_try(
     _channel_id: &ChannelId,
     _channel_cap: &ChannelCapability,
     _counterparty: &Counterparty,
+    version: &Version,
     counterparty_version: &Version,
 ) -> Result<Version, ChannelError> {
     Ok(counterparty_version.clone())

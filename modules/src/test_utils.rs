@@ -58,6 +58,7 @@ impl Module for DummyModule {
         _channel_id: &ChannelId,
         _channel_cap: &ChannelCapability,
         _counterparty: &Counterparty,
+        _version: &Version,
         counterparty_version: &Version,
     ) -> Result<Version, Error> {
         Ok(counterparty_version.clone())
