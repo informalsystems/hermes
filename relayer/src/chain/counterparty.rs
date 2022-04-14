@@ -332,7 +332,6 @@ pub fn unreceived_packets_sequences(
     channel_id: &ChannelId,
     commitments_on_counterparty: Vec<u64>,
 ) -> Result<Vec<u64>, Error> {
-    // get the packet commitments on the counterparty/ source chain
     if commitments_on_counterparty.is_empty() {
         return Ok(vec![]);
     }
@@ -385,6 +384,10 @@ pub fn unreceived_acknowledgements_sequences(
     channel_id: &ChannelId,
     acks_on_counterparty: Vec<u64>,
 ) -> Result<Vec<u64>, Error> {
+    if acks_on_counterparty.is_empty() {
+        return Ok(vec![]);
+    }
+
     let request = QueryUnreceivedAcksRequest {
         port_id: port_id.to_string(),
         channel_id: channel_id.to_string(),
