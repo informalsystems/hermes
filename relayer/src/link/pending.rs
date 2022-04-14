@@ -206,7 +206,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                                 }
                             }
                             None => {
-                                // The clear packet interval is 0 such that no resubmit logic was received
+                                // `clear_interval != 0` such that resubmission has been disabled
                                 Ok(None)
                             }
                         }
