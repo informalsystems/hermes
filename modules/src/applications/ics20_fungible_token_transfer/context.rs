@@ -2,7 +2,6 @@ use super::error::Error as Ics20Error;
 use super::BaseCoin;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
-use crate::core::ics04_channel::error::Error as ChannelError;
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
@@ -151,39 +150,49 @@ fn validate_counterparty_version(counterparty_version: &Version) -> Result<(), I
 
 #[allow(clippy::too_many_arguments)]
 pub fn on_chan_open_init(
-    _ctx: &mut impl Ics20Context,
-    _order: Order,
+    ctx: &mut impl Ics20Context,
+    order: Order,
     _connection_hops: &[ConnectionId],
-    _port_id: &PortId,
-    _channel_id: &ChannelId,
+    port_id: &PortId,
+    channel_id: &ChannelId,
     _channel_cap: &ChannelCapability,
     _counterparty: &Counterparty,
-    _version: &Version,
-) -> Result<(), ChannelError> {
+    version: &Version,
+) -> Result<(), Ics20Error> {
+    validate_transfer_channel_params(ctx, order, port_id, channel_id, version)?;
+
+    // TODO(hu55a1n1): claim channel capability
+
     Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn on_chan_open_try(
-    _ctx: &mut impl Ics20Context,
-    _order: Order,
+    ctx: &mut impl Ics20Context,
+    order: Order,
     _connection_hops: &[ConnectionId],
-    _port_id: &PortId,
-    _channel_id: &ChannelId,
+    port_id: &PortId,
+    channel_id: &ChannelId,
     _channel_cap: &ChannelCapability,
     _counterparty: &Counterparty,
     version: &Version,
     counterparty_version: &Version,
-) -> Result<Version, ChannelError> {
-    Ok(counterparty_version.clone())
+) -> Result<Version, Ics20Error> {
+    validate_transfer_channel_params(ctx, order, port_id, channel_id, version)?;
+    validate_counterparty_version(counterparty_version)?;
+
+    // TODO(hu55a1n1): claim channel capability (iff we don't already own it)
+
+    Ok(Version::ics20())
 }
 
 pub fn on_chan_open_ack(
     _ctx: &mut impl Ics20Context,
     _port_id: &PortId,
     _channel_id: &ChannelId,
-    _counterparty_version: &Version,
-) -> Result<(), ChannelError> {
+    counterparty_version: &Version,
+) -> Result<(), Ics20Error> {
+    validate_counterparty_version(counterparty_version)?;
     Ok(())
 }
 
@@ -191,7 +200,7 @@ pub fn on_chan_open_confirm(
     _ctx: &mut impl Ics20Context,
     _port_id: &PortId,
     _channel_id: &ChannelId,
-) -> Result<(), ChannelError> {
+) -> Result<(), Ics20Error> {
     Ok(())
 }
 
@@ -199,15 +208,15 @@ pub fn on_chan_close_init(
     _ctx: &mut impl Ics20Context,
     _port_id: &PortId,
     _channel_id: &ChannelId,
-) -> Result<(), ChannelError> {
-    Ok(())
+) -> Result<(), Ics20Error> {
+    Err(Ics20Error::cant_close_channel())
 }
 
 pub fn on_chan_close_confirm(
     _ctx: &mut impl Ics20Context,
     _port_id: &PortId,
     _channel_id: &ChannelId,
-) -> Result<(), ChannelError> {
+) -> Result<(), Ics20Error> {
     Ok(())
 }
 
@@ -224,7 +233,7 @@ pub fn on_acknowledgement_packet(
     _packet: &Packet,
     _acknowledgement: &GenericAcknowledgement,
     _relayer: &Signer,
-) -> Result<(), ChannelError> {
+) -> Result<(), Ics20Error> {
     Ok(())
 }
 
@@ -232,6 +241,6 @@ pub fn on_timeout_packet(
     _ctx: &mut impl Ics20Context,
     _packet: &Packet,
     _relayer: &Signer,
-) -> Result<(), ChannelError> {
+) -> Result<(), Ics20Error> {
     Ok(())
 }
