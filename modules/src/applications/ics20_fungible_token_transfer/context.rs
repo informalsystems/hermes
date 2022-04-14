@@ -115,6 +115,40 @@ pub trait Ics20Context:
     type AccountId: Into<String>;
 }
 
+fn validate_transfer_channel_params(
+    _ctx: &mut impl Ics20Context,
+    order: Order,
+    _port_id: &PortId,
+    channel_id: &ChannelId,
+    version: &Version,
+) -> Result<(), Ics20Error> {
+    if channel_id.sequence() > (u32::MAX as u64) {
+        return Err(Ics20Error::chan_seq_exceeds_limit(channel_id.sequence()));
+    }
+
+    if order != Order::Unordered {
+        return Err(Ics20Error::channel_not_unordered(order));
+    }
+
+    // TODO(hu55a1n1): check that port_id matches the port_id that the transfer module is bound to
+
+    if version != &Version::ics20() {
+        return Err(Ics20Error::invalid_version(version.clone()));
+    }
+
+    Ok(())
+}
+
+fn validate_counterparty_version(counterparty_version: &Version) -> Result<(), Ics20Error> {
+    if counterparty_version == &Version::ics20() {
+        Ok(())
+    } else {
+        Err(Ics20Error::invalid_counterparty_version(
+            counterparty_version.clone(),
+        ))
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn on_chan_open_init(
     _ctx: &mut impl Ics20Context,
