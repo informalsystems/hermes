@@ -330,40 +330,27 @@ pub fn unreceived_packets_sequences(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-    counterparty_chain: &impl ChainHandle,
-    counterparty_port_id: &PortId,
-    counterparty_channel_id: &ChannelId,
-) -> Result<(Vec<u64>, Vec<u64>, Height), Error> {
+    commitments_on_counterparty: Vec<u64>,
+) -> Result<Vec<u64>, Error> {
     // get the packet commitments on the counterparty/ source chain
-    let (commitments_on_counterparty, counterparty_height) = commitments_on_chain(
-        counterparty_chain,
-        counterparty_port_id,
-        counterparty_channel_id,
-    )?;
     if commitments_on_counterparty.is_empty() {
-        return Ok((vec![], vec![], counterparty_height));
+        return Ok(vec![]);
     }
 
     let request = QueryUnreceivedPacketsRequest {
         port_id: port_id.to_string(),
         channel_id: channel_id.to_string(),
-        packet_commitment_sequences: commitments_on_counterparty.clone(),
+        packet_commitment_sequences: commitments_on_counterparty,
     };
 
-    let unreceived_recv_msgs = chain
+    chain
         .query_unreceived_packets(request)
-        .map_err(Error::relayer)?;
-
-    Ok((
-        commitments_on_counterparty,
-        unreceived_recv_msgs,
-        counterparty_height,
-    ))
+        .map_err(Error::relayer)
 }
 
 /// Returns the sequences of the written acknowledgments on a given chain and channel (port_id + channel_id), out of
 /// the commitments still present on the counterparty chain.
-fn packet_acknowledgements(
+pub fn packet_acknowledgements(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
@@ -396,36 +383,17 @@ pub fn unreceived_acknowledgements_sequences(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-    counterparty_chain: &impl ChainHandle,
-    counterparty_port_id: &PortId,
-    counterparty_channel_id: &ChannelId,
-) -> Result<(Vec<u64>, Vec<u64>, Height), Error> {
-    // get the packet commitments on the source chain
-    let (commitments, _) = commitments_on_chain(chain, port_id, channel_id)?;
-
-    // get the packet acknowledgments on counterparty chain
-    let (acks_on_counterparty, counterparty_height) = packet_acknowledgements(
-        counterparty_chain,
-        counterparty_port_id,
-        counterparty_channel_id,
-        commitments,
-    )?;
-
+    acks_on_counterparty: Vec<u64>,
+) -> Result<Vec<u64>, Error> {
     let request = QueryUnreceivedAcksRequest {
         port_id: port_id.to_string(),
         channel_id: channel_id.to_string(),
-        packet_ack_sequences: acks_on_counterparty.clone(),
+        packet_ack_sequences: acks_on_counterparty,
     };
 
-    let unreceived_ack_msgs = chain
+    chain
         .query_unreceived_acknowledgement(request)
-        .map_err(Error::relayer)?;
-
-    Ok((
-        acks_on_counterparty,
-        unreceived_ack_msgs,
-        counterparty_height,
-    ))
+        .map_err(Error::relayer)
 }
 
 pub fn unreceived_packets(
@@ -433,23 +401,24 @@ pub fn unreceived_packets(
     counterparty_chain: &impl ChainHandle,
     channel: &IdentifiedChannelEnd,
 ) -> Result<Vec<u64>, Error> {
-    let counterparty_channel_id = channel
-        .channel_end
-        .counterparty()
+    let counterparty = channel.channel_end.counterparty();
+    let counterparty_channel_id = counterparty
         .channel_id
         .as_ref()
         .ok_or_else(Error::missing_counterparty_channel_id)?;
 
-    let (_, sequences, _) = unreceived_packets_sequences(
-        chain,
-        &channel.port_id,
-        &channel.channel_id,
+    let (commit_sequences, _) = commitments_on_chain(
         counterparty_chain,
-        &channel.channel_end.counterparty().port_id,
+        &counterparty.port_id,
         counterparty_channel_id,
     )?;
 
-    Ok(sequences)
+    unreceived_packets_sequences(
+        chain,
+        &channel.port_id,
+        &channel.channel_id,
+        commit_sequences,
+    )
 }
 
 pub fn acknowledgements_on_chain(
@@ -484,23 +453,28 @@ pub fn unreceived_acknowledgements(
     counterparty_chain: &impl ChainHandle,
     channel: &IdentifiedChannelEnd,
 ) -> Result<Vec<u64>, Error> {
-    let counterparty_channel_id = channel
-        .channel_end
-        .counterparty()
+    let counterparty = channel.channel_end.counterparty();
+    let counterparty_channel_id = counterparty
         .channel_id
         .as_ref()
         .ok_or_else(Error::missing_counterparty_channel_id)?;
 
-    let (_, sequences, _) = unreceived_acknowledgements_sequences(
+    let (commitments_on_src, _) =
+        commitments_on_chain(chain, &channel.port_id, &channel.channel_id)?;
+
+    let (acks_on_counterparty, _) = packet_acknowledgements(
+        counterparty_chain,
+        &counterparty.port_id,
+        counterparty_channel_id,
+        commitments_on_src,
+    )?;
+
+    unreceived_acknowledgements_sequences(
         chain,
         &channel.port_id,
         &channel.channel_id,
-        counterparty_chain,
-        &channel.channel_end.counterparty().port_id,
-        counterparty_channel_id,
-    )?;
-
-    Ok(sequences)
+        acks_on_counterparty,
+    )
 }
 
 /// A structure to display pending packet commitment IDs
@@ -525,21 +499,32 @@ pub fn pending_packet_summary(
         .as_ref()
         .ok_or_else(Error::missing_counterparty_channel_id)?;
 
-    let (_, unreceived, _) = unreceived_packets_sequences(
-        chain,
-        &channel.port_id,
-        &channel.channel_id,
+    let (commitments_on_counterparty, _) = commitments_on_chain(
         counterparty_chain,
         &counterparty.port_id,
         counterparty_channel_id,
     )?;
-    let (_, pending_acks, _) = unreceived_acknowledgements_sequences(
-        counterparty_chain,
-        &counterparty.port_id,
-        counterparty_channel_id,
+
+    let unreceived = unreceived_packets_sequences(
         chain,
         &channel.port_id,
         &channel.channel_id,
+        commitments_on_counterparty.clone(),
+    )?;
+
+    // get the set of all packet acknowledgments on the source chain
+    let (acks_on_src, _) = packet_acknowledgements(
+        chain,
+        &channel.port_id,
+        &channel.channel_id,
+        commitments_on_counterparty,
+    )?;
+
+    let pending_acks = unreceived_acknowledgements_sequences(
+        counterparty_chain,
+        &counterparty.port_id,
+        counterparty_channel_id,
+        acks_on_src,
     )?;
 
     Ok(PendingPackets {

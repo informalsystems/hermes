@@ -38,7 +38,8 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 
 use crate::chain::counterparty::{
-    unreceived_acknowledgements_sequences, unreceived_packets_sequences,
+    commitments_on_chain, packet_acknowledgements, unreceived_acknowledgements_sequences,
+    unreceived_packets_sequences,
 };
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
@@ -947,13 +948,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_channel_id = self.src_channel_id();
         let dst_channel_id = self.dst_channel_id();
 
-        let (commit_sequences, sequences, src_response_height) = unreceived_packets_sequences(
+        let (commit_sequences, src_response_height) =
+            commitments_on_chain(self.src_chain(), self.src_port_id(), src_channel_id)
+                .map_err(LinkError::supervisor)?;
+
+        let sequences = unreceived_packets_sequences(
             self.dst_chain(),
             self.dst_port_id(),
             dst_channel_id,
-            self.src_chain(),
-            self.src_port_id(),
-            src_channel_id,
+            commit_sequences,
         )
         .map_err(LinkError::supervisor)?;
 
@@ -963,13 +966,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if sequences.is_empty() {
             return Ok((events_result.into(), query_height));
         }
-
-        debug!(
-            "packet seq. that still have commitments on {}: {} (first 10 shown here; total={})",
-            self.src_chain().id(),
-            commit_sequences.iter().take(10).join(", "),
-            commit_sequences.len()
-        );
 
         debug!(
             "recv packets to send out to {} of the ones with commitments on {}: {} (first 10 shown here; total={})",
@@ -1058,16 +1054,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_channel_id = self.src_channel_id();
         let dst_channel_id = self.dst_channel_id();
 
-        let (acks_on_src, unreceived_acks_by_dst, src_response_height) =
-            unreceived_acknowledgements_sequences(
-                self.dst_chain(),
-                self.dst_port_id(),
-                dst_channel_id,
-                self.src_chain(),
-                self.src_port_id(),
-                src_channel_id,
-            )
-            .map_err(LinkError::supervisor)?;
+        let (commitments_on_counterparty, _) =
+            commitments_on_chain(self.dst_chain(), self.dst_port_id(), dst_channel_id)
+                .map_err(LinkError::supervisor)?;
+
+        let (acks_on_src, src_response_height) = packet_acknowledgements(
+            self.src_chain(),
+            self.src_port_id(),
+            src_channel_id,
+            commitments_on_counterparty,
+        )
+        .map_err(LinkError::supervisor)?;
+
+        let unreceived_acks_by_dst = unreceived_acknowledgements_sequences(
+            self.dst_chain(),
+            self.dst_port_id(),
+            dst_channel_id,
+            acks_on_src,
+        )
+        .map_err(LinkError::supervisor)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -1075,14 +1080,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         if sequences.is_empty() {
             return Ok((events_result.into(), query_height));
         }
-
-        debug!(
-            "packets that have acknowledgments on {}: [{:?}..{:?}] (total={})",
-            self.src_chain().id(),
-            acks_on_src.first(),
-            acks_on_src.last(),
-            acks_on_src.len()
-        );
 
         debug!(
             "ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
