@@ -1418,10 +1418,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn process_pending_txs_src(&self, resubmit: Resubmit) -> Result<RelaySummary, LinkError> {
-        let do_resubmit = if resubmit == Resubmit::Yes {
-            Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
-        } else {
-            None
+        let do_resubmit = match resubmit {
+            Resubmit::Yes => {
+                Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
+            }
+            Resubmit::No => None,
         };
 
         let res = self
@@ -1433,10 +1434,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn process_pending_txs_dst(&self, resubmit: Resubmit) -> Result<RelaySummary, LinkError> {
-        let do_resubmit = if resubmit == Resubmit::Yes {
-            Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
-        } else {
-            None
+        let do_resubmit = match resubmit {
+            Resubmit::Yes => {
+                Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
+            }
+            Resubmit::No => None,
         };
 
         let res = self
