@@ -1,7 +1,9 @@
 use alloc::string::FromUtf8Error;
 use core::num::ParseIntError;
 
+use crate::core::ics04_channel::channel::Order;
 use crate::core::ics04_channel::error as channel_error;
+use crate::core::ics04_channel::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
@@ -82,5 +84,24 @@ define_error! {
         ParseHex
             [ TraceError<HexError> ]
             | _ | { "invalid hex string" },
+
+        ChanSeqExceedsLimit
+            { sequence: u64 }
+            | e | { format_args!("channel sequence ({0}) exceeds limit of {1}", e.sequence, u32::MAX) },
+
+        ChannelNotUnordered
+            { order: Order }
+            | e | { format_args!("expected '{0}' channel, got '{1}'", Order::Unordered.as_str(), e.order.as_str()) },
+
+        InvalidVersion
+            { version: Version }
+            | e | { format_args!("expected version '{0}', got '{1}'", Version::ics20(), e.version.to_string()) },
+
+        InvalidCounterpartyVersion
+            { version: Version }
+            | e | { format_args!("expected counterparty version '{0}', got '{1}'", Version::ics20(), e.version.to_string()) },
+
+        CantCloseChannel
+            | _ | { "channel cannot be closed" },
     }
 }
