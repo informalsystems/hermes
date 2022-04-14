@@ -13,7 +13,7 @@ set -eou pipefail
 # GAIA_BRANCH="v5.0.8" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
 # For future gaia use this
-GAIA_BRANCH="v7.0.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
+GAIA_BRANCH="v7.0.1" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
 # Check if gaiad is installed and if the versions match
 if ! [ -x "$(command -v gaiad)" ]; then
