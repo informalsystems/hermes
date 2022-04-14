@@ -348,6 +348,14 @@ define_error! {
 
         ImplementationSpecific
             | _ | { "implementation specific error" },
+
+        AppModule
+            { description: String }
+            | e | {
+                format_args!(
+                    "application module error: {0}",
+                    e.description)
+            },
     }
 }
 
