@@ -65,7 +65,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         self.chain.id()
     }
 
-    // Insert new pending transaction to the back of the queue.
+    /// Insert a new pending transaction to the back of the queue.
     pub fn insert_new_pending_tx(&self, r: AsyncReply, od: OperationalData) {
         let mut tx_hashes = Vec::new();
         let mut error_events = Vec::new();
@@ -190,6 +190,9 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                                 // closure to it.
                                 let new_od = relay_path
                                     .regenerate_operational_data(pending.original_od.clone());
+
+                                trace!("regenerated operational data for {}", tx_hashes);
+
                                 match new_od.map(f) {
                                     Some(Ok(reply)) => {
                                         self.insert_new_pending_tx(reply, pending.original_od);
