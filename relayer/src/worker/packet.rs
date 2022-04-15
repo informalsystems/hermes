@@ -82,7 +82,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
         let summary = relay_path.process_pending_txs();
 
         if !summary.is_empty() {
-            trace!("Packet worker produced relay summary: {:?}", summary);
+            trace!("packet worker produced relay summary: {}", summary);
         }
 
         telemetry!(packet_metrics(&path, &summary));
@@ -148,7 +148,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd: WorkerCmd,
     index: u64,
 ) -> RetryResult<(), u64> {
-    trace!("handling command {:?}", cmd);
+    trace!("handling command {}", cmd);
     let result = match cmd {
         WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
 
