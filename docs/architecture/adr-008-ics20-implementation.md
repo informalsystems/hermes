@@ -141,16 +141,16 @@ It should be upto the module implementer to use the provided helper functions an
         /// Set the params (send_enabled and receive_enabled) for the module
         fn set_module_params(&mut self, send_enabled: Option<bool>, receive_enabled: Option<bool>) -> Result<(), ICS20Error>;
         /// bind_port defines a wrapper function for the PortKeeper's bind_port function.
-        fn bind_port(&mut self, port_id: PortId) -> Result<(), ICS20Error>;
+        fn bind_port(&mut self, port_id: &PortId) -> Result<(), ICS20Error>;
         /// set_port sets the portID for the transfer module.
-        fn set_port(&mut self, port_id: PortId) -> ();
+        fn set_port(&mut self, port_id: &PortId) -> ();
         /// authenticate_capability wraps the CapabilityKeeper's authenticate_capability function
-        fn authenticate_capability(&mut self, cap: PortCapability, name: CapabilityName) -> bool;
+        fn authenticate_capability(&mut self, cap: &PortCapability, name: &CapabilityName) -> bool;
         /// claim_capability allows the transfer module to claim a capability that IBC module
         /// passes to it
-        fn claim_capability(&mut self, cap: PortCapability, name: CapabilityName) -> Result<(), ICS20Error>;
+        fn claim_capability(&mut self, cap: &PortCapability, name: &CapabilityName) -> Result<(), ICS20Error>;
         /// Set channel escrow address
-        fn set_channel_escrow_address(&mut self, port_id: PortId, channel_id: ChannelId) -> Result<(), ICS20Error>;
+        fn set_channel_escrow_address(&mut self, port_id: &PortId, channel_id: &ChannelId) -> Result<(), ICS20Error>;
     }
 
     pub trait ICS20Reader:
@@ -158,26 +158,26 @@ It should be upto the module implementer to use the provided helper functions an
     {
         type AccountId: From<String>;
         /// is_bound checks if the transfer module is already bound to the desired port.
-        fn is_bound(&self, port_id: PortId) -> bool;
+        fn is_bound(&self, port_id: &PortId) -> bool;
         /// get_transfer_account returns the ICS20 - transfers AccountId.
         fn get_transfer_account(&self) -> AccountId;
         /// get_port returns the portID for the transfer module.
         fn get_port(&self) -> Result<PortId, Error>;
         /// Sets and returns the escrow account id for a port and channel combination
-        fn get_channel_escrow_address(&self, port_id: PortId, channel_id: ChannelId) -> Result<Self::AccountId, ICS20Error>;
+        fn get_channel_escrow_address(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<Self::AccountId, ICS20Error>;
         /// Returns the channel end for port_id and channel_id combination
-        fn get_channel(&self, port_id: PortId, channel_id: ChannelId) -> Result<ChannelEnd, ICS20Error>;
+        fn get_channel(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ICS20Error>;
         /// Returns the next sequence send for port_id and channel_id combination
-        fn get_next_sequence_send(&self, port_id: PortId, channel_id: ChannelId) -> Result<Sequence, ICS20Error>;
+        fn get_next_sequence_send(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<Sequence, ICS20Error>;
     }
 
     pub trait BankKeeper<AccountId> {
         /// This function should enable sending ibc fungible tokens from one account to another
-        fn send_coins(&mut self, from: AccountId, to: AccountId, amt: Coin) -> Result<(), ICS20Error>;
+        fn send_coins(&mut self, from: &AccountId, to: &AccountId, amt: &Coin) -> Result<(), ICS20Error>;
         /// This function to enable  minting tokens(vouchers) in a module
-        fn mint_coins(&mut self, amt: Coin) -> Result<(), ICS20Error>;
+        fn mint_coins(&mut self, amt: &Coin) -> Result<(), ICS20Error>;
         /// This function should enable burning of minted tokens or vouchers
-        fn burn_coins(&mut self, module: AccountId, amt: Coin) -> Result<(), ICS20Error>;
+        fn burn_coins(&mut self, module: &AccountId, amt: &Coin) -> Result<(), ICS20Error>;
     }
 
     pub trait AccountReader<AccountId> {
@@ -362,7 +362,7 @@ pub fn on_recv_packet<Ctx>(ctx: &Ctx, packet: &Packet, data: &FungibleTokenPacke
 /// on_timeout_packet refunds the sender since the original packet sent was
 /// never received and has been timed out.
 /// To be called inside the on_timeout_packet callback
-pub fn on_timeout_packet<Ctx>(ctx: &Ctx, packet: Packet, data: &FungibleTokenPacketData) -> Result<(), ICS20Error>
+pub fn on_timeout_packet<Ctx>(ctx: &Ctx, data: &FungibleTokenPacketData) -> Result<(), ICS20Error>
     where Ctx: ICS20Context
 {
     refund_packet_token(ctx, data)
