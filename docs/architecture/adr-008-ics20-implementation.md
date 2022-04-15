@@ -88,7 +88,7 @@ It should be upto the module implementer to use the provided helper functions an
         }
 
         /// Returns the prefix for this trace
-        pub fn has_prefix(denom: String, prefix: String) -> bool {
+        pub fn has_prefix(denom: &str, prefix: &str) -> bool {
             denom.starts_with(prefix)
         }
 
@@ -99,7 +99,7 @@ It should be upto the module implementer to use the provided helper functions an
 
 
         /// get_prefixed_denom returns the denomination with the port_id and channel_id prefixed
-        pub fn get_prefixed_denom(port_id: &PortId, channel_id: &ChannelId, base_denom: String) -> String {
+        pub fn get_prefixed_denom(port_id: &PortId, channel_id: &ChannelId, base_denom: &str) -> String {
             format!("{}/{}/{}", port_id, channel_id, base_denom)
         }
         
@@ -109,33 +109,25 @@ It should be upto the module implementer to use the provided helper functions an
     }
 
     impl FromStr for DenomTrace {
-        type Error = ICS20Error
+        type Error = ICS20Error;
         fn from_str(val: &str) -> Result<Self, Self::Error> {
             DenomTrace::parse_denom_trace(val)
         }
     }
 
-    /// sender_chain_is_source returns false if the denomination originally came
-    /// from the receiving chain and true otherwise.
-    fn sender_chain_is_source(source_port: &PortId, source_channel: &ChannelId, denom: String) -> bool {
-        // This is the prefix that would have been prefixed to the denomination
-        // on sender chain IF and only if the token originally came from the
-        // receiving chain.
-
-        !receiver_chain_is_source(source_port, source_channel, denom)
+    pub enum SourceChain {
+        Sender,
+        Receiver
     }
 
-    /// receiver_chain_is_source returns true if the denomination originally came
-    /// from the receiving chain and false otherwise.
-    fn receiver_chain_is_source(source_port: &PortId, source_channel: &ChannelId, denom: String) -> bool {
-        // The prefix passed in should contain the SourcePort and SourceChannel.
-        // If  the receiver chain originally sent the token to the sender chain
-        // the denom will have the sender's SourcePort and SourceChannel as the
-        // prefix.
-
+    pub fn get_source_chain(source_port: &PortId, source_channel: &ChannelId, denom: &str) -> SourceChain {
         let voucher_prefix = get_denom_prefix(source_port, source_channel);
-        DenomTrace::has_prefix(denom, voucher_prefix)
-
+        if DenomTrace::has_prefix(denom, voucher_prefix) {
+            SourceChain::Receiver
+        }
+        else {
+            SourceChain::Sender
+        }
     }
 
     pub trait ICS20Keeper: BankKeeper<Self::AccountId> 
@@ -143,22 +135,22 @@ It should be upto the module implementer to use the provided helper functions an
     {
         type AccountId: Into<String>;
         /// Returns if sending is allowed in the module params
-        fn is_send_enabled(&self) -> bool;
+        fn is_send_enabled(&mut self) -> bool;
         /// Returns if receiving is allowed in the module params
-        fn is_receive_enabled(&self) -> bool;
+        fn is_receive_enabled(&mut self) -> bool;
         /// Set the params (send_enabled and receive_enabled) for the module
-        fn set_module_params(send_enabled: Option<bool>, receive_enabled: Option<bool>) -> Result<(), ICS20Error>;
+        fn set_module_params(&mut self, send_enabled: Option<bool>, receive_enabled: Option<bool>) -> Result<(), ICS20Error>;
         /// bind_port defines a wrapper function for the PortKeeper's bind_port function.
-        fn bind_port(&self, port_id: PortId) -> Result<(), ICS20Error>;
+        fn bind_port(&mut self, port_id: PortId) -> Result<(), ICS20Error>;
         /// set_port sets the portID for the transfer module.
-        fn set_port(&self, port_id: PortId) -> ();
+        fn set_port(&mut self, port_id: PortId) -> ();
         /// authenticate_capability wraps the CapabilityKeeper's authenticate_capability function
-        fn authenticate_capability(&self, cap: PortCapability, name: CapabilityName) -> bool;
+        fn authenticate_capability(&mut self, cap: PortCapability, name: CapabilityName) -> bool;
         /// claim_capability allows the transfer module to claim a capability that IBC module
         /// passes to it
-        fn claim_capability(&self, cap: PortCapability, name: CapabilityName) -> Result<(), ICS20Error>;
+        fn claim_capability(&mut self, cap: PortCapability, name: CapabilityName) -> Result<(), ICS20Error>;
         /// Set channel escrow address
-        fn set_channel_escrow_address(&self, port_id: PortId, channel_id: ChannelId) -> Result<(), ICS20Error>;
+        fn set_channel_escrow_address(&mut self, port_id: PortId, channel_id: ChannelId) -> Result<(), ICS20Error>;
     }
 
     pub trait ICS20Reader:
@@ -174,18 +166,18 @@ It should be upto the module implementer to use the provided helper functions an
         /// Sets and returns the escrow account id for a port and channel combination
         fn get_channel_escrow_address(&self, port_id: PortId, channel_id: ChannelId) -> Result<Self::AccountId, ICS20Error>;
         /// Returns the channel end for port_id and channel_id combination
-        fn get_channel(port_id: PortId, channel_id: ChannelId) -> Result<ChannelEnd, ICS20Error>;
+        fn get_channel(&self, port_id: PortId, channel_id: ChannelId) -> Result<ChannelEnd, ICS20Error>;
         /// Returns the next sequence send for port_id and channel_id combination
-        fn get_next_sequence_send(port_id: PortId, channel_id: ChannelId) -> Result<Sequence, ICS20Error>;
+        fn get_next_sequence_send(&self, port_id: PortId, channel_id: ChannelId) -> Result<Sequence, ICS20Error>;
     }
 
     pub trait BankKeeper<AccountId> {
         /// This function should enable sending ibc fungible tokens from one account to another
-        fn send_coins(&self, from: AccountId, to: AccountId, amt: Coin) -> Result<(), ICS20Error>;
+        fn send_coins(&mut self, from: AccountId, to: AccountId, amt: Coin) -> Result<(), ICS20Error>;
         /// This function to enable  minting tokens(vouchers) in a module
-        fn mint_coins(&self, amt: Coin) -> Result<(), ICS20Error>;
+        fn mint_coins(&mut self, amt: Coin) -> Result<(), ICS20Error>;
         /// This function should enable burning of minted tokens or vouchers
-        fn burn_coins(&self, module: AccountId, amt: Coin) -> Result<(), ICS20Error>;
+        fn burn_coins(&mut self, module: AccountId, amt: Coin) -> Result<(), ICS20Error>;
     }
 
     pub trait AccountReader<AccountId> {
@@ -204,21 +196,17 @@ These handlers will be executed in the module callbacks of any thirdparty IBCmod
 
 ```rust
     pub enum ICS20Acknowledgement {
-    /// Equivalent to b"AQ=="
-    Success,
-    /// Error Acknowledgement
-    Error(String)
-}
-
-impl From<GenericAcknowledgement> for ICS20Acknowledgement {
-    ...
-}
-
-impl Acknowledgement for ICS20Acknowledgement {
-    fn success() -> bool {
-        ...
+        /// Equivalent to b"AQ=="
+        Success,
+        /// Error Acknowledgement
+        Error(String)
     }
-}
+
+    // GenericAcknowledgement from ics04_channel::msgs::acknowledgement::Acknowledgement
+    impl From<GenericAcknowledgement> for ICS20Acknowledgement {}
+
+    // Acknowledgement trait from ics26_routing::context::Acknowledgement
+    impl Acknowledgement for ICS20Acknowledgement {}
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -292,17 +280,20 @@ pub fn send_transfer<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<SendTransferPac
     
     let full_denom_path = msg.token.denom.get_full_denom_path();
 
-    if sender_chain_is_source(&msg.source_port, &msg.source_channel, full_denom_path.clone()) {
-        let escrow_address = ctx.get_channel_escrow_address(msg.source_port.clone(), msg.source_channel.clone())?;
+    match get_source_chain(&msg.source_port, &msg.source_channel, full_denom_path.clone()) {
+        SourceChain::Sender => {
+            let escrow_address = ctx.get_channel_escrow_address(msg.source_port.clone(), msg.source_channel.clone())?;
 
-        // Send tokens from sender to channel escrow
-        ctx.send_coins(msg.sender.as_str().into(), escrow_address, msg.token)?;
-    } else {
-        let module_acc = ctx.get_module_account();
-        // Send tokens to module
-        ctx.send_coins(msg.sender.as_str().into(), module_acc, msg.token)?;
-        // Burn tokens
-        ctx.burn_coins(module_acc, msg.token)?;
+            // Send tokens from sender to channel escrow
+            ctx.send_coins(msg.sender.as_str().into(), escrow_address, msg.token)?;
+        }
+        SourceChain::Receiver => {
+            let module_acc = ctx.get_module_account();
+            // Send tokens to module
+            ctx.send_coins(msg.sender.as_str().into(), module_acc, msg.token)?;
+            // Burn tokens
+            ctx.burn_coins(module_acc, msg.token)?;
+        }
     }
 
     let data = FungibleTokenPacketData::new(full_denom_path, msg.token.amount, msg.sender.as_str(), msg.receiver.as_str())?;
@@ -320,7 +311,7 @@ pub fn send_transfer<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<SendTransferPac
 
 /// Handles incoming packets with ICS20 data
 /// To be called inside the on_recv_packet callback
-pub fn on_recv_packet<Ctx>(ctx: &Ctx, packet: Packet, data: FungibleTokenPacketData) -> Result<(), ICS20Error>
+pub fn on_recv_packet<Ctx>(ctx: &Ctx, packet: &Packet, data: &FungibleTokenPacketData) -> Result<(), ICS20Error>
     where Ctx: ICS20Context
 {
     if !ctx.is_received_enabled() {
@@ -328,24 +319,26 @@ pub fn on_recv_packet<Ctx>(ctx: &Ctx, packet: Packet, data: FungibleTokenPacketD
     }
 
     let full_denom_path = data.denomination.to_string();
-    if receiver_chain_is_source(&packet.dest_port, &packet.dest_channel, full_denom_path.clone()) {
-        
-        // remove prefix added by sender chain
-        let voucher_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
-        let unprefixed_denom = full_denom_path.clone().split_off(voucher_prefix.len());
-        
-        let denom = parse_denom_trace(&unprefixed_denom)?;
-        
-        let token = Coin {
-            denom,
-            amount: data.amount
-        };
+    match get_source_chain(&packet.dest_port, &packet.dest_channel, full_denom_path.clone()) {
+        SourceChain::Receiver => {
+            // remove prefix added by sender chain
+            let voucher_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
+            let unprefixed_denom = full_denom_path.clone().split_off(voucher_prefix.len());
 
-        let escrow_address = ctx.get_channel_escrow_address(packet.dest_port.clone(), packet.dest_channel.clone())?;
-        // Send tokens from escrow to receiver
-        ctx.send_coins(escrow_address, data.receiver.into())?;
-        
-        return Ok(())
+            let denom = parse_denom_trace(&unprefixed_denom)?;
+
+            let token = Coin {
+                denom,
+                amount: data.amount
+            };
+
+            let escrow_address = ctx.get_channel_escrow_address(packet.dest_port.clone(), packet.dest_channel.clone())?;
+            // Send tokens from escrow to receiver
+            ctx.send_coins(escrow_address, data.receiver.into())?;
+
+            return Ok(())
+        }
+        _ => {}
     }
 
     let denom = get_denom_prefix(&packet.dest_port, &packet.dest_channel);
@@ -369,7 +362,7 @@ pub fn on_recv_packet<Ctx>(ctx: &Ctx, packet: Packet, data: FungibleTokenPacketD
 /// on_timeout_packet refunds the sender since the original packet sent was
 /// never received and has been timed out.
 /// To be called inside the on_timeout_packet callback
-pub fn on_timeout_packet<Ctx>(ctx: &Ctx, packet: Packet, data: FungibleTokenPacketData) -> Result<(), ICS20Error>
+pub fn on_timeout_packet<Ctx>(ctx: &Ctx, packet: Packet, data: &FungibleTokenPacketData) -> Result<(), ICS20Error>
     where Ctx: ICS20Context
 {
     refund_packet_token(ctx, data)
@@ -380,7 +373,7 @@ pub fn on_timeout_packet<Ctx>(ctx: &Ctx, packet: Packet, data: FungibleTokenPack
 /// was a success then nothing occurs. If the acknowledgement failed, then
 /// the sender is refunded their tokens.
 /// To be called inside the on_acknowledgement_packet callback
-pub fn on_acknowledgement_packet<Ctx>(ctx: &Ctx, ack: ICS20Acknowledgement, data: FungibleTokenPacketData) -> Result<(), ICS20Error>
+pub fn on_acknowledgement_packet<Ctx>(ctx: &Ctx, ack: ICS20Acknowledgement, data: &FungibleTokenPacketData) -> Result<(), ICS20Error>
     where Ctx: ICS20Context
 {
     match ack {
@@ -390,7 +383,7 @@ pub fn on_acknowledgement_packet<Ctx>(ctx: &Ctx, ack: ICS20Acknowledgement, data
 }
 
 /// Implements logic for refunding a sender on packet timeout or acknowledgement error
-pub fn refund_packet_token<Ctx>(ctx: &Ctx, data: FungibleTokenPacketData) -> Result<(), ICS20Error>
+pub fn refund_packet_token<Ctx>(ctx: &Ctx, data: &FungibleTokenPacketData) -> Result<(), ICS20Error>
     where Ctx: ICS20Context
 {
     let full_denom_path = data.denomination.to_string();
@@ -399,11 +392,14 @@ pub fn refund_packet_token<Ctx>(ctx: &Ctx, data: FungibleTokenPacketData) -> Res
         denom: DenomTrace::parse_denom_trace(&full_denom_path)?,
         amount: data.amount
     };
-    if sender_chain_is_source(&packet.source_port, &packet.source_channel, full_denom_path.clone()) {
-        let escrow_address = ctx.get_channel_escrow_address(packet.source_port.clone(), packet.source_channel.clone())?;
-        
-        ctx.send_coins(escrow_address, data.sender.into(), token.clone())?;
-        return Ok(())
+    match get_chain_source(&packet.source_port, &packet.source_channel, full_denom_path.clone()) {
+        SourceChain::Sender => {
+            let escrow_address = ctx.get_channel_escrow_address(packet.source_port.clone(), packet.source_channel.clone())?;
+
+            ctx.send_coins(escrow_address, data.sender.into(), token.clone())?;
+            return Ok(())
+        }
+        _ => {}
     }
     
     // Mint vouchers back to sender
