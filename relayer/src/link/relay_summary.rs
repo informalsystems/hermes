@@ -27,7 +27,6 @@ impl RelaySummary {
     }
 }
 
-
 impl fmt::Display for RelaySummary {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "RelaySummary events: ")?;
