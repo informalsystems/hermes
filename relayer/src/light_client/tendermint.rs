@@ -29,7 +29,7 @@ use ibc::{
     },
     downcast,
 };
-use tracing::trace;
+use tracing::{debug, trace};
 
 use crate::{chain::CosmosSdkChain, config::ChainConfig, error::Error};
 
@@ -70,7 +70,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         // Verify the target header
         let target = client
             .verify_to_target(target_height, &mut state)
-            .map_err(|e| Error::light_client(self.chain_id.to_string(), e))?;
+            .map_err(|e| Error::light_client_verification(self.chain_id.to_string(), e))?;
 
         // Collect the verification trace for the target block
         let target_trace = state.get_trace(target.height());
@@ -142,7 +142,29 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         }
 
         let Verified { target, supporting } =
-            self.verify(trusted_height, target_height, client_state)?;
+            match self.verify(trusted_height, target_height, client_state) {
+                // Verification passed, return the target block + supporting blocks.
+                Ok(v) => v,
+
+                // Special-case: Verification failed because the trusted state is too old.
+                // This means we cannot check for misbehavior with the provided trusted state.
+                Err(e)
+                    if e.trace()
+                        .root_cause()
+                        .to_string()
+                        .eq("trusted state outside of trusting period") =>
+                {
+                    // TODO: Instead of `eq` check, we should match the error's root cause
+                    //  with the exact error type below
+                    //  [`tendermint_light_client::errors::ErrorDetail::TrustedStateOutsideTrustingPeriod`]
+                    debug!(trusted = %trusted_height, target = %target_height,
+                    "trusted consensus state is outside of trusting period; finished verification");
+                    return Ok(None);
+                }
+
+                // Unknown error occurred in the light client `verify` method. Propagate.
+                Err(e) => return Err(e),
+            };
 
         if !headers_compatible(&target.signed_header, &update_header.signed_header) {
             let (witness, supporting) = self.adjust_headers(trusted_height, target, supporting)?;

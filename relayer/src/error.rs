@@ -93,10 +93,10 @@ define_error! {
             [ TraceError<TendermintProtoError> ]
             |_| { "error decoding protobuf" },
 
-        LightClient
-            { address: String }
+        LightClientVerification
+            { chain_id: String }
             [ TraceError<LightClientError> ]
-            |e| { format!("light client error for RPC address {0}", e.address) },
+            |e| { format!("light client verification error for chain id {0}", e.chain_id) },
 
         LightClientState
             [ client_error::Error ]
