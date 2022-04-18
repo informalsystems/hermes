@@ -91,15 +91,15 @@ define_error! {
 
         ChannelNotUnordered
             { order: Order }
-            | e | { format_args!("expected '{0}' channel, got '{1}'", Order::Unordered.as_str(), e.order.as_str()) },
+            | e | { format_args!("expected '{0}' channel, got '{1}'", Order::Unordered, e.order) },
 
         InvalidVersion
             { version: Version }
-            | e | { format_args!("expected version '{0}', got '{1}'", Version::ics20(), e.version.to_string()) },
+            | e | { format_args!("expected version '{0}', got '{1}'", Version::ics20(), e.version) },
 
         InvalidCounterpartyVersion
             { version: Version }
-            | e | { format_args!("expected counterparty version '{0}', got '{1}'", Version::ics20(), e.version.to_string()) },
+            | e | { format_args!("expected counterparty version '{0}', got '{1}'", Version::ics20(), e.version) },
 
         CantCloseChannel
             | _ | { "channel cannot be closed" },
