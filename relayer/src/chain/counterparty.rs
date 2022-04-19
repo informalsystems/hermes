@@ -485,10 +485,10 @@ pub fn unreceived_acknowledgements(
 #[derive(Debug, Serialize)]
 pub struct PendingPackets {
     /// Not yet received on the counterparty chain.
-    unreceived: Vec<u64>,
+    pub unreceived: Vec<u64>,
     /// Received on the counterparty chain,
     /// but the acknowledgement is not yet received on the local chain.
-    pending_acks: Vec<u64>,
+    pub pending_acks: Vec<u64>,
 }
 
 pub fn pending_packet_summary(
@@ -502,32 +502,28 @@ pub fn pending_packet_summary(
         .as_ref()
         .ok_or_else(Error::missing_counterparty_channel_id)?;
 
-    let (commitments_on_counterparty, _) = commitments_on_chain(
+    let (commitments_on_src, _) =
+        commitments_on_chain(chain, &channel.port_id, &channel.channel_id)?;
+
+    let unreceived = unreceived_packets_sequences(
         counterparty_chain,
         &counterparty.port_id,
         counterparty_channel_id,
+        commitments_on_src.clone(),
     )?;
 
-    let unreceived = unreceived_packets_sequences(
-        chain,
-        &channel.port_id,
-        &channel.channel_id,
-        commitments_on_counterparty.clone(),
-    )?;
-
-    // get the set of all packet acknowledgments on the source chain
-    let (acks_on_src, _) = packet_acknowledgements(
-        chain,
-        &channel.port_id,
-        &channel.channel_id,
-        commitments_on_counterparty,
+    let (acks_on_counterparty, _) = packet_acknowledgements(
+        counterparty_chain,
+        &counterparty.port_id,
+        counterparty_channel_id,
+        commitments_on_src,
     )?;
 
     let pending_acks = unreceived_acknowledgements_sequences(
-        counterparty_chain,
-        &counterparty.port_id,
-        counterparty_channel_id,
-        acks_on_src,
+        chain,
+        &channel.port_id,
+        &channel.channel_id,
+        acks_on_counterparty,
     )?;
 
     Ok(PendingPackets {
