@@ -52,6 +52,15 @@ pub struct TracePrefix {
     channel_id: ChannelId,
 }
 
+impl TracePrefix {
+    pub fn new(port_id: PortId, channel_id: ChannelId) -> Self {
+        Self {
+            port_id,
+            channel_id,
+        }
+    }
+}
+
 impl fmt::Display for TracePrefix {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}/{}", self.port_id, self.channel_id)
