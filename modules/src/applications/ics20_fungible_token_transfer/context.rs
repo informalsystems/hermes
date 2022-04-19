@@ -45,7 +45,7 @@ pub trait Ics20Keeper:
 pub trait Ics20Reader:
     ChannelReader + PortReader + AccountReader<AccountId = <Self as Ics20Reader>::AccountId>
 {
-    type AccountId: Into<String>;
+    type AccountId: Into<String> + FromStr<Err = Ics20Error>;
 
     /// is_bound checks if the transfer module is already bound to the desired port.
     fn is_bound(&self, port_id: PortId) -> bool;
@@ -61,7 +61,18 @@ pub trait Ics20Reader:
         &self,
         port_id: PortId,
         channel_id: ChannelId,
-    ) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error>;
+    ) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error> {
+        // https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md
+        let contents = format!("{}/{}", port_id, channel_id);
+        let mut hasher = Sha256::new();
+        hasher.update(VERSION.as_bytes());
+        hasher.update(b"0");
+        hasher.update(contents.as_bytes());
+        let hash: Vec<u8> = hasher.finalize().to_vec().drain(20..).collect();
+        String::from_utf8(hex::encode_upper(hash))
+            .expect("hex encoded bytes are not valid UTF8")
+            .parse()
+    }
 
     /// Returns true iff send is enabled.
     fn is_send_enabled(&self) -> bool;
