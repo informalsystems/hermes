@@ -1,6 +1,7 @@
 use alloc::string::FromUtf8Error;
 use core::num::ParseIntError;
 
+use super::signer::Signer;
 use crate::core::ics04_channel::channel::Order;
 use crate::core::ics04_channel::error as channel_error;
 use crate::core::ics04_channel::Version;
@@ -110,5 +111,12 @@ define_error! {
         InvalidReceiverBech32
             [ TraceError<EncodingError> ]
             | _ | { "invalid receiver address" },
+
+        ReceiveDisabled
+            | _ | { "receive is not enabled" },
+
+        UnauthorisedReceive
+            { receiver: Signer }
+            | e | { format_args!("'{0}' is not allowed to receive funds", e.receiver) },
     }
 }

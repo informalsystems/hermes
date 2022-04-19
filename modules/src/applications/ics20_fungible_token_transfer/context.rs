@@ -1,5 +1,12 @@
+use core::str::FromStr;
+
+use sha2::{Digest, Sha256};
+use subtle_encoding::{bech32, hex};
+
 use super::error::Error as Ics20Error;
-use super::BaseCoin;
+use crate::applications::ics20_fungible_token_transfer::acknowledgement::Acknowledgement;
+use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
+use crate::applications::ics20_fungible_token_transfer::{IbcCoin, TracePrefix, VERSION};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
@@ -248,10 +255,58 @@ pub fn on_chan_close_confirm(
 }
 
 pub fn on_recv_packet(
-    _ctx: &impl Ics20Context,
-    _packet: &Packet,
+    ctx: &impl Ics20Context,
+    packet: &Packet,
     _relayer: &Signer,
 ) -> OnRecvPacketAck {
+    fn process_recv_packet(ctx: &impl Ics20Context, packet: &Packet) -> Result<(), Ics20Error> {
+        let data = serde_json::from_slice::<PacketData>(&packet.data)
+            .map_err(|_| Ics20Error::packet_data_deserialization())?;
+
+        if !ctx.is_receive_enabled() {
+            return Err(Ics20Error::receive_disabled());
+        }
+
+        bech32::decode(&data.receiver)
+            .map(|_| ())
+            .map_err(Ics20Error::invalid_receiver_bech32)?;
+
+        let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
+        if data.token.denom.is_receiver_chain_source(&prefix) {
+            // sender chain is not the source, unescrow tokens
+
+            let coin = {
+                let mut c = data.token.clone();
+                c.denom.remove_prefix(&prefix);
+                c
+            };
+
+            let amount = IbcCoin::from(coin);
+
+            let receiver = data.receiver.to_string().parse()?;
+            if ctx.is_blocked_account(&receiver) {
+                return Err(Ics20Error::unauthorised_receive(data.receiver));
+            }
+
+            let escrow_address = ctx.get_channel_escrow_address(
+                packet.destination_port.clone(),
+                packet.destination_channel,
+            )?;
+
+            ctx.send_coins(&escrow_address, &receiver, amount)?;
+        }
+
+        Ok(())
+    }
+
+    let _ack = match process_recv_packet(ctx, packet) {
+        Ok(_) => OnRecvPacketAck::Successful(
+            Box::new(Acknowledgement::Success(vec![])),
+            Box::new(|_| {}),
+        ),
+        Err(e) => OnRecvPacketAck::Failed(Box::new(Acknowledgement::from_error(e))),
+    };
+
     OnRecvPacketAck::Nil(Box::new(|_| {}))
 }
 
