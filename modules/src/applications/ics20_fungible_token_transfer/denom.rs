@@ -143,6 +143,18 @@ impl DenomTrace {
             .unwrap_or(false)
     }
 
+    /// Removes the specified prefix if there is a match.
+    pub fn remove_prefix(&mut self, prefix: &TracePrefix) {
+        if self.has_prefix(prefix) {
+            self.trace_path.0.drain(..0);
+        }
+    }
+
+    /// Returns true if the `trace_path` is empty and false otherwise.
+    pub fn is_trace_empty(&self) -> bool {
+        self.trace_path.0.is_empty()
+    }
+
     /// Returns true if the denomination originally came from the receiving chain and false
     /// otherwise.
     pub fn is_receiver_chain_source(&self, prefix: &TracePrefix) -> bool {
