@@ -9,7 +9,7 @@ use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 
 use flex_error::{define_error, DisplayOnly, TraceError};
-use subtle_encoding::Error as HexError;
+use subtle_encoding::Error as EncodingError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -82,7 +82,7 @@ define_error! {
             | _ | { "missing 'ibc/' prefix in denomination" },
 
         ParseHex
-            [ TraceError<HexError> ]
+            [ TraceError<EncodingError> ]
             | _ | { "invalid hex string" },
 
         ChanSeqExceedsLimit
@@ -103,5 +103,12 @@ define_error! {
 
         CantCloseChannel
             | _ | { "channel cannot be closed" },
+
+        PacketDataDeserialization
+            | _ | { "failed to deserialize packet data" },
+
+        InvalidReceiverBech32
+            [ TraceError<EncodingError> ]
+            | _ | { "invalid receiver address" },
     }
 }
