@@ -1395,7 +1395,7 @@ dependencies = [
  "ics23",
  "modelator",
  "num-traits",
- "prost",
+ "prost 0.10.1",
  "prost-types",
  "safe-regex",
  "serde",
@@ -1436,7 +1436,7 @@ version = "0.17.0"
 dependencies = [
  "base64",
  "bytes",
- "prost",
+ "prost 0.10.1",
  "prost-types",
  "schemars",
  "serde",
@@ -1472,7 +1472,7 @@ dependencies = [
  "nanoid",
  "num-bigint",
  "num-rational",
- "prost",
+ "prost 0.10.1",
  "prost-types",
  "regex",
  "retry",
@@ -1529,7 +1529,7 @@ dependencies = [
  "itertools",
  "once_cell",
  "oneline-eyre",
- "prost",
+ "prost 0.10.1",
  "prost-types",
  "regex",
  "serde",
@@ -1591,7 +1591,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-cli",
  "itertools",
- "prost",
+ "prost 0.10.1",
  "prost-types",
  "rand 0.8.5",
  "semver",
@@ -1617,7 +1617,7 @@ dependencies = [
  "anyhow",
  "bytes",
  "hex",
- "prost",
+ "prost 0.9.0",
  "ripemd160",
  "sha2 0.9.9",
  "sha3",
@@ -2310,7 +2310,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "444879275cb4fd84958b1a1d5420d15e6fcf7c235fe47f053c9c2a80aceb6001"
 dependencies = [
  "bytes",
- "prost-derive",
+ "prost-derive 0.9.0",
+]
+
+[[package]]
+name = "prost"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a07b0857a71a8cb765763950499cae2413c3f9cede1133478c43600d9e146890"
+dependencies = [
+ "bytes",
+ "prost-derive 0.10.1",
 ]
 
 [[package]]
@@ -2327,13 +2337,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost-derive"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b670f45da57fb8542ebdbb6105a925fe571b67f9e7ed9f47a06a84e72b4e7cc"
+dependencies = [
+ "anyhow",
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "prost-types"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "534b7a0e836e3c482d2693070f982e39e7611da9695d4d1f5a4b186b51faef0a"
 dependencies = [
  "bytes",
- "prost",
+ "prost 0.9.0",
 ]
 
 [[package]]
@@ -3248,7 +3271,7 @@ dependencies = [
  "k256",
  "num-traits",
  "once_cell",
- "prost",
+ "prost 0.9.0",
  "prost-types",
  "ripemd160",
  "serde",
@@ -3323,7 +3346,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost",
+ "prost 0.9.0",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -3647,8 +3670,8 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
- "prost",
- "prost-derive",
+ "prost 0.9.0",
+ "prost-derive 0.9.0",
  "rustls-native-certs",
  "tokio",
  "tokio-rustls",
