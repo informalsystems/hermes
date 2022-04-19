@@ -333,3 +333,20 @@ impl From<IbcCoin> for RawCoin {
         Self { denom, amount }
     }
 }
+
+impl From<PrefixedCoin> for IbcCoin {
+    fn from(prefixed_coin: PrefixedCoin) -> Self {
+        let Coin { denom, amount } = prefixed_coin;
+        if !denom.is_trace_empty() {
+            IbcCoin::Hashed(HashedCoin {
+                denom: denom.hashed(),
+                amount,
+            })
+        } else {
+            IbcCoin::Base(BaseCoin {
+                denom: denom.base_denom,
+                amount,
+            })
+        }
+    }
+}
