@@ -138,7 +138,7 @@ pub trait Ics20Context:
     Ics20Keeper<AccountId = <Self as Ics20Context>::AccountId>
     + Ics20Reader<AccountId = <Self as Ics20Context>::AccountId>
 {
-    type AccountId: Into<String>;
+    type AccountId: Into<String> + FromStr<Err = Ics20Error>;
 }
 
 fn validate_transfer_channel_params(
