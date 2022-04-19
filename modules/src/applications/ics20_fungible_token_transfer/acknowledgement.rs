@@ -1,3 +1,4 @@
+use super::error::Error;
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
 use crate::core::ics26_routing::context::Acknowledgement as AckTrait;
 use crate::prelude::*;
@@ -15,8 +16,11 @@ pub enum Acknowledgement {
 }
 
 impl Acknowledgement {
-    pub fn error() -> Self {
-        Self::Error(ACK_ERR_STR.to_owned())
+    pub fn from_error(err: Error) -> Self {
+        fn abci_info(_err: Error) -> usize {
+            todo!()
+        }
+        Self::Error(format!("ABCI code: {}: {}", abci_info(err), ACK_ERR_STR))
     }
 }
 
@@ -25,7 +29,7 @@ impl From<GenericAcknowledgement> for Acknowledgement {
         if ack.as_ref() == ACK_SUCCESS_B64 {
             Self::Success(ACK_SUCCESS_B64.to_vec())
         } else {
-            Self::error()
+            Self::Error(ACK_ERR_STR.to_owned())
         }
     }
 }
