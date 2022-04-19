@@ -43,7 +43,10 @@ pub trait Ics20Keeper:
 }
 
 pub trait Ics20Reader:
-    ChannelReader + PortReader + AccountReader<AccountId = <Self as Ics20Reader>::AccountId>
+    BankReader<AccountId = <Self as Ics20Reader>::AccountId>
+    + AccountReader<AccountId = <Self as Ics20Reader>::AccountId>
+    + ChannelReader
+    + PortReader
 {
     type AccountId: Into<String> + FromStr<Err = Ics20Error>;
 
@@ -113,6 +116,13 @@ pub trait BankKeeper {
         module: Self::AccountId,
         amt: BaseCoin,
     ) -> Result<(), Ics20Error>;
+}
+
+pub trait BankReader {
+    type AccountId: Into<String> + FromStr;
+
+    /// Returns true if the specified account is not allowed to receive funds and false otherwise.
+    fn is_blocked_account(&self, account: &Self::AccountId) -> bool;
 }
 
 pub trait AccountReader {
