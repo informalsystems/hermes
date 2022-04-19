@@ -118,7 +118,7 @@ pub trait ClientDef: Clone {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        commitment: String,
+        commitment: Vec<u8>,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has been commited.
@@ -437,7 +437,7 @@ impl ClientDef for AnyClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        commitment: String,
+        commitment: Vec<u8>,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {

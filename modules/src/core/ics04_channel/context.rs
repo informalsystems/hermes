@@ -58,17 +58,24 @@ pub trait ChannelReader: CapabilityReader {
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<Sequence, Error>;
 
-    fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Result<String, Error>;
+    fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Result<Vec<u8>, Error>;
 
     fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Result<Receipt, Error>;
 
     fn get_packet_acknowledgement(
         &self,
         key: &(PortId, ChannelId, Sequence),
-    ) -> Result<String, Error>;
+    ) -> Result<Vec<u8>, Error>;
+
+    fn commitment(
+        &self,
+        packet_data: Vec<u8>,
+        timeout_height: Height,
+        timeout_timestamp: Timestamp,
+    ) -> Vec<u8>;
 
     /// A hashing function for packet commitments
-    fn hash(&self, value: String) -> String;
+    fn hash(&self, value: Vec<u8>) -> Vec<u8>;
 
     /// Returns the current height of the local chain.
     fn host_height(&self) -> Height;

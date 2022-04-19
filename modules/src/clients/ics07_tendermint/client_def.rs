@@ -275,7 +275,7 @@ impl ClientDef for TendermintClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        commitment: String,
+        commitment: Vec<u8>,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
@@ -286,18 +286,13 @@ impl ClientDef for TendermintClient {
             sequence,
         };
 
-        let mut commitment_bytes = Vec::new();
-        commitment
-            .encode(&mut commitment_bytes)
-            .expect("buffer size too small");
-
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
             proof,
             root,
             commitment_path,
-            commitment_bytes,
+            commitment,
         )
     }
 

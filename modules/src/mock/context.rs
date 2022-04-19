@@ -108,13 +108,13 @@ pub struct MockContext {
     /// Tracks the sequence number for the next packet to be acknowledged.
     next_sequence_ack: BTreeMap<(PortId, ChannelId), Sequence>,
 
-    packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
+    packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), Vec<u8>>,
 
     /// Maps ports to their capabilities
     port_capabilities: BTreeMap<PortId, (ModuleId, PortCapability)>,
 
     /// Constant-size commitments to packets data fields
-    packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
+    packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), Vec<u8>>,
 
     // Used by unordered channel
     packet_receipt: BTreeMap<(PortId, ChannelId, Sequence), Receipt>,
@@ -437,7 +437,7 @@ impl MockContext {
         port_id: PortId,
         chan_id: ChannelId,
         seq: Sequence,
-        data: String,
+        data: Vec<u8>,
     ) -> Self {
         let mut packet_commitment = self.packet_commitment.clone();
         packet_commitment.insert((port_id, chan_id, seq), data);
@@ -723,7 +723,7 @@ impl ChannelReader for MockContext {
     fn get_packet_commitment(
         &self,
         key: &(PortId, ChannelId, Sequence),
-    ) -> Result<String, Ics04Error> {
+    ) -> Result<Vec<u8>, Ics04Error> {
         match self.packet_commitment.get(key) {
             Some(commitment) => Ok(commitment.clone()),
             None => Err(Ics04Error::packet_commitment_not_found(key.2)),
@@ -743,16 +743,32 @@ impl ChannelReader for MockContext {
     fn get_packet_acknowledgement(
         &self,
         key: &(PortId, ChannelId, Sequence),
-    ) -> Result<String, Ics04Error> {
+    ) -> Result<Vec<u8>, Ics04Error> {
         match self.packet_acknowledgement.get(key) {
             Some(ack) => Ok(ack.clone()),
             None => Err(Ics04Error::packet_acknowledgement_not_found(key.2)),
         }
     }
 
-    fn hash(&self, input: String) -> String {
-        let r = sha2::Sha256::digest(input.as_bytes());
-        format!("{:x}", r)
+    fn commitment(
+        &self,
+        packet_data: Vec<u8>,
+        timeout_height: Height,
+        timeout_timestamp: Timestamp,
+    ) -> Vec<u8> {
+        let mut input = timeout_timestamp.nanoseconds().to_be_bytes().to_vec();
+        let revision_number = timeout_height.revision_number.to_be_bytes();
+        input.append(&mut revision_number.to_vec());
+        let revision_height = timeout_height.revision_height.to_be_bytes();
+        input.append(&mut revision_height.to_vec());
+        let data = self.hash(packet_data);
+        input.append(&mut data.to_vec());
+
+        self.hash(input)
+    }
+
+    fn hash(&self, value: Vec<u8>) -> Vec<u8> {
+        sha2::Sha256::digest(value).to_vec()
     }
 
     fn host_height(&self) -> Height {
@@ -833,9 +849,10 @@ impl ChannelKeeper for MockContext {
         timeout_height: Height,
         data: Vec<u8>,
     ) -> Result<(), Ics04Error> {
-        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
-        self.packet_commitment
-            .insert(key, ChannelReader::hash(self, input));
+        self.packet_commitment.insert(
+            key,
+            self.commitment(data, timeout_height, timeout_timestamp),
+        );
         Ok(())
     }
 
@@ -844,9 +861,7 @@ impl ChannelKeeper for MockContext {
         key: (PortId, ChannelId, Sequence),
         ack: Vec<u8>,
     ) -> Result<(), Ics04Error> {
-        let input = format!("{:?}", ack);
-        self.packet_acknowledgement
-            .insert(key, ChannelReader::hash(self, input));
+        self.packet_acknowledgement.insert(key, self.hash(ack));
         Ok(())
     }
 

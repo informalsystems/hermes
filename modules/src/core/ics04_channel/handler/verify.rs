@@ -70,11 +70,11 @@ pub fn verify_packet_recv_proofs(
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
-    let input = format!(
-        "{:?},{:?},{:?}",
-        packet.timeout_timestamp, packet.timeout_height, packet.data
+    let commitment = ctx.commitment(
+        packet.data.clone(),
+        packet.timeout_height,
+        packet.timeout_timestamp,
     );
-    let commitment = ctx.hash(input);
 
     // Verify the proof for the packet against the chain store.
     client_def

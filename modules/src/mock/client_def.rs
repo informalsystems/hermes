@@ -123,7 +123,7 @@ impl ClientDef for MockClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _sequence: Sequence,
-        _commitment: String,
+        _commitment: Vec<u8>,
     ) -> Result<(), Error> {
         Ok(())
     }
