@@ -23,7 +23,7 @@ impl Acknowledgement {
 impl From<GenericAcknowledgement> for Acknowledgement {
     fn from(ack: GenericAcknowledgement) -> Self {
         if ack.as_ref() == ACK_SUCCESS_B64 {
-            Self::Success(ack.into_bytes())
+            Self::Success(ACK_SUCCESS_B64.to_vec())
         } else {
             Self::error()
         }
