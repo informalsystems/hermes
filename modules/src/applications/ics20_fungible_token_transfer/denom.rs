@@ -14,6 +14,7 @@ use subtle_encoding::hex;
 use super::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
+use crate::serializers::serde_string;
 
 const IBC_DENOM_PREFIX: &str = "ibc/";
 
@@ -108,9 +109,10 @@ impl fmt::Display for TracePath {
 }
 
 /// A type that contains the base denomination for ICS20 and the source tracing information path.
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Deserialize)]
 pub struct DenomTrace {
     /// A series of `{port-id}/{channel-id}`s for tracing the source of the token.
+    #[serde(with = "serde_string")]
     trace_path: TracePath,
     /// Base denomination of the relayed fungible token.
     base_denom: Denom,
@@ -233,7 +235,9 @@ impl FromStr for HashedDenom {
 }
 
 /// A decimal type for representing token transfer amounts.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, From, FromStr)]
+#[derive(
+    Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, From, FromStr, Deserialize,
+)]
 pub struct Decimal(u64);
 
 // We only provide an `Add<Decimal>` implementation which always panics on overflow.
@@ -250,7 +254,7 @@ impl Add<Self> for Decimal {
 }
 
 /// Coin defines a token with a denomination and an amount.
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Deserialize)]
 pub struct Coin<D> {
     /// Denomination
     pub denom: D,
