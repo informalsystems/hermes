@@ -90,23 +90,23 @@ pub trait BankKeeper {
     /// This function should enable sending ibc fungible tokens from one account to another
     fn send_coins(
         &self,
-        from: Self::AccountId,
-        to: Self::AccountId,
-        amt: BaseCoin,
+        from: &Self::AccountId,
+        to: &Self::AccountId,
+        amt: IbcCoin,
     ) -> Result<(), Ics20Error>;
 
     /// This function to enable minting ibc tokens in a module
-    fn mint_coins(&self, module: Self::AccountId, amt: BaseCoin) -> Result<(), Ics20Error>;
+    fn mint_coins(&self, module: Self::AccountId, amt: IbcCoin) -> Result<(), Ics20Error>;
 
     /// This function should enable burning of minted tokens
-    fn burn_coins(&self, module: Self::AccountId, amt: BaseCoin) -> Result<(), Ics20Error>;
+    fn burn_coins(&self, module: Self::AccountId, amt: IbcCoin) -> Result<(), Ics20Error>;
 
     /// This function should enable transfer of tokens from the ibc module to an account
     fn send_coins_from_module_to_account(
         &self,
         module: Self::AccountId,
         to: Self::AccountId,
-        amt: BaseCoin,
+        amt: IbcCoin,
     ) -> Result<(), Ics20Error>;
 
     /// This function should enable transfer of tokens from an account to the ibc module
@@ -114,7 +114,7 @@ pub trait BankKeeper {
         &self,
         from: Self::AccountId,
         module: Self::AccountId,
-        amt: BaseCoin,
+        amt: IbcCoin,
     ) -> Result<(), Ics20Error>;
 }
 
