@@ -62,6 +62,12 @@ pub trait Ics20Reader:
         port_id: PortId,
         channel_id: ChannelId,
     ) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error>;
+
+    /// Returns true iff send is enabled.
+    fn is_send_enabled(&self) -> bool;
+
+    /// Returns true iff receive is enabled.
+    fn is_receive_enabled(&self) -> bool;
 }
 
 pub trait BankKeeper {
