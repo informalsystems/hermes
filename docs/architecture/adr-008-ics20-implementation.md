@@ -78,11 +78,13 @@ It should be up to the module implementer to use the provided helper functions a
                 format!("{}{}", acc, next)
             })
         }
+
         /// IBCDenom a coin denomination for an ICS20 fungible token in the format
         /// 'ibc/trace_path/base_denom'. If the trace is empty, it will return the base denomination.
         fn ibc_denom(&self) -> String {
             format!("ibc/{}", self.get_full_denom_path())
         }
+
         /// Returns the prefix for this trace
         fn get_prefix(&self) -> String {
             DenomTrace::get_denom_prefix(self.trace_path[0].port_id, self.trace_path[0].channel_id)
@@ -97,7 +99,6 @@ It should be up to the module implementer to use the provided helper functions a
         pub fn get_denom_prefix(port_id: &PortId, channel_id: &ChannelId) -> String {
             format!("{}/{}/", port_id, channel_id)
         }
-
 
         /// Returns the denomination with the port_id and channel_id prefixed
         pub fn get_prefixed_denom(port_id: &PortId, channel_id: &ChannelId, base_denom: &str) -> String {
