@@ -59,6 +59,27 @@ use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
 
+/// Whether or not to resubmit packets when pending transactions
+/// fail to process within the given timeout duration.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Resubmit {
+    Yes,
+    No,
+}
+
+impl Resubmit {
+    /// Packet resubmission is enabled when the clear interval for packets is 0. Otherwise,
+    /// when the packet clear interval is > 0, the relayer will periodically clear unsent packets
+    /// such that resubmitting packets is not necessary.
+    pub fn from_clear_interval(clear_interval: u64) -> Self {
+        if clear_interval == 0 {
+            Self::Yes
+        } else {
+            Self::No
+        }
+    }
+}
+
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
 
@@ -557,8 +578,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(S::Reply::empty())
     }
 
-    /// Helper for managing retries of the `relay_from_operational_data` method.
-    /// Expects as input the initial operational data that failed to send.
+    /// Generates fresh operational data for a tx given the initial operational data
+    /// that failed to send.
     ///
     /// Return value:
     ///   - `Some(..)`: a new operational data from which to retry sending,
@@ -567,7 +588,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ///
     /// Side effects: may schedule a new operational data targeting the source chain, comprising
     /// new timeout messages.
-    fn regenerate_operational_data(
+    pub(crate) fn regenerate_operational_data(
         &self,
         initial_odata: OperationalData,
     ) -> Option<OperationalData> {
@@ -1371,17 +1392,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(())
     }
 
-    pub fn process_pending_txs(&self) -> RelaySummary {
+    /// Kicks off the process of relaying pending txs to the source and destination chains.
+    ///
+    /// See [`Resubmit::from_clear_interval`] for more info about the `resubmit` parameter.
+    pub fn process_pending_txs(&self, resubmit: Resubmit) -> RelaySummary {
         if !self.confirm_txes {
             return RelaySummary::empty();
         }
 
-        let mut summary_src = self.process_pending_txs_src().unwrap_or_else(|e| {
+        let mut summary_src = self.process_pending_txs_src(resubmit).unwrap_or_else(|e| {
             error!("error processing pending events in source chain: {}", e);
             RelaySummary::empty()
         });
 
-        let summary_dst = self.process_pending_txs_dst().unwrap_or_else(|e| {
+        let summary_dst = self.process_pending_txs_dst(resubmit).unwrap_or_else(|e| {
             error!(
                 "error processing pending events in destination chain: {}",
                 e
@@ -1393,23 +1417,33 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         summary_src
     }
 
-    fn process_pending_txs_src(&self) -> Result<RelaySummary, LinkError> {
+    fn process_pending_txs_src(&self, resubmit: Resubmit) -> Result<RelaySummary, LinkError> {
+        let do_resubmit = match resubmit {
+            Resubmit::Yes => {
+                Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
+            }
+            Resubmit::No => None,
+        };
+
         let res = self
             .pending_txs_src
-            .process_pending(pending::TIMEOUT, |odata| {
-                self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
-            })?
+            .process_pending(pending::TIMEOUT, self, do_resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
     }
 
-    fn process_pending_txs_dst(&self) -> Result<RelaySummary, LinkError> {
+    fn process_pending_txs_dst(&self, resubmit: Resubmit) -> Result<RelaySummary, LinkError> {
+        let do_resubmit = match resubmit {
+            Resubmit::Yes => {
+                Some(|odata| self.relay_from_operational_data::<relay_sender::AsyncSender>(odata))
+            }
+            Resubmit::No => None,
+        };
+
         let res = self
             .pending_txs_dst
-            .process_pending(pending::TIMEOUT, |odata| {
-                self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
-            })?
+            .process_pending(pending::TIMEOUT, self, do_resubmit)?
             .unwrap_or_else(RelaySummary::empty);
 
         Ok(res)
