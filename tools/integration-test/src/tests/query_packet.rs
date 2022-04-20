@@ -1,8 +1,8 @@
-use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::Height;
 use ibc_relayer::chain::counterparty::pending_packet_summary;
+use ibc_relayer::link::{Link, LinkParameters};
 
 use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::channel::query_identified_channel_end;
 use ibc_test_framework::util::random::random_u64_range;
 
 #[test]
@@ -34,7 +34,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        relayer: RelayerDriver,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -59,29 +59,50 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             &denom_a,
         )?;
 
-        sleep(Duration::from_secs(1));
+        sleep(Duration::from_secs(2));
 
-        let channel_end = chains.handle_a().query_channel(
-            channel.port_a.as_ref().value(),
-            channel.channel_id_a.as_ref().value(),
-            Height::zero(),
+        let opts = LinkParameters {
+            src_port_id: channel.port_a.clone().into_value(),
+            src_channel_id: channel.channel_id_a.clone().into_value(),
+        };
+        let link = Link::new_from_opts(
+            chains.handle_a().clone(),
+            chains.handle_b().clone(),
+            opts,
+            false,
         )?;
-        let channel_end = IdentifiedChannelEnd::new(
-            channel.port_a.clone().into_value(),
-            channel.channel_id_a.clone().into_value(),
-            channel_end,
-        );
 
-        let summary = pending_packet_summary(chains.handle_a(), chains.handle_b(), &channel_end)?;
+        let channel_end = query_identified_channel_end(
+            chains.handle_a(),
+            channel.channel_id_a.as_ref(),
+            channel.port_a.as_ref(),
+        )?;
+
+        let summary =
+            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
 
         assert_eq!(summary.unreceived, [1]);
-        // TODO: test pending_ack
+        assert!(summary.pending_acks.is_empty());
 
-        // Spawn the supervisor only after the first IBC trasnfer
-        relayer.with_supervisor(|| {
-            sleep(Duration::from_secs(1));
+        // Receive the packet on the destination chain
+        link.build_and_send_recv_packet_messages()?;
 
-            Ok(())
-        })
+        let summary =
+            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
+
+        assert!(summary.unreceived.is_empty());
+        assert_eq!(summary.pending_acks, [1]);
+
+        // Acknowledge the packet on the source chain
+        let link = link.reverse(false)?;
+        link.build_and_send_ack_packet_messages()?;
+
+        let summary =
+            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
+
+        assert!(summary.unreceived.is_empty());
+        assert!(summary.pending_acks.is_empty());
+
+        Ok(())
     }
 }
