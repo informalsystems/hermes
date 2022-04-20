@@ -143,11 +143,16 @@ impl DenomTrace {
             .unwrap_or(false)
     }
 
-    /// Removes the specified prefix if there is a match.
+    /// Removes the specified prefix from the `trace_path` if there is a match.
     pub fn remove_prefix(&mut self, prefix: &TracePrefix) {
         if self.has_prefix(prefix) {
             self.trace_path.0.drain(..0);
         }
+    }
+
+    /// Adds the specified prefix to the `trace_path`.
+    pub fn add_prefix(&mut self, prefix: TracePrefix) {
+        self.trace_path.0.push(prefix)
     }
 
     /// Returns true if the `trace_path` is empty and false otherwise.

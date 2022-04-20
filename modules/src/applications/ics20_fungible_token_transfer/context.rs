@@ -6,7 +6,9 @@ use subtle_encoding::{bech32, hex};
 use super::error::Error as Ics20Error;
 use crate::applications::ics20_fungible_token_transfer::acknowledgement::Acknowledgement;
 use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
-use crate::applications::ics20_fungible_token_transfer::{IbcCoin, TracePrefix, VERSION};
+use crate::applications::ics20_fungible_token_transfer::{
+    DenomTrace, HashedDenom, IbcCoin, TracePrefix, VERSION,
+};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
@@ -16,7 +18,7 @@ use crate::core::ics05_port::capabilities::{Capability, ChannelCapability};
 use crate::core::ics05_port::context::{PortKeeper, PortReader};
 use crate::core::ics05_port::error::Error as PortError;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::OnRecvPacketAck;
+use crate::core::ics26_routing::context::{OnRecvPacketAck, WriteFn};
 use crate::prelude::*;
 use crate::signer::Signer;
 
@@ -47,6 +49,9 @@ pub trait Ics20Keeper:
         port_id: PortId,
         channel_id: ChannelId,
     ) -> Result<(), Ics20Error>;
+
+    /// Sets a new {trace hash -> denom trace} pair to the store.
+    fn set_denom_trace(&mut self, denom_trace: DenomTrace);
 }
 
 pub trait Ics20Reader:
@@ -89,6 +94,9 @@ pub trait Ics20Reader:
 
     /// Returns true iff receive is enabled.
     fn is_receive_enabled(&self) -> bool;
+
+    /// Returns true iff the store contains a `DenomTrace` entry for the specified `HashedDenom`.
+    fn has_denom_trace(&self, hashed_denom: HashedDenom) -> bool;
 }
 
 pub trait BankKeeper {
@@ -96,21 +104,21 @@ pub trait BankKeeper {
 
     /// This function should enable sending ibc fungible tokens from one account to another
     fn send_coins(
-        &self,
+        &mut self,
         from: &Self::AccountId,
         to: &Self::AccountId,
         amt: IbcCoin,
     ) -> Result<(), Ics20Error>;
 
     /// This function to enable minting ibc tokens in a module
-    fn mint_coins(&self, module: Self::AccountId, amt: IbcCoin) -> Result<(), Ics20Error>;
+    fn mint_coins(&mut self, module: Self::AccountId, amt: IbcCoin) -> Result<(), Ics20Error>;
 
     /// This function should enable burning of minted tokens
-    fn burn_coins(&self, module: Self::AccountId, amt: IbcCoin) -> Result<(), Ics20Error>;
+    fn burn_coins(&mut self, module: Self::AccountId, amt: IbcCoin) -> Result<(), Ics20Error>;
 
     /// This function should enable transfer of tokens from the ibc module to an account
     fn send_coins_from_module_to_account(
-        &self,
+        &mut self,
         module: Self::AccountId,
         to: Self::AccountId,
         amt: IbcCoin,
@@ -118,7 +126,7 @@ pub trait BankKeeper {
 
     /// This function should enable transfer of tokens from an account to the ibc module
     fn send_coins_from_account_to_module(
-        &self,
+        &mut self,
         from: Self::AccountId,
         module: Self::AccountId,
         amt: IbcCoin,
@@ -145,7 +153,7 @@ pub trait Ics20Context:
     Ics20Keeper<AccountId = <Self as Ics20Context>::AccountId>
     + Ics20Reader<AccountId = <Self as Ics20Context>::AccountId>
 {
-    type AccountId: Into<String> + FromStr<Err = Ics20Error>;
+    type AccountId: Into<String> + FromStr<Err = Ics20Error> + 'static;
 }
 
 fn validate_transfer_channel_params(
@@ -254,12 +262,15 @@ pub fn on_chan_close_confirm(
     Ok(())
 }
 
-pub fn on_recv_packet(
-    ctx: &impl Ics20Context,
+pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
+    ctx: &Ctx,
     packet: &Packet,
     _relayer: &Signer,
 ) -> OnRecvPacketAck {
-    fn process_recv_packet(ctx: &impl Ics20Context, packet: &Packet) -> Result<(), Ics20Error> {
+    fn process_recv_packet<Ctx: 'static + Ics20Context>(
+        ctx: &Ctx,
+        packet: &Packet,
+    ) -> Result<Box<WriteFn>, Ics20Error> {
         let data = serde_json::from_slice::<PacketData>(&packet.data)
             .map_err(|_| Ics20Error::packet_data_deserialization())?;
 
@@ -267,9 +278,12 @@ pub fn on_recv_packet(
             return Err(Ics20Error::receive_disabled());
         }
 
-        bech32::decode(&data.receiver)
-            .map(|_| ())
-            .map_err(Ics20Error::invalid_receiver_bech32)?;
+        let receiver = {
+            bech32::decode(&data.receiver)
+                .map(|_| ())
+                .map_err(Ics20Error::invalid_receiver_bech32)?;
+            data.receiver.to_string().parse()?
+        };
 
         let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
         if data.token.denom.is_receiver_chain_source(&prefix) {
@@ -281,9 +295,6 @@ pub fn on_recv_packet(
                 c
             };
 
-            let amount = IbcCoin::from(coin);
-
-            let receiver = data.receiver.to_string().parse()?;
             if ctx.is_blocked_account(&receiver) {
                 return Err(Ics20Error::unauthorised_receive(data.receiver));
             }
@@ -292,22 +303,46 @@ pub fn on_recv_packet(
                 packet.destination_port.clone(),
                 packet.destination_channel,
             )?;
+            let amount = IbcCoin::from(coin);
 
-            ctx.send_coins(&escrow_address, &receiver, amount)?;
+            Ok(Box::new(move |ctx| {
+                let ctx = ctx.downcast_mut::<Ctx>().unwrap();
+                ctx.send_coins(&escrow_address, &receiver, amount)
+                    .map_err(|e| e.to_string())
+            }))
+        } else {
+            // sender chain is the source, mint vouchers
+
+            let prefix =
+                TracePrefix::new(packet.destination_port.clone(), packet.destination_channel);
+            let coin = {
+                let mut c = data.token.clone();
+                c.denom.add_prefix(prefix);
+                c
+            };
+
+            Ok(Box::new(move |ctx| {
+                let ctx = ctx.downcast_mut::<Ctx>().unwrap();
+                let hashed_denom = coin.denom.hashed();
+                if ctx.has_denom_trace(hashed_denom) {
+                    ctx.set_denom_trace(coin.denom.clone());
+                }
+
+                let amount = IbcCoin::from(coin);
+                ctx.mint_coins(ctx.get_transfer_account(), amount.clone())
+                    .map_err(|e| e.to_string())?;
+                ctx.send_coins_from_module_to_account(ctx.get_transfer_account(), receiver, amount)
+                    .map_err(|e| e.to_string())
+            }))
         }
-
-        Ok(())
     }
 
-    let _ack = match process_recv_packet(ctx, packet) {
-        Ok(_) => OnRecvPacketAck::Successful(
-            Box::new(Acknowledgement::Success(vec![])),
-            Box::new(|_| {}),
-        ),
+    match process_recv_packet(ctx, packet) {
+        Ok(write_fn) => {
+            OnRecvPacketAck::Successful(Box::new(Acknowledgement::Success(vec![])), write_fn)
+        }
         Err(e) => OnRecvPacketAck::Failed(Box::new(Acknowledgement::from_error(e))),
-    };
-
-    OnRecvPacketAck::Nil(Box::new(|_| {}))
+    }
 }
 
 pub fn on_acknowledgement_packet(
