@@ -3,11 +3,14 @@ use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as Generi
 use crate::core::ics26_routing::context::Acknowledgement as AckTrait;
 use crate::prelude::*;
 
+use serde::Deserialize;
+
 /// A string constant included in error acknowledgements.
 /// NOTE: Changing this const is state machine breaking as acknowledgements are written into state
 pub const ACK_ERR_STR: &str = "error handling packet on destination chain: see events for details";
 pub const ACK_SUCCESS_B64: &[u8] = b"AQ==";
 
+#[derive(Deserialize)]
 pub enum Acknowledgement {
     /// Equivalent to b"AQ==" (i.e. `base64::encode(0x01)`)
     Success(Vec<u8>),

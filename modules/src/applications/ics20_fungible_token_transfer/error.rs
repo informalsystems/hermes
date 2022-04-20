@@ -108,9 +108,16 @@ define_error! {
         PacketDataDeserialization
             | _ | { "failed to deserialize packet data" },
 
-        InvalidReceiverBech32
+        AckDeserialization
+            | _ | { "failed to deserialize acknowledgement" },
+
+        InvalidReceiverAddress
             [ TraceError<EncodingError> ]
             | _ | { "invalid receiver address" },
+
+        InvalidSenderAddress
+            [ TraceError<EncodingError> ]
+            | _ | { "invalid sender address" },
 
         ReceiveDisabled
             | _ | { "receive is not enabled" },
