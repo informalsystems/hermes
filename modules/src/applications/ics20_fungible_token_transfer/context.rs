@@ -316,7 +316,7 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
             let prefix =
                 TracePrefix::new(packet.destination_port.clone(), packet.destination_channel);
             let coin = {
-                let mut c = data.token.clone();
+                let mut c = data.token;
                 c.denom.add_prefix(prefix);
                 c
             };
