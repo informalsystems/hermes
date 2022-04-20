@@ -78,7 +78,7 @@ impl Borrow<str> for ModuleId {
 /// Types implementing this trait are expected to implement `From<GenericAcknowledgement>`
 pub trait Acknowledgement: AsRef<[u8]> {}
 
-pub type WriteFn = dyn FnOnce(&mut dyn Any);
+pub type WriteFn = dyn FnOnce(&mut dyn Any) -> Result<(), String>;
 
 pub enum OnRecvPacketAck {
     Nil(Box<WriteFn>),
@@ -163,7 +163,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _packet: &Packet,
         _relayer: &Signer,
     ) -> OnRecvPacketAck {
-        OnRecvPacketAck::Nil(Box::new(|_| {}))
+        OnRecvPacketAck::Nil(Box::new(|_| Ok(())))
     }
 
     fn on_acknowledgement_packet(

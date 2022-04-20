@@ -218,7 +218,7 @@ where
             let result = cb.on_recv_packet(module_output, &msg.packet, &msg.signer);
             match result {
                 OnRecvPacketAck::Nil(write_fn) | OnRecvPacketAck::Successful(_, write_fn) => {
-                    write_fn(cb.as_any_mut());
+                    write_fn(cb.as_any_mut()).map_err(Error::app_module)?;
                 }
                 OnRecvPacketAck::Failed(_) => {}
             }
