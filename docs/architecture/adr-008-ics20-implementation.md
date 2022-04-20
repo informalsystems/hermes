@@ -11,11 +11,11 @@ The goal of this ADR, is to provide recommendations and a guide for implementing
 The  implementation is broken down into traits which should be implemented by the ICS20 module
 context, it also defines some primitives that would help in building a module compliant with the ICS20 spec.
 
-Decided it's better for the ICS20 context to be completely independent of the ibc core context traits, that way it can be 
+Decided it's better for the ICS20 context to be completely independent of the IBC core context traits, that way it can be 
 fully implemented as a standalone module in any framework.
 
-Coupling the ICS20 Context with the ibc Core traits will not allow the existence of the ICS20 module as a standalone library in some frameworks
-It should be upto the module implementer to use the provided helper functions and ICS20 primitives correctly
+Coupling the ICS20 Context with the IBC Core traits will not allow the existence of the ICS20 module as a standalone library in some frameworks.
+It should be up to the module implementer to use the provided helper functions and ICS20 primitives correctly.
 
 ```rust
     define_error! {
@@ -26,6 +26,7 @@ It should be upto the module implementer to use the provided helper functions an
 
         SendDisabled
             | _ | { "Sending tokens is disabled" },
+        
         ReceiveDisabled
             | _ | { "Receiving tokens is disabled" },
         }
@@ -61,7 +62,7 @@ It should be upto the module implementer to use the provided helper functions an
         pub channel_id: ChannelId
     }
 
-    /// This struct and it's implementations should help identifying denomination traces
+    /// This struct and its implementations should help identifying denomination traces.
     pub struct DenomTrace {
         /// Full denomination path
         pub trace_path: Vec<TracePrefix>,
