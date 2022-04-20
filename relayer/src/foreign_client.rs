@@ -1164,7 +1164,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })?;
 
         let consensus_state_heights = if let Some(ref event) = update {
-            vec![event.height()]
+            vec![event.consensus_height()]
         } else {
             // Get the list of consensus state heights in descending order.
             // Note: If chain does not prune consensus states then the last consensus state is
