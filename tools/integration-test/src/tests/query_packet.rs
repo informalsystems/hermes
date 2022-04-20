@@ -1,8 +1,9 @@
-use ibc_relayer::chain::counterparty::pending_packet_summary;
+use ibc_relayer::chain::counterparty::{channel_on_destination, pending_packet_summary};
 use ibc_relayer::link::{Link, LinkParameters};
 
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::query_identified_channel_end;
+use ibc_test_framework::relayer::connection::query_identified_connection_end;
 use ibc_test_framework::util::random::random_u64_range;
 
 #[test]
@@ -101,6 +102,46 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
 
         assert!(summary.unreceived.is_empty());
+        assert!(summary.pending_acks.is_empty());
+
+        let denom_b = chains.node_b.denom();
+        let amount2 = random_u64_range(1000, 5000);
+
+        chains.node_b.chain_driver().transfer_token(
+            &channel.port_b.as_ref(),
+            &channel.channel_id_b.as_ref(),
+            &wallet_b.address(),
+            &wallet_a.address(),
+            amount2,
+            &denom_b,
+        )?;
+
+        info!(
+            "Performing IBC transfer with amount {}, which should *not* be relayed",
+            amount2
+        );
+
+        sleep(Duration::from_secs(2));
+
+        // Get the reverse channel end, like the CLI command does
+        let connection_end = query_identified_connection_end(
+            chains.handle_a(),
+            channel.connection.connection_id_a.as_ref(),
+        )?;
+        let counterparty_channel_end = channel_on_destination(
+            channel_end.value(),
+            connection_end.value(),
+            chains.handle_b(),
+        )?
+        .unwrap();
+
+        let summary = pending_packet_summary(
+            chains.handle_b(),
+            chains.handle_a(),
+            &counterparty_channel_end,
+        )?;
+
+        assert_eq!(summary.unreceived, [1]);
         assert!(summary.pending_acks.is_empty());
 
         Ok(())
