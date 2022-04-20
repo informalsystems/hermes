@@ -5,7 +5,6 @@
 use core::convert::TryInto;
 use core::time::Duration;
 use ibc::core::ics04_channel::channel::Order;
-use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 
@@ -50,17 +49,17 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
                 let port_a = &ports[i][j];
                 let port_b = &ports[j][i];
 
+                let bootstrap_options = BootstrapChannelOptions::default()
+                    .order(order)
+                    .bootstrap_with_random_ids(bootstrap_with_random_ids);
+
                 let channel = bootstrap_channel_with_connection(
                     chain_a,
                     chain_b,
                     connection.clone(),
                     &DualTagged::new(port_a),
                     &DualTagged::new(port_b),
-                    BootstrapChannelOptions {
-                        order,
-                        version: Version::ics20(),
-                        bootstrap_with_random_ids,
-                    },
+                    bootstrap_options,
                 )?;
 
                 channels_b.push(channel);

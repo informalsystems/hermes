@@ -272,3 +272,17 @@ pub fn save_relayer_config(config: &Config, config_path: &Path) -> Result<(), Er
 
     Ok(())
 }
+
+impl BootstrapClientOptions {
+    /// Overrides options for the foreign client connecting chain A to chain B.
+    pub fn client_options_a_to_b(mut self, options: ClientOptions) -> Self {
+        self.client_options_a_to_b = options;
+        self
+    }
+
+    /// Overrides options for the foreign client connecting chain B to chain A.
+    pub fn client_options_b_to_a(mut self, options: ClientOptions) -> Self {
+        self.client_options_b_to_a = options;
+        self
+    }
+}

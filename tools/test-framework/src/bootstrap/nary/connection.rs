@@ -39,13 +39,11 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
                 let foreign_clients =
                     ForeignClientPair::new(foreign_client.clone(), counter_foreign_client.clone());
 
-                let connection = bootstrap_connection(
-                    &foreign_clients,
-                    BootstrapConnectionOptions {
-                        connection_delay,
-                        bootstrap_with_random_ids,
-                    },
-                )?;
+                let bootstrap_options = BootstrapConnectionOptions::default()
+                    .connection_delay(connection_delay)
+                    .bootstrap_with_random_ids(bootstrap_with_random_ids);
+
+                let connection = bootstrap_connection(&foreign_clients, bootstrap_options)?;
 
                 connections_b.push(connection);
             } else {

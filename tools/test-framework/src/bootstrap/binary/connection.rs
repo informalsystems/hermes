@@ -118,3 +118,15 @@ impl Default for BootstrapConnectionOptions {
         }
     }
 }
+
+impl BootstrapConnectionOptions {
+    pub fn connection_delay(mut self, connection_delay: Duration) -> Self {
+        self.connection_delay = connection_delay;
+        self
+    }
+
+    pub fn bootstrap_with_random_ids(mut self, bootstrap_with_random_ids: bool) -> Self {
+        self.bootstrap_with_random_ids = bootstrap_with_random_ids;
+        self
+    }
+}

@@ -192,3 +192,20 @@ impl Default for BootstrapChannelOptions {
         }
     }
 }
+
+impl BootstrapChannelOptions {
+    pub fn order(mut self, order: Order) -> Self {
+        self.order = order;
+        self
+    }
+
+    pub fn version(mut self, version: Version) -> Self {
+        self.version = version;
+        self
+    }
+
+    pub fn bootstrap_with_random_ids(mut self, bootstrap_with_random_ids: bool) -> Self {
+        self.bootstrap_with_random_ids = bootstrap_with_random_ids;
+        self
+    }
+}
