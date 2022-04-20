@@ -1499,7 +1499,7 @@ mod tests {
                 _ => None,
             })
             .for_each(|(mid, write_fn)| {
-                write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut())
+                write_fn(ctx.router.get_route_mut(&mid).unwrap().as_any_mut()).unwrap()
             });
     }
 }
