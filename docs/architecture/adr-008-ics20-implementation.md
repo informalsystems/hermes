@@ -1,4 +1,4 @@
-# ADR 008: ICS20 Implementation
+# ADR 008: ICS20 Implementation Proposal
 
 ## Changelog
 * 16.02.2022: Proposed
@@ -93,19 +93,19 @@ It should be up to the module implementer to use the provided helper functions a
             denom.starts_with(prefix)
         }
 
-        /// get_denom_prefix returns the receiving denomination prefix
+        /// Returns the receiving denomination prefix
         pub fn get_denom_prefix(port_id: &PortId, channel_id: &ChannelId) -> String {
             format!("{}/{}/", port_id, channel_id)
         }
 
 
-        /// get_prefixed_denom returns the denomination with the port_id and channel_id prefixed
+        /// Returns the denomination with the port_id and channel_id prefixed
         pub fn get_prefixed_denom(port_id: &PortId, channel_id: &ChannelId, base_denom: &str) -> String {
             format!("{}/{}/{}", port_id, channel_id, base_denom)
         }
-        
+
         pub fn parse_denom_trace(denom: &str) -> Result<Self, ICS20Error> {
-            
+            // ...
         }
     }
 
@@ -189,25 +189,24 @@ It should be up to the module implementer to use the provided helper functions a
     pub trait ICS20Context: ICS20Keeper + ICS20Reader {}
 ```
 ## Handling ICS20 Packets
-ICS20 messages are still a subset of channel packets so they should be handled as such
+ICS20 messages are still a subset of channel packets so they should be handled as such.
 
-The following handlers are recommended to be implemented in the ics20_fungible_token_transfer application in the ibc-rs crate
-
-These handlers will be executed in the module callbacks of any thirdparty IBCmodule that is implementing an ICS20 application on-chain
+The following handlers are recommended to be implemented in the `ics20_fungible_token_transfer` application in the `ibc` crate.
+These handlers will be executed in the module callbacks of any thirdparty IBC module that is implementing an ICS20 application on-chain.
 
 ```rust
-    pub enum ICS20Acknowledgement {
-        /// Equivalent to b"AQ=="
-        Success,
-        /// Error Acknowledgement
-        Error(String)
-    }
+pub enum ICS20Acknowledgement {
+    /// Equivalent to b"AQ=="
+    Success,
+    /// Error Acknowledgement
+    Error(String)
+}
 
-    // GenericAcknowledgement from ics04_channel::msgs::acknowledgement::Acknowledgement
-    impl From<GenericAcknowledgement> for ICS20Acknowledgement {}
+// GenericAcknowledgement from ics04_channel::msgs::acknowledgement::Acknowledgement
+impl From<GenericAcknowledgement> for ICS20Acknowledgement {}
 
-    // Acknowledgement trait from ics26_routing::context::Acknowledgement
-    impl Acknowledgement for ICS20Acknowledgement {}
+// Acknowledgement trait from ics26_routing::context::Acknowledgement
+impl Acknowledgement for ICS20Acknowledgement {}
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -278,7 +277,7 @@ pub fn send_transfer<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<SendTransferPac
         .ok_or(|_| ICS20Error::channel_error("counterparty channel not found"))?;
 
     let sequence = ctx.get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel.clone()))?;
-    
+
     let full_denom_path = msg.token.denom.get_full_denom_path();
 
     match get_source_chain(&msg.source_port, &msg.source_channel, full_denom_path.clone()) {
@@ -418,9 +417,10 @@ Proposed
 
 ## Consequences
 
-> This section describes the consequences, after applying the decision. All consequences should be summarized here, not just the "positive" ones.
-
 ### Positive
+
+- Provides more clarity on the details of implementing the ICS20 application in the `ibc` crate.
+- Helps align closer with the ibc-go implementation.
 
 ### Negative
 
