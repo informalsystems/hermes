@@ -37,7 +37,5 @@ toml = "0.5"
 subtle-encoding = "0.5.1"
 sha2 = "0.10.2"
 crossbeam-channel = "0.5.4"
-prost = { version = "0.10", default-features = false }
-prost-types = { version = "0.9", default-features = false }
 semver = "1.0.7"
 flex-error = "0.4.4"
