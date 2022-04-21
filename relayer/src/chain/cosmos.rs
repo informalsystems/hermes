@@ -674,10 +674,7 @@ impl ChainEndpoint for CosmosSdkChain {
             revision_height: u64::from(abci_status.last_block_height),
         };
 
-        Ok(ChainStatus {
-            height,
-            timestamp,
-        })
+        Ok(ChainStatus { height, timestamp })
     }
 
     fn query_clients(
