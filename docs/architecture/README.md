@@ -33,4 +33,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | [004](./adr-004-relayer-domain-decomposition.md) | Relayer domain decomposition      | Accepted |
 | [005](./adr-005-relayer-v0-implementation.md)    | Relayer v0 implementation         | Accepted |
 | [006](./adr-006-hermes-v0.2-usecases.md)         | Hermes v0.2.0 Use-Cases           | Proposed |
-| [007](./adr-008-ics20-implementation.md)         | ICS20 implementation              | Proposed |
+| [007](./adr-007-ics20-implementation.md)         | ICS20 implementation              | Proposed |
