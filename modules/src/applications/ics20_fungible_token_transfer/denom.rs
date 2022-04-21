@@ -4,7 +4,7 @@ use core::fmt;
 use core::ops::Add;
 use core::str::FromStr;
 
-use derive_more::{AsRef, Display, From, FromStr};
+use derive_more::{Display, From, FromStr};
 use ibc_proto::cosmos::base::v1beta1::Coin as RawCoin;
 use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
@@ -28,7 +28,7 @@ pub type HashedCoin = Coin<HashedDenom>;
 pub type BaseCoin = Coin<Denom>;
 
 /// Base denomination type
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, AsRef, Display)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Display)]
 #[serde(transparent)]
 pub struct Denom(String);
 
@@ -315,6 +315,15 @@ impl<D: ToString> From<Coin<D>> for RawCoin {
 pub enum IbcCoin {
     Hashed(HashedCoin),
     Base(BaseCoin),
+}
+
+impl IbcCoin {
+    pub fn amount(&self) -> Decimal {
+        match self {
+            IbcCoin::Hashed(c) => c.amount,
+            IbcCoin::Base(c) => c.amount,
+        }
+    }
 }
 
 impl TryFrom<RawCoin> for IbcCoin {
