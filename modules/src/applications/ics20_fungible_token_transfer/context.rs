@@ -51,7 +51,7 @@ pub trait Ics20Keeper:
     ) -> Result<(), Ics20Error>;
 
     /// Sets a new {trace hash -> denom trace} pair to the store.
-    fn set_denom_trace(&mut self, denom_trace: DenomTrace);
+    fn set_denom_trace(&mut self, denom_trace: DenomTrace) -> Result<(), Ics20Error>;
 }
 
 pub trait Ics20Reader:
@@ -356,7 +356,8 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
                 let ctx = ctx.downcast_mut::<Ctx>().unwrap();
                 let hashed_denom = coin.denom.hashed();
                 if ctx.has_denom_trace(hashed_denom) {
-                    ctx.set_denom_trace(coin.denom.clone());
+                    ctx.set_denom_trace(coin.denom.clone())
+                        .map_err(|e| e.to_string())?;
                 }
 
                 let amount = IbcCoin::from(coin);
