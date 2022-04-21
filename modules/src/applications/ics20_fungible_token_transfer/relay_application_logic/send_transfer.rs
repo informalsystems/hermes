@@ -1,20 +1,28 @@
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::applications::ics20_fungible_token_transfer::error::Error;
 use crate::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
+use crate::applications::ics20_fungible_token_transfer::{Coin, IbcCoin, TracePrefix};
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::packet::PacketResult;
 use crate::handler::HandlerOutput;
 use crate::prelude::*;
 
+use subtle_encoding::bech32;
+
 #[allow(unused)]
-pub(crate) fn send_transfer<Ctx, AccountId>(
-    ctx: &Ctx,
+pub(crate) fn send_transfer<Ctx>(
+    ctx: &mut Ctx,
     msg: MsgTransfer,
 ) -> Result<HandlerOutput<PacketResult>, Error>
 where
-    Ctx: Ics20Context<AccountId = AccountId>,
+    Ctx: Ics20Context,
 {
+    if !ctx.is_send_enabled() {
+        return Err(Error::send_disabled());
+    }
+
     let source_channel_end = ctx
         .channel_end(&(msg.source_port.clone(), msg.source_channel))
         .map_err(Error::ics04_channel)?;
@@ -32,7 +40,45 @@ where
         .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel))
         .map_err(Error::ics04_channel)?;
 
-    //TODO: Application LOGIC.
+    // TODO(hu55a1n1): get channel capability
+
+    let denom = match msg.token.clone() {
+        IbcCoin::Hashed(coin) => ctx
+            .get_denom_trace(coin.denom)
+            .ok_or_else(Error::trace_not_found)?,
+        IbcCoin::Base(coin) => coin.denom.into(),
+    };
+
+    let sender = {
+        bech32::decode(&msg.sender)
+            .map(|_| ())
+            .map_err(Error::invalid_sender_address)?;
+        msg.sender.to_string().parse()?
+    };
+
+    let prefix = TracePrefix::new(msg.source_port.clone(), msg.source_channel);
+    if denom.is_sender_chain_source(&prefix) {
+        let escrow_address =
+            ctx.get_channel_escrow_address(msg.source_port.clone(), msg.source_channel)?;
+        ctx.send_coins(&sender, &escrow_address, msg.token.clone())?;
+    } else {
+        ctx.send_coins_from_account_to_module(
+            sender,
+            ctx.get_transfer_account(),
+            msg.token.clone(),
+        )?;
+        ctx.burn_coins(ctx.get_transfer_account(), msg.token.clone())
+            .expect("cannot burn coins after a successful send to a module account");
+    }
+
+    let data = PacketData {
+        token: Coin {
+            denom,
+            amount: msg.token.amount(),
+        },
+        sender: msg.sender.to_string().parse()?,
+        receiver: msg.receiver.to_string().parse()?,
+    };
 
     let packet = Packet {
         sequence,

@@ -97,6 +97,9 @@ pub trait Ics20Reader:
 
     /// Returns true iff the store contains a `DenomTrace` entry for the specified `HashedDenom`.
     fn has_denom_trace(&self, hashed_denom: HashedDenom) -> bool;
+
+    /// Get the denom trace associated with the specified hash in the store.
+    fn get_denom_trace(&self, denom_hash: HashedDenom) -> Option<DenomTrace>;
 }
 
 pub trait BankKeeper {

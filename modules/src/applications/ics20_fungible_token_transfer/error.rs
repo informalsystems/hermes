@@ -122,8 +122,14 @@ define_error! {
         ReceiveDisabled
             | _ | { "receive is not enabled" },
 
+        SendDisabled
+            | _ | { "send is not enabled" },
+
         UnauthorisedReceive
             { receiver: Signer }
             | e | { format_args!("'{0}' is not allowed to receive funds", e.receiver) },
+
+        TraceNotFound
+            | _ | { "no trace associated with specified hash" },
     }
 }

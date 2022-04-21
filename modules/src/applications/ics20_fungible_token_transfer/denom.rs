@@ -219,6 +219,15 @@ impl From<DenomTrace> for RawDenomTrace {
     }
 }
 
+impl From<Denom> for DenomTrace {
+    fn from(denom: Denom) -> Self {
+        Self {
+            trace_path: Default::default(),
+            base_denom: denom,
+        }
+    }
+}
+
 impl fmt::Display for DenomTrace {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.trace_path.0.is_empty() {
