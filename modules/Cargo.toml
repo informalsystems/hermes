@@ -1,13 +1,13 @@
 [package]
 name         = "ibc"
-version      = "0.13.0-rc.0"
+version      = "0.13.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/ibc-rs"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.58"
+rust-version = "1.60"
 description  = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
     This crate comprises the main data structures and on-chain logic.
@@ -27,13 +27,13 @@ mocks = ["tendermint-testgen", "clock", "std"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.16.0", path = "../proto", default-features = false }
+ibc-proto = { version = "0.17.0", path = "../proto", default-features = false }
 ics23 = { version = "0.7.0", default-features = false }
 time = { version = "0.3", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1", default-features = false }
-tracing = { version = "0.1.32", default-features = false }
+tracing = { version = "0.1.34", default-features = false }
 prost = { version = "0.9", default-features = false }
 prost-types = { version = "0.9", default-features = false }
 bytes = { version = "1.1.0", default-features = false }
@@ -45,30 +45,30 @@ num-traits = { version = "0.2.14", default-features = false }
 derive_more = { version = "0.99.17", default-features = false, features = ["from", "display"] }
 
 [dependencies.tendermint]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "=0.23.5"
+version = "=0.23.6"
 optional = true
 default-features = false
 
 [dev-dependencies]
 env_logger = "0.9.0"
-tracing-subscriber = { version = "0.3.9", features = ["fmt", "env-filter", "json"]}
-test-log = { version = "0.2.8", features = ["trace"] }
+tracing-subscriber = { version = "0.3.11", features = ["fmt", "env-filter", "json"]}
+test-log = { version = "0.2.10", features = ["trace"] }
 modelator = "0.4.2"
 sha2 = { version = "0.10.2" }
-tendermint-rpc = { version = "=0.23.5", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.23.5" } # Needed for generating (synthetic) light blocks.
+tendermint-rpc = { version = "=0.23.6", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "=0.23.6" } # Needed for generating (synthetic) light blocks.
 
 [[test]]
 name = "mbt"

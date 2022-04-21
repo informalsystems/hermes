@@ -1,6 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
 
+use core::time::Duration;
 use ibc::{
     core::{
         ics02_client::client_state::ClientState,
@@ -136,12 +137,12 @@ impl TxIcs20MsgTransferCmd {
 
         let opts = TransferOptions {
             packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id.clone(),
+            packet_src_channel_id: self.src_channel_id,
             amount: self.amount,
             denom,
             receiver: self.receiver.clone(),
             timeout_height_offset: self.timeout_height_offset,
-            timeout_seconds: core::time::Duration::from_secs(self.timeout_seconds),
+            timeout_duration: Duration::from_secs(self.timeout_seconds),
             number_msgs,
         };
 
@@ -226,7 +227,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         // Checks pass, build and send the tx
         let res: Result<Vec<IbcEvent>, Error> =
             build_and_send_transfer_messages(&chains.src, &chains.dst, &opts)
-                .map_err(Error::packet);
+                .map_err(Error::transfer);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),

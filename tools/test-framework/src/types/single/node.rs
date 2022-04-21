@@ -45,11 +45,6 @@ pub struct FullNode {
        The child process that is running the full node.
 
        The full node is killed when the `Arc` shared pointer is dropped.
-       Test frameworks should keep a reference to the shared pointer
-       so that the full node is kept alive even in the event that the
-       test exited with errors, so that
-       [`hang_on_error`](crate::types::config::TestConfig::hang_on_error)
-       can be used for manual interaction with the full node.
 
        Test authors can acquire the child process and kill the full node
        in the middle of tests using [`kill`](FullNode::kill).
@@ -140,7 +135,7 @@ impl FullNode {
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
-            max_block_time: Default::default(),
+            max_block_time: Duration::from_secs(30),
             clock_drift: Duration::from_secs(5),
             trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
             trust_threshold: Default::default(),

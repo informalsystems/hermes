@@ -34,12 +34,14 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 
-use crate::cache::Cache;
+use crate::cache::{Cache, CacheStatus};
+use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::tx::TrackedMsgs;
-use crate::chain::{HealthCheck, StatusResponse};
+use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;
 use crate::error::Error;
+use crate::telemetry;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
 #[derive(Debug, Clone)]
@@ -125,14 +127,21 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_application_status(&self) -> Result<StatusResponse, Error> {
+    fn query_application_status(&self) -> Result<ChainStatus, Error> {
         self.inner().query_application_status()
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {
         let handle = self.inner();
-        self.cache
-            .get_or_try_update_latest_height_with(|| handle.query_latest_height())
+        let (result, in_cache) = self
+            .cache
+            .get_or_try_update_latest_height_with(|| handle.query_latest_height())?;
+
+        if in_cache == CacheStatus::Hit {
+            telemetry!(query_cache_hit, &self.id(), "query_latest_height");
+        }
+
+        Ok(result)
     }
 
     fn query_clients(
@@ -150,10 +159,17 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<AnyClientState, Error> {
         let handle = self.inner();
         if height.is_zero() {
-            self.cache
+            let (result, in_cache) = self
+                .cache
                 .get_or_try_insert_client_state_with(client_id, || {
                     handle.query_client_state(client_id, height)
-                })
+                })?;
+
+            if in_cache == CacheStatus::Hit {
+                telemetry!(query_cache_hit, &self.id(), "query_client_state");
+            }
+
+            Ok(result)
         } else {
             handle.query_client_state(client_id, height)
         }
@@ -212,10 +228,17 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<ConnectionEnd, Error> {
         let handle = self.inner();
         if height.is_zero() {
-            self.cache
+            let (result, in_cache) = self
+                .cache
                 .get_or_try_insert_connection_with(connection_id, || {
                     handle.query_connection(connection_id, height)
-                })
+                })?;
+
+            if in_cache == CacheStatus::Hit {
+                telemetry!(query_cache_hit, &self.id(), "query_connection");
+            }
+
+            Ok(result)
         } else {
             handle.query_connection(connection_id, height)
         }
@@ -257,10 +280,16 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<ChannelEnd, Error> {
         let handle = self.inner();
         if height.is_zero() {
-            self.cache.get_or_try_insert_channel_with(
-                &PortChannelId::new(channel_id.clone(), port_id.clone()),
+            let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
+                &PortChannelId::new(*channel_id, port_id.clone()),
                 || handle.query_channel(port_id, channel_id, height),
-            )
+            )?;
+
+            if in_cache == CacheStatus::Hit {
+                telemetry!(query_cache_hit, &self.id(), "query_channel");
+            }
+
+            Ok(result)
         } else {
             handle.query_channel(port_id, channel_id, height)
         }
@@ -313,9 +342,9 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<AnyClientState, Error> {
-        self.inner().build_client_state(height, dst_config)
+        self.inner().build_client_state(height, settings)
     }
 
     /// Constructs a consensus state at the given height
@@ -411,5 +440,9 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
         self.inner().query_blocks(request)
+    }
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
+        self.inner.query_host_consensus_state(height)
     }
 }

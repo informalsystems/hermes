@@ -55,6 +55,12 @@ define_error! {
     }
 }
 
+impl FilterError {
+    pub fn log_as_debug(&self) -> bool {
+        matches!(self.detail(), FilterErrorDetail::Spawn(e) if e.source.log_as_debug())
+    }
+}
+
 /// A cache storing filtering status (allow or deny) for
 /// arbitrary identifiers.
 #[derive(Default, Debug)]
@@ -271,7 +277,7 @@ impl FilterPolicy {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> Result<Permission, FilterError> {
-        let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
+        let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), *channel_id);
 
         trace!(
             "[client filter] controlling permissions for {:?}",
@@ -315,7 +321,7 @@ impl FilterPolicy {
             conn_id,
         )?;
 
-        let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
+        let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), *channel_id);
 
         debug!(
             "[client filter] {:?}: relay for channel {:?}: ",

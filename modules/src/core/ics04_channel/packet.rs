@@ -388,7 +388,7 @@ mod tests {
             Test {
                 name: "Src channel validation: correct".to_string(),
                 raw: RawPacket {
-                    source_channel: "srcchannelp34".to_string(),
+                    source_channel: "channel-1".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,
@@ -404,7 +404,7 @@ mod tests {
             Test {
                 name: "Bad src channel, name too long".to_string(),
                 raw: RawPacket {
-                    source_channel: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
+                    source_channel: "channel-12839128379182739812739879".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
@@ -412,7 +412,7 @@ mod tests {
             Test {
                 name: "Dst channel validation: correct".to_string(),
                 raw: RawPacket {
-                    destination_channel: "dstchannelp34".to_string(),
+                    destination_channel: "channel-34".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,
@@ -428,7 +428,7 @@ mod tests {
             Test {
                 name: "Bad dst channel, name too long".to_string(),
                 raw: RawPacket {
-                    destination_channel: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
+                    destination_channel: "channel-12839128379182739812739879".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

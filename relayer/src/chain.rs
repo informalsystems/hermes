@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
 
-use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
@@ -36,17 +35,20 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
+use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
-use crate::event::monitor::TxMonitorCmd;
+use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
-use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
+use self::client::ClientSettings;
 use self::tx::TrackedMsgs;
 
+pub mod client;
 pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
@@ -65,7 +67,7 @@ pub enum HealthCheck {
 
 /// The result of the application status query.
 #[derive(Clone, Debug)]
-pub struct StatusResponse {
+pub struct ChainStatus {
     pub height: ICSHeight,
     pub timestamp: Timestamp,
 }
@@ -158,7 +160,7 @@ pub trait ChainEndpoint: Sized {
     }
 
     /// Query the latest height and timestamp the application is at
-    fn query_application_status(&self) -> Result<StatusResponse, Error>;
+    fn query_application_status(&self) -> Result<ChainStatus, Error>;
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(
@@ -270,6 +272,8 @@ pub trait ChainEndpoint: Sized {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 
+    fn query_host_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error>;
+
     // Provable queries
     fn proven_client_state(
         &self,
@@ -309,7 +313,7 @@ pub trait ChainEndpoint: Sized {
     fn build_client_state(
         &self,
         height: ICSHeight,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<Self::ClientState, Error>;
 
     fn build_consensus_state(

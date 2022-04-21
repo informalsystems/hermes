@@ -169,6 +169,7 @@ impl WorkerMap {
         )
     }
 
+    /// Compute the next worker id
     fn next_worker_id(&mut self) -> WorkerId {
         let id = self.latest_worker_id.next();
         self.latest_worker_id = id;
@@ -193,7 +194,12 @@ impl WorkerMap {
             .collect()
     }
 
-    /// Shutdown the worker associated with the given [`Object`].
+    /// Return all the handles to the workers tracked in this map.
+    pub fn handles(&self) -> impl Iterator<Item = &WorkerHandle> {
+        self.workers.values()
+    }
+
+    /// Shutdown the worker associated with the given [`Object`], synchronously.
     pub fn shutdown_worker(&mut self, object: &Object) {
         if let Some(handle) = self.workers.remove(object) {
             telemetry!(worker, metric_type(object), -1);
@@ -203,13 +209,7 @@ impl WorkerMap {
         // Drop handle automatically handles the waiting for tasks to terminate.
     }
 
-    /// Get an iterator over the worker map's objects.
-    pub fn objects(&self) -> impl Iterator<Item = (WorkerId, &Object)> {
-        self.workers
-            .iter()
-            .map(|(object, handle)| (handle.id(), object))
-    }
-
+    /// Shut down all the workers, asynchronously.
     pub fn shutdown(&mut self) {
         let workers = mem::take(&mut self.workers);
         for worker in workers.values() {

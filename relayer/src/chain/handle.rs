@@ -51,7 +51,9 @@ use crate::{
     keyring::KeyEntry,
 };
 
-use super::{tx::TrackedMsgs, HealthCheck, StatusResponse};
+use super::client::ClientSettings;
+use super::tx::TrackedMsgs;
+use super::{ChainStatus, HealthCheck};
 
 mod base;
 mod cache;
@@ -148,7 +150,7 @@ pub enum ChainRequest {
     },
 
     QueryApplicationStatus {
-        reply_to: ReplyTo<StatusResponse>,
+        reply_to: ReplyTo<ChainStatus>,
     },
 
     QueryClients {
@@ -165,7 +167,7 @@ pub enum ChainRequest {
 
     BuildClientState {
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
         reply_to: ReplyTo<AnyClientState>,
     },
 
@@ -333,6 +335,11 @@ pub enum ChainRequest {
         request: QueryBlockRequest,
         reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
     },
+
+    QueryHostConsensusState {
+        height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
+    },
 }
 
 pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
@@ -377,7 +384,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
-    fn query_application_status(&self) -> Result<StatusResponse, Error>;
+    fn query_application_status(&self) -> Result<ChainStatus, Error>;
 
     fn query_latest_height(&self) -> Result<Height, Error> {
         Ok(self.query_application_status()?.height)
@@ -493,7 +500,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<AnyClientState, Error>;
 
     /// Constructs a consensus state at the given height
@@ -560,4 +567,6 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
 }

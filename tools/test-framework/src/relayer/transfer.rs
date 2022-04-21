@@ -46,17 +46,17 @@ pub fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     denom: &MonoTagged<SrcChain, &Denom>,
     amount: u64,
     timeout_height_offset: u64,
-    timeout_seconds: Duration,
+    timeout_duration: Duration,
     number_messages: usize,
 ) -> Result<Vec<IbcEvent>, Error> {
     let transfer_options = TransferOptions {
         packet_src_port_id: channel.port_a.value().clone(),
-        packet_src_channel_id: channel.channel_id_a.value().clone(),
+        packet_src_channel_id: *channel.channel_id_a.value(),
         amount: Amount(amount.into()),
         denom: denom.value().to_string(),
         receiver: Some(recipient.value().0.clone()),
         timeout_height_offset,
-        timeout_seconds,
+        timeout_duration,
         number_msgs: number_messages,
     };
 

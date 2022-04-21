@@ -7,7 +7,7 @@ use std::sync::RwLock;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use itertools::Itertools;
-use tracing::{error, error_span, info, trace, warn};
+use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
@@ -17,11 +17,8 @@ use ibc::{
 
 use crate::{
     chain::{handle::ChainHandle, HealthCheck},
-    config::{Config, SharedConfig},
-    event::{
-        self,
-        monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
-    },
+    config::Config,
+    event::monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,
     registry::{Registry, SharedRegistry},
     rest,
@@ -50,7 +47,7 @@ use cmd::SupervisorCmd;
 
 use self::{scan::ChainScanner, spawn::SpawnContext};
 
-type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
+type ArcBatch = Arc<monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
 
 /**
@@ -78,12 +75,12 @@ pub struct SupervisorOptions {
 
 /**
    Spawn a supervisor for testing purpose using the provided
-   [`SharedConfig`] and [`SharedRegistry`]. Returns a
+   [`Config`] and [`SharedRegistry`]. Returns a
    [`SupervisorHandle`] that stops the supervisor when the
    value is dropped.
 */
 pub fn spawn_supervisor(
-    config: SharedConfig,
+    config: Config,
     registry: SharedRegistry<impl ChainHandle>,
     rest_rx: Option<rest::Receiver>,
     options: SupervisorOptions,
@@ -120,21 +117,21 @@ impl SupervisorHandle {
 }
 
 pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
-    config: Arc<RwLock<Config>>,
+    config: Config,
     registry: SharedRegistry<Chain>,
     rest_rx: Option<rest::Receiver>,
     cmd_rx: Receiver<SupervisorCmd>,
     options: SupervisorOptions,
 ) -> Result<Vec<TaskHandle>, Error> {
     if options.health_check {
-        health_check(&config.acquire_read(), &mut registry.write());
+        health_check(&config, &mut registry.write());
     }
 
     let workers = Arc::new(RwLock::new(WorkerMap::new()));
     let client_state_filter = Arc::new(RwLock::new(FilterPolicy::default()));
 
     let scan = chain_scanner(
-        &config.acquire_read(),
+        &config,
         &mut registry.write(),
         &mut client_state_filter.acquire_write(),
         if options.force_full_scan {
@@ -148,17 +145,12 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     info!("Scanned chains:");
     info!("{}", scan);
 
-    spawn_context(
-        &config.acquire_read(),
-        &mut registry.write(),
-        &mut workers.acquire_write(),
-    )
-    .spawn_workers(scan);
+    spawn_context(&config, &mut registry.write(), &mut workers.acquire_write()).spawn_workers(scan);
 
-    let subscriptions = init_subscriptions(&config.acquire_read(), &mut registry.write())?;
+    let subscriptions = init_subscriptions(&config, &mut registry.write())?;
 
     let batch_tasks = spawn_batch_workers(
-        config.clone(),
+        &config,
         registry.clone(),
         client_state_filter,
         workers.clone(),
@@ -179,7 +171,7 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
 }
 
 fn spawn_batch_workers<Chain: ChainHandle>(
-    config: Arc<RwLock<Config>>,
+    config: &Config,
     registry: SharedRegistry<Chain>,
     client_state_filter: Arc<RwLock<FilterPolicy>>,
     workers: Arc<RwLock<WorkerMap>>,
@@ -199,7 +191,7 @@ fn spawn_batch_workers<Chain: ChainHandle>(
             move || -> Result<Next, TaskError<Infallible>> {
                 if let Ok(batch) = subscription.try_recv() {
                     handle_batch(
-                        &config.acquire_read(),
+                        &config,
                         &mut registry.write(),
                         &mut client_state_filter.acquire_write(),
                         &mut workers.acquire_write(),
@@ -241,7 +233,7 @@ pub fn spawn_cmd_worker<Chain: ChainHandle>(
 }
 
 pub fn spawn_rest_worker<Chain: ChainHandle>(
-    config: Arc<RwLock<Config>>,
+    config: Config,
     registry: SharedRegistry<Chain>,
     workers: Arc<RwLock<WorkerMap>>,
     rest_rx: rest::Receiver,
@@ -250,12 +242,7 @@ pub fn spawn_rest_worker<Chain: ChainHandle>(
         error_span!("rest"),
         Some(Duration::from_millis(500)),
         move || -> Result<Next, TaskError<Infallible>> {
-            handle_rest_requests(
-                &config.acquire_read(),
-                &registry.read(),
-                &workers.acquire_read(),
-                &rest_rx,
-            );
+            handle_rest_requests(&config, &registry.read(), &workers.acquire_read(), &rest_rx);
 
             Ok(Next::Continue)
         },
@@ -338,6 +325,15 @@ fn relay_on_object<Chain: ChainHandle>(
             warn!(
                 "client filter denies relaying on object {}",
                 object.short_name()
+            );
+
+            false
+        }
+        Err(e) if e.log_as_debug() => {
+            debug!(
+                "denying relaying on object {}, caused by: {}",
+                object.short_name(),
+                e
             );
 
             false
@@ -561,7 +557,7 @@ fn dump_state<Chain: ChainHandle>(
 /// as a [`SupervisorState`].
 fn state<Chain: ChainHandle>(registry: &Registry<Chain>, workers: &WorkerMap) -> SupervisorState {
     let chains = registry.chains().map(|c| c.id()).collect_vec();
-    SupervisorState::new(chains, workers.objects())
+    SupervisorState::new(chains, workers.handles())
 }
 
 fn handle_rest_requests<Chain: ChainHandle>(

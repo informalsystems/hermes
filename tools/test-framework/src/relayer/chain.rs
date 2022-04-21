@@ -54,9 +54,10 @@ use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusS
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
+use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::tx::TrackedMsgs;
-use ibc_relayer::chain::{HealthCheck, StatusResponse};
+use ibc_relayer::chain::{ChainStatus, HealthCheck};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::error::Error;
 use ibc_relayer::{connection::ConnectionMsgType, keyring::KeyEntry};
@@ -127,7 +128,7 @@ where
         self.value().ibc_version()
     }
 
-    fn query_application_status(&self) -> Result<StatusResponse, Error> {
+    fn query_application_status(&self) -> Result<ChainStatus, Error> {
         self.value().query_application_status()
     }
 
@@ -288,9 +289,9 @@ where
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<AnyClientState, Error> {
-        self.value().build_client_state(height, dst_config)
+        self.value().build_client_state(height, settings)
     }
 
     /// Constructs a consensus state at the given height
@@ -386,5 +387,9 @@ where
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
         self.value().query_blocks(request)
+    }
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
+        self.value().query_host_consensus_state(height)
     }
 }

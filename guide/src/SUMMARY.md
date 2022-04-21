@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v0.13.0-rc.0)
+# Hermes (v0.13.0)
 
 ---
 - [Introduction](./index.md)
@@ -11,6 +11,7 @@
    - [Pre-requisites](./pre_requisites.md)
    - [Installation](./installation.md)
    - [Configuration](./config.md)
+     - [Example Configuration](./example-config.md)
 - [Telemetry](./telemetry.md)
 - [REST API](./rest-api.md)
 - [Tutorials](./tutorials/index.md)

@@ -9,7 +9,7 @@ use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
 use crate::supervisor::Error as SupervisorError;
-use crate::transfer::PacketError;
+use crate::transfer::TransferError;
 
 define_error! {
     LinkError {
@@ -64,7 +64,7 @@ define_error! {
             |_| { "failed during a client operation" },
 
         Packet
-            [ PacketError ]
+            [ TransferError ]
             |_| { "packet error" },
 
         OldPacketClearingFailed
@@ -143,7 +143,9 @@ define_error! {
                     e.channel_id, e.chain_id)
             },
 
-    }
+        UpdateClientFailed
+             |_| { "failed to update client" },
+   }
 }
 
 impl HasExpiredOrFrozenError for LinkErrorDetail {

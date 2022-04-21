@@ -1,4 +1,3 @@
-use crate::core::ics02_client::height::Height;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
@@ -22,30 +21,30 @@ pub struct AckPacketResult {
 
 pub fn process(
     ctx: &dyn ChannelReader,
-    msg: MsgAcknowledgement,
+    msg: &MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
 
     let source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel))?;
 
     if !source_channel_end.state_matches(&State::Open) {
-        return Err(Error::channel_closed(packet.source_channel.clone()));
+        return Err(Error::channel_closed(packet.source_channel));
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
-        Some(packet.destination_channel.clone()),
+        Some(packet.destination_channel),
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
         return Err(Error::invalid_packet_counterparty(
             packet.destination_port.clone(),
-            packet.destination_channel.clone(),
+            packet.destination_channel,
         ));
     }
 
@@ -60,7 +59,7 @@ pub fn process(
     // Verify packet commitment
     let packet_commitment = ctx.get_packet_commitment(&(
         packet.source_port.clone(),
-        packet.source_channel.clone(),
+        packet.source_channel,
         packet.sequence,
     ))?;
 
@@ -84,8 +83,8 @@ pub fn process(
     )?;
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
-        let next_seq_ack = ctx
-            .get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+        let next_seq_ack =
+            ctx.get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel))?;
 
         if packet.sequence != next_seq_ack {
             return Err(Error::invalid_packet_sequence(
@@ -96,14 +95,14 @@ pub fn process(
 
         PacketResult::Ack(AckPacketResult {
             port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel.clone(),
+            channel_id: packet.source_channel,
             seq: packet.sequence,
             seq_number: Some(next_seq_ack.increment()),
         })
     } else {
         PacketResult::Ack(AckPacketResult {
             port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel.clone(),
+            channel_id: packet.source_channel,
             seq: packet.sequence,
             seq_number: None,
         })
@@ -112,7 +111,7 @@ pub fn process(
     output.log("success: packet ack");
 
     output.emit(IbcEvent::AcknowledgePacket(AcknowledgePacket {
-        height: Height::zero(),
+        height: ctx.host_height(),
         packet: packet.clone(),
     }));
 
@@ -172,7 +171,7 @@ mod tests {
             Order::default(),
             Counterparty::new(
                 packet.destination_port.clone(),
-                Some(packet.destination_channel.clone()),
+                Some(packet.destination_channel),
             ),
             vec![ConnectionId::default()],
             Version::ics20(),
@@ -216,7 +215,7 @@ mod tests {
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
                         packet.source_port.clone(),
-                        packet.source_channel.clone(),
+                        packet.source_channel,
                         source_channel_end,
                     )
                     .with_packet_commitment(
@@ -238,7 +237,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = process(&test.ctx, test.msg.clone());
+            let res = process(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
@@ -254,6 +253,7 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::AcknowledgePacket(_)));
+                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

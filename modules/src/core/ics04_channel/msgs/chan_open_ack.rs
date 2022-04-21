@@ -184,7 +184,7 @@ mod tests {
             Test {
                 name: "Correct channel identifier".to_string(),
                 raw: RawMsgChannelOpenAck {
-                    channel_id: "channelid34".to_string(),
+                    channel_id: "channel-34".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,
@@ -200,7 +200,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 raw: RawMsgChannelOpenAck {
-                    channel_id: "abcdefghsdfasdfasfdasfdwewefsdfasdfasdfasdfasdfasdfsfdijklmnopqrstu".to_string(),
+                    channel_id: "channel-12839128379182739812739879".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
@@ -208,7 +208,7 @@ mod tests {
             Test {
                 name: "[Counterparty] Correct channel identifier".to_string(),
                 raw: RawMsgChannelOpenAck {
-                    counterparty_channel_id: "channelid34".to_string(),
+                    counterparty_channel_id: "channel-34".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,
@@ -224,7 +224,7 @@ mod tests {
             Test {
                 name: "[Counterparty] Bad channel, name too long".to_string(),
                 raw: RawMsgChannelOpenAck {
-                    counterparty_channel_id: "abcdefghsdfasdfasfdasfdwewefsdfasdfasdfasdfasdfasdfsfdijklmnopqrstu".to_string(),
+                    counterparty_channel_id: "channel-12839128379182739812739879".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

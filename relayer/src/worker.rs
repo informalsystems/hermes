@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use tracing::error;
 
 use crate::foreign_client::ForeignClient;
-use crate::link::{Link, LinkParameters};
+use crate::link::{Link, LinkParameters, Resubmit};
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
     config::Config,
@@ -18,7 +18,7 @@ mod error;
 pub use error::RunError;
 
 mod handle;
-pub use handle::WorkerHandle;
+pub use handle::{WorkerData, WorkerHandle};
 
 mod cmd;
 pub use cmd::WorkerCmd;
@@ -62,38 +62,52 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> WorkerHandle {
     let mut task_handles = Vec::new();
 
-    let cmd_tx = match &object {
+    let (cmd_tx, data) = match &object {
         Object::Client(client) => {
             let client = ForeignClient::restore(client.dst_client_id.clone(), chains.b, chains.a);
+
+            let (mut refresh, mut misbehaviour) = (false, false);
 
             let refresh_task = client::spawn_refresh_client(client.clone());
             if let Some(refresh_task) = refresh_task {
                 task_handles.push(refresh_task);
+                refresh = true;
             }
 
-            if config.mode.clients.misbehaviour {
+            let cmd_tx = if config.mode.clients.misbehaviour {
                 let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
                 let misbehavior_task = client::detect_misbehavior_task(cmd_rx, client);
                 if let Some(task) = misbehavior_task {
                     task_handles.push(task);
+                    misbehaviour = true;
                 }
+
                 Some(cmd_tx)
             } else {
                 None
-            }
+            };
+
+            let data = WorkerData::Client {
+                misbehaviour,
+                refresh,
+            };
+
+            (cmd_tx, Some(data))
         }
         Object::Connection(connection) => {
             let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
             let connection_task =
                 connection::spawn_connection_worker(connection.clone(), chains, cmd_rx);
             task_handles.push(connection_task);
-            Some(cmd_tx)
+
+            (Some(cmd_tx), None)
         }
         Object::Channel(channel) => {
             let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
             let channel_task = channel::spawn_channel_worker(channel.clone(), chains, cmd_rx);
             task_handles.push(channel_task);
-            Some(cmd_tx)
+
+            (Some(cmd_tx), None)
         }
         Object::Packet(path) => {
             let packets_config = config.mode.packets;
@@ -102,7 +116,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 chains.b,
                 LinkParameters {
                     src_port_id: path.src_port_id.clone(),
-                    src_channel_id: path.src_channel_id.clone(),
+                    src_channel_id: path.src_channel_id,
                 },
                 packets_config.tx_confirmation,
             );
@@ -111,6 +125,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 Ok(link) => {
                     let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
                     let link = Arc::new(Mutex::new(link));
+                    let resubmit = Resubmit::from_clear_interval(packets_config.clear_interval);
                     let packet_task = packet::spawn_packet_cmd_worker(
                         cmd_rx,
                         link.clone(),
@@ -120,17 +135,18 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     );
                     task_handles.push(packet_task);
 
-                    let link_task = packet::spawn_packet_worker(path.clone(), link);
+                    let link_task = packet::spawn_packet_worker(path.clone(), link, resubmit);
                     task_handles.push(link_task);
-                    Some(cmd_tx)
+
+                    (Some(cmd_tx), None)
                 }
                 Err(e) => {
                     error!("error initializing link object for packet worker: {}", e);
-                    None
+                    (None, None)
                 }
             }
         }
     };
 
-    WorkerHandle::new(id, object, cmd_tx, task_handles)
+    WorkerHandle::new(id, object, data, cmd_tx, task_handles)
 }

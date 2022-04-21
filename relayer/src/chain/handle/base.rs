@@ -37,7 +37,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{
-    chain::{tx::TrackedMsgs, StatusResponse},
+    chain::{client::ClientSettings, tx::TrackedMsgs, ChainStatus},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -142,7 +142,7 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
     }
 
-    fn query_application_status(&self) -> Result<StatusResponse, Error> {
+    fn query_application_status(&self) -> Result<ChainStatus, Error> {
         self.send(|reply_to| ChainRequest::QueryApplicationStatus { reply_to })
     }
 
@@ -263,7 +263,7 @@ impl ChainHandle for BaseChainHandle {
     ) -> Result<ChannelEnd, Error> {
         self.send(|reply_to| ChainRequest::QueryChannel {
             port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
+            channel_id: *channel_id,
             height,
             reply_to,
         })
@@ -331,11 +331,11 @@ impl ChainHandle for BaseChainHandle {
     fn build_client_state(
         &self,
         height: Height,
-        dst_config: ChainConfig,
+        settings: ClientSettings,
     ) -> Result<AnyClientState, Error> {
         self.send(|reply_to| ChainRequest::BuildClientState {
             height,
-            dst_config,
+            settings,
             reply_to,
         })
     }
@@ -392,7 +392,7 @@ impl ChainHandle for BaseChainHandle {
     ) -> Result<Proofs, Error> {
         self.send(|reply_to| ChainRequest::BuildChannelProofs {
             port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
+            channel_id: *channel_id,
             height,
             reply_to,
         })
@@ -409,7 +409,7 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::BuildPacketProofs {
             packet_type,
             port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
+            channel_id: *channel_id,
             sequence,
             height,
             reply_to,
@@ -453,6 +453,10 @@ impl ChainHandle for BaseChainHandle {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to })
+    }
+
+    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
+        self.send(|reply_to| ChainRequest::QueryHostConsensusState { height, reply_to })
     }
 }
 
