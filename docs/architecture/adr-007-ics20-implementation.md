@@ -1,11 +1,11 @@
-# ADR 008: ICS20 Implementation Proposal
+# ADR 007: ICS20 Implementation Proposal
 
 ## Changelog
-* 16.02.2022: Proposed
+* 21.04.2022: Draft Proposed
 
 ## Context
 
-The goal of this ADR, is to provide recommendations and a guide for implementing the ICS20 application
+The goal of this ADR is to provide recommendations and a guide for implementing the ICS20 application.
 
 ## Decision
 The  implementation is broken down into traits which should be implemented by the ICS20 module
