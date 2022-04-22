@@ -160,7 +160,7 @@ ICS20 application on-chain.
 /// Should be used in the transaction that initiates the ICS20 token transfer
 /// Performs all logic related to token transfer and returns a SendTransferPacket type
 /// for the calling module to create the actual packet and register it in the ibc module.
-pub fn send_transfer<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<SendTransferPacket, ICS20Error>
+pub fn send_transfer<Ctx>(ctx: &Ctx, _msg: MsgTransfer) -> Result<SendTransferPacket, ICS20Error>
     where Ctx: ICS20Context
 {
     if !ctx.is_send_enabled() {
@@ -172,7 +172,7 @@ pub fn send_transfer<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<SendTransferPac
 
 /// Handles incoming packets with ICS20 data
 /// To be called inside the on_recv_packet callback
-pub fn on_recv_packet<Ctx>(ctx: &Ctx, packet: &Packet, data: &FungibleTokenPacketData) -> ICS20Acknowledgement
+pub fn on_recv_packet<Ctx>(ctx: &Ctx, _packet: &Packet, _data: &FungibleTokenPacketData) -> ICS20Acknowledgement
     where Ctx: ICS20Context
 {
     if !ctx.is_received_enabled() {
@@ -206,7 +206,7 @@ pub fn on_acknowledgement_packet<Ctx>(ctx: &Ctx, ack: ICS20Acknowledgement, data
 }
 
 /// Implements logic for refunding a sender on packet timeout or acknowledgement error
-pub fn refund_packet_token<Ctx>(ctx: &Ctx, data: &FungibleTokenPacketData) -> Result<(), ICS20Error>
+pub fn refund_packet_token<Ctx>(_ctx: &Ctx, _data: &FungibleTokenPacketData) -> Result<(), ICS20Error>
     where Ctx: ICS20Context
 {
     //...
