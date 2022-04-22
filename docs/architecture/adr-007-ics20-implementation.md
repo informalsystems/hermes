@@ -204,7 +204,7 @@ Proposed
 ### Positive
 
 - Provides more clarity on the details of implementing the ICS20 application in the `ibc` crate.
-- Helps align closer with the ibc-go implementation.
+- Helps align closer with the ibc-go implementation[^3].
 
 ### Negative
 
@@ -212,5 +212,6 @@ Proposed
 
 ## References
 
-* https://github.com/informalsystems/ibc-rs/issues/1759
-* https://github.com/cosmos/ibc-go/tree/d31f92d9bf709f5550b75db5c70a3b44314d9781/modules/apps/transfer
+[^1]: [ibc-go ADR 001: Coin Source Tracing](https://github.com/cosmos/ibc-go/blob/4271027a5ab1e6faaa2edbc2b9840209c315afab/docs/architecture/adr-001-coin-source-tracing.md)
+[^2]: [ICS20 spec](https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer)
+[^3]: [ibc-go's transfer module implementation](https://github.com/cosmos/ibc-go/tree/d31f92d9bf709f5550b75db5c70a3b44314d9781/modules/apps/transfer)
