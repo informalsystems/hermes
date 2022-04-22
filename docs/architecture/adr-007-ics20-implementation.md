@@ -10,43 +10,54 @@ The goal of this ADR is to provide recommendations and a guide for implementing 
 
 ## Decision
 
-The implementation is broken down into traits which should be implemented by the ICS20 module context, it also defines
-some primitives that would help in building a module compliant with the ICS20 spec.
+The proposal is broken down into traits that should be implemented by the ICS20 module. It also defines some primitives
+that would help in building a module compliant with the ICS20 spec.
 
-Decided it's better for the ICS20 context to be completely independent of the IBC core context traits, that way it can
-be fully implemented as a standalone module in any framework.
+#### Types
 
-Coupling the ICS20 Context with the IBC Core traits will not allow the existence of the ICS20 module as a standalone
-library in some frameworks. It should be up to the module implementer to use the provided helper functions and ICS20
-primitives correctly.
+The implementation must provide a base denom type that is serializable to string. Additionally, the following denom
+types must also be provided:
+
+* `HashedDenom`: A denom type that can be serialized to a string of the form `'ibc/{Hash(trace_path/base_denom)}'`.
+* `PrefixedDenom`: A denom type with a base denom which is prefixed with a trace. The trace itself consists
+  of `'{PortId}/{ChannelId}'` pairs and enables coin source tracing[^1].
 
 ```rust
-    define_error! {
-    #[derive(Debug, PartialEq, Eq)]
-    Error {
-        InvalidDenomTrace
-            | _ | { "Denom trace is not valid" },
-
-        SendDisabled
-            | _ | { "Sending tokens is disabled" },
-
-        ReceiveDisabled
-            | _ | { "Receiving tokens is disabled" },
-        }
-    }
-
 /// Base denomination type
 pub struct Denom(String);
+```
 
-/// Coin defines a token with a denomination and an amount.
+A `Coin` defines a token with a denomination and an amount where the denomination may be any one of the denom types
+described above.
+
+```rust
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct Coin {
+pub struct Coin<Denom> {
     /// Denomination
-    pub denom: DenomTrace,
-
+    pub denom: Denom,
     /// Amount
     pub amount: U256,
 }
+```
+
+The ICS20 acknowledgement type and packet data type are defined in the spec[^2] and maybe modelled as follows. Note that
+these types must be (de)serializable from/to JSON.
+
+```rust
+pub enum ICS20Acknowledgement {
+    /// Equivalent to b"AQ=="
+    Success,
+    /// Error Acknowledgement
+    Error(String)
+}
+
+pub struct FungibleTokenPacketData {
+    denomination: Denom,
+    amount: U256,
+    sender: String,
+    receiver: String,
+}
+```
 
 pub trait ICS20Keeper: ChannelKeeper
 + PortKeeper
