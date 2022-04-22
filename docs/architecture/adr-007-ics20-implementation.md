@@ -59,69 +59,93 @@ pub struct FungibleTokenPacketData {
 }
 ```
 
+#### Keepers and readers
+
+```rust
 pub trait ICS20Keeper: ChannelKeeper
 + PortKeeper
-+ BankKeeper<Self::AccountId>
-+ AccountKeeper<Self::AccountId>
++ BankKeeper<AccountId=<Self as Ics20Keeper>::AccountId>
++ AccountKeeper<AccountId=<Self as Ics20Keeper>::AccountId>
 {
+    /// The account identifier type.
     type AccountId: Into<String>;
-    /// Returns if sending is allowed in the module params
-    fn is_send_enabled(&self) -> bool;
-    /// Returns if receiving is allowed in the module params
-    fn is_receive_enabled(&self) -> bool;
-    /// Set the params (send_enabled and receive_enabled) for the module
-    fn set_module_params(&mut self, send_enabled: Option<bool>, receive_enabled: Option<bool>) -> Result<(), ICS20Error>;
 
-    /// The following methods are related to object capabilities.
-    ///
-
-    /// Defines a wrapper function for the PortKeeper's bind_port function.
-    fn bind_port(&mut self, port_id: &PortId) -> Result<(), ICS20Error>;
-    /// Sets the portID for the transfer module.
-    fn set_port(&mut self, port_id: &PortId) -> ();
-    /// Wraps the CapabilityKeeper's authenticate_capability function
-    fn authenticate_capability(&mut self, cap: &PortCapability, name: &CapabilityName) -> bool;
-    /// Allows the transfer module to claim a capability that IBC module
-    /// passes to it
-    fn claim_capability(&mut self, cap: &PortCapability, name: &CapabilityName) -> Result<(), ICS20Error>;
     /// Set channel escrow address
     fn set_channel_escrow_address(&mut self, port_id: &PortId, channel_id: &ChannelId) -> Result<(), ICS20Error>;
+    /// Sets a new {trace hash -> denom trace} pair to the store.
+    fn set_denom_trace(&mut self, denom_trace: DenomTrace) -> Result<(), Ics20Error>;
 }
 
 pub trait ICS20Reader: ChannelReader
 + PortReader
-+ AccountReader<Self::AccountId>
++ AccountReader<AccountId=<Self as Ics20Reader>::AccountId>
++ BankReader<AccountId=<Self as Ics20Reader>::AccountId>
 {
-    type AccountId: From<String>;
-    /// is_bound checks if the transfer module is already bound to the desired port.
-    fn is_bound(&self, port_id: &PortId) -> bool;
+    /// The account identifier type.
+    type AccountId: Into<String> + FromStr<Err=Ics20Error>;
+
+    /// Returns true iff sending is allowed in the module params
+    fn is_send_enabled(&self) -> bool;
+    /// Returns true iff receiving is allowed in the module params
+    fn is_receive_enabled(&self) -> bool;
     /// get_transfer_account returns the ICS20 - transfers AccountId.
     fn get_transfer_account(&self) -> AccountId;
-    /// get_port returns the portID for the transfer module.
-    fn get_port(&self) -> Result<PortId, Error>;
     /// Sets and returns the escrow account id for a port and channel combination
     fn get_channel_escrow_address(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<Self::AccountId, ICS20Error>;
-    /// Returns the channel end for port_id and channel_id combination
-    fn get_channel(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ICS20Error>;
-    /// Returns the next sequence send for port_id and channel_id combination
-    fn get_next_sequence_send(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<Sequence, ICS20Error>;
+    /// Returns true iff the store contains a `DenomTrace` entry for the specified `HashedDenom`.
+    fn has_denom_trace(&self, hashed_denom: HashedDenom) -> bool;
+    /// Gets the denom trace associated with the specified hash in the store.
+    fn get_denom_trace(&self, denom_hash: HashedDenom) -> Option<DenomTrace>;
 }
 
-pub trait BankKeeper<AccountId> {
+pub trait BankKeeper {
+    /// The account identifier type.
+    type AccountId: Into<String>;
+
     /// This function should enable sending ibc fungible tokens from one account to another
-    fn send_coins(&mut self, from: &AccountId, to: &AccountId, amt: &Coin) -> Result<(), ICS20Error>;
+    fn send_coins(&mut self, from: &Self::AccountId, to: &Self::AccountId, amt: Coin) -> Result<(), ICS20Error>;
     /// This function to enable  minting tokens(vouchers) in a module
-    fn mint_coins(&mut self, amt: &Coin) -> Result<(), ICS20Error>;
+    fn mint_coins(&mut self, amt: Coin) -> Result<(), ICS20Error>;
     /// This function should enable burning of minted tokens or vouchers
-    fn burn_coins(&mut self, module: &AccountId, amt: &Coin) -> Result<(), ICS20Error>;
+    fn burn_coins(&mut self, module: &Self::AccountId, amt: Coin) -> Result<(), ICS20Error>;
+    /// This function should enable transfer of tokens from the ibc module to an account
+    fn send_coins_from_module_to_account(
+        &mut self,
+        module: Self::AccountId,
+        to: Self::AccountId,
+        amt: Coin,
+    ) -> Result<(), Ics20Error>;
+    /// This function should enable transfer of tokens from an account to the ibc module
+    fn send_coins_from_account_to_module(
+        &mut self,
+        from: Self::AccountId,
+        module: Self::AccountId,
+        amt: Coin,
+    ) -> Result<(), Ics20Error>;
 }
 
-pub trait AccountReader<AccountId> {
+pub trait BankReader {
+    /// The account identifier type.
+    type AccountId: Into<String> + FromStr;
+
+    /// Returns true if the specified account is not allowed to receive funds and false otherwise.
+    fn is_blocked_account(&self, account: &Self::AccountId) -> bool;
+}
+
+pub trait AccountReader {
+    /// The account identifier type.
+    type AccountId: Into<String> + FromStr;
+
     /// This function should return the account of the ibc module
-    fn get_module_account(&self) -> AccountId;
+    fn get_module_account(&self) -> Self::AccountId;
 }
 
-pub trait ICS20Context: ICS20Keeper + ICS20Reader {}
+pub trait Ics20Context:
+Ics20Keeper<AccountId=<Self as Ics20Context>::AccountId>
++ Ics20Reader<AccountId=<Self as Ics20Context>::AccountId>
+{
+    type AccountId: Into<String> + FromStr<Err=Ics20Error>;
+}
 ```
 
 ## Handling ICS20 Packets
@@ -129,27 +153,10 @@ pub trait ICS20Context: ICS20Keeper + ICS20Reader {}
 ICS20 messages are still a subset of channel packets, so they should be handled as such.
 
 The following handlers are recommended to be implemented in the `ics20_fungible_token_transfer` application in the `ibc`
-crate. These handlers will be executed in the module callbacks of any thirdparty IBC module that is implementing an
+crate. These handlers will be executed in the module callbacks of any third-party IBC module that is implementing an
 ICS20 application on-chain.
 
 ```rust
-pub enum ICS20Acknowledgement {
-    /// Equivalent to b"AQ=="
-    Success,
-    /// Error Acknowledgement
-    Error(String)
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub struct FungibleTokenPacketData {
-    denomination: Denom,
-    amount: U256,
-    sender: String,
-    receiver: String,
-}
-
-
 /// Should be used in the transaction that initiates the ICS20 token transfer
 /// Performs all logic related to token transfer and returns a SendTransferPacket type
 /// for the calling module to create the actual packet and register it in the ibc module.
@@ -165,7 +172,7 @@ pub fn send_transfer<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<SendTransferPac
 
 /// Handles incoming packets with ICS20 data
 /// To be called inside the on_recv_packet callback
-pub fn on_recv_packet<Ctx>(ctx: &Ctx, packet: &Packet, data: &FungibleTokenPacketData) -> Result<(), ICS20Error>
+pub fn on_recv_packet<Ctx>(ctx: &Ctx, packet: &Packet, data: &FungibleTokenPacketData) -> ICS20Acknowledgement
     where Ctx: ICS20Context
 {
     if !ctx.is_received_enabled() {
