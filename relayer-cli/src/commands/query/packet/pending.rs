@@ -17,10 +17,10 @@ use crate::prelude::*;
 /// at both ends of a channel.
 #[derive(Debug, Serialize)]
 struct Summary {
-    /// The packets sent on the identified chain.
-    forward: PendingPackets,
+    /// The packets sent on the source chain as identified by the command.
+    src: PendingPackets,
     /// The packets sent on the counterparty chain.
-    reverse: PendingPackets,
+    dst: PendingPackets,
 }
 
 /// This command does the following:
@@ -54,7 +54,7 @@ impl QueryPendingPacketsCmd {
     fn execute(&self) -> Result<Summary, Error> {
         let config = app_config();
 
-        let (chains, ccc) = spawn_chain_counterparty::<BaseChainHandle>(
+        let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
@@ -64,18 +64,24 @@ impl QueryPendingPacketsCmd {
         debug!(
             chain=%self.chain_id,
             "fetched channel from source chain: {:?}",
-            ccc.channel
+            chan_conn_cli.channel
         );
 
-        let forward = pending_packet_summary(&chains.src, &chains.dst, &ccc.channel)
+        let src_summary = pending_packet_summary(&chains.src, &chains.dst, &chan_conn_cli.channel)
             .map_err(Error::supervisor)?;
-        let counterparty_channel =
-            channel_on_destination(&ccc.channel, &ccc.connection, &chains.dst)
-                .map_err(Error::supervisor)?
-                .ok_or_else(|| Error::missing_counterparty_channel_id(ccc.channel))?;
-        let reverse = pending_packet_summary(&chains.dst, &chains.src, &counterparty_channel)
+        let counterparty_channel = channel_on_destination(
+            &chan_conn_cli.channel,
+            &chan_conn_cli.connection,
+            &chains.dst,
+        )
+        .map_err(Error::supervisor)?
+        .ok_or_else(|| Error::missing_counterparty_channel_id(chan_conn_cli.channel))?;
+        let dst_summary = pending_packet_summary(&chains.dst, &chains.src, &counterparty_channel)
             .map_err(Error::supervisor)?;
-        Ok(Summary { forward, reverse })
+        Ok(Summary {
+            src: src_summary,
+            dst: dst_summary,
+        })
     }
 }
 
