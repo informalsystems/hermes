@@ -7,7 +7,7 @@ use std::sync::RwLock;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use itertools::Itertools;
-use tracing::{error, error_span, info, trace, warn};
+use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
@@ -18,10 +18,7 @@ use ibc::{
 use crate::{
     chain::{handle::ChainHandle, HealthCheck},
     config::Config,
-    event::{
-        self,
-        monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
-    },
+    event::monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,
     registry::{Registry, SharedRegistry},
     rest,
@@ -50,7 +47,7 @@ use cmd::SupervisorCmd;
 
 use self::{scan::ChainScanner, spawn::SpawnContext};
 
-type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
+type ArcBatch = Arc<monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
 
 /**
@@ -328,6 +325,15 @@ fn relay_on_object<Chain: ChainHandle>(
             warn!(
                 "client filter denies relaying on object {}",
                 object.short_name()
+            );
+
+            false
+        }
+        Err(e) if e.log_as_debug() => {
+            debug!(
+                "denying relaying on object {}, caused by: {}",
+                object.short_name(),
+                e
             );
 
             false

@@ -11,6 +11,7 @@
    - [Pre-requisites](./pre_requisites.md)
    - [Installation](./installation.md)
    - [Configuration](./config.md)
+     - [Example Configuration](./example-config.md)
 - [Telemetry](./telemetry.md)
 - [REST API](./rest-api.md)
 - [Tutorials](./tutorials/index.md)
