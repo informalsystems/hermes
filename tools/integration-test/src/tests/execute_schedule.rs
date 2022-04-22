@@ -1,7 +1,7 @@
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
-use ibc_relayer::link::{Link, LinkParameters};
+use ibc_relayer::link::{Link, LinkParameters, Resubmit};
 
 #[test]
 fn test_execute_schedule() -> Result<(), Error> {
@@ -66,6 +66,20 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
         // relay pending packets
         relay_path.schedule_packet_clearing(None)?;
+        relay_path.refresh_schedule()?;
+        relay_path.execute_schedule()?;
+
+        let summary = relay_path.process_pending_txs(Resubmit::No);
+
+        assert_eq!(summary.events.len(), 1);
+
+        chains.shutdown();
+
+        relay_path.execute_schedule()?;
+
+        let summary = relay_path.process_pending_txs(Resubmit::No);
+
+        assert_eq!(summary.events.len(), 1);
 
         Ok(())
     }
