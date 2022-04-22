@@ -24,11 +24,6 @@ impl TestOverrides for QueryPacketPendingTest {
     fn should_spawn_supervisor(&self) -> bool {
         false
     }
-
-    // Unordered channel: will permit gaps in the sequence of relayed packets
-    fn channel_order(&self) -> Order {
-        Order::Unordered
-    }
 }
 
 impl BinaryChannelTest for QueryPacketPendingTest {
