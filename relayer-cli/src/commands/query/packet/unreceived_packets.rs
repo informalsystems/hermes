@@ -34,7 +34,7 @@ impl QueryUnreceivedPacketsCmd {
         let config = app_config();
         debug!("Options: {:?}", self);
 
-        let (chains, ccc) = spawn_chain_counterparty::<BaseChainHandle>(
+        let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
@@ -43,10 +43,11 @@ impl QueryUnreceivedPacketsCmd {
 
         debug!(
             "fetched from source chain {} the following channel {:?}",
-            self.chain_id, ccc.channel
+            self.chain_id, chan_conn_cli.channel
         );
 
-        unreceived_packets(&chains.src, &chains.dst, &ccc.channel).map_err(Error::supervisor)
+        unreceived_packets(&chains.src, &chains.dst, &chan_conn_cli.channel)
+            .map_err(Error::supervisor)
     }
 }
 
