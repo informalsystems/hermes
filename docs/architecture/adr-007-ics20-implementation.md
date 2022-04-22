@@ -1,6 +1,7 @@
 # ADR 007: ICS20 Implementation Proposal
 
 ## Changelog
+
 * 21.04.2022: Draft Proposed
 
 ## Context
@@ -8,14 +9,16 @@
 The goal of this ADR is to provide recommendations and a guide for implementing the ICS20 application.
 
 ## Decision
-The  implementation is broken down into traits which should be implemented by the ICS20 module
-context, it also defines some primitives that would help in building a module compliant with the ICS20 spec.
 
-Decided it's better for the ICS20 context to be completely independent of the IBC core context traits, that way it can be 
-fully implemented as a standalone module in any framework.
+The implementation is broken down into traits which should be implemented by the ICS20 module context, it also defines
+some primitives that would help in building a module compliant with the ICS20 spec.
 
-Coupling the ICS20 Context with the IBC Core traits will not allow the existence of the ICS20 module as a standalone library in some frameworks.
-It should be up to the module implementer to use the provided helper functions and ICS20 primitives correctly.
+Decided it's better for the ICS20 context to be completely independent of the IBC core context traits, that way it can
+be fully implemented as a standalone module in any framework.
+
+Coupling the ICS20 Context with the IBC Core traits will not allow the existence of the ICS20 module as a standalone
+library in some frameworks. It should be up to the module implementer to use the provided helper functions and ICS20
+primitives correctly.
 
 ```rust
     define_error! {
@@ -32,89 +35,91 @@ It should be up to the module implementer to use the provided helper functions a
         }
     }
 
-    /// Base denomination type
-    pub struct Denom(String);
+/// Base denomination type
+pub struct Denom(String);
 
-    /// Coin defines a token with a denomination and an amount.
-    #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
-    pub struct Coin {
-        /// Denomination
-        pub denom: DenomTrace,
+/// Coin defines a token with a denomination and an amount.
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct Coin {
+    /// Denomination
+    pub denom: DenomTrace,
 
-        /// Amount
-        pub amount: U256,
-    }
+    /// Amount
+    pub amount: U256,
+}
 
-    pub trait ICS20Keeper: ChannelKeeper
-        + PortKeeper
-        + BankKeeper<Self::AccountId> 
-        + AccountKeeper<Self::AccountId>
-    {
-        type AccountId: Into<String>;
-        /// Returns if sending is allowed in the module params
-        fn is_send_enabled(&self) -> bool;
-        /// Returns if receiving is allowed in the module params
-        fn is_receive_enabled(&self) -> bool;
-        /// Set the params (send_enabled and receive_enabled) for the module
-        fn set_module_params(&mut self, send_enabled: Option<bool>, receive_enabled: Option<bool>) -> Result<(), ICS20Error>;
+pub trait ICS20Keeper: ChannelKeeper
++ PortKeeper
++ BankKeeper<Self::AccountId>
++ AccountKeeper<Self::AccountId>
+{
+    type AccountId: Into<String>;
+    /// Returns if sending is allowed in the module params
+    fn is_send_enabled(&self) -> bool;
+    /// Returns if receiving is allowed in the module params
+    fn is_receive_enabled(&self) -> bool;
+    /// Set the params (send_enabled and receive_enabled) for the module
+    fn set_module_params(&mut self, send_enabled: Option<bool>, receive_enabled: Option<bool>) -> Result<(), ICS20Error>;
 
-        /// The following methods are related to object capabilities.
-        ///
+    /// The following methods are related to object capabilities.
+    ///
 
-        /// Defines a wrapper function for the PortKeeper's bind_port function.
-        fn bind_port(&mut self, port_id: &PortId) -> Result<(), ICS20Error>;
-        /// Sets the portID for the transfer module.
-        fn set_port(&mut self, port_id: &PortId) -> ();
-        /// Wraps the CapabilityKeeper's authenticate_capability function
-        fn authenticate_capability(&mut self, cap: &PortCapability, name: &CapabilityName) -> bool;
-        /// Allows the transfer module to claim a capability that IBC module
-        /// passes to it
-        fn claim_capability(&mut self, cap: &PortCapability, name: &CapabilityName) -> Result<(), ICS20Error>;
-        /// Set channel escrow address
-        fn set_channel_escrow_address(&mut self, port_id: &PortId, channel_id: &ChannelId) -> Result<(), ICS20Error>;
-    }
+    /// Defines a wrapper function for the PortKeeper's bind_port function.
+    fn bind_port(&mut self, port_id: &PortId) -> Result<(), ICS20Error>;
+    /// Sets the portID for the transfer module.
+    fn set_port(&mut self, port_id: &PortId) -> ();
+    /// Wraps the CapabilityKeeper's authenticate_capability function
+    fn authenticate_capability(&mut self, cap: &PortCapability, name: &CapabilityName) -> bool;
+    /// Allows the transfer module to claim a capability that IBC module
+    /// passes to it
+    fn claim_capability(&mut self, cap: &PortCapability, name: &CapabilityName) -> Result<(), ICS20Error>;
+    /// Set channel escrow address
+    fn set_channel_escrow_address(&mut self, port_id: &PortId, channel_id: &ChannelId) -> Result<(), ICS20Error>;
+}
 
-    pub trait ICS20Reader: ChannelReader
-        + PortReader
-        + AccountReader<Self::AccountId>
-    {
-        type AccountId: From<String>;
-        /// is_bound checks if the transfer module is already bound to the desired port.
-        fn is_bound(&self, port_id: &PortId) -> bool;
-        /// get_transfer_account returns the ICS20 - transfers AccountId.
-        fn get_transfer_account(&self) -> AccountId;
-        /// get_port returns the portID for the transfer module.
-        fn get_port(&self) -> Result<PortId, Error>;
-        /// Sets and returns the escrow account id for a port and channel combination
-        fn get_channel_escrow_address(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<Self::AccountId, ICS20Error>;
-        /// Returns the channel end for port_id and channel_id combination
-        fn get_channel(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ICS20Error>;
-        /// Returns the next sequence send for port_id and channel_id combination
-        fn get_next_sequence_send(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<Sequence, ICS20Error>;
-    }
+pub trait ICS20Reader: ChannelReader
++ PortReader
++ AccountReader<Self::AccountId>
+{
+    type AccountId: From<String>;
+    /// is_bound checks if the transfer module is already bound to the desired port.
+    fn is_bound(&self, port_id: &PortId) -> bool;
+    /// get_transfer_account returns the ICS20 - transfers AccountId.
+    fn get_transfer_account(&self) -> AccountId;
+    /// get_port returns the portID for the transfer module.
+    fn get_port(&self) -> Result<PortId, Error>;
+    /// Sets and returns the escrow account id for a port and channel combination
+    fn get_channel_escrow_address(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<Self::AccountId, ICS20Error>;
+    /// Returns the channel end for port_id and channel_id combination
+    fn get_channel(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ICS20Error>;
+    /// Returns the next sequence send for port_id and channel_id combination
+    fn get_next_sequence_send(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<Sequence, ICS20Error>;
+}
 
-    pub trait BankKeeper<AccountId> {
-        /// This function should enable sending ibc fungible tokens from one account to another
-        fn send_coins(&mut self, from: &AccountId, to: &AccountId, amt: &Coin) -> Result<(), ICS20Error>;
-        /// This function to enable  minting tokens(vouchers) in a module
-        fn mint_coins(&mut self, amt: &Coin) -> Result<(), ICS20Error>;
-        /// This function should enable burning of minted tokens or vouchers
-        fn burn_coins(&mut self, module: &AccountId, amt: &Coin) -> Result<(), ICS20Error>;
-    }
+pub trait BankKeeper<AccountId> {
+    /// This function should enable sending ibc fungible tokens from one account to another
+    fn send_coins(&mut self, from: &AccountId, to: &AccountId, amt: &Coin) -> Result<(), ICS20Error>;
+    /// This function to enable  minting tokens(vouchers) in a module
+    fn mint_coins(&mut self, amt: &Coin) -> Result<(), ICS20Error>;
+    /// This function should enable burning of minted tokens or vouchers
+    fn burn_coins(&mut self, module: &AccountId, amt: &Coin) -> Result<(), ICS20Error>;
+}
 
-    pub trait AccountReader<AccountId> {
-        /// This function should return the account of the ibc module
-        fn get_module_account(&self) -> AccountId;
-    }
+pub trait AccountReader<AccountId> {
+    /// This function should return the account of the ibc module
+    fn get_module_account(&self) -> AccountId;
+}
 
-    pub trait ICS20Context: ICS20Keeper + ICS20Reader {}
+pub trait ICS20Context: ICS20Keeper + ICS20Reader {}
 ```
 
 ## Handling ICS20 Packets
+
 ICS20 messages are still a subset of channel packets, so they should be handled as such.
 
-The following handlers are recommended to be implemented in the `ics20_fungible_token_transfer` application in the `ibc` crate.
-These handlers will be executed in the module callbacks of any thirdparty IBC module that is implementing an ICS20 application on-chain.
+The following handlers are recommended to be implemented in the `ics20_fungible_token_transfer` application in the `ibc`
+crate. These handlers will be executed in the module callbacks of any thirdparty IBC module that is implementing an
+ICS20 application on-chain.
 
 ```rust
 pub enum ICS20Acknowledgement {
