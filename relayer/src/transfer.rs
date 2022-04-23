@@ -1,9 +1,8 @@
 use core::convert::TryInto;
-use core::fmt::{Display, Formatter};
-use core::str::FromStr;
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
+use ibc::applications::ics20_fungible_token_transfer::Decimal as Amount;
 use ibc::applications::ics20_fungible_token_transfer::{
     error::Error as Ics20Error, msgs::transfer::MsgTransfer,
 };
@@ -12,13 +11,11 @@ use ibc::events::IbcEvent;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::ChainStatus;
 use crate::error::Error;
-use crate::util::bigint::U256;
 
 define_error! {
     TransferError {
@@ -62,23 +59,6 @@ define_error! {
 
         ZeroTimeout
             | _ | { "packet timeout height and packet timeout timestamp cannot both be 0" },
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Amount(pub U256);
-
-impl Display for Amount {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl FromStr for Amount {
-    type Err = FromStrRadixErr;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(U256::from_str_radix(s, 10)?))
     }
 }
 

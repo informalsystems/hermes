@@ -1,5 +1,8 @@
 use alloc::string::FromUtf8Error;
-use core::num::ParseIntError;
+
+use flex_error::{define_error, DisplayOnly, TraceError};
+use subtle_encoding::Error as EncodingError;
+use uint::FromStrRadixErr;
 
 use super::signer::Signer;
 use crate::core::ics04_channel::channel::Order;
@@ -8,9 +11,6 @@ use crate::core::ics04_channel::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
-
-use flex_error::{define_error, DisplayOnly, TraceError};
-use subtle_encoding::Error as EncodingError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -70,7 +70,7 @@ define_error! {
             | e | { format_args!("trace length must be even but got: {0}", e.len) },
 
         InvalidCoinAmount
-            [ TraceError<ParseIntError> ]
+            [ TraceError<FromStrRadixErr> ]
             | _ | { "invalid coin amount" },
 
         InvalidToken

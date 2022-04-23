@@ -105,6 +105,7 @@ pub mod test_util {
     use core::ops::Add;
     use core::time::Duration;
 
+    use crate::bigint::U256;
     use crate::{
         applications::ics20_fungible_token_transfer::{BaseCoin, IbcCoin},
         core::ics24_host::identifier::{ChannelId, PortId},
@@ -124,7 +125,7 @@ pub mod test_util {
             source_channel: ChannelId::default(),
             token: IbcCoin::Base(BaseCoin {
                 denom: "uatom".parse().unwrap(),
-                amount: 10.into(),
+                amount: U256::from(10).into(),
             }),
             sender: id.clone(),
             receiver: id,

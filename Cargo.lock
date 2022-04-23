@@ -1403,6 +1403,7 @@ dependencies = [
  "time",
  "tracing",
  "tracing-subscriber",
+ "uint",
 ]
 
 [[package]]
@@ -1491,7 +1492,6 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber",
- "uint",
 ]
 
 [[package]]

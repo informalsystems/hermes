@@ -10,8 +10,10 @@ use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use subtle_encoding::hex;
+use uint::FromStrRadixErr;
 
 use super::error::Error;
+use crate::bigint::U256;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 use crate::serializers::serde_string;
@@ -270,10 +272,16 @@ impl FromStr for HashedDenom {
 }
 
 /// A decimal type for representing token transfer amounts.
-#[derive(
-    Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, From, FromStr, Deserialize,
-)]
-pub struct Decimal(u64);
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, From)]
+pub struct Decimal(U256);
+
+impl FromStr for Decimal {
+    type Err = FromStrRadixErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(U256::from_str_radix(s, 10)?))
+    }
+}
 
 // We only provide an `Add<Decimal>` implementation which always panics on overflow.
 impl Add<Self> for Decimal {
@@ -294,6 +302,7 @@ pub struct Coin<D> {
     /// Denomination
     pub denom: D,
     /// Amount
+    #[serde(with = "serde_string")]
     pub amount: Decimal,
 }
 
