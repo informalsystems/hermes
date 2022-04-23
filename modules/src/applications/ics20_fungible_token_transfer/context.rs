@@ -14,7 +14,7 @@ use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
-use crate::core::ics05_port::capabilities::{Capability, ChannelCapability};
+use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::{PortKeeper, PortReader};
 use crate::core::ics05_port::error::Error as PortError;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
@@ -23,25 +23,9 @@ use crate::prelude::*;
 use crate::signer::Signer;
 
 pub trait Ics20Keeper:
-    ChannelKeeper
-    + PortKeeper
-    + BankKeeper<AccountId = <Self as Ics20Keeper>::AccountId>
-    + AccountReader<AccountId = <Self as Ics20Keeper>::AccountId>
+    ChannelKeeper + PortKeeper + BankKeeper<AccountId = <Self as Ics20Keeper>::AccountId>
 {
     type AccountId: Into<String>;
-
-    /// bind_port defines a wrapper function for the PortKeeper's bind_port function.
-    fn bind_port(&self, port_id: PortId) -> Result<(), Ics20Error>;
-
-    /// set_port sets the portID for the transfer module.
-    fn set_port(&mut self, port_id: PortId);
-
-    /// authenticate_capability wraps the CapabilityKeeper's authenticate_capability function
-    fn authenticate_capability(&self, cap: Capability, name: &str) -> bool;
-
-    /// claim_capability allows the transfer module to claim a capability that IBC module
-    /// passes to it
-    fn claim_capability(&self, cap: Capability, name: &str) -> Result<(), Ics20Error>;
 
     /// Set channel escrow address
     fn set_channel_escrow_address(
@@ -61,12 +45,6 @@ pub trait Ics20Reader:
     + PortReader
 {
     type AccountId: Into<String> + FromStr<Err = Ics20Error>;
-
-    /// is_bound checks if the transfer module is already bound to the desired port.
-    fn is_bound(&self, port_id: PortId) -> bool;
-
-    /// get_transfer_account returns the ICS20 - transfers AccountId.
-    fn get_transfer_account(&self) -> <Self as Ics20Reader>::AccountId;
 
     /// get_port returns the portID for the transfer module.
     fn get_port(&self) -> Result<PortId, PortError>;
@@ -96,7 +74,9 @@ pub trait Ics20Reader:
     fn is_receive_enabled(&self) -> bool;
 
     /// Returns true iff the store contains a `DenomTrace` entry for the specified `HashedDenom`.
-    fn has_denom_trace(&self, hashed_denom: HashedDenom) -> bool;
+    fn has_denom_trace(&self, hashed_denom: HashedDenom) -> bool {
+        self.get_denom_trace(hashed_denom).is_some()
+    }
 
     /// Get the denom trace associated with the specified hash in the store.
     fn get_denom_trace(&self, denom_hash: HashedDenom) -> Option<DenomTrace>;
@@ -146,8 +126,8 @@ pub trait BankReader {
 pub trait AccountReader {
     type AccountId: Into<String>;
 
-    /// This function should return the account of the ibc module
-    fn get_module_account(&self) -> Self::AccountId;
+    /// get_transfer_account returns the ICS20 - transfers AccountId.
+    fn get_transfer_account(&self) -> Self::AccountId;
 }
 
 /// Captures all the dependencies which the ICS20 module requires to be able to dispatch and
