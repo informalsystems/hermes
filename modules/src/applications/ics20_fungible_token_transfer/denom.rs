@@ -273,9 +273,9 @@ impl FromStr for HashedDenom {
 
 /// A decimal type for representing token transfer amounts.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, From)]
-pub struct Decimal(U256);
+pub struct Amount(U256);
 
-impl FromStr for Decimal {
+impl FromStr for Amount {
     type Err = FromStrRadixErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -284,7 +284,7 @@ impl FromStr for Decimal {
 }
 
 // We only provide an `Add<Decimal>` implementation which always panics on overflow.
-impl Add<Self> for Decimal {
+impl Add<Self> for Amount {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -303,7 +303,7 @@ pub struct Coin<D> {
     pub denom: D,
     /// Amount
     #[serde(with = "serde_string")]
-    pub amount: Decimal,
+    pub amount: Amount,
 }
 
 impl<D: FromStr> TryFrom<RawCoin> for Coin<D>
@@ -314,7 +314,7 @@ where
 
     fn try_from(proto: RawCoin) -> Result<Coin<D>, Self::Error> {
         let denom = D::from_str(&proto.denom)?;
-        let amount = Decimal::from_str(&proto.amount).map_err(Error::invalid_coin_amount)?;
+        let amount = Amount::from_str(&proto.amount).map_err(Error::invalid_coin_amount)?;
         Ok(Self { denom, amount })
     }
 }
@@ -336,7 +336,7 @@ pub enum IbcCoin {
 }
 
 impl IbcCoin {
-    pub fn amount(&self) -> Decimal {
+    pub fn amount(&self) -> Amount {
         match self {
             IbcCoin::Hashed(c) => c.amount,
             IbcCoin::Base(c) => c.amount,

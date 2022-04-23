@@ -2,7 +2,7 @@ use core::convert::TryInto;
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
-use ibc::applications::ics20_fungible_token_transfer::Decimal as Amount;
+use ibc::applications::ics20_fungible_token_transfer::Amount;
 use ibc::applications::ics20_fungible_token_transfer::{
     error::Error as Ics20Error, msgs::transfer::MsgTransfer,
 };
