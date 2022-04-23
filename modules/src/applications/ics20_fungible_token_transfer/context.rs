@@ -304,10 +304,8 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
     fn process_recv_packet<Ctx: 'static + Ics20Context>(
         ctx: &Ctx,
         packet: &Packet,
+        data: PacketData,
     ) -> Result<Box<WriteFn>, Ics20Error> {
-        let data = serde_json::from_slice::<PacketData>(&packet.data)
-            .map_err(|_| Ics20Error::packet_data_deserialization())?;
-
         if !ctx.is_receive_enabled() {
             return Err(Ics20Error::receive_disabled());
         }
@@ -372,9 +370,18 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
         }
     }
 
+    let data = match serde_json::from_slice::<PacketData>(&packet.data) {
+        Ok(data) => data,
+        Err(_) => {
+            return OnRecvPacketAck::Failed(Box::new(Acknowledgement::Error(
+                Ics20Error::packet_data_deserialization().to_string(),
+            )))
+        }
+    };
+
     // TODO(hu55a1n1): emit event
 
-    match process_recv_packet(ctx, packet) {
+    match process_recv_packet(ctx, packet, data) {
         Ok(write_fn) => OnRecvPacketAck::Successful(Box::new(Acknowledgement::success()), write_fn),
         Err(e) => OnRecvPacketAck::Failed(Box::new(Acknowledgement::from_error(e))),
     }
