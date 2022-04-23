@@ -375,9 +375,7 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
     // TODO(hu55a1n1): emit event
 
     match process_recv_packet(ctx, packet) {
-        Ok(write_fn) => {
-            OnRecvPacketAck::Successful(Box::new(Acknowledgement::Success(vec![])), write_fn)
-        }
+        Ok(write_fn) => OnRecvPacketAck::Successful(Box::new(Acknowledgement::success()), write_fn),
         Err(e) => OnRecvPacketAck::Failed(Box::new(Acknowledgement::from_error(e))),
     }
 }

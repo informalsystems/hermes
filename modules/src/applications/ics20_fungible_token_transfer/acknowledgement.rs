@@ -17,6 +17,10 @@ pub enum Acknowledgement {
 }
 
 impl Acknowledgement {
+    pub fn success() -> Self {
+        Self::Success(ACK_SUCCESS_B64.to_vec())
+    }
+
     pub fn from_error(err: Error) -> Self {
         fn abci_info(_err: Error) -> usize {
             todo!()
