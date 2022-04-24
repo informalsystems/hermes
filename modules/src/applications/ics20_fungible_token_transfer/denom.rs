@@ -119,6 +119,14 @@ impl fmt::Display for TracePath {
     }
 }
 
+/// Indicates whether the sender chain is acting as a source or sink. Each send to any chain other
+/// than the one it was previously received from is a movement forwards in the token's timeline. In
+/// these instances the sender chain is acting as the source zone.
+pub enum Source {
+    Sender,
+    Receiver,
+}
+
 /// A type that contains the base denomination for ICS20 and the source tracing information path.
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Deserialize)]
 pub struct DenomTrace {
@@ -162,16 +170,14 @@ impl DenomTrace {
         self.trace_path.0.is_empty()
     }
 
-    /// Returns true if the denomination originally came from the receiving chain and false
-    /// otherwise.
-    pub fn is_receiver_chain_source(&self, prefix: &TracePrefix) -> bool {
-        self.has_prefix(prefix)
-    }
-
-    /// Returns false if the denomination originally came from the receiving chain and true
-    /// otherwise.
-    pub fn is_sender_chain_source(&self, prefix: &TracePrefix) -> bool {
-        !self.is_receiver_chain_source(prefix)
+    /// Returns `Source::Receiver` if the denomination originally came from the receiving chain and
+    /// `Source::Sender` otherwise.
+    pub fn source_chain(&self, prefix: &TracePrefix) -> Source {
+        if self.has_prefix(prefix) {
+            Source::Receiver
+        } else {
+            Source::Sender
+        }
     }
 }
 

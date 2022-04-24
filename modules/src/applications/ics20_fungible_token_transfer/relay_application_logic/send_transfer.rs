@@ -2,7 +2,7 @@ use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::applications::ics20_fungible_token_transfer::error::Error;
 use crate::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
-use crate::applications::ics20_fungible_token_transfer::{Coin, IbcCoin, TracePrefix};
+use crate::applications::ics20_fungible_token_transfer::{Coin, IbcCoin, Source, TracePrefix};
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::packet::PacketResult;
@@ -57,18 +57,21 @@ where
     };
 
     let prefix = TracePrefix::new(msg.source_port.clone(), msg.source_channel);
-    if denom.is_sender_chain_source(&prefix) {
-        let escrow_address =
-            ctx.get_channel_escrow_address(msg.source_port.clone(), msg.source_channel)?;
-        ctx.send_coins(&sender, &escrow_address, msg.token.clone())?;
-    } else {
-        ctx.send_coins_from_account_to_module(
-            sender,
-            ctx.get_transfer_account(),
-            msg.token.clone(),
-        )?;
-        ctx.burn_coins(ctx.get_transfer_account(), msg.token.clone())
-            .expect("cannot burn coins after a successful send to a module account");
+    match denom.source_chain(&prefix) {
+        Source::Sender => {
+            let escrow_address =
+                ctx.get_channel_escrow_address(msg.source_port.clone(), msg.source_channel)?;
+            ctx.send_coins(&sender, &escrow_address, msg.token.clone())?;
+        }
+        Source::Receiver => {
+            ctx.send_coins_from_account_to_module(
+                sender,
+                ctx.get_transfer_account(),
+                msg.token.clone(),
+            )?;
+            ctx.burn_coins(ctx.get_transfer_account(), msg.token.clone())
+                .expect("cannot burn coins after a successful send to a module account");
+        }
     }
 
     let data = PacketData {

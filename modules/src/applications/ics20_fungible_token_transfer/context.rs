@@ -7,7 +7,7 @@ use super::error::Error as Ics20Error;
 use crate::applications::ics20_fungible_token_transfer::acknowledgement::Acknowledgement;
 use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
 use crate::applications::ics20_fungible_token_transfer::{
-    DenomTrace, HashedDenom, IbcCoin, TracePrefix, VERSION,
+    DenomTrace, HashedDenom, IbcCoin, Source, TracePrefix, VERSION,
 };
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
@@ -188,19 +188,20 @@ fn refund_packet_token(
     let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
     let amount: IbcCoin = data.token.clone().into();
 
-    if data.token.denom.is_sender_chain_source(&prefix) {
-        // unescrow tokens back to sender
+    match data.token.denom.source_chain(&prefix) {
+        Source::Sender => {
+            // unescrow tokens back to sender
+            let escrow_address =
+                ctx.get_channel_escrow_address(packet.source_port.clone(), packet.source_channel)?;
 
-        let escrow_address =
-            ctx.get_channel_escrow_address(packet.source_port.clone(), packet.source_channel)?;
-
-        ctx.send_coins(&escrow_address, &sender, amount)
-    } else {
-        // mint vouchers back to sender
-
-        ctx.mint_coins(ctx.get_transfer_account(), amount.clone())?;
-        ctx.send_coins_from_module_to_account(ctx.get_transfer_account(), sender, amount).expect("unable to send coins from module to account despite previously minting coins to module account");
-        Ok(())
+            ctx.send_coins(&escrow_address, &sender, amount)
+        }
+        Source::Receiver => {
+            // mint vouchers back to sender
+            ctx.mint_coins(ctx.get_transfer_account(), amount.clone())?;
+            ctx.send_coins_from_module_to_account(ctx.get_transfer_account(), sender, amount).expect("unable to send coins from module to account despite previously minting coins to module account");
+            Ok(())
+        }
     }
 }
 
@@ -298,55 +299,60 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
         };
 
         let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
-        if data.token.denom.is_receiver_chain_source(&prefix) {
-            // sender chain is not the source, unescrow tokens
+        match data.token.denom.source_chain(&prefix) {
+            Source::Receiver => {
+                // sender chain is not the source, unescrow tokens
+                let coin = {
+                    let mut c = data.token.clone();
+                    c.denom.remove_prefix(&prefix);
+                    c
+                };
 
-            let coin = {
-                let mut c = data.token.clone();
-                c.denom.remove_prefix(&prefix);
-                c
-            };
-
-            if ctx.is_blocked_account(&receiver) {
-                return Err(Ics20Error::unauthorised_receive(data.receiver));
-            }
-
-            let escrow_address = ctx.get_channel_escrow_address(
-                packet.destination_port.clone(),
-                packet.destination_channel,
-            )?;
-            let amount = IbcCoin::from(coin);
-
-            Ok(Box::new(move |ctx| {
-                let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                ctx.send_coins(&escrow_address, &receiver, amount)
-                    .map_err(|e| e.to_string())
-            }))
-        } else {
-            // sender chain is the source, mint vouchers
-
-            let prefix =
-                TracePrefix::new(packet.destination_port.clone(), packet.destination_channel);
-            let coin = {
-                let mut c = data.token;
-                c.denom.add_prefix(prefix);
-                c
-            };
-
-            Ok(Box::new(move |ctx| {
-                let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                let hashed_denom = coin.denom.hashed();
-                if ctx.has_denom_trace(hashed_denom) {
-                    ctx.set_denom_trace(coin.denom.clone())
-                        .map_err(|e| e.to_string())?;
+                if ctx.is_blocked_account(&receiver) {
+                    return Err(Ics20Error::unauthorised_receive(data.receiver));
                 }
 
+                let escrow_address = ctx.get_channel_escrow_address(
+                    packet.destination_port.clone(),
+                    packet.destination_channel,
+                )?;
                 let amount = IbcCoin::from(coin);
-                ctx.mint_coins(ctx.get_transfer_account(), amount.clone())
-                    .map_err(|e| e.to_string())?;
-                ctx.send_coins_from_module_to_account(ctx.get_transfer_account(), receiver, amount)
+
+                Ok(Box::new(move |ctx| {
+                    let ctx = ctx.downcast_mut::<Ctx>().unwrap();
+                    ctx.send_coins(&escrow_address, &receiver, amount)
+                        .map_err(|e| e.to_string())
+                }))
+            }
+            Source::Sender => {
+                // sender chain is the source, mint vouchers
+                let prefix =
+                    TracePrefix::new(packet.destination_port.clone(), packet.destination_channel);
+                let coin = {
+                    let mut c = data.token;
+                    c.denom.add_prefix(prefix);
+                    c
+                };
+
+                Ok(Box::new(move |ctx| {
+                    let ctx = ctx.downcast_mut::<Ctx>().unwrap();
+                    let hashed_denom = coin.denom.hashed();
+                    if ctx.has_denom_trace(hashed_denom) {
+                        ctx.set_denom_trace(coin.denom.clone())
+                            .map_err(|e| e.to_string())?;
+                    }
+
+                    let amount = IbcCoin::from(coin);
+                    ctx.mint_coins(ctx.get_transfer_account(), amount.clone())
+                        .map_err(|e| e.to_string())?;
+                    ctx.send_coins_from_module_to_account(
+                        ctx.get_transfer_account(),
+                        receiver,
+                        amount,
+                    )
                     .map_err(|e| e.to_string())
-            }))
+                }))
+            }
         }
     }
 
