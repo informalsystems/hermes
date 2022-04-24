@@ -129,6 +129,10 @@ define_error! {
             { receiver: Signer }
             | e | { format_args!("'{0}' is not allowed to receive funds", e.receiver) },
 
+        InvalidPort
+            { port_id: PortId, exp_port_id: PortId }
+            | e | { format_args!("invalid port: '{0}', expected '{1}'", e.port_id, e.exp_port_id) },
+
         TraceNotFound
             | _ | { "no trace associated with specified hash" },
     }

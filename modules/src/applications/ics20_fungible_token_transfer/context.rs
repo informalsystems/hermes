@@ -16,7 +16,6 @@ use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::{PortKeeper, PortReader};
-use crate::core::ics05_port::error::Error as PortError;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{OnRecvPacketAck, WriteFn};
 use crate::prelude::*;
@@ -47,7 +46,7 @@ pub trait Ics20Reader:
     type AccountId: Into<String> + FromStr<Err = Ics20Error>;
 
     /// get_port returns the portID for the transfer module.
-    fn get_port(&self) -> Result<PortId, PortError>;
+    fn get_port(&self) -> Result<PortId, Ics20Error>;
 
     /// Returns the escrow account id for a port and channel combination
     fn get_channel_escrow_address(
@@ -143,9 +142,9 @@ pub trait Ics20Context:
 }
 
 fn validate_transfer_channel_params(
-    _ctx: &mut impl Ics20Context,
+    ctx: &mut impl Ics20Context,
     order: Order,
-    _port_id: &PortId,
+    port_id: &PortId,
     channel_id: &ChannelId,
     version: &Version,
 ) -> Result<(), Ics20Error> {
@@ -157,7 +156,10 @@ fn validate_transfer_channel_params(
         return Err(Ics20Error::channel_not_unordered(order));
     }
 
-    // TODO(hu55a1n1): check that port_id matches the port_id that the transfer module is bound to
+    let bound_port = ctx.get_port()?;
+    if port_id != &bound_port {
+        return Err(Ics20Error::invalid_port(port_id.clone(), bound_port));
+    }
 
     if version != &Version::ics20() {
         return Err(Ics20Error::invalid_version(version.clone()));
