@@ -26,15 +26,8 @@ pub trait Ics20Keeper:
 {
     type AccountId: Into<String>;
 
-    /// Set channel escrow address
-    fn set_channel_escrow_address(
-        &mut self,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> Result<(), Ics20Error>;
-
     /// Sets a new {trace hash -> denom trace} pair to the store.
-    fn set_denom_trace(&mut self, denom_trace: DenomTrace) -> Result<(), Ics20Error>;
+    fn set_denom_trace(&mut self, denom_trace: &DenomTrace) -> Result<(), Ics20Error>;
 }
 
 pub trait Ics20Reader:
@@ -51,7 +44,7 @@ pub trait Ics20Reader:
     /// Returns the escrow account id for a port and channel combination
     fn get_channel_escrow_address(
         &self,
-        port_id: PortId,
+        port_id: &PortId,
         channel_id: ChannelId,
     ) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error> {
         // https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md
@@ -73,12 +66,12 @@ pub trait Ics20Reader:
     fn is_receive_enabled(&self) -> bool;
 
     /// Returns true iff the store contains a `DenomTrace` entry for the specified `HashedDenom`.
-    fn has_denom_trace(&self, hashed_denom: HashedDenom) -> bool {
+    fn has_denom_trace(&self, hashed_denom: &HashedDenom) -> bool {
         self.get_denom_trace(hashed_denom).is_some()
     }
 
     /// Get the denom trace associated with the specified hash in the store.
-    fn get_denom_trace(&self, denom_hash: HashedDenom) -> Option<DenomTrace>;
+    fn get_denom_trace(&self, denom_hash: &HashedDenom) -> Option<DenomTrace>;
 }
 
 pub trait BankKeeper {
@@ -89,29 +82,29 @@ pub trait BankKeeper {
         &mut self,
         from: &Self::AccountId,
         to: &Self::AccountId,
-        amt: IbcCoin,
+        amt: &IbcCoin,
     ) -> Result<(), Ics20Error>;
 
     /// This function to enable minting ibc tokens in a module
-    fn mint_coins(&mut self, module: Self::AccountId, amt: IbcCoin) -> Result<(), Ics20Error>;
+    fn mint_coins(&mut self, module: &Self::AccountId, amt: &IbcCoin) -> Result<(), Ics20Error>;
 
     /// This function should enable burning of minted tokens
-    fn burn_coins(&mut self, module: Self::AccountId, amt: IbcCoin) -> Result<(), Ics20Error>;
+    fn burn_coins(&mut self, module: &Self::AccountId, amt: &IbcCoin) -> Result<(), Ics20Error>;
 
     /// This function should enable transfer of tokens from the ibc module to an account
     fn send_coins_from_module_to_account(
         &mut self,
-        module: Self::AccountId,
-        to: Self::AccountId,
-        amt: IbcCoin,
+        module: &Self::AccountId,
+        to: &Self::AccountId,
+        amt: &IbcCoin,
     ) -> Result<(), Ics20Error>;
 
     /// This function should enable transfer of tokens from an account to the ibc module
     fn send_coins_from_account_to_module(
         &mut self,
-        from: Self::AccountId,
-        module: Self::AccountId,
-        amt: IbcCoin,
+        from: &Self::AccountId,
+        module: &Self::AccountId,
+        amt: &IbcCoin,
     ) -> Result<(), Ics20Error>;
 }
 
@@ -129,7 +122,7 @@ pub trait AccountReader {
     type AccountId: Into<String>;
     type Address;
 
-    fn get_account(&self, address: Self::Address) -> Option<Self::AccountId>;
+    fn get_account(&self, address: &Self::Address) -> Option<Self::AccountId>;
 }
 
 /// Captures all the dependencies which the ICS20 module requires to be able to dispatch and
@@ -138,7 +131,7 @@ pub trait Ics20Context:
     Ics20Keeper<AccountId = <Self as Ics20Context>::AccountId>
     + Ics20Reader<AccountId = <Self as Ics20Context>::AccountId>
 {
-    type AccountId: Into<String> + FromStr<Err = Ics20Error> + 'static;
+    type AccountId: Into<String> + FromStr<Err = Ics20Error>;
 }
 
 fn validate_transfer_channel_params(
@@ -197,14 +190,14 @@ fn refund_packet_token(
         Source::Sender => {
             // unescrow tokens back to sender
             let escrow_address =
-                ctx.get_channel_escrow_address(packet.source_port.clone(), packet.source_channel)?;
+                ctx.get_channel_escrow_address(&packet.source_port, packet.source_channel)?;
 
-            ctx.send_coins(&escrow_address, &sender, amount)
+            ctx.send_coins(&escrow_address, &sender, &amount)
         }
         Source::Receiver => {
             // mint vouchers back to sender
-            ctx.mint_coins(ctx.get_transfer_account(), amount.clone())?;
-            ctx.send_coins_from_module_to_account(ctx.get_transfer_account(), sender, amount).expect("unable to send coins from module to account despite previously minting coins to module account");
+            ctx.mint_coins(&ctx.get_transfer_account(), &amount)?;
+            ctx.send_coins_from_module_to_account(&ctx.get_transfer_account(), &sender, &amount).expect("unable to send coins from module to account despite previously minting coins to module account");
             Ok(())
         }
     }
@@ -318,14 +311,14 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
                 }
 
                 let escrow_address = ctx.get_channel_escrow_address(
-                    packet.destination_port.clone(),
+                    &packet.destination_port,
                     packet.destination_channel,
                 )?;
                 let amount = IbcCoin::from(coin);
 
                 Ok(Box::new(move |ctx| {
                     let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                    ctx.send_coins(&escrow_address, &receiver, amount)
+                    ctx.send_coins(&escrow_address, &receiver, &amount)
                         .map_err(|e| e.to_string())
                 }))
             }
@@ -342,18 +335,18 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
                 Ok(Box::new(move |ctx| {
                     let ctx = ctx.downcast_mut::<Ctx>().unwrap();
                     let hashed_denom = coin.denom.hashed();
-                    if ctx.has_denom_trace(hashed_denom) {
-                        ctx.set_denom_trace(coin.denom.clone())
+                    if ctx.has_denom_trace(&hashed_denom) {
+                        ctx.set_denom_trace(&coin.denom)
                             .map_err(|e| e.to_string())?;
                     }
 
                     let amount = IbcCoin::from(coin);
-                    ctx.mint_coins(ctx.get_transfer_account(), amount.clone())
+                    ctx.mint_coins(&ctx.get_transfer_account(), &amount)
                         .map_err(|e| e.to_string())?;
                     ctx.send_coins_from_module_to_account(
-                        ctx.get_transfer_account(),
-                        receiver,
-                        amount,
+                        &ctx.get_transfer_account(),
+                        &receiver,
+                        &amount,
                     )
                     .map_err(|e| e.to_string())
                 }))

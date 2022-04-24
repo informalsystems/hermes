@@ -44,7 +44,7 @@ where
 
     let denom = match msg.token.clone() {
         IbcCoin::Hashed(coin) => ctx
-            .get_denom_trace(coin.denom)
+            .get_denom_trace(&coin.denom)
             .ok_or_else(Error::trace_not_found)?,
         IbcCoin::Base(coin) => coin.denom.into(),
     };
@@ -60,16 +60,16 @@ where
     match denom.source_chain(&prefix) {
         Source::Sender => {
             let escrow_address =
-                ctx.get_channel_escrow_address(msg.source_port.clone(), msg.source_channel)?;
-            ctx.send_coins(&sender, &escrow_address, msg.token.clone())?;
+                ctx.get_channel_escrow_address(&msg.source_port, msg.source_channel)?;
+            ctx.send_coins(&sender, &escrow_address, &msg.token)?;
         }
         Source::Receiver => {
             ctx.send_coins_from_account_to_module(
-                sender,
-                ctx.get_transfer_account(),
-                msg.token.clone(),
+                &sender,
+                &ctx.get_transfer_account(),
+                &msg.token,
             )?;
-            ctx.burn_coins(ctx.get_transfer_account(), msg.token.clone())
+            ctx.burn_coins(&ctx.get_transfer_account(), &msg.token)
                 .expect("cannot burn coins after a successful send to a module account");
         }
     }
