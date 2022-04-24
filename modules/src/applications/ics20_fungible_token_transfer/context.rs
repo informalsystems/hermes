@@ -121,13 +121,16 @@ pub trait BankReader {
 
     /// Returns true if the specified account is not allowed to receive funds and false otherwise.
     fn is_blocked_account(&self, account: &Self::AccountId) -> bool;
+
+    /// get_transfer_account returns the ICS20 - transfers AccountId.
+    fn get_transfer_account(&self) -> Self::AccountId;
 }
 
 pub trait AccountReader {
     type AccountId: Into<String>;
+    type Address;
 
-    /// get_transfer_account returns the ICS20 - transfers AccountId.
-    fn get_transfer_account(&self) -> Self::AccountId;
+    fn get_account(&self, address: Self::Address) -> Option<Self::AccountId>;
 }
 
 /// Captures all the dependencies which the ICS20 module requires to be able to dispatch and
