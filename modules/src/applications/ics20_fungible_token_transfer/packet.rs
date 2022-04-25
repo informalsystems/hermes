@@ -3,12 +3,12 @@ use core::convert::TryFrom;
 use core::str::FromStr;
 
 use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::error::Error;
 use super::{address::Address, Amount, DenomTrace, PrefixedCoin};
 
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PacketData {
     pub token: PrefixedCoin,
     pub sender: Address,

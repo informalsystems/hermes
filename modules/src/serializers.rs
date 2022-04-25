@@ -17,7 +17,6 @@ pub mod serde_string {
 
     use serde::{de, Deserialize, Deserializer, Serializer};
 
-    // FIXME(hu55a1n1) - do we need this anywhere?
     #[allow(unused)]
     pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where

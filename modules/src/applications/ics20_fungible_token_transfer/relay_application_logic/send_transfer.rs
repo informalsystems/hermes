@@ -26,7 +26,7 @@ where
         .map_err(Error::ics04_channel)?;
 
     let destination_port = source_channel_end.counterparty().port_id().clone();
-    let destination_channel = source_channel_end
+    let destination_channel = *source_channel_end
         .counterparty()
         .channel_id()
         .ok_or_else(|| {
@@ -67,13 +67,16 @@ where
         }
     }
 
-    let data = PacketData {
-        token: Coin {
-            denom,
-            amount: msg.token.amount(),
-        },
-        sender: msg.sender.to_string().parse()?,
-        receiver: msg.receiver.to_string().parse()?,
+    let data = {
+        let data = PacketData {
+            token: Coin {
+                denom,
+                amount: msg.token.amount(),
+            },
+            sender: msg.sender.to_string().parse()?,
+            receiver: msg.receiver.to_string().parse()?,
+        };
+        serde_json::to_vec(&data).expect("PacketData's infallible Serialize impl failed")
     };
 
     let packet = Packet {
@@ -81,8 +84,8 @@ where
         source_port: msg.source_port,
         source_channel: msg.source_channel,
         destination_port,
-        destination_channel: *destination_channel,
-        data: vec![0],
+        destination_channel,
+        data,
         timeout_height: msg.timeout_height,
         timeout_timestamp: msg.timeout_timestamp,
     };

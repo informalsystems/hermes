@@ -128,7 +128,7 @@ pub enum Source {
 }
 
 /// A type that contains the base denomination for ICS20 and the source tracing information path.
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct DenomTrace {
     /// A series of `{port-id}/{channel-id}`s for tracing the source of the token.
     #[serde(with = "serde_string")]
@@ -303,7 +303,7 @@ impl Add<Self> for Amount {
 }
 
 /// Coin defines a token with a denomination and an amount.
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Coin<D> {
     /// Denomination
     pub denom: D,
