@@ -252,19 +252,19 @@ define_error! {
         MissingLocalConsensusState
             { height: Height }
             | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
-        
-        InvalidConnectionEnd 
+
+        InvalidConnectionEnd
             [ TraceError<TendermintProtoError>]
             | _ | { "invalid connection end" },
-        
-        InvalidChannelEnd 
+
+        InvalidChannelEnd
             [ TraceError<TendermintProtoError>]
             | _ | { "invalid channel end" },
-        
-        InvalidAnyClientState 
+
+        InvalidAnyClientState
             [ TraceError<TendermintProtoError>]
             | _ | { "invalid any client state" },
-        
+
         InvalidAnyConsensusState
             [ TraceError<TendermintProtoError> ]
             | _ | { "invalid any client consensus state" },
