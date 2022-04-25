@@ -77,8 +77,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
 
-        assert_eq!(summary.unreceived, [1]);
-        assert!(summary.pending_acks.is_empty());
+        assert_eq!(summary.unreceived_packets, [1]);
+        assert!(summary.unreceived_acks.is_empty());
 
         // Receive the packet on the destination chain
         link.build_and_send_recv_packet_messages()?;
@@ -86,8 +86,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
 
-        assert!(summary.unreceived.is_empty());
-        assert_eq!(summary.pending_acks, [1]);
+        assert!(summary.unreceived_packets.is_empty());
+        assert_eq!(summary.unreceived_acks, [1]);
 
         // Acknowledge the packet on the source chain
         let link = link.reverse(false)?;
@@ -96,8 +96,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
 
-        assert!(summary.unreceived.is_empty());
-        assert!(summary.pending_acks.is_empty());
+        assert!(summary.unreceived_packets.is_empty());
+        assert!(summary.unreceived_acks.is_empty());
 
         let denom_b = chains.node_b.denom();
         let amount2 = random_u64_range(1000, 5000);
@@ -136,8 +136,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             &counterparty_channel_end,
         )?;
 
-        assert_eq!(summary.unreceived, [1]);
-        assert!(summary.pending_acks.is_empty());
+        assert_eq!(summary.unreceived_packets, [1]);
+        assert!(summary.unreceived_acks.is_empty());
 
         Ok(())
     }

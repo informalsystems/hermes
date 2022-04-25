@@ -485,10 +485,10 @@ pub fn unreceived_acknowledgements(
 #[derive(Debug, Serialize)]
 pub struct PendingPackets {
     /// Not yet received on the counterparty chain.
-    pub unreceived: Vec<u64>,
+    pub unreceived_packets: Vec<u64>,
     /// Received on the counterparty chain,
     /// but the acknowledgement is not yet received on the local chain.
-    pub pending_acks: Vec<u64>,
+    pub unreceived_acks: Vec<u64>,
 }
 
 pub fn pending_packet_summary(
@@ -527,7 +527,7 @@ pub fn pending_packet_summary(
     )?;
 
     Ok(PendingPackets {
-        unreceived,
-        pending_acks,
+        unreceived_packets: unreceived,
+        unreceived_acks: pending_acks,
     })
 }
