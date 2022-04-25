@@ -643,15 +643,16 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_application_status");
         crate::telemetry!(query, self.id(), "query_application_status");
 
-        // Query `abci_info`, this will give us details about the
-        // the application status, eg. current app. block height.
+        // We cannot rely on `/status` endpoint to provide details about the latest block.
+        // Instead, we need to pull block height via `/abci_info` and then fetch block
+        // metadata at the given height via `/blockchain` endpoint.
         let abci_info = self
             .block_on(self.rpc_client.abci_info())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         // Query `/blockchain` endpoint to pull the block metadata corresponding to
         // the latest block that the application committed.
-        // TODO: This is a workaround to using `/header`, which is not yet available.
+        // TODO: Replace this query with `/header`, once it's available.
         //  https://github.com/informalsystems/tendermint-rs/pull/1101
         let blocks = self
             .block_on(

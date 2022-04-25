@@ -44,6 +44,8 @@ use crate::error::Error;
 use crate::telemetry;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
+/// A chain handle with support for caching.
+/// To be used for the passive relaying mode (i.e., `start` CLI).
 #[derive(Debug, Clone)]
 pub struct CachingChainHandle<Handle> {
     inner: Handle,
