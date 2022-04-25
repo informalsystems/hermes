@@ -48,7 +48,7 @@ pub fn process(
         packet.sequence,
     ))?;
 
-    let expected_commitment = ctx.commitment(
+    let expected_commitment = ctx.packet_commitment(
         packet.data.clone(),
         packet.timeout_height,
         packet.timeout_timestamp,
@@ -177,7 +177,7 @@ mod tests {
         .unwrap();
         let packet = msg.packet.clone();
 
-        let data = context.commitment(
+        let data = context.packet_commitment(
             msg.packet.data.clone(),
             msg.packet.timeout_height,
             msg.packet.timeout_timestamp,

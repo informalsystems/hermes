@@ -70,7 +70,7 @@ pub fn verify_packet_recv_proofs(
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
-    let commitment = ctx.commitment(
+    let commitment = ctx.packet_commitment(
         packet.data.clone(),
         packet.timeout_height,
         packet.timeout_timestamp,

@@ -64,7 +64,7 @@ pub fn process(
     ))?;
 
     if packet_commitment
-        != ctx.commitment(
+        != ctx.packet_commitment(
             packet.data.clone(),
             packet.timeout_height,
             packet.timeout_timestamp,
@@ -159,7 +159,7 @@ mod tests {
         .unwrap();
         let packet = msg.packet.clone();
 
-        let data = context.commitment(
+        let data = context.packet_commitment(
             packet.data.clone(),
             packet.timeout_height,
             packet.timeout_timestamp,

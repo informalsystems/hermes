@@ -67,12 +67,21 @@ pub trait ChannelReader: CapabilityReader {
         key: &(PortId, ChannelId, Sequence),
     ) -> Result<Vec<u8>, Error>;
 
-    fn commitment(
+    fn packet_commitment(
         &self,
         packet_data: Vec<u8>,
         timeout_height: Height,
         timeout_timestamp: Timestamp,
-    ) -> Vec<u8>;
+    ) -> Vec<u8> {
+        let mut input = timeout_timestamp.nanoseconds().to_be_bytes().to_vec();
+        let revision_number = timeout_height.revision_number.to_be_bytes();
+        input.append(&mut revision_number.to_vec());
+        let revision_height = timeout_height.revision_height.to_be_bytes();
+        input.append(&mut revision_height.to_vec());
+        let data = self.hash(packet_data);
+        input.append(&mut data.to_vec());
+        self.hash(input)
+    }
 
     /// A hashing function for packet commitments
     fn hash(&self, value: Vec<u8>) -> Vec<u8>;

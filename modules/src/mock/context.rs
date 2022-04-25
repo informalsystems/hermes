@@ -750,23 +750,6 @@ impl ChannelReader for MockContext {
         }
     }
 
-    fn commitment(
-        &self,
-        packet_data: Vec<u8>,
-        timeout_height: Height,
-        timeout_timestamp: Timestamp,
-    ) -> Vec<u8> {
-        let mut input = timeout_timestamp.nanoseconds().to_be_bytes().to_vec();
-        let revision_number = timeout_height.revision_number.to_be_bytes();
-        input.append(&mut revision_number.to_vec());
-        let revision_height = timeout_height.revision_height.to_be_bytes();
-        input.append(&mut revision_height.to_vec());
-        let data = self.hash(packet_data);
-        input.append(&mut data.to_vec());
-
-        self.hash(input)
-    }
-
     fn hash(&self, value: Vec<u8>) -> Vec<u8> {
         sha2::Sha256::digest(value).to_vec()
     }
@@ -851,7 +834,7 @@ impl ChannelKeeper for MockContext {
     ) -> Result<(), Ics04Error> {
         self.packet_commitment.insert(
             key,
-            self.commitment(data, timeout_height, timeout_timestamp),
+            self.packet_commitment(data, timeout_height, timeout_timestamp),
         );
         Ok(())
     }

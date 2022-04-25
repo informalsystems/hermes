@@ -81,7 +81,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
         packet.sequence,
     ))?;
 
-    let expected_commitment = ctx.commitment(
+    let expected_commitment = ctx.packet_commitment(
         packet.data.clone(),
         packet.timeout_height,
         packet.timeout_timestamp,
@@ -184,7 +184,7 @@ mod tests {
         let mut msg_ok = msg.clone();
         msg_ok.packet.timeout_timestamp = Default::default();
 
-        let data = context.commitment(
+        let data = context.packet_commitment(
             msg_ok.packet.data.clone(),
             msg_ok.packet.timeout_height,
             msg_ok.packet.timeout_timestamp,
