@@ -2,7 +2,7 @@
 //!
 //! We define each of the four messages in the connection handshake protocol as a `struct`.
 //! Each such message comprises the same fields as the datagrams defined in ICS3 English spec:
-//! <https://github.com/cosmos/ibc/tree/master/spec/ics-003-connection-semantics>.
+//! <https://github.com/cosmos/ibc/tree/master/spec/core/ics-003-connection-semantics>.
 //!
 //! One departure from ICS3 is that we abstract the three counterparty fields (connection id,
 //! prefix, and client id) into a single field of type `Counterparty`; this applies to messages
