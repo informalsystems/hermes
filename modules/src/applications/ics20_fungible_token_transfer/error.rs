@@ -4,7 +4,7 @@ use flex_error::{define_error, DisplayOnly, TraceError};
 use subtle_encoding::Error as EncodingError;
 use uint::FromStrRadixErr;
 
-use super::signer::Signer;
+use super::address::Address;
 use crate::core::ics04_channel::channel::Order;
 use crate::core::ics04_channel::error as channel_error;
 use crate::core::ics04_channel::Version;
@@ -126,7 +126,7 @@ define_error! {
             | _ | { "send is not enabled" },
 
         UnauthorisedReceive
-            { receiver: Signer }
+            { receiver: Address }
             | e | { format_args!("'{0}' is not allowed to receive funds", e.receiver) },
 
         InvalidPort

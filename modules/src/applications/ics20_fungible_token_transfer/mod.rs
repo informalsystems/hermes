@@ -7,10 +7,10 @@ pub mod msgs;
 pub mod relay_application_logic;
 
 mod acknowledgement;
+mod address;
 mod denom;
 mod events;
 mod packet;
-mod signer;
 
 pub use denom::*;
 
