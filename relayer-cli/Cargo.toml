@@ -60,7 +60,7 @@ dialoguer = "0.10.0"
 console = "0.15.0"
 
 [dependencies.tendermint-proto]
-version = "=0.23.6"
+version = "=0.23.7"
 
 [dependencies.tendermint]
 version = "=0.23.6"
