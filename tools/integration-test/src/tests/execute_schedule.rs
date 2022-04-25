@@ -73,7 +73,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
         assert_eq!(summary.events.len(), 1);
 
-        chains.shutdown();
+        chains.node_a.shutdown();
 
         relay_path.execute_schedule()?;
 
