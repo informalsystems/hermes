@@ -73,7 +73,7 @@ version = "0.4.0"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "=0.23.6"
+version = "=0.23.7"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
