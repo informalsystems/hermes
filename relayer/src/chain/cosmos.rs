@@ -21,7 +21,7 @@ use tendermint_rpc::{
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{span, warn, Level};
+use tracing::{error, span, warn, Level};
 
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
@@ -643,38 +643,38 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_application_status");
         crate::telemetry!(query, self.id(), "query_application_status");
 
-        // query the chain status
-        let status = self.rt.block_on(query_status(
-            self.id(),
-            &self.rpc_client,
-            &self.config.rpc_addr,
-        ))?;
-
-        // query the application status
-        let abci_status = self
+        // Query `abci_info`, this will give us details about the
+        // the application status, eg. current app. block height.
+        let abci_info = self
             .block_on(self.rpc_client.abci_info())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-        // has the application been updated with latest block?
-        let timestamp = if abci_status.last_block_height.value() == status.height.revision_height {
-            // yes, use the chain latest block time
-            status.timestamp
+        // Query `/blockchain` endpoint to pull the block metadata corresponding to
+        // the latest block that the application committed.
+        // TODO: This is a workaround to using `/header`, which is not yet available.
+        //  https://github.com/informalsystems/tendermint-rs/pull/1101
+        let blocks = self
+            .block_on(
+                self.rpc_client
+                    .blockchain(abci_info.last_block_height, abci_info.last_block_height),
+            )
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
+            .block_metas;
+
+        return if let Some(latest_app_block) = blocks.first() {
+            let height = ICSHeight {
+                revision_number: ChainId::chain_version(latest_app_block.header.chain_id.as_str()),
+                revision_height: u64::from(abci_info.last_block_height),
+            };
+            let timestamp = latest_app_block.header.time.into();
+
+            Ok(ChainStatus { height, timestamp })
         } else {
-            // no, retrieve the time of the header at application latest height
-            self.block_on(self.rpc_client.commit(abci_status.last_block_height))
-                .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
-                .signed_header
-                .header
-                .time
-                .into()
+            // The `/blockchain` query failed to return the header we wanted
+            Err(Error::query(
+                "/blockchain endpoint for latest app. block".to_owned(),
+            ))
         };
-
-        let height = ICSHeight {
-            revision_number: status.height.revision_number,
-            revision_height: u64::from(abci_status.last_block_height),
-        };
-
-        Ok(ChainStatus { height, timestamp })
     }
 
     fn query_clients(
@@ -1548,6 +1548,13 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     // Check that transaction indexing is enabled
     if status.node_info.other.tx_index != TxIndexStatus::On {
         return Err(Error::tx_indexing_disabled(chain_id.clone()));
+    }
+
+    // Check that the chain identifier matches the network name
+    if !status.node_info.network.as_str().eq(chain_id.as_str()) {
+        // Log the error, continue optimistically
+        error!("/status endpoint from chain id '{}' reports network identifier to be '{}': this is usually a sign of misconfiguration, check your config.toml",
+            chain_id, status.node_info.network);
     }
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
