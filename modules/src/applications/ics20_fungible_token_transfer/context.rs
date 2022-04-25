@@ -1,7 +1,7 @@
 use core::str::FromStr;
 
 use sha2::{Digest, Sha256};
-use subtle_encoding::{bech32, hex};
+use subtle_encoding::hex;
 
 use super::error::Error as Ics20Error;
 use crate::applications::ics20_fungible_token_transfer::acknowledgement::Acknowledgement;
@@ -176,12 +176,7 @@ fn refund_packet_token(
     packet: &Packet,
     data: &PacketData,
 ) -> Result<(), Ics20Error> {
-    let sender = {
-        bech32::decode(&data.sender)
-            .map(|_| ())
-            .map_err(Ics20Error::invalid_sender_address)?;
-        data.sender.to_string().parse()?
-    };
+    let sender = data.sender.to_string().parse()?;
 
     let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
     let amount: IbcCoin = data.token.clone().into();
@@ -289,12 +284,7 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
             return Err(Ics20Error::receive_disabled());
         }
 
-        let receiver = {
-            bech32::decode(&data.receiver)
-                .map(|_| ())
-                .map_err(Ics20Error::invalid_receiver_address)?;
-            data.receiver.to_string().parse()?
-        };
+        let receiver = data.receiver.to_string().parse()?;
 
         let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
         match data.token.denom.source_chain(&prefix) {

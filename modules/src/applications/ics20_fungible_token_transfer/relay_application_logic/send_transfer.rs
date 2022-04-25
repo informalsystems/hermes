@@ -9,8 +9,6 @@ use crate::core::ics04_channel::packet::PacketResult;
 use crate::handler::HandlerOutput;
 use crate::prelude::*;
 
-use subtle_encoding::bech32;
-
 #[allow(unused)]
 pub(crate) fn send_transfer<Ctx>(
     ctx: &mut Ctx,
@@ -49,12 +47,7 @@ where
         IbcCoin::Base(coin) => coin.denom.into(),
     };
 
-    let sender = {
-        bech32::decode(&msg.sender)
-            .map(|_| ())
-            .map_err(Error::invalid_sender_address)?;
-        msg.sender.to_string().parse()?
-    };
+    let sender = msg.sender.to_string().parse()?;
 
     let prefix = TracePrefix::new(msg.source_port.clone(), msg.source_channel);
     match denom.source_chain(&prefix) {

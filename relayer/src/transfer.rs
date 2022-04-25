@@ -126,7 +126,12 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         Some(r) => r.clone().into(),
     };
 
-    let sender = packet_src_chain.get_signer().map_err(TransferError::key)?;
+    let sender = packet_src_chain
+        .get_signer()
+        .map_err(TransferError::key)?
+        .as_ref()
+        .parse()
+        .map_err(TransferError::token_transfer)?;
 
     let chain_status = packet_dst_chain
         .query_status()

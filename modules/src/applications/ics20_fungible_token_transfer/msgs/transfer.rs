@@ -6,6 +6,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
+use crate::applications::ics20_fungible_token_transfer::address::Address;
 use crate::applications::ics20_fungible_token_transfer::error::Error;
 use crate::applications::ics20_fungible_token_transfer::IbcCoin;
 use crate::core::ics02_client::height::Height;
@@ -26,7 +27,7 @@ pub struct MsgTransfer {
     /// the tokens to be transferred
     pub token: IbcCoin,
     /// the sender address
-    pub sender: Signer,
+    pub sender: Address,
     /// the recipient address on the destination chain
     pub receiver: Signer,
     /// Timeout height relative to the current block height.
@@ -78,7 +79,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
                 .parse()
                 .map_err(|e| Error::invalid_channel_id(raw_msg.source_channel.clone(), e))?,
             token,
-            sender: raw_msg.sender.into(),
+            sender: raw_msg.sender.parse()?,
             receiver: raw_msg.receiver.into(),
             timeout_height,
             timeout_timestamp,
@@ -109,7 +110,7 @@ pub mod test_util {
     use crate::{
         applications::ics20_fungible_token_transfer::{BaseCoin, IbcCoin},
         core::ics24_host::identifier::{ChannelId, PortId},
-        test_utils::get_dummy_account_id,
+        test_utils::{get_dummy_account_id, get_dummy_bech32_account},
         timestamp::Timestamp,
         Height,
     };
@@ -118,8 +119,6 @@ pub mod test_util {
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
-        let id = get_dummy_account_id();
-
         MsgTransfer {
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
@@ -127,8 +126,8 @@ pub mod test_util {
                 denom: "uatom".parse().unwrap(),
                 amount: U256::from(10).into(),
             }),
-            sender: id.clone(),
-            receiver: id,
+            sender: get_dummy_bech32_account().as_str().parse().unwrap(),
+            receiver: get_dummy_account_id(),
             timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
             timeout_height: Height {
                 revision_number: 0,

@@ -111,13 +111,9 @@ define_error! {
         AckDeserialization
             | _ | { "failed to deserialize acknowledgement" },
 
-        InvalidReceiverAddress
+        AddressNotValidBech32
             [ TraceError<EncodingError> ]
-            | _ | { "invalid receiver address" },
-
-        InvalidSenderAddress
-            [ TraceError<EncodingError> ]
-            | _ | { "invalid sender address" },
+            | _ | { "address isn't valid bech32" },
 
         ReceiveDisabled
             | _ | { "receive is not enabled" },
