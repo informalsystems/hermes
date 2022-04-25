@@ -8,7 +8,6 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
-use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -139,7 +138,7 @@ impl ClientDef for MockClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _sequence: Sequence,
-        _ack: Acknowledgement,
+        _ack: Vec<u8>,
     ) -> Result<(), Error> {
         Ok(())
     }

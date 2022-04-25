@@ -10,6 +10,7 @@ use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
+use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::{error::Error, packet::Receipt};
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::CapabilityReader;
@@ -81,6 +82,10 @@ pub trait ChannelReader: CapabilityReader {
         let data = self.hash(packet_data);
         input.append(&mut data.to_vec());
         self.hash(input)
+    }
+
+    fn ack_commitment(&self, ack: Acknowledgement) -> Vec<u8> {
+        self.hash(ack.into_bytes())
     }
 
     /// A hashing function for packet commitments
