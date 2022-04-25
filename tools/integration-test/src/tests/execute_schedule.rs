@@ -20,7 +20,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
-        relayer: RelayerDriver,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -29,7 +29,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
-        let balance_a = chains
+        let _balance_a = chains
             .node_a
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
@@ -73,7 +73,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
         assert_eq!(summary.events.len(), 1);
 
-        chains.node_a.shutdown();
+        chains.node_a.value().kill()?;
 
         relay_path.execute_schedule()?;
 
