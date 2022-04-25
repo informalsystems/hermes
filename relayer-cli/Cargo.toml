@@ -75,7 +75,7 @@ version = "=0.23.6"
 features = ["unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.6"
+version = "=0.23.7"
 
 [dependencies.abscissa_core]
 version = "=0.6.0"
