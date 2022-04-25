@@ -53,7 +53,7 @@ version = "=0.23.6"
 default-features = false
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.6"
+version = "=0.23.7"
 default-features = false
 
 [dependencies.tendermint-testgen]
