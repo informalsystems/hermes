@@ -1,10 +1,8 @@
-#![allow(unused)]
-
 use core::fmt;
 use core::ops::Add;
 use core::str::FromStr;
 
-use derive_more::{Display, From, FromStr};
+use derive_more::{Display, From};
 use ibc_proto::cosmos::base::v1beta1::Coin as RawCoin;
 use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
@@ -102,8 +100,7 @@ impl FromStr for TracePath {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut parts: Vec<&str> = s.split('/').collect();
-        parts.try_into()
+        s.split('/').collect::<Vec<&str>>().try_into()
     }
 }
 
