@@ -7,7 +7,7 @@ use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::supervisor::Error as SupervisorError;
-use ibc_relayer::transfer::PacketError;
+use ibc_relayer::transfer::TransferError;
 use ibc_relayer::upgrade_chain::UpgradeChainError;
 use tendermint::Error as TendermintError;
 
@@ -47,17 +47,17 @@ define_error! {
         Keys
             |_| { "keys error" },
 
-        MissingConfig
+        MissingChainConfig
             { chain_id: ChainId }
             | e | {
-                format_args!("missing chain for id ({}) in configuration file",
+                format_args!("missing chain with id '{}' in configuration file",
                     e.chain_id)
             },
 
         MissingCounterpartyChannelId
             { channel_end: IdentifiedChannelEnd }
             | e | {
-                format_args!("the channel {:?} counterparty has no channel id",
+                format_args!("this channel's counterparty has no channel id: {:?}",
                     e.channel_end)
             },
 
@@ -69,9 +69,9 @@ define_error! {
             [ ConnectionError ]
             |_| { "connection error" },
 
-        Packet
-            [ PacketError ]
-            |_| { "packet error" },
+        Transfer
+            [ TransferError ]
+            |_| { "transfer error" },
 
         Channel
             [ ChannelError ]

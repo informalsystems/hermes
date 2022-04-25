@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use tracing::error;
 
 use crate::foreign_client::ForeignClient;
-use crate::link::{Link, LinkParameters};
+use crate::link::{Link, LinkParameters, Resubmit};
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
     config::Config,
@@ -125,6 +125,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 Ok(link) => {
                     let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
                     let link = Arc::new(Mutex::new(link));
+                    let resubmit = Resubmit::from_clear_interval(packets_config.clear_interval);
                     let packet_task = packet::spawn_packet_cmd_worker(
                         cmd_rx,
                         link.clone(),
@@ -134,7 +135,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     );
                     task_handles.push(packet_task);
 
-                    let link_task = packet::spawn_packet_worker(path.clone(), link);
+                    let link_task = packet::spawn_packet_worker(path.clone(), link, resubmit);
                     task_handles.push(link_task);
 
                     (Some(cmd_tx), None)
