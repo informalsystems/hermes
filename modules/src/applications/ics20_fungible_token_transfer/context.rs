@@ -6,9 +6,12 @@ use subtle_encoding::hex;
 use super::error::Error as Ics20Error;
 use crate::applications::ics20_fungible_token_transfer::acknowledgement::Acknowledgement;
 use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
+use crate::applications::ics20_fungible_token_transfer::relay_application_logic::on_ack_packet::process_ack_packet;
+use crate::applications::ics20_fungible_token_transfer::relay_application_logic::on_recv_packet::process_recv_packet;
 use crate::applications::ics20_fungible_token_transfer::{
-    DenomTrace, HashedDenom, IbcCoin, Source, TracePrefix, VERSION,
+    DenomTrace, HashedDenom, IbcCoin, VERSION,
 };
+use crate::applications::ics20_fungible_token_transfer::relay_application_logic::on_timeout_packet::process_timeout_packet;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
@@ -17,7 +20,7 @@ use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::{PortKeeper, PortReader};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::{OnRecvPacketAck, WriteFn};
+use crate::core::ics26_routing::context::OnRecvPacketAck;
 use crate::prelude::*;
 use crate::signer::Signer;
 
@@ -171,33 +174,6 @@ fn validate_counterparty_version(counterparty_version: &Version) -> Result<(), I
     }
 }
 
-fn refund_packet_token(
-    ctx: &mut impl Ics20Context,
-    packet: &Packet,
-    data: &PacketData,
-) -> Result<(), Ics20Error> {
-    let sender = data.sender.to_string().parse()?;
-
-    let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
-    let amount: IbcCoin = data.token.clone().into();
-
-    match data.token.denom.source_chain(&prefix) {
-        Source::Sender => {
-            // unescrow tokens back to sender
-            let escrow_address =
-                ctx.get_channel_escrow_address(&packet.source_port, packet.source_channel)?;
-
-            ctx.send_coins(&escrow_address, &sender, &amount)
-        }
-        Source::Receiver => {
-            // mint vouchers back to sender
-            ctx.mint_coins(&ctx.get_transfer_account(), &amount)?;
-            ctx.send_coins_from_module_to_account(&ctx.get_transfer_account(), &sender, &amount).expect("unable to send coins from module to account despite previously minting coins to module account");
-            Ok(())
-        }
-    }
-}
-
 #[allow(clippy::too_many_arguments)]
 pub fn on_chan_open_init(
     ctx: &mut impl Ics20Context,
@@ -275,75 +251,6 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
     packet: &Packet,
     _relayer: &Signer,
 ) -> OnRecvPacketAck {
-    fn process_recv_packet<Ctx: 'static + Ics20Context>(
-        ctx: &Ctx,
-        packet: &Packet,
-        data: PacketData,
-    ) -> Result<Box<WriteFn>, Ics20Error> {
-        if !ctx.is_receive_enabled() {
-            return Err(Ics20Error::receive_disabled());
-        }
-
-        let receiver = data.receiver.to_string().parse()?;
-
-        let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
-        match data.token.denom.source_chain(&prefix) {
-            Source::Receiver => {
-                // sender chain is not the source, unescrow tokens
-                let coin = {
-                    let mut c = data.token.clone();
-                    c.denom.remove_prefix(&prefix);
-                    c
-                };
-
-                if ctx.is_blocked_account(&receiver) {
-                    return Err(Ics20Error::unauthorised_receive(data.receiver));
-                }
-
-                let escrow_address = ctx.get_channel_escrow_address(
-                    &packet.destination_port,
-                    packet.destination_channel,
-                )?;
-                let amount = IbcCoin::from(coin);
-
-                Ok(Box::new(move |ctx| {
-                    let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                    ctx.send_coins(&escrow_address, &receiver, &amount)
-                        .map_err(|e| e.to_string())
-                }))
-            }
-            Source::Sender => {
-                // sender chain is the source, mint vouchers
-                let prefix =
-                    TracePrefix::new(packet.destination_port.clone(), packet.destination_channel);
-                let coin = {
-                    let mut c = data.token;
-                    c.denom.add_prefix(prefix);
-                    c
-                };
-
-                Ok(Box::new(move |ctx| {
-                    let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                    let hashed_denom = coin.denom.hashed();
-                    if ctx.has_denom_trace(&hashed_denom) {
-                        ctx.set_denom_trace(&coin.denom)
-                            .map_err(|e| e.to_string())?;
-                    }
-
-                    let amount = IbcCoin::from(coin);
-                    ctx.mint_coins(&ctx.get_transfer_account(), &amount)
-                        .map_err(|e| e.to_string())?;
-                    ctx.send_coins_from_module_to_account(
-                        &ctx.get_transfer_account(),
-                        &receiver,
-                        &amount,
-                    )
-                    .map_err(|e| e.to_string())
-                }))
-            }
-        }
-    }
-
     let data = match serde_json::from_slice::<PacketData>(&packet.data) {
         Ok(data) => data,
         Err(_) => {
@@ -373,9 +280,7 @@ pub fn on_acknowledgement_packet(
     let ack = serde_json::from_slice::<Acknowledgement>(acknowledgement.as_ref())
         .map_err(|_| Ics20Error::ack_deserialization())?;
 
-    if matches!(ack, Acknowledgement::Error(_)) {
-        refund_packet_token(ctx, packet, &data)?;
-    }
+    process_ack_packet(ctx, packet, &data, &ack)?;
 
     // TODO(hu55a1n1): emit event
 
@@ -390,7 +295,7 @@ pub fn on_timeout_packet(
     let data = serde_json::from_slice::<PacketData>(&packet.data)
         .map_err(|_| Ics20Error::packet_data_deserialization())?;
 
-    refund_packet_token(ctx, packet, &data)?;
+    process_timeout_packet(ctx, packet, &data)?;
 
     // TODO(hu55a1n1): emit event
 
