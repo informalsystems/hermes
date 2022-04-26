@@ -69,9 +69,9 @@ define_error! {
             { len: usize }
             | e | { format_args!("trace length must be even but got: {0}", e.len) },
 
-        InvalidCoinAmount
+        InvalidAmount
             [ TraceError<FromStrRadixErr> ]
-            | _ | { "invalid coin amount" },
+            | _ | { "invalid amount" },
 
         InvalidToken
             | _ | { "invalid token" },

@@ -8,7 +8,6 @@ use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use subtle_encoding::hex;
-use uint::FromStrRadixErr;
 
 use super::error::Error;
 use crate::bigint::U256;
@@ -279,10 +278,11 @@ impl FromStr for HashedDenom {
 pub struct Amount(U256);
 
 impl FromStr for Amount {
-    type Err = FromStrRadixErr;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(U256::from_str_radix(s, 10)?))
+        let amount = U256::from_str_radix(s, 10).map_err(Error::invalid_amount)?;
+        Ok(Self(amount))
     }
 }
 
@@ -317,7 +317,7 @@ where
 
     fn try_from(proto: RawCoin) -> Result<Coin<D>, Self::Error> {
         let denom = D::from_str(&proto.denom)?;
-        let amount = Amount::from_str(&proto.amount).map_err(Error::invalid_coin_amount)?;
+        let amount = Amount::from_str(&proto.amount)?;
         Ok(Self { denom, amount })
     }
 }

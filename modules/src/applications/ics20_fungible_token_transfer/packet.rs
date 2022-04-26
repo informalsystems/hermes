@@ -20,7 +20,7 @@ impl TryFrom<RawPacketData> for PacketData {
 
     fn try_from(raw_pkt_data: RawPacketData) -> Result<Self, Self::Error> {
         let denom = DenomTrace::from_str(&raw_pkt_data.denom)?;
-        let amount = Amount::from_str(&raw_pkt_data.amount).map_err(Error::invalid_coin_amount)?;
+        let amount = Amount::from_str(&raw_pkt_data.amount)?;
         Ok(Self {
             token: PrefixedCoin { denom, amount },
             sender: raw_pkt_data.sender.parse()?,

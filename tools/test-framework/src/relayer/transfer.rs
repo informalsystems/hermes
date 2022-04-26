@@ -4,9 +4,11 @@
 */
 
 use core::time::Duration;
+
+use ibc::bigint::U256;
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::transfer::{build_and_send_transfer_messages, Amount, TransferOptions};
+use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
@@ -52,7 +54,7 @@ pub fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     let transfer_options = TransferOptions {
         packet_src_port_id: channel.port_a.value().clone(),
         packet_src_channel_id: *channel.channel_id_a.value(),
-        amount: Amount(amount.into()),
+        amount: U256::from(amount).into(),
         denom: denom.value().to_string(),
         receiver: Some(recipient.value().0.clone()),
         timeout_height_offset,
