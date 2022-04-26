@@ -15,10 +15,18 @@ use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
+use crate::core::ics23_commitment::merkle::{self, apply_prefix};
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics24_host::path::{
+    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
+    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+};
+use crate::core::ics24_host::Path;
 use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
+use prost::Message;
+use tendermint_proto::Protobuf;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_def::MockClient;
@@ -63,7 +71,19 @@ pub trait ClientDef: Clone {
         client_id: &ClientId,
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
+
+        let path = ClientConsensusStatePath {
+            client_id: client_id.clone(),
+            epoch: consensus_height.revision_number,
+            height: consensus_height.revision_height,
+        };
+        let value = expected_consensus_state
+            .encode_vec()
+            .map_err(Error::invalid_any_consensus_state)?;
+        self.verify_membership(client_state, prefix, proof, root, path, value)
+    }
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
     #[allow(clippy::too_many_arguments)]
@@ -76,7 +96,15 @@ pub trait ClientDef: Clone {
         root: &CommitmentRoot,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
+
+        let path = ConnectionsPath(connection_id.clone());
+        let value = expected_connection_end
+            .encode_vec()
+            .map_err(Error::invalid_connection_end)?;
+        self.verify_membership(client_state, prefix, proof, root, path, value)
+    }
 
     /// Verify a `proof` that a channel state matches that of the input `channel_end`.
     #[allow(clippy::too_many_arguments)]
@@ -90,7 +118,16 @@ pub trait ClientDef: Clone {
         port_id: &PortId,
         channel_id: &ChannelId,
         expected_channel_end: &ChannelEnd,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
+
+        let path = ChannelEndsPath(port_id.clone(), *channel_id);
+        let value = expected_channel_end
+            .encode_vec()
+            .map_err(Error::invalid_channel_end)?;
+
+        self.verify_membership(client_state, prefix, proof, root, path, value)
+    }
 
     /// Verify the client state for this chain that it is stored on the counterparty chain.
     #[allow(clippy::too_many_arguments)]
@@ -103,7 +140,16 @@ pub trait ClientDef: Clone {
         root: &CommitmentRoot,
         client_id: &ClientId,
         expected_client_state: &AnyClientState,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
+
+        let path = ClientStatePath(client_id.clone());
+        let value = expected_client_state
+            .encode_vec()
+            .map_err(Error::invalid_any_client_state)?;
+
+        self.verify_membership(client_state, prefix, proof, root, path, value)
+    }
 
     /// Verify a `proof` that a packet has been commited.
     #[allow(clippy::too_many_arguments)]
@@ -119,7 +165,30 @@ pub trait ClientDef: Clone {
         channel_id: &ChannelId,
         sequence: Sequence,
         commitment: String,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
+        self.verify_delay_passed(ctx, height, connection_end)?;
+
+        let commitment_path = CommitmentsPath {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            sequence,
+        };
+
+        let mut commitment_bytes = Vec::new();
+        commitment
+            .encode(&mut commitment_bytes)
+            .expect("buffer size too small");
+
+        self.verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            commitment_path,
+            commitment_bytes,
+        )
+    }
 
     /// Verify a `proof` that a packet has been commited.
     #[allow(clippy::too_many_arguments)]
@@ -135,7 +204,24 @@ pub trait ClientDef: Clone {
         channel_id: &ChannelId,
         sequence: Sequence,
         ack: Acknowledgement,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
+        self.verify_delay_passed(ctx, height, connection_end)?;
+
+        let ack_path = AcksPath {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            sequence,
+        };
+        self.verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            ack_path,
+            ack.into_bytes(),
+        )
+    }
 
     /// Verify a `proof` that of the next_seq_received.
     #[allow(clippy::too_many_arguments)]
@@ -150,7 +236,25 @@ pub trait ClientDef: Clone {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
+        self.verify_delay_passed(ctx, height, connection_end)?;
+
+        let mut seq_bytes = Vec::new();
+        u64::from(sequence)
+            .encode(&mut seq_bytes)
+            .expect("buffer size too small");
+
+        let seq_path = SeqRecvsPath(port_id.clone(), *channel_id);
+        self.verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            seq_path,
+            seq_bytes,
+        )
+    }
 
     /// Verify a `proof` that a packet has not been received.
     #[allow(clippy::too_many_arguments)]
@@ -165,6 +269,72 @@ pub trait ClientDef: Clone {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
+    ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
+        self.verify_delay_passed(ctx, height, connection_end)?;
+
+        let receipt_path = ReceiptsPath {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            sequence,
+        };
+        self.verify_non_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            receipt_path,
+        )
+    }
+
+    fn verify_membership(
+        &self,
+        client_state: &Self::ClientState,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        path: impl Into<Path>,
+        value: Vec<u8>,
+    ) -> Result<(), Error> {
+        let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
+        let merkle_proof: merkle::MerkleProof = MerkleProof::try_from(proof.clone())
+            .map_err(Error::invalid_commitment_proof)?
+            .into();
+
+        merkle_proof
+            .verify_membership(
+                client_state.proof_specs(),
+                root.clone().into(),
+                merkle_path,
+                value,
+                0,
+            )
+            .map_err(Error::ics23_error)
+    }
+
+    fn verify_non_membership(
+        &self,
+        client_state: &Self::ClientState,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        path: impl Into<Path>,
+    ) -> Result<(), Error> {
+        let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
+        let merkle_proof: merkle::MerkleProof = MerkleProof::try_from(proof.clone())
+            .map_err(Error::invalid_commitment_proof)?
+            .into();
+
+        merkle_proof
+            .verify_non_membership(client_state.proof_specs(), root.clone().into(), merkle_path)
+            .map_err(Error::ics23_error)
+    }
+
+    fn verify_delay_passed(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
     ) -> Result<(), Error>;
 }
 
@@ -237,416 +407,6 @@ impl ClientDef for AnyClient {
         }
     }
 
-    fn verify_client_consensus_state(
-        &self,
-        client_state: &Self::ClientState,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
-        root: &CommitmentRoot,
-        client_id: &ClientId,
-        consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Error> {
-        match self {
-            Self::Tendermint(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Tendermint
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
-
-                client.verify_client_consensus_state(
-                    client_state,
-                    height,
-                    prefix,
-                    proof,
-                    root,
-                    client_id,
-                    consensus_height,
-                    expected_consensus_state,
-                )
-            }
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Mock
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
-
-                client.verify_client_consensus_state(
-                    client_state,
-                    height,
-                    prefix,
-                    proof,
-                    root,
-                    client_id,
-                    consensus_height,
-                    expected_consensus_state,
-                )
-            }
-        }
-    }
-
-    fn verify_connection_state(
-        &self,
-        client_state: &AnyClientState,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
-        root: &CommitmentRoot,
-        connection_id: &ConnectionId,
-        expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Error> {
-        match self {
-            Self::Tendermint(client) => {
-                let client_state = downcast!(client_state => AnyClientState::Tendermint)
-                    .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
-
-                client.verify_connection_state(
-                    client_state,
-                    height,
-                    prefix,
-                    proof,
-                    root,
-                    connection_id,
-                    expected_connection_end,
-                )
-            }
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(client) => {
-                let client_state = downcast!(client_state => AnyClientState::Mock)
-                    .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
-
-                client.verify_connection_state(
-                    client_state,
-                    height,
-                    prefix,
-                    proof,
-                    root,
-                    connection_id,
-                    expected_connection_end,
-                )
-            }
-        }
-    }
-
-    fn verify_channel_state(
-        &self,
-        client_state: &AnyClientState,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
-        root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        expected_channel_end: &ChannelEnd,
-    ) -> Result<(), Error> {
-        match self {
-            Self::Tendermint(client) => {
-                let client_state = downcast!(client_state => AnyClientState::Tendermint)
-                    .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
-
-                client.verify_channel_state(
-                    client_state,
-                    height,
-                    prefix,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    expected_channel_end,
-                )
-            }
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(client) => {
-                let client_state = downcast!(client_state => AnyClientState::Mock)
-                    .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
-
-                client.verify_channel_state(
-                    client_state,
-                    height,
-                    prefix,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    expected_channel_end,
-                )
-            }
-        }
-    }
-
-    fn verify_client_full_state(
-        &self,
-        client_state: &Self::ClientState,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProofBytes,
-        root: &CommitmentRoot,
-        client_id: &ClientId,
-        client_state_on_counterparty: &AnyClientState,
-    ) -> Result<(), Error> {
-        match self {
-            Self::Tendermint(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Tendermint
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
-
-                client.verify_client_full_state(
-                    client_state,
-                    height,
-                    prefix,
-                    proof,
-                    root,
-                    client_id,
-                    client_state_on_counterparty,
-                )
-            }
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Mock
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
-
-                client.verify_client_full_state(
-                    client_state,
-                    height,
-                    prefix,
-                    proof,
-                    root,
-                    client_id,
-                    client_state_on_counterparty,
-                )
-            }
-        }
-    }
-    fn verify_packet_data(
-        &self,
-        ctx: &dyn ChannelReader,
-        client_state: &Self::ClientState,
-        height: Height,
-        connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
-        root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: Sequence,
-        commitment: String,
-    ) -> Result<(), Error> {
-        match self {
-            Self::Tendermint(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Tendermint
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
-
-                client.verify_packet_data(
-                    ctx,
-                    client_state,
-                    height,
-                    connection_end,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    sequence,
-                    commitment,
-                )
-            }
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Mock
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
-
-                client.verify_packet_data(
-                    ctx,
-                    client_state,
-                    height,
-                    connection_end,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    sequence,
-                    commitment,
-                )
-            }
-        }
-    }
-
-    fn verify_packet_acknowledgement(
-        &self,
-        ctx: &dyn ChannelReader,
-        client_state: &Self::ClientState,
-        height: Height,
-        connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
-        root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: Sequence,
-        ack: Acknowledgement,
-    ) -> Result<(), Error> {
-        match self {
-            Self::Tendermint(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Tendermint
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
-
-                client.verify_packet_acknowledgement(
-                    ctx,
-                    client_state,
-                    height,
-                    connection_end,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    sequence,
-                    ack,
-                )
-            }
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Mock
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
-
-                client.verify_packet_acknowledgement(
-                    ctx,
-                    client_state,
-                    height,
-                    connection_end,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    sequence,
-                    ack,
-                )
-            }
-        }
-    }
-
-    fn verify_next_sequence_recv(
-        &self,
-        ctx: &dyn ChannelReader,
-        client_state: &Self::ClientState,
-        height: Height,
-        connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
-        root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: Sequence,
-    ) -> Result<(), Error> {
-        match self {
-            Self::Tendermint(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Tendermint
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
-
-                client.verify_next_sequence_recv(
-                    ctx,
-                    client_state,
-                    height,
-                    connection_end,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    sequence,
-                )
-            }
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Mock
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
-
-                client.verify_next_sequence_recv(
-                    ctx,
-                    client_state,
-                    height,
-                    connection_end,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    sequence,
-                )
-            }
-        }
-    }
-    fn verify_packet_receipt_absence(
-        &self,
-        ctx: &dyn ChannelReader,
-        client_state: &Self::ClientState,
-        height: Height,
-        connection_end: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
-        root: &CommitmentRoot,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: Sequence,
-    ) -> Result<(), Error> {
-        match self {
-            Self::Tendermint(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Tendermint
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
-
-                client.verify_packet_receipt_absence(
-                    ctx,
-                    client_state,
-                    height,
-                    connection_end,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    sequence,
-                )
-            }
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(client) => {
-                let client_state = downcast!(
-                    client_state => AnyClientState::Mock
-                )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
-
-                client.verify_packet_receipt_absence(
-                    ctx,
-                    client_state,
-                    height,
-                    connection_end,
-                    proof,
-                    root,
-                    port_id,
-                    channel_id,
-                    sequence,
-                )
-            }
-        }
-    }
-
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
@@ -695,6 +455,20 @@ impl ClientDef for AnyClient {
                     AnyConsensusState::Mock(new_consensus),
                 ))
             }
+        }
+    }
+
+    fn verify_delay_passed(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
+    ) -> Result<(), Error> {
+        match self {
+            Self::Tendermint(client) => client.verify_delay_passed(ctx, height, connection_end),
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(client) => client.verify_delay_passed(ctx, height, connection_end),
         }
     }
 }

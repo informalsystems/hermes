@@ -41,6 +41,15 @@ define_error! {
             { client_id: ClientId }
             | e | { format_args!("client is frozen: {0}", e.client_id) },
 
+        ClientFrozenAt
+            {
+                frozen_height: Height,
+                target_height: Height,
+            }
+            | e | {
+                format_args!("the client is frozen: frozen_height={0} target_height={1}", e.frozen_height, e.target_height)
+            },
+
         ConsensusStateNotFound
             { client_id: ClientId, height: Height }
             | e | {
@@ -268,6 +277,20 @@ define_error! {
         InvalidAnyConsensusState
             [ TraceError<TendermintProtoError> ]
             | _ | { "invalid any client consensus state" },
+
+
+        InsufficientHeight
+            {
+                latest_height: Height,
+                target_height: Height,
+            }
+            | e | {
+                format_args!("the height is insufficient: latest_height={0} target_height={1}", e.latest_height, e.target_height)
+            },
+
+        Ics23Error
+            [ Ics23Error ]
+            | _ | { "ics23 commitment error" },
     }
 }
 

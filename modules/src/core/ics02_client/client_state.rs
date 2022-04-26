@@ -11,6 +11,7 @@ use crate::clients::ics07_tendermint::client_state;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
+use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(any(test, feature = "mocks"))]
@@ -35,6 +36,9 @@ pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
     /// Latest height of consensus state
     fn latest_height(&self) -> Height;
 
+    /// Proof Specification of the client state
+    fn proof_specs(&self) -> &ProofSpecs;
+
     /// Freeze status of the client
     fn is_frozen(&self) -> bool {
         self.frozen_height().is_some()
@@ -55,6 +59,20 @@ pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
 
     /// Wrap into an `AnyClientState`
     fn wrap_any(self) -> AnyClientState;
+
+    /// Verify that the client is at a sufficient height and unfrozen at the given height
+    fn verify_height(&self, height: Height) -> Result<(), Error> {
+        if self.latest_height() < height {
+            return Err(Error::insufficient_height(self.latest_height(), height));
+        }
+
+        match self.frozen_height() {
+            Some(frozen_height) if frozen_height <= height => {
+                Err(Error::client_frozen_at(frozen_height, height))
+            }
+            _ => Ok(()),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -109,7 +127,7 @@ impl AnyClientState {
 
     pub fn trust_threshold(&self) -> Option<TrustThreshold> {
         match self {
-            AnyClientState::Tendermint(state) => Some(state.trust_level),
+            AnyClientState::Tendermint(tm_state) => Some(tm_state.trust_level),
 
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(_) => None,
@@ -118,7 +136,7 @@ impl AnyClientState {
 
     pub fn max_clock_drift(&self) -> Duration {
         match self {
-            AnyClientState::Tendermint(state) => state.max_clock_drift,
+            AnyClientState::Tendermint(tm_state) => tm_state.max_clock_drift,
 
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(_) => Duration::new(0, 0),
@@ -127,10 +145,10 @@ impl AnyClientState {
 
     pub fn client_type(&self) -> ClientType {
         match self {
-            Self::Tendermint(state) => state.client_type(),
+            Self::Tendermint(tm_state) => tm_state.client_type(),
 
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(state) => state.client_type(),
+            Self::Mock(mock_state) => mock_state.client_type(),
         }
     }
 
@@ -149,6 +167,24 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
+        }
+    }
+
+    pub fn proof_specs(&self) -> &ProofSpecs {
+        match self {
+            Self::Tendermint(tm_state) => tm_state.proof_specs(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(mock_state) => mock_state.proof_specs(),
+        }
+    }
+
+    pub fn verify_height(&self, height: Height) -> Result<(), Error> {
+        match self {
+            Self::Tendermint(tm_state) => tm_state.verify_height(height),
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(mock_state) => mock_state.verify_height(height),
         }
     }
 }
@@ -213,6 +249,10 @@ impl ClientState for AnyClientState {
         self.client_type()
     }
 
+    fn proof_specs(&self) -> &ProofSpecs {
+        self.proof_specs()
+    }
+
     fn latest_height(&self) -> Height {
         self.latest_height()
     }
@@ -241,6 +281,10 @@ impl ClientState for AnyClientState {
 
     fn wrap_any(self) -> AnyClientState {
         self
+    }
+
+    fn verify_height(&self, height: Height) -> Result<(), Error> {
+        self.verify_height(height)
     }
 }
 
