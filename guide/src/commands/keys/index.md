@@ -41,23 +41,27 @@ SUBCOMMANDS:
 
 In order to execute the command below you need a private key file (JSON). The relayer uses the private key file to sign the transactions submitted to the chain.
 
-The private key file can be obtained by using the `keys add` on a Cosmos chain, for example for a `gaia` chain the command is:
+The private key file can be obtained by using the `keys add` on a Cosmos chain. For example, the command for `gaiad` is:
 
 ```shell
-gaiad keys add ...
+# The `key_name` parameter is the name of the key that will be found in the json output
+# For example, in the "Two Local Chains" tutorial, we use "testkey".
+gaiad keys add <key_name> --output json
 ```
 
-The command outputs a JSON similar to the one below. You can save this file (e.g. `key_seed.json`) and use it to add to the relayer
+The command outputs a JSON similar to the one below. 
 
 ```json
 {
-  "name": "user",
+  "name": "testkey",
   "type": "local",
   "address": "cosmos1tc3vcuxyyac0dmayf887t95tdg7qpyql48w7gj",
   "pubkey": "cosmospub1addwnpepqgg7ng4ycm60pdxfzdfh4hjvkwcr3da59mr8k883vsstx60ruv7kur4525u",
   "mnemonic": "[24 words mnemonic]"
 }
 ```
+
+You can save this to a file (e.g. `key_seed.json`) and use it to add to the relayer with `hermes keys add <chain_id> -f key_seed.json`. See the `Adding Keys` section for more details.
 
 ### Adding Keys
 
