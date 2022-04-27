@@ -399,9 +399,9 @@ checksum = "fff857943da45f546682664a79488be82e69e43c1a7a2307679ab9afb3a66d2e"
 
 [[package]]
 name = "clap"
-version = "3.1.9"
+version = "3.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6aad2534fad53df1cc12519c5cda696dd3e20e6118a027e24054aea14a0bdcbe"
+checksum = "7c167e37342afc5f33fd87bbc870cedd020d2a6dffa05d45ccd9241fbdd146db"
 dependencies = [
  "atty",
  "bitflags",
@@ -1385,7 +1385,7 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "bytes",
  "derive_more",
@@ -1416,7 +1416,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-integration-test"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "ibc",
  "ibc-proto",
@@ -1432,7 +1432,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "base64",
  "bytes",
@@ -1446,7 +1446,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1505,7 +1505,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "abscissa_core",
  "atty",
@@ -1550,7 +1550,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "crossbeam-channel 0.5.4",
  "ibc",
@@ -1565,7 +1565,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "crossbeam-channel 0.5.4",
  "ibc",
@@ -1578,7 +1578,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-test-framework"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "color-eyre",
  "crossbeam-channel 0.5.4",
