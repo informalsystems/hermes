@@ -113,6 +113,7 @@ where
         let node_a = bootstrap_single_node(
             builder,
             "alpha",
+            config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
         )?;
@@ -120,6 +121,7 @@ where
         let node_b = bootstrap_single_node(
             builder,
             "beta",
+            config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
         )?;
@@ -143,6 +145,7 @@ where
         let node = bootstrap_single_node(
             builder,
             "alpha",
+            config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
         )?;
