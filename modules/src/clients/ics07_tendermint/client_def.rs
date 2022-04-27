@@ -18,6 +18,7 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
@@ -274,7 +275,7 @@ impl ClientDef for TendermintClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        commitment: Vec<u8>,
+        commitment: PacketCommitment,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
@@ -291,7 +292,7 @@ impl ClientDef for TendermintClient {
             proof,
             root,
             commitment_path,
-            commitment,
+            commitment.into_vec(),
         )
     }
 
@@ -306,7 +307,7 @@ impl ClientDef for TendermintClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        ack: Vec<u8>,
+        ack_commitment: AcknowledgementCommitment,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
@@ -322,7 +323,7 @@ impl ClientDef for TendermintClient {
             proof,
             root,
             ack_path,
-            ack,
+            ack_commitment.into_vec(),
         )
     }
 

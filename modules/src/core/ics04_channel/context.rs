@@ -8,6 +8,7 @@ use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
@@ -59,21 +60,24 @@ pub trait ChannelReader: CapabilityReader {
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<Sequence, Error>;
 
-    fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Result<Vec<u8>, Error>;
+    fn get_packet_commitment(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> Result<PacketCommitment, Error>;
 
     fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Result<Receipt, Error>;
 
     fn get_packet_acknowledgement(
         &self,
         key: &(PortId, ChannelId, Sequence),
-    ) -> Result<Vec<u8>, Error>;
+    ) -> Result<AcknowledgementCommitment, Error>;
 
     fn packet_commitment(
         &self,
         packet_data: Vec<u8>,
         timeout_height: Height,
         timeout_timestamp: Timestamp,
-    ) -> Vec<u8> {
+    ) -> PacketCommitment {
         let mut input = timeout_timestamp.nanoseconds().to_be_bytes().to_vec();
         let revision_number = timeout_height.revision_number.to_be_bytes();
         input.append(&mut revision_number.to_vec());
@@ -81,11 +85,11 @@ pub trait ChannelReader: CapabilityReader {
         input.append(&mut revision_height.to_vec());
         let data = self.hash(packet_data);
         input.append(&mut data.to_vec());
-        self.hash(input)
+        self.hash(input).into()
     }
 
-    fn ack_commitment(&self, ack: Acknowledgement) -> Vec<u8> {
-        self.hash(ack.into_bytes())
+    fn ack_commitment(&self, ack: Acknowledgement) -> AcknowledgementCommitment {
+        self.hash(ack.into_bytes()).into()
     }
 
     /// A hashing function for packet commitments
@@ -176,9 +180,7 @@ pub trait ChannelKeeper {
 
                 self.store_packet_commitment(
                     (res.port_id.clone(), res.channel_id, res.seq),
-                    res.timeout_timestamp,
-                    res.timeout_height,
-                    res.data,
+                    res.commitment,
                 )?;
             }
             PacketResult::Recv(res) => {
@@ -206,7 +208,7 @@ pub trait ChannelKeeper {
             PacketResult::WriteAck(res) => {
                 self.store_packet_acknowledgement(
                     (res.port_id.clone(), res.channel_id, res.seq),
-                    res.ack,
+                    res.ack_commitment,
                 )?;
             }
             PacketResult::Ack(res) => {
@@ -239,9 +241,7 @@ pub trait ChannelKeeper {
     fn store_packet_commitment(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        timestamp: Timestamp,
-        heigh: Height,
-        data: Vec<u8>,
+        commitment: PacketCommitment,
     ) -> Result<(), Error>;
 
     fn delete_packet_commitment(&mut self, key: (PortId, ChannelId, Sequence))
@@ -256,7 +256,7 @@ pub trait ChannelKeeper {
     fn store_packet_acknowledgement(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        ack: Vec<u8>,
+        ack_commitment: AcknowledgementCommitment,
     ) -> Result<(), Error>;
 
     fn delete_packet_acknowledgement(
