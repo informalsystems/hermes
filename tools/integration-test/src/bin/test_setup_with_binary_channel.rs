@@ -48,6 +48,10 @@ impl TestOverrides for Test {
             chain.key_store_type = Store::Test;
         }
     }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
 }
 
 impl BinaryChannelTest for Test {

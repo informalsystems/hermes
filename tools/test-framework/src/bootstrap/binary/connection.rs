@@ -19,7 +19,8 @@ use crate::util::random::random_u64_range;
 
 pub struct BootstrapConnectionOptions {
     pub connection_delay: Duration,
-    pub bootstrap_with_random_ids: bool,
+    pub pad_connection_id_a: u64,
+    pub pad_connection_id_b: u64,
 }
 
 /**
@@ -36,10 +37,20 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     let client_id_a = foreign_clients.client_id_a();
     let client_id_b = foreign_clients.client_id_b();
 
-    if options.bootstrap_with_random_ids {
-        pad_connection_id(&chain_a, &chain_b, &client_id_a, &client_id_b)?;
-        pad_connection_id(&chain_b, &chain_a, &client_id_b, &client_id_a)?;
-    }
+    pad_connection_id(
+        &chain_a,
+        &chain_b,
+        &client_id_a,
+        &client_id_b,
+        options.pad_connection_id_a,
+    )?;
+    pad_connection_id(
+        &chain_b,
+        &chain_a,
+        &client_id_b,
+        &client_id_a,
+        options.pad_connection_id_b,
+    )?;
 
     let connection = Connection::new(
         foreign_clients.client_b_to_a.clone(),
@@ -90,8 +101,9 @@ pub fn pad_connection_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_b: &ChainB,
     client_id_a: &TaggedClientIdRef<ChainA, ChainB>,
     client_id_b: &TaggedClientIdRef<ChainB, ChainA>,
+    pad_count: u64,
 ) -> Result<(), Error> {
-    for i in 0..random_u64_range(1, 6) {
+    for i in 0..pad_count {
         debug!(
             "creating new connection id {} on chain {}",
             i + 1,
@@ -114,7 +126,8 @@ impl Default for BootstrapConnectionOptions {
     fn default() -> Self {
         Self {
             connection_delay: default_connection_delay(),
-            bootstrap_with_random_ids: false,
+            pad_connection_id_a: 0,
+            pad_connection_id_b: 0,
         }
     }
 }
@@ -126,7 +139,14 @@ impl BootstrapConnectionOptions {
     }
 
     pub fn bootstrap_with_random_ids(mut self, bootstrap_with_random_ids: bool) -> Self {
-        self.bootstrap_with_random_ids = bootstrap_with_random_ids;
+        if bootstrap_with_random_ids {
+            self.pad_connection_id_a = random_u64_range(0, 6);
+            self.pad_connection_id_b = random_u64_range(0, 6);
+        } else {
+            self.pad_connection_id_a = 0;
+            self.pad_connection_id_b = 1;
+        }
+
         self
     }
 }
