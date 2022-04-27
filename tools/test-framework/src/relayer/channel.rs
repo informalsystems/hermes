@@ -89,7 +89,7 @@ pub fn query_identified_channel_end<ChainA: ChainHandle, ChainB>(
     let channel_end = handle.query_channel(port_id.value(), channel_id.value(), Height::zero())?;
     Ok(DualTagged::new(IdentifiedChannelEnd::new(
         port_id.into_value().clone(),
-        channel_id.into_value().clone(),
+        *channel_id.into_value(),
         channel_end,
     )))
 }
