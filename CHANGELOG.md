@@ -12,6 +12,8 @@ The `ibc` crate now also come with a complete [ICS 026][ics-26] implementation.
 
 ### Note for operators
 
+There is a new `query packet pending` command, see above for more information.
+
 The `create channel` command now requires an existing client and connection,
 unless the `--new-client-connection` flag is provided.
 Please [refer to the guide][create-channel] for more information.
