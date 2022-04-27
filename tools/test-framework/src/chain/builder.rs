@@ -72,7 +72,7 @@ impl ChainBuilder {
         let chain_id = if use_random_id {
             ChainId::from_string(&format!("ibc-{}-{:x}", prefix, random_u32()))
         } else {
-            ChainId::from_string(prefix)
+            ChainId::from_string(&format!("ibc-{}", prefix))
         };
 
         let rpc_port = random_unused_tcp_port();
