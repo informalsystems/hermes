@@ -34,7 +34,7 @@ impl QueryUnreceivedAcknowledgementCmd {
         let config = app_config();
         debug!("Options: {:?}", self);
 
-        let (chains, channel) = spawn_chain_counterparty::<BaseChainHandle>(
+        let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
@@ -43,10 +43,11 @@ impl QueryUnreceivedAcknowledgementCmd {
 
         debug!(
             "fetched from source chain {} the following channel {:?}",
-            self.chain_id, channel
+            self.chain_id, chan_conn_cli.channel,
         );
 
-        unreceived_acknowledgements(&chains.src, &chains.dst, &channel).map_err(Error::supervisor)
+        unreceived_acknowledgements(&chains.src, &chains.dst, &chan_conn_cli.channel)
+            .map_err(Error::supervisor)
     }
 }
 

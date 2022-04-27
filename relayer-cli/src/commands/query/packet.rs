@@ -5,6 +5,7 @@ mod ack;
 mod acks;
 mod commitment;
 mod commitments;
+mod pending;
 mod unreceived_acks;
 mod unreceived_packets;
 
@@ -27,4 +28,7 @@ pub enum QueryPacketCmds {
 
     /// Query unreceived acknowledgments
     UnreceivedAcks(unreceived_acks::QueryUnreceivedAcknowledgementCmd),
+
+    /// Output a summary of pending packets in both directions
+    Pending(pending::QueryPendingPacketsCmd),
 }
