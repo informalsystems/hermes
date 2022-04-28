@@ -1226,10 +1226,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // Check for misbehaviour according to the specific source chain type.
             // In case of Tendermint client, this will also check the BFT time violation if
             // a header for the event height cannot be retrieved from the witness.
-            //
-            // FIXME: This returns error if the update event contains expired client state.
-            // This can happen even if the latest client state is unexpired, but the
-            // update event is from earlier.
             let misbehavior = self
                 .src_chain
                 .check_misbehaviour(update_event.clone(), client_state.clone())
