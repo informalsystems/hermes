@@ -41,7 +41,7 @@ futures = "0.3.21"
 crossbeam-channel = "0.5.4"
 k256 = { version = "0.10.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
-bitcoin = { version = "=0.27", features = ["use-serde"] }
+bitcoin = { version = "=0.28", features = ["use-serde"] }
 tiny-bip39 = "0.8.0"
 hdpath = { version = "0.6.0" }
 sha2 = "0.10.2"
