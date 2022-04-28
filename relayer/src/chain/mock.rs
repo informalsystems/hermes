@@ -170,7 +170,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_status(&self) -> Result<ChainStatus, Error> {
+    fn query_application_status(&self) -> Result<ChainStatus, Error> {
         Ok(ChainStatus {
             height: self.context.host_height(),
             timestamp: self.context.host_timestamp(),

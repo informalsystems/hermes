@@ -429,7 +429,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let dst_latest_info = self
             .dst_chain()
-            .query_status()
+            .query_application_status()
             .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
         let dst_latest_height = dst_latest_info.height;
         // Operational data targeting the source chain (e.g., Timeout packets)
@@ -1460,7 +1460,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let dst_status = self
             .dst_chain()
-            .query_status()
+            .query_application_status()
             .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
 
         let dst_current_height = dst_status.height;
