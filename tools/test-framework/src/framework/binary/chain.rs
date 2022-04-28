@@ -8,7 +8,7 @@ use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::CreateOptions as ClientOptions;
 use tracing::info;
 
-use crate::bootstrap::binary::chain::Builder;
+use crate::bootstrap::binary::chain::{bootstrap_chains_with_full_nodes, BootstrapClientOptions};
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::node::{
@@ -203,12 +203,20 @@ where
 {
     fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
         let overrides = self.test.get_overrides();
-        let (relayer, chains) = Builder::with_node_pair(config, node_a, node_b)
+
+        let bootstrap_options = BootstrapClientOptions::default()
             .client_options_a_to_b(overrides.client_options_a_to_b())
-            .client_options_b_to_a(overrides.client_options_b_to_a())
-            .bootstrap_with_config(|config| {
+            .client_options_b_to_a(overrides.client_options_b_to_a());
+
+        let (relayer, chains) = bootstrap_chains_with_full_nodes(
+            config,
+            node_a,
+            node_b,
+            bootstrap_options,
+            |config| {
                 overrides.modify_relayer_config(config);
-            })?;
+            },
+        )?;
 
         let env_path = config.chain_store_dir.join("binary-chains.env");
 

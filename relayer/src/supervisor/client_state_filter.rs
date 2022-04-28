@@ -55,6 +55,12 @@ define_error! {
     }
 }
 
+impl FilterError {
+    pub fn log_as_debug(&self) -> bool {
+        matches!(self.detail(), FilterErrorDetail::Spawn(e) if e.source.log_as_debug())
+    }
+}
+
 /// A cache storing filtering status (allow or deny) for
 /// arbitrary identifiers.
 #[derive(Default, Debug)]
