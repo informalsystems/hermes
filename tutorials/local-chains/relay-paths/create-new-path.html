@@ -144,13 +144,106 @@
                     <main>
                         <h1 id="create-a-new-path"><a class="header" href="#create-a-new-path">Create a new path</a></h1>
 <p>Perform client creation, connection and channel handshake to establish a new path between the <code>transfer</code> ports on <code>ibc-0</code> and <code>ibc-1</code> chains.</p>
-<pre><code class="language-shell">hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer
+<ol>
+<li>Create a client for <code>ibc-1</code> on <code>ibc-0</code>:</li>
+</ol>
+<pre><code class="language-shell">hermes create client ibc-0 ibc-1
+</code></pre>
+<pre><code class="language-json">Success: CreateClient(
+    CreateClient(
+        Attributes {
+            height: Height {
+                revision: 0,
+                height: 8532,
+            },
+            client_id: ClientId(
+                &quot;07-tendermint-0&quot;,
+            ),
+            client_type: Tendermint,
+            consensus_height: Height {
+                revision: 1,
+                height: 8532,
+            },
+        },
+    ),
+)
+</code></pre>
+<ol start="2">
+<li>Create a client for <code>ibc-0</code> on <code>ibc-1</code>:</li>
+</ol>
+<pre><code class="language-shell">hermes create client ibc-1 ibc-0
+</code></pre>
+<pre><code class="language-json">Success: CreateClient(
+    CreateClient(
+        Attributes {
+            height: Height {
+                revision: 1,
+                height: 8547,
+            },
+            client_id: ClientId(
+                &quot;07-tendermint-1&quot;,
+            ),
+            client_type: Tendermint,
+            consensus_height: Height {
+                revision: 0,
+                height: 8545,
+            },
+        },
+    ),
+)
+</code></pre>
+<ol start="3">
+<li>Create a connection between <code>ibc-0</code> and <code>ibc-1</code> using the two clients we just created</li>
+</ol>
+<pre><code class="language-shell">hermes create connection ibc-0 --client-a 07-tendermint-0 --client-b 07-tendermint-1
+</code></pre>
+<p>If all the handshakes are performed successfully you should see a message similar to the one below:
+Note the connection identifier: <code>connection-0</code> on side A (<code>ibc-0</code>) and <code>connection-1</code> on side B (<code>ibc-1</code>)</p>
+<pre><code class="language-json">Success: Connection {
+    delay_period: 0ns,
+    a_side: ConnectionSide {
+        chain: BaseChainHandle {
+            chain_id: ChainId {
+                id: &quot;ibc-0&quot;,
+                version: 0,
+            },
+            runtime_sender: Sender { .. },
+        },
+        client_id: ClientId(
+            &quot;07-tendermint-0&quot;,
+        ),
+        connection_id: Some(
+            ConnectionId(
+                &quot;connection-0&quot;,
+            ),
+        ),
+    },
+    b_side: ConnectionSide {
+        chain: BaseChainHandle {
+            chain_id: ChainId {
+                id: &quot;ibc-1&quot;,
+                version: 1,
+            },
+            runtime_sender: Sender { .. },
+        },
+        client_id: ClientId(
+            &quot;07-tendermint-1&quot;,
+        ),
+        connection_id: Some(
+            ConnectionId(
+                &quot;connection-1&quot;,
+            ),
+        ),
+    },
+}
+</code></pre>
+<pre><code class="language-shell">hermes create channel ibc-0 connection-0 --port-a transfer --port-b transfer
 </code></pre>
 <p>If all the handshakes are performed successfully you should see a message similar to the one below:</p>
 <pre><code class="language-json">Success: Channel {
     ordering: Unordered,
     a_side: ChannelSide {
-        chain: ProdChainHandle {
+        chain: BaseChainHandle {
             chain_id: ChainId {
                 id: &quot;ibc-0&quot;,
                 version: 0,
@@ -166,12 +259,15 @@
         port_id: PortId(
             &quot;transfer&quot;,
         ),
-        channel_id: ChannelId(
-            &quot;channel-0&quot;,
+        channel_id: Some(
+            ChannelId(
+                &quot;channel-0&quot;,
+            ),
         ),
+        version: None,
     },
     b_side: ChannelSide {
-        chain: ProdChainHandle {
+        chain: BaseChainHandle {
             chain_id: ChainId {
                 id: &quot;ibc-1&quot;,
                 version: 1,
@@ -187,17 +283,17 @@
         port_id: PortId(
             &quot;transfer&quot;,
         ),
-        channel_id: ChannelId(
-            &quot;channel-1&quot;,
+        channel_id: Some(
+            ChannelId(
+                &quot;channel-1&quot;,
+            ),
         ),
+        version: None,
     },
-    connection_delay: 0s,
-    version: Some(
-        &quot;ics20-1&quot;,
-    ),
+    connection_delay: 0ns,
 }
-
 </code></pre>
+<p>This channel has identifier <code>channel-0</code> on <code>ibc-0</code> and <code>channel-1</code> on <code>ibc-1</code>.</p>
 <p>Note that for each side, <em>a_side</em> (<strong>ibc-0</strong>) and <em>b_side</em> (<strong>ibc-1</strong>) there are a <strong>client_id</strong>, <strong>connection_id</strong>, <strong>channel_id</strong> and <strong>port_id</strong>.
 With all these established, you have <a href="./multiple-paths.html">a path that you can relay packets over</a>.</p>
 
