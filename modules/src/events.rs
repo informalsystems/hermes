@@ -465,6 +465,24 @@ impl IbcEvent {
     }
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ModuleEvent {
+    pub kind: String,
+    pub attributes: Vec<ModuleEventAttribute>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ModuleEventAttribute {
+    pub key: String,
+    pub value: String,
+}
+
+impl From<ModuleEvent> for IbcEvent {
+    fn from(e: ModuleEvent) -> Self {
+        IbcEvent::AppModule(e)
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct RawObject<'a> {
     pub height: Height,
