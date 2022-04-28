@@ -4,6 +4,7 @@
 */
 
 use ibc_relayer::chain::handle::ChainHandle;
+use tracing::info;
 
 use crate::bootstrap::nary::chain::{
     boostrap_chains_with_nodes, boostrap_chains_with_self_connected_node,
@@ -17,6 +18,7 @@ use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::DropChainHandle;
 use crate::types::config::TestConfig;
+use crate::types::env::write_env;
 use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::single::node::FullNode;
 use crate::util::suspend::hang_on_error;
@@ -130,6 +132,12 @@ where
             self.test.get_overrides().modify_relayer_config(config);
         })?;
 
+        let env_path = config.chain_store_dir.join("nary-chains.env");
+
+        write_env(&env_path, &(&relayer, &chains))?;
+
+        info!("written chains environment to {}", env_path.display());
+
         let _drop_handles = chains
             .chain_handles()
             .iter()
@@ -154,6 +162,12 @@ where
             boostrap_chains_with_self_connected_node(config, nodes[0].clone(), |config| {
                 self.test.get_overrides().modify_relayer_config(config);
             })?;
+
+        let env_path = config.chain_store_dir.join("nary-chains.env");
+
+        write_env(&env_path, &(&relayer, &chains))?;
+
+        info!("written chains environment to {}", env_path.display());
 
         let _drop_handles = chains
             .chain_handles()

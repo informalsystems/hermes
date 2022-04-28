@@ -11,6 +11,7 @@ use ibc_relayer::channel::Channel;
 use super::aliases::NthChainHandle;
 use crate::error::Error;
 use crate::types::binary::channel::ConnectedChannel;
+use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::tagged::*;
 use crate::util::array::try_into_nested_array;
 
@@ -115,5 +116,43 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChannels<Ha
 impl<Handle: ChainHandle> From<ConnectedChannels<Handle, 2>> for NthConnectedChannel<0, 1, Handle> {
     fn from(channels: ConnectedChannels<Handle, 2>) -> Self {
         channels.channel_at::<0, 1>().unwrap()
+    }
+}
+
+impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedChannels<Handle, SIZE> {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        for (i, inner_channels) in self.channels.iter().enumerate() {
+            for (j, channel_i_to_j) in inner_channels.iter().enumerate() {
+                writer.write_env(
+                    &format!("CONNECTION_ID_{}_to_{}", j, i),
+                    &format!("{}", channel_i_to_j.connection.connection_id_a),
+                );
+
+                writer.write_env(
+                    &format!("CONNECTION_ID_{}_to_{}", i, j),
+                    &format!("{}", channel_i_to_j.connection.connection_id_b),
+                );
+
+                writer.write_env(
+                    &format!("CHANNEL_ID_{}_to_{}", j, i),
+                    &format!("{}", channel_i_to_j.channel_id_a),
+                );
+
+                writer.write_env(
+                    &format!("PORT_{}_to_{}", j, i),
+                    &format!("{}", channel_i_to_j.port_a),
+                );
+
+                writer.write_env(
+                    &format!("CHANNEL_ID_{}_to_{}", i, j),
+                    &format!("{}", channel_i_to_j.channel_id_b),
+                );
+
+                writer.write_env(
+                    &format!("PORT_{}_to_{}", i, j),
+                    &format!("{}", channel_i_to_j.port_b),
+                );
+            }
+        }
     }
 }
