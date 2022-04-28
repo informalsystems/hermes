@@ -11,11 +11,11 @@ use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelSide};
 use crate::link::error::LinkError;
-use crate::link::relay_path::RelayPath;
 
 pub mod cli;
 pub mod error;
 pub mod operational_data;
+
 mod pending;
 mod relay_path;
 mod relay_sender;
@@ -25,6 +25,8 @@ use tx_hashes::TxHashes;
 
 // Re-export the telemetries summary
 pub use relay_summary::RelaySummary;
+
+pub use relay_path::{RelayPath, Resubmit};
 
 #[derive(Clone, Debug)]
 pub struct LinkParameters {

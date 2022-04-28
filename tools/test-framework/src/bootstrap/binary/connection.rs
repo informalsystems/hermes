@@ -6,6 +6,7 @@ use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::connection::{Connection, ConnectionSide};
 use tracing::{debug, info};
 
@@ -16,14 +17,18 @@ use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::id::TaggedClientIdRef;
 use crate::util::random::random_u64_range;
 
+pub struct BootstrapConnectionOptions {
+    pub connection_delay: Duration,
+    pub bootstrap_with_random_ids: bool,
+}
+
 /**
    Create a new [`ConnectedConnection`] using the foreign clients with
    initialized client IDs.
 */
 pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     foreign_clients: &ForeignClientPair<ChainA, ChainB>,
-    connection_delay: Duration,
-    bootstrap_with_random_ids: bool,
+    options: BootstrapConnectionOptions,
 ) -> Result<ConnectedConnection<ChainA, ChainB>, Error> {
     let chain_a = foreign_clients.handle_a();
     let chain_b = foreign_clients.handle_b();
@@ -31,7 +36,7 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     let client_id_a = foreign_clients.client_id_a();
     let client_id_b = foreign_clients.client_id_b();
 
-    if bootstrap_with_random_ids {
+    if options.bootstrap_with_random_ids {
         pad_connection_id(&chain_a, &chain_b, &client_id_a, &client_id_b)?;
         pad_connection_id(&chain_b, &chain_a, &client_id_b, &client_id_a)?;
     }
@@ -39,7 +44,7 @@ pub fn bootstrap_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
     let connection = Connection::new(
         foreign_clients.client_b_to_a.clone(),
         foreign_clients.client_a_to_b.clone(),
-        connection_delay,
+        options.connection_delay,
     )?;
 
     let connection_id_a = connection
@@ -103,4 +108,25 @@ pub fn pad_connection_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     }
 
     Ok(())
+}
+
+impl Default for BootstrapConnectionOptions {
+    fn default() -> Self {
+        Self {
+            connection_delay: default_connection_delay(),
+            bootstrap_with_random_ids: false,
+        }
+    }
+}
+
+impl BootstrapConnectionOptions {
+    pub fn connection_delay(mut self, connection_delay: Duration) -> Self {
+        self.connection_delay = connection_delay;
+        self
+    }
+
+    pub fn bootstrap_with_random_ids(mut self, bootstrap_with_random_ids: bool) -> Self {
+        self.bootstrap_with_random_ids = bootstrap_with_random_ids;
+        self
+    }
 }

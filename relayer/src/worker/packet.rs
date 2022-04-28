@@ -9,6 +9,7 @@ use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::foreign_client::HasExpiredOrFrozenError;
+use crate::link::Resubmit;
 use crate::link::{error::LinkError, Link};
 use crate::object::Packet;
 use crate::telemetry;
@@ -52,10 +53,13 @@ fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     }
 }
 
+/// Spawns a packet worker task in the background that handles the work of
+/// processing pending txs between `ChainA` and `ChainB`.
 pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: Packet,
     // Mutex is used to prevent race condition between the packet workers
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
+    resubmit: Resubmit,
 ) -> TaskHandle {
     let span = {
         let relay_path = &link.lock().unwrap().a_to_b;
@@ -79,10 +83,10 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             .execute_schedule()
             .map_err(handle_link_error_in_task)?;
 
-        let summary = relay_path.process_pending_txs();
+        let summary = relay_path.process_pending_txs(resubmit);
 
         if !summary.is_empty() {
-            trace!("Packet worker produced relay summary: {:?}", summary);
+            trace!("packet worker produced relay summary: {}", summary);
         }
 
         telemetry!(packet_metrics(&path, &summary));
@@ -148,7 +152,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd: WorkerCmd,
     index: u64,
 ) -> RetryResult<(), u64> {
-    trace!("handling command {:?}", cmd);
+    trace!("handling command {}", cmd);
     let result = match cmd {
         WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
 
@@ -218,7 +222,8 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
     }
 
-    let summary = link.a_to_b.process_pending_txs();
+    let resubmit = Resubmit::from_clear_interval(clear_interval);
+    let summary = link.a_to_b.process_pending_txs(resubmit);
 
     if !summary.is_empty() {
         trace!("produced relay summary: {:?}", summary);

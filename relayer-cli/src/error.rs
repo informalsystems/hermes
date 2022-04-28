@@ -47,17 +47,17 @@ define_error! {
         Keys
             |_| { "keys error" },
 
-        MissingConfig
+        MissingChainConfig
             { chain_id: ChainId }
             | e | {
-                format_args!("missing chain for id ({}) in configuration file",
+                format_args!("missing chain with id '{}' in configuration file",
                     e.chain_id)
             },
 
         MissingCounterpartyChannelId
             { channel_end: IdentifiedChannelEnd }
             | e | {
-                format_args!("the channel {:?} counterparty has no channel id",
+                format_args!("this channel's counterparty has no channel id: {:?}",
                     e.channel_end)
             },
 

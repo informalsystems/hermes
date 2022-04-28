@@ -1,4 +1,4 @@
-# ADR 008: ChainEndpoint and ChainHandle methods standardization
+# ADR 009: ChainEndpoint and ChainHandle methods standardization
 
 ## Status
 

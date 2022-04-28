@@ -36,15 +36,16 @@ impl QueryPacketAcknowledgementsCmd {
 
         debug!("Options: {:?}", self);
 
-        let (chains, channel) = spawn_chain_counterparty::<BaseChainHandle>(
+        let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
             &self.channel_id,
         )?;
 
-        let (seqs, height) = acknowledgements_on_chain(&chains.src, &chains.dst, &channel)
-            .map_err(Error::supervisor)?;
+        let (seqs, height) =
+            acknowledgements_on_chain(&chains.src, &chains.dst, &chan_conn_cli.channel)
+                .map_err(Error::supervisor)?;
 
         Ok(PacketSeqs { seqs, height })
     }
