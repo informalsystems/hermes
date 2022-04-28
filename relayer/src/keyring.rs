@@ -408,8 +408,14 @@ fn private_key_from_mnemonic(
 
     let seed = Seed::new(&mnemonic, "");
 
-    let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
-        .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
+    let base_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
+        .map_err(Error::private_key)?;
+
+    let private_key = base_key
+        .derive_priv(
+            &Secp256k1::new(),
+            &standard_path_to_derivation_path(hd_path),
+        )
         .map_err(Error::private_key)?;
 
     Ok(private_key)
@@ -473,4 +479,19 @@ fn keccak256_hash(bytes: &[u8]) -> Vec<u8> {
     let mut resp = vec![0u8; 32];
     hasher.finalize(&mut resp);
     resp
+}
+
+fn standard_path_to_derivation_path(path: &StandardHDPath) -> DerivationPath {
+    use bitcoin::util::bip32::ChildNumber;
+
+    let child_numbers = vec![
+        ChildNumber::from_hardened_idx(path.purpose().as_value().as_number())
+            .expect("Purpose is not Hardened"),
+        ChildNumber::from_hardened_idx(path.coin_type()).expect("Coin Type is not Hardened"),
+        ChildNumber::from_hardened_idx(path.account()).expect("Account is not Hardened"),
+        ChildNumber::from_normal_idx(path.change()).expect("Change is Hardened"),
+        ChildNumber::from_normal_idx(path.index()).expect("Index is Hardened"),
+    ];
+
+    DerivationPath::from(child_numbers)
 }
