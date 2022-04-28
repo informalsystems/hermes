@@ -13,7 +13,7 @@ use crate::core::ics04_channel::handler::{
     packet_validate as ics4_packet_validate,
 };
 use crate::core::ics04_channel::packet::PacketResult;
-use crate::core::ics26_routing::context::Ics26Context;
+use crate::core::ics26_routing::context::{Ics26Context, ModuleOutput};
 use crate::core::ics26_routing::error::Error;
 use crate::core::ics26_routing::msgs::Ics26Envelope::{
     self, Ics2Msg, Ics3Msg, Ics4ChannelMsg, Ics4PacketMsg,
@@ -82,7 +82,7 @@ where
             let (mut handler_builder, channel_result) =
                 ics4_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
 
-            let mut module_output = HandlerOutput::builder().with_result(());
+            let mut module_output = ModuleOutput::builder().with_result(());
             let cb_result =
                 ics4_callback(ctx, &module_id, &msg, channel_result, &mut module_output);
             handler_builder.merge(module_output);
@@ -104,7 +104,7 @@ where
                 return Ok(handler_builder.with_result(()));
             }
 
-            let mut module_output = HandlerOutput::builder().with_result(());
+            let mut module_output = ModuleOutput::builder().with_result(());
             let cb_result = ics4_packet_callback(ctx, &module_id, &msg, &mut module_output);
             handler_builder.merge(module_output);
             cb_result.map_err(Error::ics04_channel)?;

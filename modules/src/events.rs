@@ -89,6 +89,7 @@ impl WithBlockDataType {
 const NEW_BLOCK_EVENT: &str = "new_block";
 const EMPTY_EVENT: &str = "empty";
 const CHAIN_ERROR_EVENT: &str = "chain_error";
+const APP_MODULE_EVENT: &str = "app_module";
 /// Client event types
 const CREATE_CLIENT_EVENT: &str = "create_client";
 const UPDATE_CLIENT_EVENT: &str = "update_client";
@@ -138,6 +139,7 @@ pub enum IbcEventType {
     AckPacket,
     Timeout,
     TimeoutOnClose,
+    AppModule,
     Empty,
     ChainError,
 }
@@ -166,6 +168,7 @@ impl IbcEventType {
             IbcEventType::AckPacket => ACK_PACKET_EVENT,
             IbcEventType::Timeout => TIMEOUT_EVENT,
             IbcEventType::TimeoutOnClose => TIMEOUT_ON_CLOSE_EVENT,
+            IbcEventType::AppModule => APP_MODULE_EVENT,
             IbcEventType::Empty => EMPTY_EVENT,
             IbcEventType::ChainError => CHAIN_ERROR_EVENT,
         }
@@ -234,6 +237,8 @@ pub enum IbcEvent {
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
+    AppModule(ModuleEvent),
+
     Empty(String),      // Special event, signifying empty response
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
@@ -284,6 +289,8 @@ impl fmt::Display for IbcEvent {
             IbcEvent::AcknowledgePacket(ev) => write!(f, "AcknowledgePacketEv({})", ev),
             IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacketEv({})", ev),
             IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacketEv({})", ev),
+
+            IbcEvent::AppModule(ev) => write!(f, "AppModuleEv({:?})", ev),
 
             IbcEvent::Empty(ev) => write!(f, "EmptyEv({})", ev),
             IbcEvent::ChainError(ev) => write!(f, "ChainErrorEv({})", ev),
@@ -420,6 +427,7 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(_) => IbcEventType::AckPacket,
             IbcEvent::TimeoutPacket(_) => IbcEventType::Timeout,
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
+            IbcEvent::AppModule(_) => IbcEventType::AppModule,
             IbcEvent::Empty(_) => IbcEventType::Empty,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
         }

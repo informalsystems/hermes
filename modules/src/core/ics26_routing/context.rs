@@ -16,7 +16,7 @@ use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::events::IbcEvent;
+use crate::events::ModuleEvent;
 use crate::handler::HandlerOutput;
 use crate::signer::Signer;
 
@@ -85,8 +85,6 @@ pub enum OnRecvPacketAck {
     Successful(Box<dyn Acknowledgement>, Box<WriteFn>),
     Failed(Box<dyn Acknowledgement>),
 }
-
-pub type ModuleEvent = IbcEvent;
 
 pub type ModuleOutput = HandlerOutput<(), ModuleEvent>;
 
