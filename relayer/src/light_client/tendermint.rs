@@ -157,12 +157,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
             // Special-case: Verification failed because the trusted state is too old.
             // This means we cannot check for misbehavior with the provided trusted state.
-            Err(e)
-                if e.trace()
-                    .root_cause()
-                    .to_string()
-                    .eq("trusted state outside of trusting period") =>
-            {
+            Err(e) if e.is_trusted_state_outside_trusting_period_error() => {
                 // TODO: Instead of `eq` check, we should match the error's root cause
                 //  with the exact error type below
                 //  [`tendermint_light_client::errors::ErrorDetail::TrustedStateOutsideTrustingPeriod`]

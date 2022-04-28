@@ -7,8 +7,9 @@ use http::uri::InvalidUri;
 use humantime::format_duration;
 use prost::{DecodeError, EncodeError};
 use tendermint::Error as TendermintError;
-use tendermint_light_client::{
-    components::io::IoError as LightClientIoError, errors::Error as LightClientError,
+use tendermint_light_client::components::io::IoError as LightClientIoError;
+use tendermint_light_client::errors::{
+    Error as LightClientError, ErrorDetail as LightClientErrorDetail,
 };
 use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
@@ -95,7 +96,7 @@ define_error! {
 
         LightClientVerification
             { chain_id: String }
-            [ TraceError<LightClientError> ]
+            [ LightClientError ]
             |e| { format!("light client verification error for chain id {0}", e.chain_id) },
 
         LightClientState
@@ -104,7 +105,7 @@ define_error! {
 
         LightClientIo
             { address: String }
-            [ TraceError<LightClientIoError> ]
+            [ LightClientIoError ]
             |e| { format!("light client error for RPC address {0}", e.address) },
 
         ChainNotCaughtUp
@@ -505,6 +506,16 @@ define_error! {
 impl Error {
     pub fn send<T>(_: crossbeam_channel::SendError<T>) -> Error {
         Error::channel_send()
+    }
+
+    pub fn is_trusted_state_outside_trusting_period_error(&self) -> bool {
+        match self.detail() {
+            ErrorDetail::LightClientVerification(e) => match e.source {
+                LightClientErrorDetail::TrustedStateOutsideTrustingPeriod(_) => true,
+                _ => false,
+            },
+            _ => false,
+        }
     }
 }
 
