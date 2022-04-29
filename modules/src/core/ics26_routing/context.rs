@@ -5,6 +5,8 @@ use core::any::Any;
 use core::fmt::Debug;
 use core::{fmt, str::FromStr};
 
+use serde::{Deserialize, Serialize};
+
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
@@ -42,7 +44,7 @@ pub trait Ics26Context:
 #[derive(Debug, PartialEq)]
 pub struct InvalidModuleId;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct ModuleId(String);
 
 impl ModuleId {
