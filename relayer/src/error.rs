@@ -510,10 +510,10 @@ impl Error {
 
     pub fn is_trusted_state_outside_trusting_period_error(&self) -> bool {
         match self.detail() {
-            ErrorDetail::LightClientVerification(e) => match e.source {
-                LightClientErrorDetail::TrustedStateOutsideTrustingPeriod(_) => true,
-                _ => false,
-            },
+            ErrorDetail::LightClientVerification(e) => matches!(
+                e.source,
+                LightClientErrorDetail::TrustedStateOutsideTrustingPeriod(_)
+            ),
             _ => false,
         }
     }
