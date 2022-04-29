@@ -173,7 +173,7 @@ impl CompileCmd {
                 println!("Successfully compiled proto files");
             }
             Err(e) => {
-                println!("Failed to compile:{:?}", e.to_string());
+                println!("Failed to compile: {}", e);
                 process::exit(1);
             }
         }
@@ -254,7 +254,7 @@ impl CompileCmd {
                 println!("Successfully compiled proto files");
             }
             Err(e) => {
-                println!("Failed to compile:{:?}", e.to_string());
+                println!("Failed to compile: {}", e);
                 process::exit(1);
             }
         }
