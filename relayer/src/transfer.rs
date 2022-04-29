@@ -121,10 +121,12 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
     opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, TransferError> {
-    let receiver = match &opts.receiver {
-        None => packet_dst_chain.get_signer().map_err(TransferError::key)?,
-        Some(r) => r.clone().into(),
-    };
+    let receiver = packet_dst_chain
+        .get_signer()
+        .map_err(TransferError::key)?
+        .as_ref()
+        .parse()
+        .map_err(TransferError::token_transfer)?;
 
     let sender = packet_src_chain
         .get_signer()

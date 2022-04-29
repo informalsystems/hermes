@@ -11,7 +11,6 @@ use crate::applications::ics20_fungible_token_transfer::error::Error;
 use crate::applications::ics20_fungible_token_transfer::IbcCoin;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::tx_msg::Msg;
 
@@ -29,7 +28,7 @@ pub struct MsgTransfer {
     /// the sender address
     pub sender: Address,
     /// the recipient address on the destination chain
-    pub receiver: Signer,
+    pub receiver: Address,
     /// Timeout height relative to the current block height.
     /// The timeout is disabled when set to 0.
     pub timeout_height: Height,
@@ -80,7 +79,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
                 .map_err(|e| Error::invalid_channel_id(raw_msg.source_channel.clone(), e))?,
             token,
             sender: raw_msg.sender.parse()?,
-            receiver: raw_msg.receiver.into(),
+            receiver: raw_msg.receiver.parse()?,
             timeout_height,
             timeout_timestamp,
         })
@@ -106,11 +105,12 @@ pub mod test_util {
     use core::ops::Add;
     use core::time::Duration;
 
+    use crate::applications::ics20_fungible_token_transfer::address::Address;
     use crate::bigint::U256;
     use crate::{
         applications::ics20_fungible_token_transfer::{BaseCoin, IbcCoin},
         core::ics24_host::identifier::{ChannelId, PortId},
-        test_utils::{get_dummy_account_id, get_dummy_bech32_account},
+        test_utils::get_dummy_bech32_account,
         timestamp::Timestamp,
         Height,
     };
@@ -119,6 +119,7 @@ pub mod test_util {
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
+        let address: Address = get_dummy_bech32_account().as_str().parse().unwrap();
         MsgTransfer {
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
@@ -126,8 +127,8 @@ pub mod test_util {
                 denom: "uatom".parse().unwrap(),
                 amount: U256::from(10).into(),
             }),
-            sender: get_dummy_bech32_account().as_str().parse().unwrap(),
-            receiver: get_dummy_account_id(),
+            sender: address.clone(),
+            receiver: address,
             timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
             timeout_height: Height {
                 revision_number: 0,
