@@ -71,7 +71,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     opts: &UpgradePlanOptions,
 ) -> Result<TxHash, UpgradeChainError> {
     let upgrade_height = dst_chain
-        .query_latest_height()
+        .query_chain_latest_height()
         .map_err(UpgradeChainError::query)?
         .add(opts.height_offset);
 
