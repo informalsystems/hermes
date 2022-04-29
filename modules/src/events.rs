@@ -19,6 +19,7 @@ use crate::core::ics04_channel::events as ChannelEvents;
 use crate::core::ics04_channel::events::Attributes as ChannelAttributes;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::error::ValidationError;
+use crate::core::ics26_routing::context::ModuleId;
 use crate::timestamp::ParseTimestampError;
 use crate::Height;
 
@@ -476,6 +477,7 @@ impl IbcEvent {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ModuleEvent {
     pub kind: String,
+    pub module_name: ModuleId,
     pub attributes: Vec<ModuleEventAttribute>,
 }
 
