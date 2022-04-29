@@ -487,6 +487,15 @@ pub struct ModuleEventAttribute {
     pub value: String,
 }
 
+impl<K: ToString, V: ToString> From<(K, V)> for ModuleEventAttribute {
+    fn from((k, v): (K, V)) -> Self {
+        Self {
+            key: k.to_string(),
+            value: v.to_string(),
+        }
+    }
+}
+
 impl From<ModuleEvent> for IbcEvent {
     fn from(e: ModuleEvent) -> Self {
         IbcEvent::AppModule(e)
