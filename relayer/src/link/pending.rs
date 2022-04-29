@@ -9,7 +9,7 @@ use ibc::events::IbcEvent;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use crate::error::Error as RelayerError;
-use crate::link::error::LinkError;
+use crate::link::{error::LinkError, RelayPath};
 use crate::util::queue::Queue;
 use crate::{
     chain::handle::ChainHandle,
@@ -65,7 +65,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         self.chain.id()
     }
 
-    // Insert new pending transaction to the back of the queue.
+    /// Insert a new pending transaction to the back of the queue.
     pub fn insert_new_pending_tx(&self, r: AsyncReply, od: OperationalData) {
         let mut tx_hashes = Vec::new();
         let mut error_events = Vec::new();
@@ -133,11 +133,17 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         Ok(Some(all_events))
     }
 
-    /// Try and process one pending transaction if available.
-    pub fn process_pending(
+    /// Try and process one pending transaction within the given timeout duration if one
+    /// is available.
+    ///
+    /// A `resubmit` closure is provided when the clear interval for packets is 0. If this closure
+    /// is provided, the pending transactions that fail to process within the given timeout duration
+    /// are resubmitted following the logic specified by the closure.
+    pub fn process_pending<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         timeout: Duration,
-        resubmit: impl FnOnce(OperationalData) -> Result<AsyncReply, LinkError>,
+        relay_path: &RelayPath<ChainA, ChainB>,
+        resubmit: Option<impl FnOnce(OperationalData) -> Result<AsyncReply, LinkError>>,
     ) -> Result<Option<RelaySummary>, LinkError> {
         // We process pending transactions in a FIFO manner, so take from
         // the front of the queue.
@@ -177,16 +183,34 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         // relayer to resubmit the transaction to the chain again.
                         error!("timed out while confirming {}", tx_hashes);
 
-                        let resubmit_res = resubmit(pending.original_od.clone());
+                        match resubmit {
+                            Some(f) => {
+                                // The pending tx needs to be resubmitted. This involves replacing the tx's
+                                // stale operational data with a fresh copy and then applying the `resubmit`
+                                // closure to it.
+                                let new_od = relay_path
+                                    .regenerate_operational_data(pending.original_od.clone());
 
-                        match resubmit_res {
-                            Ok(reply) => {
-                                self.insert_new_pending_tx(reply, pending.original_od);
-                                Ok(None)
+                                trace!("regenerated operational data for {}", tx_hashes);
+
+                                match new_od.map(f) {
+                                    Some(Ok(reply)) => {
+                                        self.insert_new_pending_tx(reply, pending.original_od);
+                                        Ok(None)
+                                    }
+                                    Some(Err(e)) => {
+                                        self.pending_queue.push_back(pending);
+                                        Err(e)
+                                    }
+                                    None => {
+                                        // No operational data was regenerated; nothing to resubmit
+                                        Ok(None)
+                                    }
+                                }
                             }
-                            Err(e) => {
-                                self.pending_queue.push_back(pending);
-                                Err(e)
+                            None => {
+                                // `clear_interval != 0` such that resubmission has been disabled
+                                Ok(None)
                             }
                         }
                     } else {

@@ -2,7 +2,6 @@
     Helper functions for bootstrapping a channel between two chains.
 */
 
-use core::time::Duration;
 use eyre::{eyre, Report as Error};
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics04_channel::Version;
@@ -11,7 +10,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::{Channel, ChannelSide};
 use tracing::{debug, info};
 
-use super::connection::bootstrap_connection;
+use super::connection::{bootstrap_connection, BootstrapConnectionOptions};
 use crate::types::binary::chains::ConnectedChains;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::binary::connection::ConnectedConnection;
@@ -19,6 +18,12 @@ use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::id::TaggedPortIdRef;
 use crate::types::tagged::*;
 use crate::util::random::random_u64_range;
+
+pub struct BootstrapChannelOptions {
+    pub order: Order,
+    pub version: Version,
+    pub bootstrap_with_random_ids: bool,
+}
 
 /**
    Create a new [`ConnectedChannel`] based on the provided [`ConnectedChains`].
@@ -30,19 +35,15 @@ pub fn bootstrap_channel_with_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: &ConnectedChains<ChainA, ChainB>,
     port_a: &PortId,
     port_b: &PortId,
-    order: Order,
-    version: Version,
-    connection_delay: Duration,
-    bootstrap_with_random_ids: bool,
+    connection_options: BootstrapConnectionOptions,
+    channel_options: BootstrapChannelOptions,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
     let channel = bootstrap_channel(
         &chains.foreign_clients,
         &DualTagged::new(port_a),
         &DualTagged::new(port_b),
-        order,
-        version,
-        connection_delay,
-        bootstrap_with_random_ids,
+        connection_options,
+        channel_options,
     )?;
 
     Ok(channel)
@@ -56,13 +57,10 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     foreign_clients: &ForeignClientPair<ChainA, ChainB>,
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
-    order: Order,
-    version: Version,
-    connection_delay: Duration,
-    bootstrap_with_random_ids: bool,
+    connection_options: BootstrapConnectionOptions,
+    channel_options: BootstrapChannelOptions,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
-    let connection =
-        bootstrap_connection(foreign_clients, connection_delay, bootstrap_with_random_ids)?;
+    let connection = bootstrap_connection(foreign_clients, connection_options)?;
 
     bootstrap_channel_with_connection(
         &foreign_clients.handle_a(),
@@ -70,9 +68,7 @@ pub fn bootstrap_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         connection,
         port_a,
         port_b,
-        order,
-        version,
-        bootstrap_with_random_ids,
+        channel_options,
     )
 }
 
@@ -85,21 +81,19 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
     connection: ConnectedConnection<ChainA, ChainB>,
     port_a: &TaggedPortIdRef<ChainA, ChainB>,
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
-    order: Order,
-    version: Version,
-    bootstrap_with_random_ids: bool,
+    options: BootstrapChannelOptions,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
-    if bootstrap_with_random_ids {
+    if options.bootstrap_with_random_ids {
         pad_channel_id(chain_a, chain_b, &connection, port_a)?;
         pad_channel_id(chain_b, chain_a, &connection.clone().flip(), port_b)?;
     }
 
     let channel = Channel::new(
         connection.connection.clone(),
-        order,
+        options.order,
         port_a.0.clone(),
         port_b.0.clone(),
-        Some(version),
+        Some(options.version),
     )?;
 
     let channel_id_a = *channel
@@ -187,4 +181,31 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     }
 
     Ok(())
+}
+
+impl Default for BootstrapChannelOptions {
+    fn default() -> Self {
+        Self {
+            order: Order::Unordered,
+            version: Version::ics20(),
+            bootstrap_with_random_ids: false,
+        }
+    }
+}
+
+impl BootstrapChannelOptions {
+    pub fn order(mut self, order: Order) -> Self {
+        self.order = order;
+        self
+    }
+
+    pub fn version(mut self, version: Version) -> Self {
+        self.version = version;
+        self
+    }
+
+    pub fn bootstrap_with_random_ids(mut self, bootstrap_with_random_ids: bool) -> Self {
+        self.bootstrap_with_random_ids = bootstrap_with_random_ids;
+        self
+    }
 }

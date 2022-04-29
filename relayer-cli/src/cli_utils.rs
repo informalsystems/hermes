@@ -2,9 +2,8 @@ use alloc::sync::Arc;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer::chain::counterparty::channel_connection_client;
+use ibc_relayer::chain::counterparty::{channel_connection_client, ChannelConnectionClient};
 use ibc_relayer::{
     chain::{
         handle::{BaseChainHandle, ChainHandle},
@@ -63,7 +62,7 @@ pub fn spawn_chain_runtime_generic<Chain: ChainHandle>(
     let chain_config = config
         .find_chain(chain_id)
         .cloned()
-        .ok_or_else(|| Error::missing_config(chain_id.clone()))?;
+        .ok_or_else(|| Error::missing_chain_config(chain_id.clone()))?;
 
     let rt = Arc::new(TokioRuntime::new().unwrap());
     let handle =
@@ -80,7 +79,7 @@ pub fn spawn_chain_counterparty<Chain: ChainHandle>(
     chain_id: &ChainId,
     port_id: &PortId,
     channel_id: &ChannelId,
-) -> Result<(ChainHandlePair<Chain>, IdentifiedChannelEnd), Error> {
+) -> Result<(ChainHandlePair<Chain>, ChannelConnectionClient), Error> {
     let chain = spawn_chain_runtime_generic::<Chain>(config, chain_id)?;
     let channel_connection_client =
         channel_connection_client(&chain, port_id, channel_id).map_err(Error::supervisor)?;
@@ -94,6 +93,6 @@ pub fn spawn_chain_counterparty<Chain: ChainHandle>(
             src: chain,
             dst: counterparty_chain,
         },
-        channel_connection_client.channel,
+        channel_connection_client,
     ))
 }

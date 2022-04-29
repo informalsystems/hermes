@@ -208,7 +208,9 @@ impl ClientDef for TendermintClient {
             epoch: consensus_height.revision_number,
             height: consensus_height.revision_height,
         };
-        let value = expected_consensus_state.encode_vec().unwrap();
+        let value = expected_consensus_state
+            .encode_vec()
+            .map_err(Ics02Error::invalid_any_consensus_state)?;
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 
@@ -225,7 +227,9 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
 
         let path = ConnectionsPath(connection_id.clone());
-        let value = expected_connection_end.encode_vec().unwrap();
+        let value = expected_connection_end
+            .encode_vec()
+            .map_err(Ics02Error::invalid_connection_end)?;
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 
@@ -243,7 +247,9 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
 
         let path = ChannelEndsPath(port_id.clone(), *channel_id);
-        let value = expected_channel_end.encode_vec().unwrap();
+        let value = expected_channel_end
+            .encode_vec()
+            .map_err(Ics02Error::invalid_channel_end)?;
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 
@@ -260,7 +266,9 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
 
         let path = ClientStatePath(client_id.clone());
-        let value = expected_client_state.encode_vec().unwrap();
+        let value = expected_client_state
+            .encode_vec()
+            .map_err(Ics02Error::invalid_any_client_state)?;
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 

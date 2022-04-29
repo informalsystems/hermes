@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-test-framework"
-version    = "0.13.0"
+version    = "0.14.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -22,7 +22,7 @@ tendermint      = { version = "=0.23.6" }
 tendermint-rpc  = { version = "=0.23.6", features = ["http-client", "websocket-client"] }
 
 tokio = { version = "1.0", features = ["full"] }
-tracing = "0.1.33"
+tracing = "0.1.34"
 tracing-subscriber = "0.3.11"
 eyre = "0.6.8"
 color-eyre = "0.6"

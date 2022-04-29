@@ -1,9 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use serde::Serialize;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::Height;
 use ibc_relayer::chain::counterparty::unreceived_packets;
 use ibc_relayer::chain::handle::BaseChainHandle;
 
@@ -11,12 +9,6 @@ use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
-
-#[derive(Serialize, Debug)]
-struct PacketSeqs {
-    height: Height,
-    seqs: Vec<u64>,
-}
 
 /// This command does the following:
 /// 1. queries the chain to get its counterparty chain, channel and port identifiers (needed in 2)
@@ -42,7 +34,7 @@ impl QueryUnreceivedPacketsCmd {
         let config = app_config();
         debug!("Options: {:?}", self);
 
-        let (chains, channel) = spawn_chain_counterparty::<BaseChainHandle>(
+        let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
@@ -51,10 +43,11 @@ impl QueryUnreceivedPacketsCmd {
 
         debug!(
             "fetched from source chain {} the following channel {:?}",
-            self.chain_id, channel
+            self.chain_id, chan_conn_cli.channel
         );
 
-        unreceived_packets(&chains.src, &chains.dst, &channel).map_err(Error::supervisor)
+        unreceived_packets(&chains.src, &chains.dst, &chan_conn_cli.channel)
+            .map_err(Error::supervisor)
     }
 }
 

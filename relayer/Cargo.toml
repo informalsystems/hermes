@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.13.0"
+version      = "0.14.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -21,9 +21,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.13.0", path = "../modules" }
-ibc-proto     = { version = "0.17.0", path = "../proto" }
-ibc-telemetry = { version = "0.13.0", path = "../telemetry", optional = true }
+ibc           = { version = "0.14.0", path = "../modules" }
+ibc-proto     = { version = "0.17.1", path = "../proto" }
+ibc-telemetry = { version = "0.14.0", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
@@ -31,7 +31,7 @@ serde = "1.0"
 serde_derive = "1.0"
 thiserror = "1.0.30"
 toml = "0.5"
-tracing = "0.1.33"
+tracing = "0.1.34"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
 bytes = "1.1.0"
@@ -43,7 +43,7 @@ k256 = { version = "0.10.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
 bitcoin = { version = "=0.27", features = ["use-serde"] }
 tiny-bip39 = "0.8.0"
-hdpath = { version = "0.6.0", features = ["with-bitcoin"] }
+hdpath = { version = "0.6.0" }
 sha2 = "0.10.2"
 tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = false }
 ripemd160 = "0.9.1"
@@ -62,7 +62,7 @@ uint = "0.9"
 humantime = "2.1.0"
 nanoid = "0.4.0"
 regex = "1.5.5"
-moka = "0.8.1"
+moka = "0.8.2"
 
 [dependencies.num-bigint]
 version = "0.4"
@@ -93,7 +93,7 @@ default-features = false
 version = "=0.23.6"
 
 [dev-dependencies]
-ibc = { version = "0.13.0", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.14.0", path = "../modules", features = ["mocks"] }
 serial_test = "0.6.0"
 env_logger = "0.9.0"
 tracing-subscriber = { version = "0.3.11", features = ["fmt", "env-filter", "json"] }

@@ -31,7 +31,7 @@ substrate-std = [
   "sp-std/std",
 ]
 
-[patch.crates-io]
-tendermint                        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-tendermint-proto                  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-tendermint-light-client-verifier  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+# [patch.crates-io]
+# tendermint                        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+# tendermint-proto                  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+# tendermint-light-client-verifier  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
