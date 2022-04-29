@@ -1,6 +1,7 @@
 use super::error::Error;
 use crate::core::ics26_routing::context::Acknowledgement as AckTrait;
 use crate::prelude::*;
+use core::fmt::{Display, Formatter};
 
 use serde::{Deserialize, Deserializer};
 
@@ -47,6 +48,15 @@ impl<'de> Deserialize<'de> for Acknowledgement {
             Self::Error(s)
         };
         Ok(ack)
+    }
+}
+
+impl Display for Acknowledgement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Acknowledgement::Success(_) => write!(f, "AQ=="),
+            Acknowledgement::Error(err_str) => write!(f, "{}", err_str),
+        }
     }
 }
 
