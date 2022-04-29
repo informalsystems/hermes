@@ -9,11 +9,16 @@ use serde::de::Unexpected;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Clone, Copy)]
-pub struct MaxMsgNum(pub usize);
+pub struct MaxMsgNum(usize);
 
 impl MaxMsgNum {
     const DEFAULT: usize = 30;
+    const MIN_BOUND: usize = 2;
     const MAX_BOUND: usize = 100;
+
+    pub fn to_usize(self) -> usize {
+        self.0
+    }
 }
 
 impl Default for MaxMsgNum {
@@ -29,10 +34,17 @@ impl<'de> Deserialize<'de> for MaxMsgNum {
     {
         let u = usize::deserialize(deserializer)?;
 
+        if u < Self::MIN_BOUND {
+            return Err(D::Error::invalid_value(
+                Unexpected::Unsigned(u as u64),
+                &format!("a usize greater than or equal to {}", Self::MIN_BOUND).as_str(),
+            ));
+        }
+
         if u > Self::MAX_BOUND {
             return Err(D::Error::invalid_value(
                 Unexpected::Unsigned(u as u64),
-                &format!("a usize less than {}", Self::MAX_BOUND).as_str(),
+                &format!("a usize less than or equal to {}", Self::MAX_BOUND).as_str(),
             ));
         }
 
@@ -61,6 +73,10 @@ pub struct MaxTxSize(usize);
 impl MaxTxSize {
     const DEFAULT: usize = 2 * 1048576; // 2 MBytes
     const MAX_BOUND: usize = 8 * 1048576; // 8 MBytes
+
+    pub fn to_usize(self) -> usize {
+        self.0
+    }
 }
 
 impl Default for MaxTxSize {

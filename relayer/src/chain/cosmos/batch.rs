@@ -136,7 +136,7 @@ async fn send_messages_as_batches(
 }
 
 fn batch_messages(config: &ChainConfig, messages: Vec<Any>) -> Result<Vec<Vec<Any>>, Error> {
-    let max_message_count = config.max_msg_num.0;
+    let max_message_count = config.max_msg_num.to_usize();
     let max_tx_size = config.max_tx_size.into();
 
     let mut batches = vec![];
