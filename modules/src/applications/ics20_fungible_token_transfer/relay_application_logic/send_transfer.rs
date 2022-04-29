@@ -47,7 +47,11 @@ where
         IbcCoin::Base(coin) => coin.denom.into(),
     };
 
-    let sender = msg.sender.to_string().parse()?;
+    let sender = msg
+        .sender
+        .to_string()
+        .parse()
+        .map_err(|_| Error::parse_account_failure())?;
 
     let prefix = TracePrefix::new(msg.source_port.clone(), msg.source_channel);
     match denom.source_chain(&prefix) {

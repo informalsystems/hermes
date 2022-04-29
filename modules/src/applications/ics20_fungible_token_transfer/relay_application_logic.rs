@@ -16,7 +16,11 @@ fn refund_packet_token(
     packet: &Packet,
     data: &PacketData,
 ) -> Result<(), Ics20Error> {
-    let sender = data.sender.to_string().parse()?;
+    let sender = data
+        .sender
+        .to_string()
+        .parse()
+        .map_err(|_| Ics20Error::parse_account_failure())?;
     let amount: IbcCoin = data.token.clone().into();
 
     let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);

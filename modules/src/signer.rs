@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use derive_more::{Display, From, FromStr};
+use derive_more::{Display, From, FromStr, Into};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
     Display,
     FromStr,
     From,
+    Into,
 )]
 pub struct Signer(String);
 

@@ -125,6 +125,9 @@ define_error! {
             { receiver: Address }
             | e | { format_args!("'{0}' is not allowed to receive funds", e.receiver) },
 
+        ParseAccountFailure
+            | _ | { "failed to parse as AccountId" },
+
         InvalidPort
             { port_id: PortId, exp_port_id: PortId }
             | e | { format_args!("invalid port: '{0}', expected '{1}'", e.port_id, e.exp_port_id) },

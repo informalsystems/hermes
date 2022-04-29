@@ -219,7 +219,7 @@ pub trait ChannelKeeper {
         &mut self,
         key: (PortId, ChannelId, Sequence),
         timestamp: Timestamp,
-        heigh: Height,
+        height: Height,
         data: Vec<u8>,
     ) -> Result<(), Error>;
 

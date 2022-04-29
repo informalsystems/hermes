@@ -39,7 +39,7 @@ pub trait Ics20Reader:
     + ChannelReader
     + PortReader
 {
-    type AccountId: Into<String> + FromStr<Err = Ics20Error>;
+    type AccountId: Into<String> + FromStr;
 
     /// get_port returns the portID for the transfer module.
     fn get_port(&self) -> Result<PortId, Ics20Error>;
@@ -52,14 +52,17 @@ pub trait Ics20Reader:
     ) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error> {
         // https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md
         let contents = format!("{}/{}", port_id, channel_id);
+
         let mut hasher = Sha256::new();
         hasher.update(VERSION.as_bytes());
         hasher.update(b"0");
         hasher.update(contents.as_bytes());
         let hash: Vec<u8> = hasher.finalize().to_vec().drain(20..).collect();
+
         String::from_utf8(hex::encode_upper(hash))
             .expect("hex encoded bytes are not valid UTF8")
             .parse()
+            .map_err(|_| Ics20Error::parse_account_failure())
     }
 
     /// Returns true iff send is enabled.
@@ -134,7 +137,7 @@ pub trait Ics20Context:
     Ics20Keeper<AccountId = <Self as Ics20Context>::AccountId>
     + Ics20Reader<AccountId = <Self as Ics20Context>::AccountId>
 {
-    type AccountId: Into<String> + FromStr<Err = Ics20Error>;
+    type AccountId: Into<String> + FromStr;
 }
 
 fn validate_transfer_channel_params(

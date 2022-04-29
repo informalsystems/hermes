@@ -15,7 +15,11 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
         return Err(Ics20Error::receive_disabled());
     }
 
-    let receiver = data.receiver.to_string().parse()?;
+    let receiver = data
+        .receiver
+        .to_string()
+        .parse()
+        .map_err(|_| Ics20Error::parse_account_failure())?;
 
     let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
     match data.token.denom.source_chain(&prefix) {
