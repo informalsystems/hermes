@@ -399,12 +399,12 @@ pub fn unreceived_acknowledgements_sequences(
         .map_err(Error::relayer)
 }
 
-/// This method expects an [`IdentifiedChannelEnd`] plus a pair of
-/// [`ChainHandle`]s representing the chains at the two ends of this
-/// channel, called a (target) chain and a counterparty chain.
-/// The method returns a vector of sequence numbers for all the packets
+/// This method returns a vector of sequence numbers for all the packets
 /// which the counterparty chain _sent_ on the given channel and which the
 /// (target) chain did not yet _receive_.
+/// Expects an [`IdentifiedChannelEnd`] plus a pair of
+/// [`ChainHandle`]s representing the chains at the two ends of this
+/// channel, called a (target) chain and a counterparty chain.
 ///
 /// ### Implementation details
 /// This method involves two separate queries:
@@ -474,12 +474,12 @@ pub fn acknowledgements_on_chain(
     Ok((sequences, height))
 }
 
-/// This method expects an [`IdentifiedChannelEnd`] plus a pair of
-/// [`ChainHandle`]s representing the chains at the two ends of this
-/// channel, called a (target) chain and a counterparty chain.
-/// The method returns a vector of sequence numbers for those packets
+/// This method returns a vector of sequence numbers for those packets
 /// which the counterparty chain _received_ on the given channel and which the
 /// (target) chain did not yet _acknowledge_.
+/// Expects an [`IdentifiedChannelEnd`] plus a pair of
+/// [`ChainHandle`]s representing the chains at the two ends of this
+/// channel, called a (target) chain and a counterparty chain.
 ///
 /// ### Implementation details
 /// This method involves two separate queries:
