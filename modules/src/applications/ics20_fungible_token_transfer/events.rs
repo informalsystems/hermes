@@ -17,6 +17,7 @@ pub enum Event {
     Ack(AckEvent),
     Timeout(TimeoutEvent),
     DenomTrace(DenomTraceEvent),
+    Transfer(TransferEvent),
 }
 
 pub struct RecvEvent {
@@ -112,6 +113,22 @@ impl From<DenomTraceEvent> for ModuleEvent {
             kind: EVENT_TYPE_DENOM_TRACE.to_string(),
             module_name: MODULE_ID_STR.parse().expect("invalid ModuleId"),
             attributes: vec![("trace_hash", trace_hash).into(), ("denom", denom).into()],
+        }
+    }
+}
+
+pub struct TransferEvent {
+    pub sender: Address,
+    pub receiver: Address,
+}
+
+impl From<TransferEvent> for ModuleEvent {
+    fn from(ev: TransferEvent) -> Self {
+        let TransferEvent { sender, receiver } = ev;
+        Self {
+            kind: EVENT_TYPE_TRANSFER.to_string(),
+            module_name: MODULE_ID_STR.parse().expect("invalid ModuleId"),
+            attributes: vec![("sender", sender).into(), ("receiver", receiver).into()],
         }
     }
 }
