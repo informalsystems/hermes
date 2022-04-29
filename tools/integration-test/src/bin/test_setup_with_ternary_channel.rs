@@ -54,17 +54,19 @@ impl TestOverrides for Test {
     }
 }
 
-impl BinaryChannelTest for Test {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+impl NaryChannelTest<3> for Test {
+    fn run<Handle: ChainHandle>(
         &self,
         _config: &TestConfig,
         _relayer: RelayerDriver,
-        _chains: ConnectedChains<ChainA, ChainB>,
-        _channel: ConnectedChannel<ChainA, ChainB>,
+        _chains: NaryConnectedChains<Handle, 3>,
+        _channels: NaryConnectedChannels<Handle, 3>,
     ) -> Result<(), Error> {
         suspend()
     }
 }
+
+impl PortsOverride<3> for Test {}
 
 fn main() -> Result<(), Error> {
     let store_dir = env::var("TEST_STORE_DIR").unwrap_or_else(|_| "data/test".to_string());
@@ -76,7 +78,7 @@ fn main() -> Result<(), Error> {
 
     println!("Make sure the directory is clean for the setup to succeed");
 
-    run_binary_channel_test(&Test {
+    run_nary_channel_test(&Test {
         store_dir: store_dir.into(),
     })
 }

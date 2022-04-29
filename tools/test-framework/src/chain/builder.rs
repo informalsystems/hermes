@@ -68,9 +68,12 @@ impl ChainBuilder {
        a [`ChainDriver`] configured with a chain ID  like
        `"ibc-alpha-f5a2a988"`.
     */
-    pub fn new_chain(&self, prefix: &str) -> Result<ChainDriver, Error> {
-        let chain_num = random_u32();
-        let chain_id = ChainId::from_string(&format!("ibc-{}-{:x}", prefix, chain_num));
+    pub fn new_chain(&self, prefix: &str, use_random_id: bool) -> Result<ChainDriver, Error> {
+        let chain_id = if use_random_id {
+            ChainId::from_string(&format!("ibc-{}-{:x}", prefix, random_u32()))
+        } else {
+            ChainId::from_string(&format!("ibc-{}", prefix))
+        };
 
         let rpc_port = random_unused_tcp_port();
         let grpc_port = random_unused_tcp_port();
