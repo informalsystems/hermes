@@ -14,6 +14,9 @@ mod packet;
 
 pub use denom::*;
 
+/// Module identifier for the ICS20 application.
+pub const MODULE_ID_STR: &str = "transfer";
+
 /// The port identifier that the ICS20 applications
 /// typically bind with.
 pub const PORT_ID: &str = "transfer";
