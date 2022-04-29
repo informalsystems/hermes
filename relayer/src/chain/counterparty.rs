@@ -399,6 +399,29 @@ pub fn unreceived_acknowledgements_sequences(
         .map_err(Error::relayer)
 }
 
+/// This method returns a vector of sequence numbers for all the packets
+/// which the counterparty chain _sent_ on the given channel and which the
+/// (target) chain did not yet _receive_.
+/// Expects an [`IdentifiedChannelEnd`] plus a pair of
+/// [`ChainHandle`]s representing the chains at the two ends of this
+/// channel, called a (target) chain and a counterparty chain.
+///
+/// ### Implementation details
+/// This method involves two separate queries:
+///
+/// 1. It performs a [`QueryPacketCommitmentsRequest`] on the counterparty chain.
+///     This query returns the vector of all sequence numbers for those packets that have
+///     commitments written on-chain in the counterparty chain's state.
+///
+///     This step relies on [`commitments_on_chain`], see that method for more details.
+///
+/// 2. It performs a [`QueryUnreceivedPacketsRequest`] on the (target) chain.
+///     Given the sequence numbers of packet commitments on the counterparty (query #1),
+///     this query returns a subset of these sequence numbers, all of which the target
+///     chain has not yet _received_.
+///
+///    This step relies on [`unreceived_packets_sequences`], see that method for more details.
+///
 pub fn unreceived_packets(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
@@ -451,6 +474,34 @@ pub fn acknowledgements_on_chain(
     Ok((sequences, height))
 }
 
+/// This method returns a vector of sequence numbers for those packets
+/// which the counterparty chain _received_ on the given channel and which the
+/// (target) chain did not yet _acknowledge_.
+/// Expects an [`IdentifiedChannelEnd`] plus a pair of
+/// [`ChainHandle`]s representing the chains at the two ends of this
+/// channel, called a (target) chain and a counterparty chain.
+///
+/// ### Implementation details
+/// This method involves two separate queries:
+///
+/// 1. It performs a [`QueryPacketCommitmentsRequest`] on the target chain.
+///     This query returns the vector of all sequence numbers for those packets that have
+///     commitments written on-chain in the (target) chain's state.
+///
+///     This step relies on [`commitments_on_chain`], see that method for more details.
+///
+/// 2. It performs a [`QueryPacketAcknowledgementsRequest`] on the counterparty chain.
+///     Given the sequence numbers of packet commitments on the target chain (from step #1),
+///     this query returns a subset of these sequence numbers, all of which the counterparty
+///     chain has _received_ (i.e., it stores acknowledgments for these sequence numbers).
+///
+///     This step relies on [`packet_acknowledgements`], see that method for more details.
+///
+/// 3. It performs a [`QueryUnreceivedAcksRequest`] on the target chain.
+///     Given the sequence numbers of packet acknowledgements on the counterparty (step #3),
+///     this query fetches the subset among these acknowledgements which have not been
+///     relayed yet to the target chain.
+///     This step relies on [`unreceived_acknowledgements_sequences`].
 pub fn unreceived_acknowledgements(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
