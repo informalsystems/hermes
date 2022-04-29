@@ -8,6 +8,24 @@ use core::fmt;
 use serde::de::Unexpected;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
+flex_error::define_error! {
+    MaxMsgNumError {
+        TooSmall
+            { value: usize }
+            |e| {
+                format_args!("`max_msg_num` must be greater than or equal to {}, found {}",
+                    MaxMsgNum::MIN_BOUND, e.value)
+            },
+
+        TooBig
+            { value: usize }
+            |e| {
+                format_args!("`max_msg_num` must be less than or equal to {}, found {}",
+                    MaxMsgNum::MAX_BOUND, e.value)
+            },
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct MaxMsgNum(usize);
 
@@ -15,6 +33,18 @@ impl MaxMsgNum {
     const DEFAULT: usize = 30;
     const MIN_BOUND: usize = 2;
     const MAX_BOUND: usize = 100;
+
+    pub fn new(value: usize) -> Result<Self, MaxMsgNumError> {
+        if value < Self::MIN_BOUND {
+            return Err(MaxMsgNumError::too_small(value));
+        }
+
+        if value > Self::MAX_BOUND {
+            return Err(MaxMsgNumError::too_big(value));
+        }
+
+        Ok(Self(value))
+    }
 
     pub fn to_usize(self) -> usize {
         self.0
@@ -32,23 +62,18 @@ impl<'de> Deserialize<'de> for MaxMsgNum {
     where
         D: Deserializer<'de>,
     {
-        let u = usize::deserialize(deserializer)?;
+        let value = usize::deserialize(deserializer)?;
 
-        if u < Self::MIN_BOUND {
-            return Err(D::Error::invalid_value(
-                Unexpected::Unsigned(u as u64),
+        MaxMsgNum::new(value).map_err(|e| match e.detail() {
+            MaxMsgNumErrorDetail::TooSmall(_) => D::Error::invalid_value(
+                Unexpected::Unsigned(value as u64),
                 &format!("a usize greater than or equal to {}", Self::MIN_BOUND).as_str(),
-            ));
-        }
-
-        if u > Self::MAX_BOUND {
-            return Err(D::Error::invalid_value(
-                Unexpected::Unsigned(u as u64),
+            ),
+            MaxMsgNumErrorDetail::TooBig(_) => D::Error::invalid_value(
+                Unexpected::Unsigned(value as u64),
                 &format!("a usize less than or equal to {}", Self::MAX_BOUND).as_str(),
-            ));
-        }
-
-        Ok(MaxMsgNum(u))
+            ),
+        })
     }
 }
 
