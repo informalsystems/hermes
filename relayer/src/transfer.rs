@@ -141,14 +141,14 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
 
     let sender = packet_src_chain.get_signer().map_err(TransferError::key)?;
 
-    let chain_status = packet_dst_chain
-        .query_status()
+    let application_status = packet_dst_chain
+        .query_application_status()
         .map_err(TransferError::relayer)?;
 
     let timeout = TransferTimeout::new(
         opts.timeout_height_offset,
         opts.timeout_duration,
-        &chain_status,
+        &application_status,
     )?;
 
     let msg = MsgTransfer {
