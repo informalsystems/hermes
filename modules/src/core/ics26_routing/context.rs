@@ -5,6 +5,7 @@ use core::any::Any;
 use core::fmt::Debug;
 use core::{fmt, str::FromStr};
 
+use ibc_proto::google::protobuf::Any as ProtobufAny;
 use serde::{Deserialize, Serialize};
 
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
@@ -183,6 +184,10 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
         _relayer: &Signer,
     ) -> Result<(), Error> {
         Ok(())
+    }
+
+    fn deliver(&mut self, _msg: ProtobufAny) -> Result<HandlerOutput<()>, Error> {
+        Ok(HandlerOutput::builder().with_result(()))
     }
 }
 
