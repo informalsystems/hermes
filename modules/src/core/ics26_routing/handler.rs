@@ -126,14 +126,9 @@ mod tests {
 
     use test_log::test;
 
+    use crate::applications::ics20_fungible_token_transfer::{IbcCoin, PrefixedCoin};
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
-    use crate::events::IbcEvent;
-    use crate::{
-        applications::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer,
-        core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof,
-    };
-
     use crate::core::ics02_client::msgs::{
         create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient,
         upgrade_client::MsgUpgradeAnyClient, ClientMsg,
@@ -156,15 +151,24 @@ mod tests {
         timeout_on_close::{test_util::get_dummy_raw_msg_timeout_on_close, MsgTimeoutOnClose},
         ChannelMsg, PacketMsg,
     };
+    use crate::core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof;
+    use crate::events::IbcEvent;
+    use crate::{
+        applications::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer,
+        applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer,
+        applications::ics20_fungible_token_transfer::packet::PacketData,
+        applications::ics20_fungible_token_transfer::MODULE_ID_STR,
+    };
 
     use crate::core::ics24_host::identifier::ConnectionId;
-    use crate::core::ics26_routing::context::{ModuleId, RouterBuilder};
+    use crate::core::ics26_routing::context::{Ics26Context, ModuleId, Router, RouterBuilder};
+    use crate::core::ics26_routing::error::Error;
     use crate::core::ics26_routing::handler::dispatch;
     use crate::core::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::{MockContext, MockRouterBuilder};
     use crate::mock::header::MockHeader;
-    use crate::test_utils::{get_dummy_account_id, DummyModule};
+    use crate::test_utils::{get_dummy_account_id, DummyTransferModule};
     use crate::timestamp::Timestamp;
     use crate::Height;
 
@@ -174,10 +178,28 @@ mod tests {
     /// to work with the context and correctly store results (i.e., the `ClientKeeper`,
     /// `ConnectionKeeper`, and `ChannelKeeper` traits).
     fn routing_module_and_keepers() {
+        #[derive(Clone, Debug)]
+        enum TestMsg {
+            Ics26(Ics26Envelope),
+            Ics20(MsgTransfer),
+        }
+
+        impl From<Ics26Envelope> for TestMsg {
+            fn from(msg: Ics26Envelope) -> Self {
+                Self::Ics26(msg)
+            }
+        }
+
+        impl From<MsgTransfer> for TestMsg {
+            fn from(msg: MsgTransfer) -> Self {
+                Self::Ics20(msg)
+            }
+        }
+
         // Test parameters
         struct Test {
             name: String,
-            msg: Ics26Envelope,
+            msg: TestMsg,
             want_pass: bool,
         }
         let default_signer = get_dummy_account_id();
@@ -192,16 +214,18 @@ mod tests {
 
         let upgrade_client_height_second = Height::new(1, 1);
 
-        let module = DummyModule::default();
-        let module_id: ModuleId = "dummymodule".parse().unwrap();
-
-        let router = MockRouterBuilder::default()
-            .add_route(module_id.clone(), module)
-            .unwrap()
-            .build();
+        let transfer_module_id: ModuleId = MODULE_ID_STR.parse().unwrap();
 
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
-        let mut ctx = MockContext::default().with_router(router);
+        let mut ctx = {
+            let ctx = MockContext::default();
+            let module = DummyTransferModule::new(ctx.ibc_store_share());
+            let router = MockRouterBuilder::default()
+                .add_route(transfer_module_id.clone(), module)
+                .unwrap()
+                .build();
+            ctx.with_router(router)
+        };
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
@@ -259,6 +283,7 @@ mod tests {
             MsgChannelCloseConfirm::try_from(get_dummy_raw_msg_chan_close_confirm(client_height))
                 .unwrap();
 
+        let msg_transfer = get_dummy_msg_transfer(35);
         let msg_transfer_two = get_dummy_msg_transfer(36);
 
         let mut msg_to_on_close =
@@ -266,6 +291,23 @@ mod tests {
         msg_to_on_close.packet.sequence = 2.into();
         msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height;
         msg_to_on_close.packet.timeout_timestamp = msg_transfer_two.timeout_timestamp;
+
+        let denom = match msg_transfer_two.token.clone() {
+            IbcCoin::Base(coin) => coin.denom.into(),
+            IbcCoin::Hashed(_) => unreachable!(),
+        };
+        let packet_data = {
+            let data = PacketData {
+                token: PrefixedCoin {
+                    denom,
+                    amount: msg_transfer_two.token.amount(),
+                },
+                sender: msg_transfer_two.sender.clone(),
+                receiver: msg_transfer_two.receiver.clone(),
+            };
+            serde_json::to_vec(&data).expect("PacketData's infallible Serialize impl failed")
+        };
+        msg_to_on_close.packet.data = packet_data;
 
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
 
@@ -282,7 +324,7 @@ mod tests {
             res
         );
 
-        ctx.scope_port_to_module(msg_chan_init.port_id.clone(), module_id);
+        ctx.scope_port_to_module(msg_chan_init.port_id.clone(), transfer_module_id.clone());
 
         // Figure out the ID of the client that was just created.
         let mut events = res.unwrap().events;
@@ -306,7 +348,8 @@ mod tests {
                         .with_timestamp(Timestamp::now())
                         .into(),
                     signer: default_signer.clone(),
-                })),
+                }))
+                .into(),
                 want_pass: true,
             },
             Test {
@@ -315,14 +358,16 @@ mod tests {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height).into(),
                     signer: default_signer.clone(),
-                })),
+                }))
+                .into(),
                 want_pass: false,
             },
             Test {
                 name: "Connection open init succeeds".to_string(),
                 msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenInit(
                     msg_conn_init.with_client_id(client_id.clone()),
-                )),
+                ))
+                .into(),
                 want_pass: true,
             },
             Test {
@@ -330,44 +375,54 @@ mod tests {
                     .to_string(),
                 msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     incorrect_msg_conn_try,
-                ))),
+                )))
+                .into(),
                 want_pass: false,
             },
             Test {
                 name: "Connection open try succeeds".to_string(),
                 msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     correct_msg_conn_try.with_client_id(client_id.clone()),
-                ))),
+                )))
+                .into(),
                 want_pass: true,
             },
             Test {
                 name: "Connection open ack succeeds".to_string(),
                 msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
                     msg_conn_ack,
-                ))),
+                )))
+                .into(),
                 want_pass: true,
             },
             // ICS04
             Test {
                 name: "Channel open init succeeds".to_string(),
-                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenInit(msg_chan_init)),
+                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenInit(msg_chan_init))
+                    .into(),
                 want_pass: true,
             },
             Test {
                 name: "Channel open init fail due to missing connection".to_string(),
                 msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenInit(
                     incorrect_msg_chan_init,
-                )),
+                ))
+                .into(),
                 want_pass: false,
             },
             Test {
                 name: "Channel open try succeeds".to_string(),
-                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenTry(msg_chan_try)),
+                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenTry(msg_chan_try)).into(),
                 want_pass: true,
             },
             Test {
                 name: "Channel open ack succeeds".to_string(),
-                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenAck(msg_chan_ack)),
+                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenAck(msg_chan_ack)).into(),
+                want_pass: true,
+            },
+            Test {
+                name: "Packet send".to_string(),
+                msg: msg_transfer.into(),
                 want_pass: true,
             },
             // The client update is required in this test, because the proof associated with
@@ -380,17 +435,24 @@ mod tests {
                         .with_timestamp(Timestamp::now())
                         .into(),
                     signer: default_signer.clone(),
-                })),
+                }))
+                .into(),
                 want_pass: true,
             },
             Test {
                 name: "Receive packet".to_string(),
-                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet.clone())),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet.clone()))
+                    .into(),
                 want_pass: true,
             },
             Test {
                 name: "Re-Receive packet".to_string(),
-                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)).into(),
+                want_pass: true,
+            },
+            Test {
+                name: "Packet send".to_string(),
+                msg: msg_transfer_two.into(),
                 want_pass: true,
             },
             Test {
@@ -399,7 +461,8 @@ mod tests {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height_after_second_send).into(),
                     signer: default_signer.clone(),
-                })),
+                }))
+                .into(),
                 want_pass: true,
             },
             //ICS04-close channel
@@ -407,20 +470,22 @@ mod tests {
                 name: "Channel close init succeeds".to_string(),
                 msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelCloseInit(
                     msg_chan_close_init,
-                )),
+                ))
+                .into(),
                 want_pass: true,
             },
             Test {
                 name: "Channel close confirm fails cause channel is already closed".to_string(),
                 msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelCloseConfirm(
                     msg_chan_close_confirm,
-                )),
+                ))
+                .into(),
                 want_pass: false,
             },
             //ICS04-to_on_close
             Test {
                 name: "Timeout on close".to_string(),
-                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::ToClosePacket(msg_to_on_close)),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::ToClosePacket(msg_to_on_close)).into(),
                 want_pass: true,
             },
             Test {
@@ -436,7 +501,8 @@ mod tests {
                     get_dummy_merkle_proof(),
                     get_dummy_merkle_proof(),
                     default_signer.clone(),
-                ))),
+                )))
+                .into(),
                 want_pass: true,
             },
             Test {
@@ -452,7 +518,8 @@ mod tests {
                     get_dummy_merkle_proof(),
                     get_dummy_merkle_proof(),
                     default_signer,
-                ))),
+                )))
+                .into(),
                 want_pass: false,
             },
         ]
@@ -460,7 +527,17 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = dispatch(&mut ctx, test.msg.clone());
+            let res = match test.msg.clone() {
+                TestMsg::Ics26(msg) => dispatch(&mut ctx, msg).map(|_| ()),
+                TestMsg::Ics20(msg) => {
+                    let transfer_module =
+                        ctx.router_mut().get_route_mut(&transfer_module_id).unwrap();
+                    transfer_module
+                        .deliver(msg.into())
+                        .map(|_| ())
+                        .map_err(Error::ics04_channel)
+                }
+            };
 
             assert_eq!(
                 test.want_pass,
