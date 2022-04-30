@@ -2,6 +2,7 @@ use alloc::string::FromUtf8Error;
 
 use flex_error::{define_error, DisplayOnly, TraceError};
 use subtle_encoding::Error as EncodingError;
+use tendermint_proto::Error as TendermintProtoError;
 use uint::FromStrRadixErr;
 
 use super::address::Address;
@@ -134,5 +135,13 @@ define_error! {
 
         TraceNotFound
             | _ | { "no trace associated with specified hash" },
+
+        DecodeRawMsg
+            [ TraceError<TendermintProtoError> ]
+            | _ | { "error decoding raw msg" },
+
+        UnknownMsgType
+            { msg_type: String }
+            | e | { format_args!("unknown msg type: {0}", e.msg_type) },
     }
 }

@@ -2,9 +2,9 @@
 
 use crate::prelude::*;
 
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 use tendermint_proto::Protobuf;
-
-use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 use crate::applications::ics20_fungible_token_transfer::address::Address;
 use crate::applications::ics20_fungible_token_transfer::error::Error;
@@ -49,8 +49,6 @@ impl Msg for MsgTransfer {
         TYPE_URL.to_string()
     }
 }
-
-impl Protobuf<RawMsgTransfer> for MsgTransfer {}
 
 impl TryFrom<RawMsgTransfer> for MsgTransfer {
     type Error = Error;
@@ -100,11 +98,36 @@ impl From<MsgTransfer> for RawMsgTransfer {
     }
 }
 
+impl Protobuf<RawMsgTransfer> for MsgTransfer {}
+
+impl TryFrom<Any> for MsgTransfer {
+    type Error = Error;
+
+    fn try_from(raw: Any) -> Result<Self, Self::Error> {
+        match raw.type_url.as_str() {
+            TYPE_URL => MsgTransfer::decode_vec(&raw.value).map_err(Error::decode_raw_msg),
+            _ => Err(Error::unknown_msg_type(raw.type_url)),
+        }
+    }
+}
+
+impl From<MsgTransfer> for Any {
+    fn from(msg: MsgTransfer) -> Self {
+        Self {
+            type_url: TYPE_URL.to_string(),
+            value: msg
+                .encode_vec()
+                .expect("encoding to `Any` from `MsgTranfer`"),
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod test_util {
     use core::ops::Add;
     use core::time::Duration;
 
+    use super::MsgTransfer;
     use crate::applications::ics20_fungible_token_transfer::address::Address;
     use crate::bigint::U256;
     use crate::{
@@ -114,8 +137,6 @@ pub mod test_util {
         timestamp::Timestamp,
         Height,
     };
-
-    use super::MsgTransfer;
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
