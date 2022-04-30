@@ -79,6 +79,14 @@ pub mod cosmos {
                         ..Default::default()
                     })
                 }
+
+                pub fn first_page(limit: u64, key: Option<Vec<u8>>) -> Option<PageRequest> {
+                    Some(PageRequest {
+                        limit,
+                        key: key.unwrap_or_default(),
+                        ..Default::default()
+                    })
+                }
             }
         }
         pub mod reflection {

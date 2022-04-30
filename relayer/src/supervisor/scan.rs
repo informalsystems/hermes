@@ -223,7 +223,9 @@ impl ChannelScan {
         counterparty_chain: &impl ChainHandle,
     ) -> Option<Vec<u64>> {
         self.counterparty.as_ref().map(|counterparty| {
-            unreceived_packets(counterparty_chain, chain, counterparty).unwrap_or_default()
+            unreceived_packets(counterparty_chain, chain, counterparty.into())
+                .map(|(seq, _)| seq)
+                .unwrap_or_default()
         })
     }
 

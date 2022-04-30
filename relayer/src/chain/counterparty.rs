@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
 use crate::channel::ChannelError;
+use crate::path::PathIdentifiers;
 use crate::supervisor::Error;
 use ibc::{
     core::{
@@ -422,29 +423,46 @@ pub fn unreceived_acknowledgements_sequences(
 ///
 ///    This step relies on [`unreceived_packets_sequences`], see that method for more details.
 ///
+// pub fn unreceived_packets(
+//     chain: &impl ChainHandle,
+//     counterparty_chain: &impl ChainHandle,
+//     channel: &IdentifiedChannelEnd,
+// ) -> Result<Vec<u64>, Error> {
+//     let counterparty = channel.channel_end.counterparty();
+//     let counterparty_channel_id = counterparty
+//         .channel_id
+//         .as_ref()
+//         .ok_or_else(Error::missing_counterparty_channel_id)?;
+//
+//     let (commit_sequences, _) = commitments_on_chain(
+//         counterparty_chain,
+//         &counterparty.port_id,
+//         counterparty_channel_id,
+//     )?;
+//
+//     unreceived_packets_sequences(
+//         chain,
+//         &channel.port_id,
+//         &channel.channel_id,
+//         commit_sequences,
+//     )
+// }
+
 pub fn unreceived_packets(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
-    channel: &IdentifiedChannelEnd,
-) -> Result<Vec<u64>, Error> {
-    let counterparty = channel.channel_end.counterparty();
-    let counterparty_channel_id = counterparty
-        .channel_id
-        .as_ref()
-        .ok_or_else(Error::missing_counterparty_channel_id)?;
-
-    let (commit_sequences, _) = commitments_on_chain(
+    path: PathIdentifiers,
+) -> Result<(Vec<u64>, Height), Error> {
+    let (commit_sequences, h) = commitments_on_chain(
         counterparty_chain,
-        &counterparty.port_id,
-        counterparty_channel_id,
+        &path.counterparty_port_id,
+        &path.counterparty_channel_id,
     )?;
 
-    unreceived_packets_sequences(
-        chain,
-        &channel.port_id,
-        &channel.channel_id,
-        commit_sequences,
-    )
+    let sn =
+        unreceived_packets_sequences(chain, &path.port_id, &path.channel_id, commit_sequences)?;
+
+    Ok((sn, h))
 }
 
 pub fn acknowledgements_on_chain(

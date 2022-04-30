@@ -81,6 +81,9 @@ pub struct QueryResponse {
     pub height: Height,
 }
 
+/// Limit on how many query results should be expected.
+pub const QUERY_RESULT_LIMIT: usize = 50;
+
 /// Defines a blockchain as understood by the relayer
 pub trait ChainEndpoint: Sized {
     /// Type of light blocks for this chain
