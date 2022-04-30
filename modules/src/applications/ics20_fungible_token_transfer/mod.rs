@@ -1,16 +1,15 @@
 //! ICS 20: Token Transfer implementation allows for multi-chain denomination handling, which
 //! constitutes a "fungible token transfer bridge module" between the IBC routing module and an
 //! asset tracking module.
+pub mod acknowledgement;
+pub mod address;
 pub mod context;
+pub mod denom;
 pub mod error;
+pub mod events;
 pub mod msgs;
+pub mod packet;
 pub mod relay_application_logic;
-
-mod acknowledgement;
-mod address;
-mod denom;
-mod events;
-mod packet;
 
 pub use denom::*;
 
