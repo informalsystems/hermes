@@ -5,7 +5,6 @@ use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
 use crate::applications::ics20_fungible_token_transfer::{Coin, IbcCoin, Source, TracePrefix};
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
-use crate::core::ics04_channel::packet::PacketResult;
 use crate::handler::HandlerOutput;
 use crate::prelude::*;
 
@@ -13,7 +12,7 @@ use crate::prelude::*;
 pub(crate) fn send_transfer<Ctx>(
     ctx: &mut Ctx,
     msg: MsgTransfer,
-) -> Result<HandlerOutput<PacketResult>, Error>
+) -> Result<HandlerOutput<()>, Error>
 where
     Ctx: Ics20Context,
 {
@@ -77,8 +76,8 @@ where
                 denom,
                 amount: msg.token.amount(),
             },
-            sender: msg.sender.to_string().parse()?,
-            receiver: msg.receiver.to_string().parse()?,
+            sender: msg.sender,
+            receiver: msg.receiver,
         };
         serde_json::to_vec(&data).expect("PacketData's infallible Serialize impl failed")
     };
@@ -94,7 +93,19 @@ where
         timeout_timestamp: msg.timeout_timestamp,
     };
 
-    let handler_output = send_packet(ctx, packet).map_err(Error::ics04_channel)?;
+    let HandlerOutput {
+        result,
+        log,
+        events,
+    } = send_packet(ctx, packet).map_err(Error::ics04_channel)?;
+
+    ctx.store_packet_result(result)
+        .map_err(Error::ics04_channel)?;
+
+    let handler_output = HandlerOutput::builder()
+        .with_log(log)
+        .with_events(events)
+        .with_result(());
 
     //TODO:  add event/atributes and writes to the store issued by the application logic for packet sending.
     Ok(handler_output)
