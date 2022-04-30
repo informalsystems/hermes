@@ -72,7 +72,7 @@ pub struct MockContext {
     block_time: Duration,
 
     /// An object that stores all IBC related data.
-    ibc_store: Arc<Mutex<MockIbcStore>>,
+    pub ibc_store: Arc<Mutex<MockIbcStore>>,
 
     /// ICS26 router impl
     router: MockRouter,
@@ -520,61 +520,65 @@ impl MockContext {
             .expect("history cannot be empty")
             .height()
     }
+
+    pub fn ibc_store_share(&self) -> Arc<Mutex<MockIbcStore>> {
+        self.ibc_store.clone()
+    }
 }
 
 /// An object that stores all IBC related data.
 #[derive(Clone, Debug, Default)]
 pub struct MockIbcStore {
     /// The set of all clients, indexed by their id.
-    clients: BTreeMap<ClientId, MockClientRecord>,
+    pub clients: BTreeMap<ClientId, MockClientRecord>,
 
     /// Tracks the processed time for clients header updates
-    client_processed_times: BTreeMap<(ClientId, Height), Timestamp>,
+    pub client_processed_times: BTreeMap<(ClientId, Height), Timestamp>,
 
     /// Tracks the processed height for the clients
-    client_processed_heights: BTreeMap<(ClientId, Height), Height>,
+    pub client_processed_heights: BTreeMap<(ClientId, Height), Height>,
 
     /// Counter for the client identifiers, necessary for `increase_client_counter` and the
     /// `client_counter` methods.
-    client_ids_counter: u64,
+    pub client_ids_counter: u64,
 
     /// Association between client ids and connection ids.
-    client_connections: BTreeMap<ClientId, ConnectionId>,
+    pub client_connections: BTreeMap<ClientId, ConnectionId>,
 
     /// All the connections in the store.
-    connections: BTreeMap<ConnectionId, ConnectionEnd>,
+    pub connections: BTreeMap<ConnectionId, ConnectionEnd>,
 
     /// Counter for connection identifiers (see `increase_connection_counter`).
-    connection_ids_counter: u64,
+    pub connection_ids_counter: u64,
 
     /// Association between connection ids and channel ids.
-    connection_channels: BTreeMap<ConnectionId, Vec<(PortId, ChannelId)>>,
+    pub connection_channels: BTreeMap<ConnectionId, Vec<(PortId, ChannelId)>>,
 
     /// Counter for channel identifiers (see `increase_channel_counter`).
-    channel_ids_counter: u64,
+    pub channel_ids_counter: u64,
 
     /// All the channels in the store. TODO Make new key PortId X ChanneId
-    channels: BTreeMap<(PortId, ChannelId), ChannelEnd>,
+    pub channels: BTreeMap<(PortId, ChannelId), ChannelEnd>,
 
     /// Tracks the sequence number for the next packet to be sent.
-    next_sequence_send: BTreeMap<(PortId, ChannelId), Sequence>,
+    pub next_sequence_send: BTreeMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be received.
-    next_sequence_recv: BTreeMap<(PortId, ChannelId), Sequence>,
+    pub next_sequence_recv: BTreeMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be acknowledged.
-    next_sequence_ack: BTreeMap<(PortId, ChannelId), Sequence>,
+    pub next_sequence_ack: BTreeMap<(PortId, ChannelId), Sequence>,
 
-    packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
+    pub packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     /// Maps ports to their capabilities
-    port_capabilities: BTreeMap<PortId, (ModuleId, PortCapability)>,
+    pub port_capabilities: BTreeMap<PortId, (ModuleId, PortCapability)>,
 
     /// Constant-size commitments to packets data fields
-    packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
+    pub packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
 
     // Used by unordered channel
-    packet_receipt: BTreeMap<(PortId, ChannelId, Sequence), Receipt>,
+    pub packet_receipt: BTreeMap<(PortId, ChannelId, Sequence), Receipt>,
 }
 
 #[derive(Default)]
