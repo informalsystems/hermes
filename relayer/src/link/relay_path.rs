@@ -37,10 +37,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
-use crate::chain::counterparty::{
-    commitments_on_chain, packet_acknowledgements, unreceived_acknowledgements_sequences,
-    unreceived_packets,
-};
+use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, QUERY_RESULT_LIMIT};
@@ -85,11 +82,7 @@ impl Resubmit {
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
 
-    src_channel_id: ChannelId,
-    src_port_id: PortId,
-
-    dst_channel_id: ChannelId,
-    dst_port_id: PortId,
+    path_id: PathIdentifiers,
 
     // Operational data, targeting both the source and destination chain.
     // These vectors of operational data are ordered decreasingly by
@@ -133,20 +126,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_port_id = channel.src_port_id().clone();
         let dst_port_id = channel.dst_port_id().clone();
 
-        // let path = PathIdentifiers {
-        //     port_id: Default::default(),
-        //     channel_id: Default::default(),
-        //     counterparty_port_id: Default::default(),
-        //     counterparty_channel_id: Default::default()
-        // };
+        let path = PathIdentifiers {
+            port_id: dst_port_id.clone(),
+            channel_id: dst_channel_id,
+            counterparty_port_id: src_port_id.clone(),
+            counterparty_channel_id: src_channel_id,
+        };
 
         Ok(Self {
             channel,
 
-            src_channel_id,
-            src_port_id: src_port_id.clone(),
-            dst_channel_id,
-            dst_port_id: dst_port_id.clone(),
+            path_id: path,
 
             src_operational_data: Queue::new(),
             dst_operational_data: Queue::new(),
@@ -182,19 +172,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub fn src_port_id(&self) -> &PortId {
-        &self.src_port_id
+        &self.path_id.counterparty_port_id
     }
 
     pub fn dst_port_id(&self) -> &PortId {
-        &self.dst_port_id
+        &self.path_id.port_id
     }
 
     pub fn src_channel_id(&self) -> &ChannelId {
-        &self.src_channel_id
+        &self.path_id.counterparty_channel_id
     }
 
     pub fn dst_channel_id(&self) -> &ChannelId {
-        &self.dst_channel_id
+        &self.path_id.channel_id
     }
 
     pub fn channel(&self) -> &Channel<ChainA, ChainB> {
@@ -969,7 +959,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
     }
 
-    /// Returns relevant packet events for building RecvPacket and timeout messages.
+    /// Returns relevant packet events for building RecvPacket and timeout messages
+    /// for the given vector of packet [`Sequence`] numbers.
     fn query_send_packet_events(
         &self,
         sequences: Vec<Sequence>,
@@ -1043,7 +1034,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
             }
             info!(
-                "found unprocessed SendPacket events for {:?} (first 10 shown here; total={})",
+                "found SendPacket events for {:?} (first 10 shown here; total={})",
                 packet_sequences,
                 events_result.len()
             );
@@ -1054,59 +1045,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     /// Returns relevant packet events for building ack messages.
     /// Additionally returns the height (on source chain) corresponding to these events.
-    fn target_height_and_write_ack_events(
+    fn query_write_ack_events(
         &self,
-        opt_query_height: Option<Height>,
-    ) -> Result<(TrackedEvents, Height), LinkError> {
-        let mut events_result = vec![];
-
-        let src_channel_id = self.src_channel_id();
-        let dst_channel_id = self.dst_channel_id();
-
-        let (commitments_on_counterparty, _) =
-            commitments_on_chain(self.dst_chain(), self.dst_port_id(), dst_channel_id)
-                .map_err(LinkError::supervisor)?;
-
-        let (acks_on_src, src_response_height) = packet_acknowledgements(
-            self.src_chain(),
-            self.src_port_id(),
-            src_channel_id,
-            commitments_on_counterparty,
-        )
-        .map_err(LinkError::supervisor)?;
-
-        let unreceived_acks_by_dst = unreceived_acknowledgements_sequences(
-            self.dst_chain(),
-            self.dst_port_id(),
-            dst_channel_id,
-            acks_on_src,
-        )
-        .map_err(LinkError::supervisor)?;
-
-        let query_height = opt_query_height.unwrap_or(src_response_height);
-
-        let sequences: Vec<Sequence> = unreceived_acks_by_dst.into_iter().map(From::from).collect();
-        if sequences.is_empty() {
-            return Ok((events_result.into(), query_height));
-        }
-
-        debug!(
-            "ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
-            self.dst_chain().id(),
-            self.src_chain().id(),
-            sequences.iter().take(10).join(", "), sequences.len()
-        );
-
-        events_result = self
+        sequences: Vec<Sequence>,
+        src_query_height: Height,
+    ) -> Result<TrackedEvents, LinkError> {
+        let events_result = self
             .src_chain()
             .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
                 event_id: WithBlockDataType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
-                source_channel_id: *dst_channel_id,
+                source_channel_id: *self.dst_channel_id(),
                 destination_port_id: self.src_port_id().clone(),
-                destination_channel_id: *src_channel_id,
+                destination_channel_id: *self.src_channel_id(),
                 sequences,
-                height: query_height,
+                height: src_query_height,
             }))
             .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
 
@@ -1137,7 +1090,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             );
         }
 
-        Ok((events_result.into(), query_height))
+        Ok(events_result.into())
     }
 
     /// Schedules the relaying of RecvPacket and Timeout messages.
@@ -1154,19 +1107,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             span!(Level::DEBUG, "build_recv_packet_and_timeout_msgs", h = ?opt_query_height)
                 .entered();
 
-        let src_channel_id = self.src_channel_id();
-        let dst_channel_id = self.dst_channel_id();
-
-        let path = PathIdentifiers {
-            port_id: self.dst_port_id().clone(),
-            channel_id: dst_channel_id.clone(),
-            counterparty_port_id: self.src_port_id().clone(),
-            counterparty_channel_id: src_channel_id.clone(),
-        };
-
         // Pull the s.n. of all packets that the destination chain has not yet received.
         let (sequences, src_response_height) =
-            unreceived_packets(self.dst_chain(), self.src_chain(), path)
+            unreceived_packets(self.dst_chain(), self.src_chain(), &self.path_id)
                 .map_err(LinkError::supervisor)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
@@ -1185,10 +1128,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         // Chunk-up the list of sequence nrs. into smaller parts,
         // and construct operational data incrementally across each chunk.
-        let mut chunks = sequences.chunks(QUERY_RESULT_LIMIT);
-        while let Some(c) = chunks.next() {
-            trace!(sequences = %c.len(), "doing another chunk {:?}", c);
-            let sequences = c.into_iter().map(|&i| Sequence::from(i)).collect();
+        let chunks = sequences.chunks(QUERY_RESULT_LIMIT);
+        for c in chunks {
+            let sequences = c.iter().map(|&i| Sequence::from(i)).collect();
             let mut events = self.query_send_packet_events(sequences, query_height)?;
 
             // Skip: no relevant events found.
@@ -1198,7 +1140,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             events.set_height(query_height);
 
-            debug!("translating into operational data..");
             self.events_to_operational_data(events)?;
         }
 
@@ -1210,18 +1151,39 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// chain where to query for packet data. If `None`, the latest available height on the source
     /// chain is used.
     pub fn build_packet_ack_msgs(&self, opt_query_height: Option<Height>) -> Result<(), LinkError> {
-        // Get the sequences of packets that have been acknowledged on destination chain but still
-        // have commitments on source chain (i.e. ack was not seen on source chain)
-        let (mut events, height) = self.target_height_and_write_ack_events(opt_query_height)?;
+        let _span = span!(Level::DEBUG, "build_packet_ack_msgs", h = ?opt_query_height).entered();
+
+        let (sequences, src_response_height) =
+            unreceived_acknowledgements(self.dst_chain(), self.src_chain(), &self.path_id)
+                .map_err(LinkError::supervisor)?;
+
+        let query_height = opt_query_height.unwrap_or(src_response_height);
 
         // Skip: no relevant events found.
-        if events.is_empty() {
+        if sequences.is_empty() {
             return Ok(());
         }
 
-        events.set_height(height);
+        debug!(
+            "seq. nrs. of ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
+            self.dst_chain().id(),
+            self.src_chain().id(),
+            sequences.iter().take(10).join(", "), sequences.len()
+        );
 
-        self.events_to_operational_data(events)?;
+        // Incrementally process all the available sequence numbers in chunks
+        let chunks = sequences.chunks(QUERY_RESULT_LIMIT);
+        for c in chunks {
+            let sequences = c.iter().map(|&i| Sequence::from(i)).collect();
+            // Get the sequences of packets that have been acknowledged on destination chain but still
+            // have commitments on source chain (i.e. ack was not seen on source chain)
+            let mut events = self.query_write_ack_events(sequences, query_height)?;
+
+            events.set_height(query_height);
+
+            self.events_to_operational_data(events)?;
+        }
+
         Ok(())
     }
 

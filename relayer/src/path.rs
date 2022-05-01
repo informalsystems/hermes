@@ -14,6 +14,7 @@ pub struct PathIdentifiers {
 }
 
 // TODO: This should probably be a `TryFrom` instead of `From` so we can get rid of `expect`.
+// TODO: Clarify if we should keep `From<&..>` or `From<..>.
 impl From<&IdentifiedChannelEnd> for PathIdentifiers {
     fn from(ice: &IdentifiedChannelEnd) -> Self {
         let counterparty = ice.channel_end.counterparty();

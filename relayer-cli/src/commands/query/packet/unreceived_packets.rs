@@ -46,7 +46,7 @@ impl QueryUnreceivedPacketsCmd {
             self.chain_id, chan_conn_cli.channel
         );
 
-        unreceived_packets(&chains.src, &chains.dst, (&chan_conn_cli.channel).into())
+        unreceived_packets(&chains.src, &chains.dst, &(&chan_conn_cli.channel).into())
             .map_err(Error::supervisor)
             .map(|(seq, _)| seq)
     }
