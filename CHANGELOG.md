@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v0.14.1
+
+*May 2nd, 2022*
+
+This release improves the reliability of the relayer by fixing an edge case where
+some queries would fail if they reach a full node after a new block is committed but before the application state updates to reflect the changes in that block.
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Fixed query for application status when application state lags behind blockchain state.
+    ([#1970](https://github.com/informalsystems/ibc-rs/issues/1970))
+
 ## v0.14.0
 
 *April 27th, 2022*
