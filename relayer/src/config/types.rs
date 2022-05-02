@@ -147,7 +147,7 @@ pub mod max_tx_size {
             MaxTxSize::new(value).map_err(|e| match e.detail() {
                 ErrorDetail::TooBig(_) => D::Error::invalid_value(
                     Unexpected::Unsigned(value as u64),
-                    &format!("a usize less than {}", Self::MAX_BOUND).as_str(),
+                    &format!("a usize less than or equal to {}", Self::MAX_BOUND).as_str(),
                 ),
             })
         }
@@ -251,5 +251,72 @@ pub mod memo {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             write!(f, "{}", self.as_str())
         }
+    }
+}
+
+#[cfg(test)]
+#[allow(dead_code)]
+mod tests {
+    use super::*;
+
+    use serde::Deserialize;
+    use test_log::test;
+
+    #[test]
+    fn parse_invalid_max_msg_num_min() {
+        #[derive(Debug, Deserialize)]
+        struct DummyConfig {
+            max_msg_num: MaxMsgNum,
+        }
+
+        let err = toml::from_str::<DummyConfig>("max_msg_num = 1")
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("expected a usize greater than or equal to"));
+    }
+
+    #[test]
+    fn parse_invalid_max_msg_num_max() {
+        #[derive(Debug, Deserialize)]
+        struct DummyConfig {
+            max_msg_num: MaxMsgNum,
+        }
+
+        let err = toml::from_str::<DummyConfig>("max_msg_num = 1024")
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("expected a usize less than or equal to"));
+    }
+
+    #[test]
+    fn parse_invalid_max_tx_size() {
+        #[derive(Debug, Deserialize)]
+        struct DummyConfig {
+            max_tx_size: MaxTxSize,
+        }
+
+        let err = toml::from_str::<DummyConfig>("max_tx_size = 9999999999")
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("expected a usize less than or equal to"));
+    }
+
+    #[test]
+    fn parse_invalid_memo() {
+        #[derive(Debug, Deserialize)]
+        struct DummyConfig {
+            memo: Memo,
+        }
+
+        let err = toml::from_str::<DummyConfig>(
+            r#"memo = "foo bar baz foo bar baz foo bar baz foo bar baz foo bar baz""#,
+        )
+        .unwrap_err()
+        .to_string();
+
+        assert!(err.contains("a string length of at most"));
     }
 }
