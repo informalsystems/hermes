@@ -1020,8 +1020,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(events_result.into())
     }
 
-    /// Returns relevant packet events for building ack messages.
-    /// Additionally returns the height (on source chain) corresponding to these events.
+    /// Returns packet event data for building ack messages for the
+    /// given list of [`Sequence`] numbers.
     fn query_write_ack_events(
         &self,
         sequences: Vec<Sequence>,
