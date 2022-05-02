@@ -1,11 +1,11 @@
 # What is Hermes?
 
-Hermes is a an open-source Rust implementation of a relayer for the
-[Inter-Blockchain Communication protocol](https://ibcprotocol.org) (IBC),
+Hermes is an open-source Rust implementation of a relayer for the
+[Inter-Blockchain Communication protocol](https://docs.cosmos.network/master/ibc/overview.html) (IBC),
 released under the [ibc-relayer-cli](https://crates.io/crates/ibc-relayer-cli) crate.
 
 The **Inter-Blockchain Communication protocol** is an end-to-end, connection-oriented,
-state-ful protocol for reliable, ordered, and authenticated communication between modules
+stateful protocol for reliable, ordered, and authenticated communication between modules
 on separate distributed ledgers. [^ibc]
 
 An IBC **relayer** is an off-chain process responsible for relaying IBC datagrams between any two chains.
@@ -17,8 +17,8 @@ in this architecture are not directly sending messages to each other over networ
 but instead they create and store the data to be retrieved and used by a relayer to build the IBC datagrams.
 
 We sometimes refer to Hermes as "IBC Relayer CLI", to make it clear that this
-is a relayer CLI (i.e., a binary) and distinguish from the relayer core library
-(which is the crate called [`ibc-relayer`](https://crates.io/crates/ibc-relayer)).
+is a relayer CLI (i.e., a binary) and distinguish it from the relayer core library
+(that is the crate called [`ibc-relayer`](https://crates.io/crates/ibc-relayer)).
 
 Hermes is actively developed and maintained by [Informal Systems](https://informal.systems) in the [ibc-rs](https://github.com/informalsystems/ibc-rs) repository.
 
