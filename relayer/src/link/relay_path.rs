@@ -968,7 +968,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<TrackedEvents, LinkError> {
         let mut events_result = vec![];
         let _span =
-            span!(Level::DEBUG, "target_height_and_send_packet_events", h = %src_query_height)
+            span!(Level::DEBUG, "query_send_packet_events", h = %src_query_height)
                 .entered();
 
         let src_channel_id = self.src_channel_id();
@@ -1017,29 +1017,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         events_result.extend(tx_events);
         events_result.extend(end_block_events);
 
-        if events_result.is_empty() {
-            info!("found zero unprocessed SendPacket events on source chain, nothing to do");
-        } else {
-            let mut packet_sequences = vec![];
-            for event in events_result.iter() {
-                match event {
-                    IbcEvent::SendPacket(send_event) => {
-                        packet_sequences.push(send_event.packet.sequence);
-                        if packet_sequences.len() >= 10 {
-                            // Enough to print the first 10
-                            break;
-                        }
-                    }
-                    _ => return Err(LinkError::unexpected_event(event.clone())),
-                }
-            }
-            info!(
-                "found SendPacket events for {:?} (first 10 shown here; total={})",
-                packet_sequences,
-                events_result.len()
-            );
-        }
-
         Ok(events_result.into())
     }
 
@@ -1062,33 +1039,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 height: src_query_height,
             }))
             .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
-
-        if events_result.is_empty() {
-            info!(
-                "found zero unprocessed WriteAcknowledgement events on source chain, nothing to do",
-            );
-        } else {
-            let mut packet_sequences = vec![];
-            for event in events_result.iter() {
-                match event {
-                    IbcEvent::WriteAcknowledgement(write_ack_event) => {
-                        packet_sequences.push(write_ack_event.packet.sequence);
-                        if packet_sequences.len() >= 10 {
-                            // Enough to print the first 10
-                            break;
-                        }
-                    }
-                    _ => {
-                        return Err(LinkError::unexpected_event(event.clone()));
-                    }
-                }
-            }
-            info!(
-                "found unprocessed WriteAcknowledgement events for {:?} (first 10 shown here; total={})",
-                packet_sequences,
-                events_result.len(),
-            );
-        }
 
         Ok(events_result.into())
     }
@@ -1119,11 +1069,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             return Ok(());
         }
 
+        let events_total_count = sequences.len();
+        let mut events_left_count = events_total_count;
         debug!(
             "seq. nrs. of unreceived packets to send out to {} of the ones with commitments on {}: {} (first 10 shown here; total={})",
             self.dst_chain().id(),
             self.src_chain().id(),
-            sequences.iter().take(10).join(", "), sequences.len()
+            sequences.iter().take(10).join(", "), events_total_count
         );
 
         // Chunk-up the list of sequence nrs. into smaller parts,
@@ -1137,6 +1089,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             if events.is_empty() {
                 continue;
             }
+
+            events_left_count = events_left_count - c.len();
+            info!(total = %events_total_count, left = %events_left_count, "built packet data for {} events", events.len());
 
             events.set_height(query_height);
 
@@ -1164,11 +1119,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             return Ok(());
         }
 
+        let events_total_count = sequences.len();
+        let mut events_left_count = events_total_count;
         debug!(
             "seq. nrs. of ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
             self.dst_chain().id(),
             self.src_chain().id(),
-            sequences.iter().take(10).join(", "), sequences.len()
+            sequences.iter().take(10).join(", "), events_total_count
         );
 
         // Incrementally process all the available sequence numbers in chunks
@@ -1178,6 +1135,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             // Get the sequences of packets that have been acknowledged on destination chain but still
             // have commitments on source chain (i.e. ack was not seen on source chain)
             let mut events = self.query_write_ack_events(sequences, query_height)?;
+
+            // Skip: no relevant events found.
+            if events.is_empty() {
+                continue;
+            }
+
+            events_left_count = events_left_count - c.len();
+            info!(total = %events_total_count, left = %events_left_count, "built packet data for {} events", events.len());
 
             events.set_height(query_height);
 
