@@ -10,6 +10,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use super::aliases::NthChainHandle;
 use crate::error::Error;
 use crate::types::binary::connection::ConnectedConnection;
+use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::tagged::*;
 use crate::util::array::{into_nested_vec, try_into_nested_array};
 
@@ -112,5 +113,23 @@ impl<Handle: ChainHandle> From<ConnectedConnections<Handle, 2>>
 {
     fn from(channels: ConnectedConnections<Handle, 2>) -> Self {
         channels.connection_at::<0, 1>().unwrap()
+    }
+}
+
+impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedConnections<Handle, SIZE> {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        for (i, inner_connections) in self.connections.iter().enumerate() {
+            for (j, connection_i_to_j) in inner_connections.iter().enumerate() {
+                writer.write_env(
+                    &format!("CONNECTION_ID_{}_to_{}", j, i),
+                    &format!("{}", connection_i_to_j.connection_id_a),
+                );
+
+                writer.write_env(
+                    &format!("CONNECTION_ID_{}_to_{}", i, j),
+                    &format!("{}", connection_i_to_j.connection_id_b),
+                );
+            }
+        }
     }
 }

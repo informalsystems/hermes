@@ -30,6 +30,8 @@ use crate::util::random::random_u64_range;
 pub struct BootstrapClientOptions {
     pub client_options_a_to_b: ClientOptions,
     pub client_options_b_to_a: ClientOptions,
+    pub pad_client_id_a_to_b: u64,
+    pub pad_client_id_b_to_a: u64,
 }
 
 /// Bootstraps two relayer chain handles with connected foreign clients.
@@ -70,10 +72,8 @@ pub fn bootstrap_chains_with_full_nodes(
     let handle_a = spawn_chain_handle(|| {}, &registry, &node_a)?;
     let handle_b = spawn_chain_handle(|| {}, &registry, &node_b)?;
 
-    if test_config.bootstrap_with_random_ids {
-        pad_client_ids(&handle_a, &handle_b)?;
-        pad_client_ids(&handle_b, &handle_a)?;
-    }
+    pad_client_ids(&handle_a, &handle_b, options.pad_client_id_a_to_b)?;
+    pad_client_ids(&handle_b, &handle_a, options.pad_client_id_b_to_a)?;
 
     let foreign_clients = bootstrap_foreign_client_pair(&handle_a, &handle_b, options)?;
 
@@ -143,11 +143,12 @@ pub fn bootstrap_foreign_client<ChainA: ChainHandle, ChainB: ChainHandle>(
 pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a: &ChainA,
     chain_b: &ChainB,
+    pad_count: u64,
 ) -> Result<(), Error> {
     let foreign_client =
         ForeignClient::restore(ClientId::default(), chain_b.clone(), chain_a.clone());
 
-    for i in 0..random_u64_range(1, 6) {
+    for i in 0..pad_count {
         debug!("creating new client id {} on chain {}", i + 1, chain_b.id());
         foreign_client.build_create_client_and_send(Default::default())?;
     }
@@ -283,6 +284,18 @@ impl BootstrapClientOptions {
     /// Overrides options for the foreign client connecting chain B to chain A.
     pub fn client_options_b_to_a(mut self, options: ClientOptions) -> Self {
         self.client_options_b_to_a = options;
+        self
+    }
+
+    pub fn bootstrap_with_random_ids(mut self, bootstrap_with_random_ids: bool) -> Self {
+        if bootstrap_with_random_ids {
+            self.pad_client_id_b_to_a = random_u64_range(1, 6);
+            self.pad_client_id_a_to_b = random_u64_range(1, 6);
+        } else {
+            self.pad_client_id_b_to_a = 0;
+            self.pad_client_id_a_to_b = 1;
+        }
+
         self
     }
 }
