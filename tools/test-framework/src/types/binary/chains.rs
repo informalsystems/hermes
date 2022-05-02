@@ -138,6 +138,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ExportEnv for ConnectedChains<Cha
         writer.write_env("CHAIN_ID_A", &format!("{}", self.node_a.chain_id()));
         writer.write_env("CHAIN_ID_B", &format!("{}", self.node_b.chain_id()));
 
+        writer.write_env(
+            "CLIENT_ID_B",
+            &format!("{}", self.foreign_clients.client_a_to_b.id()),
+        );
+        writer.write_env(
+            "CLIENT_ID_A",
+            &format!("{}", self.foreign_clients.client_b_to_a.id()),
+        );
+
         self.node_a.export_env(&mut prefix_writer("NODE_A", writer));
         self.node_b.export_env(&mut prefix_writer("NODE_B", writer));
     }

@@ -155,9 +155,9 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_status(&self) -> Result<ChainStatus, Error> {
-        self.inc_metric("query_status");
-        self.inner().query_status()
+    fn query_application_status(&self) -> Result<ChainStatus, Error> {
+        self.inc_metric("query_application_status");
+        self.inner().query_application_status()
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {

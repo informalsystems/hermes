@@ -4,8 +4,8 @@
 
 use core::time::Duration;
 use eyre::eyre;
-use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics03_connection::connection::State as ConnectionState;
+use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::timestamp::ZERO_DURATION;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -91,6 +91,17 @@ pub fn query_connection_end<ChainA: ChainHandle, ChainB>(
     let connection_end = handle.query_connection(connection_id.value(), Height::zero())?;
 
     Ok(DualTagged::new(connection_end))
+}
+
+pub fn query_identified_connection_end<ChainA: ChainHandle, ChainB>(
+    handle: &ChainA,
+    connection_id: TaggedConnectionIdRef<ChainA, ChainB>,
+) -> Result<DualTagged<ChainA, ChainB, IdentifiedConnectionEnd>, Error> {
+    let connection_end = handle.query_connection(connection_id.value(), Height::zero())?;
+    Ok(DualTagged::new(IdentifiedConnectionEnd::new(
+        connection_id.into_value().clone(),
+        connection_end,
+    )))
 }
 
 pub fn assert_eventually_connection_established<ChainA: ChainHandle, ChainB: ChainHandle>(
