@@ -1444,7 +1444,7 @@ dependencies = [
  "ics23",
  "modelator",
  "num-traits",
- "prost 0.10.1",
+ "prost",
  "prost-types",
  "safe-regex",
  "serde",
@@ -1485,7 +1485,7 @@ version = "0.17.0"
 dependencies = [
  "base64",
  "bytes",
- "prost 0.10.1",
+ "prost",
  "prost-types",
  "schemars",
  "serde",
@@ -1653,13 +1653,12 @@ dependencies = [
 [[package]]
 name = "ics23"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d454cc0a22bd556cc3d3c69f9d75a392a36244634840697a4b9eb81bc5c8ae0"
+source = "git+https://github.com/mzabaluev/ics23.git?branch=prost-0.10#ea7ef846bdd5325584d8fd2c8935ac674d056ae9"
 dependencies = [
  "anyhow",
  "bytes",
  "hex",
- "prost 0.9.0",
+ "prost",
  "ripemd160",
  "sha2 0.9.9",
  "sha3",
@@ -2353,35 +2352,12 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "444879275cb4fd84958b1a1d5420d15e6fcf7c235fe47f053c9c2a80aceb6001"
-dependencies = [
- "bytes",
- "prost-derive 0.9.0",
-]
-
-[[package]]
-name = "prost"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a07b0857a71a8cb765763950499cae2413c3f9cede1133478c43600d9e146890"
 dependencies = [
  "bytes",
- "prost-derive 0.10.1",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
-dependencies = [
- "anyhow",
- "itertools",
- "proc-macro2",
- "quote",
- "syn",
+ "prost-derive",
 ]
 
 [[package]]
@@ -2404,7 +2380,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d0a014229361011dc8e69c8a1ec6c2e8d0f2af7c91e3ea3f5b2170298461e68"
 dependencies = [
  "bytes",
- "prost 0.10.1",
+ "prost",
 ]
 
 [[package]]
@@ -3325,7 +3301,7 @@ dependencies = [
  "k256",
  "num-traits",
  "once_cell",
- "prost 0.10.1",
+ "prost",
  "prost-types",
  "ripemd160",
  "serde",
@@ -3400,7 +3376,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost 0.10.1",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -3725,8 +3701,8 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
- "prost 0.10.1",
- "prost-derive 0.10.1",
+ "prost",
+ "prost-derive",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.0",
