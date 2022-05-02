@@ -968,8 +968,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<TrackedEvents, LinkError> {
         let mut events_result = vec![];
         let _span =
-            span!(Level::DEBUG, "query_send_packet_events", h = %src_query_height)
-                .entered();
+            span!(Level::DEBUG, "query_send_packet_events", h = %src_query_height).entered();
 
         let src_channel_id = self.src_channel_id();
         let dst_channel_id = self.dst_channel_id();
@@ -1090,8 +1089,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 continue;
             }
 
-            events_left_count = events_left_count - c.len();
-            info!(total = %events_total_count, left = %events_left_count, "built packet data for {} events", events.len());
+            events_left_count -= c.len();
+            info!(events_total = %events_total_count, events_left = %events_left_count, "built packet data for {} events;", events.len());
 
             events.set_height(query_height);
 
@@ -1141,8 +1140,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 continue;
             }
 
-            events_left_count = events_left_count - c.len();
-            info!(total = %events_total_count, left = %events_left_count, "built packet data for {} events", events.len());
+            events_left_count -= c.len();
+            info!(events_total = %events_total_count, events_left = %events_left_count, "built packet data for {} events;", events.len());
 
             events.set_height(query_height);
 
