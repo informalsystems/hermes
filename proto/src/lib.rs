@@ -80,10 +80,10 @@ pub mod cosmos {
                     })
                 }
 
-                pub fn first_page(limit: u64, key: Option<Vec<u8>>) -> Option<PageRequest> {
+                pub fn latest_limited(limit: u64) -> Option<PageRequest> {
                     Some(PageRequest {
                         limit,
-                        key: key.unwrap_or_default(),
+                        reverse: true,
                         ..Default::default()
                     })
                 }
