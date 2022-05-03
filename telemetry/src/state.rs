@@ -113,6 +113,7 @@ impl TelemetryState {
         self.receive_packets.add(count, labels);
     }
 
+    /// Number of acknowledgment packets relayed, per channel
     pub fn ibc_acknowledgment_packets(
         &self,
         src_chain: &ChainId,
@@ -129,6 +130,7 @@ impl TelemetryState {
         self.acknowledgment_packets.add(count, labels);
     }
 
+    /// Number of timeout packets relayed, per channel
     pub fn ibc_timeout_packets(
         &self,
         src_chain: &ChainId,
@@ -145,6 +147,7 @@ impl TelemetryState {
         self.timeout_packets.add(count, labels);
     }
 
+    /// Number of queries emitted by the relayer, per chain and query type
     pub fn query(&self, chain_id: &ChainId, query_type: &'static str) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
@@ -154,6 +157,7 @@ impl TelemetryState {
         self.queries.add(1, labels);
     }
 
+    /// Number of cache hits for queries emitted by the relayer, per chain and query type
     pub fn query_cache_hit(&self, chain_id: &ChainId, query_type: &'static str) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
@@ -163,6 +167,7 @@ impl TelemetryState {
         self.query_cache_hits.add(1, labels);
     }
 
+    /// Number of time the relayer had to reconnect to the WebSocket endpoint, per chain
     pub fn ws_reconnect(&self, chain_id: &ChainId) {
         let labels = &[KeyValue::new("chain", chain_id.to_string())];
 
