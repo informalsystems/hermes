@@ -59,6 +59,9 @@ pub struct TelemetryState {
 
     /// Number of time the relayer had to reconnect to the WebSocket endpoint, per chain
     ws_reconnect: Counter<u64>,
+
+    /// How many IBC events did Hermes receive via the WebSocket subscription, per chain
+    ws_events: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -165,6 +168,13 @@ impl TelemetryState {
 
         self.ws_reconnect.add(1, labels);
     }
+
+    /// How many IBC events did Hermes receive via the WebSocket subscription, per chain
+    pub fn ws_events(&self, chain_id: &ChainId, count: u64) {
+        let labels = &[KeyValue::new("chain", chain_id.to_string())];
+
+        self.ws_events.add(count, labels);
+    }
 }
 
 impl Default for TelemetryState {
@@ -220,6 +230,11 @@ impl Default for TelemetryState {
             ws_reconnect: meter
                 .u64_counter("ws_reconnect")
                 .with_description("Number of time the relayer had to reconnect to the WebSocket endpoint, per chain")
+                .init(),
+
+            ws_events: meter
+                .u64_counter("ws_events")
+                .with_description("How many IBC events did Hermes receive via the WebSocket subscription, per chain")
                 .init(),
         }
     }

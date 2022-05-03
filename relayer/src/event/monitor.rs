@@ -404,6 +404,8 @@ impl EventMonitor {
 
     /// Collect the IBC events from the subscriptions
     fn process_batch(&self, batch: EventBatch) -> Result<()> {
+        telemetry!(ws_events, &batch.chain_id, batch.events.len() as u64);
+
         self.tx_batch
             .send(Ok(batch))
             .map_err(|_| Error::channel_send_failed())?;
