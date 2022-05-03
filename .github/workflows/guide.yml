@@ -6,8 +6,6 @@ on:
       - master
     tags:
       - v[0-9]+.*
-    paths:
-      - guide/**
   pull_request:
     paths:
       - guide/**
