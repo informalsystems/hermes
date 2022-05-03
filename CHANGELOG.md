@@ -1,5 +1,94 @@
 # CHANGELOG
 
+## v0.14.1
+
+*May 2nd, 2022*
+
+This release improves the reliability of the relayer by fixing an edge case where
+some queries would fail if they reach a full node after a new block is committed but before the application state updates to reflect the changes in that block.
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Fixed query for application status when application state lags behind blockchain state.
+    ([#1970](https://github.com/informalsystems/ibc-rs/issues/1970))
+
+## v0.14.0
+
+*April 27th, 2022*
+
+This release notably features a new [`query packet pending`][pending] command to
+list outstanding packet commitments that are either unreceived or pending
+acknowledgement at both ends of a channel.
+
+The `ibc` crate now also come with a complete [ICS 026][ics-26] implementation.
+
+### Note for operators
+
+There is a new `query packet pending` command, see above for more information.
+
+The `create channel` command now requires an existing client and connection,
+unless the `--new-client-connection` flag is provided.
+Please [refer to the guide][create-channel] for more information.
+
+[ics-26]: https://github.com/cosmos/ibc/blob/master/spec/core/ics-026-routing-module/README.md
+[pending]: https://hermes.informal.systems/commands/queries/packet.html#pending-packets
+[create-channel]: http://hermes.informal.systems/commands/path-setup/channels.html#establish-channel
+
+### BREAKING CHANGES
+
+- `create channel` now requires a `--new-client-connection` flag to create a new client and connection for the channel
+  ([#1421](https://github.com/informalsystems/ibc-rs/issues/1421))
+- Update MSRV to Rust 1.60
+  ([#2081](https://github.com/informalsystems/ibc-rs/issues/2081))
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Make all handlers emit an IbcEvent with current host chain height as height parameter value.
+    ([#2035](https://github.com/informalsystems/ibc-rs/issues/2035))
+  - Use the version in the message when handling a MsgConnOpenInit
+    ([#2062](https://github.com/informalsystems/ibc-rs/issues/2062))
+- [Relayer Library](relayer)
+  - Fix the connection delay logic to use the timestamp of the host block when the client update header was installed.
+    ([#1772](https://github.com/informalsystems/ibc-rs/issues/1772))
+  - Fixed Hermes retrying mechanism not regenerating operational data for messages ([#1792](https://github.com/informalsystems/ibc-rs/pull/1951))
+  - Adjusted max_block_time default value to 30s
+    ([#1998](https://github.com/informalsystems/ibc-rs/issues/1998))
+  - Fix a bug in the wildcard filter where pattern would match in the middle of a
+    string ([#2075](https://github.com/informalsystems/ibc-rs/issues/2075))
+  - Fixed target height used in misbehavior detection.
+    ([#2097](https://github.com/informalsystems/ibc-rs/issues/2097))
+- [Relayer CLI](relayer-cli)
+  - Skip waiting for confirmation events on tx raw upgrade-chain
+    ([#1288](https://github.com/informalsystems/ibc-rs/issues/1288))
+  - Apply client options specified with the `create client` command.
+    ([#1921](https://github.com/informalsystems/ibc-rs/issues/1921))
+
+### FEATURES
+
+- [Relayer Library](relayer)
+  - Add a metric for query cache hits
+    ([#2036](https://github.com/informalsystems/ibc-rs/issues/2036))
+
+### IMPROVEMENTS
+
+- General
+  - Log `missing chain in configuration` errors emitted during event processing at
+    debug level ([#1936](https://github.com/informalsystems/ibc-rs/issues/1936))
+  - Update tendermint-rs dependencies to v0.23.6
+    ([#2045](https://github.com/informalsystems/ibc-rs/issues/2045))
+- [IBC Modules](modules)
+  - Complete ICS26 implementation ([#1758](https://github.com/informalsystems/ibc-rs/issues/1758))
+  - Improve `ChannelId` validation. ([#2068](https://github.com/informalsystems/ibc-rs/issues/2068))
+- [Relayer CLI](relayer-cli)
+  - Change `create channel` CLI command such that it is more difficult to create
+    clients / connections using it ([#1421](https://github.com/informalsystems/ibc-rs/issues/1421))
+  - Added `query packet pending` command to list outstanding packet
+    commitments that are either unreceived or pending acknowledgement
+    at both ends of a channel.
+    ([#1862](https://github.com/informalsystems/ibc-rs/issues/1862))
+
 ## v0.13.0
 *March 28th, 2022*
 

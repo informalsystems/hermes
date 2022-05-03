@@ -6,23 +6,47 @@
 
 ## Create Client
 
-Use the `create client` command to create a new client.
+Use the `create client` command to create a new client on a destination chain,
+tracking the state of the source chain.
 
 ```shell
 USAGE:
-    hermes create client <OPTIONS>
+    hermes create client [OPTIONS] <DST_CHAIN_ID> <SRC_CHAIN_ID>
 
-DESCRIPTION:
-    Create a new IBC client
+ARGS:
+    <DST_CHAIN_ID>
+            identifier of the destination chain
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
+    <SRC_CHAIN_ID>
+            identifier of the source chain
+
+OPTIONS:
+    -d, --clock-drift <CLOCK_DRIFT>
+            The maximum allowed clock drift for this client.
+
+            The clock drift is a correction parameter. It helps deal with clocks that are only
+            approximately synchronized between the source and destination chains of this client. The
+            destination chain for this client uses the clock drift parameter when deciding to accept
+            or reject a new header (originating from the source chain) for this client. If this
+            option is not specified, a suitable clock drift value is derived from the chain
+            configurations.
+
+    -p, --trusting-period <TRUSTING_PERIOD>
+            Override the trusting period specified in the config.
+
+            The trusting period specifies how long a validator set is trusted for (must be shorter
+            than the chain's unbonding period).
+
+    -t, --trust-threshold <TRUST_THRESHOLD>
+            Override the trust threshold specified in the configuration.
+
+            The trust threshold defines what fraction of the total voting power of a known and
+            trusted validator set is sufficient for a commit to be accepted going forward.
 ```
 
 __Example__
 
-Create a new client of `ibc-1` on `ibc-0`:
+Create a new client on `ibc-0` which tracks `ibc-1`:
 
 ```shell
 hermes create client ibc-0 ibc-1
@@ -57,18 +81,16 @@ Specific update and trusted heights can be specified.
 
 ```shell
 USAGE:
-    hermes update client <OPTIONS>
+    hermes update client [OPTIONS] <DST_CHAIN_ID> <DST_CLIENT_ID>
 
-DESCRIPTION:
-    Update an IBC client
+ARGS:
+    <DST_CHAIN_ID>     identifier of the destination chain
+    <DST_CLIENT_ID>    identifier of the client to be updated on destination chain
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    dst_client_id             identifier of the client to be updated on destination chain
-
-FLAGS:
-    -H, --target-height TARGET-HEIGHT
-    -t, --trusted-height TRUSTED-HEIGHT
+OPTIONS:
+    -h, --help                               Print help information
+    -H, --target-height <TARGET_HEIGHT>      the target height of the client update
+    -t, --trusted-height <TRUSTED_HEIGHT>    the trusted height of the client update
 ```
 
 __Update client with latest header__

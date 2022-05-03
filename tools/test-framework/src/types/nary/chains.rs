@@ -7,10 +7,11 @@ use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use super::aliases::*;
-use super::foreign_client::*;
 use crate::error::Error;
 use crate::types::binary::chains::ConnectedChains as BinaryConnectedChains;
+use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
+use crate::types::nary::aliases::*;
+use crate::types::nary::foreign_client::*;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
 use crate::util::array::try_into_array;
@@ -235,5 +236,20 @@ impl<Handle: ChainHandle> From<NaryConnectedChains<Handle, 2>>
 {
     fn from(chains: NaryConnectedChains<Handle, 2>) -> Self {
         chains.connected_chains_at::<0, 1>().unwrap()
+    }
+}
+
+impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for NaryConnectedChains<Handle, SIZE> {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        for (i, node) in self.full_nodes.iter().enumerate() {
+            writer.write_env(
+                &format!("CHAIN_ID_{}", i),
+                &format!("{}", node.chain_driver.chain_id),
+            );
+
+            self.foreign_clients.export_env(writer);
+
+            node.export_env(&mut prefix_writer(&format!("NODE_{}", i), writer));
+        }
     }
 }

@@ -11,8 +11,8 @@ use crate::error::Error;
 /// Otherwise query for the account information, update the `Option` to `Some`,
 /// and return the underlying `&mut` reference.
 pub async fn get_or_fetch_account<'a>(
-    grpc_address: &Uri,
-    account_address: &str,
+    grpc_address: &'a Uri,
+    account_address: &'a str,
     m_account: &'a mut Option<Account>,
 ) -> Result<&'a mut Account, Error> {
     match m_account {

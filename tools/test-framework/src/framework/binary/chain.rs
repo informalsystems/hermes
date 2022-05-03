@@ -206,7 +206,8 @@ where
 
         let bootstrap_options = BootstrapClientOptions::default()
             .client_options_a_to_b(overrides.client_options_a_to_b())
-            .client_options_b_to_a(overrides.client_options_b_to_a());
+            .client_options_b_to_a(overrides.client_options_b_to_a())
+            .bootstrap_with_random_ids(config.bootstrap_with_random_ids);
 
         let (relayer, chains) = bootstrap_chains_with_full_nodes(
             config,
