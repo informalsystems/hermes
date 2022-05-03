@@ -84,9 +84,9 @@ mod tests {
 
     #[test]
     fn conn_open_init_msg_processing() {
-        struct Test {
+        struct Test<'a> {
             name: String,
-            ctx: MockContext,
+            ctx: &'a MockContext,
             msg: ConnectionMsg,
             expected_versions: Vec<Version>,
             want_pass: bool,
@@ -112,31 +112,31 @@ mod tests {
             .clone()
             .with_client(&msg_conn_init_default.client_id, Height::new(0, 10));
 
-        let tests: Vec<Test> = vec![
+        let tests: Vec<Test<'_>> = vec![
             Test {
                 name: "Processing fails because no client exists in the context".to_string(),
-                ctx: default_context,
+                ctx: &default_context,
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_default.clone()),
                 expected_versions: vec![msg_conn_init_default.version.clone().unwrap()],
                 want_pass: false,
             },
             Test {
                 name: "Incompatible version in MsgConnectionOpenInit msg".to_string(),
-                ctx: good_context.clone(),
+                ctx: &good_context,
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_bad_version),
                 expected_versions: vec![],
                 want_pass: false,
             },
             Test {
                 name: "No version in MsgConnectionOpenInit msg".to_string(),
-                ctx: good_context.clone(),
+                ctx: &good_context,
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_no_version),
                 expected_versions: good_context.get_compatible_versions(),
                 want_pass: true,
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: good_context,
+                ctx: &good_context,
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_default.clone()),
                 expected_versions: vec![msg_conn_init_default.version.unwrap()],
                 want_pass: true,
@@ -146,7 +146,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = dispatch(&test.ctx, test.msg.clone());
+            let res = dispatch(test.ctx, test.msg.clone());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
