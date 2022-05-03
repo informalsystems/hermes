@@ -348,43 +348,40 @@ impl EventMonitor {
                     error!("[{}] {}", self.chain_id, e);
                 }),
                 Err(e) => {
-                    match e.detail() {
-                        ErrorDetail::SubscriptionCancelled(reason) => {
-                            error!(
-                                "[{}] subscription cancelled, reason: {}",
-                                self.chain_id, reason
-                            );
+                    if let ErrorDetail::SubscriptionCancelled(reason) = e.detail() {
+                        error!(
+                            "[{}] subscription cancelled, reason: {}",
+                            self.chain_id, reason
+                        );
 
-                            self.propagate_error(e).unwrap_or_else(|e| {
-                                error!("[{}] {}", self.chain_id, e);
-                            });
+                        self.propagate_error(e).unwrap_or_else(|e| {
+                            error!("[{}] {}", self.chain_id, e);
+                        });
 
-                            telemetry!(ws_reconnect, &self.chain_id);
+                        telemetry!(ws_reconnect, &self.chain_id);
 
-                            // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
-                            self.reconnect();
+                        // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                        self.reconnect();
 
-                            // Abort this event loop, the `run` method will start a new one.
-                            // We can't just write `return self.run()` here because Rust
-                            // does not perform tail call optimization, and we would
-                            // thus potentially blow up the stack after many restarts.
-                            return Next::Continue;
-                        }
-                        _ => {
-                            error!("[{}] failed to collect events: {}", self.chain_id, e);
+                        // Abort this event loop, the `run` method will start a new one.
+                        // We can't just write `return self.run()` here because Rust
+                        // does not perform tail call optimization, and we would
+                        // thus potentially blow up the stack after many restarts.
+                        return Next::Continue;
+                    } else {
+                        error!("[{}] failed to collect events: {}", self.chain_id, e);
 
-                            telemetry!(ws_reconnect, &self.chain_id);
+                        telemetry!(ws_reconnect, &self.chain_id);
 
-                            // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
-                            self.reconnect();
+                        // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                        self.reconnect();
 
-                            // Abort this event loop, the `run` method will start a new one.
-                            // We can't just write `return self.run()` here because Rust
-                            // does not perform tail call optimization, and we would
-                            // thus potentially blow up the stack after many restarts.
-                            return Next::Continue;
-                        }
-                    }
+                        // Abort this event loop, the `run` method will start a new one.
+                        // We can't just write `return self.run()` here because Rust
+                        // does not perform tail call optimization, and we would
+                        // thus potentially blow up the stack after many restarts.
+                        return Next::Continue;
+                    };
                 }
             }
         }
