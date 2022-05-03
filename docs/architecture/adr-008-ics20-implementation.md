@@ -1,4 +1,8 @@
-# ADR 007: ICS20 Implementation Proposal
+# ADR 008: ICS20 Implementation Proposal
+
+## Status
+
+Accepted
 
 ## Changelog
 
@@ -213,9 +217,6 @@ pub fn refund_packet_token<Ctx>(_ctx: &Ctx, _data: &FungibleTokenPacketData) -> 
 }
 ```
 
-## Status
-
-Proposed
 
 ## Consequences
 
