@@ -56,6 +56,9 @@ pub struct TelemetryState {
 
     /// Number of cache hits for queries emitted by the relayer, per chain and query type
     query_cache_hits: Counter<u64>,
+
+    /// Number of time the relayer had to reconnect to the WebSocket endpoint, per chain
+    ws_reconnect: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -156,6 +159,12 @@ impl TelemetryState {
 
         self.query_cache_hits.add(1, labels);
     }
+
+    pub fn ws_reconnect(&self, chain_id: &ChainId) {
+        let labels = &[KeyValue::new("chain", chain_id.to_string())];
+
+        self.ws_reconnect.add(1, labels);
+    }
 }
 
 impl Default for TelemetryState {
@@ -206,6 +215,11 @@ impl Default for TelemetryState {
             query_cache_hits: meter
                 .u64_counter("cache_hits")
                 .with_description("Number of cache hits for queries emitted by the relayer, per chain and query type")
+                .init(),
+
+            ws_reconnect: meter
+                .u64_counter("ws_reconnect")
+                .with_description("Number of time the relayer had to reconnect to the WebSocket endpoint, per chain")
                 .init(),
         }
     }

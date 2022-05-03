@@ -20,9 +20,12 @@ use ibc::{
     core::ics02_client::height::Height, core::ics24_host::identifier::ChainId, events::IbcEvent,
 };
 
-use crate::util::{
-    retry::{retry_count, retry_with_index, RetryResult},
-    stream::try_group_while,
+use crate::{
+    telemetry,
+    util::{
+        retry::{retry_count, retry_with_index, RetryResult},
+        stream::try_group_while,
+    },
 };
 
 mod error;
@@ -356,6 +359,8 @@ impl EventMonitor {
                                 error!("[{}] {}", self.chain_id, e);
                             });
 
+                            telemetry!(ws_reconnect, &self.chain_id);
+
                             // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
                             self.reconnect();
 
@@ -367,6 +372,8 @@ impl EventMonitor {
                         }
                         _ => {
                             error!("[{}] failed to collect events: {}", self.chain_id, e);
+
+                            telemetry!(ws_reconnect, &self.chain_id);
 
                             // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
                             self.reconnect();
