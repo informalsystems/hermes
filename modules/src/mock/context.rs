@@ -96,7 +96,10 @@ impl Default for MockContext {
 /// is a shared ptr.
 impl Clone for MockContext {
     fn clone(&self) -> Self {
-        let ibc_store = Arc::new(Mutex::new(MockIbcStore::default()));
+        let ibc_store = {
+            let ibc_store = self.ibc_store.lock().unwrap().clone();
+            Arc::new(Mutex::new(ibc_store))
+        };
         Self {
             host_chain_type: self.host_chain_type,
             host_chain_id: self.host_chain_id.clone(),
