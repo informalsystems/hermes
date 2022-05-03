@@ -53,7 +53,7 @@ use crate::Height;
 pub const DEFAULT_BLOCK_TIME_SECS: u64 = 3;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct MockContext {
     /// The type of host chain underlying this mock context.
     host_chain_type: HostType,
@@ -89,6 +89,23 @@ impl Default for MockContext {
             5,
             Height::new(0, 5),
         )
+    }
+}
+
+/// A manual clone impl is provided because the tests are oblivious to the fact that the `ibc_store`
+/// is a shared ptr.
+impl Clone for MockContext {
+    fn clone(&self) -> Self {
+        let ibc_store = Arc::new(Mutex::new(MockIbcStore::default()));
+        Self {
+            host_chain_type: self.host_chain_type,
+            host_chain_id: self.host_chain_id.clone(),
+            max_history_size: self.max_history_size,
+            history: self.history.clone(),
+            block_time: self.block_time,
+            ibc_store,
+            router: self.router.clone(),
+        }
     }
 }
 
