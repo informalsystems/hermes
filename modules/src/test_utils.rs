@@ -18,6 +18,7 @@ use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::error::Error as Ics03Error;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
@@ -125,16 +126,13 @@ impl ChannelKeeper for DummyTransferModule {
     fn store_packet_commitment(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        timeout_timestamp: Timestamp,
-        timeout_height: Height,
-        data: Vec<u8>,
+        commitment: PacketCommitment,
     ) -> Result<(), Error> {
-        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
         self.ibc_store
             .lock()
             .unwrap()
             .packet_commitment
-            .insert(key, ChannelReader::hash(self, input));
+            .insert(key, commitment);
         Ok(())
     }
 
@@ -156,7 +154,7 @@ impl ChannelKeeper for DummyTransferModule {
     fn store_packet_acknowledgement(
         &mut self,
         _key: (PortId, ChannelId, Sequence),
-        _ack: Vec<u8>,
+        _ack: AcknowledgementCommitment,
     ) -> Result<(), Error> {
         unimplemented!()
     }
@@ -423,7 +421,10 @@ impl ChannelReader for DummyTransferModule {
         unimplemented!()
     }
 
-    fn get_packet_commitment(&self, _key: &(PortId, ChannelId, Sequence)) -> Result<String, Error> {
+    fn get_packet_commitment(
+        &self,
+        _key: &(PortId, ChannelId, Sequence),
+    ) -> Result<PacketCommitment, Error> {
         unimplemented!()
     }
 
@@ -434,15 +435,14 @@ impl ChannelReader for DummyTransferModule {
     fn get_packet_acknowledgement(
         &self,
         _key: &(PortId, ChannelId, Sequence),
-    ) -> Result<String, Error> {
+    ) -> Result<AcknowledgementCommitment, Error> {
         unimplemented!()
     }
 
-    fn hash(&self, input: String) -> String {
+    fn hash(&self, value: Vec<u8>) -> Vec<u8> {
         use sha2::Digest;
 
-        let r = sha2::Sha256::digest(input.as_bytes());
-        format!("{:x}", r)
+        sha2::Sha256::digest(value).to_vec()
     }
 
     fn host_height(&self) -> Height {
