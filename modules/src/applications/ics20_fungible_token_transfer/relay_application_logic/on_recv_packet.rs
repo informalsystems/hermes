@@ -1,13 +1,15 @@
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::applications::ics20_fungible_token_transfer::error::Error as Ics20Error;
+use crate::applications::ics20_fungible_token_transfer::events::DenomTraceEvent;
 use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
 use crate::applications::ics20_fungible_token_transfer::{IbcCoin, Source, TracePrefix};
 use crate::core::ics04_channel::packet::Packet;
-use crate::core::ics26_routing::context::WriteFn;
+use crate::core::ics26_routing::context::{ModuleOutputBuilder, WriteFn};
 use crate::prelude::*;
 
 pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
     ctx: &Ctx,
+    output: &mut ModuleOutputBuilder,
     packet: &Packet,
     data: PacketData,
 ) -> Result<Box<WriteFn>, Ics20Error> {
@@ -54,6 +56,12 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
                 c.denom.add_prefix(prefix);
                 c
             };
+
+            let denom_trace_event = DenomTraceEvent {
+                trace_hash: coin.denom.hashed(),
+                denom: coin.denom.clone(),
+            };
+            output.emit(denom_trace_event.into());
 
             Ok(Box::new(move |ctx| {
                 let ctx = ctx.downcast_mut::<Ctx>().unwrap();

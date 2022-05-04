@@ -11,6 +11,7 @@ use crate::applications::ics20_fungible_token_transfer::relay_application_logic:
 use crate::applications::ics20_fungible_token_transfer::{
     DenomTrace, HashedDenom, IbcCoin, VERSION,
 };
+use crate::applications::ics20_fungible_token_transfer::events::RecvEvent;
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::on_timeout_packet::process_timeout_packet;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
@@ -270,12 +271,20 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
         }
     };
 
-    // TODO(hu55a1n1): emit event
-
-    match process_recv_packet(ctx, packet, data) {
+    let ack = match process_recv_packet(ctx, output, packet, data.clone()) {
         Ok(write_fn) => OnRecvPacketAck::Successful(Box::new(Acknowledgement::success()), write_fn),
         Err(e) => OnRecvPacketAck::Failed(Box::new(Acknowledgement::from_error(e))),
-    }
+    };
+
+    let recv_event = RecvEvent {
+        receiver: data.receiver,
+        denom: data.token.denom,
+        amount: data.token.amount,
+        success: ack.is_successful(),
+    };
+    output.emit(recv_event.into());
+
+    ack
 }
 
 pub fn on_acknowledgement_packet(

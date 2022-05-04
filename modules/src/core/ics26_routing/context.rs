@@ -89,6 +89,12 @@ pub enum OnRecvPacketAck {
     Failed(Box<dyn Acknowledgement>),
 }
 
+impl OnRecvPacketAck {
+    pub fn is_successful(&self) -> bool {
+        matches!(self, OnRecvPacketAck::Successful(_, _))
+    }
+}
+
 pub type ModuleOutputBuilder = HandlerOutputBuilder<(), ModuleEvent>;
 
 pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
