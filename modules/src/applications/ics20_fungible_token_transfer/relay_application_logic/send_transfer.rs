@@ -111,6 +111,11 @@ where
             .with_result(()),
     );
 
+    output.log(format!(
+        "IBC fungible token transfer: {} --({})--> {}",
+        msg.sender, msg.token, msg.receiver
+    ));
+
     let transfer_event = TransferEvent {
         sender: msg.sender,
         receiver: msg.receiver,

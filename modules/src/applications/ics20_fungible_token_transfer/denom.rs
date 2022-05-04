@@ -347,6 +347,15 @@ impl IbcCoin {
     }
 }
 
+impl fmt::Display for IbcCoin {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IbcCoin::Hashed(coin) => write!(f, "{}-{}", coin.amount, coin.denom),
+            IbcCoin::Base(coin) => write!(f, "{}-{}", coin.amount, coin.denom),
+        }
+    }
+}
+
 impl TryFrom<RawCoin> for IbcCoin {
     type Error = Error;
 
