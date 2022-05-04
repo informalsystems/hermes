@@ -11,7 +11,6 @@ const EVENT_TYPE_TIMEOUT: &str = "timeout";
 const EVENT_TYPE_DENOM_TRACE: &str = "denomination_trace";
 const EVENT_TYPE_TRANSFER: &str = "ibc_transfer";
 
-#[allow(unused)]
 pub enum Event {
     Recv(RecvEvent),
     Ack(AckEvent),

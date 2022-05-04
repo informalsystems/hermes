@@ -10,7 +10,6 @@ use crate::events::ModuleEvent;
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 use crate::prelude::*;
 
-#[allow(unused)]
 pub(crate) fn send_transfer<Ctx>(
     ctx: &mut Ctx,
     output: &mut HandlerOutputBuilder<()>,

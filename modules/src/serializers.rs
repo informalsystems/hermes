@@ -17,7 +17,6 @@ pub mod serde_string {
 
     use serde::{de, Deserialize, Deserializer, Serializer};
 
-    #[allow(unused)]
     pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         T: Display,
