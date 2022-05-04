@@ -34,6 +34,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 
+use crate::account::Balance;
 use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
@@ -127,6 +128,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         self.inner().ibc_version()
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        self.inner().query_balance()
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

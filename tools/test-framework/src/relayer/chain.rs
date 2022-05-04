@@ -54,6 +54,7 @@ use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusS
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
+use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::tx::TrackedMsgs;
@@ -391,5 +392,9 @@ where
 
     fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
         self.value().query_host_consensus_state(height)
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        self.value().query_balance()
     }
 }

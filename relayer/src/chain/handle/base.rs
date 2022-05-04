@@ -37,6 +37,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{
+    account::Balance,
     chain::{client::ClientSettings, tx::TrackedMsgs, ChainStatus},
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -142,6 +143,10 @@ impl ChainHandle for BaseChainHandle {
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        self.send(|reply_to| ChainRequest::QueryBalance { reply_to })
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
