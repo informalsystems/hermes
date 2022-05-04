@@ -15,6 +15,7 @@ const EVENT_TYPE_TRANSFER: &str = "ibc_transfer";
 pub enum Event {
     Recv(RecvEvent),
     Ack(AckEvent),
+    AckStatus(AckStatusEvent),
     Timeout(TimeoutEvent),
     DenomTrace(DenomTraceEvent),
     Transfer(TransferEvent),
@@ -73,6 +74,29 @@ impl From<AckEvent> for ModuleEvent {
                 ("acknowledgement", acknowledgement).into(),
             ],
         }
+    }
+}
+
+pub struct AckStatusEvent {
+    pub acknowledgement: Acknowledgement,
+}
+
+impl From<AckStatusEvent> for ModuleEvent {
+    fn from(ev: AckStatusEvent) -> Self {
+        let AckStatusEvent { acknowledgement } = ev;
+        let mut event = Self {
+            kind: EVENT_TYPE_PACKET.to_string(),
+            module_name: MODULE_ID_STR.parse().expect("invalid ModuleId"),
+            attributes: vec![],
+        };
+        let attr_label = match acknowledgement {
+            Acknowledgement::Success(_) => "success",
+            Acknowledgement::Error(_) => "error",
+        };
+        event
+            .attributes
+            .push((attr_label, acknowledgement.to_string()).into());
+        event
     }
 }
 
@@ -138,6 +162,7 @@ impl From<Event> for ModuleEvent {
         match ev {
             Event::Recv(ev) => ev.into(),
             Event::Ack(ev) => ev.into(),
+            Event::AckStatus(ev) => ev.into(),
             Event::Timeout(ev) => ev.into(),
             Event::DenomTrace(ev) => ev.into(),
             Event::Transfer(ev) => ev.into(),
