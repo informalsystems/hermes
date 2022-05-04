@@ -1064,7 +1064,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     ///
     /// The optional `u64` can be used to limit the number of consensus states that
     /// are requested.
-    fn consensus_states(
+    fn consensus_states_with_limit(
         &self,
         result_limit: Option<u64>,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, ForeignClientError> {
@@ -1113,7 +1113,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // [TODO] Utilize query that only fetches consensus state heights
         // https://github.com/cosmos/ibc-go/issues/798
         let consensus_state_heights: Vec<Height> = self
-            .consensus_states(None)?
+            .consensus_states_with_limit(None)?
             .iter()
             .map(|cs| cs.height)
             .collect();
@@ -1133,7 +1133,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Iterate through the available consensus heights and find one
         // that is lower than the target height.
         if let Some(res) = self
-            .consensus_states(Some(OPTIMISTIC_CONSENSUS_STATES_QUERY_LIMIT))?
+            .consensus_states_with_limit(Some(OPTIMISTIC_CONSENSUS_STATES_QUERY_LIMIT))?
             .iter()
             .map(|cs| cs.height)
             .find(|h| h < &upper_bound)
@@ -1144,7 +1144,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // The optimistic query was not enough. We'll pull _all_ the consensus states
             // and pick an appropriate height among those.
             warn!("resolving trusted height from the full list of consensus state heights; this may take a while");
-            self.consensus_states(None)?
+            self.consensus_states_with_limit(None)?
                 .iter()
                 .map(|cs| cs.height)
                 .find(|h| h < &upper_bound)
