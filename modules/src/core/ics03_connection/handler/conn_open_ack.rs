@@ -39,7 +39,7 @@ pub(crate) fn process(
     let prev_counterparty = conn_end.counterparty();
     let counterparty = Counterparty::new(
         prev_counterparty.client_id().clone(),
-        Some(msg.connection_id.clone()),
+        Some(msg.counterparty_connection_id.clone()),
         prev_counterparty.prefix().clone(),
     );
     conn_end.set_state(State::Open);
@@ -48,9 +48,9 @@ pub(crate) fn process(
 
     // The counterparty is the local chain.
     let counterparty = Counterparty::new(
-        conn_end.client_id().clone(), // The local client identifier.
-        Some(msg.counterparty_connection_id.clone()), // This chain's connection id as known on counterparty.
-        ctx.commitment_prefix(),                      // Local commitment prefix.
+        conn_end.client_id().clone(),    // The local client identifier.
+        Some(msg.connection_id.clone()), // This chain's connection id as known on counterparty.
+        ctx.commitment_prefix(),         // Local commitment prefix.
     );
 
     // Proof verification.
