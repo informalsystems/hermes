@@ -204,14 +204,16 @@ where
     fn run(&self, config: &TestConfig, node_a: FullNode, node_b: FullNode) -> Result<(), Error> {
         let overrides = self.test.get_overrides();
 
+        let bootstrap_options = BootstrapClientOptions::default()
+            .client_options_a_to_b(overrides.client_options_a_to_b())
+            .client_options_b_to_a(overrides.client_options_b_to_a())
+            .bootstrap_with_random_ids(config.bootstrap_with_random_ids);
+
         let (relayer, chains) = bootstrap_chains_with_full_nodes(
             config,
             node_a,
             node_b,
-            BootstrapClientOptions {
-                client_options_a_to_b: overrides.client_options_a_to_b(),
-                client_options_b_to_a: overrides.client_options_b_to_a(),
-            },
+            bootstrap_options,
             |config| {
                 overrides.modify_relayer_config(config);
             },

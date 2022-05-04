@@ -22,7 +22,8 @@ use crate::util::random::random_u64_range;
 pub struct BootstrapChannelOptions {
     pub order: Order,
     pub version: Version,
-    pub bootstrap_with_random_ids: bool,
+    pub pad_channel_id_a: u64,
+    pub pad_channel_id_b: u64,
 }
 
 /**
@@ -83,10 +84,20 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
     port_b: &TaggedPortIdRef<ChainB, ChainA>,
     options: BootstrapChannelOptions,
 ) -> Result<ConnectedChannel<ChainA, ChainB>, Error> {
-    if options.bootstrap_with_random_ids {
-        pad_channel_id(chain_a, chain_b, &connection, port_a)?;
-        pad_channel_id(chain_b, chain_a, &connection.clone().flip(), port_b)?;
-    }
+    pad_channel_id(
+        chain_a,
+        chain_b,
+        &connection,
+        port_a,
+        options.pad_channel_id_a,
+    )?;
+    pad_channel_id(
+        chain_b,
+        chain_a,
+        &connection.clone().flip(),
+        port_b,
+        options.pad_channel_id_b,
+    )?;
 
     let channel = Channel::new(
         connection.connection.clone(),
@@ -143,11 +154,12 @@ pub fn pad_channel_id<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_b: &ChainB,
     connection: &ConnectedConnection<ChainA, ChainB>,
     port_id: &TaggedPortIdRef<ChainA, ChainB>,
+    pad_count: u64,
 ) -> Result<(), Error> {
     let client_id_a = &connection.client_ids.client_id_a;
     let client_id_b = &connection.client_ids.client_id_b;
 
-    for i in 0..random_u64_range(1, 6) {
+    for i in 0..pad_count {
         debug!(
             "creating new channel id {} on chain/connection/client {}/{}/{}",
             i + 1,
@@ -188,7 +200,32 @@ impl Default for BootstrapChannelOptions {
         Self {
             order: Order::Unordered,
             version: Version::ics20(),
-            bootstrap_with_random_ids: false,
+            pad_channel_id_a: 0,
+            pad_channel_id_b: 1,
         }
+    }
+}
+
+impl BootstrapChannelOptions {
+    pub fn order(mut self, order: Order) -> Self {
+        self.order = order;
+        self
+    }
+
+    pub fn version(mut self, version: Version) -> Self {
+        self.version = version;
+        self
+    }
+
+    pub fn bootstrap_with_random_ids(mut self, bootstrap_with_random_ids: bool) -> Self {
+        if bootstrap_with_random_ids {
+            self.pad_channel_id_a = random_u64_range(0, 6);
+            self.pad_channel_id_b = random_u64_range(0, 6);
+        } else {
+            self.pad_channel_id_a = 0;
+            self.pad_channel_id_b = 1;
+        }
+
+        self
     }
 }

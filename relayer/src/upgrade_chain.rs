@@ -5,16 +5,17 @@ use core::time::Duration;
 
 use bytes::BufMut;
 use flex_error::define_error;
-use ibc::clients::ics07_tendermint::client_state::UpgradeOptions;
-use ibc::downcast;
-use ibc_proto::google::protobuf::Any;
 
+use tendermint::abci::transaction::Hash as TxHash;
+
+use ibc::clients::ics07_tendermint::client_state::UpgradeOptions;
 use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc::events::IbcEvent;
+use ibc::downcast;
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::{Plan, SoftwareUpgradeProposal};
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
 use crate::chain::tx::TrackedMsgs;
@@ -68,9 +69,9 @@ pub fn build_and_send_ibc_upgrade_proposal(
     mut dst_chain: CosmosSdkChain, // the chain which will undergo an upgrade
     src_chain: CosmosSdkChain, // the source chain; supplies a client state for building the upgrade plan
     opts: &UpgradePlanOptions,
-) -> Result<Vec<IbcEvent>, UpgradeChainError> {
+) -> Result<TxHash, UpgradeChainError> {
     let upgrade_height = dst_chain
-        .query_latest_height()
+        .query_chain_latest_height()
         .map_err(UpgradeChainError::query)?
         .add(opts.height_offset);
 
@@ -140,20 +141,16 @@ pub fn build_and_send_ibc_upgrade_proposal(
         value: buf_msg,
     };
 
-    let events = dst_chain
-        .send_messages_and_wait_commit(TrackedMsgs::new_single(any_msg, "upgrade"))
+    // Can't use send_messages_and_wait_commit because no IBC events
+    // corresponding to the transaction can be recognized to confirm the
+    // upgrade.
+    // https://github.com/informalsystems/ibc-rs/issues/1288#issuecomment-1066884163
+
+    let responses = dst_chain
+        .send_messages_and_wait_check_tx(TrackedMsgs::new_single(any_msg, "upgrade"))
         .map_err(|e| UpgradeChainError::submit(dst_chain.id().clone(), e))?;
 
-    // Check if the chain rejected the transaction
-    let result = events.iter().find_map(|event| match event {
-        IbcEvent::ChainError(reason) => Some(reason.clone()),
-        _ => None,
-    });
-
-    match result {
-        None => Ok(events),
-        Some(reason) => Err(UpgradeChainError::tx_response(reason)),
-    }
+    Ok(responses[0].hash)
 }
 
 enum Proposal {

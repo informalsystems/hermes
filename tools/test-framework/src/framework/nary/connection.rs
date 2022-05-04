@@ -5,6 +5,7 @@
 */
 
 use ibc_relayer::chain::handle::ChainHandle;
+use tracing::info;
 
 use crate::bootstrap::nary::connection::bootstrap_connections;
 use crate::error::Error;
@@ -17,6 +18,7 @@ use crate::framework::nary::node::run_nary_node_test;
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
+use crate::types::env::write_env;
 use crate::types::nary::chains::NaryConnectedChains;
 use crate::types::nary::connection::ConnectedConnections;
 use crate::util::suspend::hang_on_error;
@@ -109,6 +111,12 @@ where
             connection_delay,
             config.bootstrap_with_random_ids,
         )?;
+
+        let env_path = config.chain_store_dir.join("nary-connections.env");
+
+        write_env(&env_path, &(&chains, &(&relayer, &connections)))?;
+
+        info!("written channel environment to {}", env_path.display());
 
         self.test.run(config, relayer, chains, connections)?;
 

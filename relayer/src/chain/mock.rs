@@ -40,7 +40,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::chain::client::ClientSettings;
-use crate::chain::{ChainEndpoint, StatusResponse};
+use crate::chain::{ChainEndpoint, ChainStatus};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -170,8 +170,8 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_status(&self) -> Result<StatusResponse, Error> {
-        Ok(StatusResponse {
+    fn query_application_status(&self) -> Result<ChainStatus, Error> {
+        Ok(ChainStatus {
             height: self.context.host_height(),
             timestamp: self.context.host_timestamp(),
         })

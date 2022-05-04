@@ -71,8 +71,8 @@ impl KeyEntry {
 
         // Decode the private key from the mnemonic
         let private_key = private_key_from_mnemonic(&key_file.mnemonic, hd_path)?;
-        let derived_pubkey = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
-        let derived_pubkey_bytes = derived_pubkey.public_key.to_bytes();
+        let derived_pubkey = ExtendedPubKey::from_priv(&Secp256k1::new(), &private_key);
+        let derived_pubkey_bytes = derived_pubkey.to_pub().to_bytes();
         assert!(derived_pubkey_bytes.len() <= keyfile_pubkey_bytes.len());
 
         // FIXME: For some reason that is currently unclear, the public key decoded from
@@ -334,7 +334,7 @@ impl KeyRing {
         let private_key = private_key_from_mnemonic(mnemonic_words, hd_path)?;
 
         // Get the public Key from the private key
-        let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
+        let public_key = ExtendedPubKey::from_priv(&Secp256k1::new(), &private_key);
 
         // Get address from the public Key
         let address = get_address(public_key, at);
@@ -360,31 +360,42 @@ impl KeyRing {
     ) -> Result<Vec<u8>, Error> {
         let key = self.get_key(key_name)?;
 
-        let private_key_bytes = key.private_key.private_key.to_bytes();
-        match address_type {
-            AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
-                let hash = keccak256_hash(msg.as_slice());
-                let s = Secp256k1::signing_only();
-                // SAFETY: hash is 32 bytes, as expected in `Message::from_slice` -- see `keccak256_hash`, hence `unwrap`
-                let sign_msg = Message::from_slice(hash.as_slice()).unwrap();
-                let key = SecretKey::from_slice(private_key_bytes.as_slice())
-                    .map_err(Error::invalid_key_raw)?;
-                let (_, sig_bytes) = s.sign_recoverable(&sign_msg, &key).serialize_compact();
-                Ok(sig_bytes.to_vec())
-            }
-            AddressType::Cosmos | AddressType::Ethermint { .. } => {
-                let signing_key = SigningKey::from_bytes(private_key_bytes.as_slice())
-                    .map_err(Error::invalid_key)?;
-                let signature: Signature = signing_key.sign(&msg);
-                Ok(signature.as_ref().to_vec())
-            }
-        }
+        sign_message(&key, msg, address_type)
     }
 
     pub fn account_prefix(&self) -> &str {
         match self {
             KeyRing::Memory(m) => &m.account_prefix,
             KeyRing::Test(d) => &d.account_prefix,
+        }
+    }
+}
+
+/// Sign a message
+pub fn sign_message(
+    key: &KeyEntry,
+    msg: Vec<u8>,
+    address_type: &AddressType,
+) -> Result<Vec<u8>, Error> {
+    let private_key_bytes = key.private_key.to_priv().to_bytes();
+    match address_type {
+        AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
+            let hash = keccak256_hash(msg.as_slice());
+            let s = Secp256k1::signing_only();
+            // SAFETY: hash is 32 bytes, as expected in `Message::from_slice` -- see `keccak256_hash`, hence `unwrap`
+            let sign_msg = Message::from_slice(hash.as_slice()).unwrap();
+            let key = SecretKey::from_slice(private_key_bytes.as_slice())
+                .map_err(Error::invalid_key_raw)?;
+            let (_, sig_bytes) = s
+                .sign_ecdsa_recoverable(&sign_msg, &key)
+                .serialize_compact();
+            Ok(sig_bytes.to_vec())
+        }
+        AddressType::Cosmos | AddressType::Ethermint { .. } => {
+            let signing_key =
+                SigningKey::from_bytes(private_key_bytes.as_slice()).map_err(Error::invalid_key)?;
+            let signature: Signature = signing_key.sign(&msg);
+            Ok(signature.as_ref().to_vec())
         }
     }
 }
@@ -399,8 +410,14 @@ fn private_key_from_mnemonic(
 
     let seed = Seed::new(&mnemonic, "");
 
-    let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
-        .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
+    let base_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
+        .map_err(Error::private_key)?;
+
+    let private_key = base_key
+        .derive_priv(
+            &Secp256k1::new(),
+            &standard_path_to_derivation_path(hd_path),
+        )
         .map_err(Error::private_key)?;
 
     Ok(private_key)
@@ -410,7 +427,7 @@ fn private_key_from_mnemonic(
 fn get_address(pk: ExtendedPubKey, at: &AddressType) -> Vec<u8> {
     match at {
         AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
-            let public_key = pk.public_key.key.serialize_uncompressed();
+            let public_key = pk.public_key.serialize_uncompressed();
             // 0x04 is [SECP256K1_TAG_PUBKEY_UNCOMPRESSED](https://github.com/bitcoin-core/secp256k1/blob/d7ec49a6893751f068275cc8ddf4993ef7f31756/include/secp256k1.h#L196)
             debug_assert_eq!(public_key[0], 0x04);
 
@@ -421,7 +438,7 @@ fn get_address(pk: ExtendedPubKey, at: &AddressType) -> Vec<u8> {
         }
         AddressType::Cosmos | AddressType::Ethermint { .. } => {
             let mut hasher = Sha256::new();
-            hasher.update(pk.public_key.to_bytes().as_slice());
+            hasher.update(pk.to_pub().to_bytes().as_slice());
 
             // Read hash digest over the public key bytes & consume hasher
             let pk_hash = hasher.finalize();
@@ -464,4 +481,19 @@ fn keccak256_hash(bytes: &[u8]) -> Vec<u8> {
     let mut resp = vec![0u8; 32];
     hasher.finalize(&mut resp);
     resp
+}
+
+fn standard_path_to_derivation_path(path: &StandardHDPath) -> DerivationPath {
+    use bitcoin::util::bip32::ChildNumber;
+
+    let child_numbers = vec![
+        ChildNumber::from_hardened_idx(path.purpose().as_value().as_number())
+            .expect("Purpose is not Hardened"),
+        ChildNumber::from_hardened_idx(path.coin_type()).expect("Coin Type is not Hardened"),
+        ChildNumber::from_hardened_idx(path.account()).expect("Account is not Hardened"),
+        ChildNumber::from_normal_idx(path.change()).expect("Change is Hardened"),
+        ChildNumber::from_normal_idx(path.index()).expect("Index is Hardened"),
+    ];
+
+    DerivationPath::from(child_numbers)
 }

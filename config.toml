@@ -56,7 +56,9 @@ clear_on_start = true
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
-# (to any chain in this config file) have delivered successfully.
+# (to any chain in this config file) have been successfully delivered.
+# If they have not been, and `clear_interval = 0`, then those packets are
+# queued up for re-submission.
 # Experimental feature. Affects telemetry if set to false.
 # [Default: true]
 tx_confirmation = true

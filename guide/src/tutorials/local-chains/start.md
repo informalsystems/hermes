@@ -8,7 +8,7 @@ To this end, clone the `ibc-rs` repository and check out the current version:
 ```bash
 git clone git@github.com:informalsystems/ibc-rs.git
 cd ibc-rs
-git checkout v0.13.0
+git checkout v0.14.1
 ```
 
 ### Stop existing `gaiad` processes
@@ -50,6 +50,50 @@ vi ~/.hermes/config.toml
 ```
 
 Then just __`copy`__ the content for `config.toml` above and __`paste`__ into this file.
+
+### Generating private keys
+Next, we will need to associate a private key with chains `ibc-0` and `ibc-1` which `hermes` will use to sign transactions. There
+are two steps involved. For each chain,
+1. Generate a *Key Seed file* using `gaiad`
+2. Use the *Key Seed file* to associate the corresponding private key with the chain
+
+In this tutorial, we will only generate a single *Key Seed file*, which we will use with both chains.
+
+#### Generate a Key Seed file
+We will generate the Key Seed file for a key that we will call `testkey`.
+
+```shell
+gaiad keys add testkey --output json
+```
+This will generate an output similar to the one below (albeit all on the same line):
+```json
+{
+  "name": "testkey",
+  "type": "local",
+  "address": "cosmos1tc3vcuxyyac0dmayf887t95tdg7qpyql48w7gj",
+  "pubkey": "cosmospub1addwnpepqgg7ng4ycm60pdxfzdfh4hjvkwcr3da59mr8k883vsstx60ruv7kur4525u",
+  "mnemonic": "[24 words mnemonic]"
+}
+```
+
+Next, copy and paste the output to a new file called `key_seed.json`. This file contains all the information necessary for `hermes` to
+derive a private key from.
+
+#### Associate a private key with each chain
+Our config file specifies two chains: `ibc-0` and `ibc-1`. We will need to specify a private key that `hermes` will use for each chain. As
+previously mentioned, in this tutorial we will use the same private key for both chains.
+
+```shell
+hermes keys add ibc-0 -f key_seed.json
+hermes keys add ibc-1 -f key_seed.json
+```
+If successful, both commands should show an output similar to:
+
+```
+Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
+```
+
+And that's it! `hermes` will now be able to sign transactions to be sent to both chains. `key_seed.json` can safely be disposed of.
 
 ### Running the script to start the chains
 

@@ -44,7 +44,7 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    chain::{client::ClientSettings, StatusResponse},
+    chain::{client::ClientSettings, ChainStatus},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -303,8 +303,8 @@ where
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryStatus { reply_to }) => {
-                            self.query_status(reply_to)?
+                        Ok(ChainRequest::QueryApplicationStatus { reply_to }) => {
+                            self.query_application_status(reply_to)?
                         }
 
                         Ok(ChainRequest::QueryClients { request, reply_to }) => {
@@ -465,8 +465,8 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_status(&self, reply_to: ReplyTo<StatusResponse>) -> Result<(), Error> {
-        let latest_timestamp = self.chain.query_status();
+    fn query_application_status(&self, reply_to: ReplyTo<ChainStatus>) -> Result<(), Error> {
+        let latest_timestamp = self.chain.query_application_status();
         reply_to.send(latest_timestamp).map_err(Error::send)
     }
 

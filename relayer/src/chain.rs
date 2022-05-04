@@ -65,9 +65,9 @@ pub enum HealthCheck {
     Unhealthy(Box<Error>),
 }
 
-/// The result of a chain status query.
+/// The result of the application status query.
 #[derive(Clone, Debug)]
-pub struct StatusResponse {
+pub struct ChainStatus {
     pub height: ICSHeight,
     pub timestamp: Timestamp,
 }
@@ -159,8 +159,8 @@ pub trait ChainEndpoint: Sized {
         Ok(get_compatible_versions())
     }
 
-    /// Query the latest height and timestamp the chain is at
-    fn query_status(&self) -> Result<StatusResponse, Error>;
+    /// Query the latest height and timestamp the application is at
+    fn query_application_status(&self) -> Result<ChainStatus, Error>;
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(

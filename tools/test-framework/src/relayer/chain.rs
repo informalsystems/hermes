@@ -57,7 +57,7 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::tx::TrackedMsgs;
-use ibc_relayer::chain::{HealthCheck, StatusResponse};
+use ibc_relayer::chain::{ChainStatus, HealthCheck};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::error::Error;
 use ibc_relayer::{connection::ConnectionMsgType, keyring::KeyEntry};
@@ -128,8 +128,8 @@ where
         self.value().ibc_version()
     }
 
-    fn query_status(&self) -> Result<StatusResponse, Error> {
-        self.value().query_status()
+    fn query_application_status(&self) -> Result<ChainStatus, Error> {
+        self.value().query_application_status()
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {

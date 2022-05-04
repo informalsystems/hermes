@@ -53,7 +53,7 @@ use crate::{
 
 use super::client::ClientSettings;
 use super::tx::TrackedMsgs;
-use super::{HealthCheck, StatusResponse};
+use super::{ChainStatus, HealthCheck};
 
 mod base;
 mod cache;
@@ -149,8 +149,8 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Option<semver::Version>>,
     },
 
-    QueryStatus {
-        reply_to: ReplyTo<StatusResponse>,
+    QueryApplicationStatus {
+        reply_to: ReplyTo<ChainStatus>,
     },
 
     QueryClients {
@@ -384,10 +384,10 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
-    fn query_status(&self) -> Result<StatusResponse, Error>;
+    fn query_application_status(&self) -> Result<ChainStatus, Error>;
 
     fn query_latest_height(&self) -> Result<Height, Error> {
-        Ok(self.query_status()?.height)
+        Ok(self.query_application_status()?.height)
     }
 
     fn query_clients(

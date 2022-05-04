@@ -64,10 +64,16 @@ define_error! {
 
         Spawn
             [ SpawnError ]
-            |_| { "supervisor was not able to connect to any chains" },
+            |_| { "supervisor was not able to spawn chain runtime" },
 
         Scan
             [ ScanError ]
             |_| { "supervisor encountered an error when scanning chains" },
+    }
+}
+
+impl Error {
+    pub fn log_as_debug(&self) -> bool {
+        matches!(self.detail(), ErrorDetail::Spawn(e) if e.source.log_as_debug())
     }
 }

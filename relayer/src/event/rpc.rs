@@ -143,14 +143,14 @@ pub fn get_all_events(
                 if query == queries::ibc_client().to_string() {
                     if let Some(mut client_event) = ClientEvents::try_from_tx(abci_event) {
                         client_event.set_height(height);
-                        tracing::trace!("extracted ibc_client event {:?}", client_event);
+                        tracing::trace!("extracted ibc_client event {}", client_event);
                         vals.push((height, client_event));
                     }
                 }
                 if query == queries::ibc_connection().to_string() {
                     if let Some(mut conn_event) = ConnectionEvents::try_from_tx(abci_event) {
                         conn_event.set_height(height);
-                        tracing::trace!("extracted ibc_connection event {:?}", conn_event);
+                        tracing::trace!("extracted ibc_connection event {}", conn_event);
                         vals.push((height, conn_event));
                     }
                 }
@@ -158,7 +158,7 @@ pub fn get_all_events(
                     if let Some(mut chan_event) = ChannelEvents::try_from_tx(abci_event) {
                         chan_event.set_height(height);
                         let _span = tracing::trace_span!("ibc_channel event").entered();
-                        tracing::trace!("extracted {:?}", chan_event);
+                        tracing::trace!("extracted {}", chan_event);
                         if matches!(chan_event, IbcEvent::SendPacket(_)) {
                             // Should be the same as the hash of tx_result.tx?
                             if let Some(hash) =
