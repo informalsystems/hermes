@@ -24,10 +24,7 @@ impl Acknowledgement {
     }
 
     pub fn from_error(err: Error) -> Self {
-        fn abci_info(_err: Error) -> usize {
-            todo!()
-        }
-        Self::Error(format!("ABCI code: {}: {}", abci_info(err), ACK_ERR_STR))
+        Self::Error(format!("{}: {}", ACK_ERR_STR, err))
     }
 }
 
