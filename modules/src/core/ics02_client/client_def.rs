@@ -9,8 +9,8 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::{AnyHeader, Header};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::context::ChannelReader;
-use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -118,7 +118,7 @@ pub trait ClientDef: Clone {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        commitment: String,
+        commitment: PacketCommitment,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has been commited.
@@ -134,7 +134,7 @@ pub trait ClientDef: Clone {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        ack: Acknowledgement,
+        ack: AcknowledgementCommitment,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that of the next_seq_received.
@@ -437,7 +437,7 @@ impl ClientDef for AnyClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        commitment: String,
+        commitment: PacketCommitment,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
@@ -494,7 +494,7 @@ impl ClientDef for AnyClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        ack: Acknowledgement,
+        ack_commitment: AcknowledgementCommitment,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
@@ -513,7 +513,7 @@ impl ClientDef for AnyClient {
                     port_id,
                     channel_id,
                     sequence,
-                    ack,
+                    ack_commitment,
                 )
             }
 
@@ -534,7 +534,7 @@ impl ClientDef for AnyClient {
                     port_id,
                     channel_id,
                     sequence,
-                    ack,
+                    ack_commitment,
                 )
             }
         }
