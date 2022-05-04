@@ -2,7 +2,7 @@ use core::fmt;
 
 use opentelemetry::{
     global,
-    metrics::{Counter, UpDownCounter},
+    metrics::{Counter, UpDownCounter, ValueRecorder},
     KeyValue,
 };
 use opentelemetry_prometheus::PrometheusExporter;
@@ -65,6 +65,9 @@ pub struct TelemetryState {
 
     /// How many messages Hermes submitted to the chain, per chain
     msg_num: Counter<u64>,
+
+    /// The balance in each wallet that Hermes is using, per wallet, denom and chain
+    wallet_balance: ValueRecorder<u64>,
 }
 
 impl TelemetryState {
@@ -190,6 +193,17 @@ impl TelemetryState {
 
         self.msg_num.add(count, labels);
     }
+
+    /// The balance in each wallet that Hermes is using, per wallet, denom and chain
+    pub fn wallet_balance(&self, chain_id: &ChainId, wallet: &str, amount: u64, denom: &str) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("wallet", wallet.to_string()),
+            KeyValue::new("denom", denom.to_string()),
+        ];
+
+        self.wallet_balance.record(amount, labels);
+    }
 }
 
 impl Default for TelemetryState {
@@ -257,6 +271,10 @@ impl Default for TelemetryState {
                 .with_description("How many messages Hermes submitted to the chain, per chain")
                 .init(),
 
+            wallet_balance: meter
+                .u64_value_recorder("wallet_balance")
+                .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain")
+                .init(),
         }
     }
 }
