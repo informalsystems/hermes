@@ -1,15 +1,8 @@
 use http::uri::Uri;
-use serde::{Deserialize, Serialize};
 
 use ibc_proto::cosmos::bank::v1beta1::{query_client::QueryClient, QueryBalanceRequest};
 
-use crate::error::Error;
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Balance {
-    pub amount: String,
-    pub denom: String,
-}
+use crate::{account::Balance, error::Error};
 
 /// Uses the GRPC client to retrieve the account balance for a specific denom
 pub async fn query_balance(
