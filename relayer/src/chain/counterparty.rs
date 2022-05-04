@@ -434,10 +434,10 @@ pub fn unreceived_packets(
         &path.counterparty_channel_id,
     )?;
 
-    let sn =
+    let packet_seq_nrs =
         unreceived_packets_sequences(chain, &path.port_id, &path.channel_id, commit_sequences)?;
 
-    Ok((sn, h))
+    Ok((packet_seq_nrs, h))
 }
 
 pub fn acknowledgements_on_chain(
