@@ -20,7 +20,7 @@ use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::{PortKeeper, PortReader};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::OnRecvPacketAck;
+use crate::core::ics26_routing::context::{ModuleOutputBuilder, OnRecvPacketAck};
 use crate::prelude::*;
 use crate::signer::Signer;
 
@@ -180,6 +180,7 @@ fn validate_counterparty_version(counterparty_version: &Version) -> Result<(), I
 #[allow(clippy::too_many_arguments)]
 pub fn on_chan_open_init(
     ctx: &mut impl Ics20Context,
+    _output: &mut ModuleOutputBuilder,
     order: Order,
     _connection_hops: &[ConnectionId],
     port_id: &PortId,
@@ -198,6 +199,7 @@ pub fn on_chan_open_init(
 #[allow(clippy::too_many_arguments)]
 pub fn on_chan_open_try(
     ctx: &mut impl Ics20Context,
+    _output: &mut ModuleOutputBuilder,
     order: Order,
     _connection_hops: &[ConnectionId],
     port_id: &PortId,
@@ -217,6 +219,7 @@ pub fn on_chan_open_try(
 
 pub fn on_chan_open_ack(
     _ctx: &mut impl Ics20Context,
+    _output: &mut ModuleOutputBuilder,
     _port_id: &PortId,
     _channel_id: &ChannelId,
     counterparty_version: &Version,
@@ -227,6 +230,7 @@ pub fn on_chan_open_ack(
 
 pub fn on_chan_open_confirm(
     _ctx: &mut impl Ics20Context,
+    _output: &mut ModuleOutputBuilder,
     _port_id: &PortId,
     _channel_id: &ChannelId,
 ) -> Result<(), Ics20Error> {
@@ -235,6 +239,7 @@ pub fn on_chan_open_confirm(
 
 pub fn on_chan_close_init(
     _ctx: &mut impl Ics20Context,
+    _output: &mut ModuleOutputBuilder,
     _port_id: &PortId,
     _channel_id: &ChannelId,
 ) -> Result<(), Ics20Error> {
@@ -243,6 +248,7 @@ pub fn on_chan_close_init(
 
 pub fn on_chan_close_confirm(
     _ctx: &mut impl Ics20Context,
+    _output: &mut ModuleOutputBuilder,
     _port_id: &PortId,
     _channel_id: &ChannelId,
 ) -> Result<(), Ics20Error> {
@@ -251,6 +257,7 @@ pub fn on_chan_close_confirm(
 
 pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
     ctx: &Ctx,
+    output: &mut ModuleOutputBuilder,
     packet: &Packet,
     _relayer: &Signer,
 ) -> OnRecvPacketAck {
@@ -273,6 +280,7 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
 
 pub fn on_acknowledgement_packet(
     ctx: &mut impl Ics20Context,
+    _output: &mut ModuleOutputBuilder,
     packet: &Packet,
     acknowledgement: &GenericAcknowledgement,
     _relayer: &Signer,
@@ -292,6 +300,7 @@ pub fn on_acknowledgement_packet(
 
 pub fn on_timeout_packet(
     ctx: &mut impl Ics20Context,
+    _output: &mut ModuleOutputBuilder,
     packet: &Packet,
     _relayer: &Signer,
 ) -> Result<(), Ics20Error> {

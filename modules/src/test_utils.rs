@@ -103,11 +103,11 @@ impl Module for DummyTransferModule {
         Ok(counterparty_version.clone())
     }
 
-    fn deliver(&mut self, _output: &mut ModuleOutputBuilder, msg: ProtobufAny) -> Result<(), Error> {
+    fn deliver(&mut self, output: &mut ModuleOutputBuilder, msg: ProtobufAny) -> Result<(), Error> {
         let msg = msg
             .try_into()
             .map_err(|e: Ics20Error| Error::app_module(e.to_string()))?;
-        send_transfer(self, msg).map_err(|e: Ics20Error| Error::app_module(e.to_string()))
+        send_transfer(self, output, msg).map_err(|e: Ics20Error| Error::app_module(e.to_string()))
     }
 }
 
