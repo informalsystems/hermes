@@ -59,8 +59,8 @@ impl<T, E> HandlerOutputBuilder<T, E> {
         }
     }
 
-    pub fn merge<Event: Into<E>>(&mut self, other: HandlerOutput<(), Event>) {
-        let HandlerOutput {
+    pub fn merge<Event: Into<E>>(&mut self, other: HandlerOutputBuilder<(), Event>) {
+        let HandlerOutputBuilder {
             mut log, events, ..
         } = other;
         self.log.append(&mut log);

@@ -1367,7 +1367,8 @@ mod tests {
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
-        Acknowledgement, Module, ModuleId, ModuleOutput, OnRecvPacketAck, Router, RouterBuilder,
+        Acknowledgement, Module, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, Router,
+        RouterBuilder,
     };
     use crate::mock::context::MockContext;
     use crate::mock::context::MockRouterBuilder;
@@ -1537,7 +1538,7 @@ mod tests {
         impl Module for FooModule {
             fn on_chan_open_try(
                 &mut self,
-                _output: &mut ModuleOutput,
+                _output: &mut ModuleOutputBuilder,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
@@ -1552,7 +1553,7 @@ mod tests {
 
             fn on_recv_packet(
                 &self,
-                _output: &mut ModuleOutput,
+                _output: &mut ModuleOutputBuilder,
                 _packet: &Packet,
                 _relayer: &Signer,
             ) -> OnRecvPacketAck {
@@ -1573,7 +1574,7 @@ mod tests {
         impl Module for BarModule {
             fn on_chan_open_try(
                 &mut self,
-                _output: &mut ModuleOutput,
+                _output: &mut ModuleOutputBuilder,
                 _order: Order,
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
@@ -1606,7 +1607,7 @@ mod tests {
             let module_id = ModuleId::from_str(module_id).unwrap();
             let m = ctx.router.get_route_mut(&module_id).unwrap();
             let result = m.on_recv_packet(
-                &mut ModuleOutput::builder().with_result(()),
+                &mut ModuleOutputBuilder::new(),
                 &Packet::default(),
                 &Signer::new(""),
             );

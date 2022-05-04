@@ -20,7 +20,7 @@ use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::ModuleEvent;
-use crate::handler::HandlerOutput;
+use crate::handler::HandlerOutputBuilder;
 use crate::signer::Signer;
 
 /// This trait captures all the functional dependencies (i.e., context) which the ICS26 module
@@ -89,13 +89,13 @@ pub enum OnRecvPacketAck {
     Failed(Box<dyn Acknowledgement>),
 }
 
-pub type ModuleOutput = HandlerOutput<(), ModuleEvent>;
+pub type ModuleOutputBuilder = HandlerOutputBuilder<(), ModuleEvent>;
 
 pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
         &mut self,
-        _output: &mut ModuleOutput,
+        _output: &mut ModuleOutputBuilder,
         _order: Order,
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
@@ -110,7 +110,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_try(
         &mut self,
-        _output: &mut ModuleOutput,
+        _output: &mut ModuleOutputBuilder,
         _order: Order,
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
@@ -123,7 +123,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
 
     fn on_chan_open_ack(
         &mut self,
-        _output: &mut ModuleOutput,
+        _output: &mut ModuleOutputBuilder,
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _counterparty_version: &Version,
@@ -133,7 +133,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
 
     fn on_chan_open_confirm(
         &mut self,
-        _output: &mut ModuleOutput,
+        _output: &mut ModuleOutputBuilder,
         _port_id: &PortId,
         _channel_id: &ChannelId,
     ) -> Result<(), Error> {
@@ -142,7 +142,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
 
     fn on_chan_close_init(
         &mut self,
-        _output: &mut ModuleOutput,
+        _output: &mut ModuleOutputBuilder,
         _port_id: &PortId,
         _channel_id: &ChannelId,
     ) -> Result<(), Error> {
@@ -151,7 +151,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
 
     fn on_chan_close_confirm(
         &mut self,
-        _output: &mut ModuleOutput,
+        _output: &mut ModuleOutputBuilder,
         _port_id: &PortId,
         _channel_id: &ChannelId,
     ) -> Result<(), Error> {
@@ -160,7 +160,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
 
     fn on_recv_packet(
         &self,
-        _output: &mut ModuleOutput,
+        _output: &mut ModuleOutputBuilder,
         _packet: &Packet,
         _relayer: &Signer,
     ) -> OnRecvPacketAck {
@@ -169,7 +169,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
 
     fn on_acknowledgement_packet(
         &mut self,
-        _output: &mut ModuleOutput,
+        _output: &mut ModuleOutputBuilder,
         _packet: &Packet,
         _acknowledgement: &GenericAcknowledgement,
         _relayer: &Signer,
@@ -179,15 +179,19 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
 
     fn on_timeout_packet(
         &mut self,
-        _output: &mut ModuleOutput,
+        _output: &mut ModuleOutputBuilder,
         _packet: &Packet,
         _relayer: &Signer,
     ) -> Result<(), Error> {
         Ok(())
     }
 
-    fn deliver(&mut self, _msg: ProtobufAny) -> Result<HandlerOutput<()>, Error> {
-        Ok(HandlerOutput::builder().with_result(()))
+    fn deliver(
+        &mut self,
+        _output: &mut ModuleOutputBuilder,
+        _msg: ProtobufAny,
+    ) -> Result<(), Error> {
+        Ok(())
     }
 }
 
