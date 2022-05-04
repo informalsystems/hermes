@@ -1141,6 +1141,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             info!(upper_bound = %upper_bound, result = %res, "optimistically resolved consensus_state_height");
             Ok(res)
         } else {
+            // The optimistic query was not enough. We'll pull _all_ the consensus states
+            // and pick an appropriate height among those.
             warn!("resolving trusted height from the full list of consensus state heights; this may take a while");
             self.consensus_states(None)?
                 .iter()
