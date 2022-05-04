@@ -642,8 +642,20 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .consensus_state(client_state.latest_height())?
             .timestamp();
 
+        let current_src_network_time = self
+            .src_chain
+            .query_application_status()
+            .map_err(|e| {
+                ForeignClientError::client_refresh(
+                    self.id().clone(),
+                    "failed querying the application status of source chain".to_string(),
+                    e,
+                )
+            })?
+            .timestamp;
+
         // Compute the duration since the last update of this client
-        let elapsed = Timestamp::now().duration_since(&last_update_time);
+        let elapsed = current_src_network_time.duration_since(&last_update_time);
 
         if client_state.expired(elapsed.unwrap_or_default()) {
             return Err(ForeignClientError::expired_or_frozen(
