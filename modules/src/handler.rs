@@ -67,4 +67,13 @@ impl<T, E> HandlerOutputBuilder<T, E> {
         self.events
             .append(&mut events.into_iter().map(Into::into).collect());
     }
+
+    pub fn merge_output<Event: Into<E>>(&mut self, other: HandlerOutput<(), Event>) {
+        let HandlerOutput {
+            mut log, events, ..
+        } = other;
+        self.log.append(&mut log);
+        self.events
+            .append(&mut events.into_iter().map(Into::into).collect());
+    }
 }
