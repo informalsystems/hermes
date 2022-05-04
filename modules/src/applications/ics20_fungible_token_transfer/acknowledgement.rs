@@ -10,6 +10,7 @@ use serde::{Deserialize, Deserializer};
 pub const ACK_ERR_STR: &str = "error handling packet on destination chain: see events for details";
 pub const ACK_SUCCESS_B64: &[u8] = b"AQ==";
 
+#[derive(Clone, Debug)]
 pub enum Acknowledgement {
     /// Equivalent to b"AQ==" (i.e. `base64::encode(0x01)`)
     Success(Vec<u8>),

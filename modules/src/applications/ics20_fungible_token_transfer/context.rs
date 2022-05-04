@@ -11,7 +11,7 @@ use crate::applications::ics20_fungible_token_transfer::relay_application_logic:
 use crate::applications::ics20_fungible_token_transfer::{
     DenomTrace, HashedDenom, IbcCoin, VERSION,
 };
-use crate::applications::ics20_fungible_token_transfer::events::RecvEvent;
+use crate::applications::ics20_fungible_token_transfer::events::{AckEvent, AckStatusEvent, RecvEvent};
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::on_timeout_packet::process_timeout_packet;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
@@ -289,7 +289,7 @@ pub fn on_recv_packet<Ctx: 'static + Ics20Context>(
 
 pub fn on_acknowledgement_packet(
     ctx: &mut impl Ics20Context,
-    _output: &mut ModuleOutputBuilder,
+    output: &mut ModuleOutputBuilder,
     packet: &Packet,
     acknowledgement: &GenericAcknowledgement,
     _relayer: &Signer,
@@ -297,12 +297,19 @@ pub fn on_acknowledgement_packet(
     let data = serde_json::from_slice::<PacketData>(&packet.data)
         .map_err(|_| Ics20Error::packet_data_deserialization())?;
 
-    let ack = serde_json::from_slice::<Acknowledgement>(acknowledgement.as_ref())
+    let acknowledgement = serde_json::from_slice::<Acknowledgement>(acknowledgement.as_ref())
         .map_err(|_| Ics20Error::ack_deserialization())?;
 
-    process_ack_packet(ctx, packet, &data, &ack)?;
+    process_ack_packet(ctx, packet, &data, &acknowledgement)?;
 
-    // TODO(hu55a1n1): emit event
+    let ack_event = AckEvent {
+        receiver: data.receiver,
+        denom: data.token.denom,
+        amount: data.token.amount,
+        acknowledgement: acknowledgement.clone(),
+    };
+    output.emit(ack_event.into());
+    output.emit(AckStatusEvent { acknowledgement }.into());
 
     Ok(())
 }
