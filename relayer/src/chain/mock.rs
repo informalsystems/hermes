@@ -39,6 +39,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
+use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::{ChainEndpoint, ChainStatus};
 use crate::config::ChainConfig;
@@ -164,6 +165,10 @@ impl ChainEndpoint for MockChain {
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         Ok(Some(semver::Version::new(3, 0, 0)))
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        unimplemented!()
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {

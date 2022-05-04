@@ -38,6 +38,7 @@ use ibc_proto::ibc::core::connection::v1::{
 use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
+use crate::account::Balance;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
@@ -151,6 +152,9 @@ pub trait ChainEndpoint: Sized {
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
     // Queries
+
+    /// Query the balance of the current account for the denom used to pay tx fees.
+    fn query_balance(&self) -> Result<Balance, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 

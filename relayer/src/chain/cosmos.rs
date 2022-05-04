@@ -375,19 +375,6 @@ impl CosmosSdkChain {
         Ok(status)
     }
 
-    /// Query the balance of the current account for the denom used to pay tx fees.
-    pub fn query_balance(&self) -> Result<Balance, Error> {
-        let key = self.key()?;
-
-        let balance = self.block_on(query_balance(
-            &self.grpc_addr,
-            &key.account,
-            &self.config.gas_price.denom,
-        ))?;
-
-        Ok(balance)
-    }
-
     /// Query the chain's latest height
     pub fn query_chain_latest_height(&self) -> Result<ICSHeight, Error> {
         crate::time!("query_latest_height");
@@ -646,6 +633,18 @@ impl ChainEndpoint for CosmosSdkChain {
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
         Ok(version_specs.ibc_go_version)
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        let key = self.key()?;
+
+        let balance = self.block_on(query_balance(
+            &self.grpc_addr,
+            &key.account,
+            &self.config.gas_price.denom,
+        ))?;
+
+        Ok(balance)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
