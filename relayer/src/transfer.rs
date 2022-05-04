@@ -135,14 +135,14 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         .parse()
         .map_err(TransferError::token_transfer)?;
 
-    let chain_status = packet_dst_chain
-        .query_status()
+    let application_status = packet_dst_chain
+        .query_application_status()
         .map_err(TransferError::relayer)?;
 
     let timeout = TransferTimeout::new(
         opts.timeout_height_offset,
         opts.timeout_duration,
-        &chain_status,
+        &application_status,
     )?;
 
     let token = ibc_proto::cosmos::base::v1beta1::Coin {

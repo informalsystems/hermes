@@ -1,5 +1,5 @@
 use core::convert::{From, Infallible};
-use core::fmt::{self, Display, Formatter};
+use core::fmt::{self, Debug, Display, Formatter};
 use core::str::FromStr;
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -335,7 +335,7 @@ impl Default for PortId {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ChannelId(u64);
 
 impl ChannelId {
@@ -367,6 +367,12 @@ impl ChannelId {
 impl Display for ChannelId {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "{}{}", Self::prefix(), self.0)
+    }
+}
+
+impl Debug for ChannelId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        f.debug_tuple("ChannelId").field(&self.to_string()).finish()
     }
 }
 

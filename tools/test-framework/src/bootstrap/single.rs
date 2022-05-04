@@ -8,10 +8,11 @@ use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
 use crate::chain::config;
+use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::types::single::node::FullNode;
-use crate::types::wallet::TestWallets;
+use crate::types::wallet::{TestWallets, Wallet};
 use crate::util::random::{random_u32, random_u64_range};
 
 /**
@@ -36,23 +37,30 @@ use crate::util::random::{random_u32, random_u64_range};
 pub fn bootstrap_single_node(
     builder: &ChainBuilder,
     prefix: &str,
+    use_random_id: bool,
     config_modifier: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
     genesis_modifier: impl FnOnce(&mut serde_json::Value) -> Result<(), Error>,
 ) -> Result<FullNode, Error> {
     let stake_denom = Denom::base("stake");
-    let denom = Denom::base(&format!("coin{:x}", random_u32()));
+
+    let denom = if use_random_id {
+        Denom::base(&format!("coin{:x}", random_u32()))
+    } else {
+        Denom::base("samoleans")
+    };
+
     let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
 
-    let chain_driver = builder.new_chain(prefix)?;
+    let chain_driver = builder.new_chain(prefix, use_random_id)?;
 
     chain_driver.initialize()?;
 
     chain_driver.update_genesis_file("genesis.json", genesis_modifier)?;
 
-    let validator = chain_driver.add_random_wallet("validator")?;
-    let relayer = chain_driver.add_random_wallet("relayer")?;
-    let user1 = chain_driver.add_random_wallet("user1")?;
-    let user2 = chain_driver.add_random_wallet("user2")?;
+    let validator = add_wallet(&chain_driver, "validator", use_random_id)?;
+    let relayer = add_wallet(&chain_driver, "relayer", use_random_id)?;
+    let user1 = add_wallet(&chain_driver, "user1", use_random_id)?;
+    let user2 = add_wallet(&chain_driver, "user2", use_random_id)?;
 
     chain_driver.add_genesis_account(&validator.address, &[(&stake_denom, initial_amount)])?;
 
@@ -127,4 +135,14 @@ pub fn bootstrap_single_node(
     };
 
     Ok(node)
+}
+
+fn add_wallet(driver: &ChainDriver, prefix: &str, use_random_id: bool) -> Result<Wallet, Error> {
+    if use_random_id {
+        let num = random_u32();
+        let wallet_id = format!("{}-{:x}", prefix, num);
+        driver.add_wallet(&wallet_id)
+    } else {
+        driver.add_wallet(prefix)
+    }
 }

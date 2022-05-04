@@ -26,7 +26,6 @@ use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 use crate::util::file::pipe_to_file;
-use crate::util::random::random_u32;
 use crate::util::retry::assert_eventually_succeed;
 
 pub mod interchain;
@@ -254,15 +253,6 @@ impl ChainDriver {
         let full_path = PathBuf::from(&self.home_path).join(file_path);
         let res = fs::read_to_string(full_path)?;
         Ok(res)
-    }
-
-    /**
-       Add a wallet with random ID to the full node's keyring.
-    */
-    pub fn add_random_wallet(&self, prefix: &str) -> Result<Wallet, Error> {
-        let num = random_u32();
-        let wallet_id = format!("{}-{:x}", prefix, num);
-        self.add_wallet(&wallet_id)
     }
 
     /**

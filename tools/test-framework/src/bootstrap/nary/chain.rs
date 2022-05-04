@@ -9,8 +9,8 @@ use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
 
 use crate::bootstrap::binary::chain::{
-    add_chain_config, add_keys_to_chain_handle, new_registry, save_relayer_config,
-    ForeignClientBuilder,
+    add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client, new_registry,
+    save_relayer_config,
 };
 use crate::error::{handle_generic_error, Error};
 use crate::relayer::driver::RelayerDriver;
@@ -84,7 +84,8 @@ pub fn boostrap_chains_with_any_nodes(
         let mut foreign_clients_b = Vec::new();
 
         for handle_b in chain_handles.iter() {
-            let foreign_client = ForeignClientBuilder::new(handle_a, handle_b).bootstrap()?;
+            let foreign_client = bootstrap_foreign_client(handle_a, handle_b, Default::default())?;
+
             foreign_clients_b.push(foreign_client);
         }
 
