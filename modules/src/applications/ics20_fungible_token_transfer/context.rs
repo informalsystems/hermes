@@ -11,7 +11,7 @@ use crate::applications::ics20_fungible_token_transfer::relay_application_logic:
 use crate::applications::ics20_fungible_token_transfer::{
     DenomTrace, HashedDenom, IbcCoin, VERSION,
 };
-use crate::applications::ics20_fungible_token_transfer::events::{AckEvent, AckStatusEvent, RecvEvent};
+use crate::applications::ics20_fungible_token_transfer::events::{AckEvent, AckStatusEvent, RecvEvent, TimeoutEvent};
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::on_timeout_packet::process_timeout_packet;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
@@ -316,7 +316,7 @@ pub fn on_acknowledgement_packet(
 
 pub fn on_timeout_packet(
     ctx: &mut impl Ics20Context,
-    _output: &mut ModuleOutputBuilder,
+    output: &mut ModuleOutputBuilder,
     packet: &Packet,
     _relayer: &Signer,
 ) -> Result<(), Ics20Error> {
@@ -325,7 +325,12 @@ pub fn on_timeout_packet(
 
     process_timeout_packet(ctx, packet, &data)?;
 
-    // TODO(hu55a1n1): emit event
+    let timeout_event = TimeoutEvent {
+        refund_receiver: data.sender,
+        refund_denom: data.token.denom,
+        refund_amount: data.token.amount,
+    };
+    output.emit(timeout_event.into());
 
     Ok(())
 }
