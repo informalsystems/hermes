@@ -1,18 +1,21 @@
 use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::applications::ics20_fungible_token_transfer::error::Error;
+use crate::applications::ics20_fungible_token_transfer::events::TransferEvent;
 use crate::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
 use crate::applications::ics20_fungible_token_transfer::{Coin, IbcCoin, Source, TracePrefix};
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
-use crate::handler::HandlerOutput;
+use crate::events::ModuleEvent;
+use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 use crate::prelude::*;
 
 #[allow(unused)]
 pub(crate) fn send_transfer<Ctx>(
     ctx: &mut Ctx,
+    output: &mut HandlerOutputBuilder<()>,
     msg: MsgTransfer,
-) -> Result<HandlerOutput<()>, Error>
+) -> Result<(), Error>
 where
     Ctx: Ics20Context,
 {
@@ -76,8 +79,8 @@ where
                 denom,
                 amount: msg.token.amount(),
             },
-            sender: msg.sender,
-            receiver: msg.receiver,
+            sender: msg.sender.clone(),
+            receiver: msg.receiver.clone(),
         };
         serde_json::to_vec(&data).expect("PacketData's infallible Serialize impl failed")
     };
@@ -102,11 +105,18 @@ where
     ctx.store_packet_result(result)
         .map_err(Error::ics04_channel)?;
 
-    let handler_output = HandlerOutput::builder()
-        .with_log(log)
-        .with_events(events)
-        .with_result(());
+    output.merge_output(
+        HandlerOutput::builder()
+            .with_log(log)
+            .with_events(events)
+            .with_result(()),
+    );
 
-    //TODO:  add event/atributes and writes to the store issued by the application logic for packet sending.
-    Ok(handler_output)
+    let transfer_event = TransferEvent {
+        sender: msg.sender,
+        receiver: msg.receiver,
+    };
+    output.emit(ModuleEvent::from(transfer_event).into());
+
+    Ok(())
 }
