@@ -194,7 +194,7 @@ pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
 
     fn deliver(
         &mut self,
-        _output: &mut ModuleOutputBuilder,
+        _output: &mut HandlerOutputBuilder<()>,
         _msg: ProtobufAny,
     ) -> Result<(), Error> {
         Ok(())

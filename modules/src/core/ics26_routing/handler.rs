@@ -161,12 +161,11 @@ mod tests {
     };
 
     use crate::core::ics24_host::identifier::ConnectionId;
-    use crate::core::ics26_routing::context::{
-        Ics26Context, ModuleId, ModuleOutputBuilder, Router, RouterBuilder,
-    };
+    use crate::core::ics26_routing::context::{Ics26Context, ModuleId, Router, RouterBuilder};
     use crate::core::ics26_routing::error::Error;
     use crate::core::ics26_routing::handler::dispatch;
     use crate::core::ics26_routing::msgs::Ics26Envelope;
+    use crate::handler::HandlerOutputBuilder;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::{MockContext, MockRouterBuilder};
     use crate::mock::header::MockHeader;
@@ -535,7 +534,7 @@ mod tests {
                     let transfer_module =
                         ctx.router_mut().get_route_mut(&transfer_module_id).unwrap();
                     transfer_module
-                        .deliver(&mut ModuleOutputBuilder::new(), msg.into())
+                        .deliver(&mut HandlerOutputBuilder::new(), msg.into())
                         .map(|_| ())
                         .map_err(Error::ics04_channel)
                 }

@@ -32,6 +32,7 @@ use crate::core::ics05_port::context::{
 use crate::core::ics05_port::error::Error as PortError;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{Module, ModuleId, ModuleOutputBuilder};
+use crate::handler::HandlerOutputBuilder;
 use crate::mock::context::MockIbcStore;
 use crate::prelude::*;
 use crate::signer::Signer;
@@ -103,7 +104,11 @@ impl Module for DummyTransferModule {
         Ok(counterparty_version.clone())
     }
 
-    fn deliver(&mut self, output: &mut ModuleOutputBuilder, msg: ProtobufAny) -> Result<(), Error> {
+    fn deliver(
+        &mut self,
+        output: &mut HandlerOutputBuilder<()>,
+        msg: ProtobufAny,
+    ) -> Result<(), Error> {
         let msg = msg
             .try_into()
             .map_err(|e: Ics20Error| Error::app_module(e.to_string()))?;
