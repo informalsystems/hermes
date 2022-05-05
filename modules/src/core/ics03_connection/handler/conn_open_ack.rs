@@ -46,7 +46,6 @@ pub(crate) fn process(
     conn_end.set_version(msg.version.clone());
     conn_end.set_counterparty(counterparty);
 
-
     // Proof verification.
     let expected_conn = {
         // The counterparty is the local chain.
@@ -243,7 +242,10 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     // assert that counterparty connection id is correct
-                    assert_eq!(res.connection_end.counterparty().connection_id, Some(counterparty_conn_id.clone()));
+                    assert_eq!(
+                        res.connection_end.counterparty().connection_id,
+                        Some(counterparty_conn_id.clone())
+                    );
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenAckConnection(_)));
