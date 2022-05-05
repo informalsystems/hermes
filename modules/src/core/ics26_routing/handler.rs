@@ -20,10 +20,17 @@ use crate::core::ics26_routing::msgs::Ics26Envelope::{
 };
 use crate::{events::IbcEvent, handler::HandlerOutput};
 
+/// Result of message execution - comprises of events emitted and logs entries created during the
+/// execution of a transaction message.
+pub struct MsgReceipt {
+    pub events: Vec<IbcEvent>,
+    pub log: Vec<String>,
+}
+
 /// Mimics the DeliverTx ABCI interface, but for a single message and at a slightly lower level.
 /// No need for authentication info or signature checks here.
 /// Returns a vector of all events that got generated as a byproduct of processing `message`.
-pub fn deliver<Ctx>(ctx: &mut Ctx, message: Any) -> Result<(Vec<IbcEvent>, Vec<String>), Error>
+pub fn deliver<Ctx>(ctx: &mut Ctx, message: Any) -> Result<MsgReceipt, Error>
 where
     Ctx: Ics26Context,
 {
@@ -31,9 +38,9 @@ where
     let envelope = decode(message)?;
 
     // Process the envelope, and accumulate any events that were generated.
-    let output = dispatch(ctx, envelope)?;
+    let HandlerOutput { log, events, .. } = dispatch(ctx, envelope)?;
 
-    Ok((output.events, output.log))
+    Ok(MsgReceipt { events, log })
 }
 
 /// Attempts to convert a message into a [Ics26Envelope] message

@@ -39,7 +39,7 @@ use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{Ics26Context, Module, ModuleId, Router, RouterBuilder};
-use crate::core::ics26_routing::handler::{deliver, dispatch};
+use crate::core::ics26_routing::handler::{deliver, dispatch, MsgReceipt};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
 use crate::events::IbcEvent;
 use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensusState};
@@ -1341,7 +1341,8 @@ impl Ics18Context for MockContext {
         // Forward call to Ics26 delivery method.
         let mut all_events = vec![];
         for msg in msgs {
-            let (mut events, _) = deliver(self, msg).map_err(Ics18Error::transaction_failed)?;
+            let MsgReceipt { mut events, .. } =
+                deliver(self, msg).map_err(Ics18Error::transaction_failed)?;
             all_events.append(&mut events);
         }
         self.advance_host_chain_height(); // Advance chain height
