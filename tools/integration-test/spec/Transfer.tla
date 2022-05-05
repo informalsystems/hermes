@@ -69,12 +69,12 @@ Genesis(chainId) ==
     ],
 
     \* Escrow balance per chain
-    escrow |-> [cId \in CHAIN_IDS \ {chainId} |-> SetAsFun({})],
+    escrow |-> [cId \in CHAIN_IDS \ {chainId} |-> [denom \in {nativeDenom} |-> 0]],
 
     \* Record of packets receiveed from other chains
     \* Packets are maintained using the channelId, it was received at.
     \* Note: A pair of chain may have multiple channels in the past.
-    remotePackets |-> SetAsFun({}),
+    remotePackets |-> [cId \in CHAIN_IDS \ {chainId} |-> SetAsFun({})],
 
     nextPacketId |-> 0
 ]
