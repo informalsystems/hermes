@@ -10,7 +10,7 @@ use std::time::Instant;
 
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, span, trace, warn, Level};
 
 use flex_error::define_error;
 use ibc::core::ics02_client::client_consensus::{
@@ -220,6 +220,16 @@ define_error! {
                     e.client_id, e.chain_id, e.description)
             },
 
+        ConsensusStateNotTrusted
+            {
+                height: Height,
+                elapsed: Duration,
+            }
+            |e| {
+                format_args!("the consensus state at height {} is outside of trusting period: elapsed {:?}",
+                    e.height, e.elapsed)
+            },
+
         Misbehaviour
             {
                 description: String,
@@ -287,6 +297,20 @@ pub struct CreateOptions {
     pub max_clock_drift: Option<Duration>,
     pub trusting_period: Option<Duration>,
     pub trust_threshold: Option<TrustThreshold>,
+}
+
+/// Captures the diagnostic of verifying whether a certain
+/// consensus state is within the trusting period (i.e., trusted)
+/// or it's not within the trusting period (not trusted).
+pub enum ConsensusStateTrusted {
+    NotTrusted {
+        elapsed: Duration,
+        network_timestamp: Timestamp,
+        consensus_state_timestmap: Timestamp,
+    },
+    Trusted {
+        elapsed: Duration,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -638,9 +662,40 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             ));
         }
 
-        let last_update_time = self
-            .consensus_state(client_state.latest_height())?
-            .timestamp();
+        match self
+            .check_consensus_state_trusting_period(&client_state, &client_state.latest_height())?
+        {
+            ConsensusStateTrusted::NotTrusted { elapsed, .. } => {
+                return Err(ForeignClientError::expired_or_frozen(
+                    self.id().clone(),
+                    self.dst_chain.id(),
+                    format!(
+                        "expired: time elapsed since last client update: {:?}",
+                        elapsed
+                    ),
+                ));
+            }
+            ConsensusStateTrusted::Trusted { elapsed } => Ok((client_state, Some(elapsed))),
+        }
+    }
+
+    /// Verifies if  the consensus state at given [`Height`]
+    /// is within or outside of the client's trusting period.
+    fn check_consensus_state_trusting_period(
+        &self,
+        client_state: &AnyClientState,
+        height: &Height,
+    ) -> Result<ConsensusStateTrusted, ForeignClientError> {
+        let _span = span!(Level::DEBUG, "check_consensus_state_trusting_period", height = %height)
+            .entered();
+
+        // Safety check
+        if client_state.chain_id() != self.src_chain.id() {
+            warn!("the chain id in the client state ('{}') is inconsistent with the client's source chain id ('{}')",
+            client_state.chain_id(), self.src_chain.id());
+        }
+
+        let consensus_state_timestamp = self.consensus_state(*height)?.timestamp();
 
         let current_src_network_time = self
             .src_chain
@@ -654,21 +709,20 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })?
             .timestamp;
 
-        // Compute the duration since the last update of this client
-        let elapsed = current_src_network_time.duration_since(&last_update_time);
+        // Compute the duration of time elapsed since this consensus state was installed
+        let elapsed = current_src_network_time
+            .duration_since(&consensus_state_timestamp)
+            .unwrap_or_default();
 
-        if client_state.expired(elapsed.unwrap_or_default()) {
-            return Err(ForeignClientError::expired_or_frozen(
-                self.id().clone(),
-                self.dst_chain.id(),
-                format!(
-                    "expired: time elapsed since last client update: {:?}",
-                    elapsed
-                ),
-            ));
+        if client_state.expired(elapsed) {
+            Ok(ConsensusStateTrusted::NotTrusted {
+                elapsed,
+                network_timestamp: current_src_network_time,
+                consensus_state_timestmap: consensus_state_timestamp,
+            })
+        } else {
+            Ok(ConsensusStateTrusted::Trusted { elapsed })
         }
-
-        Ok((client_state, elapsed))
     }
 
     pub fn is_expired_or_frozen(&self) -> bool {
@@ -886,6 +940,16 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             self.validate_trusted_height(trusted_height, &client_state)?;
             trusted_height
         };
+
+        // Check if the consensus state at `trusted_height` is within trusting period
+        if let ConsensusStateTrusted::NotTrusted { elapsed, .. } =
+            self.check_consensus_state_trusting_period(&client_state, &trusted_height)?
+        {
+            return Err(ForeignClientError::consensus_state_not_trusted(
+                trusted_height,
+                elapsed,
+            ));
+        }
 
         if trusted_height >= target_height {
             warn!(
