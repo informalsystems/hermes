@@ -63,12 +63,13 @@ pub fn process(
         packet.sequence,
     ))?;
 
-    let input = format!(
-        "{:?},{:?},{:?}",
-        packet.timeout_timestamp, packet.timeout_height, packet.data,
-    );
-
-    if packet_commitment != ctx.hash(input) {
+    if packet_commitment
+        != ctx.packet_commitment(
+            packet.data.clone(),
+            packet.timeout_height,
+            packet.timeout_timestamp,
+        )
+    {
         return Err(Error::incorrect_packet_commitment(packet.sequence));
     }
 
@@ -158,13 +159,11 @@ mod tests {
         .unwrap();
         let packet = msg.packet.clone();
 
-        let input = format!(
-            "{:?},{:?},{:?}",
+        let data = context.packet_commitment(
+            packet.data.clone(),
+            packet.timeout_height,
             packet.timeout_timestamp,
-            packet.timeout_height.clone(),
-            packet.data.clone()
         );
-        let data = ChannelReader::hash(&context, input);
 
         let source_channel_end = ChannelEnd::new(
             State::Open,

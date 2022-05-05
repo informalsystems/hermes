@@ -1,4 +1,5 @@
 use crate::core::ics04_channel::channel::State;
+use crate::core::ics04_channel::commitment::AcknowledgementCommitment;
 use crate::core::ics04_channel::events::WriteAcknowledgement;
 use crate::core::ics04_channel::packet::{Packet, PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error};
@@ -14,7 +15,7 @@ pub struct WriteAckPacketResult {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub seq: Sequence,
-    pub ack: Vec<u8>,
+    pub ack_commitment: AcknowledgementCommitment,
 }
 
 pub fn process(
@@ -58,7 +59,7 @@ pub fn process(
         port_id: packet.source_port.clone(),
         channel_id: packet.source_channel,
         seq: packet.sequence,
-        ack: ack.clone(),
+        ack_commitment: ctx.ack_commitment(ack.clone().into()),
     });
 
     output.log("success: packet write acknowledgement");

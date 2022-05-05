@@ -81,12 +81,12 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
         packet.sequence,
     ))?;
 
-    let input = format!(
-        "{:?},{:?},{:?}",
-        packet.timeout_timestamp, packet.timeout_height, packet.data,
+    let expected_commitment = ctx.packet_commitment(
+        packet.data.clone(),
+        packet.timeout_height,
+        packet.timeout_timestamp,
     );
-
-    if packet_commitment != ChannelReader::hash(ctx, input) {
+    if packet_commitment != expected_commitment {
         return Err(Error::incorrect_packet_commitment(packet.sequence));
     }
 
@@ -184,13 +184,11 @@ mod tests {
         let mut msg_ok = msg.clone();
         msg_ok.packet.timeout_timestamp = Default::default();
 
-        let input = format!(
-            "{:?},{:?},{:?}",
+        let data = context.packet_commitment(
+            msg_ok.packet.data.clone(),
+            msg_ok.packet.timeout_height,
             msg_ok.packet.timeout_timestamp,
-            msg_ok.packet.timeout_height.clone(),
-            msg_ok.packet.data.clone()
         );
-        let data = ChannelReader::hash(&context, input);
 
         let source_channel_end = ChannelEnd::new(
             State::Open,
