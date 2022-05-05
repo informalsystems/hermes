@@ -942,9 +942,19 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         };
 
         // Check if the consensus state at `trusted_height` is within trusting period
-        if let ConsensusStateTrusted::NotTrusted { elapsed, .. } =
-            self.check_consensus_state_trusting_period(&client_state, &trusted_height)?
+        if let ConsensusStateTrusted::NotTrusted {
+            elapsed,
+            consensus_state_timestmap,
+            network_timestamp,
+        } = self.check_consensus_state_trusting_period(&client_state, &trusted_height)?
         {
+            warn!(
+                trusted_height = %trusted_height,
+                network_timestmap = %network_timestamp,
+                consensus_state_timestamp = %consensus_state_timestmap,
+                elapsed = %elapsed,
+                "[{}] cannot build client update message because the provided trusted height is outside of trusting period!",
+                self);
             return Err(ForeignClientError::consensus_state_not_trusted(
                 trusted_height,
                 elapsed,
