@@ -6,6 +6,7 @@ use core::str::FromStr;
 use flex_error::{define_error, TraceError};
 use prost::alloc::fmt::Formatter;
 use serde_derive::{Deserialize, Serialize};
+use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::error as client_error;
@@ -319,10 +320,15 @@ impl TryFrom<IbcEvent> for AbciEvent {
             IbcEvent::CloseInitChannel(event) => event.into(),
             IbcEvent::CloseConfirmChannel(event) => event.into(),
             IbcEvent::SendPacket(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::ReceivePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::WriteAcknowledgement(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
-            _ => return Err(Error::incorrect_event_type(event.to_string())),
+            IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::AppModule(event) => event.into(),
+            IbcEvent::NewBlock(_) | IbcEvent::Empty(_) | IbcEvent::ChainError(_) => {
+                return Err(Error::incorrect_event_type(event.to_string()))
+            }
         })
     }
 }
