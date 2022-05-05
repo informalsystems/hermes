@@ -29,7 +29,7 @@ use ibc::{
     },
     downcast,
 };
-use tracing::{debug, span, trace};
+use tracing::trace;
 
 use crate::{chain::CosmosSdkChain, config::ChainConfig, error::Error};
 
@@ -105,12 +105,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
         crate::time!("light client check_misbehaviour");
-        let _span = span!(
-            tracing::Level::DEBUG,
-            "light_client::check_misbehaviour",
-            client_id = %update.common.client_id,
-        )
-        .entered();
 
         let update_header = update.header.clone().ok_or_else(|| {
             Error::misbehaviour(format!(
@@ -147,25 +141,8 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             return Ok(None);
         }
 
-        let Verified { target, supporting } = match self.verify(
-            trusted_height,
-            target_height,
-            client_state,
-        ) {
-            // Verification passed, return the target block + supporting blocks.
-            Ok(v) => v,
-
-            // Special-case: Verification failed because the trusted state is too old.
-            // This means we cannot check for misbehavior with the provided trusted state.
-            Err(e) if e.is_trusted_state_outside_trusting_period_error() => {
-                debug!(trusted = %trusted_height, target = %target_height,
-                    "trusted consensus state is outside of trusting period; check_misbehaviour finished OK");
-                return Ok(None);
-            }
-
-            // Unknown error occurred in the light client `verify` method. Propagate.
-            Err(e) => return Err(e),
-        };
+        let Verified { target, supporting } =
+            self.verify(trusted_height, target_height, client_state)?;
 
         if !headers_compatible(&target.signed_header, &update_header.signed_header) {
             let (witness, supporting) = self.adjust_headers(trusted_height, target, supporting)?;
