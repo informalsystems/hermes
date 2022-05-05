@@ -64,6 +64,10 @@ define_error! {
         IncorrectEventType
             { event: String }
             | e | { format_args!("incorrect event type: {}", e.event) },
+
+        MalformedModuleEvent
+            { event: ModuleEvent }
+            | e | { format_args!("module event cannot use core event types: {:?}", e.event) },
     }
 }
 
@@ -205,6 +209,7 @@ impl FromStr for IbcEventType {
             TIMEOUT_ON_CLOSE_EVENT => Ok(IbcEventType::TimeoutOnClose),
             EMPTY_EVENT => Ok(IbcEventType::Empty),
             CHAIN_ERROR_EVENT => Ok(IbcEventType::ChainError),
+            // from_str() for `APP_MODULE_EVENT` MUST fail because a `ModuleEvent`'s type isn't constant
             _ => Err(Error::incorrect_event_type(s.to_string())),
         }
     }
@@ -325,7 +330,7 @@ impl TryFrom<IbcEvent> for AbciEvent {
             IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::AppModule(event) => event.into(),
+            IbcEvent::AppModule(event) => event.try_into()?,
             IbcEvent::NewBlock(_) | IbcEvent::Empty(_) | IbcEvent::ChainError(_) => {
                 return Err(Error::incorrect_event_type(event.to_string()))
             }
@@ -487,6 +492,28 @@ pub struct ModuleEvent {
     pub attributes: Vec<ModuleEventAttribute>,
 }
 
+impl TryFrom<ModuleEvent> for AbciEvent {
+    type Error = Error;
+
+    fn try_from(event: ModuleEvent) -> Result<Self, Self::Error> {
+        if IbcEventType::from_str(event.kind.as_str()).is_ok() {
+            return Err(Error::malformed_module_event(event));
+        }
+
+        let attributes = event.attributes.into_iter().map(Into::into).collect();
+        Ok(AbciEvent {
+            type_str: event.kind,
+            attributes,
+        })
+    }
+}
+
+impl From<ModuleEvent> for IbcEvent {
+    fn from(e: ModuleEvent) -> Self {
+        IbcEvent::AppModule(e)
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ModuleEventAttribute {
     pub key: String,
@@ -502,9 +529,18 @@ impl<K: ToString, V: ToString> From<(K, V)> for ModuleEventAttribute {
     }
 }
 
-impl From<ModuleEvent> for IbcEvent {
-    fn from(e: ModuleEvent) -> Self {
-        IbcEvent::AppModule(e)
+impl From<ModuleEventAttribute> for Tag {
+    fn from(attr: ModuleEventAttribute) -> Self {
+        Self {
+            key: attr
+                .key
+                .parse()
+                .expect("Key::from_str() impl is infallible"),
+            value: attr
+                .key
+                .parse()
+                .expect("Value::from_str() impl is infallible"),
+        }
     }
 }
 
