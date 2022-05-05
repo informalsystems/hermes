@@ -194,11 +194,11 @@ impl TelemetryState {
         self.msg_num.add(count, labels);
     }
 
-    /// The balance in each wallet that Hermes is using, per wallet, denom and chain
-    pub fn wallet_balance(&self, chain_id: &ChainId, wallet: &str, amount: u64, denom: &str) {
+    /// The balance in each wallet that Hermes is using, per account, denom and chain
+    pub fn wallet_balance(&self, chain_id: &ChainId, account: &str, amount: u64, denom: &str) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
-            KeyValue::new("wallet", wallet.to_string()),
+            KeyValue::new("account", account.to_string()),
             KeyValue::new("denom", denom.to_string()),
         ];
 
