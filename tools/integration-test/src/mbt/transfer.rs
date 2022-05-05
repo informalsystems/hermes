@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 
 use ibc_relayer::config::{
     Channels as ConfigChannels, Clients as ConfigClients, Connections as ConfigConnections,
@@ -73,33 +74,49 @@ fn generate_mbt_traces(
         .collect()
 }
 
-#[test]
-fn test_ibc_transfer() -> Result<(), Error> {
+fn execute_mbt<F>(f: F) -> Result<(), Error>
+where
+    F: FnOnce(Vec<State>) -> Result<(), Error> + UnwindSafe + RefUnwindSafe + Copy,
+{
     let apalache = APALACHE.unwrap_or("apalache-mc");
     let num_traces = NUM_TRACES
         .unwrap_or("2")
         .parse()
         .expect("an number for number of traces per test");
 
+    let success_traces = &format!("{ITF_TRACE_DIRECTORY}/success");
+    let failure_traces = &format!("{ITF_TRACE_DIRECTORY}/failure");
+
+    std::fs::create_dir_all(success_traces)?;
+    std::fs::create_dir_all(failure_traces)?;
+
     for test_name in TEST_NAMES {
         for (itf_name, itf_json) in generate_mbt_traces(apalache, test_name, num_traces)? {
             let itf: InformalTrace<State> =
                 serde_json::from_str(&itf_json).expect("deserialization error");
 
-            let result = std::panic::catch_unwind(|| {
-                run_binary_channel_test(&IbcTransferMBT(itf.states)).expect("test to fail")
-            });
+            let result = std::panic::catch_unwind(|| f(itf.states).expect("to fail"));
+
+            let unique_itf_trace_path = if result.is_ok() {
+                format!("{success_traces}/{itf_name}")
+            } else {
+                format!("{failure_traces}/{itf_name}")
+            };
+
+            let mut file = std::fs::File::create(unique_itf_trace_path)?;
+            file.write_all(itf_json.as_bytes())?;
 
             if let Err(err) = result {
-                std::fs::create_dir_all(ITF_TRACE_DIRECTORY)?;
-                let unique_itf_trace_path = format!("{ITF_TRACE_DIRECTORY}/{itf_name}");
-                let mut file = std::fs::File::create(unique_itf_trace_path)?;
-                file.write_all(itf_json.as_bytes())?;
                 std::panic::resume_unwind(err);
             }
         }
     }
     Ok(())
+}
+
+#[test]
+fn test_ibc_transfer() -> Result<(), Error> {
+    execute_mbt(|trace| run_binary_channel_test(&IbcTransferMBT(trace)))
 }
 
 /**
@@ -112,34 +129,11 @@ fn test_self_connected_ibc_transfer() -> Result<(), Error> {
     use ibc_test_framework::framework::binary::chain::run_self_connected_binary_chain_test;
     use ibc_test_framework::framework::binary::channel::RunBinaryChannelTest;
 
-    let apalache = APALACHE.unwrap_or("apalache-mc");
-    let num_traces = NUM_TRACES
-        .unwrap_or("2")
-        .parse()
-        .expect("an number for number of traces per test");
-
-    for test_name in TEST_NAMES {
-        for (itf_name, itf_json) in generate_mbt_traces(apalache, test_name, num_traces)? {
-            let itf: InformalTrace<State> =
-                serde_json::from_str(&itf_json).expect("deserialization error");
-
-            let result = std::panic::catch_unwind(|| {
-                run_self_connected_binary_chain_test(&RunBinaryConnectionTest::new(
-                    &RunBinaryChannelTest::new(&IbcTransferMBT(itf.states)),
-                ))
-                .expect("test to fail")
-            });
-
-            if let Err(err) = result {
-                std::fs::create_dir_all(ITF_TRACE_DIRECTORY)?;
-                let unique_itf_trace_path = format!("{ITF_TRACE_DIRECTORY}/{itf_name}");
-                let mut file = std::fs::File::create(unique_itf_trace_path)?;
-                file.write_all(itf_json.as_bytes())?;
-                std::panic::resume_unwind(err);
-            }
-        }
-    }
-    Ok(())
+    execute_mbt(|trace| {
+        run_self_connected_binary_chain_test(&RunBinaryConnectionTest::new(
+            &RunBinaryChannelTest::new(&IbcTransferMBT(trace)),
+        ))
+    })
 }
 
 pub struct IbcTransferMBT(Vec<State>);
