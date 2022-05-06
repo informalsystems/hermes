@@ -80,7 +80,7 @@ impl<'a> TryFrom<Vec<&'a str>> for TracePath {
 
         let mut trace = vec![];
         let id_pairs = v.windows(2).map(|paths| (paths[0], paths[1]));
-        for (pos, (port_id, channel_id)) in id_pairs.enumerate() {
+        for (pos, (port_id, channel_id)) in id_pairs.step_by(2).enumerate() {
             let port_id =
                 PortId::from_str(port_id).map_err(|e| Error::invalid_trace_port_id(pos, e))?;
             let channel_id = ChannelId::from_str(channel_id)
