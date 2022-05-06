@@ -37,8 +37,6 @@ impl FromStr for Denom {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.trim().is_empty() {
             Err(Error::empty_base_denom())
-        } else if s.contains('/') {
-            Err(Error::invalid_base_denom())
         } else {
             Ok(Denom(s.to_owned()))
         }
