@@ -53,9 +53,6 @@ define_error! {
         EmptyBaseDenom
             |_| { "base denomination is empty" },
 
-        InvalidBaseDenom
-            |_| { "invalid characters in base denomination" },
-
         InvalidTracePortId
             { pos: usize }
             [ ValidationError ]
@@ -82,6 +79,9 @@ define_error! {
 
         MissingDenomIbcPrefix
             | _ | { "missing 'ibc/' prefix in denomination" },
+
+        MalformedHashDenom
+            | _ | { "hashed denom must be of the form 'ibc/{Hash}'" },
 
         ParseHex
             [ TraceError<EncodingError> ]

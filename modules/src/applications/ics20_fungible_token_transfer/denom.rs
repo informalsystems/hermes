@@ -15,7 +15,7 @@ use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 use crate::serializers::serde_string;
 
-const IBC_DENOM_PREFIX: &str = "ibc/";
+const IBC_DENOM_PREFIX: &str = "ibc";
 
 /// A `Coin` type with fully qualified `DenomTrace`.
 pub type PrefixedCoin = Coin<DenomTrace>;
@@ -263,7 +263,7 @@ impl From<&DenomTrace> for HashedDenom {
 impl fmt::Display for HashedDenom {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let denom_hex = String::from_utf8(hex::encode_upper(&self.0)).map_err(|_| fmt::Error)?;
-        write!(f, "{}{}", IBC_DENOM_PREFIX, denom_hex)
+        write!(f, "{}/{}", IBC_DENOM_PREFIX, denom_hex)
     }
 }
 
@@ -271,10 +271,14 @@ impl FromStr for HashedDenom {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s = s
-            .strip_prefix(IBC_DENOM_PREFIX)
-            .ok_or_else(Error::missing_denom_ibc_prefix)?;
-        let bytes = hex::decode_upper(s).map_err(Error::parse_hex)?;
+        let parts: Vec<&str> = s.split('/').collect();
+        if parts.len() != 2 || parts[1].trim().is_empty() {
+            return Err(Error::malformed_hash_denom());
+        } else if parts[0] != IBC_DENOM_PREFIX {
+            return Err(Error::missing_denom_ibc_prefix());
+        }
+
+        let bytes = hex::decode_upper(parts[1]).map_err(Error::parse_hex)?;
         Ok(Self(bytes))
     }
 }
