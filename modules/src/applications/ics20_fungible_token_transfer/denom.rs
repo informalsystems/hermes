@@ -442,4 +442,39 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_denom_trace() -> Result<(), Error> {
+        assert_eq!(
+            DenomTrace::from_str("transfer/channel-0/uatom")?,
+            DenomTrace {
+                trace_path: "transfer/channel-0".parse()?,
+                base_denom: "uatom".parse()?
+            },
+            "valid single trace info"
+        );
+        assert_eq!(
+            DenomTrace::from_str("transfer/channel-0/transfer/channel-1/uatom")?,
+            DenomTrace {
+                trace_path: "transfer/channel-0/transfer/channel-1".parse()?,
+                base_denom: "uatom".parse()?
+            },
+            "valid multiple trace info"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_denom_serde() -> Result<(), Error> {
+        let dt_str = "transfer/channel-0/uatom";
+        let dt = DenomTrace::from_str(dt_str)?;
+        assert_eq!(dt.to_string(), dt_str, "valid single trace info");
+
+        let dt_str = "transfer/channel-0/transfer/channel-1/uatom";
+        let dt = DenomTrace::from_str(dt_str)?;
+        assert_eq!(dt.to_string(), dt_str, "valid multiple trace info");
+
+        Ok(())
+    }
 }
