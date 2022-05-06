@@ -1655,8 +1655,9 @@ dependencies = [
 
 [[package]]
 name = "ics23"
-version = "0.7.0"
-source = "git+https://github.com/mzabaluev/ics23.git?branch=prost-0.10#ea7ef846bdd5325584d8fd2c8935ac674d056ae9"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78675f2d967f54a6125bd218900405b01c130c31520f66092688e52a886029ce"
 dependencies = [
  "anyhow",
  "bytes",
