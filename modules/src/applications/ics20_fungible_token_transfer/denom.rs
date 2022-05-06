@@ -99,7 +99,15 @@ impl FromStr for TracePath {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.split('/').collect::<Vec<&str>>().try_into()
+        let parts = {
+            let parts: Vec<&str> = s.split('/').collect();
+            if parts.len() == 1 && parts[0].trim().is_empty() {
+                vec![]
+            } else {
+                parts
+            }
+        };
+        parts.try_into()
     }
 }
 
