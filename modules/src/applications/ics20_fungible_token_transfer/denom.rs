@@ -477,4 +477,22 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_trace_path() -> Result<(), Error> {
+        assert!(TracePath::from_str("").is_ok(), "empty trace path");
+        assert!(
+            TracePath::from_str("transfer/uatom").is_err(),
+            "invalid trace path: bad ChannelId"
+        );
+        assert!(
+            TracePath::from_str("transfer//uatom").is_err(),
+            "malformed trace path: missing ChannelId"
+        );
+        assert!(
+            TracePath::from_str("transfer/channel-0/").is_err(),
+            "malformed trace path: trailing delimiter"
+        );
+        Ok(())
+    }
 }
