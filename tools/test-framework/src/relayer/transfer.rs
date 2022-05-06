@@ -5,14 +5,22 @@
 
 use core::time::Duration;
 use ibc::events::IbcEvent;
+use ibc::signer::Signer;
+use ibc_relayer::chain::cosmos::query::status::query_status;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::transfer::{build_and_send_transfer_messages, Amount, TransferOptions};
+use ibc_relayer::transfer::{
+    build_and_send_transfer_messages, build_transfer_message, Amount, TransferOptions,
+    TransferTimeout,
+};
 
+use crate::chain::driver::tagged::TaggedChainDriverExt;
+use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::types::binary::channel::ConnectedChannel;
+use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
-use crate::types::wallet::WalletAddress;
+use crate::types::wallet::{Wallet, WalletAddress};
 
 /**
    Perform the same operation as `hermes tx raw ft-transfer`.
@@ -63,4 +71,65 @@ pub fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     let events = build_and_send_transfer_messages(src_handle, dst_handle, &transfer_options)?;
 
     Ok(events)
+}
+
+pub fn ibc_token_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
+    chain_driver: &MonoTagged<SrcChain, &ChainDriver>,
+    port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
+    channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
+    sender: &MonoTagged<SrcChain, &Wallet>,
+    recipient: &MonoTagged<DstChain, &WalletAddress>,
+    denom: &MonoTagged<SrcChain, &Denom>,
+    amount: u64,
+) -> Result<(), Error> {
+    chain_driver
+        .value()
+        .runtime
+        .block_on(async_ibc_token_transfer(
+            chain_driver,
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            denom,
+            amount,
+        ))
+}
+
+pub async fn async_ibc_token_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
+    chain_driver: &MonoTagged<SrcChain, &ChainDriver>,
+    port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
+    channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
+    sender: &MonoTagged<SrcChain, &Wallet>,
+    recipient: &MonoTagged<DstChain, &WalletAddress>,
+    denom: &MonoTagged<SrcChain, &Denom>,
+    amount: u64,
+) -> Result<(), Error> {
+    let chain_id = chain_driver.chain_id();
+
+    let tx_config = &chain_driver.value().tx_config;
+
+    let status = query_status(
+        chain_id.value(),
+        &tx_config.rpc_client,
+        &tx_config.rpc_address,
+    )
+    .await?;
+
+    let timeout = TransferTimeout::new(500, Duration::from_secs(60), &status)?;
+
+    let message = build_transfer_message(
+        (*port_id.value()).clone(),
+        **channel_id.value(),
+        amount.into(),
+        denom.value().to_string(),
+        Signer::new(sender.value().address.0.clone()),
+        Signer::new(recipient.value().0.clone()),
+        timeout.timeout_height,
+        timeout.timeout_timestamp,
+    );
+
+    chain_driver.send_tx(sender, vec![message]).await?;
+
+    Ok(())
 }

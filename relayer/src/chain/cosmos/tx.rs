@@ -2,53 +2,66 @@ use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{Client, HttpClient, Url};
-use tonic::codegen::http::Uri;
 
 use crate::chain::cosmos::encode::sign_and_encode_tx;
 use crate::chain::cosmos::estimate::estimate_tx_fees;
 use crate::chain::cosmos::types::account::Account;
+use crate::chain::cosmos::types::config::TxConfig;
 use crate::config::types::Memo;
-use crate::config::ChainConfig;
+use crate::config::AddressType;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
 pub async fn estimate_fee_and_send_tx(
-    config: &ChainConfig,
-    rpc_client: &HttpClient,
-    grpc_address: &Uri,
+    config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
+    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Response, Error> {
     let fee = estimate_tx_fees(
         config,
-        grpc_address,
         key_entry,
         account,
+        address_type,
         tx_memo,
         messages.clone(),
     )
     .await?;
 
     send_tx_with_fee(
-        config, rpc_client, key_entry, account, tx_memo, messages, &fee,
+        config,
+        key_entry,
+        account,
+        address_type,
+        tx_memo,
+        messages,
+        &fee,
     )
     .await
 }
 
 async fn send_tx_with_fee(
-    config: &ChainConfig,
-    rpc_client: &HttpClient,
+    config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
+    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
     fee: &Fee,
 ) -> Result<Response, Error> {
-    let tx_bytes = sign_and_encode_tx(config, key_entry, account, tx_memo, messages, fee)?;
+    let tx_bytes = sign_and_encode_tx(
+        config,
+        key_entry,
+        account,
+        address_type,
+        tx_memo,
+        messages,
+        fee,
+    )?;
 
-    let response = broadcast_tx_sync(rpc_client, &config.rpc_addr, tx_bytes).await?;
+    let response = broadcast_tx_sync(&config.rpc_client, &config.rpc_address, tx_bytes).await?;
 
     Ok(response)
 }

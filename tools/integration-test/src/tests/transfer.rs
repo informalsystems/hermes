@@ -1,5 +1,6 @@
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::transfer::ibc_token_transfer;
 use ibc_test_framework::util::random::random_u64_range;
 
 #[test]
@@ -70,13 +71,14 @@ impl BinaryChannelTest for IbcTransferTest {
             denom_a
         );
 
-        chains.node_a.chain_driver().transfer_token(
+        ibc_token_transfer(
+            &chains.node_a.chain_driver(),
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &wallet_a.address(),
+            &wallet_a.as_ref(),
             &wallet_b.address(),
-            a_to_b_amount,
             &denom_a,
+            a_to_b_amount,
         )?;
 
         let denom_b = derive_ibc_denom(
@@ -123,13 +125,14 @@ impl BinaryChannelTest for IbcTransferTest {
             denom_b
         );
 
-        chains.node_b.chain_driver().transfer_token(
+        ibc_token_transfer(
+            &chains.node_b.chain_driver(),
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
-            &wallet_b.address(),
+            &wallet_b.as_ref(),
             &wallet_c.address(),
-            b_to_a_amount,
             &denom_b.as_ref(),
+            b_to_a_amount,
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(

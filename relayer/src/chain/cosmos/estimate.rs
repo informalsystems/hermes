@@ -8,21 +8,22 @@ use crate::chain::cosmos::encode::sign_tx;
 use crate::chain::cosmos::gas::{gas_amount_to_fees, PrettyFee};
 use crate::chain::cosmos::simulate::send_tx_simulate;
 use crate::chain::cosmos::types::account::Account;
+use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::Memo;
-use crate::config::ChainConfig;
+use crate::config::AddressType;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
 pub async fn estimate_tx_fees(
-    config: &ChainConfig,
-    grpc_address: &Uri,
+    config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
+    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Fee, Error> {
-    let gas_config = GasConfig::from_chain_config(config);
+    let gas_config = &config.gas_config;
 
     debug!(
         "max fee, for use in tx simulation: {}",
@@ -33,6 +34,7 @@ pub async fn estimate_tx_fees(
         config,
         key_entry,
         account,
+        address_type,
         tx_memo,
         messages,
         &gas_config.max_fee,
@@ -44,7 +46,8 @@ pub async fn estimate_tx_fees(
         signatures: signed_tx.signatures,
     };
 
-    let estimated_fee = estimate_fee_with_tx(&gas_config, grpc_address, &config.id, tx).await?;
+    let estimated_fee =
+        estimate_fee_with_tx(gas_config, &config.grpc_address, &config.chain_id, tx).await?;
 
     Ok(estimated_fee)
 }

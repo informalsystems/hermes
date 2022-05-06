@@ -5,15 +5,14 @@ use ibc_proto::google::protobuf::Any;
 use std::thread;
 use tendermint::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::HttpClient;
-use tonic::codegen::http::Uri;
 use tracing::{debug, error, span, warn, Level};
 
 use crate::chain::cosmos::query::account::refresh_account;
 use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
 use crate::chain::cosmos::types::account::Account;
+use crate::chain::cosmos::types::config::TxConfig;
 use crate::config::types::Memo;
-use crate::config::ChainConfig;
+use crate::config::AddressType;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
@@ -47,25 +46,23 @@ const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
 /// nonetheless at the worker `step` level). Upon case #2, we retry
 /// submitting the same transaction.
 pub async fn send_tx_with_account_sequence_retry(
-    config: &ChainConfig,
-    rpc_client: &HttpClient,
-    grpc_address: &Uri,
+    config: &TxConfig,
     key_entry: &KeyEntry,
     account: &mut Account,
+    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
     retry_counter: u64,
 ) -> Result<Response, Error> {
     crate::time!("send_tx_with_account_sequence_retry");
     let _span =
-        span!(Level::ERROR, "send_tx_with_account_sequence_retry", id = %config.id).entered();
+        span!(Level::ERROR, "send_tx_with_account_sequence_retry", id = %config.chain_id).entered();
 
     do_send_tx_with_account_sequence_retry(
         config,
-        rpc_client,
-        grpc_address,
         key_entry,
         account,
+        address_type,
         tx_memo,
         messages,
         retry_counter,
@@ -77,11 +74,10 @@ pub async fn send_tx_with_account_sequence_retry(
 // do not currently support recursive async functions behind the
 // `async fn` syntactic sugar.
 fn do_send_tx_with_account_sequence_retry<'a>(
-    config: &'a ChainConfig,
-    rpc_client: &'a HttpClient,
-    grpc_address: &'a Uri,
+    config: &'a TxConfig,
     key_entry: &'a KeyEntry,
     account: &'a mut Account,
+    address_type: &'a AddressType,
     tx_memo: &'a Memo,
     messages: Vec<Any>,
     retry_counter: u64,
@@ -95,10 +91,9 @@ fn do_send_tx_with_account_sequence_retry<'a>(
 
         let tx_result = estimate_fee_and_send_tx(
             config,
-            rpc_client,
-            grpc_address,
             key_entry,
             account,
+            address_type,
             tx_memo,
             messages.clone(),
         )
@@ -113,7 +108,7 @@ fn do_send_tx_with_account_sequence_retry<'a>(
             // retry at the worker-level will handle retrying.
             Err(e) if mismatching_account_sequence_number(&e) => {
                 warn!("failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
-                refresh_account(grpc_address, &key_entry.account, account).await?;
+                refresh_account(&config.grpc_address, &key_entry.account, account).await?;
                 // Note: propagating error here can lead to bug & dropped packets:
                 // https://github.com/informalsystems/ibc-rs/issues/1153
                 // But periodic packet clearing will catch any dropped packets.
@@ -130,15 +125,14 @@ fn do_send_tx_with_account_sequence_retry<'a>(
                     let backoff = retry_counter * BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
 
                     thread::sleep(Duration::from_millis(backoff));
-                    refresh_account(grpc_address, &key_entry.account, account).await?;
+                    refresh_account(&config.grpc_address, &key_entry.account, account).await?;
 
                     // Now retry.
                     do_send_tx_with_account_sequence_retry(
                         config,
-                        rpc_client,
-                        grpc_address,
                         key_entry,
                         account,
+                        address_type,
                         tx_memo,
                         messages,
                         retry_counter + 1,

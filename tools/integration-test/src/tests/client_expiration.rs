@@ -304,7 +304,7 @@ impl BinaryChainTest for PacketExpirationTest {
                 chains.node_a.chain_driver().transfer_token(
                     &channels.port_a.as_ref(),
                     &channels.channel_id_a.as_ref(),
-                    &chains.node_a.wallets().user1().address(),
+                    &chains.node_a.wallets().user1(),
                     &chains.node_b.wallets().user1().address(),
                     100,
                     &chains.node_a.denom(),
@@ -332,7 +332,7 @@ impl BinaryChainTest for PacketExpirationTest {
                 chains.node_a.chain_driver().transfer_token(
                     &channels.port_a.as_ref(),
                     &channels.channel_id_a.as_ref(),
-                    &chains.node_a.wallets().user1().address(),
+                    &chains.node_a.wallets().user1(),
                     &chains.node_b.wallets().user1().address(),
                     100,
                     &chains.node_a.denom(),

@@ -52,7 +52,7 @@ impl BinaryChannelTest for ConnectionDelayTest {
             chains.node_a.chain_driver().transfer_token(
                 &channel.port_a.as_ref(),
                 &channel.channel_id_a.as_ref(),
-                &wallet_a.address(),
+                &wallet_a.as_ref(),
                 &wallet_b.address(),
                 a_to_b_amount,
                 &denom_a,

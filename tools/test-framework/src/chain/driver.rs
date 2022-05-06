@@ -5,6 +5,7 @@
 use core::str::FromStr;
 use core::time::Duration;
 
+use alloc::sync::Arc;
 use eyre::eyre;
 use semver::Version;
 use serde_json as json;
@@ -12,16 +13,20 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::str;
+use tokio::runtime::Runtime;
 use toml;
 use tracing::debug;
 
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 
 use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::chain::version::get_chain_command_version;
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
+use crate::relayer::tx::{new_tx_config_for_test, simple_send_tx};
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
@@ -82,6 +87,8 @@ pub struct ChainDriver {
     */
     pub home_path: String,
 
+    pub account_prefix: String,
+
     /**
        The port used for RPC.
     */
@@ -98,6 +105,10 @@ pub struct ChainDriver {
        The port used for P2P. (Currently unused other than for setup)
     */
     pub p2p_port: u16,
+
+    pub tx_config: TxConfig,
+
+    pub runtime: Arc<Runtime>,
 }
 
 impl ExportEnv for ChainDriver {
@@ -115,24 +126,35 @@ impl ChainDriver {
         command_path: String,
         chain_id: ChainId,
         home_path: String,
+        account_prefix: String,
         rpc_port: u16,
         grpc_port: u16,
         grpc_web_port: u16,
         p2p_port: u16,
+        runtime: Arc<Runtime>,
     ) -> Result<Self, Error> {
         // Assume we're on Gaia 6 if we can't get a version
         // (eg. with `icad`, which returns an empty string).
         let command_version = get_chain_command_version(&command_path)?;
+
+        let tx_config = new_tx_config_for_test(
+            chain_id.clone(),
+            format!("http://localhost:{}", rpc_port),
+            format!("http://localhost:{}", grpc_port),
+        )?;
 
         Ok(Self {
             command_path,
             command_version,
             chain_id,
             home_path,
+            account_prefix,
             rpc_port,
             grpc_port,
             grpc_web_port,
             p2p_port,
+            tx_config,
+            runtime,
         })
     }
 
@@ -478,6 +500,10 @@ impl ChainDriver {
         let amount = u64::from_str(&amount_str).map_err(handle_generic_error)?;
 
         Ok(amount)
+    }
+
+    pub async fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<(), Error> {
+        simple_send_tx(&self.tx_config, &wallet.key, messages).await
     }
 
     /**

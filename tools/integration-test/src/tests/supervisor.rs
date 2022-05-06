@@ -95,14 +95,14 @@ impl BinaryChainTest for SupervisorTest {
         // wallet to mess up the account sequence number on both sides.
 
         chains.node_a.chain_driver().local_transfer_token(
-            &chains.node_a.wallets().relayer().address(),
+            &chains.node_a.wallets().relayer(),
             &chains.node_a.wallets().user2().address(),
             1000,
             &denom_a,
         )?;
 
         chains.node_b.chain_driver().local_transfer_token(
-            &chains.node_b.wallets().relayer().address(),
+            &chains.node_b.wallets().relayer(),
             &chains.node_b.wallets().user2().address(),
             1000,
             &chains.node_b.denom(),
@@ -119,7 +119,7 @@ impl BinaryChainTest for SupervisorTest {
         chains.node_a.chain_driver().transfer_token(
             &port_a.as_ref(),
             &channel_id_a.as_ref(),
-            &wallet_a.address(),
+            &wallet_a.as_ref(),
             &wallet_b.address(),
             transfer_amount,
             &denom_a,

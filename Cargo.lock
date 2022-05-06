@@ -1627,12 +1627,14 @@ dependencies = [
 name = "ibc-test-framework"
 version = "0.14.1"
 dependencies = [
+ "async-trait",
  "color-eyre",
  "crossbeam-channel 0.5.4",
  "env_logger",
  "eyre",
  "flex-error",
  "hex",
+ "http",
  "ibc",
  "ibc-proto",
  "ibc-relayer",

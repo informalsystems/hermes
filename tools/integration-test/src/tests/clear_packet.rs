@@ -54,7 +54,7 @@ impl BinaryChannelTest for ClearPacketTest {
         chains.node_a.chain_driver().transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &wallet_a.address(),
+            &wallet_a.as_ref(),
             &wallet_b.address(),
             amount1,
             &denom_a,
@@ -76,7 +76,7 @@ impl BinaryChannelTest for ClearPacketTest {
             chains.node_a.chain_driver().transfer_token(
                 &channel.port_a.as_ref(),
                 &channel.channel_id_a.as_ref(),
-                &wallet_a.address(),
+                &wallet_a.as_ref(),
                 &wallet_b.address(),
                 amount2,
                 &denom_a,

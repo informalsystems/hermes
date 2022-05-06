@@ -6,7 +6,7 @@ use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::types::wallet::WalletAddress;
+use crate::types::wallet::{Wallet, WalletAddress};
 
 use super::ChainDriver;
 
@@ -21,11 +21,20 @@ pub fn transfer_token(
     driver: &ChainDriver,
     port_id: &PortId,
     channel_id: &ChannelId,
-    sender: &WalletAddress,
+    sender: &Wallet,
     recipient: &WalletAddress,
     amount: u64,
     denom: &Denom,
 ) -> Result<(), Error> {
+    // let message = build_transfer_message(
+    //     port_id,
+    //     channel_id,
+    //     amount.into(),
+    //     denom.as_str().to_string(),
+    //     Signer::new(sender.address.0),
+    //     Signer::new(recipient.0),
+    // )
+
     driver.exec(&[
         "--node",
         &driver.rpc_listen_address(),
@@ -37,7 +46,7 @@ pub fn transfer_token(
         &recipient.0,
         &format!("{}{}", amount, denom),
         "--from",
-        &sender.0,
+        &sender.address.0,
         "--chain-id",
         driver.chain_id.as_str(),
         "--home",
@@ -52,7 +61,7 @@ pub fn transfer_token(
 
 pub fn local_transfer_token(
     driver: &ChainDriver,
-    sender: &WalletAddress,
+    sender: &Wallet,
     recipient: &WalletAddress,
     amount: u64,
     denom: &Denom,
@@ -63,7 +72,7 @@ pub fn local_transfer_token(
         "tx",
         "bank",
         "send",
-        &sender.0,
+        &sender.address.0,
         &recipient.0,
         &format!("{}{}", amount, denom),
         "--chain-id",

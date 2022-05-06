@@ -2,25 +2,24 @@ use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::{HttpClient, Url};
-use tonic::codegen::http::Uri;
 
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
+use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::tx::TxSyncResult;
 use crate::chain::cosmos::wait::wait_for_block_commits;
-use crate::config::types::Memo;
-use crate::config::ChainConfig;
+use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::config::AddressType;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
 pub async fn send_batched_messages_and_wait_commit(
-    config: &ChainConfig,
-    rpc_client: &HttpClient,
-    rpc_address: &Url,
-    grpc_address: &Uri,
+    config: &TxConfig,
+    max_msg_num: MaxMsgNum,
+    max_tx_size: MaxTxSize,
     key_entry: &KeyEntry,
     account: &mut Account,
+    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<IbcEvent>, Error> {
@@ -30,19 +29,20 @@ pub async fn send_batched_messages_and_wait_commit(
 
     let mut tx_sync_results = send_messages_as_batches(
         config,
-        rpc_client,
-        grpc_address,
+        max_msg_num,
+        max_tx_size,
         key_entry,
         account,
+        address_type,
         tx_memo,
         messages,
     )
     .await?;
 
     wait_for_block_commits(
-        &config.id,
-        rpc_client,
-        rpc_address,
+        &config.chain_id,
+        &config.rpc_client,
+        &config.rpc_address,
         &config.rpc_timeout,
         &mut tx_sync_results,
     )
@@ -57,11 +57,12 @@ pub async fn send_batched_messages_and_wait_commit(
 }
 
 pub async fn send_batched_messages_and_wait_check_tx(
-    config: &ChainConfig,
-    rpc_client: &HttpClient,
-    grpc_address: &Uri,
+    config: &TxConfig,
+    max_msg_num: MaxMsgNum,
+    max_tx_size: MaxTxSize,
     key_entry: &KeyEntry,
     account: &mut Account,
+    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<Response>, Error> {
@@ -69,17 +70,16 @@ pub async fn send_batched_messages_and_wait_check_tx(
         return Ok(Vec::new());
     }
 
-    let batches = batch_messages(config, messages)?;
+    let batches = batch_messages(max_msg_num, max_tx_size, messages)?;
 
     let mut responses = Vec::new();
 
     for batch in batches {
         let response = send_tx_with_account_sequence_retry(
             config,
-            rpc_client,
-            grpc_address,
             key_entry,
             account,
+            address_type,
             tx_memo,
             batch,
             0,
@@ -93,11 +93,12 @@ pub async fn send_batched_messages_and_wait_check_tx(
 }
 
 async fn send_messages_as_batches(
-    config: &ChainConfig,
-    rpc_client: &HttpClient,
-    grpc_address: &Uri,
+    config: &TxConfig,
+    max_msg_num: MaxMsgNum,
+    max_tx_size: MaxTxSize,
     key_entry: &KeyEntry,
     account: &mut Account,
+    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<TxSyncResult>, Error> {
@@ -105,7 +106,7 @@ async fn send_messages_as_batches(
         return Ok(Vec::new());
     }
 
-    let batches = batch_messages(config, messages)?;
+    let batches = batch_messages(max_msg_num, max_tx_size, messages)?;
 
     let mut tx_sync_results = Vec::new();
 
@@ -114,10 +115,9 @@ async fn send_messages_as_batches(
 
         let response = send_tx_with_account_sequence_retry(
             config,
-            rpc_client,
-            grpc_address,
             key_entry,
             account,
+            address_type,
             tx_memo,
             batch,
             0,
@@ -135,9 +135,13 @@ async fn send_messages_as_batches(
     Ok(tx_sync_results)
 }
 
-fn batch_messages(config: &ChainConfig, messages: Vec<Any>) -> Result<Vec<Vec<Any>>, Error> {
-    let max_message_count = config.max_msg_num.0;
-    let max_tx_size = config.max_tx_size.into();
+fn batch_messages(
+    max_msg_num: MaxMsgNum,
+    max_tx_size: MaxTxSize,
+    messages: Vec<Any>,
+) -> Result<Vec<Vec<Any>>, Error> {
+    let max_message_count = max_msg_num.0;
+    let max_tx_size = max_tx_size.into();
 
     let mut batches = vec![];
 

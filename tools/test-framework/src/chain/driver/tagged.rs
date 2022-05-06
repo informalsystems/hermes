@@ -2,15 +2,17 @@
    Methods for tagged version of the chain driver.
 */
 
+use async_trait::async_trait;
+use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
 use serde_json as json;
 
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::prelude::TaggedConnectionIdRef;
-use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
+use crate::types::id::{TaggedChainIdRef, TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
-use crate::types::wallet::WalletAddress;
+use crate::types::wallet::{Wallet, WalletAddress};
 
 use super::interchain::{interchain_submit, query_interchain_account, register_interchain_account};
 use super::query_txs::query_recipient_transactions;
@@ -27,7 +29,16 @@ use super::ChainDriver;
    The tagged chain driver methods help ensure that the `ChainDriver`
    methods are used with the values associated to the correct chain.
 */
+#[async_trait]
 pub trait TaggedChainDriverExt<Chain> {
+    fn chain_id(&self) -> TaggedChainIdRef<Chain>;
+
+    async fn send_tx(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        messages: Vec<Any>,
+    ) -> Result<(), Error>;
+
     /**
        Tagged version of [`ChainDriver::query_balance`].
 
@@ -77,7 +88,7 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
-        sender: &MonoTagged<Chain, &WalletAddress>,
+        sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
@@ -85,7 +96,7 @@ pub trait TaggedChainDriverExt<Chain> {
 
     fn local_transfer_token(
         &self,
-        sender: &MonoTagged<Chain, &WalletAddress>,
+        sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
         amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
@@ -122,7 +133,20 @@ pub trait TaggedChainDriverExt<Chain> {
     ) -> Result<(), Error>;
 }
 
-impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+#[async_trait]
+impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+    fn chain_id(&self) -> TaggedChainIdRef<Chain> {
+        MonoTagged::new(&self.value().chain_id)
+    }
+
+    async fn send_tx(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        messages: Vec<Any>,
+    ) -> Result<(), Error> {
+        self.value().send_tx(wallet.value(), messages).await
+    }
+
     fn query_balance(
         &self,
         wallet_id: &MonoTagged<Chain, &WalletAddress>,
@@ -145,7 +169,7 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
-        sender: &MonoTagged<Chain, &WalletAddress>,
+        sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
@@ -163,7 +187,7 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
 
     fn local_transfer_token(
         &self,
-        sender: &MonoTagged<Chain, &WalletAddress>,
+        sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
         amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
