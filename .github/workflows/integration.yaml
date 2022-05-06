@@ -206,8 +206,8 @@ jobs:
           NO_COLOR_LOG: 1
         run: |
           nix shell \
-            github:informalsystems/cosmos.nix#${{ matrix.gaiad }} \
-            github:informalsystems/cosmos.nix#apalache \
+            .#${{ matrix.gaiad }} \
+            .#apalache \
             -c cargo \
             test -p ibc-integration-test --features mbt --no-fail-fast -- \
             --nocapture --test-threads=1 mbt
