@@ -19,6 +19,7 @@ impl TryFrom<RawPacketData> for PacketData {
     type Error = Error;
 
     fn try_from(raw_pkt_data: RawPacketData) -> Result<Self, Self::Error> {
+        // This denom may be prefixed or unprefixed.
         let denom = DenomTrace::from_str(&raw_pkt_data.denom)?;
         let amount = Amount::from_str(&raw_pkt_data.amount)?;
         Ok(Self {

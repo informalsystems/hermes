@@ -74,7 +74,7 @@ impl<'a> TryFrom<Vec<&'a str>> for TracePath {
     type Error = Error;
 
     fn try_from(v: Vec<&'a str>) -> Result<Self, Self::Error> {
-        if v.is_empty() || v.len() % 2 != 0 {
+        if v.len() % 2 != 0 {
             return Err(Error::invalid_trace_length(v.len()));
         }
 
