@@ -497,4 +497,126 @@ mod tests {
         );
         Ok(())
     }
+
+    #[test]
+    fn test_ibc_coin_from_prefixed_coin() -> Result<(), Error> {
+        let denom_str = "uatom";
+        let amount = "1000".parse()?;
+        let coin = PrefixedCoin {
+            denom: denom_str.parse()?,
+            amount,
+        };
+        assert_eq!(
+            IbcCoin::from(coin),
+            IbcCoin::Base(BaseCoin {
+                denom: denom_str.parse()?,
+                amount,
+            }),
+            "valid base denom"
+        );
+
+        let denom_str = "transfer/channel-0/uatom";
+        let amount = "1000".parse()?;
+        let coin = PrefixedCoin {
+            denom: denom_str.parse()?,
+            amount,
+        };
+        assert_eq!(
+            IbcCoin::from(coin),
+            IbcCoin::Hashed(HashedCoin {
+                denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+                    .parse()?,
+                amount,
+            }),
+            "valid hashed denom"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ibc_coin_validation() -> Result<(), Error> {
+        struct Test {
+            name: &'static str,
+            denom: &'static str,
+            exp_coin: Option<IbcCoin>,
+        }
+
+        let amount = Amount::from_str("1000")?;
+        let hashed_denom = "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
+        let base_denom_slash = "gamm/pool/1";
+        let base_denom_double_slash = "gamm//pool//1";
+        let non_ibc_prefixed_denom =
+            "notibc/7F1D3FCF4AE79E1554D670D1AD949A9BA4E4A3C76C63093E17E446A46061A7A2";
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "hashed denom",
+                denom: hashed_denom,
+                exp_coin: Some(IbcCoin::Hashed(HashedCoin {
+                    denom: hashed_denom.parse()?,
+                    amount,
+                })),
+            },
+            Test {
+                name: "base denom with '/'s",
+                denom: base_denom_slash,
+                exp_coin: Some(IbcCoin::Base(BaseCoin {
+                    denom: base_denom_slash.parse()?,
+                    amount,
+                })),
+            },
+            Test {
+                name: "base denom with '//'s",
+                denom: base_denom_double_slash,
+                exp_coin: Some(IbcCoin::Base(BaseCoin {
+                    denom: base_denom_double_slash.parse()?,
+                    amount,
+                })),
+            },
+            Test {
+                name: "non-ibc prefix with hash",
+                denom: non_ibc_prefixed_denom,
+                exp_coin: Some(IbcCoin::Base(BaseCoin {
+                    denom: non_ibc_prefixed_denom.parse()?,
+                    amount,
+                })),
+            },
+            Test {
+                name: "empty denom",
+                denom: "",
+                exp_coin: None,
+            },
+            Test {
+                name: "'ibc' denom",
+                denom: "ibc",
+                exp_coin: None,
+            },
+            Test {
+                name: "'ibc/' denom",
+                denom: "ibc/",
+                exp_coin: None,
+            },
+            Test {
+                name: "invalid hashed denom",
+                denom: "ibc/!@#$!@#",
+                exp_coin: None,
+            },
+        ];
+
+        for test in tests {
+            let coin = RawCoin {
+                denom: test.denom.to_string(),
+                amount: amount.to_string(),
+            };
+
+            if let Some(exp_coin) = test.exp_coin {
+                assert_eq!(IbcCoin::try_from(coin)?, exp_coin, "{}", test.name);
+            } else {
+                assert!(IbcCoin::try_from(coin).is_err(), "{}", test.name)
+            }
+        }
+
+        Ok(())
+    }
 }
