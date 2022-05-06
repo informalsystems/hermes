@@ -402,3 +402,44 @@ impl From<PrefixedCoin> for IbcCoin {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_denom_validation() -> Result<(), Error> {
+        assert!(Denom::from_str("").is_err(), "empty base denom");
+        assert!(Denom::from_str("uatom").is_ok(), "valid base denom");
+        assert!(DenomTrace::from_str("").is_err(), "empty denom trace");
+        assert!(
+            DenomTrace::from_str("transfer/channel-0/").is_err(),
+            "empty base denom with trace"
+        );
+        assert!(DenomTrace::from_str("/uatom").is_err(), "empty prefix");
+        assert!(DenomTrace::from_str("//uatom").is_err(), "empty ids");
+        assert!(DenomTrace::from_str("transfer/").is_err(), "single trace");
+        assert!(
+            DenomTrace::from_str("transfer/atom").is_err(),
+            "single trace with base denom"
+        );
+        assert!(
+            DenomTrace::from_str("transfer/channel-0/uatom").is_ok(),
+            "valid single trace info"
+        );
+        assert!(
+            DenomTrace::from_str("transfer/channel-0/transfer/channel-1/uatom").is_ok(),
+            "valid multiple trace info"
+        );
+        assert!(
+            DenomTrace::from_str("(transfer)/channel-0/uatom").is_err(),
+            "invalid port"
+        );
+        assert!(
+            DenomTrace::from_str("transfer/(channel-0)/uatom").is_err(),
+            "invalid channel"
+        );
+
+        Ok(())
+    }
+}
