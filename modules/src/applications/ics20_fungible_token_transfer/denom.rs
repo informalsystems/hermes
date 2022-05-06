@@ -190,13 +190,13 @@ impl FromStr for DenomTrace {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut parts: Vec<&str> = s.split('/').collect();
-        assert!(!parts.is_empty(), "split() never returns an empty iterator");
+        let first_part = parts.pop().expect("split() returned an empty iterator");
 
         let (base_denom, trace_path) = {
-            if parts.first().unwrap() == &s {
+            if first_part == s {
                 (Denom::from_str(s)?, TracePath::default())
             } else {
-                let base_denom = Denom::from_str(parts.pop().unwrap())?;
+                let base_denom = Denom::from_str(first_part)?;
                 let trace_path = TracePath::try_from(parts)?;
                 (base_denom, trace_path)
             }
