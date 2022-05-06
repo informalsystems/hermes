@@ -69,12 +69,12 @@ Genesis(chainId) ==
     ],
 
     \* Escrow balance per chain
-    escrow |-> [cId \in CHAIN_IDS \ {chainId} |-> [denom \in {nativeDenom} |-> 0]],
+    escrow |-> [cId \in CHAIN_IDS \ {chainId} |-> SetAsFun({})],
 
     \* Record of packets receiveed from other chains
     \* Packets are maintained using the channelId, it was received at.
     \* Note: A pair of chain may have multiple channels in the past.
-    remotePackets |-> [cId \in CHAIN_IDS \ {chainId} |-> SetAsFun({})],
+    remotePackets |-> SetAsFun({}),
 
     nextPacketId |-> 0
 ]
@@ -262,7 +262,8 @@ IBCTransferReceivePacket(packet) ==
 \* @type: (PACKET, CHAIN) => Bool;
 IBCTransferReceivePacketCondition(packet, targetChain) ==
     /\ relayerRunning
-    /\ packet.id \notin DOMAIN targetChain.remotePackets[packet.sourceChainId]
+    /\ \/ packet.sourceChainId \notin DOMAIN targetChain.remotePackets
+       \/ packet.id \notin DOMAIN targetChain.remotePackets[packet.sourceChainId]
 
 \* Next operator for IBCTransferReceivePacket
 IBCTransferReceivePacketNext ==
@@ -354,6 +355,7 @@ IBCTransferAcknowledgePacket(packet) ==
 \* @type: (PACKET, CHAIN) => Bool;
 IBCTransferAcknowledgePacketCondition(packet, targetChain) ==
     /\ relayerRunning
+    /\ packet.sourceChainId \in DOMAIN targetChain.remotePackets
     /\ packet.id \in DOMAIN targetChain.remotePackets[packet.sourceChainId]
 
 \* Next operator for IBCTransferAcknowledgePacket
