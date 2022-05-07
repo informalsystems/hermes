@@ -81,7 +81,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         assert!(summary.unreceived_acks.is_empty());
 
         // Receive the packet on the destination chain
-        link.build_and_send_recv_packet_messages()?;
+        link.relay_recv_packet_and_timeout_messages()?;
 
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
@@ -91,7 +91,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
 
         // Acknowledge the packet on the source chain
         let link = link.reverse(false)?;
-        link.build_and_send_ack_packet_messages()?;
+        link.relay_ack_packet_messages()?;
 
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;

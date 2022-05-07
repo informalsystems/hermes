@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use ibc::events::IbcEvent;
 use ibc::Height;
-use tracing::{error_span, info};
+use tracing::{error, error_span, info};
 
 use crate::chain::handle::ChainHandle;
 use crate::link::error::LinkError;
@@ -41,7 +41,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     /// Implements the `packet-recv` CLI
-    pub fn build_and_send_recv_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
+    pub fn relay_recv_packet_and_timeout_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
             "PacketRecvCmd",
             src_chain = %self.a_to_b.src_chain().id(),
@@ -51,7 +51,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
         .entered();
 
-        self.a_to_b.build_recv_packet_and_timeout_msgs(None)?;
+        // Relaying on a non-zero connection delay requires (indefinite) blocking
+        // to wait for the connection delay to pass.
+        // We do not support this in interactive mode.
+        if !self.a_to_b.channel().connection_delay.is_zero() {
+            error!(
+                "relaying on a non-zero connection delay path is not supported in interactive mode"
+            );
+            panic!("please use the passive relaying mode (`hermes start`)");
+        }
+
+        self.a_to_b.schedule_recv_packet_and_timeout_msgs(None)?;
 
         let mut results = vec![];
 
@@ -67,7 +77,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     }
 
     /// Implements the `packet-ack` CLI
-    pub fn build_and_send_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
+    pub fn relay_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
             "PacketAckCmd",
             src_chain = %self.a_to_b.src_chain().id(),
@@ -77,7 +87,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
         .entered();
 
-        self.a_to_b.build_packet_ack_msgs(None)?;
+        // Relaying on a non-zero connection delay requires (indefinite) blocking
+        // to wait for the connection delay to pass.
+        // We do not support this in interactive mode.
+        if !self.a_to_b.channel().connection_delay.is_zero() {
+            error!(
+                "relaying on a non-zero connection delay path is not supported in interactive mode"
+            );
+            panic!("please use the passive relaying mode (`hermes start`)");
+        }
+
+        self.a_to_b.schedule_packet_ack_msgs(None)?;
 
         let mut results = vec![];
 
