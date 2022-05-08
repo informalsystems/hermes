@@ -2,16 +2,23 @@ use std::convert::TryInto;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use ibc::events::IbcEvent;
-use ibc::Height;
 use tracing::{error, error_span, info};
 
+use ibc::events::IbcEvent;
+use ibc::Height;
+
+use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
 use crate::link::error::LinkError;
 use crate::link::operational_data::OperationalData;
+use crate::link::packet_events::{query_packet_events_with, query_send_packet_events};
 use crate::link::relay_path::RelayPath;
-use crate::link::{relay_sender, Link};
+use crate::link::Link;
 
+// TODO(Adi): Open an issue or discussion. Options are:
+//  a. We remove this code and deprecate relaying on paths with non-zero delay.
+//  b. Maintain support for interactive relaying on non-zeroy delay paths.
+#[allow(dead_code)]
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
     /// waiting for the delay period to pass.
@@ -61,16 +68,31 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             panic!("please use the passive relaying mode (`hermes start`)");
         }
 
-        self.a_to_b.schedule_recv_packet_and_timeout_msgs(None)?;
+        // Find the sequence numbers of unreceived packets
+        let (sequences, src_response_height) = unreceived_packets(
+            self.a_to_b.dst_chain(),
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+        )
+        .map_err(LinkError::supervisor)?;
 
+        if sequences.is_empty() {
+            return Ok(vec![]);
+        }
+
+        info!("unreceived packets found: {} ", sequences.len());
+
+        // Relay
         let mut results = vec![];
-
-        // Block waiting for all of the scheduled data (until `None` is returned)
-        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
-            let mut last_res = self
-                .a_to_b
-                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
-            results.append(&mut last_res.events);
+        for events_chunk in query_packet_events_with(
+            &sequences,
+            src_response_height,
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+            query_send_packet_events,
+        ) {
+            let mut last_events = self.a_to_b.relay_from_events(events_chunk)?;
+            results.append(&mut last_events.events);
         }
 
         Ok(results)
@@ -97,16 +119,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             panic!("please use the passive relaying mode (`hermes start`)");
         }
 
-        self.a_to_b.schedule_packet_ack_msgs(None)?;
+        // Find the sequence numbers of unreceived acknowledgements
+        let (sequences, src_response_height) = unreceived_acknowledgements(
+            self.a_to_b.dst_chain(),
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+        )
+        .map_err(LinkError::supervisor)?;
 
+        if sequences.is_empty() {
+            return Ok(vec![]);
+        }
+
+        info!("unreceived acknowledgements found: {} ", sequences.len());
+
+        // Relay
         let mut results = vec![];
-
-        // Block waiting for all of the scheduled data
-        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
-            let mut last_res = self
-                .a_to_b
-                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
-            results.append(&mut last_res.events);
+        for events_chunk in query_packet_events_with(
+            &sequences,
+            src_response_height,
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+            query_send_packet_events,
+        ) {
+            // Bypass scheduling and waiting on operational data, relay directly.
+            let mut last_events = self.a_to_b.relay_from_events(events_chunk)?;
+            results.append(&mut last_events.events);
         }
 
         Ok(results)

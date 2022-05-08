@@ -9,10 +9,12 @@ use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::QUERY_RESULT_LIMIT;
 use crate::link::error::LinkError;
 use crate::link::operational_data::TrackedEvents;
 use crate::path::PathIdentifiers;
+
+/// Limit on how many query results should be expected.
+pub const QUERY_RESULT_LIMIT: usize = 50;
 
 /// Returns an iterator on batches of packet events.
 pub fn query_packet_events_with<'a, ChainA>(

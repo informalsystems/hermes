@@ -85,7 +85,7 @@ impl Resubmit {
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
 
-    path_id: PathIdentifiers,
+    pub(crate) path_id: PathIdentifiers,
 
     // Operational data, targeting both the source and destination chain.
     // These vectors of operational data are ordered decreasingly by
@@ -405,6 +405,30 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         Ok(())
+    }
+
+    /// Given a set of [`TrackedEvents`], this method blocks until
+    /// it finishes relaying all the relevant messages based on those events.
+    ///
+    ///
+    /// This method bypasses the scheduling step and relays the operational
+    /// data directly using a [`SyncSender`].
+    pub fn relay_from_events(&self, events: TrackedEvents) -> Result<RelaySummary, LinkError> {
+        let mut summary = RelaySummary::empty();
+
+        let (src_opt, dst_opt) = self.generate_operational_data(events)?;
+
+        if let Some(src_od) = src_opt {
+            let last_res = self.relay_from_operational_data::<relay_sender::SyncSender>(src_od)?;
+            summary.extend(last_res);
+        }
+
+        if let Some(dst_od) = dst_opt {
+            let last_res = self.relay_from_operational_data::<relay_sender::SyncSender>(dst_od)?;
+            summary.extend(last_res);
+        }
+
+        Ok(summary)
     }
 
     /// Generates operational data out of a set of events.
