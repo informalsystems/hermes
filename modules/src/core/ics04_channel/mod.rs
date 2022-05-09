@@ -10,5 +10,6 @@ pub mod handler;
 pub mod msgs;
 pub mod packet;
 
+pub mod commitment;
 mod version;
 pub use version::Version;

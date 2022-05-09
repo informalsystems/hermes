@@ -5,7 +5,7 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  VERSION="v0.1.0"
+  VERSION="v0.1.1"
   if is_json_output; then
     echo '{"status": "success", "message": "'"${VERSION}"'"}'
   else
@@ -1071,10 +1071,12 @@ reset() {
     warn "No configuration at ${HOME_DIR}. Skipping..."
     return 0
   fi
+  # `unsafe-reset-all` was moved to `gaiad tendermint` sub-command
+  TM="$(gaiad | grep -q 'unsafe' || echo "tendermint")"
   if is_json_output; then
-    "$GAIAD_BINARY" unsafe-reset-all --home "$HOME_DIR" 1> /dev/null 2> /dev/null
+    "$GAIAD_BINARY" "$TM" unsafe-reset-all --home "$HOME_DIR" 1> /dev/null 2> /dev/null
   else
-    "$GAIAD_BINARY" unsafe-reset-all --home "$HOME_DIR"
+    "$GAIAD_BINARY" "$TM" unsafe-reset-all --home "$HOME_DIR"
   fi
   if [ -z "$WAS_RUNNING" ]; then
     start "$1"

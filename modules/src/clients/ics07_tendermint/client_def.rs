@@ -18,8 +18,8 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::context::ChannelReader;
-use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -283,7 +283,7 @@ impl ClientDef for TendermintClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        commitment: String,
+        commitment: PacketCommitment,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
@@ -294,18 +294,13 @@ impl ClientDef for TendermintClient {
             sequence,
         };
 
-        let mut commitment_bytes = Vec::new();
-        commitment
-            .encode(&mut commitment_bytes)
-            .expect("buffer size too small");
-
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
             proof,
             root,
             commitment_path,
-            commitment_bytes,
+            commitment.into_vec(),
         )
     }
 
@@ -320,7 +315,7 @@ impl ClientDef for TendermintClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: Sequence,
-        ack: Acknowledgement,
+        ack_commitment: AcknowledgementCommitment,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
@@ -336,7 +331,7 @@ impl ClientDef for TendermintClient {
             proof,
             root,
             ack_path,
-            ack.into_bytes(),
+            ack_commitment.into_vec(),
         )
     }
 
