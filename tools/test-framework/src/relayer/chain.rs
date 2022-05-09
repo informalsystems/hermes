@@ -55,7 +55,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use ibc_relayer::chain::requests::QueryChannelClientStateRequest;
+use ibc_relayer::chain::requests::{QueryChannelClientStateRequest, QueryChannelRequest};
 use ibc_relayer::chain::tx::TrackedMsgs;
 use ibc_relayer::chain::{ChainStatus, HealthCheck};
 use ibc_relayer::config::ChainConfig;
@@ -233,13 +233,8 @@ where
         self.value().query_channels(request)
     }
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error> {
-        self.value().query_channel(port_id, channel_id, height)
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
+        self.value().query_channel(request)
     }
 
     fn query_channel_client_state(

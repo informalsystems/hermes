@@ -72,7 +72,7 @@ use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
-use crate::chain::requests::QueryChannelClientStateRequest;
+use crate::chain::requests::{QueryChannelClientStateRequest, QueryChannelRequest};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{ChainStatus, QueryResponse};
@@ -1007,16 +1007,15 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(channels)
     }
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: ICSHeight,
-    ) -> Result<ChannelEnd, Error> {
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
         crate::time!("query_channel");
         crate::telemetry!(query, self.id(), "query_channel");
 
-        let res = self.query(ChannelEndsPath(port_id.clone(), *channel_id), height, false)?;
+        let res = self.query(
+            ChannelEndsPath(request.port_id, request.channel_id),
+            request.height,
+            false,
+        )?;
         let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok(channel_end)

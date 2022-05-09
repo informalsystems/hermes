@@ -39,7 +39,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::chain::client::ClientSettings;
-use crate::chain::requests::QueryChannelClientStateRequest;
+use crate::chain::requests::{QueryChannelClientStateRequest, QueryChannelRequest};
 use crate::chain::{ChainEndpoint, ChainStatus};
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -241,12 +241,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_channel(
-        &self,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _height: Height,
-    ) -> Result<ChannelEnd, Error> {
+    fn query_channel(&self, _request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
         unimplemented!()
     }
 

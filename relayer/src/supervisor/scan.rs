@@ -23,6 +23,7 @@ use crate::{
     chain::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
+        requests::QueryChannelRequest,
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
     registry::Registry,
@@ -702,9 +703,12 @@ fn query_channel<Chain: ChainHandle>(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<IdentifiedChannelEnd, Error> {
-    let channel_end = chain
-        .query_channel(port_id, channel_id, Height::zero())
-        .map_err(Error::query)?;
+    let request = QueryChannelRequest {
+        port_id: port_id.clone(),
+        channel_id: channel_id.clone(),
+        height: Height::zero(),
+    };
+    let channel_end = chain.query_channel(request).map_err(Error::query)?;
 
     Ok(IdentifiedChannelEnd::new(
         port_id.clone(),

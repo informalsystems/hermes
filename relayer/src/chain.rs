@@ -45,7 +45,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 use self::client::ClientSettings;
-use self::requests::QueryChannelClientStateRequest;
+use self::requests::{QueryChannelClientStateRequest, QueryChannelRequest};
 use self::tx::TrackedMsgs;
 
 pub mod client;
@@ -229,12 +229,7 @@ pub trait ChainEndpoint: Sized {
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: ICSHeight,
-    ) -> Result<ChannelEnd, Error>;
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error>;
 
     fn query_channel_client_state(
         &self,

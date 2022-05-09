@@ -9,6 +9,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::chain::requests::QueryChannelRequest;
 use ibc_relayer::registry::Registry;
 
 use crate::conclude::Output;
@@ -78,7 +79,14 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         None => chain.query_latest_height()?,
     };
 
-    let channel_end = chain.query_channel(&port_id, &channel_id, chain_height)?;
+    let channel_end = {
+        let request = QueryChannelRequest {
+            port_id: port_id.clone(),
+            channel_id: channel_id,
+            height: chain_height,
+        };
+        chain.query_channel(request)?
+    };
     if channel_end.state_matches(&State::Uninitialized) {
         return Err(format!(
             "{}/{} on chain {} @ {:?} is uninitialized",
@@ -138,11 +146,15 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let counterparty_client_state = counterparty_chain
         .query_client_state(&counterparty_client_id, counterparty_chain_height)?;
 
-    let counterparty_channel_end = counterparty_chain.query_channel(
-        &counterparty_port_id,
-        &counterparty_channel_id,
-        counterparty_chain_height,
-    )?;
+    let counterparty_channel_end = {
+        let request = QueryChannelRequest {
+            port_id: counterparty_port_id.clone(),
+            channel_id: counterparty_channel_id,
+            height: counterparty_chain_height,
+        };
+
+        counterparty_chain.query_channel(request)?
+    };
 
     if cmd.verbose {
         let res = ChannelEnds {

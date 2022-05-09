@@ -43,7 +43,11 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    chain::{client::ClientSettings, requests::QueryChannelClientStateRequest, ChainStatus},
+    chain::{
+        client::ClientSettings,
+        requests::{QueryChannelClientStateRequest, QueryChannelRequest},
+        ChainStatus,
+    },
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -358,8 +362,8 @@ where
                             self.query_channels(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
-                            self.query_channel(port_id, channel_id, height, reply_to)?
+                        Ok(ChainRequest::QueryChannel { request, reply_to }) => {
+                            self.query_channel(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannelClientState { request, reply_to }) => {
@@ -721,12 +725,10 @@ where
 
     fn query_channel(
         &self,
-        port_id: PortId,
-        channel_id: ChannelId,
-        height: Height,
+        request: QueryChannelRequest,
         reply_to: ReplyTo<ChannelEnd>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_channel(&port_id, &channel_id, height);
+        let result = self.chain.query_channel(request);
         reply_to.send(result).map_err(Error::send)
     }
 

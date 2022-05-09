@@ -10,6 +10,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortCh
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::chain::requests::QueryChannelRequest;
 use ibc_relayer::registry::Registry;
 
 use crate::commands::query::channel_ends::ChannelEnds;
@@ -172,11 +173,15 @@ fn query_channel_ends<Chain: ChainHandle>(
     let counterparty_client_state = counterparty_chain
         .query_client_state(&counterparty_client_id, counterparty_chain_height)?;
 
-    let counterparty_channel_end = counterparty_chain.query_channel(
-        &counterparty_port_id,
-        &counterparty_channel_id,
-        counterparty_chain_height,
-    )?;
+    let counterparty_channel_end = {
+        let request = QueryChannelRequest {
+            port_id: counterparty_port_id,
+            channel_id: counterparty_channel_id,
+            height: counterparty_chain_height,
+        };
+
+        counterparty_chain.query_channel(request)?
+    };
 
     Ok(ChannelEnds {
         channel_end,

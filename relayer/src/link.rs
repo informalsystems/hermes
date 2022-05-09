@@ -9,6 +9,7 @@ use ibc::{
 
 use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::QueryChannelRequest;
 use crate::channel::{Channel, ChannelSide};
 use crate::link::error::LinkError;
 
@@ -57,11 +58,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
         let a_port_id = &opts.src_port_id;
-        let a_channel = a_chain
-            .query_channel(a_port_id, a_channel_id, Height::default())
-            .map_err(|e| {
+        let a_channel = {
+            let request = QueryChannelRequest {
+                port_id: opts.src_port_id.clone(),
+                channel_id: opts.src_channel_id.clone(),
+                height: Height::default(),
+            };
+
+            a_chain.query_channel(request).map_err(|e| {
                 LinkError::channel_not_found(a_port_id.clone(), *a_channel_id, a_chain.id(), e)
-            })?;
+            })?
+        };
 
         if !a_channel.state_matches(&ChannelState::Open)
             && !a_channel.state_matches(&ChannelState::Closed)

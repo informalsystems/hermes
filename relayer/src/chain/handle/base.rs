@@ -37,7 +37,9 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{
     chain::{
-        client::ClientSettings, requests::QueryChannelClientStateRequest, tx::TrackedMsgs,
+        client::ClientSettings,
+        requests::{QueryChannelClientStateRequest, QueryChannelRequest},
+        tx::TrackedMsgs,
         ChainStatus,
     },
     config::ChainConfig,
@@ -259,18 +261,8 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryChannels { request, reply_to })
     }
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error> {
-        self.send(|reply_to| ChainRequest::QueryChannel {
-            port_id: port_id.clone(),
-            channel_id: *channel_id,
-            height,
-            reply_to,
-        })
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
+        self.send(|reply_to| ChainRequest::QueryChannel { request, reply_to })
     }
 
     fn query_channel_client_state(

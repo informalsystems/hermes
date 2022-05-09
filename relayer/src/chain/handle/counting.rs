@@ -36,7 +36,7 @@ use tracing::debug;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use crate::chain::requests::QueryChannelClientStateRequest;
+use crate::chain::requests::{QueryChannelClientStateRequest, QueryChannelRequest};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;
@@ -276,14 +276,9 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().query_channels(request)
     }
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error> {
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
         self.inc_metric("query_channel");
-        self.inner().query_channel(port_id, channel_id, height)
+        self.inner().query_channel(request)
     }
 
     fn query_channel_client_state(

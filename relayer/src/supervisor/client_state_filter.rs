@@ -11,6 +11,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, Connection
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::QueryChannelRequest;
 use crate::error::Error as RelayerError;
 use crate::object;
 use crate::registry::{Registry, SpawnError};
@@ -294,9 +295,17 @@ impl FilterPolicy {
             .get_or_spawn(chain_id)
             .map_err(FilterError::spawn)?;
 
-        let channel_end = src_chain
-            .query_channel(port_id, channel_id, Height::zero())
-            .map_err(FilterError::relayer)?;
+        let channel_end = {
+            let request = QueryChannelRequest {
+                port_id: port_id.clone(),
+                channel_id: channel_id.clone(),
+                height: Height::zero(),
+            };
+
+            src_chain
+                .query_channel(request)
+                .map_err(FilterError::relayer)?
+        };
 
         let conn_id = channel_end.connection_hops.first().ok_or_else(|| {
             FilterError::channel(ChannelError::invalid_connection_hops_length(

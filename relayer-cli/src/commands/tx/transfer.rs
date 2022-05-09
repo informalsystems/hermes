@@ -11,6 +11,7 @@ use ibc::{
     events::IbcEvent,
 };
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::QueryChannelRequest;
 use ibc_relayer::transfer::Amount;
 use ibc_relayer::{
     config::Config,
@@ -168,14 +169,18 @@ impl Runnable for TxIcs20MsgTransferCmd {
         // To do this, fetch from the source chain the channel end, then the associated connection
         // end, and then the underlying client state; finally, check that this client is verifying
         // headers for the destination chain.
-        let channel_end_src = chains
-            .src
-            .query_channel(
-                &opts.packet_src_port_id,
-                &opts.packet_src_channel_id,
-                Height::zero(),
-            )
-            .unwrap_or_else(exit_with_unrecoverable_error);
+        let channel_end_src = {
+            let request = QueryChannelRequest {
+                port_id: opts.packet_src_port_id.clone(),
+                channel_id: opts.packet_src_channel_id,
+                height: Height::zero(),
+            };
+
+            chains
+                .src
+                .query_channel(request)
+                .unwrap_or_else(exit_with_unrecoverable_error)
+        };
         if !channel_end_src.is_open() {
             Output::error(format!(
                 "the requested port/channel ('{}'/'{}') on chain id '{}' is in state '{}'; expected 'open' state",

@@ -42,6 +42,7 @@ use crate::chain::counterparty::{
     unreceived_packets_sequences,
 };
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::QueryChannelRequest;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::ChainStatus;
 use crate::channel::error::ChannelError;
@@ -194,14 +195,26 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
+        let request = QueryChannelRequest {
+            port_id: self.src_port_id().clone(),
+            channel_id: self.src_channel_id().clone(),
+            height,
+        };
+
         self.src_chain()
-            .query_channel(self.src_port_id(), self.src_channel_id(), height)
+            .query_channel(request)
             .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
+        let request = QueryChannelRequest {
+            port_id: self.dst_port_id().clone(),
+            channel_id: self.dst_channel_id().clone(),
+            height,
+        };
+
         self.dst_chain()
-            .query_channel(self.dst_port_id(), self.dst_channel_id(), height)
+            .query_channel(request)
             .map_err(|e| LinkError::channel(ChannelError::query(self.dst_chain().id(), e)))
     }
 

@@ -43,7 +43,7 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    chain::requests::QueryChannelClientStateRequest,
+    chain::requests::{QueryChannelClientStateRequest, QueryChannelRequest},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -255,9 +255,7 @@ pub enum ChainRequest {
     },
 
     QueryChannel {
-        port_id: PortId,
-        channel_id: ChannelId,
-        height: Height,
+        request: QueryChannelRequest,
         reply_to: ReplyTo<ChannelEnd>,
     },
 
@@ -458,12 +456,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error>;
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error>;
 
     fn query_channel_client_state(
         &self,

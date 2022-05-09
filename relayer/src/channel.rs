@@ -23,6 +23,7 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::QueryChannelRequest;
 use crate::chain::tx::TrackedMsgs;
 use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
@@ -249,9 +250,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         channel: WorkerChannelObject,
         height: Height,
     ) -> Result<(Channel<ChainA, ChainB>, State), ChannelError> {
-        let a_channel = chain
-            .query_channel(&channel.src_port_id, &channel.src_channel_id, height)
-            .map_err(ChannelError::relayer)?;
+        let a_channel = {
+            let request = QueryChannelRequest {
+                port_id: channel.src_port_id.clone(),
+                channel_id: channel.src_channel_id.clone(),
+                height,
+            };
+
+            chain
+                .query_channel(request)
+                .map_err(ChannelError::relayer)?
+        };
 
         let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
             ChannelError::supervisor(SupervisorError::missing_connection_hops(
@@ -475,29 +484,38 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             );
 
             // Continue loop if query error
-            let a_channel = channel
-                .src_chain()
-                .query_channel(channel.src_port_id(), src_channel_id, Height::zero())
-                .map_err(|e| {
+            let a_channel = {
+                let request = QueryChannelRequest {
+                    port_id: channel.src_port_id().clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: Height::zero(),
+                };
+
+                channel.src_chain().query_channel(request).map_err(|e| {
                     ChannelError::handshake_finalize(
                         channel.src_port_id().clone(),
                         *src_channel_id,
                         channel.src_chain().id(),
                         e,
                     )
-                })?;
+                })
+            }?;
 
-            let b_channel = channel
-                .dst_chain()
-                .query_channel(channel.dst_port_id(), dst_channel_id, Height::zero())
-                .map_err(|e| {
+            let b_channel = {
+                let request = QueryChannelRequest {
+                    port_id: channel.dst_port_id().clone(),
+                    channel_id: dst_channel_id.clone(),
+                    height: Height::zero(),
+                };
+                channel.dst_chain().query_channel(request).map_err(|e| {
                     ChannelError::handshake_finalize(
                         channel.dst_port_id().clone(),
                         *dst_channel_id,
                         channel.dst_chain().id(),
                         e,
                     )
-                })?;
+                })?
+            };
 
             Ok((*a_channel.state(), *b_channel.state()))
         }
@@ -821,10 +839,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         );
 
         // Retrieve existing channel
-        let dst_channel = self
-            .dst_chain()
-            .query_channel(self.dst_port_id(), dst_channel_id, Height::zero())
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+        let dst_channel = {
+            let request = QueryChannelRequest {
+                port_id: self.dst_port_id().clone(),
+                channel_id: dst_channel_id.clone(),
+                height: Height::zero(),
+            };
+
+            self.dst_chain()
+                .query_channel(request)
+                .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?
+        };
 
         // Check if a channel is expected to exist on destination chain
         // A channel must exist on destination chain for Ack and Confirm Tx-es to succeed
@@ -848,10 +873,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .ok_or_else(ChannelError::missing_local_channel_id)?;
 
         // Channel must exist on source
-        let src_channel = self
-            .src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+        let src_channel = {
+            let request = QueryChannelRequest {
+                port_id: self.src_port_id().clone(),
+                channel_id: src_channel_id.clone(),
+                height: Height::zero(),
+            };
+
+            self.src_chain()
+                .query_channel(request)
+                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?
+        };
 
         if src_channel.counterparty().port_id() != self.dst_port_id() {
             return Err(ChannelError::mismatch_port(
@@ -962,10 +994,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
         // Channel must exist on source
-        let src_channel = self
-            .src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+        let src_channel = {
+            let request = QueryChannelRequest {
+                port_id: self.src_port_id().clone(),
+                channel_id: src_channel_id.clone(),
+                height: Height::zero(),
+            };
+
+            self.src_chain()
+                .query_channel(request)
+                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?
+        };
 
         // Connection must exist on destination
         self.dst_chain()
@@ -1063,9 +1102,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         self.validated_expected_channel(ChannelMsgType::OpenConfirm)?;
 
         // Channel must exist on source
-        self.src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+        {
+            let request = QueryChannelRequest {
+                port_id: self.src_port_id().clone(),
+                channel_id: src_channel_id.clone(),
+                height: Height::zero(),
+            };
+            self.src_chain()
+                .query_channel(request)
+                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+        }
 
         // Connection must exist on destination
         self.dst_chain()
@@ -1151,9 +1197,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
         // Channel must exist on destination
-        self.dst_chain()
-            .query_channel(self.dst_port_id(), dst_channel_id, Height::zero())
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+        {
+            let request = QueryChannelRequest {
+                port_id: self.dst_port_id().clone(),
+                channel_id: dst_channel_id.clone(),
+                height: Height::zero(),
+            };
+            self.dst_chain()
+                .query_channel(request)
+                .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+        }
 
         let signer = self
             .dst_chain()
@@ -1211,9 +1264,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         self.validated_expected_channel(ChannelMsgType::CloseConfirm)?;
 
         // Channel must exist on source
-        self.src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+        {
+            let request = QueryChannelRequest {
+                port_id: self.src_port_id().clone(),
+                channel_id: src_channel_id.clone(),
+                height: Height::zero(),
+            };
+            self.src_chain()
+                .query_channel(request)
+                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+        }
 
         // Connection must exist on destination
         self.dst_chain()

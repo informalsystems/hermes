@@ -36,7 +36,7 @@ use serde::{Serialize, Serializer};
 use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use crate::chain::requests::QueryChannelClientStateRequest;
+use crate::chain::requests::{QueryChannelClientStateRequest, QueryChannelRequest};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;
@@ -274,17 +274,12 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_channels(request)
     }
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error> {
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
         let handle = self.inner();
-        if height.is_zero() {
+        if request.height.is_zero() {
             let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
-                &PortChannelId::new(*channel_id, port_id.clone()),
-                || handle.query_channel(port_id, channel_id, height),
+                &PortChannelId::new(request.channel_id.clone(), request.port_id.clone()),
+                || handle.query_channel(request),
             )?;
 
             if in_cache == CacheStatus::Hit {
@@ -293,7 +288,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
             Ok(result)
         } else {
-            handle.query_channel(port_id, channel_id, height)
+            handle.query_channel(request)
         }
     }
 

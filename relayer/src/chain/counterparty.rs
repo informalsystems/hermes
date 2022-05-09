@@ -25,6 +25,7 @@ use ibc_proto::ibc::core::channel::v1::{
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 use super::handle::ChainHandle;
+use super::requests::QueryChannelRequest;
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
@@ -130,9 +131,14 @@ pub fn channel_connection_client(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
-    let channel_end = chain
-        .query_channel(port_id, channel_id, Height::zero())
-        .map_err(Error::relayer)?;
+    let channel_end = {
+        let request = QueryChannelRequest {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            height: Height::zero(),
+        };
+        chain.query_channel(request).map_err(Error::relayer)?
+    };
 
     if channel_end.state_matches(&State::Uninitialized) {
         return Err(Error::channel_uninitialized(
@@ -224,12 +230,14 @@ pub fn channel_on_destination(
     counterparty_chain: &impl ChainHandle,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     if let Some(remote_channel_id) = channel.channel_end.counterparty().channel_id() {
+        let request = QueryChannelRequest {
+            port_id: channel.channel_end.counterparty().port_id().clone(),
+            channel_id: remote_channel_id.clone(),
+            height: Height::zero(),
+        };
+
         let counterparty = counterparty_chain
-            .query_channel(
-                channel.channel_end.counterparty().port_id(),
-                remote_channel_id,
-                Height::zero(),
-            )
+            .query_channel(request)
             .map(|c| IdentifiedChannelEnd {
                 port_id: channel.channel_end.counterparty().port_id().clone(),
                 channel_id: *remote_channel_id,
@@ -259,13 +267,17 @@ pub fn check_channel_counterparty(
     target_pchan: &PortChannelId,
     expected: &PortChannelId,
 ) -> Result<(), ChannelError> {
-    let channel_end_dst = target_chain
-        .query_channel(
-            &target_pchan.port_id,
-            &target_pchan.channel_id,
-            Height::zero(),
-        )
-        .map_err(|e| ChannelError::query(target_chain.id(), e))?;
+    let channel_end_dst = {
+        let request = QueryChannelRequest {
+            port_id: target_pchan.port_id.clone(),
+            channel_id: target_pchan.channel_id.clone(),
+            height: Height::zero(),
+        };
+
+        target_chain
+            .query_channel(request)
+            .map_err(|e| ChannelError::query(target_chain.id(), e))?
+    };
 
     let counterparty = channel_end_dst.remote;
     match counterparty.channel_id {
