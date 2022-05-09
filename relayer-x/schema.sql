@@ -41,6 +41,9 @@ CREATE TABLE tx_results (
   UNIQUE (block_id, index)
 );
 
+-- Index tx results by hash
+CREATE INDEX idx_tx_results_hash ON tx_results(tx_hash);
+
 -- The events table records events. All events (both block and transaction) are
 -- associated with a block ID; transaction events also have a transaction ID.
 CREATE TABLE events (
