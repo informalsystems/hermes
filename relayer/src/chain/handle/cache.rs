@@ -23,7 +23,7 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    PacketState, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
@@ -37,6 +37,7 @@ use serde::{Serialize, Serializer};
 use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
+use crate::chain::requests::QueryChannelClientStateRequest;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;

@@ -50,7 +50,7 @@ use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    PacketState, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
@@ -73,6 +73,7 @@ use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
+use crate::chain::requests::QueryChannelClientStateRequest;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{ChainStatus, QueryResponse};
@@ -1037,7 +1038,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.channel_client_state(request))

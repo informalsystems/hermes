@@ -45,7 +45,7 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    PacketState, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
@@ -56,6 +56,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
+use ibc_relayer::chain::requests::QueryChannelClientStateRequest;
 use ibc_relayer::chain::tx::TrackedMsgs;
 use ibc_relayer::chain::{ChainStatus, HealthCheck};
 use ibc_relayer::config::ChainConfig;

@@ -26,7 +26,7 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    PacketState, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
@@ -37,7 +37,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{
-    chain::{client::ClientSettings, tx::TrackedMsgs, ChainStatus},
+    chain::{client::ClientSettings, requests::QueryChannelClientStateRequest, tx::TrackedMsgs, ChainStatus},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,

@@ -25,7 +25,7 @@ use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    PacketState, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
@@ -46,12 +46,14 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 use self::client::ClientSettings;
+use self::requests::QueryChannelClientStateRequest;
 use self::tx::TrackedMsgs;
 
 pub mod client;
 pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
+pub mod requests;
 pub mod runtime;
 pub mod tx;
 

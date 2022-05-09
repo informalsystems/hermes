@@ -33,7 +33,7 @@ use ibc::{
 };
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+        PacketState, QueryChannelsRequest,
         QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
         QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
         QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
@@ -44,7 +44,7 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    chain::{client::ClientSettings, ChainStatus},
+    chain::{client::ClientSettings, ChainStatus, requests::QueryChannelClientStateRequest},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,

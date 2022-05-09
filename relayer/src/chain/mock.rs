@@ -28,7 +28,7 @@ use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    PacketState, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
@@ -41,6 +41,7 @@ use ibc_proto::ibc::core::connection::v1::{
 
 use crate::chain::client::ClientSettings;
 use crate::chain::{ChainEndpoint, ChainStatus};
+use crate::chain::requests::QueryChannelClientStateRequest;
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
