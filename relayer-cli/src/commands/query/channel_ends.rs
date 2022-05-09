@@ -82,7 +82,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let channel_end = {
         let request = QueryChannelRequest {
             port_id: port_id.clone(),
-            channel_id: channel_id,
+            channel_id,
             height: chain_height,
         };
         chain.query_channel(request)?

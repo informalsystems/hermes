@@ -134,7 +134,7 @@ pub fn channel_connection_client(
     let channel_end = {
         let request = QueryChannelRequest {
             port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
+            channel_id: *channel_id,
             height: Height::zero(),
         };
         chain.query_channel(request).map_err(Error::relayer)?
@@ -232,7 +232,7 @@ pub fn channel_on_destination(
     if let Some(remote_channel_id) = channel.channel_end.counterparty().channel_id() {
         let request = QueryChannelRequest {
             port_id: channel.channel_end.counterparty().port_id().clone(),
-            channel_id: remote_channel_id.clone(),
+            channel_id: *remote_channel_id,
             height: Height::zero(),
         };
 
@@ -270,7 +270,7 @@ pub fn check_channel_counterparty(
     let channel_end_dst = {
         let request = QueryChannelRequest {
             port_id: target_pchan.port_id.clone(),
-            channel_id: target_pchan.channel_id.clone(),
+            channel_id: target_pchan.channel_id,
             height: Height::zero(),
         };
 

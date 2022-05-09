@@ -61,7 +61,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         let a_channel = {
             let request = QueryChannelRequest {
                 port_id: opts.src_port_id.clone(),
-                channel_id: opts.src_channel_id.clone(),
+                channel_id: opts.src_channel_id,
                 height: Height::default(),
             };
 

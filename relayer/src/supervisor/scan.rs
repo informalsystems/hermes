@@ -705,7 +705,7 @@ fn query_channel<Chain: ChainHandle>(
 ) -> Result<IdentifiedChannelEnd, Error> {
     let request = QueryChannelRequest {
         port_id: port_id.clone(),
-        channel_id: channel_id.clone(),
+        channel_id: *channel_id,
         height: Height::zero(),
     };
     let channel_end = chain.query_channel(request).map_err(Error::query)?;

@@ -298,7 +298,7 @@ impl FilterPolicy {
         let channel_end = {
             let request = QueryChannelRequest {
                 port_id: port_id.clone(),
-                channel_id: channel_id.clone(),
+                channel_id: *channel_id,
                 height: Height::zero(),
             };
 

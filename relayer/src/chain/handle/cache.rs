@@ -278,7 +278,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         let handle = self.inner();
         if request.height.is_zero() {
             let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
-                &PortChannelId::new(request.channel_id.clone(), request.port_id.clone()),
+                &PortChannelId::new(request.channel_id, request.port_id.clone()),
                 || handle.query_channel(request),
             )?;
 

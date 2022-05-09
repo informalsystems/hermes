@@ -253,7 +253,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let a_channel = {
             let request = QueryChannelRequest {
                 port_id: channel.src_port_id.clone(),
-                channel_id: channel.src_channel_id.clone(),
+                channel_id: channel.src_channel_id,
                 height,
             };
 
@@ -487,7 +487,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             let a_channel = {
                 let request = QueryChannelRequest {
                     port_id: channel.src_port_id().clone(),
-                    channel_id: src_channel_id.clone(),
+                    channel_id: *src_channel_id,
                     height: Height::zero(),
                 };
 
@@ -504,7 +504,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             let b_channel = {
                 let request = QueryChannelRequest {
                     port_id: channel.dst_port_id().clone(),
-                    channel_id: dst_channel_id.clone(),
+                    channel_id: *dst_channel_id,
                     height: Height::zero(),
                 };
                 channel.dst_chain().query_channel(request).map_err(|e| {
@@ -842,7 +842,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let dst_channel = {
             let request = QueryChannelRequest {
                 port_id: self.dst_port_id().clone(),
-                channel_id: dst_channel_id.clone(),
+                channel_id: *dst_channel_id,
                 height: Height::zero(),
             };
 
@@ -876,7 +876,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let src_channel = {
             let request = QueryChannelRequest {
                 port_id: self.src_port_id().clone(),
-                channel_id: src_channel_id.clone(),
+                channel_id: *src_channel_id,
                 height: Height::zero(),
             };
 
@@ -997,7 +997,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let src_channel = {
             let request = QueryChannelRequest {
                 port_id: self.src_port_id().clone(),
-                channel_id: src_channel_id.clone(),
+                channel_id: *src_channel_id,
                 height: Height::zero(),
             };
 
@@ -1105,7 +1105,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         {
             let request = QueryChannelRequest {
                 port_id: self.src_port_id().clone(),
-                channel_id: src_channel_id.clone(),
+                channel_id: *src_channel_id,
                 height: Height::zero(),
             };
             self.src_chain()
@@ -1200,7 +1200,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         {
             let request = QueryChannelRequest {
                 port_id: self.dst_port_id().clone(),
-                channel_id: dst_channel_id.clone(),
+                channel_id: *dst_channel_id,
                 height: Height::zero(),
             };
             self.dst_chain()
@@ -1267,7 +1267,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         {
             let request = QueryChannelRequest {
                 port_id: self.src_port_id().clone(),
-                channel_id: src_channel_id.clone(),
+                channel_id: *src_channel_id,
                 height: Height::zero(),
             };
             self.src_chain()
