@@ -96,8 +96,8 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // mostly timeout packet messages.
     // The operational data targeting the destination chain
     // comprises mostly RecvPacket and Ack msgs.
-    pub(crate) src_operational_data: Queue<OperationalData>,
-    pub(crate) dst_operational_data: Queue<OperationalData>,
+    pub src_operational_data: Queue<OperationalData>,
+    pub dst_operational_data: Queue<OperationalData>,
 
     // Toggle for the transaction confirmation mechanism.
     confirm_txes: bool,

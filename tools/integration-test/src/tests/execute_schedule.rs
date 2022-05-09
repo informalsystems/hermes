@@ -60,27 +60,43 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             chains.handle_a().clone(),
             chains.handle_b().clone(),
             link_opts,
-            false,
+            true,
         )?;
         let relay_path = link.a_to_b;
 
+        info!("Calling schedule_packet_clearing");
+
         // relay pending packets
         relay_path.schedule_packet_clearing(None)?;
+
+        info!("Calling refresh_schedule");
+
         relay_path.refresh_schedule()?;
+
+        info!("Calling execute_schedule");
+
         relay_path.execute_schedule()?;
 
-        let summary = relay_path.process_pending_txs(Resubmit::No);
+        info!("Calling process_pending_txs");
 
-        assert_eq!(summary.events.len(), 1);
+        assert_eventually_succeed("process_pending_tx", 10, Duration::from_secs(1), || {
+            let summary = relay_path.process_pending_txs(Resubmit::No);
+            info!("RELAY SUMMARY: {:?}", summary);
+            assert_gt("Summary should not be empty", &summary.events.len(), &0)
+        })?;
 
         chains.node_a.value().kill()?;
         chains.node_b.value().kill()?;
 
-        relay_path.execute_schedule()?;
+        match relay_path.execute_schedule() {
+            Ok(_) => panic!("Expected an error"),
+            Err(_e) => {}
+        }
 
-        let summary = relay_path.process_pending_txs(Resubmit::No);
+        assert!(!relay_path.src_operational_data.is_empty());
+        assert!(!relay_path.dst_operational_data.is_empty());
 
-        assert_eq!(summary.events.len(), 1);
+        // assert_eq!(summary.events.len(), 1);
 
         Ok(())
     }
