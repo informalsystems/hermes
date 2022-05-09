@@ -1,0 +1,7 @@
+version: v1
+plugins:
+  - name: prost
+    out: src/prost
+    opt:
+      - file_descriptor_set=false # does not work?
+      - extern_path=.tendermint=::tendermint_proto
