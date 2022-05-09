@@ -37,13 +37,15 @@ use ibc_proto::ibc::core::{
         QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
         QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
-    client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
+    client::v1::QueryConsensusStatesRequest,
     commitment::v1::MerkleProof,
     connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
 
 use crate::{
-    chain::requests::{QueryChannelClientStateRequest, QueryChannelRequest},
+    chain::requests::{
+        QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+    },
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,

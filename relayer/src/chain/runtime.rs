@@ -37,7 +37,7 @@ use ibc_proto::ibc::core::{
         QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
         QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
-    client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
+    client::v1::QueryConsensusStatesRequest,
     commitment::v1::MerkleProof,
     connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
@@ -45,7 +45,7 @@ use ibc_proto::ibc::core::{
 use crate::{
     chain::{
         client::ClientSettings,
-        requests::{QueryChannelClientStateRequest, QueryChannelRequest},
+        requests::{QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest},
         ChainStatus,
     },
     config::ChainConfig,

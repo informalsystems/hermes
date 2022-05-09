@@ -70,6 +70,7 @@ pub mod cosmos {
                 include_proto!("cosmos.base.query.v1beta1.rs");
             }
 
+            // TODO (BEFORE MERGING PR): Remove
             pub mod pagination {
                 use super::v1beta1::PageRequest;
 

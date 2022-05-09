@@ -1,11 +1,12 @@
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest as RawQueryChannelClientStateRequest;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
+use ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest as RawQueryChannelClientStateRequest;
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest as RawQueryClientStatesRequest;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin
     /// querying the next page most efficiently. Only one of offset or key
@@ -27,6 +28,15 @@ pub struct PageRequest {
     pub reverse: bool,
 }
 
+impl PageRequest {
+    pub fn all() -> PageRequest {
+        PageRequest {
+            limit: u64::MAX,
+            ..Default::default()
+        }
+    }
+}
+
 impl From<PageRequest> for RawPageRequest {
     fn from(request: PageRequest) -> Self {
         RawPageRequest {
@@ -35,6 +45,19 @@ impl From<PageRequest> for RawPageRequest {
             limit: request.limit,
             count_total: request.count_total,
             reverse: request.reverse,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryClientStatesRequest {
+    pub pagination: Option<PageRequest>,
+}
+
+impl From<QueryClientStatesRequest> for RawQueryClientStatesRequest {
+    fn from(request: QueryClientStatesRequest) -> Self {
+        RawQueryClientStatesRequest {
+            pagination: request.pagination.map(|pagination| pagination.into()),
         }
     }
 }

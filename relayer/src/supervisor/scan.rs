@@ -15,15 +15,14 @@ use ibc::{
 };
 
 use ibc_proto::ibc::core::{
-    channel::v1::QueryConnectionChannelsRequest, client::v1::QueryClientStatesRequest,
-    connection::v1::QueryClientConnectionsRequest,
+    channel::v1::QueryConnectionChannelsRequest, connection::v1::QueryClientConnectionsRequest,
 };
 
 use crate::{
     chain::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
-        requests::QueryChannelRequest,
+        requests::{PageRequest, QueryChannelRequest, QueryClientStatesRequest},
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
     registry::Registry,
@@ -737,7 +736,7 @@ fn query_all_clients<Chain: ChainHandle>(
     chain: &Chain,
 ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
     let clients_req = QueryClientStatesRequest {
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        pagination: Some(PageRequest::all()),
     };
 
     chain.query_clients(clients_req).map_err(Error::query)

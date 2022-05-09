@@ -6,8 +6,8 @@ use abscissa_core::{Command, Runnable};
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::{PageRequest, QueryClientStatesRequest};
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use tendermint_light_client_verifier::types::TrustThreshold;
@@ -249,7 +249,7 @@ impl TxUpgradeClientsCmd {
         let dst_chain = spawn_chain_runtime_generic::<Chain>(config, dst_chain_id)?;
 
         let req = QueryClientStatesRequest {
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
+            pagination: Some(PageRequest::all()),
         };
         let outputs = dst_chain
             .query_clients(req)

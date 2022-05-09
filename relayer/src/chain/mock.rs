@@ -32,14 +32,16 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
 use crate::chain::client::ClientSettings;
-use crate::chain::requests::{QueryChannelClientStateRequest, QueryChannelRequest};
+use crate::chain::requests::{
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+};
 use crate::chain::{ChainEndpoint, ChainStatus};
 use crate::config::ChainConfig;
 use crate::error::Error;
