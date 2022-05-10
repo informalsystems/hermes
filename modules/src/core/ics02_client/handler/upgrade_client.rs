@@ -1,7 +1,7 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 //!
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
+use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
@@ -19,10 +19,10 @@ use crate::prelude::*;
 pub struct Result {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub consensus_state: Option<ConsensusUpdateResult>,
 }
 
-pub fn process(
+pub fn process<Beefy: BeefyLCStore>(
     ctx: &dyn ClientReader,
     msg: MsgUpgradeAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
@@ -47,7 +47,7 @@ pub fn process(
 
     let client_type = ctx.client_type(&client_id)?;
 
-    let client_def = AnyClient::from_client_type(client_type);
+    let client_def = AnyClient::<Beefy>::from_client_type(client_type);
 
     let (new_client_state, new_consensus_state) = client_def.verify_upgrade_and_update_state(
         &upgrade_client_state,
@@ -62,7 +62,7 @@ pub fn process(
     let result = ClientResult::Upgrade(Result {
         client_id: client_id.clone(),
         client_state: new_client_state,
-        consensus_state: new_consensus_state,
+        consensus_state: Some(new_consensus_state),
     });
     let event_attributes = Attributes {
         client_id,

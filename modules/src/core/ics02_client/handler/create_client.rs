@@ -23,7 +23,7 @@ pub struct Result {
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub consensus_state: Option<AnyConsensusState>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }

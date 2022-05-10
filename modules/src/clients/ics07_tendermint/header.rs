@@ -42,6 +42,10 @@ impl Header {
         )
     }
 
+    pub fn timestamp(&self) -> Timestamp {
+        self.signed_header.header.time.into()
+    }
+
     pub fn compatible_with(&self, other_header: &Header) -> bool {
         headers_compatible(&self.signed_header, &other_header.signed_header)
     }
@@ -70,14 +74,6 @@ pub fn headers_compatible(header: &SignedHeader, other: &SignedHeader) -> bool {
 impl crate::core::ics02_client::header::Header for Header {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
-    }
-
-    fn height(&self) -> Height {
-        self.height()
-    }
-
-    fn timestamp(&self) -> Timestamp {
-        self.signed_header.header.time.into()
     }
 
     fn wrap_any(self) -> AnyHeader {

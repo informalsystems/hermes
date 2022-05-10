@@ -26,7 +26,7 @@ pub struct CloneCmd {
 }
 
 pub const COSMOS_SDK_URL: &str = "https://github.com/cosmos/cosmos-sdk";
-pub const IBC_GO_URL: &str = "https://github.com/cosmos/ibc-go";
+pub const IBC_GO_URL: &str = "https://github.com/ComposableFi/ibc-go.git";
 
 impl CloneCmd {
     pub fn validate(&self) {

@@ -11,7 +11,7 @@ use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_def::ClientDef;
+use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::ClientReader;
@@ -46,13 +46,13 @@ impl ClientDef for TendermintClient {
     type ClientState = ClientState;
     type ConsensusState = ConsensusState;
 
-    fn check_header_and_update_state(
+    fn verify_header(
         &self,
         ctx: &dyn ClientReader,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
+    ) -> Result<(), Ics02Error> {
         if header.height().revision_number != client_state.chain_id.version() {
             return Err(Ics02Error::tendermint_handler_error(
                 Error::mismatched_revisions(
@@ -61,25 +61,6 @@ impl ClientDef for TendermintClient {
                 ),
             ));
         }
-
-        // Check if a consensus state is already installed; if so it should
-        // match the untrusted header.
-        let header_consensus_state = ConsensusState::from(header.clone());
-        let existing_consensus_state =
-            match ctx.maybe_consensus_state(&client_id, header.height())? {
-                Some(cs) => {
-                    let cs = downcast_consensus_state(cs)?;
-                    // If this consensus state matches, skip verification
-                    // (optimization)
-                    if cs == header_consensus_state {
-                        // Header is already installed and matches the incoming
-                        // header (already verified)
-                        return Ok((client_state, cs));
-                    }
-                    Some(cs)
-                }
-                None => None,
-            };
 
         let trusted_consensus_state =
             downcast_consensus_state(ctx.consensus_state(&client_id, header.trusted_height)?)?;
@@ -133,12 +114,68 @@ impl ClientDef for TendermintClient {
             }
         }
 
+        Ok(())
+    }
+
+    fn update_state(
+        &self,
+        _ctx: &dyn ClientReader,
+        _client_id: ClientId,
+        client_state: Self::ClientState,
+        header: Self::Header,
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Ics02Error> {
+        let header_consensus_state = ConsensusState::from(header.clone());
+        Ok((
+            client_state.with_header(header),
+            ConsensusUpdateResult::Single(AnyConsensusState::Tendermint(
+                header_consensus_state.into(),
+            )),
+        ))
+    }
+
+    fn update_state_on_misbehaviour(
+        &self,
+        client_state: Self::ClientState,
+        header: Self::Header,
+    ) -> Result<Self::ClientState, Ics02Error> {
+        client_state
+            .with_frozen_height(header.height())
+            .map_err(|e| e.into())
+    }
+
+    fn check_for_misbehaviour(
+        &self,
+        ctx: &dyn ClientReader,
+        client_id: ClientId,
+        client_state: Self::ClientState,
+        header: Self::Header,
+    ) -> Result<bool, Ics02Error> {
+        // Check if a consensus state is already installed; if so it should
+        // match the untrusted header.
+        let header_consensus_state = ConsensusState::from(header.clone());
+
+        let existing_consensus_state =
+            match ctx.maybe_consensus_state(&client_id, header.height())? {
+                Some(cs) => {
+                    let cs = downcast_consensus_state(cs)?;
+                    // If this consensus state matches, skip verification
+                    // (optimization)
+                    if cs == header_consensus_state {
+                        // Header is already installed and matches the incoming
+                        // header (already verified)
+                        return Ok(false);
+                    }
+                    Some(cs)
+                }
+                None => None,
+            };
+
         // If the header has verified, but its corresponding consensus state
         // differs from the existing consensus state for that height, freeze the
         // client and return the installed consensus state.
         if let Some(cs) = existing_consensus_state {
             if cs != header_consensus_state {
-                return Ok((client_state.with_frozen_height(header.height())?, cs));
+                return Ok(true);
             }
         }
 
@@ -146,7 +183,7 @@ impl ClientDef for TendermintClient {
         // (cs-new, cs-next, cs-latest)
         if header.height() < client_state.latest_height() {
             let maybe_next_cs = ctx
-                .next_consensus_state(&client_id, header.height())?
+                .next_consensus_state(&client_id, header.height(), None)?
                 .map(downcast_consensus_state)
                 .transpose()?;
 
@@ -166,7 +203,7 @@ impl ClientDef for TendermintClient {
         // (cs-trusted, cs-prev, cs-new)
         if header.trusted_height < header.height() {
             let maybe_prev_cs = ctx
-                .prev_consensus_state(&client_id, header.height())?
+                .prev_consensus_state(&client_id, header.height(), None)?
                 .map(downcast_consensus_state)
                 .transpose()?;
 
@@ -184,10 +221,7 @@ impl ClientDef for TendermintClient {
             }
         }
 
-        Ok((
-            client_state.with_header(header.clone()),
-            ConsensusState::from(header),
-        ))
+        Ok(false)
     }
 
     fn verify_client_consensus_state(
@@ -399,9 +433,9 @@ impl ClientDef for TendermintClient {
         &self,
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-        _proof_upgrade_client: RawMerkleProof,
-        _proof_upgrade_consensus_state: RawMerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
+        _proof_upgrade_client: Vec<u8>,
+        _proof_upgrade_consensus_state: Vec<u8>,
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Ics02Error> {
         todo!()
     }
 }

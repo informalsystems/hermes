@@ -1,5 +1,6 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
 
+use crate::clients::ics11_beefy::client_def::BeefyLCStore;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
@@ -11,7 +12,7 @@ use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS3 message.
-pub fn verify_proofs(
+pub fn verify_proofs<Beefy: BeefyLCStore>(
     ctx: &dyn ConnectionReader,
     client_state: Option<AnyClientState>,
     height: Height,
@@ -19,7 +20,7 @@ pub fn verify_proofs(
     expected_conn: &ConnectionEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    verify_connection_proof(
+    verify_connection_proof::<Beefy>(
         ctx,
         height,
         connection_end,
@@ -30,7 +31,7 @@ pub fn verify_proofs(
 
     // If the message includes a client state, then verify the proof for that state.
     if let Some(expected_client_state) = client_state {
-        verify_client_proof(
+        verify_client_proof::<Beefy>(
             ctx,
             height,
             connection_end,
@@ -45,7 +46,12 @@ pub fn verify_proofs(
 
     // If a consensus proof is attached to the message, then verify it.
     if let Some(proof) = proofs.consensus_proof() {
-        Ok(verify_consensus_proof(ctx, height, connection_end, &proof)?)
+        Ok(verify_consensus_proof::<Beefy>(
+            ctx,
+            height,
+            connection_end,
+            &proof,
+        )?)
     } else {
         Ok(())
     }
@@ -54,7 +60,7 @@ pub fn verify_proofs(
 /// Verifies the authenticity and semantic correctness of a commitment `proof`. The commitment
 /// claims to prove that an object of type connection exists on the source chain (i.e., the chain
 /// which created this proof). This object must match the state of `expected_conn`.
-pub fn verify_connection_proof(
+pub fn verify_connection_proof<Beefy: BeefyLCStore>(
     ctx: &dyn ConnectionReader,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -80,7 +86,7 @@ pub fn verify_connection_proof(
         .connection_id()
         .ok_or_else(Error::invalid_counterparty)?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<Beefy>::from_client_type(client_state.client_type());
 
     // Verify the proof for the connection state against the expected connection end.
     client_def
@@ -103,7 +109,7 @@ pub fn verify_connection_proof(
 /// complete verification: that the client state the counterparty stores is valid (i.e., not frozen,
 /// at the same revision as the current chain, with matching chain identifiers, etc) and that the
 /// `proof` is correct.
-pub fn verify_client_proof(
+pub fn verify_client_proof<Beefy: BeefyLCStore>(
     ctx: &dyn ConnectionReader,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -120,7 +126,7 @@ pub fn verify_client_proof(
 
     let consensus_state = ctx.client_consensus_state(connection_end.client_id(), proof_height)?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<Beefy>::from_client_type(client_state.client_type());
 
     client_def
         .verify_client_full_state(
@@ -137,7 +143,7 @@ pub fn verify_client_proof(
         })
 }
 
-pub fn verify_consensus_proof(
+pub fn verify_consensus_proof<Beefy: BeefyLCStore>(
     ctx: &dyn ConnectionReader,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -155,7 +161,7 @@ pub fn verify_consensus_proof(
 
     let consensus_state = ctx.client_consensus_state(connection_end.client_id(), height)?;
 
-    let client = AnyClient::from_client_type(client_state.client_type());
+    let client = AnyClient::<Beefy>::from_client_type(client_state.client_type());
 
     client
         .verify_client_consensus_state(

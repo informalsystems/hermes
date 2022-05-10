@@ -1,15 +1,10 @@
 use prost::Message;
-use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
-use crate::alloc::string::ToString;
-use crate::clients::ics11_beefy::client_state::REVISION_NUMBER;
 use crate::clients::ics11_beefy::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::header::AnyHeader;
-use crate::core::ics24_host::identifier::ChainId;
-use crate::timestamp::Timestamp;
-use crate::Height;
+use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 use beefy_client::primitives::{
@@ -25,18 +20,16 @@ use ibc_proto::ibc::lightclients::beefy::v1::{
     BeefyAuthoritySet as RawBeefyAuthoritySet, BeefyMmrLeaf as RawBeefyMmrLeaf,
     BeefyMmrLeafPartial as RawBeefyMmrLeafPartial, Commitment as RawCommitment,
     CommitmentSignature, Header as RawBeefyHeader, MmrUpdateProof as RawMmrUpdateProof,
-    ParachainHeader as RawParachainHeader, PayloadItem as RawPayloadItem, PayloadItem,
-    SignedCommitment as RawSignedCommitment,
+    PayloadItem, SignedCommitment as RawSignedCommitment,
 };
-use pallet_mmr_primitives::{BatchProof, Proof};
+use pallet_mmr_primitives::Proof;
 use sp_core::H256;
-use sp_runtime::generic::{Header as SubstrateHeader, UncheckedExtrinsic};
+use sp_runtime::generic::Header as SubstrateHeader;
 use sp_runtime::traits::{BlakeTwo256, SaturatedConversion};
-use sp_runtime::Digest;
-use sp_trie::{StorageProof, Trie, TrieDBMut};
+use sp_trie::{StorageProof, Trie};
 
 /// Beefy consensus header
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct BeefyHeader {
     pub parachain_headers: Vec<ParachainHeader>, // contains the parachain headers
     pub mmr_proofs: Vec<Vec<u8>>,                // mmr proofs for these headers
@@ -44,7 +37,17 @@ pub struct BeefyHeader {
     pub mmr_update_proof: Option<MmrUpdateProof>, // Proof for updating the latest mmr root hash
 }
 
-#[derive(Clone, PartialEq, Eq, codec::Encode, codec::Decode)]
+impl crate::core::ics02_client::header::Header for BeefyHeader {
+    fn client_type(&self) -> ClientType {
+        ClientType::Beefy
+    }
+
+    fn wrap_any(self) -> AnyHeader {
+        AnyHeader::Beefy(self)
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, codec::Encode, codec::Decode)]
 pub struct ParachainHeader {
     pub parachain_header: SubstrateHeader<u32, BlakeTwo256>,
     /// Reconstructed mmr leaf
@@ -80,37 +83,32 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
             .parachain_headers
             .into_iter()
             .map(|raw_para_header| {
+                let mmr_partial_leaf = raw_para_header
+                    .mmr_leaf_partial
+                    .ok_or(Error::invalid_raw_header())?;
                 let parent_hash =
-                    H256::decode(&mut raw_para_header.mmr_leaf_partial.parent_hash.as_slice())
-                        .unwrap();
-                let beefy_next_authority_set = if let Some(next_set) =
-                    raw_para_header.mmr_leaf_partial.beefy_next_authority_set
-                {
-                    BeefyNextAuthoritySet {
-                        id: next_set.id,
-                        len: next_set.len,
-                        root: H256::decode(&mut next_set.root.as_slice()).unwrap(),
-                    }
-                } else {
-                    Default::default()
-                };
+                    H256::decode(&mut mmr_partial_leaf.parent_hash.as_slice()).unwrap();
+                let beefy_next_authority_set =
+                    if let Some(next_set) = mmr_partial_leaf.beefy_next_authority_set {
+                        BeefyNextAuthoritySet {
+                            id: next_set.id,
+                            len: next_set.len,
+                            root: H256::decode(&mut next_set.authority_root.as_slice())
+                                .map_err(|e| Error::invalid_mmr_update(e.to_string()))?,
+                        }
+                    } else {
+                        Default::default()
+                    };
                 Ok(ParachainHeader {
                     parachain_header: decode_parachain_header(raw_para_header.parachain_header)
-                        .map_err(|err| Error::invalid_header(err))?,
+                        .map_err(|_| Error::invalid_raw_header())?,
                     partial_mmr_leaf: PartialMmrLeaf {
                         version: {
-                            let (major, minor) = split_leaf_version(
-                                raw_para_header
-                                    .mmr_leaf_partial
-                                    .version
-                                    .saturated_into::<u8>(),
-                            );
+                            let (major, minor) =
+                                split_leaf_version(mmr_partial_leaf.version.saturated_into::<u8>());
                             MmrLeafVersion::new(major, minor)
                         },
-                        parent_number_and_hash: (
-                            raw_para_header.mmr_leaf_partial.parent_number,
-                            parent_hash,
-                        ),
+                        parent_number_and_hash: (mmr_partial_leaf.parent_number, parent_hash),
                         beefy_next_authority_set,
                     },
                     para_id: raw_para_header.para_id,
@@ -119,10 +117,13 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                         .into_iter()
                         .map(|item| {
                             let mut dest = [0u8; 32];
+                            if item.len() != 32 {
+                                return Err(Error::invalid_raw_header());
+                            }
                             dest.copy_from_slice(&*item);
-                            dest
+                            Ok(dest)
                         })
-                        .collect(),
+                        .collect::<Result<Vec<_>, Error>>()?,
                     heads_leaf_index: raw_para_header.heads_leaf_index,
                     heads_total_count: raw_para_header.heads_total_count,
                     extrinsic_proof: raw_para_header.extrinsic_proof,
@@ -135,46 +136,60 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                 mmr_update
                     .signed_commitment
                     .as_ref()
-                    .unwrap()
+                    .ok_or(Error::invalid_mmr_update("".to_string()))?
                     .commitment
-                    .unwrap()
+                    .as_ref()
+                    .ok_or(Error::invalid_mmr_update("".to_string()))?
                     .payload
                     .iter()
-                    .map(|item| {
+                    .filter_map(|item| {
+                        if item.payload_id.as_slice() != &MMR_ROOT_ID {
+                            return None;
+                        }
                         let mut payload_id = [0u8; 2];
                         payload_id.copy_from_slice(&item.payload_id);
-                        Payload::new(payload_id, item.payload_data.clone())
+                        Some(Payload::new(payload_id, item.payload_data.clone()))
                     })
-                    .collect()
+                    .collect::<Vec<_>>()
+                    .get(0)
+                    .ok_or(Error::invalid_mmr_update("".to_string()))?
+                    .clone()
             };
             let block_number = mmr_update
                 .signed_commitment
                 .as_ref()
-                .unwrap()
+                .ok_or(Error::invalid_mmr_update("".to_string()))?
                 .commitment
-                .unwrap()
+                .as_ref()
+                .ok_or(Error::invalid_mmr_update("".to_string()))?
                 .block_numer;
             let validator_set_id = mmr_update
                 .signed_commitment
                 .as_ref()
-                .unwrap()
+                .ok_or(Error::invalid_mmr_update("".to_string()))?
                 .commitment
-                .unwrap()
+                .as_ref()
+                .ok_or(Error::invalid_mmr_update("".to_string()))?
                 .validator_set_id;
             let signatures = mmr_update
                 .signed_commitment
-                .unwrap()
+                .ok_or(Error::invalid_mmr_update("".to_string()))?
                 .signatures
                 .into_iter()
-                .map(|commitment_sig| SignatureWithAuthorityIndex {
-                    signature: {
-                        let mut sig = [0u8; 65];
-                        sig.copy_from_slice(&commitment_sig.signature);
-                        sig
-                    },
-                    index: commitment_sig.authority_index,
+                .map(|commitment_sig| {
+                    if commitment_sig.signature.len() != 65 {
+                        return Err(Error::invalid_mmr_update("".to_string()));
+                    }
+                    Ok(SignatureWithAuthorityIndex {
+                        signature: {
+                            let mut sig = [0u8; 65];
+                            sig.copy_from_slice(&commitment_sig.signature);
+                            sig
+                        },
+                        index: commitment_sig.authority_index,
+                    })
                 })
-                .collect();
+                .collect::<Result<Vec<_>, Error>>()?;
             Some(MmrUpdateProof {
                 signed_commitment: SignedCommitment {
                     commitment: Commitment {
@@ -190,50 +205,68 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                             mmr_update
                                 .mmr_leaf
                                 .as_ref()
-                                .unwrap()
+                                .ok_or(Error::invalid_mmr_update("".to_string()))?
                                 .version
                                 .saturated_into::<u8>(),
                         );
                         MmrLeafVersion::new(major, minor)
                     },
                     parent_number_and_hash: {
-                        let parent_number = mmr_update.mmr_leaf.as_ref().unwrap().parent_number;
+                        let parent_number = mmr_update
+                            .mmr_leaf
+                            .as_ref()
+                            .ok_or(Error::invalid_mmr_update("".to_string()))?
+                            .parent_number;
                         let parent_hash = H256::decode(
-                            &mut mmr_update.mmr_leaf.as_ref().unwrap().parent_hash.as_slice(),
+                            &mut mmr_update
+                                .mmr_leaf
+                                .as_ref()
+                                .ok_or(Error::invalid_mmr_update("".to_string()))?
+                                .parent_hash
+                                .as_slice(),
                         )
-                        .unwrap();
+                        .map_err(|e| Error::invalid_mmr_update(e.to_string()))?;
                         (parent_number, parent_hash)
                     },
                     beefy_next_authority_set: BeefyNextAuthoritySet {
                         id: mmr_update
                             .mmr_leaf
                             .as_ref()
-                            .unwrap()
+                            .ok_or(Error::invalid_mmr_update("".to_string()))?
                             .beefy_next_authority_set
-                            .unwrap()
+                            .as_ref()
+                            .ok_or(Error::invalid_mmr_update("".to_string()))?
                             .id,
                         len: mmr_update
                             .mmr_leaf
                             .as_ref()
-                            .unwrap()
+                            .ok_or(Error::invalid_mmr_update("".to_string()))?
                             .beefy_next_authority_set
-                            .unwrap()
+                            .as_ref()
+                            .ok_or(Error::invalid_mmr_update("".to_string()))?
                             .len,
                         root: H256::decode(
-                            &mut &mmr_update
+                            &mut mmr_update
                                 .mmr_leaf
                                 .as_ref()
-                                .unwrap()
+                                .ok_or(Error::invalid_mmr_update("".to_string()))?
                                 .beefy_next_authority_set
-                                .unwrap()
-                                .authority_root,
+                                .as_ref()
+                                .ok_or(Error::invalid_mmr_update("".to_string()))?
+                                .authority_root
+                                .as_slice(),
                         )
-                        .unwrap(),
+                        .map_err(|e| Error::invalid_mmr_update(e.to_string()))?,
                     },
                     parachain_heads: H256::decode(
-                        &mut &mmr_update.mmr_leaf.as_ref().unwrap().parachain_heads,
+                        &mut mmr_update
+                            .mmr_leaf
+                            .as_ref()
+                            .ok_or(Error::invalid_mmr_update("".to_string()))?
+                            .parachain_heads
+                            .as_slice(),
                     )
-                    .unwrap(),
+                    .map_err(|e| Error::invalid_mmr_update(e.to_string()))?,
                 },
                 mmr_proof: Proof {
                     leaf_index: mmr_update.mmr_leaf_index,
@@ -241,18 +274,24 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                     items: mmr_update
                         .mmr_proof
                         .into_iter()
-                        .map(|item| H256::decode(&mut &item).unwrap())
-                        .collect(),
+                        .map(|item| {
+                            H256::decode(&mut &*item)
+                                .map_err(|e| Error::invalid_mmr_update(e.to_string()))
+                        })
+                        .collect::<Result<Vec<_>, Error>>()?,
                 },
                 authority_proof: mmr_update
                     .authorities_proof
                     .into_iter()
                     .map(|item| {
+                        if item.len() != 32 {
+                            return Err(Error::invalid_mmr_update("".to_string()));
+                        }
                         let mut dest = [0u8; 32];
                         dest.copy_from_slice(&item);
-                        dest
+                        Ok(dest)
                     })
-                    .collect(),
+                    .collect::<Result<Vec<_>, Error>>()?,
             })
         } else {
             None
@@ -385,10 +424,10 @@ pub fn decode_parachain_header(
     raw_header: Vec<u8>,
 ) -> Result<SubstrateHeader<u32, BlakeTwo256>, Error> {
     SubstrateHeader::decode(&mut &*raw_header)
-        .map_err(|_| Error::invalid_header("failed to decode parachain header"))
+        .map_err(|_| Error::invalid_header("failed to decode parachain header".to_string()))
 }
 
-pub fn decode_header<B: Buf>(buf: B) -> Result<Header, Error> {
+pub fn decode_header<B: Buf>(buf: B) -> Result<BeefyHeader, Error> {
     RawBeefyHeader::decode(buf)
         .map_err(Error::decode)?
         .try_into()
@@ -410,7 +449,7 @@ pub fn decode_timestamp_extrinsic(header: &ParachainHeader) -> Result<u64, Error
     // Decoding from the [2..] because the timestamp inmherent has two extra bytes before the call that represents the
     // call length and the extrinsic version.
     let (_, _, timestamp): (u8, u8, codec::Compact<u64>) =
-        codec::Decode::decode(&mut &*ext_bytes[2..]).map_err(|_| Error::timestamp_extrinsic())?;
+        codec::Decode::decode(&mut &ext_bytes[2..]).map_err(|_| Error::timestamp_extrinsic())?;
     Ok(timestamp.into())
 }
 

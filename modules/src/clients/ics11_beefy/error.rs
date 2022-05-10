@@ -8,7 +8,6 @@ use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::{Timestamp, TimestampOverflowError};
 use beefy_client::error::BeefyClientError;
 use codec::Error as ScaleCodecError;
-use sp_core::H256;
 
 use crate::Height;
 
@@ -19,9 +18,9 @@ define_error! {
             |_| { "invalid address" },
         InvalidMmrUpdate
             { reason: String }
-            |e| { "invalid address {}", e.reason },
+            |e| { format_args!("invalid mmr update {}", e.reason) },
         InvalidCommitmentRoot
-            |_| { "invalid commitment root" }
+            |_| { "invalid commitment root" },
         TimestampExtrinsic
             |_| { "error decoding timestamp extrinsic" },
         InvalidHeader
@@ -38,21 +37,15 @@ define_error! {
             { reason: String }
             |e| { format_args!("invalid raw client state: {}", e.reason) },
 
-        MissingValidatorSet
-            |_| { "missing validator set" },
-
-        MissingTrustedValidatorSet
-            |_| { "missing trusted validator set" },
-
-        MissingTrustedHeight
-            |_| { "missing trusted height" },
-
         InvalidChainIdentifier
             [ ValidationError ]
             |_| { "invalid chain identifier" },
 
         MissingLatestHeight
             |_| { "missing latest height" },
+
+        MissingBeefyAuthoritySet
+            |_| { "missing beefy authority set" },
 
         MissingFrozenHeight
             |_| { "missing frozen height" },
@@ -166,25 +159,10 @@ define_error! {
                 format_args!("the header's current/trusted revision number ({0}) and the update's revision number ({1}) should be the same", e.current_revision, e.update_revision)
             },
 
-        InvalidValidatorSet
-            {
-                hash1: H256,
-                hash2: H256,
-            }
-            | e | {
-                format_args!("invalid validator set: header_validators_hash={} and validators_hash={}", e.hash1, e.hash2)
-            },
-
-        NotEnoughTrustedValsSigned
-            { reason: String }
-            | e | {
-                format_args!("not enough trust because insufficient validators overlap: {}", e.reason)
-            },
-
         VerificationError
             { reason: BeefyClientError }
             | e | {
-                format_args!("verification failed: {}", e.reason)
+                format_args!("verification failed: {:?}", e.reason)
             },
 
         ProcessedTimeNotFound

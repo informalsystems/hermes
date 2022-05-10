@@ -100,6 +100,7 @@ impl AnyUpgradeOptions {
 #[serde(tag = "type")]
 pub enum AnyClientState {
     Tendermint(client_state::ClientState),
+    #[serde(skip)]
     Beefy(beefy_client_state::ClientState),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockClientState),
@@ -109,7 +110,7 @@ impl AnyClientState {
     pub fn latest_height(&self) -> Height {
         match self {
             Self::Tendermint(tm_state) => tm_state.latest_height(),
-            Self::Beefy(bf_state) => bf_state.latest_para_height(),
+            Self::Beefy(bf_state) => bf_state.latest_height(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.latest_height(),
         }
@@ -136,7 +137,7 @@ impl AnyClientState {
     pub fn max_clock_drift(&self) -> Duration {
         match self {
             AnyClientState::Tendermint(state) => state.max_clock_drift,
-            AnyClientState::Beefy(_) => None,
+            AnyClientState::Beefy(_) => Duration::new(0, 0),
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(_) => Duration::new(0, 0),
         }
@@ -163,7 +164,7 @@ impl AnyClientState {
     pub fn expired(&self, elapsed_since_latest: Duration) -> bool {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
-            AnyClientState::Beefy(state) => false,
+            AnyClientState::Beefy(_) => false,
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
@@ -185,9 +186,9 @@ impl TryFrom<Any> for AnyClientState {
             )),
 
             BEEFY_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Beefy(
-                beefy_client_state::ClientState::decode_vec(&raw.value),
-            ))
-            .map_err(Error::decode_raw_client_state)?,
+                beefy_client_state::ClientState::decode_vec(&raw.value)
+                    .map_err(Error::decode_raw_client_state)?,
+            )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
@@ -204,6 +205,12 @@ impl From<AnyClientState> for Any {
         match value {
             AnyClientState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
+                value: value
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
+            },
+            AnyClientState::Beefy(value) => Any {
+                type_url: BEEFY_CLIENT_STATE_TYPE_URL.to_string(),
                 value: value
                     .encode_vec()
                     .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
@@ -225,7 +232,7 @@ impl ClientState for AnyClientState {
     fn chain_id(&self) -> ChainId {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
-
+            AnyClientState::Beefy(bf_state) => bf_state.chain_id(),
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.chain_id(),
         }
@@ -253,7 +260,9 @@ impl ClientState for AnyClientState {
             AnyClientState::Tendermint(tm_state) => tm_state
                 .upgrade(upgrade_height, upgrade_options.into_tendermint(), chain_id)
                 .wrap_any(),
-
+            AnyClientState::Beefy(bf_state) => bf_state
+                .upgrade(upgrade_height, upgrade_options.into_beefy(), chain_id)
+                .wrap_any(),
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => {
                 mock_state.upgrade(upgrade_height, (), chain_id).wrap_any()

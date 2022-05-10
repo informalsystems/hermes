@@ -1,5 +1,6 @@
 //! This module implements the processing logic for ICS4 (channel) messages.
 
+use crate::clients::ics11_beefy::client_def::BeefyLCStore;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
@@ -58,20 +59,21 @@ where
 
 /// General entry point for processing any type of message related to the ICS4 channel open and
 /// channel close handshake protocols.
-pub fn channel_dispatch<Ctx>(
+pub fn channel_dispatch<Ctx, Beefy>(
     ctx: &Ctx,
     msg: &ChannelMsg,
 ) -> Result<(HandlerOutputBuilder<()>, ChannelResult), Error>
 where
     Ctx: ChannelReader,
+    Beefy: BeefyLCStore,
 {
     let output = match msg {
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
-        ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process(ctx, msg),
-        ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process(ctx, msg),
-        ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process(ctx, msg),
+        ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process::<Beefy>(ctx, msg),
+        ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process::<Beefy>(ctx, msg),
+        ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process::<Beefy>(ctx, msg),
         ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg),
-        ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process(ctx, msg),
+        ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process::<Beefy>(ctx, msg),
     }?;
     let HandlerOutput {
         result,
@@ -166,18 +168,19 @@ where
 }
 
 /// Dispatcher for processing any type of message related to the ICS4 packet protocols.
-pub fn packet_dispatch<Ctx>(
+pub fn packet_dispatch<Ctx, Beefy>(
     ctx: &Ctx,
     msg: &PacketMsg,
 ) -> Result<(HandlerOutputBuilder<()>, PacketResult), Error>
 where
     Ctx: ChannelReader,
+    Beefy: BeefyLCStore,
 {
     let output = match msg {
-        PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
-        PacketMsg::AckPacket(msg) => acknowledgement::process(ctx, msg),
-        PacketMsg::ToPacket(msg) => timeout::process(ctx, msg),
-        PacketMsg::ToClosePacket(msg) => timeout_on_close::process(ctx, msg),
+        PacketMsg::RecvPacket(msg) => recv_packet::process::<Beefy>(ctx, msg),
+        PacketMsg::AckPacket(msg) => acknowledgement::process::<Beefy>(ctx, msg),
+        PacketMsg::ToPacket(msg) => timeout::process::<Beefy>(ctx, msg),
+        PacketMsg::ToClosePacket(msg) => timeout_on_close::process::<Beefy>(ctx, msg),
     }?;
     let HandlerOutput {
         result,

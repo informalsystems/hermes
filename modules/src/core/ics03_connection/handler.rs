@@ -1,5 +1,6 @@
 //! This module implements the processing logic for ICS3 (connection open handshake) messages.
 
+use crate::clients::ics11_beefy::client_def::BeefyLCStore;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
@@ -41,17 +42,18 @@ pub struct ConnectionResult {
 
 /// General entry point for processing any type of message related to the ICS3 connection open
 /// handshake protocol.
-pub fn dispatch<Ctx>(
+pub fn dispatch<Ctx, Beefy>(
     ctx: &Ctx,
     msg: ConnectionMsg,
 ) -> Result<HandlerOutput<ConnectionResult>, Error>
 where
     Ctx: ConnectionReader,
+    Beefy: BeefyLCStore,
 {
     match msg {
         ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),
-        ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process(ctx, *msg),
-        ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process(ctx, *msg),
-        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process(ctx, msg),
+        ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process::<Beefy>(ctx, *msg),
+        ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process::<Beefy>(ctx, *msg),
+        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process::<Beefy>(ctx, msg),
     }
 }

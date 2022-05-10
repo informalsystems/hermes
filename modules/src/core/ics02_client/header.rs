@@ -24,12 +24,6 @@ pub trait Header: Clone + core::fmt::Debug + Send + Sync {
     /// The type of client (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
-    /// The height of the consensus state
-    fn height(&self) -> Height;
-
-    /// The timestamp of the consensus state
-    fn timestamp(&self) -> Timestamp;
-
     /// Wrap into an `AnyHeader`
     fn wrap_any(self) -> AnyHeader;
 }
@@ -44,6 +38,26 @@ pub enum AnyHeader {
     Mock(MockHeader),
 }
 
+impl AnyHeader {
+    pub fn height(&self) -> Height {
+        match self {
+            Self::Tendermint(header) => header.height(),
+            Self::Beefy(_header) => Default::default(),
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(header) => header.height(),
+        }
+    }
+
+    pub fn timestamp(&self) -> Timestamp {
+        match self {
+            Self::Tendermint(header) => header.timestamp(),
+            Self::Beefy(_header) => Default::default(),
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(header) => header.timestamp(),
+        }
+    }
+}
+
 impl Header for AnyHeader {
     fn client_type(&self) -> ClientType {
         match self {
@@ -51,24 +65,6 @@ impl Header for AnyHeader {
             Self::Beefy(header) => header.client_type(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.client_type(),
-        }
-    }
-
-    fn height(&self) -> Height {
-        match self {
-            Self::Tendermint(header) => header.height(),
-            Self::Beefy(header) => Default::default(),
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(header) => header.height(),
-        }
-    }
-
-    fn timestamp(&self) -> Timestamp {
-        match self {
-            Self::Tendermint(header) => header.timestamp(),
-            Self::Beefy(header) => Default::default(),
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(header) => header.timestamp(),
         }
     }
 
@@ -104,7 +100,7 @@ impl TryFrom<Any> for AnyHeader {
             }
 
             BEEFY_HEADER_TYPE_URL => {
-                let val = decode_beefy_header(&raw.value).map_err(Error::beefy)?;
+                let val = decode_beefy_header(&*raw.value).map_err(Error::beefy)?;
                 Ok(AnyHeader::Beefy(val))
             }
 

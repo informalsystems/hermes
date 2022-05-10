@@ -5,14 +5,15 @@ use beefy_primitives::mmr::BeefyNextAuthoritySet;
 use codec::{Decode, Encode};
 use core::convert::TryFrom;
 use core::time::Duration;
+use serde::{Deserialize, Serialize};
 use sp_core::H256;
 use sp_runtime::SaturatedConversion;
 use tendermint_proto::Protobuf;
 
+use crate::clients::ics11_beefy::client_def::BeefyLCStore;
 use ibc_proto::ibc::lightclients::beefy::v1::{BeefyAuthoritySet, ClientState as RawClientState};
 
 use crate::clients::ics11_beefy::error::Error;
-use crate::clients::ics11_beefy::header::BeefyHeader;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics24_host::identifier::ChainId;
@@ -55,27 +56,23 @@ impl ClientState {
         authority_set: BeefyNextAuthoritySet<H256>,
         next_authority_set: BeefyNextAuthoritySet<H256>,
     ) -> Result<ClientState, Error> {
-        if chain_id.version() <= 0 {
+        if chain_id.version() == 0 {
             return Err(Error::validation(
-                "ClientState Chain id version must be the parachain id which cannot be less or equal to zero ".to_string(),
-            ));
-        }
-
-        if latest_beefy_height < 0 {
-            return Err(Error::validation(
-                "ClientState latest beefy height and latest parachain height must be greater than or equal to zero".to_string(),
+                "ClientState Chain id cannot be equal to zero ".to_string(),
             ));
         }
 
         if beefy_activation_block > latest_beefy_height {
             return Err(Error::validation(
-                "ClientState beefy activation block cannot be greater than latest_beefy_height".to_string(),
+                "ClientState beefy activation block cannot be greater than latest_beefy_height"
+                    .to_string(),
             ));
         }
 
         if authority_set.id >= next_authority_set.id {
             return Err(Error::validation(
-                "ClientState next authority set id must be greater than current authority set id".to_string(),
+                "ClientState next authority set id must be greater than current authority set id"
+                    .to_string(),
             ));
         }
 
@@ -87,8 +84,6 @@ impl ClientState {
             beefy_activation_block,
             authority: authority_set,
             next_authority_set,
-            latest_para_height: None,
-            para_id: chain_id.version().saturated_into::<u32>(),
         })
     }
 
@@ -103,12 +98,7 @@ impl ClientState {
         self.beefy_activation_block - (block_number + 1)
     }
 
-    pub fn with_updates(
-        &self,
-        mmr_state: MmrState,
-        authorities: AuthoritySet,
-        latest_para_height: Height,
-    ) -> Self {
+    pub fn with_updates(&self, mmr_state: MmrState, authorities: AuthoritySet) -> Self {
         let clone = self.clone();
         Self {
             mmr_root_hash: mmr_state.mmr_root_hash,
@@ -162,7 +152,7 @@ impl ClientState {
     pub fn verify_height(&self, height: Height) -> Result<(), Error> {
         if (self.latest_height() as u64) < height.revision_height {
             return Err(Error::insufficient_height(
-                self.latest_height(),
+                Height::new(0, self.latest_beefy_height.into()),
                 height,
             ));
         }
@@ -173,6 +163,20 @@ impl ClientState {
             }
             _ => Ok(()),
         }
+    }
+
+    pub fn verify_parachain_height<LCStore: BeefyLCStore>(
+        &self,
+        height: Height,
+    ) -> Result<(), Error> {
+        let para_id = height.revision_number;
+        let trusted_para_height = LCStore::get_parachain_latest_height(para_id)
+            .map_err(|e| Error::implementation_specific(e.to_string()))?;
+        let latest_para_height = Height::new(para_id, trusted_para_height);
+        if latest_para_height < height {
+            return Err(Error::insufficient_height(latest_para_height, height));
+        }
+        Ok(())
     }
 }
 
@@ -224,8 +228,7 @@ impl TryFrom<RawClientState> for ClientState {
     type Error = Error;
 
     fn try_from(raw: RawClientState) -> Result<Self, Self::Error> {
-        // TODO: Change Revison number to para id when chain id is added to the beefy spec
-        let frozen_height = Some(Height::new(REVISION_NUMBER, raw.frozen_height));
+        let frozen_height = Some(Height::new(0, raw.frozen_height));
 
         let authority_set = raw
             .authority
@@ -233,10 +236,10 @@ impl TryFrom<RawClientState> for ClientState {
                 Some(BeefyNextAuthoritySet {
                     id: set.id,
                     len: set.len,
-                    root: H256::decode(&mut &set.authority_root).ok()?,
+                    root: H256::decode(&mut &*set.authority_root).ok()?,
                 })
             })
-            .ok_or(Error::missing_validator_set())?;
+            .ok_or(Error::missing_beefy_authority_set())?;
 
         let next_authority_set = raw
             .next_authority_set
@@ -244,12 +247,13 @@ impl TryFrom<RawClientState> for ClientState {
                 Some(BeefyNextAuthoritySet {
                     id: set.id,
                     len: set.len,
-                    root: H256::decode(&mut &set.authority_root).ok()?,
+                    root: H256::decode(&mut &*set.authority_root).ok()?,
                 })
             })
-            .ok_or(Error::missing_validator_set())?;
+            .ok_or(Error::missing_beefy_authority_set())?;
 
-        let mmr_root_hash = H256::decode(&mut &raw.mmr_root_hash).map_err(|_| Error::decode())?;
+        let mmr_root_hash =
+            H256::decode(&mut &*raw.mmr_root_hash).map_err(|e| Error::scale_decode(e))?;
 
         Ok(Self {
             chain_id: ChainId::default(),
@@ -259,9 +263,6 @@ impl TryFrom<RawClientState> for ClientState {
             beefy_activation_block: raw.beefy_activation_block,
             authority: authority_set,
             next_authority_set,
-            latest_para_height: None,
-            // TODO Para Id should be added to the client state spec
-            para_id: ChainId::default().version().saturated_into::<u32>(),
         })
     }
 }

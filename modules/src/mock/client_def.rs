@@ -1,7 +1,7 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_def::ClientDef;
+use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
@@ -30,22 +30,23 @@ impl ClientDef for MockClient {
     type ClientState = MockClientState;
     type ConsensusState = MockConsensusState;
 
-    fn check_header_and_update_state(
+    fn update_state(
         &self,
         _ctx: &dyn ClientReader,
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         if client_state.latest_height() >= header.height() {
             return Err(Error::low_header_height(
                 header.height(),
                 client_state.latest_height(),
             ));
         }
+
         Ok((
             MockClientState::new(header),
-            MockConsensusState::new(header),
+            ConsensusUpdateResult::Single(AnyConsensusState::Mock(MockConsensusState::new(header))),
         ))
     }
 
@@ -180,7 +181,38 @@ impl ClientDef for MockClient {
         consensus_state: &Self::ConsensusState,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
-        Ok((*client_state, consensus_state.clone()))
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
+        Ok((
+            *client_state,
+            ConsensusUpdateResult::Single(AnyConsensusState::Mock(consensus_state.clone())),
+        ))
+    }
+
+    fn verify_header(
+        &self,
+        _ctx: &dyn ClientReader,
+        _client_id: ClientId,
+        _client_state: Self::ClientState,
+        _header: Self::Header,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
+
+    fn update_state_on_misbehaviour(
+        &self,
+        client_state: Self::ClientState,
+        _header: Self::Header,
+    ) -> Result<Self::ClientState, Error> {
+        Ok(client_state)
+    }
+
+    fn check_for_misbehaviour(
+        &self,
+        _ctx: &dyn ClientReader,
+        _client_id: ClientId,
+        _client_state: Self::ClientState,
+        _header: Self::Header,
+    ) -> Result<bool, Error> {
+        Ok(false)
     }
 }

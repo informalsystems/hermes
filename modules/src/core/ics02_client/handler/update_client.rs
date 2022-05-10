@@ -1,15 +1,15 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
+use crate::clients::ics11_beefy::client_def::BeefyLCStore;
 use tracing::debug;
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
+use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
-use crate::core::ics02_client::header::Header;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
@@ -24,12 +24,12 @@ use crate::timestamp::Timestamp;
 pub struct Result {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub consensus_state: Option<ConsensusUpdateResult>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
 
-pub fn process(
+pub fn process<Beefy: BeefyLCStore>(
     ctx: &dyn ClientReader,
     msg: MsgUpdateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
@@ -44,7 +44,7 @@ pub fn process(
     // Read client type from the host chain store. The client should already exist.
     let client_type = ctx.client_type(&client_id)?;
 
-    let client_def = AnyClient::from_client_type(client_type);
+    let client_def = AnyClient::<Beefy>::from_client_type(client_type);
 
     // Read client state from the host chain store.
     let client_state = ctx.client_state(&client_id)?;
@@ -53,49 +53,73 @@ pub fn process(
         return Err(Error::client_frozen(client_id));
     }
 
-    // Read consensus state from the host chain store.
-    let latest_consensus_state = ctx
-        .consensus_state(&client_id, client_state.latest_height())
-        .map_err(|_| {
-            Error::consensus_state_not_found(client_id.clone(), client_state.latest_height())
-        })?;
+    if client_type != ClientType::Beefy {
+        // Read consensus state from the host chain store.
+        let latest_consensus_state = ctx
+            .consensus_state(&client_id, client_state.latest_height())
+            .map_err(|_| {
+                Error::consensus_state_not_found(client_id.clone(), client_state.latest_height())
+            })?;
 
-    debug!("latest consensus state: {:?}", latest_consensus_state);
+        debug!("latest consensus state: {:?}", latest_consensus_state);
 
-    let now = ctx.host_timestamp();
-    let duration = now
-        .duration_since(&latest_consensus_state.timestamp())
-        .ok_or_else(|| {
-            Error::invalid_consensus_state_timestamp(latest_consensus_state.timestamp(), now)
-        })?;
+        let now = ctx.host_timestamp();
+        let duration = now
+            .duration_since(&latest_consensus_state.timestamp())
+            .ok_or_else(|| {
+                Error::invalid_consensus_state_timestamp(latest_consensus_state.timestamp(), now)
+            })?;
 
-    if client_state.expired(duration) {
-        return Err(Error::header_not_within_trust_period(
-            latest_consensus_state.timestamp(),
-            header.timestamp(),
-        ));
+        if client_state.expired(duration) {
+            return Err(Error::header_not_within_trust_period(
+                latest_consensus_state.timestamp(),
+                header.timestamp(),
+            ));
+        }
     }
 
+    client_def
+        .verify_header(ctx, client_id.clone(), client_state.clone(), header.clone())
+        .map_err(|e| Error::header_verification_failure(e.to_string()))?;
+
+    let found_misbehaviour = client_def
+        .check_for_misbehaviour(ctx, client_id.clone(), client_state.clone(), header.clone())
+        .map_err(|e| Error::header_verification_failure(e.to_string()))?;
+
+    let event_attributes = Attributes {
+        client_id: client_id.clone(),
+        height: ctx.host_height(),
+        ..Default::default()
+    };
+
+    if found_misbehaviour {
+        let client_state =
+            client_def.update_state_on_misbehaviour(client_state.clone(), header.clone())?;
+        let result = ClientResult::Update(Result {
+            client_id: client_id.clone(),
+            client_state,
+            consensus_state: None,
+            processed_time: ctx.host_timestamp(),
+            processed_height: ctx.host_height(),
+        });
+        output.emit(IbcEvent::ClientMisbehaviour(event_attributes.into()));
+        return Ok(output.with_result(result));
+    }
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.
     let (new_client_state, new_consensus_state) = client_def
-        .check_header_and_update_state(ctx, client_id.clone(), client_state, header)
+        .update_state(ctx, client_id.clone(), client_state, header)
         .map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
     let result = ClientResult::Update(Result {
         client_id: client_id.clone(),
         client_state: new_client_state,
-        consensus_state: new_consensus_state,
+        consensus_state: Some(new_consensus_state),
         processed_time: ctx.host_timestamp(),
         processed_height: ctx.host_height(),
     });
 
-    let event_attributes = Attributes {
-        client_id,
-        height: ctx.host_height(),
-        ..Default::default()
-    };
     output.emit(IbcEvent::UpdateClient(event_attributes.into()));
 
     Ok(output.with_result(result))

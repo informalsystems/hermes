@@ -1,4 +1,5 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenConfirm`.
+use crate::clients::ics11_beefy::client_def::BeefyLCStore;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::core::ics04_channel::context::ChannelReader;
@@ -11,7 +12,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process(
+pub(crate) fn process<Beefy: BeefyLCStore>(
     ctx: &dyn ChannelReader,
     msg: &MsgChannelOpenConfirm,
 ) -> HandlerResult<ChannelResult, Error> {
@@ -64,7 +65,7 @@ pub(crate) fn process(
         channel_end.version().clone(),
     );
     //2. Verify proofs
-    verify_channel_proofs(
+    verify_channel_proofs::<Beefy>(
         ctx,
         msg.proofs.height(),
         &channel_end,

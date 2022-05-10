@@ -58,7 +58,7 @@ fi
 if [[ ! -e "$IBC_GO_GIT" ]]
 then
 	echo "Cloning ibc-go source code to as bare git repository to $IBC_GO_GIT"
-	git clone --mirror https://github.com/cosmos/ibc-go.git "$IBC_GO_GIT"
+	git clone --mirror https://github.com/ComposableFi/ibc-go.git "$IBC_GO_GIT"
 else
 	echo "Using existing ibc-go bare git repository at $IBC_GO_GIT"
 fi

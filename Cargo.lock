@@ -5,6 +5,7 @@ version = 3
 [[package]]
 name = "Inflector"
 version = "0.11.4"
+<<<<<<< HEAD
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 dependencies = [
@@ -15,18 +16,14 @@ dependencies = [
 [[package]]
 name = "abscissa_core"
 version = "0.6.0"
+=======
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6750843603bf31a83accd3c8177f9dbf53a7d64275688fc7371e0a4d9f8628b5"
+checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 dependencies = [
- "abscissa_derive",
- "arc-swap",
- "backtrace",
- "canonical-path",
- "clap",
- "color-eyre",
- "fs-err",
- "once_cell",
+ "lazy_static",
  "regex",
+<<<<<<< HEAD
  "secrecy",
  "semver",
  "serde",
@@ -49,6 +46,8 @@ dependencies = [
  "quote",
  "syn",
  "synstructure",
+=======
+>>>>>>> e05319ec (initial refactor)
 ]
 
 [[package]]
@@ -67,10 +66,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
-name = "adler32"
-version = "1.2.0"
+name = "ahash"
+version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aae1277d39aeec15cb388266ecc24b11c80469deae6067e17a1a7aa9e5c1f234"
+checksum = "fcb51a0695d8f838b1ee009b3fbf66bda078cd64590202a864a8f3e8c4315c47"
+dependencies = [
+ "getrandom 0.2.6",
+ "once_cell",
+ "version_check",
+]
 
 [[package]]
 name = "ahash"
@@ -90,21 +94,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e37cfd5e7657ada45f742d6e99ca5788580b5c529dc78faf11ece6dc702656f"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "alloc-no-stdlib"
-version = "2.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35ef4730490ad1c4eae5c4325b2a95f521d023e5c885853ff7aca0a6a1631db3"
-
-[[package]]
-name = "alloc-stdlib"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "697ed7edc0f1711de49ce108c541623a0af97c6c60b2f6e2b65229847ac843c2"
-dependencies = [
- "alloc-no-stdlib",
 ]
 
 [[package]]
@@ -132,18 +121,26 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "arc-swap"
 version = "1.5.0"
+=======
+name = "arrayref"
+version = "0.3.6"
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5d78ce20460b82d3fa150275ed9d55e21064fc7951177baacf86a145c4a4b1f"
+checksum = "a4c527152e37cf757a3f78aae5a06fbeefdb07ccc535c980a3208ee3060dd544"
 
 [[package]]
+<<<<<<< HEAD
 name = "arrayref"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4c527152e37cf757a3f78aae5a06fbeefdb07ccc535c980a3208ee3060dd544"
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "arrayvec"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -161,14 +158,17 @@ checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 [[package]]
 name = "arrayvec"
 version = "0.7.2"
+<<<<<<< HEAD
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
 
 [[package]]
 name = "ascii"
 version = "1.0.0"
+=======
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbf56136a5198c7b01a49e3afcbef6cf84597273d298f54432926024107b0109"
+checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
 
 [[package]]
 name = "async-stream"
@@ -294,10 +294,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "base16ct"
-version = "0.1.1"
+name = "base58"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "349a06037c7bf932dd7e7d1f653678b2038b9ad46a74102f1fc7bd7872678cce"
+checksum = "6107fe1be6682a68940da878d9e9f5e90ca5745b3dec9fd1bb393c8777d4f581"
 
 [[package]]
 name = "base58"
@@ -312,18 +312,49 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
-name = "base64ct"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dea908e7347a8c64e378c17e30ef880ad73e3b4498346b055c2c00ea342f3179"
+name = "beefy-generic-client"
+version = "0.1.0"
+source = "git+https://github.com/ComposableFi/beefy-client?branch=master#9a79987cdb3e1b9f90d4151325521608e4ebb506"
+dependencies = [
+ "beefy-primitives",
+ "pallet-beefy-mmr",
+ "pallet-mmr",
+ "pallet-mmr-primitives",
+ "parity-scale-codec",
+ "rs_merkle",
+ "sp-core",
+ "sp-core-hashing",
+ "sp-runtime",
+ "sp-std 4.0.0",
+]
 
 [[package]]
-name = "bech32"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
+name = "beefy-merkle-tree"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
 
 [[package]]
+name = "beefy-primitives"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 4.0.0",
+]
+
+[[package]]
+name = "bitflags"
+version = "1.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
+
+[[package]]
+<<<<<<< HEAD
 name = "bech32"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -339,22 +370,40 @@ dependencies = [
  "bitcoin_hashes",
  "secp256k1",
  "serde",
-]
-
-[[package]]
-name = "bitcoin_hashes"
-version = "0.10.0"
+=======
+name = "bitvec"
+version = "0.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "006cc91e1a1d99819bc5b8214be3555c1f0611b169f527a1fdc54ed1f2b745b0"
+checksum = "7774144344a4faa177370406a7ff5f1da24303817368584c6206c8303eb07848"
 dependencies = [
- "serde",
+ "funty",
+ "radium",
+ "tap",
+ "wyz",
+>>>>>>> e05319ec (initial refactor)
 ]
 
 [[package]]
-name = "bitflags"
-version = "1.3.2"
+name = "blake2-rfc"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
+checksum = "5d6d530bdd2d52966a6d03b7a964add7ae1a288d25214066fd4b600f0f796400"
+dependencies = [
+ "arrayvec 0.4.12",
+ "constant_time_eq",
+]
+
+[[package]]
+name = "block-buffer"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c0940dc441f31689269e10ac70eb1002a3a1d3ad1390e030043662eb7fe4688b"
+dependencies = [
+ "block-padding 0.1.5",
+ "byte-tools",
+ "byteorder",
+ "generic-array 0.12.4",
+]
 
 [[package]]
 name = "bitvec"
@@ -407,6 +456,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bf7fe51849ea569fd452f37822f606a5cabb684dc918707a0193fd4664ff324"
 dependencies = [
  "generic-array 0.14.5",
+<<<<<<< HEAD
+]
+
+[[package]]
+name = "block-padding"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa79dedbb091f449f1f39e53edf88d5dbe95f895dae6135a8d7b881fb5af73f5"
+dependencies = [
+ "byte-tools",
+=======
+>>>>>>> e05319ec (initial refactor)
 ]
 
 [[package]]
@@ -425,37 +486,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
-name = "brotli"
-version = "3.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1a0b1dbcc8ae29329621f8d4f0d835787c1c38bb1401979b49d13b0b305ff68"
-dependencies = [
- "alloc-no-stdlib",
- "alloc-stdlib",
- "brotli-decompressor",
-]
-
-[[package]]
-name = "brotli-decompressor"
-version = "2.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59ad2d4653bf5ca36ae797b1f4bb4dbddb60ce49ca4aed8a2ce4829f60425b80"
-dependencies = [
- "alloc-no-stdlib",
- "alloc-stdlib",
-]
-
-[[package]]
-name = "buf_redux"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b953a6887648bb07a535631f2bc00fbdb2a2216f135552cb3f534ed136b9c07f"
-dependencies = [
- "memchr",
- "safemem",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -470,14 +500,17 @@ checksum = "87c5fdd0166095e1d463fc6cc01aa8ce547ad77a4e84d42eb6762b084e28067e"
 [[package]]
 name = "byte-tools"
 version = "0.3.1"
+<<<<<<< HEAD
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 
 [[package]]
 name = "bytecount"
 version = "0.6.2"
+=======
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72feb31ffc86498dacdbd0fcebb56138e7177a8cc5cea4516031d15ae85a742e"
+checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 
 [[package]]
 name = "byteorder"
@@ -492,6 +525,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4872d67bab6358e59559027aa3b9157c53d9358c51423c17554809a8858e0f8"
 
 [[package]]
+<<<<<<< HEAD
 name = "bzip2"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -550,6 +584,8 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "cc"
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -643,54 +679,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "color-eyre"
-version = "0.6.1"
+name = "constant_time_eq"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ebf286c900a6d5867aeff75cfee3192857bb7f24b547d4f0df2ed6baa812c90"
-dependencies = [
- "backtrace",
- "color-spantrace",
- "eyre",
- "indenter",
- "once_cell",
- "owo-colors",
- "tracing-error",
-]
+checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
-name = "color-spantrace"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ba75b3d9449ecdccb27ecbc479fdc0b87fa2dd43d2f8298f9bf0e59aacc8dce"
-dependencies = [
- "once_cell",
- "owo-colors",
- "tracing-core",
- "tracing-error",
-]
-
-[[package]]
-name = "console"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a28b32d32ca44b70c3e4acd7db1babf555fa026e385fb95f18028f88848b3c31"
-dependencies = [
- "encode_unicode",
- "libc",
- "once_cell",
- "regex",
- "terminal_size",
- "unicode-width",
- "winapi",
-]
-
-[[package]]
-name = "const-oid"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4c78c047431fee22c1a7bb92e00ad095a02a983affe4d8a72e2a2c62c1b94f3"
-
-[[package]]
+<<<<<<< HEAD
 name = "constant_time_eq"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -699,13 +694,12 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 [[package]]
 name = "contracts"
 version = "0.6.3"
+=======
+name = "convert_case"
+version = "0.4.0"
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1d1429e3bd78171c65aa010eabcdf8f863ba3254728dbfb0ad4b1545beac15c"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
+checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "convert_case"
@@ -749,22 +743,12 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b153fe7cbef478c567df0f972e02e6d736db11affe43dfc9c56a9374d1adfb87"
-dependencies = [
- "crossbeam-utils 0.7.2",
- "maybe-uninit",
-]
-
-[[package]]
-name = "crossbeam-channel"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5aaa7bd5fb665c6864b5f963dd9097905c54125909c7aa94c9e18507cdbe6c53"
 dependencies = [
  "cfg-if 1.0.0",
- "crossbeam-utils 0.8.8",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -774,23 +758,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6455c0ca19f0d2fbf751b908d5c55c1f5cbc65e03c4225427254b46890bdde1e"
 dependencies = [
  "cfg-if 1.0.0",
- "crossbeam-epoch 0.9.8",
- "crossbeam-utils 0.8.8",
-]
-
-[[package]]
-name = "crossbeam-epoch"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "058ed274caafc1f60c4997b5fc07bf7dc7cca454af7c6e81edffe5f33f70dace"
-dependencies = [
- "autocfg",
- "cfg-if 0.1.10",
- "crossbeam-utils 0.7.2",
- "lazy_static",
- "maybe-uninit",
- "memoffset 0.5.6",
- "scopeguard",
+ "crossbeam-epoch",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -801,21 +770,10 @@ checksum = "1145cf131a2c6ba0615079ab6a638f7e1973ac9c2634fcbeaaad6114246efe8c"
 dependencies = [
  "autocfg",
  "cfg-if 1.0.0",
- "crossbeam-utils 0.8.8",
+ "crossbeam-utils",
  "lazy_static",
- "memoffset 0.6.5",
+ "memoffset",
  "scopeguard",
-]
-
-[[package]]
-name = "crossbeam-utils"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3c7c73a2d1e9fc0886a08b93e98eb643461230d5f1925e4036204d5f2e261a8"
-dependencies = [
- "autocfg",
- "cfg-if 0.1.10",
- "lazy_static",
 ]
 
 [[package]]
@@ -835,6 +793,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 
 [[package]]
+<<<<<<< HEAD
 name = "crypto-bigint"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -847,6 +806,8 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "crypto-common"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -888,6 +849,22 @@ dependencies = [
 [[package]]
 name = "curve25519-dalek"
 version = "2.1.3"
+<<<<<<< HEAD
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a9b85542f99a2dfa2a1b8e192662741c9859a846b296bef1c92ef9b58b5a216"
+dependencies = [
+ "byteorder",
+ "digest 0.8.1",
+ "rand_core 0.5.1",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "curve25519-dalek"
+version = "3.2.0"
+=======
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a9b85542f99a2dfa2a1b8e192662741c9859a846b296bef1c92ef9b58b5a216"
 dependencies = [
@@ -912,35 +889,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dashmap"
-version = "4.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e77a43b28d0668df09411cb0bc9a8c2adc40f9a048afe863e05fd43251e8e39c"
-dependencies = [
- "cfg-if 1.0.0",
- "num_cpus",
-]
-
-[[package]]
-name = "deflate"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f95bf05dffba6e6cce8dfbb30def788154949ccd9aed761b472119c21e01c70"
-dependencies = [
- "adler32",
- "gzip-header",
-]
-
-[[package]]
-name = "der"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6919815d73839e7ad218de758883aae3a257ba6759ce7a9992501efbb53d705c"
-dependencies = [
- "const-oid",
-]
-
-[[package]]
 name = "derive_more"
 version = "0.99.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -954,14 +902,19 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "dialoguer"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8c8ae48e400addc32a8710c8d62d55cb84249a7d58ac4cd959daecfbaddc545"
+=======
+name = "digest"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3d0c8c8752312f9713efd397ff63acb9f85585afbf179282e720e7704954dd5"
+>>>>>>> e05319ec (initial refactor)
 dependencies = [
- "console",
- "tempfile",
- "zeroize",
+ "generic-array 0.12.4",
 ]
 
 [[package]]
@@ -1002,16 +955,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dirs-next"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b98cf8ebf19c3d1b223e151f99a4f9f0690dca41414773390fc824184ac833e1"
-dependencies = [
- "cfg-if 1.0.0",
- "dirs-sys-next",
-]
-
-[[package]]
 name = "dirs-sys"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1023,17 +966,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "dirs-sys-next"
-version = "0.1.2"
+name = "downcast-rs"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ebda144c4fe02d1f7ea1a7d9641b6fc6b580adcfa024ae48797ecdeb6825b4d"
-dependencies = [
- "libc",
- "redox_users",
- "winapi",
-]
+checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
+<<<<<<< HEAD
 name = "downcast-rs"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1063,20 +1002,33 @@ dependencies = [
 [[package]]
 name = "dyn-clone"
 version = "1.0.5"
+=======
+name = "dyn-clonable"
+version = "0.9.0"
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21e50f3adc76d6a43f5ed73b698a87d0760ca74617f60f7c3b879003536fdd28"
+checksum = "4e9232f0e607a262ceb9bd5141a3dfb3e4db6994b31989bbfd845878cba59fd4"
+dependencies = [
+ "dyn-clonable-impl",
+ "dyn-clone",
+]
 
 [[package]]
-name = "ecdsa"
-version = "0.13.4"
+name = "dyn-clonable-impl"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0d69ae62e0ce582d56380743515fefaf1a8c70cec685d9677636d7e30ae9dc9"
+checksum = "558e40ea573c374cf53507fd240b7ee2f5477df7cfebdb97323ec61c719399c5"
 dependencies = [
- "der",
- "elliptic-curve",
- "rfc6979",
- "signature",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
+
+[[package]]
+name = "dyn-clone"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21e50f3adc76d6a43f5ed73b698a87d0760ca74617f60f7c3b879003536fdd28"
 
 [[package]]
 name = "ed25519"
@@ -1108,6 +1060,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
+<<<<<<< HEAD
 name = "elliptic-curve"
 version = "0.11.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1132,6 +1085,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "env_logger"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1147,17 +1102,17 @@ dependencies = [
 [[package]]
 name = "environmental"
 version = "1.1.3"
+<<<<<<< HEAD
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68b91989ae21441195d7d9b9993a2f9295c7e1a8c96255d8b729accddc124797"
 
 [[package]]
 name = "error-chain"
 version = "0.12.4"
+=======
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d2f06b9cac1506ece98fe3231e3cc9c4410ec3d5b1f24ae1c8946f0742cdefc"
-dependencies = [
- "version_check",
-]
+checksum = "68b91989ae21441195d7d9b9993a2f9295c7e1a8c96255d8b729accddc124797"
 
 [[package]]
 name = "eyre"
@@ -1185,6 +1140,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "ff"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1197,13 +1153,17 @@ dependencies = [
 [[package]]
 name = "filetime"
 version = "0.2.16"
+=======
+name = "fixed-hash"
+version = "0.7.0"
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0408e2626025178a6a7f7ffc05a25bc47103229f19c113755de7bf63816290c"
+checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
 dependencies = [
- "cfg-if 1.0.0",
- "libc",
- "redox_syscall",
- "winapi",
+ "byteorder",
+ "rand 0.8.5",
+ "rustc-hex",
+ "static_assertions",
 ]
 
 [[package]]
@@ -1236,7 +1196,6 @@ version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c606d892c9de11507fa0dcffc116434f94e105d0bbdc4e405b61519464c49d7b"
 dependencies = [
- "anyhow",
  "eyre",
  "paste",
 ]
@@ -1277,6 +1236,107 @@ dependencies = [
  "sp-std 4.0.0",
  "sp-storage",
 ]
+<<<<<<< HEAD
+=======
+
+[[package]]
+name = "frame-metadata"
+version = "14.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37ed5e5c346de62ca5c184b4325a6600d1eaca210666e4606fe4e449574978d0"
+dependencies = [
+ "cfg-if 1.0.0",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+]
+
+[[package]]
+name = "frame-support"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "bitflags",
+ "frame-metadata",
+ "frame-support-procedural",
+ "impl-trait-for-tuples",
+ "log",
+ "once_cell",
+ "parity-scale-codec",
+ "paste",
+ "scale-info",
+ "serde",
+ "smallvec",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-core-hashing-proc-macro",
+ "sp-inherents",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-state-machine",
+ "sp-std 4.0.0",
+ "sp-tracing",
+ "tt-call",
+]
+
+[[package]]
+name = "frame-support-procedural"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "Inflector",
+ "frame-support-procedural-tools",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "frame-support-procedural-tools"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "frame-support-procedural-tools-derive",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "frame-support-procedural-tools-derive"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "frame-system"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "frame-support",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 4.0.0",
+ "sp-version",
+]
+
+[[package]]
+name = "funty"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fed34cd105917e91daa4da6b3728c47b068749d6a62c59811f06ed2ac71d9da7"
+>>>>>>> e05319ec (initial refactor)
 
 [[package]]
 name = "frame-metadata"
@@ -1530,23 +1590,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78cc372d058dcf6d5ecd98510e7fbc9e5aec4d21de70f65fea8fecebcd881bd4"
 
 [[package]]
-name = "glob"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
-
-[[package]]
-name = "group"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5ac374b108929de78460075f3dc439fa66df9d8fc77e8f12caa5165fcf0c89"
-dependencies = [
- "ff",
- "rand_core 0.6.3",
- "subtle",
-]
-
-[[package]]
 name = "gumdrop"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1564,15 +1607,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "gzip-header"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0131feb3d3bb2a5a238d8a4d09f6353b7ebfdc52e77bccbf4ea6eaa751dde639"
-dependencies = [
- "crc32fast",
 ]
 
 [[package]]
@@ -1595,10 +1629,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "half"
-version = "1.8.2"
+name = "hash-db"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
+checksum = "d23bd4e7b5eda0d0f3a307e8b381fdc8ba9000f26fbe912250c0a4cc3956364a"
+
+[[package]]
+name = "hash256-std-hasher"
+version = "0.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92c171d55b98633f4ed3860808f004099b36c1cc29c42cfc53aa8591b21efcf2"
+dependencies = [
+ "crunchy",
+]
 
 [[package]]
 name = "hash-db"
@@ -1623,6 +1666,7 @@ checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 dependencies = [
  "ahash",
 ]
+<<<<<<< HEAD
 
 [[package]]
 name = "hashbrown"
@@ -1632,14 +1676,16 @@ checksum = "8c21d40587b92fa6a6c6e3c1bdbf87d75511db5672f9c93175574b3a00df1758"
 dependencies = [
  "ahash",
 ]
+=======
+>>>>>>> e05319ec (initial refactor)
 
 [[package]]
-name = "hdpath"
-version = "0.6.0"
+name = "hashbrown"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72adf5a17a0952ecfcddf8d46d071271d5ee52e78443f07ba0b2dcfe3063a132"
+checksum = "db0d4cf898abf0081f964436dc980e96670a0f36863e4b83aaacdb65c9d7ccc3"
 dependencies = [
- "byteorder",
+ "ahash",
 ]
 
 [[package]]
@@ -1766,16 +1812,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
-name = "humantime-serde"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57a3db5ea5923d99402c94e9feb261dc5ee9b4efa158b0315f788cf549cc200c"
-dependencies = [
- "humantime",
- "serde",
-]
-
-[[package]]
 name = "hyper"
 version = "0.14.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1883,6 +1919,7 @@ dependencies = [
  "test-log",
  "time 0.3.9",
  "tracing",
+<<<<<<< HEAD
  "tracing-subscriber",
  "uint",
 ]
@@ -1903,6 +1940,9 @@ dependencies = [
  "tendermint",
  "tendermint-rpc",
  "time 0.3.9",
+=======
+ "tracing-subscriber 0.3.11",
+>>>>>>> e05319ec (initial refactor)
 ]
 
 [[package]]
@@ -1920,6 +1960,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "ibc-relayer"
 version = "0.15.0"
 dependencies = [
@@ -1927,14 +1968,17 @@ dependencies = [
  "async-stream",
  "bech32 0.9.0",
  "bitcoin",
+=======
+name = "ics23"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d454cc0a22bd556cc3d3c69f9d75a392a36244634840697a4b9eb81bc5c8ae0"
+dependencies = [
+ "anyhow",
+>>>>>>> e05319ec (initial refactor)
  "bytes",
- "crossbeam-channel 0.5.4",
- "dirs-next",
- "env_logger",
- "flex-error",
- "futures",
- "hdpath",
  "hex",
+<<<<<<< HEAD
  "http",
  "humantime",
  "humantime-serde",
@@ -1947,11 +1991,11 @@ dependencies = [
  "nanoid",
  "num-bigint 0.4.3",
  "num-rational 0.4.0",
+=======
+>>>>>>> e05319ec (initial refactor)
  "prost",
- "prost-types",
- "regex",
- "retry",
  "ripemd160",
+<<<<<<< HEAD
  "semver",
  "serde",
  "serde_derive",
@@ -2097,13 +2141,11 @@ dependencies = [
  "sha2 0.9.9",
  "sha3",
  "sp-std 3.0.0",
+=======
+ "sha2 0.9.9",
+ "sha3",
+ "sp-std 3.0.0",
 ]
-
-[[package]]
-name = "ident_case"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "idna"
@@ -2114,6 +2156,36 @@ dependencies = [
  "matches",
  "unicode-bidi",
  "unicode-normalization",
+]
+
+[[package]]
+name = "impl-codec"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "161ebdfec3c8e3b52bf61c4f3550a1eea4f9579d10dc1b936f3171ebdcd6c443"
+dependencies = [
+ "parity-scale-codec",
+]
+
+[[package]]
+name = "impl-serde"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4551f042f3438e64dbd6226b20527fc84a6e1fe65688b58746a2f53623f25f5c"
+dependencies = [
+ "serde",
+>>>>>>> e05319ec (initial refactor)
+]
+
+[[package]]
+name = "impl-trait-for-tuples"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11d7a9f6330b71fea57921c9b61c47ee6e84f72d394754eff6163ae67e7395eb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -2173,7 +2245,17 @@ dependencies = [
 
 [[package]]
 name = "itoa"
+<<<<<<< HEAD
 version = "1.0.2"
+=======
+version = "0.4.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4"
+
+[[package]]
+name = "itoa"
+version = "1.0.1"
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "112c678d4050afce233f4f2852bb2eb519230b3cf12f33585275537d7e41578d"
 
@@ -2184,19 +2266,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "671a26f820db17c2a2750743f1dd03bafd15b98c9f30c7c2628c024c05d73397"
 dependencies = [
  "wasm-bindgen",
-]
-
-[[package]]
-name = "k256"
-version = "0.10.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19c3a5e0a0b8450278feda242592512e09f61c72e018b8cd5c859482802daf2d"
-dependencies = [
- "cfg-if 1.0.0",
- "ecdsa",
- "elliptic-curve",
- "sec1",
- "sha2 0.9.9",
 ]
 
 [[package]]
@@ -2272,10 +2341,68 @@ dependencies = [
 ]
 
 [[package]]
-name = "linked-hash-map"
-version = "0.5.4"
+name = "libm"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fb9b38af92608140b86b693604b9ffcc5824240a484d1ecd4795bacb2fe88f3"
+checksum = "33a33a362ce288760ec6a508b94caaec573ae7d3bbbd91b87aa0bad4456839db"
+
+[[package]]
+name = "libsecp256k1"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0452aac8bab02242429380e9b2f94ea20cea2b37e2c1777a1358799bbe97f37"
+dependencies = [
+ "arrayref",
+ "base64",
+ "digest 0.9.0",
+ "hmac-drbg",
+ "libsecp256k1-core",
+ "libsecp256k1-gen-ecmult",
+ "libsecp256k1-gen-genmult",
+ "rand 0.8.5",
+ "serde",
+ "sha2 0.9.9",
+ "typenum",
+]
+
+[[package]]
+name = "libsecp256k1-core"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5be9b9bb642d8522a44d533eab56c16c738301965504753b03ad1de3425d5451"
+dependencies = [
+ "crunchy",
+ "digest 0.9.0",
+ "subtle",
+]
+
+[[package]]
+name = "libsecp256k1-gen-ecmult"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3038c808c55c87e8a172643a7d87187fc6c4174468159cb3090659d55bcb4809"
+dependencies = [
+ "libsecp256k1-core",
+]
+
+[[package]]
+name = "libsecp256k1-gen-genmult"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3db8d6ba2cec9eacc40e6e8ccc98931840301f1006e95647ceb2dd5c3aa06f7c"
+dependencies = [
+ "libsecp256k1-core",
+]
+
+[[package]]
+name = "linregress"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6c601a85f5ecd1aba625247bca0031585fb1c446461b142878a16f8245ddeb8"
+dependencies = [
+ "nalgebra",
+ "statrs",
+]
 
 [[package]]
 name = "linregress"
@@ -2307,12 +2434,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "mach"
-version = "0.3.2"
+name = "matchers"
+version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b823e83b2affd8f40a9ee8c29dbc56404c1e34cd2710921f2801e2cf29527afa"
+checksum = "f099785f7595cc4b4553a174ce30dd7589ef93391ff414dbb67f62392b9e0ce1"
 dependencies = [
- "libc",
+ "regex-automata",
 ]
 
 [[package]]
@@ -2340,6 +2467,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3e378b66a060d48947b590737b30a1be76706c8dd7b8ba0f2fe3989c68a853f"
 
 [[package]]
+<<<<<<< HEAD
 name = "matchit"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2348,23 +2476,21 @@ checksum = "73cbba799671b762df5a175adf59ce145165747bb891505c43d09aefbbf38beb"
 [[package]]
 name = "maybe-uninit"
 version = "2.0.0"
+=======
+name = "matrixmultiply"
+version = "0.3.2"
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
+checksum = "add85d4dd35074e6fedc608f8c8f513a3548619a9024b751949ef0e8e45a4d84"
+dependencies = [
+ "rawpointer",
+]
 
 [[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
-
-[[package]]
-name = "memoffset"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "043175f069eda7b85febe4a74abbaeff828d9f8b448515d3151a14a3542811aa"
-dependencies = [
- "autocfg",
-]
 
 [[package]]
 name = "memoffset"
@@ -2376,6 +2502,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "memory-db"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d505169b746dacf02f7d14d8c80b34edfd8212159c63d23c977739a0d960c626"
+dependencies = [
+ "hash-db",
+ "hashbrown 0.11.2",
+ "parity-util-mem",
+]
+
+[[package]]
+<<<<<<< HEAD
 name = "memory-db"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2413,18 +2551,36 @@ checksum = "39617bc909d64b068dcffd0e3e31679195b5576d0c83fadc52690268cc2b2b55"
 [[package]]
 name = "mime"
 version = "0.3.16"
+=======
+name = "memory_units"
+version = "0.3.0"
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
+checksum = "71d96e3f3c0b6325d8ccd83c33b28acb183edcb6c67938ba104ec546854b0882"
 
 [[package]]
-name = "mime_guess"
-version = "2.0.4"
+name = "merlin"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4192263c238a5f0d0c6bfd21f336a313a4ce1c450542449ca191bb657b4642ef"
+checksum = "4e261cf0f8b3c42ded9f7d2bb59dea03aa52bc8a1cbc7482f9fc3fd1229d3b42"
 dependencies = [
- "mime",
- "unicase",
+ "byteorder",
+ "keccak",
+ "rand_core 0.5.1",
+ "zeroize",
 ]
+
+[[package]]
+name = "micromath"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39617bc909d64b068dcffd0e3e31679195b5576d0c83fadc52690268cc2b2b55"
+
+[[package]]
+name = "mime"
+version = "0.3.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
 
 [[package]]
 name = "minimal-lexical"
@@ -2498,12 +2654,17 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing",
+<<<<<<< HEAD
  "tracing-subscriber 0.3.10",
+=======
+ "tracing-subscriber 0.3.11",
+>>>>>>> e05319ec (initial refactor)
  "ureq",
  "zip",
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "moka"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2523,27 +2684,38 @@ dependencies = [
  "thiserror",
  "triomphe",
  "uuid 0.8.2",
-]
-
-[[package]]
-name = "multipart"
-version = "0.18.0"
+=======
+name = "nalgebra"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00dec633863867f29cb39df64a397cdf4a6354708ddd7759f70c7fb51c5f9182"
+checksum = "462fffe4002f4f2e1f6a9dcf12cc1a6fc0e15989014efc02a941d3e0f5dc2120"
 dependencies = [
- "buf_redux",
- "httparse",
- "log",
- "mime",
- "mime_guess",
- "quick-error",
+ "approx",
+ "matrixmultiply",
+ "nalgebra-macros",
+ "num-complex",
+ "num-rational 0.4.0",
+ "num-traits",
  "rand 0.8.5",
- "safemem",
- "tempfile",
- "twoway",
+ "rand_distr",
+ "simba",
+ "typenum",
+>>>>>>> e05319ec (initial refactor)
 ]
 
 [[package]]
+name = "nalgebra-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01fcc0b8149b4632adc89ac3b7b31a12fb6099a0317a4eb2ebff574ef7de7218"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+<<<<<<< HEAD
 name = "nalgebra"
 version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2560,6 +2732,12 @@ dependencies = [
  "simba",
  "typenum",
 ]
+=======
+name = "nodrop"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
+>>>>>>> e05319ec (initial refactor)
 
 [[package]]
 name = "nalgebra-macros"
@@ -2610,14 +2788,22 @@ dependencies = [
 
 [[package]]
 name = "num-bigint"
-version = "0.4.3"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f93ab6289c7b344a8a9f60f88d80aa20032336fe78da341afc91c8a2341fc75f"
+checksum = "090c7f9998ee0ff65aa5b723e4009f7b217707f1fb5ea551329cc4d6231fb304"
 dependencies = [
  "autocfg",
  "num-integer",
  "num-traits",
- "serde",
+]
+
+[[package]]
+name = "num-complex"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97fbc387afefefd5e9e39493299f3069e14a140dd34dc19b4c1c1a8fddb6a790"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]
@@ -2667,7 +2853,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
 dependencies = [
  "autocfg",
+<<<<<<< HEAD
  "num-bigint 0.2.6",
+=======
+ "num-bigint",
+>>>>>>> e05319ec (initial refactor)
  "num-integer",
  "num-traits",
 ]
@@ -2679,10 +2869,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d41702bd167c2df5520b384281bc111a4b5efcf7fbc4c9c222c815b07e0a6a6a"
 dependencies = [
  "autocfg",
+<<<<<<< HEAD
  "num-bigint 0.4.3",
+=======
+>>>>>>> e05319ec (initial refactor)
  "num-integer",
  "num-traits",
- "serde",
 ]
 
 [[package]]
@@ -2730,13 +2922,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7709cef83f0c1f58f666e746a08b21e0085f7440fa6a29cc194d68aac97a4225"
 
 [[package]]
-name = "oneline-eyre"
-version = "0.1.0"
+name = "opaque-debug"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "862f17a1e689c0ce8ca158ea48e776c5101c5d14fdfbed3e01c15f89604c3097"
-dependencies = [
- "eyre",
-]
+checksum = "2839e79665f131bdb5782e51f2c6c9599c133c6098982a54c794358bf432529c"
 
 [[package]]
 name = "opaque-debug"
@@ -2757,50 +2946,95 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
-name = "opentelemetry"
-version = "0.17.0"
+name = "os_str_bytes"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6105e89802af13fdf48c49d7646d3b533a70e536d818aae7e78ba0433d01acb8"
+checksum = "8e22443d1643a904602595ba1cd8f7d896afe56d26712531c5ff73a15b2fbf64"
+
+[[package]]
+name = "pallet-beefy"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
 dependencies = [
- "async-trait",
- "crossbeam-channel 0.5.4",
- "dashmap",
- "fnv",
- "futures-channel",
- "futures-executor",
- "futures-util",
- "js-sys",
- "lazy_static",
- "percent-encoding",
- "pin-project",
- "rand 0.8.5",
- "thiserror",
+ "beefy-primitives",
+ "frame-support",
+ "frame-system",
+ "pallet-session",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-runtime",
+ "sp-std 4.0.0",
 ]
 
 [[package]]
-name = "opentelemetry-prometheus"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9328977e479cebe12ce0d3fcecdaea4721d234895a9440c5b5dfd113f0594ac6"
+name = "pallet-beefy-mmr"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
 dependencies = [
- "opentelemetry",
- "prometheus",
- "protobuf",
+ "beefy-merkle-tree",
+ "beefy-primitives",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "libsecp256k1",
+ "log",
+ "pallet-beefy",
+ "pallet-mmr",
+ "pallet-mmr-primitives",
+ "pallet-session",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 4.0.0",
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "os_str_bytes"
 version = "6.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "029d8d0b2f198229de29dca79676f2738ff952edf3fde542eb8bf94d8c21b435"
+=======
+name = "pallet-mmr"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "ckb-merkle-mountain-range",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-mmr-primitives",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 4.0.0",
+]
+>>>>>>> e05319ec (initial refactor)
 
 [[package]]
-name = "owo-colors"
-version = "3.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "decf7381921fea4dcb2549c5667eda59b3ec297ab7e2b5fc33eac69d2e7da87b"
+name = "pallet-mmr-primitives"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 4.0.0",
+]
 
 [[package]]
+<<<<<<< HEAD
 name = "pallet-beefy"
 version = "4.0.0-dev"
 source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
@@ -2976,20 +3210,112 @@ name = "parking_lot"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
+=======
+name = "pallet-session"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+>>>>>>> e05319ec (initial refactor)
 dependencies = [
- "instant",
- "lock_api",
- "parking_lot_core 0.8.5",
+ "frame-support",
+ "frame-system",
+ "impl-trait-for-tuples",
+ "log",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-session",
+ "sp-staking",
+ "sp-std 4.0.0",
+ "sp-trie",
 ]
 
 [[package]]
-name = "parking_lot"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87f5ec2493a61ac0506c0f4199f99070cbe83857b0337006a30f3e6719b8ef58"
+name = "pallet-timestamp"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
 dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 4.0.0",
+ "sp-timestamp",
+]
+
+[[package]]
+name = "parity-scale-codec"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "373b1a4c1338d9cd3d1fa53b3a11bdab5ab6bd80a20f7f7becd76953ae2be909"
+dependencies = [
+ "arrayvec 0.7.2",
+ "bitvec",
+ "byte-slice-cast",
+ "impl-trait-for-tuples",
+ "parity-scale-codec-derive",
+ "serde",
+]
+
+[[package]]
+name = "parity-scale-codec-derive"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1557010476e0595c9b568d16dcfb81b93cdeb157612726f5170d31aa707bed27"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "parity-util-mem"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f4cb4e169446179cbc6b8b6320cc9fca49bd2e94e8db25f25f200a8ea774770"
+dependencies = [
+ "cfg-if 1.0.0",
+ "hashbrown 0.11.2",
+ "impl-trait-for-tuples",
+ "parity-util-mem-derive",
+ "parking_lot",
+ "primitive-types",
+ "winapi",
+]
+
+[[package]]
+name = "parity-util-mem-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f557c32c6d268a07c921471619c0295f5efad3a0e76d4f97a05c091a51d110b2"
+dependencies = [
+ "proc-macro2",
+ "syn",
+ "synstructure",
+]
+
+[[package]]
+name = "parity-wasm"
+version = "0.42.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be5e13c266502aadf83426d87d81a0f5d1ef45b8027f5a471c360abfe4bfae92"
+
+[[package]]
+name = "parking_lot"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
+dependencies = [
+ "instant",
  "lock_api",
- "parking_lot_core 0.9.3",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -3004,19 +3330,6 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "winapi",
-]
-
-[[package]]
-name = "parking_lot_core"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09a279cbf25cb0757810394fbc1e359949b59e348145c643a939a525692e6929"
-dependencies = [
- "cfg-if 1.0.0",
- "libc",
- "redox_syscall",
- "smallvec",
- "windows-sys",
 ]
 
 [[package]]
@@ -3109,17 +3422,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
-name = "pkcs8"
-version = "0.8.0"
+name = "ppv-lite86"
+version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cabda3fb821068a9a4fab19a683eac3af12edf0f34b94a8be53c4972b8149d0"
+checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
+
+[[package]]
+name = "primitive-types"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05e4722c697a58a99d5d06a08c30821d7c082a4632198de1eaa5a6c22ef42373"
 dependencies = [
- "der",
- "spki",
- "zeroize",
+ "fixed-hash",
+ "impl-codec",
+ "impl-serde",
+ "scale-info",
+ "uint",
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "pkg-config"
 version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3128,8 +3450,16 @@ checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
 [[package]]
 name = "ppv-lite86"
 version = "0.2.16"
+=======
+name = "proc-macro-crate"
+version = "1.1.3"
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
+checksum = "e17d47ce914bf4de440332250b0edd23ce48c005f59fab39d3335866b114f11a"
+dependencies = [
+ "thiserror",
+ "toml",
+]
 
 [[package]]
 name = "primitive-types"
@@ -3188,6 +3518,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "prometheus"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3203,6 +3534,8 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "prost"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3236,6 +3569,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "protobuf"
 version = "2.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3275,6 +3609,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "quote"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3374,6 +3710,7 @@ dependencies = [
 [[package]]
 name = "rand_pcg"
 version = "0.2.1"
+<<<<<<< HEAD
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
 dependencies = [
@@ -3383,10 +3720,12 @@ dependencies = [
 [[package]]
 name = "raw-cpuid"
 version = "10.3.0"
+=======
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "738bc47119e3eeccc7e94c4a506901aea5e7b4944ecd0829cbebf4af04ceda12"
+checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
 dependencies = [
- "bitflags",
+ "rand_core 0.5.1",
 ]
 
 [[package]]
@@ -3413,9 +3752,9 @@ version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "258bcdb5ac6dad48491bb2992db6b7cf74878b0384908af124823d118c99683f"
 dependencies = [
- "crossbeam-channel 0.5.4",
+ "crossbeam-channel",
  "crossbeam-deque",
- "crossbeam-utils 0.8.8",
+ "crossbeam-utils",
  "num_cpus",
 ]
 
@@ -3441,18 +3780,30 @@ dependencies = [
 
 [[package]]
 name = "ref-cast"
+<<<<<<< HEAD
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "300f2a835d808734ee295d45007adacb9ebb29dd3ae2424acfa17930cae541da"
+=======
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "685d58625b6c2b83e4cc88a27c4bf65adb7b6b16dbdc413e515c9405b47432ab"
+>>>>>>> e05319ec (initial refactor)
 dependencies = [
  "ref-cast-impl",
 ]
 
 [[package]]
 name = "ref-cast-impl"
+<<<<<<< HEAD
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c38e3aecd2b21cb3959637b883bb3714bc7e43f0268b9a29d3743ee3e55cdd2"
+=======
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a043824e29c94169374ac5183ac0ed43f5724dc4556b19568007486bd840fa1f"
+>>>>>>> e05319ec (initial refactor)
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3495,23 +3846,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "retry"
-version = "1.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac95c60a949a63fd2822f4964939662d8f2c16c4fa0624fd954bc6e703b9a3f6"
-
-[[package]]
-name = "rfc6979"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96ef608575f6392792f9ecf7890c00086591d29a83910939d430753f7c050525"
-dependencies = [
- "crypto-bigint",
- "hmac 0.11.0",
- "zeroize",
-]
-
-[[package]]
 name = "ring"
 version = "0.16.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3538,11 +3872,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "rouille"
-version = "3.5.0"
+name = "rs_merkle"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18b2380c42510ef4a28b5f228a174c801e0dec590103e215e60812e2e2f34d05"
+checksum = "a632a43487c1332be8e183588079f89b6820fab24e04db49521eacd536837372"
 dependencies = [
+<<<<<<< HEAD
  "base64",
  "brotli",
  "chrono",
@@ -3560,6 +3895,10 @@ dependencies = [
  "time 0.3.9",
  "tiny_http",
  "url",
+=======
+ "micromath",
+ "sha2 0.10.2",
+>>>>>>> e05319ec (initial refactor)
 ]
 
 [[package]]
@@ -3637,6 +3976,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "rustls-native-certs"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3664,6 +4004,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2cc38e8fa666e2de3c4aba7edeb5ffc5246c1c2ed0e3d17e560aeeba736b23f"
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "ryu"
 version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3717,12 +4059,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "safemem"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef703b7cb59335eae2eb93ceb664c0eb7ea6bf567079d843e09420219668e072"
-
-[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3748,6 +4084,7 @@ dependencies = [
 [[package]]
 name = "scale-info-derive"
 version = "1.0.0"
+<<<<<<< HEAD
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baeb2780690380592f86205aa4ee49815feb2acad8c2f59e6dd207148c3f1fcd"
 dependencies = [
@@ -3755,6 +4092,25 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+=======
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baeb2780690380592f86205aa4ee49815feb2acad8c2f59e6dd207148c3f1fcd"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "schannel"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f05ba609c234e60bee0d547fe94a4c7e9da733d1c962cf6e59efa4cd9c8bc75"
+dependencies = [
+ "lazy_static",
+ "winapi",
+>>>>>>> e05319ec (initial refactor)
 ]
 
 [[package]]
@@ -3845,6 +4201,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "sec1"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3877,12 +4234,13 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "secrecy"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
 dependencies = [
- "serde",
  "zeroize",
 ]
 
@@ -3914,9 +4272,6 @@ name = "semver"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8cb243bdfdb5936c8dc3c45762a19d12ab4550cdc753bc247637d4ec35a040fd"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "serde"
@@ -3933,16 +4288,6 @@ version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "212e73464ebcde48d723aa02eb270ba62eff38a9b732df31f33f1b4e145f3a54"
 dependencies = [
- "serde",
-]
-
-[[package]]
-name = "serde_cbor"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bef2ebfde456fb76bbcf9f59315333decc4fda0b2b44b420243c11e0f5ec1f5"
-dependencies = [
- "half",
  "serde",
 ]
 
@@ -3991,6 +4336,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "serde_yaml"
 version = "0.8.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4028,6 +4374,8 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "sha-1"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4052,15 +4400,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "sha1"
-version = "0.6.1"
+name = "sha2"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1da05c97445caa12d05e848c4a4fcbbea29e748ac28f7e80e9b010392063770"
+checksum = "a256f46ea78a0c0d9ff00077504903ac881a1dafdc20da66545699e7776b3e69"
 dependencies = [
- "sha1_smol",
+ "block-buffer 0.7.3",
+ "digest 0.8.1",
+ "fake-simd",
+ "opaque-debug 0.2.3",
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "sha1_smol"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4079,10 +4431,13 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "sha2"
 version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d58a1e1bf39749807d89cf2d98ac2dfa0ff1cb3faa38fbb64dd88ac8013d800"
+<<<<<<< HEAD
 dependencies = [
  "block-buffer 0.9.0",
  "cfg-if 1.0.0",
@@ -4458,6 +4813,454 @@ dependencies = [
  "sp-tracing",
  "sp-wasm-interface",
  "static_assertions",
+=======
+dependencies = [
+ "block-buffer 0.9.0",
+ "cfg-if 1.0.0",
+ "cpufeatures",
+ "digest 0.9.0",
+ "opaque-debug 0.3.0",
+>>>>>>> e05319ec (initial refactor)
+]
+
+[[package]]
+name = "sp-runtime-interface-proc-macro"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "Inflector",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "sp-session"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+<<<<<<< HEAD
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-core",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std 4.0.0",
+=======
+ "block-buffer 0.9.0",
+ "digest 0.9.0",
+ "keccak",
+ "opaque-debug 0.3.0",
+>>>>>>> e05319ec (initial refactor)
+]
+
+[[package]]
+name = "sp-staking"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
+ "sp-std 4.0.0",
+]
+
+[[package]]
+<<<<<<< HEAD
+name = "signal-hook"
+version = "0.3.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a253b5e89e2698464fc26b545c9edceb338e18a89effeeecfea192c3025be29d"
+dependencies = [
+ "hash-db",
+ "log",
+ "num-traits",
+ "parity-scale-codec",
+ "parking_lot 0.11.2",
+ "rand 0.7.3",
+ "smallvec",
+ "sp-core",
+ "sp-externalities",
+ "sp-panic-handler",
+ "sp-std 4.0.0",
+ "sp-trie",
+ "thiserror",
+ "tracing",
+ "trie-db",
+ "trie-root",
+]
+
+[[package]]
+name = "sp-std"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35391ea974fa5ee869cb094d5b437688fbf3d8127d64d1b9fed5822a1ed39b12"
+
+[[package]]
+name = "sp-std"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[package]]
+name = "sp-storage"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "impl-serde",
+ "parity-scale-codec",
+ "ref-cast",
+ "serde",
+ "sp-debug-derive",
+ "sp-std 4.0.0",
+=======
+name = "signature"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02658e48d89f2bec991f9a78e69cfa4c316f8d6a6c4ec12fae1aeb263d486788"
+
+[[package]]
+name = "simba"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e82063457853d00243beda9952e910b82593e4b07ae9f721b9278a99a0d3d5c"
+dependencies = [
+ "approx",
+ "num-complex",
+ "num-traits",
+ "paste",
+>>>>>>> e05319ec (initial refactor)
+]
+
+[[package]]
+name = "sp-timestamp"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "async-trait",
+ "futures-timer",
+ "log",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 4.0.0",
+ "thiserror",
+]
+
+[[package]]
+<<<<<<< HEAD
+name = "sp-tracing"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "parity-scale-codec",
+ "sp-std 4.0.0",
+ "tracing",
+ "tracing-core",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
+name = "slab"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb703cfe953bccee95685111adeedb76fabe4e97549a58d16f03ea7b9367bb32"
+
+[[package]]
+name = "sp-version"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "impl-serde",
+ "parity-scale-codec",
+ "parity-wasm",
+ "scale-info",
+ "serde",
+ "sp-core-hashing-proc-macro",
+ "sp-runtime",
+ "sp-std 4.0.0",
+ "sp-version-proc-macro",
+ "thiserror",
+]
+
+[[package]]
+<<<<<<< HEAD
+name = "sp-version-proc-macro"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "parity-scale-codec",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+=======
+name = "socket2"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66d72b759436ae32898a2af0a14218dbf55efde3feeb170eb623637db85ee1e0"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
+name = "sp-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "hash-db",
+ "log",
+ "parity-scale-codec",
+ "sp-api-proc-macro",
+ "sp-core",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std 4.0.0",
+ "sp-version",
+ "thiserror",
+]
+
+[[package]]
+name = "sp-api-proc-macro"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "blake2-rfc",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "sp-application-crypto"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-std 4.0.0",
+]
+
+[[package]]
+name = "sp-arithmetic"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "integer-sqrt",
+ "num-traits",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-debug-derive",
+ "sp-std 4.0.0",
+ "static_assertions",
+]
+
+[[package]]
+name = "sp-core"
+version = "4.1.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "base58",
+ "bitflags",
+ "blake2-rfc",
+ "byteorder",
+ "dyn-clonable",
+ "ed25519-dalek",
+ "futures",
+ "hash-db",
+ "hash256-std-hasher",
+ "hex",
+ "impl-serde",
+ "lazy_static",
+ "libsecp256k1",
+ "log",
+ "merlin",
+ "num-traits",
+ "parity-scale-codec",
+ "parity-util-mem",
+ "parking_lot",
+ "primitive-types",
+ "rand 0.7.3",
+ "regex",
+ "scale-info",
+ "schnorrkel",
+ "secrecy",
+ "serde",
+ "sha2 0.10.2",
+ "sp-core-hashing",
+ "sp-debug-derive",
+ "sp-externalities",
+ "sp-runtime-interface",
+ "sp-std 4.0.0",
+ "sp-storage",
+ "ss58-registry",
+ "substrate-bip39",
+ "thiserror",
+ "tiny-bip39",
+ "tiny-keccak",
+ "twox-hash",
+ "wasmi",
+ "zeroize",
+]
+
+[[package]]
+name = "sp-core-hashing"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "blake2-rfc",
+ "byteorder",
+ "sha2 0.10.2",
+ "sp-std 4.0.0",
+ "tiny-keccak",
+ "twox-hash",
+]
+
+[[package]]
+name = "sp-core-hashing-proc-macro"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "sp-core-hashing",
+ "syn",
+]
+
+[[package]]
+name = "sp-debug-derive"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "sp-externalities"
+version = "0.10.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "environmental",
+ "parity-scale-codec",
+ "sp-std 4.0.0",
+ "sp-storage",
+]
+
+[[package]]
+name = "sp-inherents"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "async-trait",
+ "impl-trait-for-tuples",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 4.0.0",
+ "thiserror",
+]
+
+[[package]]
+name = "sp-io"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "futures",
+ "hash-db",
+ "libsecp256k1",
+ "log",
+ "parity-scale-codec",
+ "parking_lot",
+ "sp-core",
+ "sp-externalities",
+ "sp-keystore",
+ "sp-runtime-interface",
+ "sp-state-machine",
+ "sp-std 4.0.0",
+ "sp-tracing",
+ "sp-trie",
+ "sp-wasm-interface",
+ "tracing",
+ "tracing-core",
+]
+
+[[package]]
+name = "sp-keystore"
+version = "0.10.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "async-trait",
+ "derive_more",
+ "futures",
+ "merlin",
+ "parity-scale-codec",
+ "parking_lot",
+ "schnorrkel",
+ "sp-core",
+ "sp-externalities",
+]
+
+[[package]]
+name = "sp-panic-handler"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "backtrace",
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
+name = "sp-runtime"
+version = "4.1.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "either",
+ "hash256-std-hasher",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
+ "parity-util-mem",
+ "paste",
+ "rand 0.7.3",
+ "scale-info",
+ "serde",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-std 4.0.0",
+]
+
+[[package]]
+name = "sp-runtime-interface"
+version = "4.1.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "impl-trait-for-tuples",
+ "parity-scale-codec",
+ "primitive-types",
+ "sp-externalities",
+ "sp-runtime-interface-proc-macro",
+ "sp-std 4.0.0",
+ "sp-storage",
+ "sp-tracing",
+ "sp-wasm-interface",
+ "static_assertions",
 ]
 
 [[package]]
@@ -4498,16 +5301,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "signal-hook"
-version = "0.3.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a253b5e89e2698464fc26b545c9edceb338e18a89effeeecfea192c3025be29d"
+name = "sp-state-machine"
+version = "0.10.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
 dependencies = [
  "hash-db",
  "log",
  "num-traits",
  "parity-scale-codec",
- "parking_lot 0.11.2",
+ "parking_lot",
  "rand 0.7.3",
  "smallvec",
  "sp-core",
@@ -4574,10 +5376,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "slab"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb703cfe953bccee95685111adeedb76fabe4e97549a58d16f03ea7b9367bb32"
+name = "sp-trie"
+version = "4.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+dependencies = [
+ "hash-db",
+ "memory-db",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-std 4.0.0",
+ "trie-db",
+ "trie-root",
+]
 
 [[package]]
 name = "sp-version"
@@ -4608,6 +5419,7 @@ dependencies = [
 ]
 
 [[package]]
+>>>>>>> e05319ec (initial refactor)
 name = "sp-wasm-interface"
 version = "4.1.0-dev"
 source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
@@ -4626,13 +5438,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
-name = "spki"
-version = "0.5.4"
+name = "ss58-registry"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44d01ac02a6ccf3e07db148d2be087da624fea0221a16152ed01f0496a6b0a27"
+checksum = "7b84a70894df7a73666e0694f44b41a9571625e9546fb58a0818a565d2c7e084"
 dependencies = [
- "base64ct",
- "der",
+ "Inflector",
+ "num-format",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_json",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -4718,10 +5535,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "tagptr"
-version = "0.2.0"
+name = "tap"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b2093cf4c8eb1e67749a6762251bc9cd836b6fc171623bd0a9d324d37af2417"
+checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "tap"
@@ -4755,12 +5572,10 @@ dependencies = [
  "ed25519-dalek",
  "flex-error",
  "futures",
- "k256",
  "num-traits",
  "once_cell",
  "prost",
  "prost-types",
- "ripemd160",
  "serde",
  "serde_bytes",
  "serde_json",
@@ -4789,6 +5604,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "tendermint-light-client"
 version = "0.23.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4811,6 +5627,8 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "tendermint-light-client-verifier"
 version = "0.23.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4901,16 +5719,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "terminal_size"
-version = "0.1.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "633c1a546cee861a1a6d0dc69ebeca693bf4296661ba7852b9d21d159e0506df"
-dependencies = [
- "libc",
- "winapi",
-]
-
-[[package]]
 name = "test-log"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4954,15 +5762,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5516c27b78311c50bf42c071425c560ac799b11c30b31f87e3081965fe5e0180"
 dependencies = [
  "once_cell",
-]
-
-[[package]]
-name = "threadpool"
-version = "1.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
-dependencies = [
- "num_cpus",
 ]
 
 [[package]]
@@ -5021,19 +5820,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tiny_http"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ce51b50006056f590c9b7c3808c3bd70f0d1101666629713866c227d6e58d39"
-dependencies = [
- "ascii",
- "chrono",
- "chunked_transfer",
- "log",
- "url",
-]
-
-[[package]]
 name = "tinyvec"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5060,9 +5846,7 @@ dependencies = [
  "mio",
  "num_cpus",
  "once_cell",
- "parking_lot 0.12.0",
  "pin-project-lite",
- "signal-hook-registry",
  "socket2",
  "tokio-macros",
  "winapi",
@@ -5167,10 +5951,14 @@ dependencies = [
  "pin-project",
  "prost",
  "prost-derive",
+<<<<<<< HEAD
  "rustls-native-certs 0.6.2",
  "rustls-pemfile",
  "tokio",
  "tokio-rustls 0.23.4",
+=======
+ "tokio",
+>>>>>>> e05319ec (initial refactor)
  "tokio-stream",
  "tokio-util",
  "tower",
@@ -5266,6 +6054,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "tracing-error"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5276,6 +6065,8 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> e05319ec (initial refactor)
 name = "tracing-futures"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5308,6 +6099,28 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
+version = "0.2.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e0d2eaa99c3c2e41547cfa109e910a68ea03823cccad4a0525dcbc9b01e8c71"
+dependencies = [
+ "ansi_term",
+ "chrono",
+ "lazy_static",
+ "matchers 0.0.1",
+ "regex",
+ "serde",
+ "serde_json",
+ "sharded-slab",
+ "smallvec",
+ "thread_local",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
+ "tracing-serde",
+]
+
+[[package]]
+name = "tracing-subscriber"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4bc28f93baff38037f64e6f43d34cfa1605f27a49c34e8a04c5e78b0babf2596"
@@ -5334,7 +6147,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d32d034c0d3db64b43c31de38e945f15b40cd4ca6d2dcfc26d4798ce8de4ab83"
 dependencies = [
  "hash-db",
+<<<<<<< HEAD
  "hashbrown 0.12.0",
+=======
+ "hashbrown 0.12.1",
+>>>>>>> e05319ec (initial refactor)
  "log",
  "rustc-hex",
  "smallvec",
@@ -5343,6 +6160,7 @@ dependencies = [
 [[package]]
 name = "trie-root"
 version = "0.17.0"
+<<<<<<< HEAD
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a36c5ca3911ed3c9a5416ee6c679042064b93fc637ded67e25f92e68d783891"
 dependencies = [
@@ -5352,10 +6170,12 @@ dependencies = [
 [[package]]
 name = "triomphe"
 version = "0.1.5"
+=======
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c45e322b26410d7260e00f64234810c2f17d7ece356182af4df8f7ff07890f09"
+checksum = "9a36c5ca3911ed3c9a5416ee6c679042064b93fc637ded67e25f92e68d783891"
 dependencies = [
- "memoffset 0.6.5",
+ "hash-db",
 ]
 
 [[package]]
@@ -5390,12 +6210,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "twoway"
-version = "0.1.8"
+name = "twox-hash"
+version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59b11b2b5241ba34be09c3cc85a36e56e48f9888862e19cedf23336d35316ed1"
+checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "memchr",
+ "cfg-if 1.0.0",
+ "rand 0.8.5",
+ "static_assertions",
 ]
 
 [[package]]
@@ -5428,15 +6250,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unicase"
-version = "2.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
-dependencies = [
- "version_check",
-]
-
-[[package]]
 name = "unicode-bidi"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5456,12 +6269,6 @@ checksum = "d54590932941a9e9266f0832deed84ebe1bf2e4c9e4a3554d393d18f5e854bf9"
 dependencies = [
  "tinyvec",
 ]
-
-[[package]]
-name = "unicode-width"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ed742d4ea2bd1176e236172c8429aaf54486e7ac098db29ffe6529e0ce50973"
 
 [[package]]
 name = "unicode-xid"
@@ -5515,9 +6322,6 @@ name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-dependencies = [
- "getrandom 0.2.6",
-]
 
 [[package]]
 name = "uuid"
@@ -5539,15 +6343,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "wait-timeout"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f200f5b12eb75f8c1ed65abd4b2db8a6e1b138a20de009dacee265a2498f3f6"
-dependencies = [
- "libc",
-]
 
 [[package]]
 name = "walkdir"
@@ -5746,6 +6541,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
+<<<<<<< HEAD
 name = "windows-sys"
 version = "0.36.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5797,11 +6593,12 @@ checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 [[package]]
 name = "yaml-rust"
 version = "0.4.5"
+=======
+name = "wyz"
+version = "0.2.0"
+>>>>>>> e05319ec (initial refactor)
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
-dependencies = [
- "linked-hash-map",
-]
+checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 
 [[package]]
 name = "zeroize"
@@ -5824,6 +6621,7 @@ dependencies = [
  "synstructure",
 ]
 
+<<<<<<< HEAD
 [[package]]
 name = "zip"
 version = "0.5.13"
@@ -5837,3 +6635,894 @@ dependencies = [
  "thiserror",
  "time 0.1.43",
 ]
+=======
+[[patch.unused]]
+name = "beefy-gadget"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "beefy-gadget-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "chain-spec-builder"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "fork-tree"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "frame-benchmarking-cli"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "frame-election-provider-support"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "frame-executive"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "frame-support-test"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "frame-support-test-compile-pass"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "frame-support-test-pallet"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "frame-system-benchmarking"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "frame-system-rpc-runtime-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "frame-try-runtime"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "generate-bags"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-bench"
+version = "0.9.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-cli"
+version = "3.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-executor"
+version = "3.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-inspect"
+version = "0.9.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-primitives"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-rpc"
+version = "3.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-runtime"
+version = "3.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-runtime-generate-bags"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-template"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-template-runtime"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "node-testing"
+version = "3.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-asset-tx-payment"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-assets"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-atomic-swap"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-aura"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-authority-discovery"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-authorship"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-babe"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-bags-list"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-bags-list-fuzzer"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-bags-list-remote-tests"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-balances"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-bounties"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-child-bounties"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-collective"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-contracts"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-contracts-primitives"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-contracts-proc-macro"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-contracts-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-contracts-rpc-runtime-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-democracy"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-election-provider-multi-phase"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-elections-phragmen"
+version = "5.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-example-basic"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-example-offchain-worker"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-example-parallel"
+version = "3.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-gilt"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-grandpa"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-identity"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-im-online"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-indices"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-lottery"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-membership"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-mmr-rpc"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-multisig"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-nicks"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-node-authorization"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-offences"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-offences-benchmarking"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-preimage"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-proxy"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-randomness-collective-flip"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-recovery"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-scheduler"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-scored-pool"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-session-benchmarking"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-society"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-staking"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-staking-reward-curve"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-staking-reward-fn"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-sudo"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-template"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-tips"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-transaction-payment"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-transaction-payment-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-transaction-payment-rpc-runtime-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-transaction-storage"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-treasury"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-uniques"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-utility"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "pallet-vesting"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "remote-externalities"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-allocator"
+version = "4.1.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-authority-discovery"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-basic-authorship"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-block-builder"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-chain-spec"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-chain-spec-derive"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-cli"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-client-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-client-db"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-consensus"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-consensus-aura"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-consensus-babe"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-consensus-babe-rpc"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-consensus-epochs"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-consensus-manual-seal"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-consensus-pow"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-consensus-slots"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-consensus-uncles"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-executor"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-executor-common"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-executor-wasmi"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-executor-wasmtime"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-finality-grandpa"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-finality-grandpa-rpc"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-informant"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-keystore"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-network"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-network-gossip"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-network-test"
+version = "0.8.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-offchain"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-peerset"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-proposer-metrics"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-rpc-api"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-rpc-server"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-runtime-test"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-service"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-service-test"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-state-db"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-sync-state-rpc"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-telemetry"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-tracing"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-tracing-proc-macro"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-transaction-pool"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-transaction-pool-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sc-utils"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-api-test"
+version = "2.0.1"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-application-crypto-test"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-arithmetic-fuzzer"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-authority-discovery"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-authorship"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-block-builder"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-blockchain"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-consensus"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-consensus-aura"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-consensus-babe"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-consensus-pow"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-consensus-slots"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-consensus-vrf"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-database"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-finality-grandpa"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-keyring"
+version = "4.1.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-maybe-compressed-blob"
+version = "4.1.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-npos-elections"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-npos-elections-fuzzer"
+version = "2.0.0-alpha.5"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-npos-elections-solution-type"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-offchain"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-runtime-interface-test"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-runtime-interface-test-wasm"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-runtime-interface-test-wasm-deprecated"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-sandbox"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-serializer"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-tasks"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-test-primitives"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-transaction-pool"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "sp-transaction-storage-proof"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "subkey"
+version = "2.0.1"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-build-script-utils"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-frame-cli"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-frame-rpc-support"
+version = "3.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-frame-rpc-system"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-prometheus-endpoint"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-test-client"
+version = "2.0.1"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-test-runtime"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-test-runtime-client"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-test-runtime-transaction-pool"
+version = "2.0.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-test-utils"
+version = "4.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-test-utils-derive"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-test-utils-test-crate"
+version = "0.1.0"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "substrate-wasm-builder"
+version = "5.0.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+
+[[patch.unused]]
+name = "try-runtime-cli"
+version = "0.10.0-dev"
+source = "git+https://github.com/ComposableFi/substrate?branch=mmr-polkadot-v0.9.16#11ce421f78949728ae2ce08fb0fd4f71c84d8acf"
+>>>>>>> e05319ec (initial refactor)

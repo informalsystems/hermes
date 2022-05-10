@@ -1,3 +1,4 @@
+use crate::clients::ics11_beefy::client_def::BeefyLCStore;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{Counterparty, Order, State};
 use crate::core::ics04_channel::context::ChannelReader;
@@ -27,7 +28,10 @@ pub enum RecvPacketResult {
     NoOp,
 }
 
-pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
+pub fn process<Beefy: BeefyLCStore>(
+    ctx: &dyn ChannelReader,
+    msg: &MsgRecvPacket,
+) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
@@ -72,7 +76,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         return Err(Error::low_packet_timestamp());
     }
 
-    verify_packet_recv_proofs(
+    verify_packet_recv_proofs::<Beefy>(
         ctx,
         msg.proofs.height(),
         packet,

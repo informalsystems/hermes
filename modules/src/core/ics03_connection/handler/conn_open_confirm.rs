@@ -1,5 +1,6 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
 
+use crate::clients::ics11_beefy::client_def::BeefyLCStore;
 use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
@@ -11,7 +12,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process(
+pub(crate) fn process<Beefy: BeefyLCStore>(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenConfirm,
 ) -> HandlerResult<ConnectionResult, Error> {
@@ -40,7 +41,7 @@ pub(crate) fn process(
     );
 
     // 2. Pass the details to the verification function.
-    verify_proofs(
+    verify_proofs::<Beefy>(
         ctx,
         None,
         msg.proofs.height(),

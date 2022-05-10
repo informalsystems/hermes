@@ -1,46 +1,34 @@
 use crate::prelude::*;
 
-use beefy_client::primitives::PartialMmrLeaf;
-use beefy_primitives::mmr::{BeefyNextAuthoritySet, MmrLeafVersion};
-use codec::Encode;
 use core::convert::Infallible;
-
 use serde::Serialize;
-use sp_core::H256;
 use sp_runtime::SaturatedConversion;
-use tendermint::{hash::Algorithm, time::Time, Hash};
+use tendermint::time::Time;
 use tendermint_proto::google::protobuf as tpb;
 use tendermint_proto::Protobuf;
 
-use ibc_proto::ibc::lightclients::beefy::v1::{
-    BeefyAuthoritySet, BeefyMmrLeafPartial as RawPartialMmrLeaf,
-    ConsensusState as RawConsensusState, ParachainHeader as RawParachainHeader,
-};
+use ibc_proto::ibc::lightclients::beefy::v1::ConsensusState as RawConsensusState;
 
 use crate::clients::ics11_beefy::error::Error;
-use crate::clients::ics11_beefy::header::{
-    decode_parachain_header, decode_timestamp_extrinsic, merge_leaf_version, split_leaf_version,
-    ParachainHeader,
-};
+use crate::clients::ics11_beefy::header::{decode_timestamp_extrinsic, ParachainHeader};
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::timestamp::Timestamp;
 
+// This is a constant that comes from pallet-ibc
 pub const IBC_CONSENSUS_ID: [u8; 4] = *b"/IBC";
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConsensusState {
     pub timestamp: Time,
-    pub root: Vec<u8>,
-    pub parachain_header: ParachainHeader,
+    pub root: CommitmentRoot,
 }
 
 impl ConsensusState {
     pub fn new(root: Vec<u8>, timestamp: Time, parachain_header: ParachainHeader) -> Self {
         Self {
             timestamp,
-            root,
-            parachain_header,
+            root: root.into(),
         }
     }
 }
@@ -53,7 +41,7 @@ impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusSt
     }
 
     fn root(&self) -> &CommitmentRoot {
-        &self.root.into()
+        &self.root
     }
 
     fn wrap_any(self) -> AnyConsensusState {
@@ -124,9 +112,8 @@ impl TryFrom<RawConsensusState> for ConsensusState {
             extrinsic_proof: parachain_header.extrinsic_proof,
         };
         Ok(Self {
-            root: raw.root,
+            root: raw.root.into(),
             timestamp,
-            parachain_header,
         })
     }
 }
@@ -138,56 +125,7 @@ impl From<ConsensusState> for RawConsensusState {
 
         RawConsensusState {
             timestamp: Some(timestamp),
-            root: value.root,
-            parachain_header: Some(RawParachainHeader {
-                parachain_header: value.parachain_header.encode(),
-                mmr_leaf_partial: Some(RawPartialMmrLeaf {
-                    version: {
-                        let (major, minor) =
-                            value.parachain_header.partial_mmr_leaf.version.split();
-                        merge_leaf_version(major, minor) as u32
-                    },
-                    parent_number: value
-                        .parachain_header
-                        .partial_mmr_leaf
-                        .parent_number_and_hash
-                        .0,
-                    parent_hash: value
-                        .parachain_header
-                        .partial_mmr_leaf
-                        .parent_number_and_hash
-                        .1
-                        .encode(),
-                    beefy_next_authority_set: Some(BeefyAuthoritySet {
-                        id: value
-                            .parachain_header
-                            .partial_mmr_leaf
-                            .beefy_next_authority_set
-                            .id,
-                        len: value
-                            .parachain_header
-                            .partial_mmr_leaf
-                            .beefy_next_authority_set
-                            .len,
-                        authority_root: value
-                            .parachain_header
-                            .partial_mmr_leaf
-                            .beefy_next_authority_set
-                            .root
-                            .encode(),
-                    }),
-                }),
-                para_id: value.parachain_header.para_id,
-                parachain_heads_proof: value
-                    .parachain_header
-                    .parachain_heads_proof
-                    .into_iter()
-                    .map(|item| item.encode())
-                    .collect(),
-                heads_leaf_index: value.parachain_header.heads_leaf_index,
-                heads_total_count: value.parachain_header.heads_total_count,
-                extrinsic_proof: value.parachain_header.extrinsic_proof,
-            }),
+            root: value.root.into_vec(),
         }
     }
 }
@@ -199,9 +137,9 @@ impl From<ParachainHeader> for ConsensusState {
                 .parachain_header
                 .digest
                 .logs
-                .into_iter()
+                .iter()
                 .filter_map(|digest| digest.as_consensus())
-                .find(|(id, value)| id == &IBC_CONSENSUS_ID)
+                .find(|(id, _value)| id == &IBC_CONSENSUS_ID)
                 .map(|(.., root)| root.to_vec())
                 .unwrap_or_default()
         };
@@ -209,12 +147,13 @@ impl From<ParachainHeader> for ConsensusState {
         let timestamp = decode_timestamp_extrinsic(&header).unwrap_or_default();
         let duration = core::time::Duration::from_millis(timestamp);
         let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
-            .unwrap_or_default();
+            .unwrap_or_default()
+            .into_tm_time()
+            .unwrap();
 
         Self {
-            root,
-            timestamp: timestamp.into(),
-            parachain_header: header,
+            root: root.into(),
+            timestamp,
         }
     }
 }

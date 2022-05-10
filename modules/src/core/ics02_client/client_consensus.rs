@@ -45,7 +45,6 @@ pub trait ConsensusState: Clone + core::fmt::Debug + Send + Sync {
 #[serde(tag = "type")]
 pub enum AnyConsensusState {
     Tendermint(consensus_state::ConsensusState),
-    #[serde(skip)]
     Beefy(beefy_consensus_state::ConsensusState),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockConsensusState),
