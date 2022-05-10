@@ -15,7 +15,8 @@ members = [
 
 exclude = [
     "ci/no-std-check",
-    "proto-compiler"
+    "proto-compiler",
+    "relayer-x/ibc-proxy",
 ]
 
 # [patch.crates-io]
