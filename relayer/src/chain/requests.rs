@@ -85,6 +85,23 @@ impl From<QueryClientStatesRequest> for RawQueryClientStatesRequest {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryConsensusStateRequest {
+    pub client_id: ClientId,
+    pub consensus_height: Height,
+    pub query_height: Height,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryUpgradedClientStateRequest {
+    pub height: Height,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryUpgradedConsensusStateRequest {
+    pub height: Height,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QueryConsensusStatesRequest {
     pub client_id: ClientId,
     pub pagination: Option<PageRequest>,
@@ -123,6 +140,12 @@ impl From<QueryClientConnectionsRequest> for RawQueryClientConnectionsRequest {
             client_id: request.client_id.to_string(),
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryConnectionRequest {
+    pub connection_id: ConnectionId,
+    pub height: Height,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -258,4 +281,9 @@ impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveReques
             channel_id: request.channel_id.to_string(),
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryHostConsensusStateRequest {
+    pub height: Height,
 }

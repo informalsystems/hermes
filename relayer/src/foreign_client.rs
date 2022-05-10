@@ -37,7 +37,10 @@ use ibc::Height;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{PageRequest, QueryClientStateRequest, QueryConsensusStatesRequest};
+use crate::chain::requests::{
+    PageRequest, QueryClientStateRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+};
 use crate::chain::tx::TrackedMsgs;
 use crate::error::Error as RelayerError;
 
@@ -418,7 +421,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
             .src_chain
-            .query_upgraded_client_state(src_height)
+            .query_upgraded_client_state(QueryUpgradedClientStateRequest { height: src_height })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
                     self.id.clone(),
@@ -432,7 +435,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         let (consensus_state, proof_upgrade_consensus_state) = self
             .src_chain
-            .query_upgraded_consensus_state(src_height)
+            .query_upgraded_consensus_state(QueryUpgradedConsensusStateRequest {
+                height: src_height,
+            })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
                     self.id.clone(),
@@ -1092,7 +1097,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     fn consensus_state(&self, height: Height) -> Result<AnyConsensusState, ForeignClientError> {
         let res = self
             .dst_chain
-            .query_consensus_state(self.id.clone(), height, Height::zero())
+            .query_consensus_state(QueryConsensusStateRequest {
+                client_id: self.id.clone(),
+                consensus_height: height,
+                query_height: Height::zero(),
+            })
             .map_err(|e| {
                 ForeignClientError::client_consensus_query(
                     self.id.clone(),

@@ -21,6 +21,7 @@ use crate::{
         requests::{
             PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
             QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
+            QueryConnectionRequest,
         },
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
@@ -772,7 +773,10 @@ fn query_connection<Chain: ChainHandle>(
     connection_id: &ConnectionId,
 ) -> Result<IdentifiedConnectionEnd, Error> {
     let connection_end = chain
-        .query_connection(connection_id, Height::zero())
+        .query_connection(QueryConnectionRequest {
+            connection_id: connection_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(Error::query)?;
 
     Ok(IdentifiedConnectionEnd {

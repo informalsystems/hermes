@@ -34,10 +34,12 @@ use crate::{
         requests::{
             QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
             QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-            QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
-            QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-            QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-            QueryUnreceivedPacketsRequest,
+            QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+            QueryConsensusStateRequest, QueryConsensusStatesRequest,
+            QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+            QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+            QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+            QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
         },
         tx::TrackedMsgs,
         ChainStatus,
@@ -182,30 +184,23 @@ impl ChainHandle for BaseChainHandle {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
-        self.send(|reply_to| ChainRequest::QueryConsensusState {
-            client_id,
-            consensus_height,
-            query_height,
-            reply_to,
-        })
+        self.send(|reply_to| ChainRequest::QueryConsensusState { request, reply_to })
     }
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::QueryUpgradedClientState { height, reply_to })
+        self.send(|reply_to| ChainRequest::QueryUpgradedClientState { request, reply_to })
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::QueryUpgradedConsensusState { height, reply_to })
+        self.send(|reply_to| ChainRequest::QueryUpgradedConsensusState { request, reply_to })
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -216,16 +211,8 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryCompatibleVersions { reply_to })
     }
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error> {
-        self.send(|reply_to| ChainRequest::QueryConnection {
-            connection_id: connection_id.clone(),
-            height,
-            reply_to,
-        })
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
+        self.send(|reply_to| ChainRequest::QueryConnection { request, reply_to })
     }
 
     fn query_connections(
@@ -446,8 +433,11 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to })
     }
 
-    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
-        self.send(|reply_to| ChainRequest::QueryHostConsensusState { height, reply_to })
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<AnyConsensusState, Error> {
+        self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
     }
 }
 

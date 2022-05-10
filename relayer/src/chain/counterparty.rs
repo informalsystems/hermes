@@ -5,7 +5,8 @@ use tracing::{error, trace};
 
 use super::requests::{
     PageRequest, QueryChannelRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryPacketAcknowledgementsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryConnectionRequest, QueryPacketAcknowledgementsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use super::{
     handle::ChainHandle,
@@ -32,7 +33,10 @@ pub fn counterparty_chain_from_connection(
     src_connection_id: &ConnectionId,
 ) -> Result<ChainId, Error> {
     let connection_end = src_chain
-        .query_connection(src_connection_id, Height::zero())
+        .query_connection(QueryConnectionRequest {
+            connection_id: src_connection_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(Error::relayer)?;
 
     let client_id = connection_end.client_id();
@@ -66,7 +70,10 @@ fn connection_on_destination(
 
     for counterparty_connection in counterparty_connections.into_iter() {
         let counterparty_connection_end = counterparty_chain
-            .query_connection(&counterparty_connection, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: counterparty_connection.clone(),
+                height: Height::zero(),
+            })
             .map_err(Error::relayer)?;
 
         let local_connection_end = &counterparty_connection_end.counterparty();
@@ -85,7 +92,10 @@ pub fn connection_state_on_destination(
 ) -> Result<ConnectionState, Error> {
     if let Some(remote_connection_id) = connection.connection_end.counterparty().connection_id() {
         let connection_end = counterparty_chain
-            .query_connection(remote_connection_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: remote_connection_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(Error::relayer)?;
 
         Ok(connection_end.state)
@@ -158,7 +168,10 @@ pub fn channel_connection_client(
         .ok_or_else(|| Error::missing_connection_hops(*channel_id, chain.id()))?;
 
     let connection_end = chain
-        .query_connection(connection_id, Height::zero())
+        .query_connection(QueryConnectionRequest {
+            connection_id: connection_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(Error::relayer)?;
 
     if !connection_end.is_open() {

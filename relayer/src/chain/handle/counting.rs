@@ -32,9 +32,11 @@ use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
@@ -201,29 +203,26 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         self.inc_metric("query_consensus_state");
-        self.inner()
-            .query_consensus_state(client_id, consensus_height, query_height)
+        self.inner().query_consensus_state(request)
     }
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
         self.inc_metric("query_upgraded_client_state");
-        self.inner().query_upgraded_client_state(height)
+        self.inner().query_upgraded_client_state(request)
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         self.inc_metric("query_upgraded_consensus_state");
-        self.inner().query_upgraded_consensus_state(height)
+        self.inner().query_upgraded_consensus_state(request)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -236,13 +235,9 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().query_compatible_versions()
     }
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error> {
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
         self.inc_metric("query_connection");
-        self.inner().query_connection(connection_id, height)
+        self.inner().query_connection(request)
     }
 
     fn query_connections(
@@ -446,7 +441,10 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().query_blocks(request)
     }
 
-    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
-        self.inner.query_host_consensus_state(height)
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<AnyConsensusState, Error> {
+        self.inner.query_host_consensus_state(request)
     }
 }

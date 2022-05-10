@@ -13,6 +13,7 @@ use crate::chain::counterparty::{
 };
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::QueryChannelRequest;
+use crate::chain::requests::QueryHostConsensusStateRequest;
 use crate::chain::requests::QueryNextSequenceReceiveRequest;
 use crate::chain::requests::QueryUnreceivedAcksRequest;
 use crate::chain::requests::QueryUnreceivedPacketsRequest;
@@ -829,7 +830,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         height: Height,
     ) -> Result<Instant, LinkError> {
         let chain_time = chain
-            .query_host_consensus_state(height)
+            .query_host_consensus_state(QueryHostConsensusStateRequest { height })
             .map_err(LinkError::relayer)?
             .timestamp();
         let duration = Timestamp::now()

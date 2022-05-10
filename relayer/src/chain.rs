@@ -40,9 +40,11 @@ use self::client::ClientSettings;
 use self::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use self::tx::TrackedMsgs;
 
@@ -179,19 +181,17 @@ pub trait ChainEndpoint: Sized {
     /// that an on-chain client stores.
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: ICSHeight,
-        query_height: ICSHeight,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
-        height: ICSHeight,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn query_upgraded_consensus_state(
         &self,
-        height: ICSHeight,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     /// Performs a query to retrieve the identifiers of all connections.
@@ -206,11 +206,7 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error>;
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: ICSHeight,
-    ) -> Result<ConnectionEnd, Error>;
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error>;
 
     /// Performs a query to retrieve the identifiers of all channels associated with a connection.
     fn query_connection_channels(
@@ -263,7 +259,10 @@ pub trait ChainEndpoint: Sized {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 
-    fn query_host_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error>;
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<Self::ConsensusState, Error>;
 
     // Provable queries
     fn proven_client_state(

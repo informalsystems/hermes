@@ -11,6 +11,7 @@ use ibc::Height;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
     PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
+    QueryConnectionRequest,
 };
 use ibc_relayer::registry::Registry;
 
@@ -125,7 +126,10 @@ fn query_channel_ends<Chain: ChainHandle>(
     channel_id: ChannelId,
     chain_height: Height,
 ) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
-    let connection_end = chain.query_connection(&connection_id, chain_height)?;
+    let connection_end = chain.query_connection(QueryConnectionRequest {
+        connection_id: connection_id.clone(),
+        height: chain_height,
+    })?;
     let client_id = connection_end.client_id().clone();
     let client_state = {
         let request = QueryClientStateRequest {
@@ -172,8 +176,11 @@ fn query_channel_ends<Chain: ChainHandle>(
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
     let counterparty_chain_height = counterparty_chain.query_latest_height()?;
 
-    let counterparty_connection_end = counterparty_chain
-        .query_connection(&counterparty_connection_id, counterparty_chain_height)?;
+    let counterparty_connection_end =
+        counterparty_chain.query_connection(QueryConnectionRequest {
+            connection_id: counterparty_connection_id,
+            height: counterparty_chain_height,
+        })?;
 
     let counterparty_client_state = {
         let request = QueryClientStateRequest {

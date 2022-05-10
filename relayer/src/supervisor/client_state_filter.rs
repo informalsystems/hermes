@@ -11,7 +11,9 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, Connection
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{QueryChannelRequest, QueryClientStateRequest};
+use crate::chain::requests::{
+    QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+};
 use crate::error::Error as RelayerError;
 use crate::object;
 use crate::registry::{Registry, SpawnError};
@@ -267,7 +269,10 @@ impl FilterPolicy {
         );
 
         let connection_end = src_chain
-            .query_connection(&obj.src_connection_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: obj.src_connection_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(FilterError::relayer)?;
 
         let client_state = {
@@ -333,7 +338,10 @@ impl FilterPolicy {
         })?;
 
         let connection_end = src_chain
-            .query_connection(conn_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: conn_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(FilterError::relayer)?;
 
         let client_state = {

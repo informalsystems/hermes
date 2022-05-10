@@ -44,9 +44,11 @@ use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 use super::requests::{
     QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use super::tx::TrackedMsgs;
 use super::HealthCheck;
@@ -199,16 +201,12 @@ impl ChainEndpoint for MockChain {
 
     fn query_upgraded_client_state(
         &self,
-        _height: Height,
+        _request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
         unimplemented!()
     }
 
-    fn query_connection(
-        &self,
-        _connection_id: &ConnectionId,
-        _height: Height,
-    ) -> Result<ConnectionEnd, Error> {
+    fn query_connection(&self, _request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
         unimplemented!()
     }
 
@@ -297,7 +295,10 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_host_consensus_state(&self, _height: Height) -> Result<Self::ConsensusState, Error> {
+    fn query_host_consensus_state(
+        &self,
+        _request: QueryHostConsensusStateRequest,
+    ) -> Result<Self::ConsensusState, Error> {
         unimplemented!()
     }
 
@@ -423,21 +424,19 @@ impl ChainEndpoint for MockChain {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        _query_height: Height,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
-        let consensus_states = self.context.consensus_states(&client_id);
+        let consensus_states = self.context.consensus_states(&request.client_id);
         Ok(consensus_states
             .into_iter()
-            .find(|s| s.height == consensus_height)
+            .find(|s| s.height == request.consensus_height)
             .unwrap()
             .consensus_state)
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        _height: Height,
+        _request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
     }

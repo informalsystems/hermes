@@ -11,7 +11,9 @@ use ibc::{
     events::IbcEvent,
 };
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{QueryChannelRequest, QueryClientStateRequest};
+use ibc_relayer::chain::requests::{
+    QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+};
 use ibc_relayer::transfer::Amount;
 use ibc_relayer::{
     config::Config,
@@ -205,7 +207,10 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         let conn_end = chains
             .src
-            .query_connection(conn_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: conn_id.clone(),
+                height: Height::zero(),
+            })
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         debug!("connection hop underlying the channel: {:?}", conn_end);

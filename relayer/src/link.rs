@@ -7,9 +7,9 @@ use ibc::{
     Height,
 };
 
-use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::QueryChannelRequest;
+use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
 use crate::channel::{Channel, ChannelSide};
 use crate::link::error::LinkError;
 
@@ -105,7 +105,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
         let a_connection = a_chain
-            .query_connection(&a_connection_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: a_connection_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(LinkError::relayer)?;
 
         if !a_connection.state_matches(&ConnectionState::Open) {

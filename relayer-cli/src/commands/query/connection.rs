@@ -2,7 +2,9 @@ use alloc::sync::Arc;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::requests::{PageRequest, QueryConnectionChannelsRequest};
+use ibc_relayer::chain::requests::{
+    PageRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::{
@@ -49,7 +51,10 @@ impl Runnable for QueryConnectionEndCmd {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
-        let res = chain.query_connection(&self.connection_id, height);
+        let res = chain.query_connection(QueryConnectionRequest {
+            connection_id: self.connection_id.clone(),
+            height,
+        });
         match res {
             Ok(connection_end) => {
                 if connection_end.state_matches(&State::Uninitialized) {

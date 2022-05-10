@@ -46,9 +46,11 @@ use super::{
     requests::{
         QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
         QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-        QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
+        QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+        QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
         QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
         QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
     },
     tx::TrackedMsgs,
 };
@@ -207,19 +209,17 @@ pub enum ChainRequest {
     },
 
     QueryConsensusState {
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
     },
 
     QueryUpgradedClientState {
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
         reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
     },
 
     QueryUpgradedConsensusState {
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
         reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
     },
 
@@ -232,8 +232,7 @@ pub enum ChainRequest {
     },
 
     QueryConnection {
-        connection_id: ConnectionId,
-        height: Height,
+        request: QueryConnectionRequest,
         reply_to: ReplyTo<ConnectionEnd>,
     },
 
@@ -333,7 +332,7 @@ pub enum ChainRequest {
     },
 
     QueryHostConsensusState {
-        height: Height,
+        request: QueryHostConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
     },
 }
@@ -406,30 +405,24 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error>;
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error>;
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error>;
 
     fn query_connections(
         &self,
@@ -556,5 +549,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 
-    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<AnyConsensusState, Error>;
 }

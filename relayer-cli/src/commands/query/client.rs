@@ -4,7 +4,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use ibc_relayer::chain::requests::{
     PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryConsensusStatesRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest,
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
@@ -136,8 +136,11 @@ impl Runnable for QueryClientConsensusCmd {
                 let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
                 let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
 
-                let res =
-                    chain.query_consensus_state(self.client_id.clone(), consensus_height, height);
+                let res = chain.query_consensus_state(QueryConsensusStateRequest {
+                    client_id: self.client_id.clone(),
+                    consensus_height,
+                    query_height: height,
+                });
 
                 match res {
                     Ok(cs) => Output::success(cs).exit(),

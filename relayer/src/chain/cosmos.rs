@@ -77,9 +77,11 @@ use crate::light_client::{LightClient, Verified};
 use super::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 
 pub mod batch;
@@ -727,15 +729,16 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn query_upgraded_client_state(
         &self,
-        height: ICSHeight,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
         crate::telemetry!(query, self.id(), "query_upgraded_client_state");
 
         // Query for the value and the proof.
-        let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
+        let tm_height =
+            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
         let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientState(height.revision_height),
+            ClientUpgradePath::UpgradedClientState(request.height.revision_height),
             tm_height,
         )?;
 
@@ -747,16 +750,17 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn query_upgraded_consensus_state(
         &self,
-        height: ICSHeight,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         crate::time!("query_upgraded_consensus_state");
         crate::telemetry!(query, self.id(), "query_upgraded_consensus_state");
 
-        let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
+        let tm_height =
+            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
 
         // Fetch the consensus state and its proof.
         let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientConsensusState(height.revision_height),
+            ClientUpgradePath::UpgradedClientConsensusState(request.height.revision_height),
             tm_height,
         )?;
 
@@ -800,15 +804,16 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: ICSHeight,
-        query_height: ICSHeight,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         crate::time!("query_consensus_state");
         crate::telemetry!(query, self.id(), "query_consensus_state");
 
-        let (consensus_state, _proof) =
-            self.proven_client_consensus(&client_id, consensus_height, query_height)?;
+        let (consensus_state, _proof) = self.proven_client_consensus(
+            &request.client_id,
+            request.consensus_height,
+            request.query_height,
+        )?;
 
         Ok(consensus_state)
     }
@@ -882,11 +887,7 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(connections)
     }
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: ICSHeight,
-    ) -> Result<ConnectionEnd, Error> {
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
         crate::time!("query_connection");
         crate::telemetry!(query, self.id(), "query_connection");
 
@@ -939,7 +940,9 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         }
 
-        self.block_on(async { do_query_connection(self, connection_id, height).await })
+        self.block_on(async {
+            do_query_connection(self, &request.connection_id, request.height).await
+        })
     }
 
     fn query_connection_channels(
@@ -1282,8 +1285,12 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
-    fn query_host_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error> {
-        let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<Self::ConsensusState, Error> {
+        let height =
+            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
 
         // TODO(hu55a1n1): use the `/header` RPC endpoint instead when we move to tendermint v0.35.x
         let rpc_call = match height.value() {
