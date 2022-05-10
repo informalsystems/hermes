@@ -7,8 +7,8 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::context::ChannelReader;
-use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -123,7 +123,7 @@ impl ClientDef for MockClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _sequence: Sequence,
-        _commitment: String,
+        _commitment: PacketCommitment,
     ) -> Result<(), Error> {
         Ok(())
     }
@@ -139,7 +139,7 @@ impl ClientDef for MockClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _sequence: Sequence,
-        _ack: Acknowledgement,
+        _ack: AcknowledgementCommitment,
     ) -> Result<(), Error> {
         Ok(())
     }

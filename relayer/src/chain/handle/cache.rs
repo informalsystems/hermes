@@ -44,6 +44,8 @@ use crate::error::Error;
 use crate::telemetry;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
+/// A chain handle with support for caching.
+/// To be used for the passive relaying mode (i.e., `start` CLI).
 #[derive(Debug, Clone)]
 pub struct CachingChainHandle<Handle> {
     inner: Handle,
@@ -127,8 +129,8 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_status(&self) -> Result<ChainStatus, Error> {
-        self.inner().query_status()
+    fn query_application_status(&self) -> Result<ChainStatus, Error> {
+        self.inner().query_application_status()
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {

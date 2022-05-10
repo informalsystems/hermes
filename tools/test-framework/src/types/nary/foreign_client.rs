@@ -6,6 +6,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 use super::aliases::NthChainHandle;
 use crate::error::Error;
 use crate::types::binary::foreign_client::ForeignClientPair;
+use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::tagged::*;
 use crate::util::array::{into_nested_vec, try_into_nested_array};
 
@@ -70,5 +71,18 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<Vec<Vec<ForeignClient<Handl
     fn try_from(clients: Vec<Vec<ForeignClient<Handle, Handle>>>) -> Result<Self, Error> {
         let foreign_clients = try_into_nested_array(clients)?;
         Ok(Self { foreign_clients })
+    }
+}
+
+impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ForeignClientPairs<Handle, SIZE> {
+    fn export_env(&self, writer: &mut impl EnvWriter) {
+        for (source, inner_clients) in self.foreign_clients.iter().enumerate() {
+            for (destination, client) in inner_clients.iter().enumerate() {
+                writer.write_env(
+                    &format!("CLIENT_ID_{}_to_{}", source, destination),
+                    &format!("{}", client.id()),
+                );
+            }
+        }
     }
 }

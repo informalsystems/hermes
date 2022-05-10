@@ -1,4 +1,4 @@
-*March 28th, 2021*
+*March 28th, 2022*
 
 Hermes v0.13.0 improves performance by lowering the pressure
 on the full nodes by adding a caching layer for some queries.
