@@ -85,13 +85,13 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
 ) -> Result<(), Error> {
     // During test, all chains should have the same local clock.
     // We are also not really interested in setting a timeout for most tests,
-    // so we just put an approximate 30 minute timeout as the timeout
+    // so we just put an approximate 1 minute timeout as the timeout
     // field is compulsary, and we want to avoid IBC timeout on CI.
     //
     // If tests require explicit timeout, they should explicitly construct the
     // transfer message and pass it to send_tx.
     let timeout_timestamp = Timestamp::now()
-        .add(Duration::from_secs(30 * 60))
+        .add(Duration::from_secs(60))
         .map_err(handle_generic_error)?;
 
     let message = build_transfer_message(
