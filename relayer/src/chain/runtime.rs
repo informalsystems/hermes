@@ -33,12 +33,10 @@ use ibc::{
 };
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
     commitment::v1::MerkleProof,
-    connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
 
 use crate::{
@@ -57,8 +55,10 @@ use super::{
     client::ClientSettings,
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     requests::{
-        QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
-        QueryClientStatesRequest, QueryConsensusStatesRequest,
+        QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+        QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+        QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
+        QueryPacketCommitmentsRequest,
     },
     tx::TrackedMsgs,
     ChainEndpoint, ChainStatus, HealthCheck,

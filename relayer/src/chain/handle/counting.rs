@@ -21,13 +21,10 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
@@ -36,8 +33,10 @@ use tracing::debug;
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
-    QueryClientStatesRequest, QueryConsensusStatesRequest,
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
+    QueryPacketCommitmentsRequest,
 };
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};

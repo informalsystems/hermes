@@ -1,10 +1,19 @@
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
+use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
-use ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest as RawQueryChannelClientStateRequest;
+use ibc_proto::ibc::core::channel::v1::{
+    QueryChannelClientStateRequest as RawQueryChannelClientStateRequest,
+    QueryChannelsRequest as RawQueryChannelsRequest,
+    QueryConnectionChannelsRequest as RawQueryConnectionChannelsRequest,
+    QueryPacketCommitmentsRequest as RawQueryPacketCommitmentsRequest,
+};
 use ibc_proto::ibc::core::client::v1::{
     QueryClientStatesRequest as RawQueryClientStatesRequest,
     QueryConsensusStatesRequest as RawQueryConsensusStatesRequest,
+};
+use ibc_proto::ibc::core::connection::v1::{
+    QueryClientConnectionsRequest as RawQueryClientConnectionsRequest,
+    QueryConnectionsRequest as RawQueryConnectionsRequest,
 };
 
 use serde::{Deserialize, Serialize};
@@ -81,16 +90,55 @@ impl From<QueryConsensusStatesRequest> for RawQueryConsensusStatesRequest {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct QueryChannelClientStateRequest {
-    pub port_id: String,
-    pub channel_id: String,
+pub struct QueryConnectionsRequest {
+    pub pagination: Option<PageRequest>,
 }
 
-impl From<QueryChannelClientStateRequest> for RawQueryChannelClientStateRequest {
-    fn from(request: QueryChannelClientStateRequest) -> Self {
-        RawQueryChannelClientStateRequest {
-            port_id: request.port_id,
-            channel_id: request.channel_id,
+impl From<QueryConnectionsRequest> for RawQueryConnectionsRequest {
+    fn from(request: QueryConnectionsRequest) -> Self {
+        RawQueryConnectionsRequest {
+            pagination: request.pagination.map(|pagination| pagination.into()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryClientConnectionsRequest {
+    pub client_id: ClientId,
+}
+
+impl From<QueryClientConnectionsRequest> for RawQueryClientConnectionsRequest {
+    fn from(request: QueryClientConnectionsRequest) -> Self {
+        RawQueryClientConnectionsRequest {
+            client_id: request.client_id.to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryConnectionChannelsRequest {
+    pub connection_id: ConnectionId,
+    pub pagination: Option<PageRequest>,
+}
+
+impl From<QueryConnectionChannelsRequest> for RawQueryConnectionChannelsRequest {
+    fn from(request: QueryConnectionChannelsRequest) -> Self {
+        RawQueryConnectionChannelsRequest {
+            connection: request.connection_id.to_string(),
+            pagination: request.pagination.map(|pagination| pagination.into()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryChannelsRequest {
+    pub pagination: Option<PageRequest>,
+}
+
+impl From<QueryChannelsRequest> for RawQueryChannelsRequest {
+    fn from(request: QueryChannelsRequest) -> Self {
+        RawQueryChannelsRequest {
+            pagination: request.pagination.map(|pagination| pagination.into()),
         }
     }
 }
@@ -100,6 +148,38 @@ pub struct QueryChannelRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub height: Height,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryChannelClientStateRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+}
+
+impl From<QueryChannelClientStateRequest> for RawQueryChannelClientStateRequest {
+    fn from(request: QueryChannelClientStateRequest) -> Self {
+        RawQueryChannelClientStateRequest {
+            port_id: request.port_id.to_string(),
+            channel_id: request.channel_id.to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryPacketCommitmentsRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub pagination: Option<PageRequest>,
+}
+
+impl From<QueryPacketCommitmentsRequest> for RawQueryPacketCommitmentsRequest {
+    fn from(request: QueryPacketCommitmentsRequest) -> Self {
+        RawQueryPacketCommitmentsRequest {
+            port_id: request.port_id.to_string(),
+            channel_id: request.channel_id.to_string(),
+            pagination: request.pagination.map(|pagination| pagination.into()),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

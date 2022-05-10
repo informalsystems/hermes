@@ -3,6 +3,13 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
+use super::requests::{
+    PageRequest, QueryChannelRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+};
+use super::{
+    handle::ChainHandle,
+    requests::{QueryConnectionChannelsRequest, QueryPacketCommitmentsRequest},
+};
 use crate::channel::ChannelError;
 use crate::supervisor::Error;
 use ibc::{
@@ -19,13 +26,8 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryPacketAcknowledgementsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
-
-use super::handle::ChainHandle;
-use super::requests::{QueryChannelRequest, QueryClientStateRequest};
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
@@ -58,12 +60,10 @@ fn connection_on_destination(
     counterparty_client_id: &ClientId,
     counterparty_chain: &impl ChainHandle,
 ) -> Result<Option<ConnectionEnd>, Error> {
-    let req = QueryClientConnectionsRequest {
-        client_id: counterparty_client_id.to_string(),
-    };
-
     let counterparty_connections = counterparty_chain
-        .query_client_connections(req)
+        .query_client_connections(QueryClientConnectionsRequest {
+            client_id: counterparty_client_id.clone(),
+        })
         .map_err(Error::relayer)?;
 
     for counterparty_connection in counterparty_connections.into_iter() {
@@ -202,13 +202,11 @@ fn fetch_channel_on_destination(
     counterparty_chain: &impl ChainHandle,
     remote_connection_id: &ConnectionId,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
-    let req = QueryConnectionChannelsRequest {
-        connection: remote_connection_id.to_string(),
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-    };
-
     let counterparty_channels = counterparty_chain
-        .query_connection_channels(req)
+        .query_connection_channels(QueryConnectionChannelsRequest {
+            connection_id: remote_connection_id.clone(),
+            pagination: Some(PageRequest::all()),
+        })
         .map_err(Error::relayer)?;
 
     for counterparty_channel in counterparty_channels.into_iter() {
@@ -331,14 +329,12 @@ pub fn commitments_on_chain(
     channel_id: &ChannelId,
 ) -> Result<(Vec<u64>, Height), Error> {
     // get the packet commitments on the counterparty/ source chain
-    let commitments_request = QueryPacketCommitmentsRequest {
-        port_id: port_id.to_string(),
-        channel_id: channel_id.to_string(),
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-    };
-
     let (commitments, response_height) = chain
-        .query_packet_commitments(commitments_request)
+        .query_packet_commitments(QueryPacketCommitmentsRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            pagination: Some(PageRequest::all()),
+        })
         .map_err(Error::relayer)?;
 
     let mut commit_sequences: Vec<u64> = commitments.into_iter().map(|v| v.sequence).collect();

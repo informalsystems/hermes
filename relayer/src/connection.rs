@@ -1,11 +1,11 @@
 use core::time::Duration;
 
 use crate::chain::counterparty::connection_state_on_destination;
+use crate::chain::requests::{PageRequest, QueryConnectionsRequest};
 use crate::chain::tx::TrackedMsgs;
 use crate::util::retry::RetryResult;
 use flex_error::define_error;
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 use tracing::{error, info, warn};
 
@@ -363,11 +363,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         if a_connection.state_matches(&State::Init) && counterparty_connection_id.is_none() {
-            let req = QueryConnectionsRequest {
-                pagination: ibc_proto::cosmos::base::query::pagination::all(),
+            let request = QueryConnectionsRequest {
+                pagination: Some(PageRequest::all()),
             };
             let connections: Vec<IdentifiedConnectionEnd> = counterparty_chain
-                .query_connections(req)
+                .query_connections(request)
                 .map_err(ConnectionError::relayer)?;
 
             for conn in connections {

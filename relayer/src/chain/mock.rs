@@ -28,14 +28,10 @@ use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::{
-    QueryClientConnectionsRequest, QueryConnectionsRequest,
-};
 
 use crate::chain::client::ClientSettings;
 use crate::chain::requests::{
@@ -49,7 +45,11 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
-use super::requests::{QueryClientStateRequest, QueryConsensusStatesRequest};
+use super::requests::{
+    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
+    QueryPacketCommitmentsRequest,
+};
 use super::tx::TrackedMsgs;
 use super::HealthCheck;
 

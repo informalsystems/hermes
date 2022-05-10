@@ -8,9 +8,10 @@ use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, State};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
-use ibc_relayer::chain::requests::{QueryChannelRequest, QueryClientStateRequest};
+use ibc_relayer::chain::requests::{
+    PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
+};
 use ibc_relayer::registry::Registry;
 
 use crate::commands::query::channel_ends::ChannelEnds;
@@ -55,11 +56,9 @@ fn run_query_channels<Chain: ChainHandle>(
     let chain = registry.get_or_spawn(&cmd.chain_id)?;
     let chain_height = chain.query_latest_height()?;
 
-    let req = QueryChannelsRequest {
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-    };
-
-    let identified_channels = chain.query_channels(req)?;
+    let identified_channels = chain.query_channels(QueryChannelsRequest {
+        pagination: Some(PageRequest::all()),
+    })?;
 
     for identified_channel in identified_channels {
         let port_id = identified_channel.port_id;

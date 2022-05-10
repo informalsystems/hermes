@@ -14,16 +14,13 @@ use ibc::{
     Height,
 };
 
-use ibc_proto::ibc::core::{
-    channel::v1::QueryConnectionChannelsRequest, connection::v1::QueryClientConnectionsRequest,
-};
-
 use crate::{
     chain::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
         requests::{
-            PageRequest, QueryChannelRequest, QueryClientStateRequest, QueryClientStatesRequest,
+            PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
+            QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
         },
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
@@ -750,12 +747,10 @@ fn query_client_connections<Chain: ChainHandle>(
     chain: &Chain,
     client_id: &ClientId,
 ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-    let conns_req = QueryClientConnectionsRequest {
-        client_id: client_id.to_string(),
-    };
-
     let ids = chain
-        .query_client_connections(conns_req)
+        .query_client_connections(QueryClientConnectionsRequest {
+            client_id: client_id.clone(),
+        })
         .map_err(Error::query)?;
 
     let connections = ids
@@ -790,12 +785,10 @@ fn query_connection_channels<Chain: ChainHandle>(
     chain: &Chain,
     connection_id: &ConnectionId,
 ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-    let chans_req = QueryConnectionChannelsRequest {
-        connection: connection_id.to_string(),
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-    };
-
     chain
-        .query_connection_channels(chans_req)
+        .query_connection_channels(QueryConnectionChannelsRequest {
+            connection_id: connection_id.clone(),
+            pagination: Some(PageRequest::all()),
+        })
         .map_err(Error::query)
 }

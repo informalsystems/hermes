@@ -19,11 +19,10 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, Connection
 use ibc::events::IbcEvent;
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::QueryChannelRequest;
+use crate::chain::requests::{PageRequest, QueryChannelRequest, QueryConnectionChannelsRequest};
 use crate::chain::tx::TrackedMsgs;
 use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
@@ -307,13 +306,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         };
 
         if a_channel.state_matches(&State::Init) && a_channel.remote.channel_id.is_none() {
-            let req = QueryConnectionChannelsRequest {
-                connection: b_connection_id.to_string(),
-                pagination: ibc_proto::cosmos::base::query::pagination::all(),
-            };
-
             let channels: Vec<IdentifiedChannelEnd> = counterparty_chain
-                .query_connection_channels(req)
+                .query_connection_channels(QueryConnectionChannelsRequest {
+                    connection_id: b_connection_id,
+                    pagination: Some(PageRequest::all()),
+                })
                 .map_err(ChannelError::relayer)?;
 
             for chan in channels {

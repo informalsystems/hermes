@@ -3,7 +3,8 @@ use alloc::sync::Arc;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use ibc_relayer::chain::requests::{
-    PageRequest, QueryClientStateRequest, QueryConsensusStatesRequest,
+    PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryConsensusStatesRequest,
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
@@ -15,7 +16,6 @@ use ibc::core::ics24_host::identifier::ClientId;
 use ibc::events::WithBlockDataType;
 use ibc::query::QueryTxRequest;
 use ibc::Height;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_relayer::chain::ChainEndpoint;
 use ibc_relayer::chain::CosmosSdkChain;
 
@@ -272,11 +272,9 @@ impl Runnable for QueryClientConnectionsCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let req = QueryClientConnectionsRequest {
-            client_id: self.client_id.to_string(),
-        };
-
-        let res = chain.query_client_connections(req);
+        let res = chain.query_client_connections(QueryClientConnectionsRequest {
+            client_id: self.client_id.clone(),
+        });
 
         match res {
             Ok(ce) => Output::success(ce).exit(),
