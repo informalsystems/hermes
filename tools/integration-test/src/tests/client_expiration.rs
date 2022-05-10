@@ -301,13 +301,13 @@ impl BinaryChainTest for PacketExpirationTest {
             {
                 info!("sending first IBC transfer after client is expired. this should cause packet worker to fail");
 
-                chains.node_a.chain_driver().transfer_token(
+                chains.node_a.chain_driver().ibc_transfer_token(
                     &channels.port_a.as_ref(),
                     &channels.channel_id_a.as_ref(),
                     &chains.node_a.wallets().user1(),
                     &chains.node_b.wallets().user1().address(),
-                    100,
                     &chains.node_a.denom(),
+                    100,
                 )?;
 
                 sleep(Duration::from_secs(10));
@@ -329,13 +329,13 @@ impl BinaryChainTest for PacketExpirationTest {
             {
                 info!("sending a second IBC transfer. there should be no log from packet worker from this point on");
 
-                chains.node_a.chain_driver().transfer_token(
+                chains.node_a.chain_driver().ibc_transfer_token(
                     &channels.port_a.as_ref(),
                     &channels.channel_id_a.as_ref(),
                     &chains.node_a.wallets().user1(),
                     &chains.node_b.wallets().user1().address(),
-                    100,
                     &chains.node_a.denom(),
+                    100,
                 )?;
 
                 sleep(Duration::from_secs(10));

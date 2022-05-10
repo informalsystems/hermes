@@ -116,13 +116,13 @@ impl BinaryChainTest for SupervisorTest {
             denom_a
         );
 
-        chains.node_a.chain_driver().transfer_token(
+        chains.node_a.chain_driver().ibc_transfer_token(
             &port_a.as_ref(),
             &channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            transfer_amount,
             &denom_a,
+            transfer_amount,
         )?;
 
         // During the test, you should see error logs showing "account sequence mismatch".

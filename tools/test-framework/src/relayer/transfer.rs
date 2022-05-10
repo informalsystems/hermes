@@ -7,16 +7,16 @@ use core::time::Duration;
 use ibc::events::IbcEvent;
 use ibc::signer::Signer;
 use ibc_relayer::chain::cosmos::query::status::query_status;
+use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::transfer::{
     build_and_send_transfer_messages, build_transfer_message, Amount, TransferOptions,
     TransferTimeout,
 };
 
-use crate::chain::driver::tagged::TaggedChainDriverExt;
-use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
+use crate::relayer::tx::simple_send_tx;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -73,8 +73,8 @@ pub fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     Ok(events)
 }
 
-pub fn ibc_token_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
-    chain_driver: &MonoTagged<SrcChain, &ChainDriver>,
+pub async fn ibc_token_transfer<SrcChain, DstChain>(
+    tx_config: &MonoTagged<SrcChain, &TxConfig>,
     port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
     sender: &MonoTagged<SrcChain, &Wallet>,
@@ -82,37 +82,10 @@ pub fn ibc_token_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     denom: &MonoTagged<SrcChain, &Denom>,
     amount: u64,
 ) -> Result<(), Error> {
-    chain_driver
-        .value()
-        .runtime
-        .block_on(async_ibc_token_transfer(
-            chain_driver,
-            port_id,
-            channel_id,
-            sender,
-            recipient,
-            denom,
-            amount,
-        ))
-}
-
-pub async fn async_ibc_token_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
-    chain_driver: &MonoTagged<SrcChain, &ChainDriver>,
-    port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
-    channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
-    sender: &MonoTagged<SrcChain, &Wallet>,
-    recipient: &MonoTagged<DstChain, &WalletAddress>,
-    denom: &MonoTagged<SrcChain, &Denom>,
-    amount: u64,
-) -> Result<(), Error> {
-    let chain_id = chain_driver.chain_id();
-
-    let tx_config = &chain_driver.value().tx_config;
-
     let status = query_status(
-        chain_id.value(),
-        &tx_config.rpc_client,
-        &tx_config.rpc_address,
+        &tx_config.value().chain_id,
+        &tx_config.value().rpc_client,
+        &tx_config.value().rpc_address,
     )
     .await?;
 
@@ -129,7 +102,7 @@ pub async fn async_ibc_token_transfer<SrcChain: ChainHandle, DstChain: ChainHand
         timeout.timeout_timestamp,
     );
 
-    chain_driver.send_tx(sender, vec![message]).await?;
+    simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
 
     Ok(())
 }

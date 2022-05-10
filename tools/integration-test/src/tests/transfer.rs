@@ -1,6 +1,5 @@
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::transfer::ibc_token_transfer;
 use ibc_test_framework::util::random::random_u64_range;
 
 #[test]
@@ -71,8 +70,7 @@ impl BinaryChannelTest for IbcTransferTest {
             denom_a
         );
 
-        ibc_token_transfer(
-            &chains.node_a.chain_driver(),
+        chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
@@ -125,8 +123,7 @@ impl BinaryChannelTest for IbcTransferTest {
             denom_b
         );
 
-        ibc_token_transfer(
-            &chains.node_b.chain_driver(),
+        chains.node_b.chain_driver().ibc_transfer_token(
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &wallet_b.as_ref(),

@@ -33,7 +33,6 @@ use crate::util::retry::assert_eventually_succeed;
 
 pub mod interchain;
 pub mod query_txs;
-pub mod tagged;
 pub mod transfer;
 
 /**
@@ -475,8 +474,9 @@ impl ChainDriver {
         Ok(amount)
     }
 
-    pub async fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<(), Error> {
-        simple_send_tx(&self.tx_config, &wallet.key, messages).await
+    pub fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<(), Error> {
+        self.runtime
+            .block_on(simple_send_tx(&self.tx_config, &wallet.key, messages))
     }
 
     /**

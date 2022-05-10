@@ -14,7 +14,8 @@ pub use ibc_relayer::supervisor::SupervisorHandle;
 pub use std::thread::sleep;
 pub use tracing::{debug, error, info, warn};
 
-pub use crate::chain::driver::{tagged::TaggedChainDriverExt, ChainDriver};
+pub use crate::chain::driver::ChainDriver;
+pub use crate::chain::tagged::TaggedChainDriverExt;
 pub use crate::error::{handle_generic_error, Error};
 pub use crate::framework::base::HasOverrides;
 pub use crate::framework::binary::chain::{
