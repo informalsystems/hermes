@@ -2,7 +2,7 @@ use color_eyre::eyre::Context;
 use sqlx::postgres::PgRow;
 use sqlx::{PgPool, Row};
 use tendermint_proto::abci::TxResult;
-use tracing::info;
+use tracing::{trace, info};
 
 use crate::routes::tx::proto_to_deliver_tx;
 use crate::{error::ReportError, search::PacketSearch};
@@ -20,7 +20,7 @@ pub async fn packet_search(
     let deliver_tx = raw_tx_result.result.unwrap();
     let tx_result = proto_to_deliver_tx(deliver_tx)?;
 
-    dbg!(&tx_result.events);
+    trace!(tx_result.events = ? &tx_result.events, "got events");
 
     let txs = vec![TxResponse {
         hash: hash.parse().wrap_err("failed to parse tx hash")?, // TODO: validate hash earlier
@@ -52,11 +52,13 @@ async fn tx_result_by_packet_fields(
     let result = sqlx::query(
         "SELECT tx_hash, tx_result FROM ibc_tx_packet_events WHERE \
         packet_sequence = $1 and \
-        packet_src_channel = $2 and \
-        packet_src_port = $3 \
+        type = $2 and \
+        packet_src_channel = $3 and \
+        packet_src_port = $4 \
         LIMIT 1",
     )
     .bind(search.packet_sequence.clone())
+    .bind(search.event_type.clone())
     .bind(search.packet_src_channel.clone())
     .bind(search.packet_src_port.clone())
         .map(|row: PgRow| SqlTxResult {

@@ -24,6 +24,7 @@ pub struct HeaderSearch {
 
 #[derive(Clone, Debug)]
 pub struct PacketSearch {
+    pub event_type: String,
     pub packet_src_channel: String,
     pub packet_src_port: String,
     pub packet_dst_channel: String,
@@ -64,6 +65,15 @@ fn parse_tx_query(query: &Query) -> Option<TxSearch> {
 }
 
 fn parse_packet_query(query: &Query) -> Option<PacketSearch> {
+
+    // TODO - fix this
+    let tag = query.conditions.iter().find_map(|c| match c {
+        Condition::Eq(key, Operand::String(_)) => Some(key.to_owned()),
+        _ => None,
+    }).unwrap();
+
+    let event_type :String = tag.split('.').collect::<Vec<_>>().first().unwrap().to_string();
+
     let packet_src_channel = find_by_key(query, |k| k.ends_with(".packet_src_channel"))?;
     let packet_src_port = find_by_key(query, |k| k.ends_with(".packet_src_port"))?;
     let packet_dst_channel = find_by_key(query, |k| k.ends_with(".packet_dst_channel"))?;
@@ -71,6 +81,7 @@ fn parse_packet_query(query: &Query) -> Option<PacketSearch> {
     let packet_sequence = find_by_key(query, |k| k.ends_with(".packet_sequence"))?;
 
     Some(PacketSearch {
+        event_type,
         packet_src_channel,
         packet_src_port,
         packet_dst_channel,
