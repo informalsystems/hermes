@@ -57,7 +57,7 @@ pub fn new_tx_config_for_test(
 
     let gas_config = gas_config_for_test();
 
-    let rpc_timeout = Duration::from_secs(10);
+    let rpc_timeout = Duration::from_secs(30);
 
     let address_type = Default::default();
 

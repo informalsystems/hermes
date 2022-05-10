@@ -7,7 +7,6 @@ use core::time::Duration;
 
 use alloc::sync::Arc;
 use eyre::eyre;
-use semver::Version;
 use serde_json as json;
 use std::fs;
 use std::path::PathBuf;
@@ -23,7 +22,6 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 
 use crate::chain::exec::{simple_exec, ExecOutput};
-use crate::chain::version::get_chain_command_version;
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
 use crate::relayer::tx::{new_tx_config_for_test, simple_send_tx};
@@ -74,8 +72,6 @@ pub struct ChainDriver {
        The filesystem path to the Gaia CLI. Defaults to `gaiad`.
     */
     pub command_path: String,
-
-    pub command_version: Option<Version>,
 
     /**
        The ID of the chain.
@@ -133,10 +129,6 @@ impl ChainDriver {
         p2p_port: u16,
         runtime: Arc<Runtime>,
     ) -> Result<Self, Error> {
-        // Assume we're on Gaia 6 if we can't get a version
-        // (eg. with `icad`, which returns an empty string).
-        let command_version = get_chain_command_version(&command_path)?;
-
         let tx_config = new_tx_config_for_test(
             chain_id.clone(),
             format!("http://localhost:{}", rpc_port),
@@ -145,7 +137,6 @@ impl ChainDriver {
 
         Ok(Self {
             command_path,
-            command_version,
             chain_id,
             home_path,
             account_prefix,
@@ -393,7 +384,9 @@ impl ChainDriver {
         file: &str,
         cont: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
     ) -> Result<(), Error> {
-        let config1 = self.read_file(&format!("config/{}", file))?;
+        let config_path = format!("config/{}", file);
+
+        let config1 = self.read_file(&config_path)?;
 
         let mut config2 = toml::from_str(&config1).map_err(handle_generic_error)?;
 
@@ -401,16 +394,9 @@ impl ChainDriver {
 
         let config3 = toml::to_string_pretty(&config2).map_err(handle_generic_error)?;
 
-        self.write_file("config/config.toml", &config3)?;
+        self.write_file(&config_path, &config3)?;
 
         Ok(())
-    }
-
-    pub fn is_v6_or_later(&self) -> bool {
-        match &self.command_version {
-            Some(version) => version.major >= 6,
-            None => true,
-        }
     }
 
     /**
@@ -432,20 +418,7 @@ impl ChainDriver {
             &self.rpc_listen_address(),
         ];
 
-        // Gaia v6 requires the GRPC web port to be unique,
-        // but the argument is not available in earlier version
-        let extra_args = [
-            "--grpc-web.address",
-            &format!("localhost:{}", self.grpc_web_port),
-        ];
-
-        let args: Vec<&str> = if self.is_v6_or_later() {
-            let mut list = base_args.to_vec();
-            list.extend_from_slice(&extra_args);
-            list
-        } else {
-            base_args.to_vec()
-        };
+        let args: Vec<&str> = base_args.to_vec();
 
         let mut child = Command::new(&self.command_path)
             .args(&args)
