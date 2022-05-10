@@ -1,5 +1,14 @@
 # Gaiad Manager Change Log
 
+## v0.1.1
+
+### BUGFIXES
+
+- Added `unsafe-reset-all` support for SDK 0.44.8+ and 0.45.3+ ([#2162])
+
+
+[#2162]: https://github.com/informalsystems/ibc-rs/issues/2162
+
 ## v0.1.0
 
 ### FEATURES

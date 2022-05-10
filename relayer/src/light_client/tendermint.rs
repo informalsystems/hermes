@@ -70,7 +70,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         // Verify the target header
         let target = client
             .verify_to_target(target_height, &mut state)
-            .map_err(|e| Error::light_client(self.chain_id.to_string(), e))?;
+            .map_err(|e| Error::light_client_verification(self.chain_id.to_string(), e))?;
 
         // Collect the verification trace for the target block
         let target_trace = state.get_trace(target.height());
