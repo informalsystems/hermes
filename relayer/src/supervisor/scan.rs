@@ -22,7 +22,9 @@ use crate::{
     chain::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
-        requests::{PageRequest, QueryChannelRequest, QueryClientStatesRequest},
+        requests::{
+            PageRequest, QueryChannelRequest, QueryClientStateRequest, QueryClientStatesRequest,
+        },
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
     registry::Registry,
@@ -690,9 +692,11 @@ fn query_client<Chain: ChainHandle>(
     chain: &Chain,
     client_id: &ClientId,
 ) -> Result<IdentifiedAnyClientState, Error> {
-    let client = chain
-        .query_client_state(client_id, Height::zero())
-        .map_err(Error::query)?;
+    let request = QueryClientStateRequest {
+        client_id: client_id.clone(),
+        height: Height::zero(),
+    };
+    let client = chain.query_client_state(request).map_err(Error::query)?;
 
     Ok(IdentifiedAnyClientState::new(client_id.clone(), client))
 }

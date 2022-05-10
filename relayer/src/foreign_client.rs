@@ -38,6 +38,7 @@ use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::QueryClientStateRequest;
 use crate::chain::tx::TrackedMsgs;
 use crate::error::Error as RelayerError;
 
@@ -371,7 +372,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         let height = Height::new(expected_target_chain.id().version(), 0);
 
-        match host_chain.query_client_state(client_id, height) {
+        let request = QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height,
+        };
+        match host_chain.query_client_state(request) {
             Ok(cs) => {
                 if cs.chain_id() != expected_target_chain.id() {
                     Err(ForeignClientError::mismatch_chain_id(
@@ -619,16 +624,19 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn validated_client_state(
         &self,
     ) -> Result<(AnyClientState, Option<Duration>), ForeignClientError> {
-        let client_state = self
-            .dst_chain
-            .query_client_state(self.id(), Height::zero())
-            .map_err(|e| {
+        let client_state = {
+            let request = QueryClientStateRequest {
+                client_id: self.id().clone(),
+                height: Height::zero(),
+            };
+            self.dst_chain.query_client_state(request).map_err(|e| {
                 ForeignClientError::client_refresh(
                     self.id().clone(),
                     "failed querying client state on dst chain".to_string(),
                     e,
                 )
-            })?;
+            })?
+        };
 
         if client_state.is_frozen() {
             return Err(ForeignClientError::expired_or_frozen(
@@ -1160,15 +1168,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         .entered();
 
         // Get the latest client state on destination.
-        let client_state = self
-            .dst_chain()
-            .query_client_state(&self.id, Height::zero())
-            .map_err(|e| {
+        let client_state = {
+            let request = QueryClientStateRequest {
+                client_id: self.id().clone(),
+                height: Height::zero(),
+            };
+            self.dst_chain().query_client_state(request).map_err(|e| {
                 ForeignClientError::misbehaviour(
                     format!("failed querying client state on dst chain {}", self.id),
                     e,
                 )
-            })?;
+            })?
+        };
 
         let consensus_state_heights = if let Some(ref event) = update {
             vec![event.consensus_height()]
@@ -1461,6 +1472,7 @@ mod test {
     use crate::chain::handle::{BaseChainHandle, ChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
+    use crate::chain::requests::QueryClientStateRequest;
     use crate::chain::runtime::ChainRuntime;
     use crate::foreign_client::ForeignClient;
 
@@ -1641,14 +1653,26 @@ mod test {
         let b_client = client_on_b.id;
 
         // Now that the clients exists, we should be able to query its state
-        let b_client_state = b_chain.query_client_state(&b_client, Height::default());
+        let b_client_state = {
+            let request = QueryClientStateRequest {
+                client_id: b_client,
+                height: Height::default(),
+            };
+            b_chain.query_client_state(request)
+        };
         assert!(
             b_client_state.is_ok(),
             "Client query (on chain b) failed with error: {:?}",
             b_client_state
         );
 
-        let a_client_state = a_chain.query_client_state(&a_client, Height::default());
+        let a_client_state = {
+            let request = QueryClientStateRequest {
+                client_id: a_client.clone(),
+                height: Height::default(),
+            };
+            a_chain.query_client_state(request)
+        };
         assert!(
             a_client_state.is_ok(),
             "Client query (on chain a) failed with error: {:?}",

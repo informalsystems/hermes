@@ -1,4 +1,4 @@
-use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use ibc::Height;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
 use ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest as RawQueryChannelClientStateRequest;
@@ -81,5 +81,11 @@ impl From<QueryChannelClientStateRequest> for RawQueryChannelClientStateRequest 
 pub struct QueryChannelRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
+    pub height: Height,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryClientStateRequest {
+    pub client_id: ClientId,
     pub height: Height,
 }

@@ -56,7 +56,8 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
+    QueryClientStatesRequest,
 };
 use ibc_relayer::chain::tx::TrackedMsgs;
 use ibc_relayer::chain::{ChainStatus, HealthCheck};
@@ -147,10 +148,9 @@ where
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
-        self.value().query_client_state(client_id, height)
+        self.value().query_client_state(request)
     }
 
     fn query_client_connections(

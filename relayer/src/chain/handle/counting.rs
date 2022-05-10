@@ -37,7 +37,8 @@ use tracing::debug;
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
+    QueryClientStatesRequest,
 };
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
@@ -177,11 +178,13 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
-        self.inc_metric(&format!("query_client_state({}, {})", client_id, height));
-        self.inner().query_client_state(client_id, height)
+        self.inc_metric(&format!(
+            "query_client_state({}, {})",
+            request.client_id, request.height
+        ));
+        self.inner().query_client_state(request)
     }
 
     fn query_client_connections(

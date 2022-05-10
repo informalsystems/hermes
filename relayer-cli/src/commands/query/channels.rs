@@ -10,7 +10,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortCh
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
-use ibc_relayer::chain::requests::QueryChannelRequest;
+use ibc_relayer::chain::requests::{QueryChannelRequest, QueryClientStateRequest};
 use ibc_relayer::registry::Registry;
 
 use crate::commands::query::channel_ends::ChannelEnds;
@@ -128,7 +128,13 @@ fn query_channel_ends<Chain: ChainHandle>(
 ) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
     let connection_end = chain.query_connection(&connection_id, chain_height)?;
     let client_id = connection_end.client_id().clone();
-    let client_state = chain.query_client_state(&client_id, chain_height)?;
+    let client_state = {
+        let request = QueryClientStateRequest {
+            client_id,
+            height: chain_height,
+        };
+        chain.query_client_state(request)?
+    };
     let counterparty_chain_id = client_state.chain_id();
 
     if let Some(dst_chain_id) = destination_chain {
@@ -170,8 +176,13 @@ fn query_channel_ends<Chain: ChainHandle>(
     let counterparty_connection_end = counterparty_chain
         .query_connection(&counterparty_connection_id, counterparty_chain_height)?;
 
-    let counterparty_client_state = counterparty_chain
-        .query_client_state(&counterparty_client_id, counterparty_chain_height)?;
+    let counterparty_client_state = {
+        let request = QueryClientStateRequest {
+            client_id: counterparty_client_id,
+            height: counterparty_chain_height,
+        };
+        counterparty_chain.query_client_state(request)?
+    };
 
     let counterparty_channel_end = {
         let request = QueryChannelRequest {

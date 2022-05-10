@@ -37,7 +37,8 @@ use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
+    QueryClientStatesRequest,
 };
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
@@ -158,16 +159,19 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     // TODO: Introduce new query_client_state_latest to separate from this one.
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
         let handle = self.inner();
-        if height.is_zero() {
-            let (result, in_cache) = self
-                .cache
-                .get_or_try_insert_client_state_with(client_id, || {
-                    handle.query_client_state(client_id, height)
-                })?;
+        if request.height.is_zero() {
+            let (result, in_cache) =
+                self.cache
+                    .get_or_try_insert_client_state_with(&request.client_id, || {
+                        let request = QueryClientStateRequest {
+                            client_id: request.client_id.clone(),
+                            height: request.height,
+                        };
+                        handle.query_client_state(request)
+                    })?;
 
             if in_cache == CacheStatus::Hit {
                 telemetry!(query_cache_hit, &self.id(), "query_client_state");
@@ -175,7 +179,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
             Ok(result)
         } else {
-            handle.query_client_state(client_id, height)
+            handle.query_client_state(request)
         }
     }
 

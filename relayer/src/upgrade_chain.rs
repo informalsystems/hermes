@@ -18,6 +18,7 @@ use ibc_proto::cosmos::upgrade::v1beta1::Plan;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
+use crate::chain::requests::QueryClientStateRequest;
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, CosmosSdkChain};
 use crate::config::ChainConfig;
@@ -74,9 +75,15 @@ pub fn build_and_send_ibc_upgrade_proposal(
         .map_err(UpgradeChainError::query)?
         .add(opts.height_offset);
 
-    let client_state = src_chain
-        .query_client_state(&opts.src_client_id, Height::zero())
-        .map_err(UpgradeChainError::query)?;
+    let client_state = {
+        let request = QueryClientStateRequest {
+            client_id: opts.src_client_id.clone(),
+            height: Height::zero(),
+        };
+        src_chain
+            .query_client_state(request)
+            .map_err(UpgradeChainError::query)?
+    };
 
     let client_state = downcast!(client_state => AnyClientState::Tendermint)
         .ok_or_else(UpgradeChainError::tendermint_only)?;

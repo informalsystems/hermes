@@ -46,7 +46,8 @@ use crate::light_client::LightClient;
 
 use self::client::ClientSettings;
 use self::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
+    QueryClientStatesRequest,
 };
 use self::tx::TrackedMsgs;
 
@@ -171,11 +172,8 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
-    fn query_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<AnyClientState, Error>;
+    fn query_client_state(&self, request: QueryClientStateRequest)
+        -> Result<AnyClientState, Error>;
 
     fn query_consensus_states(
         &self,

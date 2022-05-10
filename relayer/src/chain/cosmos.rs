@@ -73,7 +73,8 @@ use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query}
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
 use crate::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
+    QueryClientStatesRequest,
 };
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
@@ -716,14 +717,13 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: ICSHeight,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
         crate::time!("query_client_state");
         crate::telemetry!(query, self.id(), "query_client_state");
 
         let client_state = self
-            .query(ClientStatePath(client_id.clone()), height, false)
+            .query(ClientStatePath(request.client_id), request.height, false)
             .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
 
         Ok(client_state)

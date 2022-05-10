@@ -25,7 +25,7 @@ use ibc_proto::ibc::core::channel::v1::{
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 use super::handle::ChainHandle;
-use super::requests::QueryChannelRequest;
+use super::requests::{QueryChannelRequest, QueryClientStateRequest};
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
@@ -36,9 +36,15 @@ pub fn counterparty_chain_from_connection(
         .map_err(Error::relayer)?;
 
     let client_id = connection_end.client_id();
-    let client_state = src_chain
-        .query_client_state(client_id, Height::zero())
-        .map_err(Error::relayer)?;
+    let client_state = {
+        let request = QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: Height::zero(),
+        };
+        src_chain
+            .query_client_state(request)
+            .map_err(Error::relayer)?
+    };
 
     trace!(
         chain_id=%src_chain.id(), connection_id=%src_connection_id,
@@ -166,9 +172,13 @@ pub fn channel_connection_client(
     }
 
     let client_id = connection_end.client_id();
-    let client_state = chain
-        .query_client_state(client_id, Height::zero())
-        .map_err(Error::relayer)?;
+    let client_state = {
+        let request = QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: Height::zero(),
+        };
+        chain.query_client_state(request).map_err(Error::relayer)?
+    };
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
     let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);

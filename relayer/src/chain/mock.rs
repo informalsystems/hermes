@@ -50,6 +50,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
+use super::requests::QueryClientStateRequest;
 use super::tx::TrackedMsgs;
 use super::HealthCheck;
 
@@ -188,13 +189,12 @@ impl ChainEndpoint for MockChain {
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        _height: Height,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
         // TODO: unclear what are the scenarios where we need to take height into account.
         let client_state = self
             .context
-            .query_client_full_state(client_id)
+            .query_client_full_state(&request.client_id)
             .ok_or_else(Error::empty_response_value)?;
 
         Ok(client_state)

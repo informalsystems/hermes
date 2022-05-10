@@ -44,7 +44,8 @@ use ibc_proto::ibc::core::{
 
 use crate::{
     chain::requests::{
-        QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+        QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
+        QueryClientStatesRequest,
     },
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -195,8 +196,7 @@ pub enum ChainRequest {
     },
 
     QueryClientState {
-        client_id: ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
         reply_to: ReplyTo<AnyClientState>,
     },
 
@@ -395,11 +395,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
-    fn query_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<AnyClientState, Error>;
+    fn query_client_state(&self, request: QueryClientStateRequest)
+        -> Result<AnyClientState, Error>;
 
     fn query_client_connections(
         &self,

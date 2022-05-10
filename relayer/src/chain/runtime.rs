@@ -43,11 +43,6 @@ use ibc_proto::ibc::core::{
 };
 
 use crate::{
-    chain::{
-        client::ClientSettings,
-        requests::{QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest},
-        ChainStatus,
-    },
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -60,9 +55,14 @@ use crate::{
 };
 
 use super::{
+    client::ClientSettings,
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
+    requests::{
+        QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
+        QueryClientStatesRequest,
+    },
     tx::TrackedMsgs,
-    ChainEndpoint, HealthCheck,
+    ChainEndpoint, ChainStatus, HealthCheck,
 };
 
 pub struct Threads {
@@ -318,8 +318,8 @@ where
                             self.query_client_connections(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
-                            self.query_client_state(client_id, height, reply_to)?
+                        Ok(ChainRequest::QueryClientState { request, reply_to }) => {
+                            self.query_client_state(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConsensusStates { request, reply_to }) => {
@@ -615,13 +615,12 @@ where
 
     fn query_client_state(
         &self,
-        client_id: ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
         let client_state = self
             .chain
-            .query_client_state(&client_id, height)
+            .query_client_state(request)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(client_state).map_err(Error::send)
