@@ -41,6 +41,9 @@ CREATE TABLE tx_results (
   UNIQUE (block_id, index)
 );
 
+-- Index the foreign key
+CREATE INDEX idx_tx_results_block_id ON tx_results(block_id);
+
 -- Index tx results by hash
 CREATE INDEX idx_tx_results_hash ON tx_results(tx_hash);
 
@@ -58,6 +61,10 @@ CREATE TABLE events (
   type VARCHAR NOT NULL
 );
 
+-- Index the foreign keys
+CREATE INDEX idx_events_block_id ON events(block_id);
+CREATE INDEX idx_events_tx_id ON events(tx_id);
+
 -- The attributes table records event attributes.
 CREATE TABLE attributes (
    event_id      BIGINT NOT NULL REFERENCES events(rowid),
@@ -67,6 +74,13 @@ CREATE TABLE attributes (
 
    UNIQUE (event_id, key)
 );
+
+-- Index the foreign key
+CREATE INDEX idx_attributes_event_id ON attributes(event_id);
+
+-- Index columns used together in queries
+CREATE INDEX idx_attributes_key_value ON attributes(key, value);
+CREATE INDEX idx_attributes_composite_key_value ON attributes(composite_key, value);
 
 -- A joined view of events and their attributes. Events that do not have any
 -- attributes are represented as a single row with empty key and value fields.
@@ -89,13 +103,13 @@ CREATE VIEW tx_events AS
 
 -- A joined view of all IBC packet transaction events.
 CREATE VIEW ibc_packet_src_events AS SELECT * FROM (
- SELECT tx_id, type, VALUE AS packet_src_port FROM event_attributes WHERE key = 'packet_src_port'
+ SELECT tx_id, type, value AS packet_src_port FROM event_attributes WHERE key = 'packet_src_port'
 ) src_port
 NATURAL JOIN (
- SELECT tx_id, VALUE AS packet_src_channel FROM event_attributes WHERE key = 'packet_src_channel'
+ SELECT tx_id, value AS packet_src_channel FROM event_attributes WHERE key = 'packet_src_channel'
 ) src_channel
 NATURAL JOIN (
- SELECT tx_id, VALUE AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
+ SELECT tx_id, value AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
 ) seq
 ORDER BY seq.packet_sequence, src_port.tx_id, src_port.type, src_port.packet_src_port, src_channel.packet_src_channel;
 

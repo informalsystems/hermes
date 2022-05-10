@@ -898,7 +898,7 @@ impl ChainEndpoint for CosmosSdkChain {
             height: ICSHeight,
         ) -> Result<ConnectionEnd, Error> {
             use ibc_proto::ibc::core::connection::v1 as connection;
-            use tonic::{metadata::MetadataValue, IntoRequest};
+            use tonic::IntoRequest;
 
             let mut client =
                 connection::query_client::QueryClient::connect(chain.grpc_addr.clone())
@@ -910,8 +910,8 @@ impl ChainEndpoint for CosmosSdkChain {
             }
             .into_request();
 
-            let height_param = MetadataValue::from_str(&height.revision_height.to_string())
-                .map_err(Error::invalid_metadata)?;
+            let height_param =
+                str::parse(&height.revision_height.to_string()).map_err(Error::invalid_metadata)?;
 
             request
                 .metadata_mut()

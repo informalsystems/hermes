@@ -3,7 +3,7 @@
 /// signed and with which modes.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MultiSignature {
-    #[prost(bytes = "vec", repeated, tag = "1")]
+    #[prost(bytes="vec", repeated, tag="1")]
     pub signatures: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 /// CompactBitArray is an implementation of a space efficient bit array.
@@ -12,8 +12,8 @@ pub struct MultiSignature {
 /// This is not thread safe, and is not intended for concurrent usage.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactBitArray {
-    #[prost(uint32, tag = "1")]
+    #[prost(uint32, tag="1")]
     pub extra_bits_stored: u32,
-    #[prost(bytes = "vec", tag = "2")]
+    #[prost(bytes="vec", tag="2")]
     pub elems: ::prost::alloc::vec::Vec<u8>,
 }
