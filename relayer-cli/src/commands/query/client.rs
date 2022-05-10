@@ -2,7 +2,9 @@ use alloc::sync::Arc;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::requests::QueryClientStateRequest;
+use ibc_relayer::chain::requests::{
+    PageRequest, QueryClientStateRequest, QueryConsensusStatesRequest,
+};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
@@ -13,7 +15,6 @@ use ibc::core::ics24_host::identifier::ClientId;
 use ibc::events::WithBlockDataType;
 use ibc::query::QueryTxRequest;
 use ibc::Height;
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_relayer::chain::ChainEndpoint;
 use ibc_relayer::chain::CosmosSdkChain;
@@ -145,8 +146,8 @@ impl Runnable for QueryClientConsensusCmd {
             }
             None => {
                 let res = chain.query_consensus_states(QueryConsensusStatesRequest {
-                    client_id: self.client_id.to_string(),
-                    pagination: ibc_proto::cosmos::base::query::pagination::all(),
+                    client_id: self.client_id.clone(),
+                    pagination: Some(PageRequest::all()),
                 });
 
                 match res {

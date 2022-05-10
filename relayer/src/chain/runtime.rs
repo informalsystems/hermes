@@ -37,7 +37,6 @@ use ibc_proto::ibc::core::{
         QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
         QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
-    client::v1::QueryConsensusStatesRequest,
     commitment::v1::MerkleProof,
     connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
@@ -59,7 +58,7 @@ use super::{
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     requests::{
         QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
-        QueryClientStatesRequest,
+        QueryClientStatesRequest, QueryConsensusStatesRequest,
     },
     tx::TrackedMsgs,
     ChainEndpoint, ChainStatus, HealthCheck,

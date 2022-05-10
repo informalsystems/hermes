@@ -29,7 +29,6 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -47,7 +46,7 @@ use crate::light_client::LightClient;
 use self::client::ClientSettings;
 use self::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
-    QueryClientStatesRequest,
+    QueryClientStatesRequest, QueryConsensusStatesRequest,
 };
 use self::tx::TrackedMsgs;
 

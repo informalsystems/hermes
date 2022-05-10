@@ -37,16 +37,11 @@ use ibc_proto::ibc::core::{
         QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
         QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
-    client::v1::QueryConsensusStatesRequest,
     commitment::v1::MerkleProof,
     connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
 
 use crate::{
-    chain::requests::{
-        QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
-        QueryClientStatesRequest,
-    },
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -54,8 +49,14 @@ use crate::{
     keyring::KeyEntry,
 };
 
-use super::client::ClientSettings;
 use super::tx::TrackedMsgs;
+use super::{
+    client::ClientSettings,
+    requests::{
+        QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
+        QueryClientStatesRequest, QueryConsensusStatesRequest,
+    },
+};
 use super::{ChainStatus, HealthCheck};
 
 mod base;

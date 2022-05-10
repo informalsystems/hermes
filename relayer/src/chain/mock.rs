@@ -32,7 +32,6 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -50,7 +49,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
-use super::requests::QueryClientStateRequest;
+use super::requests::{QueryClientStateRequest, QueryConsensusStatesRequest};
 use super::tx::TrackedMsgs;
 use super::HealthCheck;
 
@@ -421,9 +420,7 @@ impl ChainEndpoint for MockChain {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        Ok(self
-            .context
-            .consensus_states(&request.client_id.parse().unwrap()))
+        Ok(self.context.consensus_states(&request.client_id))
     }
 
     fn query_consensus_state(

@@ -34,11 +34,10 @@ use ibc::query::QueryTxRequest;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::QueryClientStateRequest;
+use crate::chain::requests::{PageRequest, QueryClientStateRequest, QueryConsensusStatesRequest};
 use crate::chain::tx::TrackedMsgs;
 use crate::error::Error as RelayerError;
 
@@ -1079,8 +1078,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let mut consensus_states = self
             .dst_chain
             .query_consensus_states(QueryConsensusStatesRequest {
-                client_id: self.id.to_string(),
-                pagination: ibc_proto::cosmos::base::query::pagination::all(),
+                client_id: self.id.clone(),
+                pagination: Some(PageRequest::all()),
             })
             .map_err(|e| {
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
@@ -1668,7 +1667,7 @@ mod test {
 
         let a_client_state = {
             let request = QueryClientStateRequest {
-                client_id: a_client.clone(),
+                client_id: a_client,
                 height: Height::default(),
             };
             a_chain.query_client_state(request)

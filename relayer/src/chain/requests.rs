@@ -2,7 +2,10 @@ use ibc::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use ibc::Height;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
 use ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest as RawQueryChannelClientStateRequest;
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest as RawQueryClientStatesRequest;
+use ibc_proto::ibc::core::client::v1::{
+    QueryClientStatesRequest as RawQueryClientStatesRequest,
+    QueryConsensusStatesRequest as RawQueryConsensusStatesRequest,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -57,6 +60,21 @@ pub struct QueryClientStatesRequest {
 impl From<QueryClientStatesRequest> for RawQueryClientStatesRequest {
     fn from(request: QueryClientStatesRequest) -> Self {
         RawQueryClientStatesRequest {
+            pagination: request.pagination.map(|pagination| pagination.into()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryConsensusStatesRequest {
+    pub client_id: ClientId,
+    pub pagination: Option<PageRequest>,
+}
+
+impl From<QueryConsensusStatesRequest> for RawQueryConsensusStatesRequest {
+    fn from(request: QueryConsensusStatesRequest) -> Self {
+        RawQueryConsensusStatesRequest {
+            client_id: request.client_id.to_string(),
             pagination: request.pagination.map(|pagination| pagination.into()),
         }
     }

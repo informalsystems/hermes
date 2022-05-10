@@ -49,7 +49,6 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
@@ -57,7 +56,7 @@ use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
-    QueryClientStatesRequest,
+    QueryClientStatesRequest, QueryConsensusStatesRequest,
 };
 use ibc_relayer::chain::tx::TrackedMsgs;
 use ibc_relayer::chain::{ChainStatus, HealthCheck};

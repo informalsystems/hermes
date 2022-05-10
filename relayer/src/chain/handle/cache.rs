@@ -27,7 +27,6 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
@@ -38,7 +37,7 @@ use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStateRequest,
-    QueryClientStatesRequest,
+    QueryClientStatesRequest, QueryConsensusStatesRequest,
 };
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
