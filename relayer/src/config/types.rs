@@ -29,7 +29,7 @@ pub mod max_msg_num {
 
     impl MaxMsgNum {
         const DEFAULT: usize = 30;
-        const MIN_BOUND: usize = 2;
+        const MIN_BOUND: usize = 1;
         const MAX_BOUND: usize = 100;
 
         pub fn new(value: usize) -> Result<Self, Error> {
@@ -269,7 +269,7 @@ mod tests {
             max_msg_num: MaxMsgNum,
         }
 
-        let err = toml::from_str::<DummyConfig>("max_msg_num = 1")
+        let err = toml::from_str::<DummyConfig>("max_msg_num = 0")
             .unwrap_err()
             .to_string();
 
