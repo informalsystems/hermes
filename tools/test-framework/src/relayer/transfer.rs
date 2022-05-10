@@ -3,18 +3,19 @@
    `hermes tx raw ft-transfer`.
 */
 
+use core::ops::Add;
 use core::time::Duration;
 use ibc::events::IbcEvent;
 use ibc::signer::Signer;
-use ibc_relayer::chain::cosmos::query::status::query_status;
+use ibc::timestamp::Timestamp;
+use ibc::Height;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::transfer::{
     build_and_send_transfer_messages, build_transfer_message, Amount, TransferOptions,
-    TransferTimeout,
 };
 
-use crate::error::Error;
+use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
 use crate::relayer::tx::simple_send_tx;
 use crate::types::binary::channel::ConnectedChannel;
@@ -82,14 +83,16 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     denom: &MonoTagged<SrcChain, &Denom>,
     amount: u64,
 ) -> Result<(), Error> {
-    let status = query_status(
-        &tx_config.value().chain_id,
-        &tx_config.value().rpc_client,
-        &tx_config.value().rpc_address,
-    )
-    .await?;
-
-    let timeout = TransferTimeout::new(500, Duration::from_secs(60), &status)?;
+    // During test, all chains should have the same local clock.
+    // We are also not really interested in setting a timeout for most tests,
+    // so we just put an approximate 10 minute timeout as the timeout
+    // field is compulsary.
+    //
+    // If tests require explicit timeout, they should explicitly construct the
+    // transfer message and pass it to send_tx.
+    let timeout_timestamp = Timestamp::now()
+        .add(Duration::from_secs(600))
+        .map_err(handle_generic_error)?;
 
     let message = build_transfer_message(
         (*port_id.value()).clone(),
@@ -98,8 +101,8 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
         denom.value().to_string(),
         Signer::new(sender.value().address.0.clone()),
         Signer::new(recipient.value().0.clone()),
-        timeout.timeout_height,
-        timeout.timeout_timestamp,
+        Height::zero(),
+        timeout_timestamp,
     );
 
     simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
