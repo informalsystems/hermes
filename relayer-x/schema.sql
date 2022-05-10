@@ -103,24 +103,24 @@ CREATE VIEW tx_events AS
 
 -- A joined view of all IBC packet transaction events.
 CREATE VIEW ibc_packet_src_events AS SELECT * FROM (
- SELECT tx_id, type, VALUE AS packet_src_port FROM event_attributes WHERE key = 'packet_src_port'
+ SELECT tx_id, type, value AS packet_src_port FROM event_attributes WHERE key = 'packet_src_port'
 ) src_port
 NATURAL JOIN (
- SELECT tx_id, VALUE AS packet_src_channel FROM event_attributes WHERE key = 'packet_src_channel'
+ SELECT tx_id, value AS packet_src_channel FROM event_attributes WHERE key = 'packet_src_channel'
 ) src_channel
 NATURAL JOIN (
- SELECT tx_id, VALUE AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
+ SELECT tx_id, value AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
 ) seq
 GROUP BY src_port.type, src_port.tx_id, src_port.packet_src_port, src_channel.packet_src_channel, seq.packet_sequence;
 
 CREATE VIEW ibc_packet_dst_events AS SELECT * FROM (
- SELECT tx_id, type, VALUE AS packet_dst_port FROM event_attributes WHERE key = 'packet_dst_port'
+ SELECT tx_id, type, value AS packet_dst_port FROM event_attributes WHERE key = 'packet_dst_port'
 ) dst_port
 NATURAL JOIN (
- SELECT tx_id, VALUE AS packet_dst_channel FROM event_attributes WHERE key = 'packet_dst_channel'
+ SELECT tx_id, value AS packet_dst_channel FROM event_attributes WHERE key = 'packet_dst_channel'
 ) dst_channel
 NATURAL JOIN (
- SELECT tx_id, VALUE AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
+ SELECT tx_id, value AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
 ) seq
 GROUP BY dst_port.type, dst_port.tx_id, dst_port.packet_dst_port, dst_channel.packet_dst_channel, seq.packet_sequence;
 
