@@ -31,13 +31,7 @@ use ibc::{
     Height,
 };
 
-use ibc_proto::ibc::core::{
-    channel::v1::{
-        PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    },
-    commitment::v1::MerkleProof,
-};
+use ibc_proto::ibc::core::{channel::v1::PacketState, commitment::v1::MerkleProof};
 
 use crate::{
     config::ChainConfig,
@@ -53,7 +47,8 @@ use super::{
         QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
         QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
         QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
-        QueryPacketCommitmentsRequest,
+        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
     tx::TrackedMsgs,
 };

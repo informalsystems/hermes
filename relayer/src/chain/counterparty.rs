@@ -5,6 +5,7 @@ use tracing::{error, trace};
 
 use super::requests::{
     PageRequest, QueryChannelRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryPacketAcknowledgementsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use super::{
     handle::ChainHandle,
@@ -24,9 +25,6 @@ use ibc::{
         },
     },
     Height,
-};
-use ibc_proto::ibc::core::channel::v1::{
-    QueryPacketAcknowledgementsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
 pub fn counterparty_chain_from_connection(
@@ -354,14 +352,12 @@ pub fn unreceived_packets_sequences(
         return Ok(vec![]);
     }
 
-    let request = QueryUnreceivedPacketsRequest {
-        port_id: port_id.to_string(),
-        channel_id: channel_id.to_string(),
-        packet_commitment_sequences: commitments_on_counterparty,
-    };
-
     chain
-        .query_unreceived_packets(request)
+        .query_unreceived_packets(QueryUnreceivedPacketsRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            packet_commitment_sequences: commitments_on_counterparty,
+        })
         .map_err(Error::relayer)
 }
 
@@ -376,14 +372,13 @@ pub fn packet_acknowledgements(
     let commit_set = commit_sequences.iter().cloned().collect::<HashSet<_>>();
 
     // Get the packet acknowledgments on counterparty/source chain
-    let acks_request = QueryPacketAcknowledgementsRequest {
-        port_id: port_id.to_string(),
-        channel_id: channel_id.to_string(),
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        packet_commitment_sequences: commit_sequences,
-    };
     let (acks, response_height) = chain
-        .query_packet_acknowledgements(acks_request)
+        .query_packet_acknowledgements(QueryPacketAcknowledgementsRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            pagination: Some(PageRequest::all()),
+            packet_commitment_sequences: commit_sequences,
+        })
         .map_err(Error::relayer)?;
 
     let mut acked_sequences: Vec<u64> = acks.into_iter().map(|v| v.sequence).collect();
@@ -406,14 +401,12 @@ pub fn unreceived_acknowledgements_sequences(
         return Ok(vec![]);
     }
 
-    let request = QueryUnreceivedAcksRequest {
-        port_id: port_id.to_string(),
-        channel_id: channel_id.to_string(),
-        packet_ack_sequences: acks_on_counterparty,
-    };
-
     chain
-        .query_unreceived_acknowledgement(request)
+        .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            packet_ack_sequences: acks_on_counterparty,
+        })
         .map_err(Error::relayer)
 }
 

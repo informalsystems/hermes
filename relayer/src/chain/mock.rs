@@ -27,10 +27,7 @@ use ibc::relayer::ics18_relayer::context::Ics18Context;
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
+use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::chain::client::ClientSettings;
@@ -48,7 +45,8 @@ use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 use super::requests::{
     QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
     QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
-    QueryPacketCommitmentsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use super::tx::TrackedMsgs;
 use super::HealthCheck;

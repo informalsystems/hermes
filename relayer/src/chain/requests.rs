@@ -5,7 +5,11 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryChannelClientStateRequest as RawQueryChannelClientStateRequest,
     QueryChannelsRequest as RawQueryChannelsRequest,
     QueryConnectionChannelsRequest as RawQueryConnectionChannelsRequest,
+    QueryNextSequenceReceiveRequest as RawQueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest as RawQueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest as RawQueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest as RawQueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest as RawQueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::{
     QueryClientStatesRequest as RawQueryClientStatesRequest,
@@ -59,6 +63,12 @@ impl From<PageRequest> for RawPageRequest {
             reverse: request.reverse,
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryClientStateRequest {
+    pub client_id: ClientId,
+    pub height: Height,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -183,7 +193,69 @@ impl From<QueryPacketCommitmentsRequest> for RawQueryPacketCommitmentsRequest {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct QueryClientStateRequest {
-    pub client_id: ClientId,
-    pub height: Height,
+pub struct QueryUnreceivedPacketsRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub packet_commitment_sequences: Vec<u64>,
+}
+
+impl From<QueryUnreceivedPacketsRequest> for RawQueryUnreceivedPacketsRequest {
+    fn from(request: QueryUnreceivedPacketsRequest) -> Self {
+        RawQueryUnreceivedPacketsRequest {
+            port_id: request.port_id.to_string(),
+            channel_id: request.channel_id.to_string(),
+            packet_commitment_sequences: request.packet_commitment_sequences,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryPacketAcknowledgementsRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub pagination: Option<PageRequest>,
+    pub packet_commitment_sequences: Vec<u64>,
+}
+
+impl From<QueryPacketAcknowledgementsRequest> for RawQueryPacketAcknowledgementsRequest {
+    fn from(request: QueryPacketAcknowledgementsRequest) -> Self {
+        RawQueryPacketAcknowledgementsRequest {
+            port_id: request.port_id.to_string(),
+            channel_id: request.channel_id.to_string(),
+            pagination: request.pagination.map(|pagination| pagination.into()),
+            packet_commitment_sequences: request.packet_commitment_sequences,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryUnreceivedAcksRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub packet_ack_sequences: Vec<u64>,
+}
+
+impl From<QueryUnreceivedAcksRequest> for RawQueryUnreceivedAcksRequest {
+    fn from(request: QueryUnreceivedAcksRequest) -> Self {
+        RawQueryUnreceivedAcksRequest {
+            port_id: request.port_id.to_string(),
+            channel_id: request.channel_id.to_string(),
+            packet_ack_sequences: request.packet_ack_sequences,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryNextSequenceReceiveRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+}
+
+impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveRequest {
+    fn from(request: QueryNextSequenceReceiveRequest) -> Self {
+        RawQueryNextSequenceReceiveRequest {
+            port_id: request.port_id.to_string(),
+            channel_id: request.channel_id.to_string(),
+        }
+    }
 }

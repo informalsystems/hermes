@@ -44,10 +44,7 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
+use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
@@ -55,7 +52,8 @@ use ibc_relayer::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
-    QueryPacketCommitmentsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::chain::tx::TrackedMsgs;
 use ibc_relayer::chain::{ChainStatus, HealthCheck};

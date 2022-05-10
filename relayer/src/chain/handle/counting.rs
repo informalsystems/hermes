@@ -20,10 +20,7 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
+use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use serde::{Serialize, Serializer};
 use std::collections::HashMap;
@@ -36,7 +33,8 @@ use crate::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
-    QueryPacketCommitmentsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};

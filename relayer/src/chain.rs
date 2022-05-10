@@ -24,10 +24,7 @@ use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
+use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
@@ -44,7 +41,8 @@ use self::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
-    QueryPacketCommitmentsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use self::tx::TrackedMsgs;
 

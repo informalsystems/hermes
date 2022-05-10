@@ -49,10 +49,7 @@ use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
+use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::chain::client::ClientSettings;
@@ -81,7 +78,8 @@ use super::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionsRequest, QueryConsensusStatesRequest,
-    QueryPacketCommitmentsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
 pub mod batch;
@@ -1100,7 +1098,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let mut response = self
             .block_on(client.unreceived_packets(request))
@@ -1127,7 +1125,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.packet_acknowledgements(request))
@@ -1160,7 +1158,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let mut response = self
             .block_on(client.unreceived_acks(request))
@@ -1186,7 +1184,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.next_sequence_receive(request))
