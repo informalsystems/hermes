@@ -53,7 +53,7 @@ async fn tx_result_by_hash(pool: &PgPool, hash: &str) -> Result<TxResult, Report
     Ok(tx_result)
 }
 
-fn proto_to_deliver_tx(
+pub fn proto_to_deliver_tx(
     deliver_tx: tendermint_proto::abci::ResponseDeliverTx,
 ) -> Result<abci::DeliverTx, ReportError> {
     let events = deliver_tx

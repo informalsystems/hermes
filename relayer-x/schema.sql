@@ -86,3 +86,31 @@ CREATE VIEW tx_events AS
   FROM blocks JOIN tx_results ON (blocks.rowid = tx_results.block_id)
   JOIN event_attributes ON (tx_results.rowid = event_attributes.tx_id)
   WHERE event_attributes.tx_id IS NOT NULL;
+
+-- A joined view of all IBC packet transaction events.
+CREATE VIEW ibc_packet_src_events AS SELECT * FROM (
+ SELECT tx_id, type, VALUE AS packet_src_port FROM event_attributes WHERE key = 'packet_src_port'
+) src_port
+NATURAL JOIN (
+ SELECT tx_id, VALUE AS packet_src_channel FROM event_attributes WHERE key = 'packet_src_channel'
+) src_channel
+NATURAL JOIN (
+ SELECT tx_id, VALUE AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
+) seq
+GROUP BY src_port.type, src_port.tx_id, src_port.packet_src_port, src_channel.packet_src_channel, seq.packet_sequence;
+
+CREATE VIEW ibc_packet_dst_events AS SELECT * FROM (
+ SELECT tx_id, type, VALUE AS packet_dst_port FROM event_attributes WHERE key = 'packet_dst_port'
+) dst_port
+NATURAL JOIN (
+ SELECT tx_id, VALUE AS packet_dst_channel FROM event_attributes WHERE key = 'packet_dst_channel'
+) dst_channel
+NATURAL JOIN (
+ SELECT tx_id, VALUE AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
+) seq
+GROUP BY dst_port.type, dst_port.tx_id, dst_port.packet_dst_port, dst_channel.packet_dst_channel, seq.packet_sequence;
+
+CREATE VIEW ibc_packet_events AS SELECT * FROM ibc_packet_src_events NATURAL JOIN ibc_packet_dst_events;
+
+CREATE VIEW ibc_tx_packet_events AS SELECT * FROM ibc_packet_events JOIN (
+    SELECT rowid, tx_hash, tx_result FROM tx_results) tx_result ON (ibc_packet_events.tx_id = tx_result.rowid);
