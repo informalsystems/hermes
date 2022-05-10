@@ -27,7 +27,7 @@ use ibc::{
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
     events::{IbcEvent, PrettyEvents, WithBlockDataType},
-    query::{QueryBlockRequest, QueryTxRequest},
+    query::QueryTxRequest,
     signer::Signer,
     timestamp::Timestamp,
     tx_msg::Msg,
@@ -1020,14 +1020,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .collect();
         query.sequences.retain(|seq| !recvd_sequences.contains(seq));
 
-        let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
-            self.src_chain()
-                .query_blocks(QueryBlockRequest::Packet(query))
-                .map_err(LinkError::relayer)?
-        } else {
-            Default::default()
-        };
+        // TODO - implement psql block query
+        // let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
+        //     self.src_chain()
+        //         .query_blocks(QueryBlockRequest::Packet(query))
+        //         .map_err(LinkError::relayer)?
+        // } else {
+        //     Default::default()
+        // };
 
+        let (start_block_events, end_block_events) = (vec![], vec![]);
         trace!("start_block_events {:?}", start_block_events);
         trace!("tx_events {:?}", tx_events);
         trace!("end_block_events {:?}", end_block_events);
