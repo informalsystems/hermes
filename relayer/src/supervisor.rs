@@ -297,13 +297,13 @@ fn relay_on_object<Chain: ChainHandle>(
     // First, apply the channel filter on packets and channel workers
     match object {
         Object::Packet(p) => {
-            if !is_channel_allowed(config, chain_id, p.src_port_id(), p.src_channel_id()) {
+            if !is_channel_allowed(config, chain_id, &p.src_port_id, &p.src_channel_id) {
                 // Forbid relaying packets on that channel
                 return false;
             }
         }
         Object::Channel(c) => {
-            if !is_channel_allowed(config, chain_id, c.src_port_id(), c.src_channel_id()) {
+            if !is_channel_allowed(config, chain_id, &c.src_port_id, &c.src_channel_id) {
                 // Forbid completing handshake for that channel
                 return false;
             }
@@ -316,7 +316,8 @@ fn relay_on_object<Chain: ChainHandle>(
         Object::Client(client) => client_state_filter.control_client_object(registry, client),
         Object::Connection(conn) => client_state_filter.control_conn_object(registry, conn),
         Object::Channel(chan) => client_state_filter.control_chan_object(registry, chan),
-        Object::Packet(u) => client_state_filter.control_packet_object(registry, u),
+        Object::Packet(packet) => client_state_filter.control_packet_object(registry, packet),
+        Object::Wallet(_wallet) => Ok(Permission::Allow),
     };
 
     match client_filter_outcome {

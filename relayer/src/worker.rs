@@ -26,13 +26,11 @@ pub use cmd::WorkerCmd;
 mod map;
 pub use map::WorkerMap;
 
-pub mod client;
-
-pub mod connection;
-
 pub mod channel;
-
+pub mod client;
+pub mod connection;
 pub mod packet;
+pub mod wallet;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -145,6 +143,15 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     (None, None)
                 }
             }
+        }
+
+        Object::Wallet(wallet) => {
+            assert_eq!(wallet.chain_id, chains.a.id());
+
+            let wallet_task = wallet::spawn_wallet_worker(chains.a);
+            task_handles.push(wallet_task);
+
+            (None, None)
         }
     };
 
