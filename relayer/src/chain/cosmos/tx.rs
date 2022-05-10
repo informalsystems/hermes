@@ -8,7 +8,6 @@ use crate::chain::cosmos::estimate::estimate_tx_fees;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::config::types::Memo;
-use crate::config::AddressType;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
@@ -16,50 +15,23 @@ pub async fn estimate_fee_and_send_tx(
     config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
-    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Response, Error> {
-    let fee = estimate_tx_fees(
-        config,
-        key_entry,
-        account,
-        address_type,
-        tx_memo,
-        messages.clone(),
-    )
-    .await?;
+    let fee = estimate_tx_fees(config, key_entry, account, tx_memo, messages.clone()).await?;
 
-    send_tx_with_fee(
-        config,
-        key_entry,
-        account,
-        address_type,
-        tx_memo,
-        messages,
-        &fee,
-    )
-    .await
+    send_tx_with_fee(config, key_entry, account, tx_memo, messages, &fee).await
 }
 
 async fn send_tx_with_fee(
     config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
-    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
     fee: &Fee,
 ) -> Result<Response, Error> {
-    let tx_bytes = sign_and_encode_tx(
-        config,
-        key_entry,
-        account,
-        address_type,
-        tx_memo,
-        messages,
-        fee,
-    )?;
+    let tx_bytes = sign_and_encode_tx(config, key_entry, account, tx_memo, messages, fee)?;
 
     let response = broadcast_tx_sync(&config.rpc_client, &config.rpc_address, tx_bytes).await?;
 

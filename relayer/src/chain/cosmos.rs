@@ -409,7 +409,6 @@ impl CosmosSdkChain {
             self.config.max_tx_size,
             &key_entry,
             account,
-            &self.config.address_type,
             &self.config.memo_prefix,
             proto_msgs,
         )
@@ -438,7 +437,6 @@ impl CosmosSdkChain {
             self.config.max_tx_size,
             &key_entry,
             account,
-            &self.config.address_type,
             &self.config.memo_prefix,
             proto_msgs,
         )

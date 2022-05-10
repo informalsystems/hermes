@@ -12,7 +12,6 @@ use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::config::types::Memo;
-use crate::config::AddressType;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
@@ -49,7 +48,6 @@ pub async fn send_tx_with_account_sequence_retry(
     config: &TxConfig,
     key_entry: &KeyEntry,
     account: &mut Account,
-    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
     retry_counter: u64,
@@ -62,7 +60,6 @@ pub async fn send_tx_with_account_sequence_retry(
         config,
         key_entry,
         account,
-        address_type,
         tx_memo,
         messages,
         retry_counter,
@@ -77,7 +74,6 @@ fn do_send_tx_with_account_sequence_retry<'a>(
     config: &'a TxConfig,
     key_entry: &'a KeyEntry,
     account: &'a mut Account,
-    address_type: &'a AddressType,
     tx_memo: &'a Memo,
     messages: Vec<Any>,
     retry_counter: u64,
@@ -89,15 +85,8 @@ fn do_send_tx_with_account_sequence_retry<'a>(
             account.sequence,
         );
 
-        let tx_result = estimate_fee_and_send_tx(
-            config,
-            key_entry,
-            account,
-            address_type,
-            tx_memo,
-            messages.clone(),
-        )
-        .await;
+        let tx_result =
+            estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages.clone()).await;
 
         match tx_result {
             // Gas estimation failed with acct. s.n. mismatch at estimate gas step.
@@ -132,7 +121,6 @@ fn do_send_tx_with_account_sequence_retry<'a>(
                         config,
                         key_entry,
                         account,
-                        address_type,
                         tx_memo,
                         messages,
                         retry_counter + 1,

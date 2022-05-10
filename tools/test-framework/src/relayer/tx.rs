@@ -59,6 +59,8 @@ pub fn new_tx_config_for_test(
 
     let rpc_timeout = Duration::from_secs(10);
 
+    let address_type = Default::default();
+
     Ok(TxConfig {
         chain_id,
         gas_config,
@@ -66,6 +68,7 @@ pub fn new_tx_config_for_test(
         rpc_address,
         grpc_address,
         rpc_timeout,
+        address_type,
     })
 }
 
@@ -92,15 +95,9 @@ pub async fn simple_send_tx(
 
     let message_count = messages.len();
 
-    let response = estimate_fee_and_send_tx(
-        config,
-        key_entry,
-        &account,
-        &Default::default(),
-        &Default::default(),
-        messages,
-    )
-    .await?;
+    let response =
+        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
+            .await?;
 
     let events_per_tx = vec![IbcEvent::default(); message_count];
 

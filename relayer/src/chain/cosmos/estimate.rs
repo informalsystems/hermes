@@ -11,7 +11,6 @@ use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::Memo;
-use crate::config::AddressType;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
@@ -19,7 +18,6 @@ pub async fn estimate_tx_fees(
     config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
-    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Fee, Error> {
@@ -34,7 +32,6 @@ pub async fn estimate_tx_fees(
         config,
         key_entry,
         account,
-        address_type,
         tx_memo,
         messages,
         &gas_config.max_fee,

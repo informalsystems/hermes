@@ -5,7 +5,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 use tendermint_rpc::{HttpClient, Url};
 
 use crate::chain::cosmos::types::gas::GasConfig;
-use crate::config::ChainConfig;
+use crate::config::{AddressType, ChainConfig};
 use crate::error::Error;
 
 #[derive(Debug, Clone)]
@@ -16,6 +16,7 @@ pub struct TxConfig {
     pub rpc_address: Url,
     pub grpc_address: Uri,
     pub rpc_timeout: Duration,
+    pub address_type: AddressType,
 }
 
 impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
@@ -37,6 +38,7 @@ impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
             rpc_address: config.rpc_addr.clone(),
             grpc_address,
             rpc_timeout: config.rpc_timeout,
+            address_type: config.address_type.clone(),
         })
     }
 }

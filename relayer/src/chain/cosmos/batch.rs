@@ -9,7 +9,6 @@ use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::tx::TxSyncResult;
 use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use crate::config::AddressType;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
@@ -19,7 +18,6 @@ pub async fn send_batched_messages_and_wait_commit(
     max_tx_size: MaxTxSize,
     key_entry: &KeyEntry,
     account: &mut Account,
-    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<IbcEvent>, Error> {
@@ -33,7 +31,6 @@ pub async fn send_batched_messages_and_wait_commit(
         max_tx_size,
         key_entry,
         account,
-        address_type,
         tx_memo,
         messages,
     )
@@ -62,7 +59,6 @@ pub async fn send_batched_messages_and_wait_check_tx(
     max_tx_size: MaxTxSize,
     key_entry: &KeyEntry,
     account: &mut Account,
-    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<Response>, Error> {
@@ -75,16 +71,9 @@ pub async fn send_batched_messages_and_wait_check_tx(
     let mut responses = Vec::new();
 
     for batch in batches {
-        let response = send_tx_with_account_sequence_retry(
-            config,
-            key_entry,
-            account,
-            address_type,
-            tx_memo,
-            batch,
-            0,
-        )
-        .await?;
+        let response =
+            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch, 0)
+                .await?;
 
         responses.push(response);
     }
@@ -98,7 +87,6 @@ async fn send_messages_as_batches(
     max_tx_size: MaxTxSize,
     key_entry: &KeyEntry,
     account: &mut Account,
-    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<TxSyncResult>, Error> {
@@ -113,16 +101,9 @@ async fn send_messages_as_batches(
     for batch in batches {
         let events_per_tx = vec![IbcEvent::default(); batch.len()];
 
-        let response = send_tx_with_account_sequence_retry(
-            config,
-            key_entry,
-            account,
-            address_type,
-            tx_memo,
-            batch,
-            0,
-        )
-        .await?;
+        let response =
+            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch, 0)
+                .await?;
 
         let tx_sync_result = TxSyncResult {
             response,

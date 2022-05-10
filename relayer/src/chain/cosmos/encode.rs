@@ -18,20 +18,11 @@ pub fn sign_and_encode_tx(
     config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
-    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
     fee: &Fee,
 ) -> Result<Vec<u8>, Error> {
-    let signed_tx = sign_tx(
-        config,
-        key_entry,
-        account,
-        address_type,
-        tx_memo,
-        messages,
-        fee,
-    )?;
+    let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
 
     let tx_raw = TxRaw {
         body_bytes: signed_tx.body_bytes,
@@ -46,14 +37,13 @@ pub fn sign_tx(
     config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
-    address_type: &AddressType,
     tx_memo: &Memo,
     messages: Vec<Any>,
     fee: &Fee,
 ) -> Result<SignedTx, Error> {
     let key_bytes = encode_key_bytes(key_entry)?;
 
-    let signer = encode_signer_info(address_type, account.sequence, key_bytes)?;
+    let signer = encode_signer_info(&config.address_type, account.sequence, key_bytes)?;
 
     let (body, body_bytes) = tx_body_and_bytes(messages, tx_memo)?;
 
@@ -62,7 +52,7 @@ pub fn sign_tx(
     let signed_doc = encode_sign_doc(
         &config.chain_id,
         key_entry,
-        address_type,
+        &config.address_type,
         account.number,
         auth_info_bytes.clone(),
         body_bytes.clone(),
