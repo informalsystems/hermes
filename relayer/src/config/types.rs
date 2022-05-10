@@ -255,6 +255,7 @@ pub mod memo {
 }
 
 #[cfg(test)]
+#[allow(dead_code)] // the fields of the structs defined below are never accessed
 mod tests {
     use super::*;
 
