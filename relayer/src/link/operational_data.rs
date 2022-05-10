@@ -17,7 +17,7 @@ use crate::chain::tx::TrackedMsgs;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum OperationalDataTarget {
     Source,
     Destination,
@@ -73,7 +73,7 @@ impl From<Vec<IbcEvent>> for TrackedEvents {
 ///
 /// Comprises the proto-encoded packet message,
 /// alongside the event which generated it.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TransitMessage {
     pub event: IbcEvent,
     pub msg: Any,
@@ -86,7 +86,7 @@ pub struct TransitMessage {
 ///     - `proofs_height`: represents the height for the proofs in all the messages.
 ///       Note: this is the height at which the proofs are queried. A client consensus state at
 ///       `proofs_height + 1` must exist on-chain in order to verify the proofs.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OperationalData {
     pub proofs_height: Height,
     pub batch: Vec<TransitMessage>,
@@ -302,7 +302,7 @@ impl OperationalData {
 
 /// A struct that holds everything that is required to calculate and deal with the connection-delay
 /// feature.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct ConnectionDelay {
     delay: Duration,
     scheduled_time: Instant,

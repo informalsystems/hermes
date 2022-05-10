@@ -8,6 +8,7 @@ use crate::util::lock::LockExt;
 /// mutable reference. We only expose subset of VecDeque methods
 /// that does not return any inner reference, so that the RefCell
 /// can never panic caused by simultaneous borrow and borrow_mut.
+#[derive(Debug)]
 pub struct Queue<T>(Arc<RwLock<VecDeque<T>>>);
 
 impl<T> Queue<T> {

@@ -1376,6 +1376,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn execute_schedule(&self) -> Result<(), LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data()?;
 
+        // info!("Src op data: {:?}", src_ods);
+        // info!("Dst op data: {:?}", dst_ods);
+
         for od in dst_ods {
             let reply =
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
@@ -1606,6 +1609,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn try_fetch_scheduled_operational_data(
         &self,
     ) -> Result<(VecDeque<OperationalData>, VecDeque<OperationalData>), LinkError> {
+        // info!("Src operational data: {:?}", self.src_operational_data);
+        // info!("Dst operational data: {:?}", self.dst_operational_data);
+
         // Extracts elements from a Vec when the predicate returns true.
         // The mutable vector is then updated to the remaining unextracted elements.
         fn partition<T>(
