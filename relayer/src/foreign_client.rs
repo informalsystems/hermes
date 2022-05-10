@@ -10,7 +10,7 @@ use std::time::Instant;
 
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, span, trace, warn};
 
 use flex_error::define_error;
 use ibc::core::ics02_client::client_consensus::{
@@ -1151,6 +1151,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         mut update: Option<UpdateClient>,
     ) -> Result<Option<MisbehaviourEvidence>, ForeignClientError> {
         thread::sleep(Duration::from_millis(100));
+        let span_guard = update.as_ref().map(|ev| ev.consensus_height());
+        let _span = span!(
+            tracing::Level::DEBUG,
+            "detect_misbehaviour",
+            update_height = ?span_guard,
+        )
+        .entered();
 
         // Get the latest client state on destination.
         let client_state = self
@@ -1175,8 +1182,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         };
 
         trace!(
-            "[{}] checking misbehaviour for consensus state heights (first 50 shown here): {}, total: {}",
-            self,
+            "checking misbehaviour for consensus state heights (first 50 shown here): {}, total: {}",
             consensus_state_heights.iter().take(50).join(", "),
             consensus_state_heights.len()
         );
@@ -1226,23 +1232,35 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // Check for misbehaviour according to the specific source chain type.
             // In case of Tendermint client, this will also check the BFT time violation if
             // a header for the event height cannot be retrieved from the witness.
-            //
-            // FIXME: This returns error if the update event contains expired client state.
-            // This can happen even if the latest client state is unexpired, but the
-            // update event is from earlier.
-            let misbehavior = self
+            let misbehavior = match self
                 .src_chain
                 .check_misbehaviour(update_event.clone(), client_state.clone())
-                .map_err(|e| {
-                    ForeignClientError::misbehaviour(
+            {
+                // Misbehavior check passed.
+                Ok(evidence_opt) => evidence_opt,
+
+                // Predictable error occurred which we'll wrap.
+                // This error means we cannot check for misbehavior with the provided `target_height`
+                Err(e) if e.is_trusted_state_outside_trusting_period_error() => {
+                    debug!(target = %target_height,
+                     "exhausted checking trusted consensus states for this client; no evidence found");
+                    // It's safe to stop checking for misbehavior past this `target_height`.
+                    break;
+                }
+
+                // Unknown error occurred in the light client `check_misbehaviour` method.
+                // Propagate.
+                Err(e) => {
+                    return Err(ForeignClientError::misbehaviour(
                         format!(
                             "failed to check misbehaviour for {} at consensus height {}",
                             update_event.client_id(),
                             update_event.consensus_height(),
                         ),
                         e,
-                    )
-                })?;
+                    ))
+                }
+            };
 
             if misbehavior.is_some() {
                 return Ok(misbehavior);
@@ -1251,8 +1269,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // Exit the loop if more than MAX_MISBEHAVIOUR_CHECK_TIME was spent here.
             if start_time.elapsed() > MAX_MISBEHAVIOUR_CHECK_DURATION {
                 trace!(
-                    "[{}] finished misbehaviour verification after {:?}",
-                    self,
+                    "finished misbehaviour verification after {:?}",
                     start_time.elapsed()
                 );
 
@@ -1267,8 +1284,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
 
         trace!(
-            "[{}] finished misbehaviour verification after {:?}",
-            self,
+            "finished misbehaviour verification after {:?}",
             start_time.elapsed()
         );
 

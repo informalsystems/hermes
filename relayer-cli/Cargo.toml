@@ -46,8 +46,6 @@ futures = "0.3.21"
 toml = "0.5.9"
 serde_derive = "1.0.116"
 serde_json = "1"
-prost = { version = "0.9" }
-prost-types = { version ="0.9" }
 hex = "0.4"
 crossbeam-channel = "0.5.4"
 subtle-encoding = "0.5"
@@ -56,26 +54,26 @@ itertools = "0.10.3"
 atty = "0.2.14"
 flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
 signal-hook = "0.3.13"
-dialoguer = "0.10.0"
+dialoguer = "0.10.1"
 console = "0.15.0"
 
 [dependencies.tendermint-proto]
-version = "=0.23.6"
+version = "=0.23.7"
 
 [dependencies.tendermint]
-version = "=0.23.6"
+version = "=0.23.7"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.6"
+version = "=0.23.7"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.6"
+version = "=0.23.7"
 features = ["unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.6"
+version = "=0.23.7"
 
 [dependencies.abscissa_core]
 version = "=0.6.0"
