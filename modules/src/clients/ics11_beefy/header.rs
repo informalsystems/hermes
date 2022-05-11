@@ -440,7 +440,7 @@ pub fn decode_timestamp_extrinsic(header: &ParachainHeader) -> Result<u64, Error
     let trie =
         sp_trie::TrieDB::<sp_trie::LayoutV0<BlakeTwo256>>::new(&db, &extrinsic_root).unwrap();
     // Timestamp extrinsic should be the first inherent and hence the first extrinsic
-    let key = codec::Compact(0u32).encode();
+    let key = 0_u32.to_be_bytes().to_vec();
     let ext_bytes = trie
         .get(&key)
         .map_err(|_| Error::timestamp_extrinsic())?
