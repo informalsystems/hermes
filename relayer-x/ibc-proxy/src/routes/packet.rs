@@ -38,8 +38,8 @@ pub async fn packet_search(
 
 #[derive(Debug, sqlx::FromRow)]
 struct SqlTxResult {
-    hash: String,
-    result: Vec<u8>,
+    tx_hash: String,
+    tx_result: Vec<u8>,
 }
 
 async fn tx_result_by_packet_fields(
@@ -67,8 +67,8 @@ async fn tx_result_by_packet_fields(
         search.packet_sequence
     ))?;
 
-    let tx_result = tendermint_proto::abci::TxResult::decode(result.result.as_slice())
+    let tx_result = tendermint_proto::abci::TxResult::decode(result.tx_result.as_slice())
         .wrap_err("failed to decode tx result")?;
 
-    Ok((tx_result, result.hash))
+    Ok((tx_result, result.tx_hash))
 }
