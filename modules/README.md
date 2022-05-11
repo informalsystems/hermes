@@ -26,7 +26,7 @@ ICS 24 (Host Requirements) gives the [following requirement](https://github.com/
 
 > The host state machine must support a module system, whereby self-contained, potentially mutually distrusted packages of code can safely execute on the same ledger [...].
 
-**This crate currently does not support mutually distruted packages**. That is, modules on the host state machine are assumed to be fully trusted. In practice, this means that every module has either been written by the host state machine developers, or fully vetted by them.
+**This crate currently does not support mutually distrusted packages**. That is, modules on the host state machine are assumed to be fully trusted. In practice, this means that every module has either been written by the host state machine developers, or fully vetted by them.
 
 ### Port system: No object capability system
 ICS 5 (Port Allocation) requires the host system to support either object-capability reference or source authentication for modules.
