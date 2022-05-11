@@ -24,16 +24,6 @@ impl BinaryChannelTest for ExecuteScheduleTest {
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let denom_a = chains.node_a.denom();
-
-        let wallet_a = chains.node_a.wallets().user1().cloned();
-        let wallet_b = chains.node_b.wallets().user1().cloned();
-
-        let _balance_a = chains
-            .node_a
-            .chain_driver()
-            .query_balance(&wallet_a.address(), &denom_a)?;
-
         let amount1 = random_u64_range(1000, 5000);
         let amount2 = random_u64_range(1000, 5000);
 
@@ -42,13 +32,13 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             amount1
         );
 
-        chains.node_a.chain_driver().ibc_token_transfer(
+        chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &wallet_a.address(),
-            &wallet_b.address(),
+            &chains.node_a.wallets().user1(),
+            &chains.node_b.wallets().user1().address(),
+            &chains.node_a.denom(),
             amount1,
-            &denom_a,
         )?;
 
         info!(
@@ -56,13 +46,13 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             amount2
         );
 
-        chains.node_a.chain_driver().ibc_token_transfer(
+        chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &wallet_a.address(),
-            &wallet_b.address(),
+            &chains.node_a.wallets().user1(),
+            &chains.node_b.wallets().user1().address(),
+            &chains.node_a.denom(),
             amount2,
-            &denom_a,
         )?;
 
         let link_opts = LinkParameters {
@@ -78,6 +68,11 @@ impl BinaryChannelTest for ExecuteScheduleTest {
         let relay_path = link.a_to_b;
 
         relay_path.schedule_packet_clearing(None)?;
+
+        info!(
+            "Dst operational data: {:?}",
+            relay_path.dst_operational_data
+        );
 
         assert_eq!(relay_path.dst_operational_data.len(), 2);
 
