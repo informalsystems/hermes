@@ -1,12 +1,13 @@
 use color_eyre::eyre::Context;
 use sqlx::PgPool;
-use tendermint_proto::abci::TxResult;
 use tracing::{info, trace};
 
-use crate::routes::tx::proto_to_deliver_tx;
-use crate::{error::ReportError, search::PacketSearch};
+use tendermint_proto::abci::TxResult;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
+
+use crate::utils::proto_to_deliver_tx;
+use crate::{error::ReportError, search::PacketSearch};
 
 #[tracing::instrument(skip(pool))]
 pub async fn packet_search(

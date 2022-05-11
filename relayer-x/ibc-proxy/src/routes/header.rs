@@ -6,7 +6,7 @@ use tendermint_proto::abci::TxResult;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 
-use crate::{error::ReportError, routes::tx::proto_to_deliver_tx, search::HeaderSearch};
+use crate::{error::ReportError, search::HeaderSearch, utils::proto_to_deliver_tx};
 
 #[tracing::instrument(skip(pool))]
 pub async fn header_search(
