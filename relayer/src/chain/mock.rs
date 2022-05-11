@@ -132,10 +132,7 @@ impl ChainEndpoint for MockChain {
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        let events = self
-            .context
-            .send(tracked_msgs.into())
-            .map_err(Error::ics18)?;
+        let events = self.context.send(tracked_msgs.msgs).map_err(Error::ics18)?;
 
         Ok(events)
     }

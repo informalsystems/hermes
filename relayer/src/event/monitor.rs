@@ -21,6 +21,7 @@ use ibc::{
 };
 
 use crate::{
+    chain::tx::TrackingId,
     telemetry,
     util::{
         retry::{retry_count, retry_with_index, RetryResult},
@@ -52,6 +53,7 @@ mod retry_strategy {
 #[derive(Clone, Debug)]
 pub struct EventBatch {
     pub chain_id: ChainId,
+    pub tracking_id: TrackingId,
     pub height: Height,
     pub events: Vec<IbcEvent>,
 }
@@ -454,6 +456,7 @@ fn stream_batches(
             height,
             events,
             chain_id: chain_id.clone(),
+            tracking_id: TrackingId::uuid(),
         }
     })
 }

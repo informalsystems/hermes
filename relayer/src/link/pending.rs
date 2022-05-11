@@ -8,8 +8,10 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
+use crate::chain::tx::TrackingId;
 use crate::error::Error as RelayerError;
 use crate::link::{error::LinkError, RelayPath};
+use crate::telemetry;
 use crate::util::queue::Queue;
 use crate::{
     chain::handle::ChainHandle,
@@ -31,6 +33,12 @@ pub struct PendingData {
     pub tx_hashes: TxHashes,
     pub submit_time: Instant,
     pub error_events: Vec<IbcEvent>,
+}
+
+impl PendingData {
+    pub fn tracking_id(&self) -> TrackingId {
+        self.original_od.tracking_id
+    }
 }
 
 /// The mediator stores all pending data
@@ -114,6 +122,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
             submit_time: Instant::now(),
             error_events,
         };
+
         self.pending_queue.push_back(u);
     }
 
@@ -227,10 +236,13 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                     // to the chain.
 
                     debug!(
-                        "confirmed after {:#?}: {} ",
-                        pending.submit_time.elapsed(),
-                        tx_hashes
+                        tracking_id = %pending.tracking_id(),
+                        elapsed = ?pending.submit_time.elapsed(),
+                        tx_hashes = %tx_hashes,
+                        "transactions confirmed",
                     );
+
+                    telemetry!(end_process_batch, &self.chain_id(), pending.tracking_id());
 
                     // Convert the events to RelaySummary and return them.
                     let mut summary = RelaySummary::from_events(events);

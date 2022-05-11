@@ -1,4 +1,28 @@
+use core::fmt;
+
 use ibc_proto::google::protobuf::Any;
+use uuid::Uuid;
+
+#[derive(Copy, Clone, Debug)]
+pub enum TrackingId {
+    Uuid(Uuid),
+    Static(&'static str),
+}
+
+impl TrackingId {
+    pub fn uuid() -> Self {
+        Self::Uuid(Uuid::new_v4())
+    }
+}
+
+impl fmt::Display for TrackingId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TrackingId::Uuid(u) => u.fmt(f),
+            TrackingId::Static(s) => s.fmt(f),
+        }
+    }
+}
 
 /// A wrapper over a vector of proto-encoded messages
 /// (`Vec<Any>`), which has an associated tracking
@@ -10,21 +34,39 @@ use ibc_proto::google::protobuf::Any;
 #[derive(Debug, Clone)]
 pub struct TrackedMsgs {
     pub msgs: Vec<Any>,
-    pub tracking_id: String,
+    pub tracking_id: TrackingId,
 }
 
 impl TrackedMsgs {
-    pub fn new(msgs: Vec<Any>, tid: impl Into<String>) -> Self {
+    pub fn new(msgs: Vec<Any>, tracking_id: TrackingId) -> Self {
+        Self { msgs, tracking_id }
+    }
+
+    pub fn new_static(msgs: Vec<Any>, tracking_id: &'static str) -> Self {
         Self {
             msgs,
-            tracking_id: tid.into(),
+            tracking_id: TrackingId::Static(tracking_id),
         }
     }
 
-    pub fn new_single(msg: Any, tid: impl Into<String>) -> Self {
+    pub fn new_uuid(msgs: Vec<Any>, tracking_id: Uuid) -> Self {
+        Self {
+            msgs,
+            tracking_id: TrackingId::Uuid(tracking_id),
+        }
+    }
+
+    pub fn new_single(msg: Any, tracking_id: &'static str) -> Self {
         Self {
             msgs: vec![msg],
-            tracking_id: tid.into(),
+            tracking_id: TrackingId::Static(tracking_id),
+        }
+    }
+
+    pub fn new_single_uuid(msg: Any, tracking_id: Uuid) -> Self {
+        Self {
+            msgs: vec![msg],
+            tracking_id: TrackingId::Uuid(tracking_id),
         }
     }
 
@@ -32,13 +74,7 @@ impl TrackedMsgs {
         &self.msgs
     }
 
-    pub fn tracking_id(&self) -> &str {
-        &self.tracking_id
-    }
-}
-
-impl From<TrackedMsgs> for Vec<Any> {
-    fn from(tm: TrackedMsgs) -> Vec<Any> {
-        tm.msgs
+    pub fn tracking_id(&self) -> TrackingId {
+        self.tracking_id
     }
 }

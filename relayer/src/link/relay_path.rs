@@ -43,6 +43,7 @@ use crate::chain::counterparty::{
 };
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
+use crate::chain::tx::TrackingId;
 use crate::chain::ChainStatus;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
@@ -305,7 +306,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     // Determines if the events received are relevant and should be processed.
     // Only events for a port/channel matching one of the channel ends should be processed.
-    fn filter_relaying_events(&self, events: Vec<IbcEvent>) -> TrackedEvents {
+    fn filter_relaying_events(
+        &self,
+        events: Vec<IbcEvent>,
+        tracking_id: TrackingId,
+    ) -> TrackedEvents {
         let src_channel_id = self.src_channel_id();
 
         let mut result = vec![];
@@ -345,7 +350,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Transform into `TrackedEvents`
-        result.into()
+        TrackedEvents::new(result, tracking_id)
     }
 
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
@@ -384,7 +389,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Generate & schedule operational data from the input `batch` of IBC events.
     pub fn update_schedule(&self, batch: EventBatch) -> Result<(), LinkError> {
         // Collect relevant events from the incoming batch & adjust their height.
-        let events = self.filter_relaying_events(batch.events);
+        let events = self.filter_relaying_events(batch.events, batch.tracking_id);
 
         // Transform the events into operational data items
         self.events_to_operational_data(events)
@@ -593,7 +598,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         initial_odata: OperationalData,
     ) -> Option<OperationalData> {
-        let op_info = initial_odata.info().into_owned();
+        let op_info = initial_odata.info();
 
         warn!(
             "failed. Regenerate operational data from {} events",
@@ -831,7 +836,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn update_client_dst(
         &self,
         src_chain_height: Height,
-        tracking_id: &str,
+        tracking_id: TrackingId,
     ) -> Result<Height, LinkError> {
         self.do_update_client_dst(src_chain_height, tracking_id, MAX_RETRIES)
     }
@@ -845,7 +850,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn do_update_client_dst(
         &self,
         src_chain_height: Height,
-        tracking_id: &str,
+        tracking_id: TrackingId,
         retries_left: usize,
     ) -> Result<Height, LinkError> {
         info!( "sending update_client to client hosted on source chain for height {} (retries left: {})", src_chain_height, retries_left );
@@ -856,6 +861,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
+
         info!("result: {}", PrettyEvents(&dst_tx_events));
 
         let (error, update, misbehaviour) = Self::event_per_type(dst_tx_events);
@@ -897,7 +903,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn update_client_src(
         &self,
         dst_chain_height: Height,
-        tracking_id: &str,
+        tracking_id: TrackingId,
     ) -> Result<Height, LinkError> {
         self.do_update_client_src(dst_chain_height, tracking_id, MAX_RETRIES)
     }
@@ -911,7 +917,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn do_update_client_src(
         &self,
         dst_chain_height: Height,
-        tracking_id: &str,
+        tracking_id: TrackingId,
         retries_left: usize,
     ) -> Result<Height, LinkError> {
         info!( "sending update_client to client hosted on source chain for height {} (retries left: {})", dst_chain_height, retries_left );
@@ -922,6 +928,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .src_chain()
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
+
         info!("result: {}", PrettyEvents(&src_tx_events));
 
         let (error, update, misbehaviour) = Self::event_per_type(src_tx_events);
@@ -964,8 +971,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         opt_query_height: Option<Height>,
     ) -> Result<(TrackedEvents, Height), LinkError> {
-        let mut events_result = vec![];
-
         let src_channel_id = self.src_channel_id();
         let dst_channel_id = self.dst_channel_id();
 
@@ -984,8 +989,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
         let sequences: Vec<Sequence> = sequences.into_iter().map(From::from).collect();
+
         if sequences.is_empty() {
-            return Ok((events_result.into(), query_height));
+            let tracked_events = TrackedEvents::new(vec![], TrackingId::uuid());
+            return Ok((tracked_events, query_height));
         }
 
         debug!(
@@ -1018,6 +1025,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 _ => None,
             })
             .collect();
+
         query.sequences.retain(|seq| !recvd_sequences.contains(seq));
 
         let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
@@ -1034,6 +1042,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         // events must be ordered in the following fashion -
         // start-block events followed by tx-events followed by end-block events
+        let mut events_result = vec![];
         events_result.extend(start_block_events);
         events_result.extend(tx_events);
         events_result.extend(end_block_events);
@@ -1061,7 +1070,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             );
         }
 
-        Ok((events_result.into(), query_height))
+        let tracked_events = TrackedEvents::new(events_result, TrackingId::uuid());
+        Ok((tracked_events, query_height))
     }
 
     /// Returns relevant packet events for building ack messages.
@@ -1070,8 +1080,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         opt_query_height: Option<Height>,
     ) -> Result<(TrackedEvents, Height), LinkError> {
-        let mut events_result = vec![];
-
         let src_channel_id = self.src_channel_id();
         let dst_channel_id = self.dst_channel_id();
 
@@ -1099,7 +1107,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let sequences: Vec<Sequence> = unreceived_acks_by_dst.into_iter().map(From::from).collect();
         if sequences.is_empty() {
-            return Ok((events_result.into(), query_height));
+            let tracked_events = TrackedEvents::new(vec![], TrackingId::uuid());
+            return Ok((tracked_events, query_height));
         }
 
         debug!(
@@ -1109,7 +1118,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             sequences.iter().take(10).join(", "), sequences.len()
         );
 
-        events_result = self
+        let events_result = self
             .src_chain()
             .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
                 event_id: WithBlockDataType::WriteAck,
@@ -1149,7 +1158,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             );
         }
 
-        Ok((events_result.into(), query_height))
+        let tracked_events = TrackedEvents::new(events_result, TrackingId::uuid());
+        Ok((tracked_events, query_height))
     }
 
     /// Schedules the relaying of RecvPacket and Timeout messages.
@@ -1494,7 +1504,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                                     OperationalData::new(
                                         dst_current_height,
                                         OperationalDataTarget::Source,
-                                        &odata.tracking_id,
+                                        odata.tracking_id,
                                         self.channel.connection_delay,
                                     )
                                 })
@@ -1570,12 +1580,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             let target_height = od.proofs_height.increment();
             match od.target {
                 OperationalDataTarget::Source => {
-                    let update_height = self.update_client_src(target_height, &od.tracking_id)?;
+                    let update_height = self.update_client_src(target_height, od.tracking_id)?;
                     od.set_update_height(update_height);
                     self.src_time_at_height(update_height)?
                 }
                 OperationalDataTarget::Destination => {
-                    let update_height = self.update_client_dst(target_height, &od.tracking_id)?;
+                    let update_height = self.update_client_dst(target_height, od.tracking_id)?;
                     od.set_update_height(update_height);
                     self.dst_time_at_height(update_height)?
                 }

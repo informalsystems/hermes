@@ -16,13 +16,14 @@ use ibc::{
 };
 
 use crate::{
-    chain::{handle::ChainHandle, HealthCheck},
+    chain::{handle::ChainHandle, tx::TrackingId, HealthCheck},
     config::Config,
     event::monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,
     registry::{Registry, SharedRegistry},
     rest,
     supervisor::scan::ScanMode,
+    telemetry,
     util::{
         lock::LockExt,
         task::{spawn_background_task, Next, TaskError, TaskHandle},
@@ -378,7 +379,8 @@ pub fn collect_events(
     src_chain: &impl ChainHandle,
     batch: &EventBatch,
 ) -> CollectedEvents {
-    let mut collected = CollectedEvents::new(batch.height, batch.chain_id.clone());
+    let mut collected =
+        CollectedEvents::new(batch.height, batch.chain_id.clone(), batch.tracking_id);
 
     let mode = config.mode;
 
@@ -606,14 +608,13 @@ fn process_batch<Chain: ChainHandle>(
 ) -> Result<(), Error> {
     assert_eq!(src_chain.id(), batch.chain_id);
 
-    let height = batch.height;
-    let chain_id = batch.chain_id.clone();
+    telemetry!(start_process_batch, batch.tracking_id);
 
     let collected = collect_events(config, workers, &src_chain, batch);
 
     // If there is a NewBlock event, forward this event first to any workers affected by it.
     if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
-        workers.notify_new_block(&src_chain.id(), height, new_block);
+        workers.notify_new_block(&src_chain.id(), batch.height, new_block);
     }
 
     // Forward the IBC events.
@@ -648,7 +649,12 @@ fn process_batch<Chain: ChainHandle>(
 
         let worker = workers.get_or_spawn(object, src, dst, config);
 
-        worker.send_events(height, events, chain_id.clone());
+        worker.send_events(
+            batch.height,
+            events,
+            batch.chain_id.clone(),
+            batch.tracking_id,
+        );
     }
 
     Ok(())
@@ -702,13 +708,16 @@ pub struct CollectedEvents {
     pub new_block: Option<IbcEvent>,
     /// Mapping between [`Object`]s and their associated [`IbcEvent`]s.
     pub per_object: HashMap<Object, Vec<IbcEvent>>,
+    /// Unique identifier for tracking this event batch
+    pub tracking_id: TrackingId,
 }
 
 impl CollectedEvents {
-    pub fn new(height: Height, chain_id: ChainId) -> Self {
+    pub fn new(height: Height, chain_id: ChainId, tracking_id: TrackingId) -> Self {
         Self {
             height,
             chain_id,
+            tracking_id,
             new_block: Default::default(),
             per_object: Default::default(),
         }

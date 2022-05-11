@@ -466,7 +466,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         msgs.push(msg_upgrade);
 
-        let tm = TrackedMsgs::new(msgs, "upgrade client");
+        let tm = TrackedMsgs::new_static(msgs, "upgrade client");
 
         let res = self
             .dst_chain
@@ -972,7 +972,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             ));
         }
 
-        let tm = TrackedMsgs::new(new_msgs, "update client");
+        let tm = TrackedMsgs::new_static(new_msgs, "update client");
 
         let events = self
             .dst_chain()
@@ -1327,7 +1327,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .to_any(),
         );
 
-        let tm = TrackedMsgs::new(msgs, "evidence");
+        let tm = TrackedMsgs::new_static(msgs, "evidence");
 
         let events = self
             .dst_chain()
