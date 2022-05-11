@@ -1,8 +1,7 @@
 use color_eyre::eyre::Context;
-use sqlx::postgres::PgRow;
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use tendermint_proto::abci::TxResult;
-use tracing::{trace, info};
+use tracing::{info, trace};
 
 use crate::routes::tx::proto_to_deliver_tx;
 use crate::{error::ReportError, search::PacketSearch};
@@ -16,7 +15,7 @@ pub async fn packet_search(
 ) -> Result<TxSearchResponse, ReportError> {
     info!(seq = ?search.packet_sequence, "got sequence");
 
-    let (raw_tx_result, hash) = tx_result_by_packet_fields(pool, &search).await?;
+    let (raw_tx_result, hash) = tx_result_by_packet_fields(pool, search).await?;
     let deliver_tx = raw_tx_result.result.unwrap();
     let tx_result = proto_to_deliver_tx(deliver_tx)?;
 
@@ -45,11 +44,11 @@ struct SqlTxResult {
 
 async fn tx_result_by_packet_fields(
     pool: &PgPool,
-    search: &PacketSearch,
+    search: PacketSearch,
 ) -> Result<(TxResult, String), ReportError> {
     use prost::Message;
 
-    let result = sqlx::query(
+    let result = sqlx::query_as::<_, SqlTxResult>(
         "SELECT tx_hash, tx_result FROM ibc_tx_packet_events WHERE \
         packet_sequence = $1 and \
         type = $2 and \
@@ -58,13 +57,9 @@ async fn tx_result_by_packet_fields(
         LIMIT 1",
     )
     .bind(search.packet_sequence.clone())
-    .bind(search.event_type.clone())
-    .bind(search.packet_src_channel.clone())
-    .bind(search.packet_src_port.clone())
-        .map(|row: PgRow| SqlTxResult {
-            hash: row.get("tx_hash"),
-            result: row.get("tx_result"),
-    })
+    .bind(search.event_type)
+    .bind(search.packet_src_channel)
+    .bind(search.packet_src_port)
     .fetch_one(pool)
     .await
     .wrap_err(format!(
