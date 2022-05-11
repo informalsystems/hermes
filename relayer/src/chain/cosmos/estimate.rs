@@ -121,7 +121,7 @@ async fn estimate_gas_with_tx(
         }
 
         // If there is a chance that the tx will be accepted once actually submitted, we fall
-        // back on the max gas and will attempt to send it anyway.
+        // back on the default gas and will attempt to send it anyway.
         // See `can_recover_from_simulation_failure` for more info.
         Err(e) if can_recover_from_simulation_failure(&e) => {
             warn!(

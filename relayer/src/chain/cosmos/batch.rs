@@ -121,7 +121,7 @@ fn batch_messages(
     max_tx_size: MaxTxSize,
     messages: Vec<Any>,
 ) -> Result<Vec<Vec<Any>>, Error> {
-    let max_message_count = max_msg_num.0;
+    let max_message_count = max_msg_num.to_usize();
     let max_tx_size = max_tx_size.into();
 
     let mut batches = vec![];
