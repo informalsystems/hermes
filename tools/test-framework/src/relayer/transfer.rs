@@ -8,8 +8,9 @@ use core::time::Duration;
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
+use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::transfer::build_transfer_message;
+use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
@@ -17,6 +18,30 @@ use crate::relayer::tx::simple_send_tx;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
+
+pub fn build_transfer_message<SrcChain, DstChain>(
+    port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
+    channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
+    sender: &MonoTagged<SrcChain, &Wallet>,
+    recipient: &MonoTagged<DstChain, &WalletAddress>,
+    denom: &MonoTagged<SrcChain, &Denom>,
+    amount: u64,
+) -> Result<Any, Error> {
+    let timeout_timestamp = Timestamp::now()
+        .add(Duration::from_secs(60))
+        .map_err(handle_generic_error)?;
+
+    Ok(raw_build_transfer_message(
+        (*port_id.value()).clone(),
+        **channel_id.value(),
+        amount.into(),
+        denom.value().to_string(),
+        Signer::new(sender.value().address.0.clone()),
+        Signer::new(recipient.value().0.clone()),
+        Height::zero(),
+        timeout_timestamp,
+    ))
+}
 
 /**
    Perform a simplified version of IBC token transfer for testing purpose.
@@ -44,20 +69,7 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     denom: &MonoTagged<SrcChain, &Denom>,
     amount: u64,
 ) -> Result<(), Error> {
-    let timeout_timestamp = Timestamp::now()
-        .add(Duration::from_secs(60))
-        .map_err(handle_generic_error)?;
-
-    let message = build_transfer_message(
-        (*port_id.value()).clone(),
-        **channel_id.value(),
-        amount.into(),
-        denom.value().to_string(),
-        Signer::new(sender.value().address.0.clone()),
-        Signer::new(recipient.value().0.clone()),
-        Height::zero(),
-        timeout_timestamp,
-    );
+    let message = build_transfer_message(port_id, channel_id, sender, recipient, denom, amount)?;
 
     simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
 
