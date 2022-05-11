@@ -65,8 +65,8 @@ pub trait TaggedChainDriverExt<Chain> {
     ) -> Result<(), Error>;
 
     /**
-       Tagged version of [`transfer_token`]. Submits an IBC token transfer
-       transaction to `Chain` to any other `Counterparty` chain.
+       Submits an IBC token transfer transaction to `Chain` to any other
+       `Counterparty` chain.
 
        The following parameters are accepted:
 
@@ -76,13 +76,13 @@ pub trait TaggedChainDriverExt<Chain> {
        - A `ChannelId` on `Chain` that corresponds to a channel connected to
          `Counterparty`.
 
-       - The wallet address of the sender on `Chain`.
+       - The [`Wallet`] of the sender on `Chain`.
 
-       - The wallet address of the recipient on `Counterparty`.
-
-       - The transfer amount.
+       - The [`WalletAddress`] address of the recipient on `Counterparty`.
 
        - The denomination of the amount on `Chain`.
+
+       - The transfer amount.
     */
     fn ibc_transfer_token<Counterparty>(
         &self,
