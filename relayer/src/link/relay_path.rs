@@ -1373,10 +1373,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// with one or more transaction hash(es).
     pub fn execute_schedule(&self) -> Result<(), LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data()?;
-
-        // info!("Src op data: {:?}", src_ods);
-        // info!("Dst op data: {:?}", dst_ods);
-
         for od in dst_ods {
             let reply =
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
