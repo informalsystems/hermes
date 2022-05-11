@@ -88,7 +88,7 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
         timeout_fee,
     )?;
 
-    let messages = vec![transfer_message, pay_message];
+    let messages = vec![pay_message, transfer_message];
 
     simple_send_tx(tx_config.value(), &sender.value().key, messages).await?;
 

@@ -40,7 +40,7 @@ impl BinaryChannelTest for ChannelWithFeeTest {
 
         let relayer_a = wallets_a.relayer();
 
-        let balance_a = chain_driver_a.query_balance(&user_a1.address(), &denom_a)?;
+        let balance_a1 = chain_driver_a.query_balance(&user_a1.address(), &denom_a)?;
 
         let relayer_balance_a = chain_driver_a.query_balance(&relayer_a.address(), &denom_a)?;
 
@@ -50,6 +50,8 @@ impl BinaryChannelTest for ChannelWithFeeTest {
         let timeout_fee = 100;
 
         let total_sent = send_amount + receive_fee + ack_fee + timeout_fee;
+
+        let balance_a2 = balance_a1 - total_sent;
 
         chain_driver_a
             .value()
@@ -73,16 +75,9 @@ impl BinaryChannelTest for ChannelWithFeeTest {
             &denom_a,
         )?;
 
-        info!(
-            "User A's balance after transfer: {}",
-            balance_a - total_sent
-        );
+        info!("Expect user A's balance after transfer: {}", balance_a2);
 
-        chain_driver_a.assert_eventual_wallet_amount(
-            &user_a1.address(),
-            balance_a - total_sent,
-            &denom_a,
-        )?;
+        chain_driver_a.assert_eventual_wallet_amount(&user_a1.address(), balance_a2, &denom_a)?;
 
         chain_driver_b.assert_eventual_wallet_amount(
             &user_b1.address(),
@@ -90,21 +85,35 @@ impl BinaryChannelTest for ChannelWithFeeTest {
             &denom_b.as_ref(),
         )?;
 
-        // // receive fee and timeout fee should be refunded,
-        // // as there is no counterparty address registered.
-        // chain_driver_a.assert_eventual_wallet_amount(
-        //     &user_a1.address(),
-        //     balance_a - send_amount - ack_fee,
-        //     &denom_a,
-        // )?;
+        info!(
+            "Expect user to be refunded receive fee {} and timeout fee {} and go from {} to {}",
+            receive_fee,
+            timeout_fee,
+            balance_a2,
+            balance_a2 + receive_fee + timeout_fee
+        );
 
-        // chain_driver_a.assert_eventual_wallet_amount(
-        //     &relayer_a.address(),
-        //     relayer_balance_a + ack_fee,
-        //     &denom_a,
-        // )?;
+        // receive fee and timeout fee should be refunded,
+        // as there is no counterparty address registered.
+        chain_driver_a.assert_eventual_wallet_amount(
+            &user_a1.address(),
+            balance_a2 + receive_fee + timeout_fee,
+            &denom_a,
+        )?;
 
-        // suspend()
+        info!(
+            "Expect relayer to receive ack fee {} and go from {} to {}",
+            ack_fee,
+            relayer_balance_a,
+            relayer_balance_a + ack_fee
+        );
+
+        chain_driver_a.assert_eventual_wallet_amount(
+            &relayer_a.address(),
+            relayer_balance_a + ack_fee,
+            &denom_a,
+        )?;
+
         Ok(())
     }
 }
