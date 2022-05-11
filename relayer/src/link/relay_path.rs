@@ -352,7 +352,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         for i in 1..=MAX_RETRIES {
             let cleared = self
                 .build_recv_packet_and_timeout_msgs(height)
-                .and_then(|()| self.build_packet_ack_msgs(height));
+                .and_then(|_| self.build_packet_ack_msgs(height));
 
             match cleared {
                 Ok(()) => return Ok(()),
@@ -367,6 +367,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Clears any packets that were sent before `height`.
+    /// If no height is passed in, then the latest height of the source chain is used.
     pub fn schedule_packet_clearing(&self, height: Option<Height>) -> Result<(), LinkError> {
         let span = span!(Level::DEBUG, "clear");
         let _enter = span.enter();
@@ -1601,16 +1602,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(())
     }
 
-    /// Pulls out the operational elements with elapsed delay period and that can
-    /// now be processed.
+    /// Partitions the source and destination chains' operational data into 'elapsed' and
+    /// 'unelapsed' buckets. The elapsed operational data of both chains is returned.
+    /// 'Elapsed' means the operational data has surpassed the latest timestamp of its chain,
+    /// the max block time of its chain, as well as its chain's latest height.
+    /// Any operational data that hasn't elapsed is considered unelapsed such that it is re-added
+    /// to the pending queue to be checked again at a later time.
     fn try_fetch_scheduled_operational_data(
         &self,
     ) -> Result<(VecDeque<OperationalData>, VecDeque<OperationalData>), LinkError> {
-        // info!("Src operational data: {:?}", self.src_operational_data);
-        // info!("Dst operational data: {:?}", self.dst_operational_data);
-
-        // Extracts elements from a Vec when the predicate returns true.
-        // The mutable vector is then updated to the remaining unextracted elements.
         fn partition<T>(
             queue: VecDeque<T>,
             pred: impl Fn(&T) -> Result<bool, LinkError>,

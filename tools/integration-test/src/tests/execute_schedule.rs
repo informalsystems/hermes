@@ -1,7 +1,7 @@
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
-use ibc_relayer::link::{Link, LinkParameters, Resubmit};
+use ibc_relayer::link::{Link, LinkParameters};
 
 #[test]
 fn test_execute_schedule() -> Result<(), Error> {
@@ -66,42 +66,18 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
         info!("Calling schedule_packet_clearing");
 
-        // relay pending packets
         relay_path.schedule_packet_clearing(None)?;
 
-        info!("Calling refresh_schedule");
+        assert_eq!(relay_path.dst_operational_data.len(), 1);
 
-        relay_path.refresh_schedule()?;
-
-        info!("Calling execute_schedule");
-
-        relay_path.execute_schedule()?;
-
-        info!("Calling process_pending_txs");
-
-        assert_eventually_succeed("process_pending_tx", 10, Duration::from_secs(1), || {
-            let summary = relay_path.process_pending_txs(Resubmit::No);
-            info!("RELAY SUMMARY: {:?}", summary);
-            assert_gt("Summary should not be empty", &summary.events.len(), &0)
-        })?;
-
-        chains.node_a.value().kill()?;
         chains.node_b.value().kill()?;
 
-        // `execute_schedule` calls `try_fetch_scheduled_operational_data`
-        // which returns no src and no dst operational data
-        // `try_fetch_scheduled_operational_data` partitions the `src_operational_data` and
-        // `dst_operational_data` fields on `RelayPath` based on some predicates, however,
-        // both of these fields start off as empty before partitioning occurs
         match relay_path.execute_schedule() {
             Ok(_) => panic!("Expected an error"),
-            Err(_e) => {}
+            Err(_e) => {
+                assert_eq!(relay_path.dst_operational_data.len(), 1);
+            }
         }
-
-        // assert!(!relay_path.src_operational_data.is_empty());
-        // assert!(!relay_path.dst_operational_data.is_empty());
-
-        // assert_eq!(summary.events.len(), 1);
 
         Ok(())
     }
