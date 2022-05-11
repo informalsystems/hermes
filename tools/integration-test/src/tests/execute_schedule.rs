@@ -65,7 +65,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             &denom_a,
         )?;
 
-        sleep(Duration::from_secs(2));
+        sleep(Duration::from_secs(4));
 
         let link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
