@@ -18,8 +18,8 @@ ibc             = { path = "../../modules" }
 ibc-relayer     = { path = "../../relayer" }
 ibc-relayer-cli = { path = "../../relayer-cli" }
 ibc-proto       = { path = "../../proto" }
-tendermint      = { version = "=0.23.7" }
-tendermint-rpc  = { version = "=0.23.7", features = ["http-client", "websocket-client"] }
+tendermint      = { version = "=0.24.0-pre.2" }
+tendermint-rpc  = { version = "=0.24.0-pre.2", features = ["http-client", "websocket-client"] }
 
 async-trait = "0.1.53"
 http = "0.2.6"
