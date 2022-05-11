@@ -27,6 +27,13 @@ impl Version {
         Self::new(ics20_fungible_token_transfer::VERSION.to_string())
     }
 
+    pub fn ics20_with_fee() -> Self {
+        Self::new(format!(
+            "{{ \"feeVersion\": \"ics29-1\", \"appVersion\": \"{}\" }}",
+            ics20_fungible_token_transfer::VERSION
+        ))
+    }
+
     pub fn empty() -> Self {
         Self::new("".to_string())
     }

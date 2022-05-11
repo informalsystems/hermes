@@ -32,6 +32,7 @@ example = []
 manual = []
 ordered = []
 ica = []
+ics29-fee = []
 experimental = []
 
 [[bin]]

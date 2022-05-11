@@ -16,6 +16,9 @@ pub mod supervisor;
 pub mod ternary_transfer;
 pub mod transfer;
 
+#[cfg(any(doc, feature = "ics29-fee"))]
+pub mod fee_middleware;
+
 #[cfg(any(doc, feature = "ordered"))]
 pub mod ordered_channel;
 

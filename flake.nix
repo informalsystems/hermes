@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
     flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix;
+    cosmos-nix.url = github:informalsystems/cosmos.nix/ibc-go-ics29-simapp;
   };
 
   outputs = inputs:
@@ -36,6 +36,8 @@
               gaia6-ordered
               ibc-go-v2-simapp
               ibc-go-v3-simapp
+              ibc-go-main-simapp
+              ibc-go-ics29-simapp
             ;
 
             python = nixpkgs.python3.withPackages (p: [

@@ -195,7 +195,7 @@ pub struct GetTxsEventRequest {
     /// events is the list of transaction event type.
     #[prost(string, repeated, tag="1")]
     pub events: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    /// pagination defines an pagination for the request.
+    /// pagination defines a pagination for the request.
     #[prost(message, optional, tag="2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
     #[prost(enumeration="OrderBy", tag="3")]
@@ -211,7 +211,7 @@ pub struct GetTxsEventResponse {
     /// tx_responses is the list of queried TxResponses.
     #[prost(message, repeated, tag="2")]
     pub tx_responses: ::prost::alloc::vec::Vec<super::super::base::abci::v1beta1::TxResponse>,
-    /// pagination defines an pagination for the response.
+    /// pagination defines a pagination for the response.
     #[prost(message, optional, tag="3")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
@@ -276,6 +276,35 @@ pub struct GetTxResponse {
     /// tx_response is the queried TxResponses.
     #[prost(message, optional, tag="2")]
     pub tx_response: ::core::option::Option<super::super::base::abci::v1beta1::TxResponse>,
+}
+/// GetBlockWithTxsRequest is the request type for the Service.GetBlockWithTxs
+/// RPC method.
+///
+/// Since: cosmos-sdk 0.45.2
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetBlockWithTxsRequest {
+    /// height is the height of the block to query.
+    #[prost(int64, tag="1")]
+    pub height: i64,
+    /// pagination defines a pagination for the request.
+    #[prost(message, optional, tag="2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+/// GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs method.
+///
+/// Since: cosmos-sdk 0.45.2
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetBlockWithTxsResponse {
+    /// txs are the transactions in the block.
+    #[prost(message, repeated, tag="1")]
+    pub txs: ::prost::alloc::vec::Vec<Tx>,
+    #[prost(message, optional, tag="2")]
+    pub block_id: ::core::option::Option<::tendermint_proto::types::BlockId>,
+    #[prost(message, optional, tag="3")]
+    pub block: ::core::option::Option<::tendermint_proto::types::Block>,
+    /// pagination defines a pagination for the response.
+    #[prost(message, optional, tag="4")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// OrderBy defines the sorting order
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -446,6 +475,28 @@ pub mod service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.tx.v1beta1.Service/GetTxsEvent",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// GetBlockWithTxs fetches a block with decoded txs.
+        ///
+        /// Since: cosmos-sdk 0.45.2
+        pub async fn get_block_with_txs(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetBlockWithTxsRequest>,
+        ) -> Result<tonic::Response<super::GetBlockWithTxsResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.tx.v1beta1.Service/GetBlockWithTxs",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
