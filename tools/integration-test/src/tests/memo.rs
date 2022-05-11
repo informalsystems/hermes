@@ -7,7 +7,7 @@ use ibc_test_framework::util::random::{random_string, random_u64_range};
 
 #[test]
 fn test_memo() -> Result<(), Error> {
-    let memo = Memo::new(&random_string());
+    let memo = Memo::new(random_string()).unwrap();
     let test = MemoTest { memo };
     run_binary_channel_test(&test)
 }

@@ -12,8 +12,9 @@
 */
 
 use core::time::Duration;
-use ibc_relayer::config::{types::MaxMsgNum, Config};
+use ibc_relayer::config::Config;
 
+use ibc_relayer::config::types::MaxMsgNum;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::transfer::tx_raw_ft_transfer;
 
@@ -29,7 +30,7 @@ pub struct SimulationTest;
 impl TestOverrides for SimulationTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         for mut chain in config.chains.iter_mut() {
-            chain.max_msg_num = MaxMsgNum(MAX_MSGS);
+            chain.max_msg_num = MaxMsgNum::new(MAX_MSGS).unwrap();
         }
     }
 }
