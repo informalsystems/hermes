@@ -35,9 +35,10 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             .query_balance(&wallet_a.address(), &denom_a)?;
 
         let amount1 = random_u64_range(1000, 5000);
+        let amount2 = random_u64_range(1000, 5000);
 
         info!(
-            "Performing IBC transfer with amount {}, which should be relayed because its an ordered channel",
+            "Performing first IBC transfer with amount {}, which should be relayed because its an ordered channel",
             amount1
         );
 
@@ -47,6 +48,20 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             &wallet_a.address(),
             &wallet_b.address(),
             amount1,
+            &denom_a,
+        )?;
+
+        info!(
+            "Performing second IBC transfer with amount {}, which should be relayed because its an ordered channel",
+            amount2
+        );
+
+        chains.node_a.chain_driver().transfer_token(
+            &channel.port_a.as_ref(),
+            &channel.channel_id_a.as_ref(),
+            &wallet_a.address(),
+            &wallet_b.address(),
+            amount2,
             &denom_a,
         )?;
 
@@ -64,11 +79,9 @@ impl BinaryChannelTest for ExecuteScheduleTest {
         )?;
         let relay_path = link.a_to_b;
 
-        info!("Calling schedule_packet_clearing");
-
         relay_path.schedule_packet_clearing(None)?;
 
-        assert_eq!(relay_path.dst_operational_data.len(), 1);
+        assert_eq!(relay_path.dst_operational_data.len(), 2);
 
         chains.node_b.value().kill()?;
 
