@@ -18,6 +18,7 @@ pub struct TxSearch {
 
 #[derive(Clone, Debug)]
 pub struct HeaderSearch {
+    pub event_type: String,
     pub client_id: String,
     pub consensus_height: String,
 }
@@ -59,20 +60,24 @@ impl Search {
     }
 }
 
+fn extract_event_type(query: &Query) -> Option<String> {
+    // TODO - fix this
+    let tag = query.conditions.iter().find_map(|c| match c {
+        Condition::Eq(key, Operand::String(_)) => Some(key.to_owned()),
+        _ => None,
+    })?;
+
+    let event_type = tag.split('.').collect::<Vec<_>>().first()?.to_string();
+
+    Some(event_type)
+}
 fn parse_tx_query(query: &Query) -> Option<TxSearch> {
     let hash = find_by_key(query, |k| k == "tx.hash")?;
     Some(TxSearch { hash })
 }
 
 fn parse_packet_query(query: &Query) -> Option<PacketSearch> {
-
-    // TODO - fix this
-    let tag = query.conditions.iter().find_map(|c| match c {
-        Condition::Eq(key, Operand::String(_)) => Some(key.to_owned()),
-        _ => None,
-    }).unwrap();
-
-    let event_type :String = tag.split('.').collect::<Vec<_>>().first().unwrap().to_string();
+    let event_type = extract_event_type(query)?;
 
     let packet_src_channel = find_by_key(query, |k| k.ends_with(".packet_src_channel"))?;
     let packet_src_port = find_by_key(query, |k| k.ends_with(".packet_src_port"))?;
@@ -91,10 +96,12 @@ fn parse_packet_query(query: &Query) -> Option<PacketSearch> {
 }
 
 fn parse_header_query(query: &Query) -> Option<HeaderSearch> {
+    let event_type = extract_event_type(query)?;
     let client_id = find_by_key(query, |k| k.ends_with(".client_id"))?;
     let consensus_height = find_by_key(query, |k| k.ends_with(".consensus_height"))?;
 
     Some(HeaderSearch {
+        event_type,
         client_id,
         consensus_height,
     })

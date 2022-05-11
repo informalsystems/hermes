@@ -119,6 +119,21 @@ ORDER BY seq.packet_sequence, src_port.tx_id, src_port.type, src_port.packet_src
 CREATE VIEW ibc_tx_packet_events AS SELECT * FROM ibc_packet_src_events JOIN (
     SELECT rowid, tx_hash, tx_result FROM tx_results) tx_result ON (ibc_packet_src_events.tx_id = tx_result.rowid);
 
+-- A joined view of all IBC client transaction events.
+CREATE VIEW ibc_client_events AS SELECT * FROM (
+ SELECT tx_id, type, value AS client_id FROM event_attributes WHERE key = 'client_id'
+) rel_client_id
+NATURAL JOIN (
+ SELECT tx_id, value AS consensus_height FROM event_attributes WHERE key = 'consensus_height'
+) rel_consensus_height
+ORDER BY rel_client_id.tx_id, rel_client_id.type, rel_consensus_height.consensus_height;
+
+CREATE VIEW ibc_tx_client_events AS SELECT * FROM ibc_client_events
+  JOIN (
+    SELECT rowid, tx_hash, tx_result FROM tx_results
+  ) tx_result
+  ON (ibc_client_events.tx_id = tx_result.rowid);
+
 -- CREATE VIEW ibc_packet_dst_events AS SELECT * FROM (
 --  SELECT tx_id, type, VALUE AS packet_dst_port FROM event_attributes WHERE key = 'packet_dst_port'
 -- ) dst_port
