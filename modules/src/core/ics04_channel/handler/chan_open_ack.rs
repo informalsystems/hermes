@@ -222,7 +222,6 @@ mod tests {
                         &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
-                    .with_port(msg_chan_ack.port_id.clone())
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
                         msg_chan_ack.channel_id,
@@ -239,7 +238,6 @@ mod tests {
                         &msg_conn_try.client_id,
                         Height::new(0, client_consensus_state_height),
                     )
-                    .with_port(msg_chan_ack.port_id.clone())
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
                         msg_chan_ack.channel_id,
@@ -253,7 +251,6 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(cid.clone(), conn_end.clone())
-                    .with_port(msg_chan_ack.port_id.clone())
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
                         msg_chan_ack.channel_id,
@@ -270,7 +267,6 @@ mod tests {
                         Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid, conn_end)
-                    .with_port(msg_chan_ack.port_id.clone())
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
                         msg_chan_ack.channel_id,

@@ -134,11 +134,7 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_connection(cid, init_conn_end).with_port(
-                    MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
-                        .unwrap()
-                        .port_id,
-                ),
+                ctx: context.with_connection(cid, init_conn_end),
                 msg: ChannelMsg::ChannelOpenInit(msg_chan_init),
                 want_pass: true,
             },

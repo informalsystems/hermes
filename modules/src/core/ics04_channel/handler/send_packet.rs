@@ -184,7 +184,6 @@ mod tests {
                     .clone()
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end.clone())
-                    .with_port(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet,
@@ -195,7 +194,6 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet: packet_old,

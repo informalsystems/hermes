@@ -296,7 +296,6 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port(msg.port_id.clone())
                     .with_channel(msg.port_id.clone(), chan_id, incorrect_chan_end_ver),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
@@ -317,7 +316,6 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port(msg.port_id.clone())
                     .with_channel(msg.port_id.clone(), chan_id, incorrect_chan_end_hops),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
@@ -338,7 +336,6 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port(msg.port_id.clone())
                     .with_channel(msg.port_id.clone(), chan_id, correct_chan_end.clone()),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
@@ -368,7 +365,6 @@ mod tests {
                     .clone()
                     .with_client(&client_id, Height::new(0, proof_height))
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port(msg.port_id.clone())
                     .with_channel(msg.port_id.clone(), chan_id, correct_chan_end),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: true,
@@ -379,8 +375,7 @@ mod tests {
                     .to_string(),
                 ctx: context
                     .with_client(&client_id, Height::new(0, proof_height))
-                    .with_connection(conn_id, conn_end)
-                    .with_port(msg.port_id),
+                    .with_connection(conn_id, conn_end),
                 msg: ChannelMsg::ChannelOpenTry(msg_vanilla),
                 want_pass: true,
                 match_error: Box::new(|_| {}),

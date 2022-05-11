@@ -155,7 +155,6 @@ mod tests {
         let context = default_context
             .with_client(&client_id, client_consensus_state_height)
             .with_connection(conn_id, conn_end)
-            .with_port(msg_chan_close_confirm.port_id.clone())
             .with_channel(
                 msg_chan_close_confirm.port_id.clone(),
                 msg_chan_close_confirm.channel_id,

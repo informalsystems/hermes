@@ -170,7 +170,6 @@ mod tests {
             ctx: context
                 .with_client(&client_id, Height::new(0, client_consensus_state_height))
                 .with_connection(conn_id, conn_end)
-                .with_port(msg_chan_confirm.port_id.clone())
                 .with_channel(
                     msg_chan_confirm.port_id.clone(),
                     msg_chan_confirm.channel_id,

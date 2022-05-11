@@ -350,11 +350,6 @@ impl MockContext {
         self
     }
 
-    pub fn with_port(mut self, port_id: PortId) -> Self {
-        self.add_port(port_id);
-        self
-    }
-
     /// Associates a channel (in an arbitrary state) to this context.
     pub fn with_channel(
         self,
