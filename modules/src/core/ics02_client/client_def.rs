@@ -339,7 +339,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                 Ok(Self::ClientState::Beefy(client_state))
             }
             #[cfg(any(test, feature = "mocks"))]
-            AnyClient::Mock(_) => {
+            AnyClient::Mock(client) => {
                 let (client_state, header) = downcast!(
                     client_state => AnyClientState::Mock,
                     header => AnyHeader::Mock,
@@ -379,7 +379,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                 client.check_for_misbehaviour(ctx, client_id, client_state, header)
             }
             #[cfg(any(test, feature = "mocks"))]
-            AnyClient::Mock(_) => {
+            AnyClient::Mock(client ) => {
                 let (client_state, header) = downcast!(
                     client_state => AnyClientState::Mock,
                     header => AnyHeader::Mock,

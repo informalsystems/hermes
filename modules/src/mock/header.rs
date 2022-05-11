@@ -54,6 +54,10 @@ impl MockHeader {
         }
     }
 
+    pub fn timestamp(&self) -> Timestamp {
+        self.timestamp
+    }
+
     pub fn with_timestamp(self, timestamp: Timestamp) -> Self {
         Self { timestamp, ..self }
     }
@@ -68,14 +72,6 @@ impl From<MockHeader> for AnyHeader {
 impl Header for MockHeader {
     fn client_type(&self) -> ClientType {
         ClientType::Mock
-    }
-
-    fn height(&self) -> Height {
-        self.height
-    }
-
-    fn timestamp(&self) -> Timestamp {
-        self.timestamp
     }
 
     fn wrap_any(self) -> AnyHeader {

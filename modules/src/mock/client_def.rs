@@ -1,5 +1,3 @@
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -179,8 +177,8 @@ impl ClientDef for MockClient {
         &self,
         client_state: &Self::ClientState,
         consensus_state: &Self::ConsensusState,
-        _proof_upgrade_client: MerkleProof,
-        _proof_upgrade_consensus_state: MerkleProof,
+        _proof_upgrade_client: Vec<u8>,
+        _proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         Ok((
             *client_state,

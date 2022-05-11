@@ -32,6 +32,7 @@ use crate::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use crate::core::ics24_host::Path;
 use crate::prelude::*;
 use crate::Height;
+use alloc::collections::BTreeMap;
 
 use crate::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
@@ -131,8 +132,13 @@ impl<Store: BeefyLCStore> ClientDef for BeefyClient<Store> {
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
+        let mut parachain_latest_heights = BTreeMap::new();
         let mut parachain_cs_states = vec![];
         for header in header.parachain_headers {
+            let parachain_height = parachain_latest_heights.entry(header.para_id).or_default();
+            if header.parachain_header.number > *parachain_height {
+                *parachain_height = header.parachain_header.number;
+            }
             let height = Height::new(header.para_id as u64, header.parachain_header.number as u64);
             // Skip duplicate consensus states
             if let Ok(_) = ctx.consensus_state(&client_id, height) {
@@ -144,17 +150,11 @@ impl<Store: BeefyLCStore> ClientDef for BeefyClient<Store> {
             ))
         }
 
-        let best_cs_state = if let Some(cs_state) = last_seen_cs {
-            cs_state
-        } else {
-            trusted_consensus_state
-        };
-
-        let best_para_height = if let Some(best_height) = last_seen_height {
-            best_height
-        } else {
-            latest_para_height
-        };
+        let parachain_latest_heights = parachain_latest_heights
+            .into_iter()
+            .map(|(para_id, height)| (para_id as u64, height as u64))
+            .collect();
+        Store::store_latest_parachains_height(parachain_latest_heights)?;
         let mmr_state = self
             .store
             .mmr_state()

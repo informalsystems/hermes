@@ -1092,6 +1092,7 @@ impl ClientReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
+        _filter_fn: Option<Box<dyn Fn(Height) -> bool>>
     ) -> Result<Option<AnyConsensusState>, Ics02Error> {
         let ibc_store = self.ibc_store.lock().unwrap();
         let client_record = ibc_store
@@ -1120,6 +1121,7 @@ impl ClientReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
+        _filter_fn: Option<Box<dyn Fn(Height) -> bool>>
     ) -> Result<Option<AnyConsensusState>, Ics02Error> {
         let ibc_store = self.ibc_store.lock().unwrap();
         let client_record = ibc_store

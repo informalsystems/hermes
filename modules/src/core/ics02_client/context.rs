@@ -200,15 +200,6 @@ pub trait ClientKeeper {
         consensus_state: AnyConsensusState,
     ) -> Result<(), Error>;
 
-    /// Called upon successful client creation and update for beefy light client
-    fn store_parachain_consensus_state(
-        &mut self,
-        client_id: ClientId,
-        para_id: u64,
-        height: Height,
-        consensus_state: AnyConsensusState,
-    ) -> Result<(), Error>;
-
     /// Called upon client creation.
     /// Increases the counter which keeps track of how many clients have been created.
     /// Should never fail.
