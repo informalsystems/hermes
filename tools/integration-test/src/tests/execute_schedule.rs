@@ -69,19 +69,16 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
         relay_path.schedule_packet_clearing(None)?;
 
-        info!(
-            "Dst operational data: {:?}",
-            relay_path.dst_operational_data
-        );
-
-        assert_eq!(relay_path.dst_operational_data.len(), 2);
+        // assert_eq!(relay_path.dst_operational_data.len(), 2);
+        assert_eq!(relay_path.dst_operational_data.len(), 1);
 
         chains.node_b.value().kill()?;
 
         match relay_path.execute_schedule() {
             Ok(_) => panic!("Expected an error"),
             Err(_e) => {
-                assert_eq!(relay_path.dst_operational_data.len(), 1);
+                // assert_eq!(relay_path.dst_operational_data.len(), 1);
+                assert_eq!(relay_path.dst_operational_data.len(), 0);
             }
         }
 
