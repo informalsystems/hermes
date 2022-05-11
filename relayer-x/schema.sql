@@ -65,6 +65,9 @@ CREATE TABLE events (
 CREATE INDEX idx_events_block_id ON events(block_id);
 CREATE INDEX idx_events_tx_id ON events(tx_id);
 
+-- Index columns used in queries
+CREATE INDEX idx_events_type ON events(type);
+
 -- The attributes table records event attributes.
 CREATE TABLE attributes (
    event_id      BIGINT NOT NULL REFERENCES events(rowid),
