@@ -3,6 +3,8 @@
     initializing the logger and loading the test configuration.
 */
 
+use alloc::sync::Arc;
+use tokio::runtime::Runtime;
 use tracing::info;
 
 use crate::bootstrap::init::init_test;
@@ -90,11 +92,14 @@ where
 {
     fn run(&self) -> Result<(), Error> {
         let mut config = init_test()?;
+
+        let runtime = Arc::new(Runtime::new()?);
+
         self.test.get_overrides().modify_test_config(&mut config);
 
         info!("starting test with test config: {:?}", config);
 
-        let builder = ChainBuilder::new_with_config(&config);
+        let builder = ChainBuilder::new_with_config(&config, runtime);
 
         self.test.run(&config, &builder)?;
 

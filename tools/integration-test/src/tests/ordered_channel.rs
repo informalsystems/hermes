@@ -51,13 +51,13 @@ impl BinaryChannelTest for OrderedChannelTest {
             amount1
         );
 
-        chains.node_a.chain_driver().transfer_token(
+        chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &wallet_a.address(),
+            &wallet_a.as_ref(),
             &wallet_b.address(),
-            amount1,
             &denom_a,
+            amount1,
         )?;
 
         sleep(Duration::from_secs(1));
@@ -72,13 +72,13 @@ impl BinaryChannelTest for OrderedChannelTest {
                 amount2
             );
 
-            chains.node_a.chain_driver().transfer_token(
+            chains.node_a.chain_driver().ibc_transfer_token(
                 &channel.port_a.as_ref(),
                 &channel.channel_id_a.as_ref(),
-                &wallet_a.address(),
+                &wallet_a.as_ref(),
                 &wallet_b.address(),
-                amount2,
                 &denom_a,
+                amount2,
             )?;
 
             sleep(Duration::from_secs(1));

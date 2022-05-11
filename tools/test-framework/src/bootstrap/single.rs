@@ -97,6 +97,13 @@ pub fn bootstrap_single_node(
         Ok(())
     })?;
 
+    chain_driver.update_chain_config("app.toml", |config| {
+        config::set_grpc_port(config, chain_driver.grpc_port)?;
+        config::disable_grpc_web(config)?;
+
+        Ok(())
+    })?;
+
     let process = chain_driver.start()?;
 
     chain_driver.assert_eventual_wallet_amount(&relayer.address, initial_amount, &denom)?;
