@@ -42,7 +42,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             amount1
         );
 
-        chains.node_a.chain_driver().transfer_token(
+        chains.node_a.chain_driver().ibc_token_transfer(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &wallet_a.address(),
@@ -56,7 +56,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             amount2
         );
 
-        chains.node_a.chain_driver().transfer_token(
+        chains.node_a.chain_driver().ibc_token_transfer(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &wallet_a.address(),
@@ -65,7 +65,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             &denom_a,
         )?;
 
-        sleep(Duration::from_secs(4));
+        sleep(Duration::from_secs(2));
 
         let link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
