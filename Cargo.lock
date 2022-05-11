@@ -1640,6 +1640,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-cli",
  "itertools",
+ "prost",
  "rand 0.8.5",
  "semver",
  "serde",

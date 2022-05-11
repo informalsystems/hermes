@@ -10,6 +10,7 @@ use ibc::signer::Signer;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
 use uint::FromStrRadixErr;
 
@@ -150,7 +151,7 @@ pub fn build_transfer_message(
     let msg = MsgTransfer {
         source_port: packet_src_port_id,
         source_channel: packet_src_channel_id,
-        token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
+        token: Some(Coin {
             denom,
             amount: amount.to_string(),
         }),
@@ -185,21 +186,18 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         &destination_chain_status,
     )?;
 
-    let msg = MsgTransfer {
-        source_port: opts.packet_src_port_id.clone(),
-        source_channel: opts.packet_src_channel_id,
-        token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
-            denom: opts.denom.clone(),
-            amount: opts.amount.to_string(),
-        }),
+    let message = build_transfer_message(
+        opts.packet_src_port_id.clone(),
+        opts.packet_src_channel_id,
+        opts.amount,
+        opts.denom.clone(),
         sender,
         receiver,
-        timeout_height: timeout.timeout_height,
-        timeout_timestamp: timeout.timeout_timestamp,
-    };
+        timeout.timeout_height,
+        timeout.timeout_timestamp,
+    );
 
-    let raw_msg = msg.to_any();
-    let msgs = vec![raw_msg; opts.number_msgs];
+    let msgs = vec![message; opts.number_msgs];
 
     let events = packet_src_chain
         .send_messages_and_wait_commit(TrackedMsgs::new(msgs, "ft-transfer"))
