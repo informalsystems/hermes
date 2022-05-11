@@ -46,13 +46,13 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             amount1
         );
 
-        chains.node_a.chain_driver().transfer_token(
+        chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &wallet_a.address(),
+            &wallet_a.as_ref(),
             &wallet_b.address(),
-            amount1,
             &denom_a,
+            amount1,
         )?;
 
         sleep(Duration::from_secs(2));
@@ -102,13 +102,13 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let denom_b = chains.node_b.denom();
         let amount2 = random_u64_range(1000, 5000);
 
-        chains.node_b.chain_driver().transfer_token(
+        chains.node_b.chain_driver().ibc_transfer_token(
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
-            &wallet_b.address(),
+            &wallet_b.as_ref(),
             &wallet_a.address(),
-            amount2,
             &denom_b,
+            amount2,
         )?;
 
         info!(

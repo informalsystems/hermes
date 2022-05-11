@@ -7,15 +7,15 @@ use ibc_proto::google::protobuf::Any;
 use tendermint::account::Id as AccountId;
 
 use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
+use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::tx::SignedTx;
 use crate::config::types::Memo;
 use crate::config::AddressType;
-use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::keyring::{sign_message, KeyEntry};
 
 pub fn sign_and_encode_tx(
-    config: &ChainConfig,
+    config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
@@ -34,7 +34,7 @@ pub fn sign_and_encode_tx(
 }
 
 pub fn sign_tx(
-    config: &ChainConfig,
+    config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
@@ -50,7 +50,7 @@ pub fn sign_tx(
     let (auth_info, auth_info_bytes) = auth_info_and_bytes(signer, fee.clone())?;
 
     let signed_doc = encode_sign_doc(
-        &config.id,
+        &config.chain_id,
         key_entry,
         &config.address_type,
         account.number,

@@ -287,7 +287,18 @@ impl BinaryChainTest for PacketExpirationTest {
             )?
         };
 
+        chains.node_a.chain_driver().ibc_transfer_token(
+            &channels.port_a.as_ref(),
+            &channels.channel_id_a.as_ref(),
+            &chains.node_a.wallets().user1(),
+            &chains.node_b.wallets().user1().address(),
+            &chains.node_a.denom(),
+            100,
+        )?;
+
         wait_for_client_expiry();
+
+        info!("Packet worker should fail after client expires");
 
         relayer.with_supervisor(|| {
             let denom_a = chains.node_a.denom();
@@ -298,55 +309,14 @@ impl BinaryChainTest for PacketExpirationTest {
                 &denom_a,
             )?;
 
-            {
-                info!("sending first IBC transfer after client is expired. this should cause packet worker to fail");
+            sleep(Duration::from_secs(10));
 
-                chains.node_a.chain_driver().transfer_token(
-                    &channels.port_a.as_ref(),
-                    &channels.channel_id_a.as_ref(),
-                    &chains.node_a.wallets().user1().address(),
-                    &chains.node_b.wallets().user1().address(),
-                    100,
-                    &chains.node_a.denom(),
-                )?;
+            let balance_b = chains.node_b.chain_driver().query_balance(
+                &chains.node_b.wallets().user1().address(),
+                &denom_b.as_ref(),
+            )?;
 
-                sleep(Duration::from_secs(10));
-
-                // We cannot check for the sender's balance, because
-                // on Gaia v6 the transaction would just fail on expired client,
-                // and the fund is not deducted from the user wallet.
-                // But on Gaia v4 and v5 the fund will still be deducted
-                // even though the IBC transfer will fail.
-
-                let balance_b = chains.node_b.chain_driver().query_balance(
-                    &chains.node_b.wallets().user1().address(),
-                    &denom_b.as_ref(),
-                )?;
-
-                assert_eq("balance on wallet B should remain zero", &balance_b, &0)?;
-            }
-
-            {
-                info!("sending a second IBC transfer. there should be no log from packet worker from this point on");
-
-                chains.node_a.chain_driver().transfer_token(
-                    &channels.port_a.as_ref(),
-                    &channels.channel_id_a.as_ref(),
-                    &chains.node_a.wallets().user1().address(),
-                    &chains.node_b.wallets().user1().address(),
-                    100,
-                    &chains.node_a.denom(),
-                )?;
-
-                sleep(Duration::from_secs(10));
-
-                let balance_b = chains.node_b.chain_driver().query_balance(
-                    &chains.node_b.wallets().user1().address(),
-                    &denom_b.as_ref(),
-                )?;
-
-                assert_eq("balance on wallet B should remain zero", &balance_b, &0)?;
-            }
+            assert_eq("balance on wallet B should remain zero", &balance_b, &0)?;
 
             Ok(())
         })

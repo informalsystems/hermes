@@ -14,7 +14,7 @@ pub fn get_chain_command_version(command: &str) -> Result<Option<Version>, Error
         output.stdout
     };
 
-    let version_str = match raw_version_str.strip_prefix('v') {
+    let version_str = match raw_version_str.trim().strip_prefix('v') {
         Some(str) => str.trim(),
         None => raw_version_str.trim(),
     };
