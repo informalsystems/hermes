@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenAck`.
 
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
@@ -14,7 +14,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Beefy: BeefyLCStore>(
+pub(crate) fn process<Beefy: BeefyTraits>(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenAck,
 ) -> HandlerResult<ConnectionResult, Error> {

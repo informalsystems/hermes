@@ -1,4 +1,4 @@
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
@@ -13,7 +13,7 @@ use crate::proofs::Proofs;
 use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
-pub fn verify_channel_proofs<Beefy: BeefyLCStore>(
+pub fn verify_channel_proofs<Beefy: BeefyTraits>(
     ctx: &dyn ChannelReader,
     height: Height,
     channel_end: &ChannelEnd,
@@ -39,6 +39,8 @@ pub fn verify_channel_proofs<Beefy: BeefyLCStore>(
     // A counterparty channel id of None in not possible, and is checked by validate_basic in msg.
     client_def
         .verify_channel_state(
+            ctx,
+            &client_id,
             &client_state,
             height,
             connection_end.counterparty().prefix(),
@@ -52,7 +54,7 @@ pub fn verify_channel_proofs<Beefy: BeefyLCStore>(
 }
 
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
-pub fn verify_packet_recv_proofs<Beefy: BeefyLCStore>(
+pub fn verify_packet_recv_proofs<Beefy: BeefyTraits>(
     ctx: &dyn ChannelReader,
     height: Height,
     packet: &Packet,
@@ -81,6 +83,7 @@ pub fn verify_packet_recv_proofs<Beefy: BeefyLCStore>(
     client_def
         .verify_packet_data(
             ctx,
+            client_id,
             &client_state,
             height,
             connection_end,
@@ -97,7 +100,7 @@ pub fn verify_packet_recv_proofs<Beefy: BeefyLCStore>(
 }
 
 /// Entry point for verifying all proofs bundled in an ICS4 packet ack message.
-pub fn verify_packet_acknowledgement_proofs<Beefy: BeefyLCStore>(
+pub fn verify_packet_acknowledgement_proofs<Beefy: BeefyTraits>(
     ctx: &dyn ChannelReader,
     height: Height,
     packet: &Packet,
@@ -123,6 +126,7 @@ pub fn verify_packet_acknowledgement_proofs<Beefy: BeefyLCStore>(
     client_def
         .verify_packet_acknowledgement(
             ctx,
+            client_id,
             &client_state,
             height,
             connection_end,
@@ -139,7 +143,7 @@ pub fn verify_packet_acknowledgement_proofs<Beefy: BeefyLCStore>(
 }
 
 /// Entry point for verifying all timeout proofs.
-pub fn verify_next_sequence_recv<Beefy: BeefyLCStore>(
+pub fn verify_next_sequence_recv<Beefy: BeefyTraits>(
     ctx: &dyn ChannelReader,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -163,6 +167,7 @@ pub fn verify_next_sequence_recv<Beefy: BeefyLCStore>(
     client_def
         .verify_next_sequence_recv(
             ctx,
+            client_id,
             &client_state,
             height,
             connection_end,
@@ -177,7 +182,7 @@ pub fn verify_next_sequence_recv<Beefy: BeefyLCStore>(
     Ok(())
 }
 
-pub fn verify_packet_receipt_absence<Beefy: BeefyLCStore>(
+pub fn verify_packet_receipt_absence<Beefy: BeefyTraits>(
     ctx: &dyn ChannelReader,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -200,6 +205,7 @@ pub fn verify_packet_receipt_absence<Beefy: BeefyLCStore>(
     client_def
         .verify_packet_receipt_absence(
             ctx,
+            client_id,
             &client_state,
             height,
             connection_end,

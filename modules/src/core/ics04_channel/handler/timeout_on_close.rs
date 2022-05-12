@@ -1,4 +1,4 @@
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
 use crate::core::ics04_channel::events::TimeoutOnClosePacket;
@@ -15,7 +15,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub fn process<Beefy: BeefyLCStore>(
+pub fn process<Beefy: BeefyTraits>(
     ctx: &dyn ChannelReader,
     msg: &MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {

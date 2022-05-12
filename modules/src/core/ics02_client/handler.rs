@@ -1,6 +1,6 @@
 //! This module implements the processing logic for ICS2 (client abstractions and functions) msgs.
 
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::msgs::ClientMsg;
@@ -21,7 +21,7 @@ pub enum ClientResult {
 pub fn dispatch<Ctx, Beefy>(ctx: &Ctx, msg: ClientMsg) -> Result<HandlerOutput<ClientResult>, Error>
 where
     Ctx: ClientReader,
-    Beefy: BeefyLCStore,
+    Beefy: BeefyTraits,
 {
     match msg {
         ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),

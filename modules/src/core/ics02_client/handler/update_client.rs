@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use tracing::debug;
 
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
@@ -29,7 +29,7 @@ pub struct Result {
     pub processed_height: Height,
 }
 
-pub fn process<Beefy: BeefyLCStore>(
+pub fn process<Beefy: BeefyTraits>(
     ctx: &dyn ClientReader,
     msg: MsgUpdateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {

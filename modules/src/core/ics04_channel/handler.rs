@@ -1,6 +1,6 @@
 //! This module implements the processing logic for ICS4 (channel) messages.
 
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
@@ -65,7 +65,7 @@ pub fn channel_dispatch<Ctx, Beefy>(
 ) -> Result<(HandlerOutputBuilder<()>, ChannelResult), Error>
 where
     Ctx: ChannelReader,
-    Beefy: BeefyLCStore,
+    Beefy: BeefyTraits,
 {
     let output = match msg {
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
@@ -174,7 +174,7 @@ pub fn packet_dispatch<Ctx, Beefy>(
 ) -> Result<(HandlerOutputBuilder<()>, PacketResult), Error>
 where
     Ctx: ChannelReader,
-    Beefy: BeefyLCStore,
+    Beefy: BeefyTraits,
 {
     let output = match msg {
         PacketMsg::RecvPacket(msg) => recv_packet::process::<Beefy>(ctx, msg),

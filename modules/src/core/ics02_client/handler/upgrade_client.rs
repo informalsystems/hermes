@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 //!
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::context::ClientReader;
@@ -22,7 +22,7 @@ pub struct Result {
     pub consensus_state: Option<ConsensusUpdateResult>,
 }
 
-pub fn process<Beefy: BeefyLCStore>(
+pub fn process<Beefy: BeefyTraits>(
     ctx: &dyn ClientReader,
     msg: MsgUpgradeAnyClient,
 ) -> HandlerResult<ClientResult, Error> {

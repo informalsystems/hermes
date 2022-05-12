@@ -1,4 +1,4 @@
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
@@ -20,7 +20,7 @@ pub struct AckPacketResult {
     pub seq_number: Option<Sequence>,
 }
 
-pub fn process<Beefy: BeefyLCStore>(
+pub fn process<Beefy: BeefyTraits>(
     ctx: &dyn ChannelReader,
     msg: &MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {

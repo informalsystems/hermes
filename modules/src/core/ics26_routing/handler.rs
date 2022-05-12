@@ -3,7 +3,7 @@ use crate::prelude::*;
 use ibc_proto::google::protobuf::Any;
 
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
@@ -38,7 +38,7 @@ pub fn deliver<Ctx, Beefy>(
 ) -> Result<(Vec<IbcEvent>, Vec<String>), Error>
 where
     Ctx: Ics26Context,
-    Beefy: BeefyLCStore,
+    Beefy: BeefyTraits,
 {
     // Decode the proto message into a domain message, creating an ICS26 envelope.
     let envelope = decode(message)?;
@@ -62,7 +62,7 @@ pub fn decode(message: Any) -> Result<Ics26Envelope, Error> {
 pub fn dispatch<Ctx, Beefy>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, Error>
 where
     Ctx: Ics26Context,
-    Beefy: BeefyLCStore,
+    Beefy: BeefyTraits,
 {
     let output = match msg {
         Ics2Msg(msg) => {

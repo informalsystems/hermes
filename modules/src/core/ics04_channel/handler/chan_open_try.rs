@@ -1,6 +1,6 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenTry`.
 
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::core::ics04_channel::context::ChannelReader;
@@ -14,7 +14,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Beefy: BeefyLCStore>(
+pub(crate) fn process<Beefy: BeefyTraits>(
     ctx: &dyn ChannelReader,
     msg: &MsgChannelOpenTry,
 ) -> HandlerResult<ChannelResult, Error> {

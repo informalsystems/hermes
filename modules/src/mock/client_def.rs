@@ -4,6 +4,7 @@ use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
+use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::context::ChannelReader;
@@ -50,6 +51,7 @@ impl ClientDef for MockClient {
 
     fn verify_client_consensus_state(
         &self,
+        _ctx: &dyn ConnectionReader,
         _client_state: &Self::ClientState,
         _height: Height,
         prefix: &CommitmentPrefix,
@@ -73,6 +75,8 @@ impl ClientDef for MockClient {
 
     fn verify_connection_state(
         &self,
+        _ctx: &dyn ConnectionReader,
+        _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
@@ -86,6 +90,8 @@ impl ClientDef for MockClient {
 
     fn verify_channel_state(
         &self,
+        _ctx: &dyn ClientReader,
+        _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
@@ -100,6 +106,7 @@ impl ClientDef for MockClient {
 
     fn verify_client_full_state(
         &self,
+        _ctx: &dyn ConnectionReader,
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
@@ -114,6 +121,7 @@ impl ClientDef for MockClient {
     fn verify_packet_data(
         &self,
         _ctx: &dyn ChannelReader,
+        _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
@@ -130,6 +138,7 @@ impl ClientDef for MockClient {
     fn verify_packet_acknowledgement(
         &self,
         _ctx: &dyn ChannelReader,
+        _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
@@ -146,6 +155,7 @@ impl ClientDef for MockClient {
     fn verify_next_sequence_recv(
         &self,
         _ctx: &dyn ChannelReader,
+        _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
@@ -161,6 +171,7 @@ impl ClientDef for MockClient {
     fn verify_packet_receipt_absence(
         &self,
         _ctx: &dyn ChannelReader,
+        _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,

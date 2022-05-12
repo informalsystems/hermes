@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use beefy_client::traits::{AuthoritySet, MmrState};
+use beefy_primitives::known_payload_ids::MMR_ROOT_ID;
 use beefy_primitives::mmr::BeefyNextAuthoritySet;
 use codec::{Decode, Encode};
 use core::convert::TryFrom;
@@ -10,10 +10,10 @@ use sp_core::H256;
 use sp_runtime::SaturatedConversion;
 use tendermint_proto::Protobuf;
 
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
 use ibc_proto::ibc::lightclients::beefy::v1::{BeefyAuthoritySet, ClientState as RawClientState};
 
 use crate::clients::ics11_beefy::error::Error;
+use crate::clients::ics11_beefy::header::BeefyHeader;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics24_host::identifier::ChainId;
@@ -98,16 +98,43 @@ impl ClientState {
         self.beefy_activation_block - (block_number + 1)
     }
 
-    pub fn with_updates(&self, mmr_state: MmrState, authorities: AuthoritySet) -> Self {
-        let clone = self.clone();
-        Self {
-            mmr_root_hash: mmr_state.mmr_root_hash,
-            latest_beefy_height: mmr_state.latest_beefy_height,
-            next_authority_set: authorities.next_authorities,
-            authority: authorities.current_authorities,
-            latest_para_height: Some(latest_para_height),
-            ..clone
+    /// Should only be called if this header has been verified successfully
+    pub fn from_header(self, header: BeefyHeader) -> Result<Self, Error> {
+        let mut clone = self.clone();
+        let mut authority_changed = false;
+        let (mmr_root_hash, latest_beefy_height, next_authority_set) =
+            if let Some(mmr_update) = header.mmr_update_proof {
+                if mmr_update.signed_commitment.commitment.validator_set_id
+                    != self.next_authority_set.id
+                {
+                    authority_changed = true;
+                }
+                (
+                    H256::from_slice(
+                        mmr_update
+                            .signed_commitment
+                            .commitment
+                            .payload
+                            .get_raw(&MMR_ROOT_ID)
+                            .ok_or(Error::invalid_raw_header())?,
+                    ),
+                    mmr_update.signed_commitment.commitment.block_number,
+                    mmr_update.latest_mmr_leaf.beefy_next_authority_set,
+                )
+            } else {
+                (
+                    self.mmr_root_hash,
+                    self.latest_beefy_height,
+                    self.next_authority_set,
+                )
+            };
+        clone.mmr_root_hash = mmr_root_hash;
+        clone.latest_beefy_height = latest_beefy_height;
+        if authority_changed {
+            clone.authority = clone.next_authority_set;
+            clone.next_authority_set = next_authority_set;
         }
+        Ok(clone)
     }
 
     /// Verify the time and height delays
@@ -163,20 +190,6 @@ impl ClientState {
             }
             _ => Ok(()),
         }
-    }
-
-    pub fn verify_parachain_height<LCStore: BeefyLCStore>(
-        &self,
-        height: Height,
-    ) -> Result<(), Error> {
-        let para_id = height.revision_number;
-        let trusted_para_height = LCStore::get_parachain_latest_height(para_id)
-            .map_err(|e| Error::implementation_specific(e.to_string()))?;
-        let latest_para_height = Height::new(para_id, trusted_para_height);
-        if latest_para_height < height {
-            return Err(Error::insufficient_height(latest_para_height, height));
-        }
-        Ok(())
     }
 }
 

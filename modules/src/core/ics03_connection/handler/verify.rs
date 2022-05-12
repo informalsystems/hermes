@@ -1,6 +1,6 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
 
-use crate::clients::ics11_beefy::client_def::BeefyLCStore;
+use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
@@ -12,7 +12,7 @@ use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS3 message.
-pub fn verify_proofs<Beefy: BeefyLCStore>(
+pub fn verify_proofs<Beefy: BeefyTraits>(
     ctx: &dyn ConnectionReader,
     client_state: Option<AnyClientState>,
     height: Height,
@@ -60,7 +60,7 @@ pub fn verify_proofs<Beefy: BeefyLCStore>(
 /// Verifies the authenticity and semantic correctness of a commitment `proof`. The commitment
 /// claims to prove that an object of type connection exists on the source chain (i.e., the chain
 /// which created this proof). This object must match the state of `expected_conn`.
-pub fn verify_connection_proof<Beefy: BeefyLCStore>(
+pub fn verify_connection_proof<Beefy: BeefyTraits>(
     ctx: &dyn ConnectionReader,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -91,6 +91,8 @@ pub fn verify_connection_proof<Beefy: BeefyLCStore>(
     // Verify the proof for the connection state against the expected connection end.
     client_def
         .verify_connection_state(
+            ctx,
+            connection_end.client_id(),
             &client_state,
             height,
             connection_end.counterparty().prefix(),
@@ -109,7 +111,7 @@ pub fn verify_connection_proof<Beefy: BeefyLCStore>(
 /// complete verification: that the client state the counterparty stores is valid (i.e., not frozen,
 /// at the same revision as the current chain, with matching chain identifiers, etc) and that the
 /// `proof` is correct.
-pub fn verify_client_proof<Beefy: BeefyLCStore>(
+pub fn verify_client_proof<Beefy: BeefyTraits>(
     ctx: &dyn ConnectionReader,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -130,6 +132,7 @@ pub fn verify_client_proof<Beefy: BeefyLCStore>(
 
     client_def
         .verify_client_full_state(
+            ctx,
             &client_state,
             height,
             connection_end.counterparty().prefix(),
@@ -143,7 +146,7 @@ pub fn verify_client_proof<Beefy: BeefyLCStore>(
         })
 }
 
-pub fn verify_consensus_proof<Beefy: BeefyLCStore>(
+pub fn verify_consensus_proof<Beefy: BeefyTraits>(
     ctx: &dyn ConnectionReader,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -165,6 +168,7 @@ pub fn verify_consensus_proof<Beefy: BeefyLCStore>(
 
     client
         .verify_client_consensus_state(
+            ctx,
             &client_state,
             height,
             connection_end.counterparty().prefix(),

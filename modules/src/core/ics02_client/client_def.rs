@@ -1,5 +1,5 @@
 use crate::clients::ics07_tendermint::client_def::TendermintClient;
-use crate::clients::ics11_beefy::client_def::{BeefyClient, BeefyLCStore};
+use crate::clients::ics11_beefy::client_def::{BeefyClient, BeefyTraits};
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
@@ -7,6 +7,7 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::{AnyHeader, Header};
 use crate::core::ics03_connection::connection::ConnectionEnd;
+use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::context::ChannelReader;
@@ -43,8 +44,8 @@ pub trait ClientDef: Clone {
 
     fn update_state(
         &self,
-        _ctx: &dyn ClientReader,
-        _client_id: ClientId,
+        ctx: &dyn ClientReader,
+        client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error>;
@@ -82,6 +83,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_client_consensus_state(
         &self,
+        ctx: &dyn ConnectionReader,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -96,6 +98,8 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_connection_state(
         &self,
+        ctx: &dyn ConnectionReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -109,6 +113,8 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_channel_state(
         &self,
+        ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -123,6 +129,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_client_full_state(
         &self,
+        ctx: &dyn ConnectionReader,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -137,6 +144,7 @@ pub trait ClientDef: Clone {
     fn verify_packet_data(
         &self,
         ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -153,6 +161,7 @@ pub trait ClientDef: Clone {
     fn verify_packet_acknowledgement(
         &self,
         ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -169,6 +178,7 @@ pub trait ClientDef: Clone {
     fn verify_next_sequence_recv(
         &self,
         ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -184,6 +194,7 @@ pub trait ClientDef: Clone {
     fn verify_packet_receipt_absence(
         &self,
         ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -196,14 +207,14 @@ pub trait ClientDef: Clone {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum AnyClient<BeefyStore: BeefyLCStore> {
+pub enum AnyClient<B: BeefyTraits> {
     Tendermint(TendermintClient),
-    Beefy(BeefyClient<BeefyStore>),
+    Beefy(BeefyClient<B>),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockClient),
 }
 
-impl<BeefyStore: BeefyLCStore> AnyClient<BeefyStore> {
+impl<Beefy: BeefyTraits> AnyClient<Beefy> {
     pub fn from_client_type(client_type: ClientType) -> Self {
         match client_type {
             ClientType::Tendermint => Self::Tendermint(TendermintClient::default()),
@@ -215,7 +226,7 @@ impl<BeefyStore: BeefyLCStore> AnyClient<BeefyStore> {
 }
 
 // ⚠️  Beware of the awful boilerplate below ⚠️
-impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
+impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
     type Header = AnyHeader;
     type ClientState = AnyClientState;
     type ConsensusState = AnyConsensusState;
@@ -379,7 +390,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                 client.check_for_misbehaviour(ctx, client_id, client_state, header)
             }
             #[cfg(any(test, feature = "mocks"))]
-            AnyClient::Mock(client ) => {
+            AnyClient::Mock(client) => {
                 let (client_state, header) = downcast!(
                     client_state => AnyClientState::Mock,
                     header => AnyHeader::Mock,
@@ -455,6 +466,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
     fn verify_client_consensus_state(
         &self,
+        ctx: &dyn ConnectionReader,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -472,6 +484,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_client_consensus_state(
+                    ctx,
                     client_state,
                     height,
                     prefix,
@@ -490,6 +503,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Beefy))?;
 
                 client.verify_client_consensus_state(
+                    ctx,
                     client_state,
                     height,
                     prefix,
@@ -508,6 +522,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_client_consensus_state(
+                    ctx,
                     client_state,
                     height,
                     prefix,
@@ -523,6 +538,8 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
     fn verify_connection_state(
         &self,
+        ctx: &dyn ConnectionReader,
+        client_id: &ClientId,
         client_state: &AnyClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -537,6 +554,8 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                     .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_connection_state(
+                    ctx,
+                    client_id,
                     client_state,
                     height,
                     prefix,
@@ -551,6 +570,8 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                     .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Beefy))?;
 
                 client.verify_connection_state(
+                    ctx,
+                    client_id,
                     client_state,
                     height,
                     prefix,
@@ -566,6 +587,8 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                     .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_connection_state(
+                    ctx,
+                    client_id,
                     client_state,
                     height,
                     prefix,
@@ -580,6 +603,8 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
     fn verify_channel_state(
         &self,
+        ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &AnyClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -595,6 +620,8 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                     .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_channel_state(
+                    ctx,
+                    client_id,
                     client_state,
                     height,
                     prefix,
@@ -611,6 +638,8 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                     .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Beefy))?;
 
                 client.verify_channel_state(
+                    ctx,
+                    client_id,
                     client_state,
                     height,
                     prefix,
@@ -628,6 +657,8 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                     .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_channel_state(
+                    ctx,
+                    client_id,
                     client_state,
                     height,
                     prefix,
@@ -642,6 +673,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
     }
     fn verify_client_full_state(
         &self,
+        ctx: &dyn ConnectionReader,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -658,6 +690,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_client_full_state(
+                    ctx,
                     client_state,
                     height,
                     prefix,
@@ -674,6 +707,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Beefy))?;
 
                 client.verify_client_full_state(
+                    ctx,
                     client_state,
                     height,
                     prefix,
@@ -691,6 +725,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_client_full_state(
+                    ctx,
                     client_state,
                     height,
                     prefix,
@@ -706,6 +741,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
     fn verify_packet_data(
         &self,
         ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -725,6 +761,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_packet_data(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -745,6 +782,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_packet_data(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -766,6 +804,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_packet_data(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -783,6 +822,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
     fn verify_packet_acknowledgement(
         &self,
         ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -802,6 +842,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_packet_acknowledgement(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -822,6 +863,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_packet_acknowledgement(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -842,6 +884,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_packet_acknowledgement(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -858,6 +901,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
     fn verify_next_sequence_recv(
         &self,
         ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -876,6 +920,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_next_sequence_recv(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -895,6 +940,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_next_sequence_recv(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -915,6 +961,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_next_sequence_recv(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -931,6 +978,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
     fn verify_packet_receipt_absence(
         &self,
         ctx: &dyn ChannelReader,
+        client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -949,6 +997,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_packet_receipt_absence(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -968,6 +1017,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_packet_receipt_absence(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
@@ -988,6 +1038,7 @@ impl<BeefyStore: BeefyLCStore> ClientDef for AnyClient<BeefyStore> {
 
                 client.verify_packet_receipt_absence(
                     ctx,
+                    client_id,
                     client_state,
                     height,
                     connection_end,
