@@ -665,7 +665,19 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         match self
             .check_consensus_state_trusting_period(&client_state, &client_state.latest_height())?
         {
-            ConsensusStateTrusted::NotTrusted { elapsed, .. } => {
+            ConsensusStateTrusted::NotTrusted {
+                elapsed,
+                network_timestamp,
+                consensus_state_timestmap,
+            } => {
+                error!(
+                    latest_height = %client_state.latest_height(),
+                    network_timestmap = %network_timestamp,
+                    consensus_state_timestamp = %consensus_state_timestmap,
+                    elapsed = ?elapsed,
+                    "[{}] client state is not valid: latest height is outside of trusting period!",
+                    self
+                );
                 return Err(ForeignClientError::expired_or_frozen(
                     self.id().clone(),
                     self.dst_chain.id(),
@@ -679,7 +691,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    /// Verifies if  the consensus state at given [`Height`]
+    /// Verifies if the consensus state at given [`Height`]
     /// is within or outside of the client's trusting period.
     fn check_consensus_state_trusting_period(
         &self,
@@ -916,18 +928,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         target_height: Height,
         trusted_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
-        let latest_height = || {
+        let src_network_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::client_create(
                     self.src_chain.id(),
-                    "failed fetching src chain latest height with error".to_string(),
+                    "failed fetching src network latest height with error".to_string(),
                     e,
                 )
             })
         };
 
-        // Wait for source chain to reach `target_height`
-        while latest_height()? < target_height {
+        // Wait for the source network to produce block(s) & reach `target_height`.
+        while src_network_latest_height()? < target_height {
             thread::sleep(Duration::from_millis(100))
         }
 
@@ -941,24 +953,28 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             trusted_height
         };
 
-        // Check if the consensus state at `trusted_height` is within trusting period
-        if let ConsensusStateTrusted::NotTrusted {
-            elapsed,
-            consensus_state_timestmap,
-            network_timestamp,
-        } = self.check_consensus_state_trusting_period(&client_state, &trusted_height)?
-        {
-            warn!(
-                trusted_height = %trusted_height,
-                network_timestmap = %network_timestamp,
-                consensus_state_timestamp = %consensus_state_timestmap,
-                elapsed = ?elapsed,
-                "[{}] cannot build client update message because the provided trusted height is outside of trusting period!",
-                self);
-            return Err(ForeignClientError::consensus_state_not_trusted(
-                trusted_height,
+        if trusted_height != client_state.latest_height() {
+            // If we're using a trusted height that is different from the client latest height,
+            // then check if the consensus state at `trusted_height` is within trusting period
+            if let ConsensusStateTrusted::NotTrusted {
                 elapsed,
-            ));
+                consensus_state_timestmap,
+                network_timestamp,
+            } = self.check_consensus_state_trusting_period(&client_state, &trusted_height)?
+            {
+                error!(
+                    trusted_height = %trusted_height,
+                    network_timestmap = %network_timestamp,
+                    consensus_state_timestamp = %consensus_state_timestmap,
+                    elapsed = ?elapsed,
+                    "[{}] cannot build client update message because the provided trusted height is outside of trusting period!",
+                    self
+                );
+                return Err(ForeignClientError::consensus_state_not_trusted(
+                    trusted_height,
+                    elapsed,
+                ));
+            }
         }
 
         if trusted_height >= target_height {
