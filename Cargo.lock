@@ -1617,6 +1617,7 @@ version = "0.14.1"
 dependencies = [
  "crossbeam-channel 0.5.4",
  "ibc",
+ "moka",
  "once_cell",
  "opentelemetry",
  "opentelemetry-prometheus",

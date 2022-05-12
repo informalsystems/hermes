@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{collections::HashMap, sync::Mutex, time::Instant};
+use std::time::{Duration, Instant};
 
 use opentelemetry::{
     global,
@@ -32,7 +32,6 @@ impl fmt::Display for WorkerType {
     }
 }
 
-#[derive(Debug)]
 pub struct TelemetryState {
     exporter: PrometheusExporter,
 
@@ -79,7 +78,7 @@ pub struct TelemetryState {
 
     /// Records the time at which we started processing an event batch.
     /// Used for computing the `tx_latency` metric.
-    in_flight_events: Mutex<HashMap<String, Instant>>,
+    in_flight_events: moka::sync::Cache<String, Instant>,
 }
 
 impl TelemetryState {
@@ -219,22 +218,13 @@ impl TelemetryState {
 
     pub fn start_process_batch(&self, tracking_id: impl ToString) {
         self.in_flight_events
-            .lock()
-            .expect("poisoned lock")
             .insert(tracking_id.to_string(), Instant::now());
     }
 
     pub fn end_process_batch(&self, chain_id: &ChainId, tracking_id: impl ToString) {
         let tracking_id = tracking_id.to_string();
 
-        let start = self
-            .in_flight_events
-            .lock()
-            .expect("poisoned lock")
-            .get(&tracking_id)
-            .copied();
-
-        if let Some(start) = start {
+        if let Some(start) = self.in_flight_events.get(&tracking_id) {
             let latency = start.elapsed().as_millis() as u64;
 
             let labels = &[
@@ -324,7 +314,10 @@ impl Default for TelemetryState {
                     until the corresponding transaction(s) were confirmed. Milliseconds.")
                 .init(),
 
-            in_flight_events: Mutex::new(HashMap::new())
+            in_flight_events: moka::sync::Cache::builder()
+                    .time_to_live(Duration::from_secs(60 * 60)) // Remove entries after 1 hour
+                    .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
+                    .build(),
         }
     }
 }
