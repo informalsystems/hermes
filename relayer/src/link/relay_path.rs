@@ -239,11 +239,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub(crate) fn src_time_latest(&self) -> Result<Instant, LinkError> {
-        self.src_time_at_height(Height::zero())
+        let elapsed =
+            Timestamp::now().duration_since(
+                &self.src_chain()
+                    .query_application_status().unwrap()
+                    .timestamp)
+                .unwrap_or_default();
+
+        Ok(Instant::now().sub(elapsed))
     }
 
     pub(crate) fn dst_time_latest(&self) -> Result<Instant, LinkError> {
-        self.dst_time_at_height(Height::zero())
+        let elapsed =
+            Timestamp::now().duration_since(
+                &self.dst_chain()
+                    .query_application_status().unwrap()
+                    .timestamp)
+                .unwrap_or_default();
+
+        Ok(Instant::now().sub(elapsed))
     }
 
     pub(crate) fn src_max_block_time(&self) -> Result<Duration, LinkError> {
