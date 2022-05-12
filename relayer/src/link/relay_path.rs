@@ -682,17 +682,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let msgs = odata.assemble_msgs(self)?;
 
+        telemetry!({
+            let (chain, counterparty, channel_id, port_id) = self.target_info(odata.target);
+
+            ibc_telemetry::global().tx_submitted(
+                msgs.tracking_id,
+                &chain,
+                channel_id,
+                port_id,
+                &counterparty,
+            );
+        });
+
         match odata.target {
-            OperationalDataTarget::Source => {
-                telemetry!(tx_submitted, &self.src_chain().id(), msgs.tracking_id);
-
-                S::submit(self.src_chain(), msgs)
-            }
-            OperationalDataTarget::Destination => {
-                telemetry!(tx_submitted, &self.dst_chain().id(), msgs.tracking_id);
-
-                S::submit(self.dst_chain(), msgs)
-            }
+            OperationalDataTarget::Source => S::submit(self.src_chain(), msgs),
+            OperationalDataTarget::Destination => S::submit(self.dst_chain(), msgs),
         }
     }
 
@@ -1679,5 +1683,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             self.dst_chain().clone(),
             self.src_chain().clone(),
         )
+    }
+
+    // we need fully qualified ChainId to avoid unneeded imports warnings
+    #[cfg(feature = "telemetry")]
+    fn target_info(
+        &self,
+        target: OperationalDataTarget,
+    ) -> (
+        ibc::core::ics24_host::identifier::ChainId, // source chain
+        ibc::core::ics24_host::identifier::ChainId, // destination chain
+        &ChannelId,
+        &PortId,
+    ) {
+        match target {
+            OperationalDataTarget::Source => (
+                self.src_chain().id(),
+                self.dst_chain().id(),
+                &self.src_channel_id,
+                &self.src_port_id,
+            ),
+            OperationalDataTarget::Destination => (
+                self.dst_chain().id(),
+                self.src_chain().id(),
+                &self.dst_channel_id,
+                &self.dst_port_id,
+            ),
+        }
     }
 }

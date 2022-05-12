@@ -242,7 +242,14 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         "transactions confirmed",
                     );
 
-                    telemetry!(tx_confirmed, &self.chain_id(), pending.tracking_id());
+                    telemetry!(
+                        tx_confirmed,
+                        pending.tracking_id(),
+                        &self.chain.id(),
+                        &self.channel_id,
+                        &self.port_id,
+                        &self.counterparty_chain_id
+                    );
 
                     // Convert the events to RelaySummary and return them.
                     let mut summary = RelaySummary::from_events(events);

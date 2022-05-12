@@ -226,30 +226,51 @@ impl TelemetryState {
             .insert(tracking_id.to_string(), Instant::now());
     }
 
-    pub fn tx_submitted(&self, chain_id: &ChainId, tracking_id: impl ToString) {
+    pub fn tx_submitted(
+        &self,
+
+        tracking_id: impl ToString,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
         let tracking_id = tracking_id.to_string();
 
         if let Some(start) = self.in_flight_events.get(&tracking_id) {
             let latency = start.elapsed().as_millis() as u64;
 
             let labels = &[
-                KeyValue::new("chain", chain_id.to_string()),
                 KeyValue::new("tracking_id", tracking_id),
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+                KeyValue::new("channel", channel_id.to_string()),
+                KeyValue::new("port", port_id.to_string()),
             ];
 
             self.tx_latency_submitted.record(latency, labels);
         }
     }
 
-    pub fn tx_confirmed(&self, chain_id: &ChainId, tracking_id: impl ToString) {
+    pub fn tx_confirmed(
+        &self,
+        tracking_id: impl ToString,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
         let tracking_id = tracking_id.to_string();
 
         if let Some(start) = self.in_flight_events.get(&tracking_id) {
             let latency = start.elapsed().as_millis() as u64;
 
             let labels = &[
-                KeyValue::new("chain", chain_id.to_string()),
                 KeyValue::new("tracking_id", tracking_id),
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+                KeyValue::new("channel", channel_id.to_string()),
+                KeyValue::new("port", port_id.to_string()),
             ];
 
             self.tx_latency_confirmed.record(latency, labels);
