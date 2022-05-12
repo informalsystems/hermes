@@ -608,7 +608,7 @@ fn process_batch<Chain: ChainHandle>(
 ) -> Result<(), Error> {
     assert_eq!(src_chain.id(), batch.chain_id);
 
-    telemetry!(start_process_batch, batch.tracking_id);
+    telemetry!(received_event_batch, batch.tracking_id);
 
     let collected = collect_events(config, workers, &src_chain, batch);
 

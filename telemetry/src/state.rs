@@ -73,8 +73,13 @@ pub struct TelemetryState {
 
     /// Indicates the latency for all transactions submitted to a specific chain,
     /// i.e. the difference between the moment when Hermes received a batch of events
+    /// until the corresponding transaction(s) were submitted. Milliseconds.
+    tx_latency_submitted: ValueRecorder<u64>,
+
+    /// Indicates the latency for all transactions submitted to a specific chain,
+    /// i.e. the difference between the moment when Hermes received a batch of events
     /// until the corresponding transaction(s) were confirmed. Milliseconds.
-    tx_latency: ValueRecorder<u64>,
+    tx_latency_confirmed: ValueRecorder<u64>,
 
     /// Records the time at which we started processing an event batch.
     /// Used for computing the `tx_latency` metric.
@@ -216,12 +221,12 @@ impl TelemetryState {
         self.wallet_balance.record(amount, labels);
     }
 
-    pub fn start_process_batch(&self, tracking_id: impl ToString) {
+    pub fn received_event_batch(&self, tracking_id: impl ToString) {
         self.in_flight_events
             .insert(tracking_id.to_string(), Instant::now());
     }
 
-    pub fn end_process_batch(&self, chain_id: &ChainId, tracking_id: impl ToString) {
+    pub fn tx_submitted(&self, chain_id: &ChainId, tracking_id: impl ToString) {
         let tracking_id = tracking_id.to_string();
 
         if let Some(start) = self.in_flight_events.get(&tracking_id) {
@@ -232,7 +237,22 @@ impl TelemetryState {
                 KeyValue::new("tracking_id", tracking_id),
             ];
 
-            self.tx_latency.record(latency, labels);
+            self.tx_latency_submitted.record(latency, labels);
+        }
+    }
+
+    pub fn tx_confirmed(&self, chain_id: &ChainId, tracking_id: impl ToString) {
+        let tracking_id = tracking_id.to_string();
+
+        if let Some(start) = self.in_flight_events.get(&tracking_id) {
+            let latency = start.elapsed().as_millis() as u64;
+
+            let labels = &[
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("tracking_id", tracking_id),
+            ];
+
+            self.tx_latency_confirmed.record(latency, labels);
         }
     }
 }
@@ -307,8 +327,15 @@ impl Default for TelemetryState {
                 .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain")
                 .init(),
 
-            tx_latency: meter
-                .u64_value_recorder("tx_latency")
+            tx_latency_submitted: meter
+                .u64_value_recorder("tx_latency_submitted")
+                .with_description("The latency for all transactions submitted to a specific chain, \
+                    i.e. the difference between the moment when Hermes received a batch of events \
+                    and when it submitted the corresponding transaction(s). Milliseconds.")
+                .init(),
+
+            tx_latency_confirmed: meter
+                .u64_value_recorder("tx_latency_confirmed")
                 .with_description("The latency for all transactions submitted to a specific chain, \
                     i.e. the difference between the moment when Hermes received a batch of events \
                     until the corresponding transaction(s) were confirmed. Milliseconds.")

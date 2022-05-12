@@ -57,6 +57,7 @@ use crate::link::pending::PendingTxs;
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
 use crate::link::{pending, relay_sender};
+use crate::telemetry;
 use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
@@ -682,8 +683,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let msgs = odata.assemble_msgs(self)?;
 
         match odata.target {
-            OperationalDataTarget::Source => S::submit(self.src_chain(), msgs),
-            OperationalDataTarget::Destination => S::submit(self.dst_chain(), msgs),
+            OperationalDataTarget::Source => {
+                telemetry!(tx_submitted, &self.src_chain().id(), msgs.tracking_id);
+
+                S::submit(self.src_chain(), msgs)
+            }
+            OperationalDataTarget::Destination => {
+                telemetry!(tx_submitted, &self.dst_chain().id(), msgs.tracking_id);
+
+                S::submit(self.dst_chain(), msgs)
+            }
         }
     }
 
