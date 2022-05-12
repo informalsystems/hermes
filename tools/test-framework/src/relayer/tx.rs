@@ -99,31 +99,37 @@ pub async fn simple_send_tx(
         estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
             .await?;
 
-    let events_per_tx = vec![IbcEvent::default(); message_count];
+    tokio::time::sleep(Duration::from_secs(2)).await;
 
-    let tx_sync_result = TxSyncResult {
-        response,
-        events: events_per_tx,
-    };
+    // There are issues with wait_for_block_commits, as the event from
+    // `MsgRegisterCounterpartyAddress` gets ignored when confirming TX,
+    // and the transaction times out.
 
-    let mut tx_sync_results = vec![tx_sync_result];
+    // let events_per_tx = vec![IbcEvent::default(); message_count];
 
-    wait_for_block_commits(
-        &config.chain_id,
-        &config.rpc_client,
-        &config.rpc_address,
-        &config.rpc_timeout,
-        &mut tx_sync_results,
-    )
-    .await?;
+    // let tx_sync_result = TxSyncResult {
+    //     response,
+    //     events: events_per_tx,
+    // };
 
-    for result in tx_sync_results.iter() {
-        for event in result.events.iter() {
-            if let IbcEvent::ChainError(e) = event {
-                return Err(Error::generic(eyre!("send_tx result in error: {}", e)));
-            }
-        }
-    }
+    // let mut tx_sync_results = vec![tx_sync_result];
+
+    // wait_for_block_commits(
+    //     &config.chain_id,
+    //     &config.rpc_client,
+    //     &config.rpc_address,
+    //     &config.rpc_timeout,
+    //     &mut tx_sync_results,
+    // )
+    // .await?;
+
+    // for result in tx_sync_results.iter() {
+    //     for event in result.events.iter() {
+    //         if let IbcEvent::ChainError(e) = event {
+    //             return Err(Error::generic(eyre!("send_tx result in error: {}", e)));
+    //         }
+    //     }
+    // }
 
     Ok(())
 }

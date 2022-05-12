@@ -125,14 +125,14 @@ impl BinaryChannelTest for ChannelWithFeeTest {
                 "Expect user to be refunded receive timeout fee {} and go from {} to {}",
                 timeout_fee,
                 balance_a2,
-                balance_a2 + timeout_fee
+                balance_a2 + timeout_fee + ack_fee
             );
 
             // receive fee and timeout fee should be refunded,
             // as there is no counterparty address registered.
             chain_driver_a.assert_eventual_wallet_amount(
                 &user_a.address(),
-                balance_a2 + receive_fee + timeout_fee,
+                balance_a2 + timeout_fee,
                 &denom_a,
             )?;
 
@@ -146,7 +146,7 @@ impl BinaryChannelTest for ChannelWithFeeTest {
 
             chain_driver_a.assert_eventual_wallet_amount(
                 &relayer_a.address(),
-                relayer_balance_a + ack_fee,
+                relayer_balance_a + ack_fee + receive_fee,
                 &denom_a,
             )?;
 

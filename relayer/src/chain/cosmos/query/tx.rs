@@ -10,6 +10,7 @@ use ibc::Height as ICSHeight;
 use tendermint::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
+use tracing::trace;
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::error::Error;
@@ -121,6 +122,8 @@ pub async fn query_txs(
                 )
                 .await
                 .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
+
+            trace!("response from tx_hash_query for {:?}: {:?}", tx, response);
 
             if response.txs.is_empty() {
                 Ok(vec![])
