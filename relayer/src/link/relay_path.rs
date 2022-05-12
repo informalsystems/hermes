@@ -392,7 +392,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Produces and schedules operational data for this relaying path based on the input events.
-    fn events_to_operational_data(&self, events: TrackedEvents) -> Result<(), LinkError> {
+    pub(crate) fn events_to_operational_data(&self, events: TrackedEvents) -> Result<(), LinkError> {
         // Obtain the operational data for the source chain (mostly timeout packets) and for the
         // destination chain (e.g., receive packet messages).
         let (src_opt, dst_opt) = self.generate_operational_data(events)?;
@@ -1482,7 +1482,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     /// Pulls out the operational elements with elapsed delay period and that can
     /// now be processed.
-    fn try_fetch_scheduled_operational_data(
+    pub(crate) fn try_fetch_scheduled_operational_data(
         &self,
     ) -> Result<(VecDeque<OperationalData>, VecDeque<OperationalData>), LinkError> {
         // Extracts elements from a Vec when the predicate returns true.

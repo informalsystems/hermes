@@ -14,6 +14,7 @@ use crate::link::operational_data::OperationalData;
 use crate::link::packet_events::{query_packet_events_with, query_send_packet_events};
 use crate::link::relay_path::RelayPath;
 use crate::link::Link;
+use crate::link::relay_sender::SyncSender;
 
 // TODO(Adi): Open an issue or discussion. Options are:
 //  a. We remove this code and deprecate relaying on paths with non-zero delay.
@@ -143,8 +144,30 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             query_send_packet_events,
         ) {
             // Bypass scheduling and waiting on operational data, relay directly.
-            let mut last_events = self.a_to_b.relay_from_events(events_chunk)?;
-            results.append(&mut last_events.events);
+            self.a_to_b.events_to_operational_data(events_chunk)?;
+
+            let (src_ods, dst_ods) =
+                self.a_to_b.try_fetch_scheduled_operational_data()?;
+
+            for od in dst_ods {
+                let mut reply =
+                    self.relay_from_operational_data::<SyncSender>(od.clone())?;
+
+                results.append(&mut reply.events);
+            }
+
+            for od in src_ods {
+                let mut reply =
+                    self.relay_from_operational_data::<SyncSender>(od.clone())?;
+                results.append(&mut reply.events);
+            }
+        }
+
+        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
+            let mut last_res = self
+                .a_to_b
+                .relay_from_operational_data::<SyncSender>(odata)?;
+            results.append(&mut last_res);
         }
 
         Ok(results)
