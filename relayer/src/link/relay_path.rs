@@ -1021,7 +1021,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         opt_query_height: Option<Height>,
     ) -> Result<(), LinkError> {
         let _span =
-            span!(Level::DEBUG, "build_recv_packet_and_timeout_msgs", h = ?opt_query_height)
+            span!(Level::DEBUG, "schedule_recv_packet_and_timeout_msgs", h = ?opt_query_height)
                 .entered();
 
         // Pull the s.n. of all packets that the destination chain has not yet received.
@@ -1037,7 +1037,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         debug!(
-            "seq. nrs. of unreceived packets to send out to {} of the ones with commitments on {}: {} (first 10 shown here; total={})",
+            "sequences of unreceived packets to send out to {} of the ones with commitments on {}: {} (first 10 shown here; total={})",
             self.dst_chain().id(),
             self.src_chain().id(),
             sequences.iter().take(10).join(", "), sequences.len()
