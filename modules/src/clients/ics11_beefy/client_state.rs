@@ -105,7 +105,7 @@ impl ClientState {
         let (mmr_root_hash, latest_beefy_height, next_authority_set) =
             if let Some(mmr_update) = header.mmr_update_proof {
                 if mmr_update.signed_commitment.commitment.validator_set_id
-                    != self.next_authority_set.id
+                    == self.next_authority_set.id
                 {
                     authority_changed = true;
                 }
