@@ -555,7 +555,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             debug!("[try {}/{}]", i + 1, MAX_RETRIES);
 
             // Consume the operational data by attempting to send its messages
-            match self.send_from_operational_data::<S>(odata.clone()) {
+            match self.send_from_operational_data::<S>(&odata) {
                 Ok(reply) => {
                     // Done with this op. data
                     info!("success");
@@ -673,7 +673,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Propagates any encountered errors.
     fn send_from_operational_data<S: relay_sender::Submit>(
         &self,
-        odata: OperationalData,
+        odata: &OperationalData,
     ) -> Result<S::Reply, LinkError> {
         if odata.batch.is_empty() {
             error!("ignoring empty operational data!");
