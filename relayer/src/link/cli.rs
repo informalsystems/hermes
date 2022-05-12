@@ -2,7 +2,7 @@ use std::convert::TryInto;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use tracing::{error, error_span, info};
+use tracing::{error_span, info};
 
 use ibc::events::IbcEvent;
 use ibc::Height;
@@ -11,10 +11,12 @@ use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets
 use crate::chain::handle::ChainHandle;
 use crate::link::error::LinkError;
 use crate::link::operational_data::OperationalData;
-use crate::link::packet_events::{query_packet_events_with, query_send_packet_events};
+use crate::link::packet_events::{
+    query_packet_events_with, query_send_packet_events, query_write_ack_events,
+};
 use crate::link::relay_path::RelayPath;
-use crate::link::Link;
 use crate::link::relay_sender::SyncSender;
+use crate::link::Link;
 
 // TODO(Adi): Open an issue or discussion. Options are:
 //  a. We remove this code and deprecate relaying on paths with non-zero delay.
@@ -59,16 +61,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
         .entered();
 
-        // Relaying on a non-zero connection delay requires (indefinite) blocking
-        // to wait for the connection delay to pass.
-        // We do not support this in interactive mode.
-        if !self.a_to_b.channel().connection_delay.is_zero() {
-            error!(
-                "relaying on a non-zero connection delay path is not supported in interactive mode"
-            );
-            panic!("please use the passive relaying mode (`hermes start`)");
-        }
-
         // Find the sequence numbers of unreceived packets
         let (sequences, src_response_height) = unreceived_packets(
             self.a_to_b.dst_chain(),
@@ -92,8 +84,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             &self.a_to_b.path_id,
             query_send_packet_events,
         ) {
-            let mut last_events = self.a_to_b.relay_from_events(events_chunk)?;
-            results.append(&mut last_events.events);
+            // Bypass scheduling and waiting on operational data, relay directly.
+            self.a_to_b.events_to_operational_data(events_chunk)?;
+
+            let (src_ods, dst_ods) = self.a_to_b.try_fetch_scheduled_operational_data()?;
+
+            for od in dst_ods {
+                let mut reply = self
+                    .a_to_b
+                    .relay_from_operational_data::<SyncSender>(od.clone())?;
+
+                results.append(&mut reply.events);
+            }
+
+            for od in src_ods {
+                let mut reply = self
+                    .a_to_b
+                    .relay_from_operational_data::<SyncSender>(od.clone())?;
+                results.append(&mut reply.events);
+            }
+        }
+
+        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
+            let mut last_res = self
+                .a_to_b
+                .relay_from_operational_data::<SyncSender>(odata)?;
+            results.append(&mut last_res.events);
         }
 
         Ok(results)
@@ -109,16 +125,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             dst_chain = %self.a_to_b.dst_chain().id(),
         )
         .entered();
-
-        // Relaying on a non-zero connection delay requires (indefinite) blocking
-        // to wait for the connection delay to pass.
-        // We do not support this in interactive mode.
-        if !self.a_to_b.channel().connection_delay.is_zero() {
-            error!(
-                "relaying on a non-zero connection delay path is not supported in interactive mode"
-            );
-            panic!("please use the passive relaying mode (`hermes start`)");
-        }
 
         // Find the sequence numbers of unreceived acknowledgements
         let (sequences, src_response_height) = unreceived_acknowledgements(
@@ -141,24 +147,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             src_response_height,
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
-            query_send_packet_events,
+            query_write_ack_events,
         ) {
             // Bypass scheduling and waiting on operational data, relay directly.
             self.a_to_b.events_to_operational_data(events_chunk)?;
 
-            let (src_ods, dst_ods) =
-                self.a_to_b.try_fetch_scheduled_operational_data()?;
+            let (src_ods, dst_ods) = self.a_to_b.try_fetch_scheduled_operational_data()?;
 
             for od in dst_ods {
-                let mut reply =
-                    self.relay_from_operational_data::<SyncSender>(od.clone())?;
+                let mut reply = self
+                    .a_to_b
+                    .relay_from_operational_data::<SyncSender>(od.clone())?;
 
                 results.append(&mut reply.events);
             }
 
             for od in src_ods {
-                let mut reply =
-                    self.relay_from_operational_data::<SyncSender>(od.clone())?;
+                let mut reply = self
+                    .a_to_b
+                    .relay_from_operational_data::<SyncSender>(od.clone())?;
                 results.append(&mut reply.events);
             }
         }
@@ -167,7 +174,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             let mut last_res = self
                 .a_to_b
                 .relay_from_operational_data::<SyncSender>(odata)?;
-            results.append(&mut last_res);
+            results.append(&mut last_res.events);
         }
 
         Ok(results)
