@@ -18,7 +18,11 @@ impl TrackingId {
 impl fmt::Display for TrackingId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TrackingId::Uuid(u) => u.fmt(f),
+            TrackingId::Uuid(u) => {
+                let mut s = u.to_string();
+                s.truncate(8);
+                s.fmt(f)
+            }
             TrackingId::Static(s) => s.fmt(f),
         }
     }
