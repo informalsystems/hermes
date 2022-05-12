@@ -43,6 +43,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Ok(None)
         }
     }
+
+    /// Given a vector of [`OperationalData`], this method proceeds to relaying
+    /// all the messages therein. It accumulates all events generated in the
+    /// mutable vector of [`IbcEvent`]s.
+    ///
+    /// This method relays the operational data using a [`SyncSender`].
+    pub fn relay_and_accumulate_results(
+        &self,
+        from: Vec<OperationalData>,
+        results: &mut Vec<IbcEvent>,
+    ) -> Result<(), LinkError> {
+        for od in from {
+            let mut last_res = self.relay_from_operational_data::<SyncSender>(od)?;
+            results.append(&mut last_res.events);
+        }
+
+        Ok(())
+    }
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
@@ -83,28 +101,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             self.a_to_b.events_to_operational_data(events_chunk)?;
 
             let (src_ods, dst_ods) = self.a_to_b.try_fetch_scheduled_operational_data()?;
-
-            for od in dst_ods {
-                let mut reply = self
-                    .a_to_b
-                    .relay_from_operational_data::<SyncSender>(od.clone())?;
-
-                results.append(&mut reply.events);
-            }
-
-            for od in src_ods {
-                let mut reply = self
-                    .a_to_b
-                    .relay_from_operational_data::<SyncSender>(od.clone())?;
-                results.append(&mut reply.events);
-            }
+            self.a_to_b
+                .relay_and_accumulate_results(Vec::from(src_ods), &mut results)?;
+            self.a_to_b
+                .relay_and_accumulate_results(Vec::from(dst_ods), &mut results)?;
         }
 
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
-            let mut last_res = self
-                .a_to_b
-                .relay_from_operational_data::<SyncSender>(odata)?;
-            results.append(&mut last_res.events);
+            self.a_to_b
+                .relay_and_accumulate_results(vec![odata], &mut results)?;
         }
 
         Ok(results)
@@ -146,29 +151,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         ) {
             self.a_to_b.events_to_operational_data(events_chunk)?;
 
+            // In case of zero connection delay, the op. data will already be ready
             let (src_ods, dst_ods) = self.a_to_b.try_fetch_scheduled_operational_data()?;
-
-            for od in dst_ods {
-                let mut reply = self
-                    .a_to_b
-                    .relay_from_operational_data::<SyncSender>(od.clone())?;
-
-                results.append(&mut reply.events);
-            }
-
-            for od in src_ods {
-                let mut reply = self
-                    .a_to_b
-                    .relay_from_operational_data::<SyncSender>(od.clone())?;
-                results.append(&mut reply.events);
-            }
+            self.a_to_b
+                .relay_and_accumulate_results(Vec::from(src_ods), &mut results)?;
+            self.a_to_b
+                .relay_and_accumulate_results(Vec::from(dst_ods), &mut results)?;
         }
 
+        // In case of non-zero connection delay, we block here waiting for all op.data
+        // until the connection delay elapses
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
-            let mut last_res = self
-                .a_to_b
-                .relay_from_operational_data::<SyncSender>(odata)?;
-            results.append(&mut last_res.events);
+            self.a_to_b
+                .relay_and_accumulate_results(vec![odata], &mut results)?;
         }
 
         Ok(results)
