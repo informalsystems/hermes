@@ -6,15 +6,13 @@
 use core::ops::Add;
 use core::time::Duration;
 
-use ibc::bigint::U256;
-use ibc::events::IbcEvent;
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
+use ibc_relayer::transfer::TransferError;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
@@ -36,8 +34,8 @@ pub fn build_transfer_message<SrcChain, DstChain>(
         .map_err(handle_generic_error)?;
 
     let token = ibc_proto::cosmos::base::v1beta1::Coin {
-        denom: opts.denom.clone(),
-        amount: opts.amount.to_string(),
+        denom: denom.value().to_string(),
+        amount: amount.to_string(),
     }
     .try_into()
     .map_err(TransferError::token_transfer)?;

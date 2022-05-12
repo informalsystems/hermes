@@ -296,6 +296,12 @@ impl FromStr for Amount {
     }
 }
 
+impl From<u64> for Amount {
+    fn from(v: u64) -> Self {
+        Self(v.into())
+    }
+}
+
 // We only provide an `Add<Decimal>` implementation which always panics on overflow.
 impl Add<Self> for Amount {
     type Output = Self;
