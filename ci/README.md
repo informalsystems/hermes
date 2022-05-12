@@ -21,41 +21,48 @@ Follow these steps to run the e2e test locally:
 
 __Note__: This assumes you are running this the first time, if not, please ensure you follow the steps to [clean up the containers](#cleaning-up) before running it again.
 
-1. Clone the `ibc-rs` repo
+1. Clone the `ibc-rs` repo.
 
-
-2. Go into the repository folder
+2. Go into the repository folder:
 
     `cd ibc-rs`
 
+3. Build the current up-to-date relayer container image. Make sure you have a
+   copy of the `hermes` binary in the root of the repo, as the docker script
+   expects this. If you don't, you can run `cp ./target/debug/hermes .`. This
+   command might take a few minutes since it will do a fresh compile and build
+   of all modules:
 
-3. Build the relayer container image (this might take a few minutes since it will do a fresh compile and build of all modules)
+    `docker-compose -f ci/docker-compose-gaia-current.yml build relayer`
 
-    `docker-compose -f ci/docker-compose.yml build relayer`
-
+> Note: If you're looking to test on a legacy version of gaia, run:
+> `docker-compose -f ci/docker-compose-gaia-legacy.yml build relayer`.
+> You'll use the `docker-compose-gaia-legacy.yml` configuration instead of
+> `docker-compose-gaia-current.yml` in all cases.
 
 4. Run all the containers (two containers, one for each chain and one for the relayer)
 
-   `docker-compose -f ci/docker-compose.yml up -d ibc-0 ibc-1 relayer`
+   `docker-compose -f ci/docker-compose-gaia-current.yml up -d ibc-0 ibc-1 relayer`
 
-    If everything is successful you should see a message saying:
+    If everything is successful you should see among the output something
+    similar to this:
     ```shell
-    Creating ibc-1 ... done
-    Creating ibc-0 ... done
-    Creating relayer ... done
+    Network ci_relaynet  Created
+    Container ibc-1      Started
+    Container ibc-0      Started
+    Container relayer    Started
     ```
 
     If you want to ensure they are all running properly you can use the command:
 
-    `docker-compose -f ci/docker-compose.yml ps`
+    `docker-compose -f ci/docker-compose-gaia-current.yml ps`
 
-    You should see the message below. Please ensure all containers are in a `Up` state
+    You should see the message below. Please ensure all containers are in a `running` state.
     ```shell
-    Name                Command               State   Ports
-    --------------------------------------------------------
-    ibc-0     gaiad start --home=/chain  ...   Up
-    ibc-1     gaiad start --home=/chain  ...   Up
-    relayer   /bin/sh                          Up
+
+    ibc-0     "/chain/gaia/run-gaia..."   ibc-0         running
+    ibc-1     "/chain/gaia/run-gaia..."   ibc-1         running
+    relayer   "/bin/sh"                   relayer       running
     ```
 
     __Note__: If this is the first time you're running this command, the `informaldev/ibc-0:[RELEASE TAG]` and `informaldev/ibc-1:[RELEASE TAG]` container images will be pulled from the Docker Hub. For instructions on how to update these images in Docker Hub please see the [upgrading the release](#upgrading-chains) section.
@@ -154,18 +161,15 @@ Jan 21 18:46:58.324  INFO relayer::event::monitor: running listener chain.id=ibc
 
 In order to clear up the testing environment and stop the containers you can run the command below
 
-`docker-compose -f ci/docker-compose.yml down`
+`docker-compose -f ci/docker-compose-gaia-current.yml down`
 
 If the command executes successfully you should see the message below:
 
 ```shell
-Stopping relayer ... done
-Stopping ibc-0   ... done
-Stopping ibc-1   ... done
-Removing relayer ... done
-Removing ibc-0   ... done
-Removing ibc-1   ... done
-Removing network ibc-rs_relaynet
+Container relayer    Removed
+Container ibc-1      Removed
+Container ibc-0      Removed
+Network ci_relaynet  Removed
 ```
 
 ### [Upgrading the gaia chains release and generating new container images](#upgrading-chains)
@@ -173,7 +177,10 @@ Removing network ibc-rs_relaynet
 The repository stores the files used to configure and build the chains for the containers. For example, the files for a `gaia` chain release `v5.0.0` can be seen [here](./chains/gaia)
 
 > Note: Please ensure you have gaiad installed on your machine and it matches the version that you're trying to upgrade.
-> You can check but running `gaiad version` in your machine
+> You can check by running `gaiad version` in your machine.
+>
+> If you need to upgrade your local `gaiad` binary, you can follow the steps
+> listed in the Cosmos Hub documentation on [installing the binary](https://hub.cosmos.network/main/getting-started/installation.html).
 
 If you need to generate configuration files for a new gaia release and new containers, please follow the steps below:
 
@@ -198,13 +205,13 @@ __Note__: This will generate the files for the chains in the `/ci/chains/gaia` f
 
 
 5. Update the release for Docker Compose. If this new release should be the default release for running the end to end (e2e) test you need to update the release version in the `docker-compose.yml` file in the `ci` folder of the repository. Open the file and change the release version in all the places required (image name and RELEASE variables. For example, if current release is `v4.0.0` and the new one is `v5.0.0` just do a find and replace with these two values.
-   
+
 Change the version in the image for ibc-0 and ibc-1 services:
-   
+
    ```
    image: "informaldev/ibc-0:v4.0.0"
    ```
-   
+
 And in the relayer service:
 
    ```
@@ -214,9 +221,9 @@ And in the relayer service:
 
 6. Update the CI workflow
 
-There are currently two CI workflows, for running the E2E tests against two versions of gaiad: 
-   - current release: `.github\workflows\e2e-gaia-current-release.yaml`, and
-   - future release: `.github\workflows\e2e-gaia-future-release.yaml`.
+There are currently two CI workflows, for running the E2E tests against two versions of gaiad:
+   - legacy release: `.github\workflows\e2e-gaia-legacy-release.yaml`, and
+   - current release: `.github\workflows\e2e-gaia-current-release.yaml`.
 
 Depending on which of the two setups you have upgraded at the prior steps, change the `name` key in the corresponding workflow file to match with the version of the upgraded gaia used, e.g.:
 

@@ -34,8 +34,6 @@ pub fn process(
         return Err(Error::channel_closed(packet.source_channel));
     }
 
-    let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
-
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
         Some(packet.destination_channel),
@@ -134,7 +132,7 @@ mod tests {
     use crate::core::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
     use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
     use crate::core::ics04_channel::Version;
-    use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::prelude::*;
@@ -196,22 +194,10 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because the port does not have a capability associated"
-                    .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    source_channel_end.clone(),
-                ),
-                msg: msg.clone(),
-                want_pass: false,
-            },
-            Test {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(packet.destination_port.clone())
                     .with_channel(
                         packet.source_port.clone(),
                         packet.source_channel,

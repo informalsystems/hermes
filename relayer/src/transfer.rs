@@ -2,15 +2,17 @@ use core::convert::TryInto;
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
-use ibc::applications::ics20_fungible_token_transfer::Amount;
 use ibc::applications::ics20_fungible_token_transfer::{
     error::Error as Ics20Error, msgs::transfer::MsgTransfer,
 };
+use ibc::applications::ics20_fungible_token_transfer::{Amount, IbcCoin};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
+use ibc::signer::Signer;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use ibc_proto::google::protobuf::Any;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::tx::TrackedMsgs;
@@ -116,6 +118,31 @@ pub struct TransferOptions {
     pub number_msgs: usize,
 }
 
+pub fn build_transfer_message(
+    packet_src_port_id: PortId,
+    packet_src_channel_id: ChannelId,
+    token: IbcCoin,
+    sender: Signer,
+    receiver: Signer,
+    timeout_height: Height,
+    timeout_timestamp: Timestamp,
+) -> Any {
+    let sender = sender.as_ref().parse().unwrap();
+    let receiver = receiver.as_ref().parse().unwrap();
+
+    let msg = MsgTransfer {
+        source_port: packet_src_port_id,
+        source_channel: packet_src_channel_id,
+        token,
+        sender,
+        receiver,
+        timeout_height,
+        timeout_timestamp,
+    };
+
+    msg.to_any()
+}
+
 pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
     packet_src_chain: &SrcChain, // the chain whose account is debited
     packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
@@ -135,14 +162,14 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         .parse()
         .map_err(TransferError::token_transfer)?;
 
-    let application_status = packet_dst_chain
+    let destination_chain_status = packet_dst_chain
         .query_application_status()
         .map_err(TransferError::relayer)?;
 
     let timeout = TransferTimeout::new(
         opts.timeout_height_offset,
         opts.timeout_duration,
-        &application_status,
+        &destination_chain_status,
     )?;
 
     let token = ibc_proto::cosmos::base::v1beta1::Coin {

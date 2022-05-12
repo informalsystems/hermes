@@ -362,6 +362,9 @@ impl<Tag, Value: IntoIterator> IntoIterator for Tagged<Tag, Value> {
 
 impl<Tag, Value: Copy> Copy for Tagged<Tag, Value> {}
 
+unsafe impl<Tag, Value: Send> Send for Tagged<Tag, Value> {}
+unsafe impl<Tag, Value: Sync> Sync for Tagged<Tag, Value> {}
+
 impl<Tag, Value: Clone> Clone for Tagged<Tag, Value> {
     fn clone(&self) -> Self {
         Self::new(self.0.clone())

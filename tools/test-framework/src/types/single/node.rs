@@ -19,6 +19,10 @@ use crate::types::process::ChildProcess;
 use crate::types::tagged::*;
 use crate::types::wallet::TestWallets;
 
+pub type TaggedFullNode<Chain> = MonoTagged<Chain, FullNode>;
+
+pub type TaggedFullNodeRef<'a, Chain> = MonoTagged<Chain, &'a FullNode>;
+
 /**
    Represents a full node running as a child process managed by the test.
 */
@@ -120,7 +124,7 @@ impl FullNode {
             websocket_addr: Url::from_str(&self.chain_driver.websocket_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
             rpc_timeout: Duration::from_secs(10),
-            account_prefix: "cosmos".to_string(),
+            account_prefix: self.chain_driver.account_prefix.clone(),
             key_name: self.wallets.relayer.id.0.clone(),
 
             // By default we use in-memory key store to avoid polluting

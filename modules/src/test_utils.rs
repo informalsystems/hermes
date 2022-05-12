@@ -23,12 +23,7 @@ use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
 use crate::core::ics04_channel::Version;
-use crate::core::ics05_port::capabilities::{
-    Capability, CapabilityName, ChannelCapability, PortCapability,
-};
-use crate::core::ics05_port::context::{
-    CapabilityKeeper, CapabilityReader, PortKeeper, PortReader,
-};
+use crate::core::ics05_port::context::{PortKeeper, PortReader};
 use crate::core::ics05_port::error::Error as PortError;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{Module, ModuleId, ModuleOutputBuilder};
@@ -96,7 +91,6 @@ impl Module for DummyTransferModule {
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _channel_cap: &ChannelCapability,
         _counterparty: &Counterparty,
         _version: &Version,
         counterparty_version: &Version,
@@ -220,41 +214,18 @@ impl ChannelKeeper for DummyTransferModule {
     }
 }
 
-impl PortKeeper for DummyTransferModule {}
-
-impl CapabilityKeeper for DummyTransferModule {
-    fn new_capability(&mut self, _name: CapabilityName) -> Result<Capability, PortError> {
-        unimplemented!()
-    }
-
-    fn claim_capability(&mut self, _name: CapabilityName, _capability: Capability) {
-        unimplemented!()
-    }
-
-    fn release_capability(&mut self, _name: CapabilityName, _capability: Capability) {
+impl PortKeeper for DummyTransferModule {
+    fn bind_module_to_port(
+        &mut self,
+        _module_id: ModuleId,
+        _port_id: PortId,
+    ) -> Result<(), PortError> {
         unimplemented!()
     }
 }
 
 impl PortReader for DummyTransferModule {
-    fn lookup_module_by_port(
-        &self,
-        _port_id: &PortId,
-    ) -> Result<(ModuleId, PortCapability), PortError> {
-        unimplemented!()
-    }
-}
-
-impl CapabilityReader for DummyTransferModule {
-    fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, PortError> {
-        unimplemented!()
-    }
-
-    fn authenticate_capability(
-        &self,
-        _name: &CapabilityName,
-        _capability: &Capability,
-    ) -> Result<(), PortError> {
+    fn lookup_module_by_port(&self, _port_id: &PortId) -> Result<ModuleId, PortError> {
         unimplemented!()
     }
 }
@@ -391,10 +362,6 @@ impl ChannelReader for DummyTransferModule {
         .map_err(|e| Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
-    fn authenticated_capability(&self, _port_id: &PortId) -> Result<ChannelCapability, Error> {
-        Ok(Capability::new().into())
-    }
-
     fn get_next_sequence_send(
         &self,
         port_channel_id: &(PortId, ChannelId),
@@ -482,14 +449,6 @@ impl ChannelReader for DummyTransferModule {
     }
 
     fn max_expected_time_per_block(&self) -> Duration {
-        unimplemented!()
-    }
-
-    fn lookup_module_by_channel(
-        &self,
-        _channel_id: &ChannelId,
-        _port_id: &PortId,
-    ) -> Result<(ModuleId, ChannelCapability), Error> {
         unimplemented!()
     }
 }

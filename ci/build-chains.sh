@@ -4,7 +4,7 @@
 ## Instead of blindly running this code, read it line by line and understand the dependecies and tasks.
 ## Prerequisites: Log into Docker Hub
 set -eou pipefail
-GAIA_BRANCH="stargate-4" # Requires a version with the `--keyring-backend` option. v2.1 and above.
+GAIA_BRANCH="v7.0.1" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
 echo "*** Requirements"
 which git && which go && which make && which sed && which jq && which docker

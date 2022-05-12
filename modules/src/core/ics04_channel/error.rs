@@ -104,17 +104,6 @@ define_error! {
         MissingChannel
             | _ | { "missing channel end" },
 
-        NoPortCapability
-            { port_id: PortId }
-            | e | {
-                format_args!(
-                    "the port {0} has no capability associated",
-                    e.port_id)
-            },
-
-        InvalidPortCapability
-            | _ | { "the module associated with the port does not have the capability it needs" },
-
         InvalidVersionLengthConnection
             | _ | { "single version must be negociated on connection before opening channel" },
 

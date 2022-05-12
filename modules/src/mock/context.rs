@@ -30,10 +30,7 @@ use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCo
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error as Ics04Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
-use crate::core::ics05_port::capabilities::{
-    Capability, CapabilityName, ChannelCapability, PortCapability,
-};
-use crate::core::ics05_port::context::{CapabilityReader, PortReader};
+use crate::core::ics05_port::context::PortReader;
 use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
@@ -321,11 +318,6 @@ impl MockContext {
         self
     }
 
-    pub fn with_port_capability(mut self, port_id: PortId) -> Self {
-        self.add_port(port_id);
-        self
-    }
-
     /// Associates a channel (in an arbitrary state) to this context.
     pub fn with_channel(
         self,
@@ -491,16 +483,16 @@ impl MockContext {
         self.ibc_store
             .lock()
             .unwrap()
-            .port_capabilities
-            .insert(port_id, (module_id, Capability::new().into()));
+            .port_to_module
+            .insert(port_id, module_id);
     }
 
     pub fn scope_port_to_module(&mut self, port_id: PortId, module_id: ModuleId) {
         self.ibc_store
             .lock()
             .unwrap()
-            .port_capabilities
-            .insert(port_id, (module_id, Capability::new().into()));
+            .port_to_module
+            .insert(port_id, module_id);
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
@@ -592,8 +584,8 @@ pub struct MockIbcStore {
 
     pub packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), AcknowledgementCommitment>,
 
-    /// Maps ports to their capabilities
-    pub port_capabilities: BTreeMap<PortId, (ModuleId, PortCapability)>,
+    /// Maps ports to the the module that owns it
+    pub port_to_module: BTreeMap<PortId, ModuleId>,
 
     /// Constant-size commitments to packets data fields
     pub packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), PacketCommitment>,
@@ -645,30 +637,10 @@ impl Ics26Context for MockContext {
     }
 }
 
-impl CapabilityReader for MockContext {
-    fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, Ics05Error> {
-        todo!()
-    }
-
-    fn authenticate_capability(
-        &self,
-        _name: &CapabilityName,
-        _capability: &Capability,
-    ) -> Result<(), Ics05Error> {
-        Ok(())
-    }
-}
-
 impl PortReader for MockContext {
-    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, PortCapability), Error> {
-        match self
-            .ibc_store
-            .lock()
-            .unwrap()
-            .port_capabilities
-            .get(port_id)
-        {
-            Some((mod_id, mod_cap)) => Ok((mod_id.clone(), mod_cap.clone())),
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<ModuleId, Error> {
+        match self.ibc_store.lock().unwrap().port_to_module.get(port_id) {
+            Some(mod_id) => Ok(mod_id.clone()),
             None => Err(Ics05Error::unknown_port(port_id.clone())),
         }
     }
@@ -708,22 +680,6 @@ impl ChannelReader for MockContext {
     ) -> Result<AnyConsensusState, Ics04Error> {
         ClientReader::consensus_state(self, client_id, height)
             .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
-    }
-
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
-        match PortReader::lookup_module_by_port(self, port_id) {
-            Ok((_, key)) => {
-                if !PortReader::authenticate(self, port_id.clone(), &key) {
-                    Err(Ics04Error::invalid_port_capability())
-                } else {
-                    Ok(Capability::from(key).into())
-                }
-            }
-            Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
-                Err(Ics04Error::no_port_capability(port_id.clone()))
-            }
-            Err(_) => Err(Ics04Error::implementation_specific()),
-        }
     }
 
     fn get_next_sequence_send(
@@ -877,16 +833,6 @@ impl ChannelReader for MockContext {
 
     fn max_expected_time_per_block(&self) -> Duration {
         self.block_time
-    }
-
-    fn lookup_module_by_channel(
-        &self,
-        _channel_id: &ChannelId,
-        port_id: &PortId,
-    ) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-        self.lookup_module_by_port(port_id)
-            .map(|(mid, pcap)| (mid, ChannelCapability::from(Capability::from(pcap))))
-            .map_err(Ics04Error::ics05_port)
     }
 }
 
@@ -1364,7 +1310,6 @@ mod tests {
     use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::packet::Packet;
     use crate::core::ics04_channel::Version;
-    use crate::core::ics05_port::capabilities::ChannelCapability;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
@@ -1544,7 +1489,6 @@ mod tests {
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
                 _channel_id: &ChannelId,
-                _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 _version: &Version,
                 counterparty_version: &Version,
@@ -1580,7 +1524,6 @@ mod tests {
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
                 _channel_id: &ChannelId,
-                _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 _version: &Version,
                 counterparty_version: &Version,

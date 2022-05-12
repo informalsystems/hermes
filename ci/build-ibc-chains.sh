@@ -13,7 +13,7 @@ set -eou pipefail
 # GAIA_BRANCH="v5.0.8" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
 # For future gaia use this
-GAIA_BRANCH="v6.0.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
+GAIA_BRANCH="v7.0.1" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
 # Check if gaiad is installed and if the versions match
 if ! [ -x "$(command -v gaiad)" ]; then
@@ -72,8 +72,8 @@ echo "*** Requirements"
 which docker
 
 echo "*** Create Docker image and upload to Docker Hub"
-docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-0 -f --no-cache -t informaldev/ibc-0:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
-docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-1 -f --no-cache -t informaldev/ibc-1:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
+docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-0 --no-cache -t informaldev/ibc-0:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
+docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-1 --no-cache -t informaldev/ibc-1:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
 
 read -p "Press ANY KEY to push image to Docker Hub, or CTRL-C to cancel. " dontcare
 docker push informaldev/ibc-0:$GAIA_BRANCH

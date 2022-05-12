@@ -18,7 +18,6 @@ use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
-use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics05_port::context::{PortKeeper, PortReader};
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{ModuleOutputBuilder, OnRecvPacketAck};
@@ -186,15 +185,10 @@ pub fn on_chan_open_init(
     _connection_hops: &[ConnectionId],
     port_id: &PortId,
     channel_id: &ChannelId,
-    _channel_cap: &ChannelCapability,
     _counterparty: &Counterparty,
     version: &Version,
 ) -> Result<(), Ics20Error> {
-    validate_transfer_channel_params(ctx, order, port_id, channel_id, version)?;
-
-    // TODO(hu55a1n1): claim channel capability
-
-    Ok(())
+    validate_transfer_channel_params(ctx, order, port_id, channel_id, version)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -205,16 +199,12 @@ pub fn on_chan_open_try(
     _connection_hops: &[ConnectionId],
     port_id: &PortId,
     channel_id: &ChannelId,
-    _channel_cap: &ChannelCapability,
     _counterparty: &Counterparty,
     version: &Version,
     counterparty_version: &Version,
 ) -> Result<Version, Ics20Error> {
     validate_transfer_channel_params(ctx, order, port_id, channel_id, version)?;
     validate_counterparty_version(counterparty_version)?;
-
-    // TODO(hu55a1n1): claim channel capability (iff we don't already own it)
-
     Ok(Version::ics20())
 }
 

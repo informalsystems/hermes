@@ -148,8 +148,8 @@ pub mod test_util {
         consensus_height: u64,
     ) -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
-            connection_id: ConnectionId::default().to_string(),
-            counterparty_connection_id: ConnectionId::default().to_string(),
+            connection_id: ConnectionId::new(0).to_string(),
+            counterparty_connection_id: ConnectionId::new(1).to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
                 revision_number: 0,
