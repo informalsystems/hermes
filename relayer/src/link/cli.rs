@@ -18,10 +18,6 @@ use crate::link::relay_path::RelayPath;
 use crate::link::relay_sender::SyncSender;
 use crate::link::Link;
 
-// TODO(Adi): Open an issue or discussion. Options are:
-//  a. We remove this code and deprecate relaying on paths with non-zero delay.
-//  b. Maintain support for interactive relaying on non-zeroy delay paths.
-#[allow(dead_code)]
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
     /// waiting for the delay period to pass.
@@ -75,7 +71,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         info!("unreceived packets found: {} ", sequences.len());
 
-        // Relay
+        // Schedule and try to relay
         let mut results = vec![];
         for events_chunk in query_packet_events_with(
             &sequences,
@@ -84,7 +80,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             &self.a_to_b.path_id,
             query_send_packet_events,
         ) {
-            // Bypass scheduling and waiting on operational data, relay directly.
             self.a_to_b.events_to_operational_data(events_chunk)?;
 
             let (src_ods, dst_ods) = self.a_to_b.try_fetch_scheduled_operational_data()?;
@@ -149,7 +144,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             &self.a_to_b.path_id,
             query_write_ack_events,
         ) {
-            // Bypass scheduling and waiting on operational data, relay directly.
             self.a_to_b.events_to_operational_data(events_chunk)?;
 
             let (src_ods, dst_ods) = self.a_to_b.try_fetch_scheduled_operational_data()?;
