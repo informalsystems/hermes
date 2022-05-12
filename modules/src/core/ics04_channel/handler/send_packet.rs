@@ -1,6 +1,7 @@
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics04_channel::channel::Counterparty;
 use crate::core::ics04_channel::channel::State;
+use crate::core::ics04_channel::commitment::PacketCommitment;
 use crate::core::ics04_channel::events::SendPacket;
 use crate::core::ics04_channel::packet::{PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error, packet::Packet};
@@ -8,8 +9,7 @@ use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
-use crate::timestamp::{Expiry, Timestamp};
-use crate::Height;
+use crate::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
 pub struct SendPacketResult {
@@ -17,9 +17,7 @@ pub struct SendPacketResult {
     pub channel_id: ChannelId,
     pub seq: Sequence,
     pub seq_number: Sequence,
-    pub timeout_height: Height,
-    pub timeout_timestamp: Timestamp,
-    pub data: Vec<u8>,
+    pub commitment: PacketCommitment,
 }
 
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
@@ -31,8 +29,6 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     if source_channel_end.state_matches(&State::Closed) {
         return Err(Error::channel_closed(packet.source_channel));
     }
-
-    let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
@@ -90,9 +86,11 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         channel_id: packet.source_channel,
         seq: packet.sequence,
         seq_number: next_seq_send.increment(),
-        data: packet.clone().data,
-        timeout_height: packet.timeout_height,
-        timeout_timestamp: packet.timeout_timestamp,
+        commitment: ctx.packet_commitment(
+            packet.data.clone(),
+            packet.timeout_height,
+            packet.timeout_timestamp,
+        ),
     });
 
     output.emit(IbcEvent::SendPacket(SendPacket {
@@ -181,23 +179,11 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because the port does not have a capability associated"
-                    .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    channel_end.clone(),
-                ),
-                packet: packet.clone(),
-                want_pass: false,
-            },
-            Test {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .clone()
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end.clone())
-                    .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet,
@@ -208,7 +194,6 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet: packet_old,

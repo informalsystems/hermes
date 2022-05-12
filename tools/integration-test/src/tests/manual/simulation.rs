@@ -12,10 +12,10 @@
 */
 
 use core::time::Duration;
+use ibc::events::IbcEvent;
 use ibc_relayer::config::{types::MaxMsgNum, Config};
-
+use ibc_relayer::transfer::{build_and_send_transfer_messages, Amount, TransferOptions};
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::transfer::tx_raw_ft_transfer;
 
 #[test]
 fn test_simulation() -> Result<(), Error> {
@@ -29,7 +29,7 @@ pub struct SimulationTest;
 impl TestOverrides for SimulationTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         for mut chain in config.chains.iter_mut() {
-            chain.max_msg_num = MaxMsgNum(MAX_MSGS);
+            chain.max_msg_num = MaxMsgNum::new(MAX_MSGS).unwrap();
         }
     }
 }
@@ -56,4 +56,43 @@ impl BinaryChannelTest for SimulationTest {
 
         suspend()
     }
+}
+
+/**
+   Perform the same operation as `hermes tx raw ft-transfer`.
+
+   The function call skips the checks done in the CLI, as we already
+   have the necessary information given to us by the test framework.
+
+   Note that we cannot change the sender's wallet in this case,
+   as the current `send_tx` implementation in
+   [`CosmosSdkChain`](ibc_relayer::chain::cosmos::CosmosSdkChain)
+   always use the signer wallet configured in the
+   [`ChainConfig`](ibc_relayer::config::ChainConfig).
+*/
+fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
+    src_handle: &SrcChain,
+    dst_handle: &DstChain,
+    channel: &ConnectedChannel<SrcChain, DstChain>,
+    recipient: &MonoTagged<DstChain, &WalletAddress>,
+    denom: &MonoTagged<SrcChain, &Denom>,
+    amount: u64,
+    timeout_height_offset: u64,
+    timeout_duration: Duration,
+    number_messages: usize,
+) -> Result<Vec<IbcEvent>, Error> {
+    let transfer_options = TransferOptions {
+        packet_src_port_id: channel.port_a.value().clone(),
+        packet_src_channel_id: *channel.channel_id_a.value(),
+        amount: Amount(amount.into()),
+        denom: denom.value().to_string(),
+        receiver: Some(recipient.value().0.clone()),
+        timeout_height_offset,
+        timeout_duration,
+        number_msgs: number_messages,
+    };
+
+    let events = build_and_send_transfer_messages(src_handle, dst_handle, &transfer_options)?;
+
+    Ok(events)
 }

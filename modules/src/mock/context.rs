@@ -26,13 +26,11 @@ use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics03_connection::error::Error as Ics03Error;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error as Ics04Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
-use crate::core::ics05_port::capabilities::{
-    Capability, CapabilityName, ChannelCapability, PortCapability,
-};
-use crate::core::ics05_port::context::{CapabilityReader, PortReader};
+use crate::core::ics05_port::context::PortReader;
 use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
@@ -108,13 +106,13 @@ pub struct MockContext {
     /// Tracks the sequence number for the next packet to be acknowledged.
     next_sequence_ack: BTreeMap<(PortId, ChannelId), Sequence>,
 
-    packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), String>,
+    packet_acknowledgement: BTreeMap<(PortId, ChannelId, Sequence), AcknowledgementCommitment>,
 
-    /// Maps ports to their capabilities
-    port_capabilities: BTreeMap<PortId, (ModuleId, PortCapability)>,
+    /// Maps ports to the the module that owns it
+    port_to_module: BTreeMap<PortId, ModuleId>,
 
     /// Constant-size commitments to packets data fields
-    packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), String>,
+    packet_commitment: BTreeMap<(PortId, ChannelId, Sequence), PacketCommitment>,
 
     // Used by unordered channel
     packet_receipt: BTreeMap<(PortId, ChannelId, Sequence), Receipt>,
@@ -204,7 +202,7 @@ impl MockContext {
             next_sequence_send: Default::default(),
             next_sequence_recv: Default::default(),
             next_sequence_ack: Default::default(),
-            port_capabilities: Default::default(),
+            port_to_module: Default::default(),
             packet_commitment: Default::default(),
             packet_receipt: Default::default(),
             packet_acknowledgement: Default::default(),
@@ -352,11 +350,6 @@ impl MockContext {
         self
     }
 
-    pub fn with_port_capability(mut self, port_id: PortId) -> Self {
-        self.add_port(port_id);
-        self
-    }
-
     /// Associates a channel (in an arbitrary state) to this context.
     pub fn with_channel(
         self,
@@ -437,7 +430,7 @@ impl MockContext {
         port_id: PortId,
         chan_id: ChannelId,
         seq: Sequence,
-        data: String,
+        data: PacketCommitment,
     ) -> Self {
         let mut packet_commitment = self.packet_commitment.clone();
         packet_commitment.insert((port_id, chan_id, seq), data);
@@ -526,13 +519,11 @@ impl MockContext {
 
     pub fn add_port(&mut self, port_id: PortId) {
         let module_id = ModuleId::new(format!("module{}", port_id).into()).unwrap();
-        self.port_capabilities
-            .insert(port_id, (module_id, Capability::new().into()));
+        self.port_to_module.insert(port_id, module_id);
     }
 
     pub fn scope_port_to_module(&mut self, port_id: PortId, module_id: ModuleId) {
-        self.port_capabilities
-            .insert(port_id, (module_id, Capability::new().into()));
+        self.port_to_module.insert(port_id, module_id);
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
@@ -615,24 +606,10 @@ impl Ics26Context for MockContext {
 
 impl Ics20Context for MockContext {}
 
-impl CapabilityReader for MockContext {
-    fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, Ics05Error> {
-        todo!()
-    }
-
-    fn authenticate_capability(
-        &self,
-        _name: &CapabilityName,
-        _capability: &Capability,
-    ) -> Result<(), Ics05Error> {
-        Ok(())
-    }
-}
-
 impl PortReader for MockContext {
-    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, PortCapability), Error> {
-        match self.port_capabilities.get(port_id) {
-            Some((mod_id, mod_cap)) => Ok((mod_id.clone(), mod_cap.clone())),
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<ModuleId, Error> {
+        match self.port_to_module.get(port_id) {
+            Some(mod_id) => Ok(mod_id.clone()),
             None => Err(Ics05Error::unknown_port(port_id.clone())),
         }
     }
@@ -674,22 +651,6 @@ impl ChannelReader for MockContext {
             .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
-        match PortReader::lookup_module_by_port(self, port_id) {
-            Ok((_, key)) => {
-                if !PortReader::authenticate(self, port_id.clone(), &key) {
-                    Err(Ics04Error::invalid_port_capability())
-                } else {
-                    Ok(Capability::from(key).into())
-                }
-            }
-            Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
-                Err(Ics04Error::no_port_capability(port_id.clone()))
-            }
-            Err(_) => Err(Ics04Error::implementation_specific()),
-        }
-    }
-
     fn get_next_sequence_send(
         &self,
         port_channel_id: &(PortId, ChannelId),
@@ -723,7 +684,7 @@ impl ChannelReader for MockContext {
     fn get_packet_commitment(
         &self,
         key: &(PortId, ChannelId, Sequence),
-    ) -> Result<String, Ics04Error> {
+    ) -> Result<PacketCommitment, Ics04Error> {
         match self.packet_commitment.get(key) {
             Some(commitment) => Ok(commitment.clone()),
             None => Err(Ics04Error::packet_commitment_not_found(key.2)),
@@ -743,16 +704,15 @@ impl ChannelReader for MockContext {
     fn get_packet_acknowledgement(
         &self,
         key: &(PortId, ChannelId, Sequence),
-    ) -> Result<String, Ics04Error> {
+    ) -> Result<AcknowledgementCommitment, Ics04Error> {
         match self.packet_acknowledgement.get(key) {
             Some(ack) => Ok(ack.clone()),
             None => Err(Ics04Error::packet_acknowledgement_not_found(key.2)),
         }
     }
 
-    fn hash(&self, input: String) -> String {
-        let r = sha2::Sha256::digest(input.as_bytes());
-        format!("{:x}", r)
+    fn hash(&self, value: Vec<u8>) -> Vec<u8> {
+        sha2::Sha256::digest(value).to_vec()
     }
 
     fn host_height(&self) -> Height {
@@ -813,40 +773,24 @@ impl ChannelReader for MockContext {
     fn max_expected_time_per_block(&self) -> Duration {
         self.block_time
     }
-
-    fn lookup_module_by_channel(
-        &self,
-        _channel_id: &ChannelId,
-        port_id: &PortId,
-    ) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-        self.lookup_module_by_port(port_id)
-            .map(|(mid, pcap)| (mid, ChannelCapability::from(Capability::from(pcap))))
-            .map_err(Ics04Error::ics05_port)
-    }
 }
 
 impl ChannelKeeper for MockContext {
     fn store_packet_commitment(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        timeout_timestamp: Timestamp,
-        timeout_height: Height,
-        data: Vec<u8>,
+        commitment: PacketCommitment,
     ) -> Result<(), Ics04Error> {
-        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
-        self.packet_commitment
-            .insert(key, ChannelReader::hash(self, input));
+        self.packet_commitment.insert(key, commitment);
         Ok(())
     }
 
     fn store_packet_acknowledgement(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        ack: Vec<u8>,
+        ack_commitment: AcknowledgementCommitment,
     ) -> Result<(), Ics04Error> {
-        let input = format!("{:?}", ack);
-        self.packet_acknowledgement
-            .insert(key, ChannelReader::hash(self, input));
+        self.packet_acknowledgement.insert(key, ack_commitment);
         Ok(())
     }
 
@@ -1239,7 +1183,6 @@ mod tests {
     use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::packet::Packet;
     use crate::core::ics04_channel::Version;
-    use crate::core::ics05_port::capabilities::ChannelCapability;
     use crate::core::ics24_host::identifier::ChainId;
     use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::core::ics26_routing::context::{
@@ -1418,7 +1361,6 @@ mod tests {
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
                 _channel_id: &ChannelId,
-                _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
             ) -> Result<Version, Error> {
@@ -1452,7 +1394,6 @@ mod tests {
                 _connection_hops: &[ConnectionId],
                 _port_id: &PortId,
                 _channel_id: &ChannelId,
-                _channel_cap: &ChannelCapability,
                 _counterparty: &Counterparty,
                 counterparty_version: &Version,
             ) -> Result<Version, Error> {
