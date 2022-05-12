@@ -2,7 +2,9 @@
    Builder construct that spawn new chains with some common parameters.
 */
 
+use alloc::sync::Arc;
 use ibc::core::ics24_host::identifier::ChainId;
+use tokio::runtime::Runtime;
 
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
@@ -31,26 +33,39 @@ pub struct ChainBuilder {
        The filesystem path to store the data files used by the chain.
     */
     pub base_store_dir: String,
+
+    pub account_prefix: String,
+
+    pub runtime: Arc<Runtime>,
 }
 
 impl ChainBuilder {
     /**
        Create a new `ChainBuilder`.
     */
-    pub fn new(command_path: &str, base_store_dir: &str) -> Self {
+    pub fn new(
+        command_path: &str,
+        base_store_dir: &str,
+        account_prefix: &str,
+        runtime: Arc<Runtime>,
+    ) -> Self {
         Self {
             command_path: command_path.to_string(),
             base_store_dir: base_store_dir.to_string(),
+            account_prefix: account_prefix.to_string(),
+            runtime,
         }
     }
 
     /**
        Create a `ChainBuilder` based on the provided [`TestConfig`].
     */
-    pub fn new_with_config(config: &TestConfig) -> Self {
+    pub fn new_with_config(config: &TestConfig, runtime: Arc<Runtime>) -> Self {
         Self::new(
             &config.chain_command_path,
             &format!("{}", config.chain_store_dir.display()),
+            &config.account_prefix,
+            runtime,
         )
     }
 
@@ -86,10 +101,12 @@ impl ChainBuilder {
             self.command_path.clone(),
             chain_id,
             home_path,
+            self.account_prefix.clone(),
             rpc_port,
             grpc_port,
             grpc_web_port,
             p2p_port,
+            self.runtime.clone(),
         )?;
 
         Ok(driver)

@@ -1,4 +1,15 @@
 # CODEOWNERS: https://help.github.com/articles/about-codeowners/
 
-# Everything goes through Adi, Anca and Romain
-*       @adizere @ancazamfir @romac
+modules/ @hu55a1n1 @plafer @ancazamfir
+
+tools/ @soareschen
+
+docs/ @seanchen1991 @adizere
+
+guide/ @seanchen1991
+
+relayer-cli/ @mzabaluev @romac @ancazamfir
+
+ci/ @mzabaluev @soareschen
+
+relayer/ @adizere @romac @seanchen1991 @ancazamfir

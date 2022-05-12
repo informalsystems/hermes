@@ -1,4 +1,4 @@
-name: End to End testing (Gaia - v5.0.8)
+name: End to End testing (Gaia - v7.0.1)
 on:
   pull_request:
     paths:
@@ -56,4 +56,5 @@ jobs:
       - name: Start chains and relayer
         run: docker-compose -f ci/docker-compose-gaia-current.yml up -d ibc-0 ibc-1 relayer
       - name: Run relayer workflow
+        continue-on-error: false
         run: docker exec relayer /bin/sh -c /relayer/e2e.sh

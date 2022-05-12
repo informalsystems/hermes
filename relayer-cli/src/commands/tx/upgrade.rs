@@ -69,13 +69,6 @@ pub struct TxIbcUpgradeChainCmd {
         help = "denomination for the deposit (default: 'stake')"
     )]
     denom: Option<String>,
-
-    #[clap(
-        short = 'l',
-        long,
-        help = "use legacy upgrade proposal constructs (for chains built with Cosmos SDK < v0.43.0)"
-    )]
-    legacy: bool,
 }
 
 impl TxIbcUpgradeChainCmd {
@@ -110,7 +103,6 @@ impl TxIbcUpgradeChainCmd {
                 .upgrade_name
                 .clone()
                 .unwrap_or_else(|| "plan".to_string()),
-            legacy: self.legacy,
         };
 
         Ok(opts)

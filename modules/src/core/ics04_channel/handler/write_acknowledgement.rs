@@ -1,4 +1,5 @@
 use crate::core::ics04_channel::channel::State;
+use crate::core::ics04_channel::commitment::AcknowledgementCommitment;
 use crate::core::ics04_channel::events::WriteAcknowledgement;
 use crate::core::ics04_channel::packet::{Packet, PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error};
@@ -14,7 +15,7 @@ pub struct WriteAckPacketResult {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub seq: Sequence,
-    pub ack: Vec<u8>,
+    pub ack_commitment: AcknowledgementCommitment,
 }
 
 pub fn process(
@@ -33,8 +34,6 @@ pub fn process(
             dest_channel_end.state,
         ));
     }
-
-    let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
 
     // NOTE: IBC app modules might have written the acknowledgement synchronously on
     // the OnRecvPacket callback so we need to check if the acknowledgement is already
@@ -58,7 +57,7 @@ pub fn process(
         port_id: packet.source_port.clone(),
         channel_id: packet.source_channel,
         seq: packet.sequence,
-        ack: ack.clone(),
+        ack_commitment: ctx.ack_commitment(ack.clone().into()),
     });
 
     output.log("success: packet write acknowledgement");
@@ -143,24 +142,11 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because the port does not have a capability associated"
-                    .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    dest_channel_end.clone(),
-                ),
-                packet: packet.clone(),
-                ack: ack.clone(),
-                want_pass: false,
-            },
-            Test {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .clone()
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end.clone())
-                    .with_port_capability(packet.destination_port.clone())
                     .with_channel(
                         packet.destination_port.clone(),
                         packet.destination_channel,
@@ -175,7 +161,6 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end),
                 packet,
                 ack: ack_null,

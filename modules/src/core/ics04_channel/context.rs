@@ -8,13 +8,12 @@ use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
+use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::{error::Error, packet::Receipt};
-use crate::core::ics05_port::capabilities::ChannelCapability;
-use crate::core::ics05_port::context::CapabilityReader;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::ModuleId;
 use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
@@ -22,7 +21,7 @@ use crate::Height;
 use super::packet::{PacketResult, Sequence};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
-pub trait ChannelReader: CapabilityReader {
+pub trait ChannelReader {
     /// Returns the ChannelEnd for the given `port_id` and `chan_id`.
     fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Error>;
 
@@ -41,8 +40,6 @@ pub trait ChannelReader: CapabilityReader {
         height: Height,
     ) -> Result<AnyConsensusState, Error>;
 
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Error>;
-
     fn get_next_sequence_send(
         &self,
         port_channel_id: &(PortId, ChannelId),
@@ -58,17 +55,40 @@ pub trait ChannelReader: CapabilityReader {
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<Sequence, Error>;
 
-    fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Result<String, Error>;
+    fn get_packet_commitment(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> Result<PacketCommitment, Error>;
 
     fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Result<Receipt, Error>;
 
     fn get_packet_acknowledgement(
         &self,
         key: &(PortId, ChannelId, Sequence),
-    ) -> Result<String, Error>;
+    ) -> Result<AcknowledgementCommitment, Error>;
+
+    fn packet_commitment(
+        &self,
+        packet_data: Vec<u8>,
+        timeout_height: Height,
+        timeout_timestamp: Timestamp,
+    ) -> PacketCommitment {
+        let mut input = timeout_timestamp.nanoseconds().to_be_bytes().to_vec();
+        let revision_number = timeout_height.revision_number.to_be_bytes();
+        input.append(&mut revision_number.to_vec());
+        let revision_height = timeout_height.revision_height.to_be_bytes();
+        input.append(&mut revision_height.to_vec());
+        let data = self.hash(packet_data);
+        input.append(&mut data.to_vec());
+        self.hash(input).into()
+    }
+
+    fn ack_commitment(&self, ack: Acknowledgement) -> AcknowledgementCommitment {
+        self.hash(ack.into_bytes()).into()
+    }
 
     /// A hashing function for packet commitments
-    fn hash(&self, value: String) -> String;
+    fn hash(&self, value: Vec<u8>) -> Vec<u8>;
 
     /// Returns the current height of the local chain.
     fn host_height(&self) -> Height;
@@ -106,13 +126,6 @@ pub trait ChannelReader: CapabilityReader {
     fn block_delay(&self, delay_period_time: Duration) -> u64 {
         calculate_block_delay(delay_period_time, self.max_expected_time_per_block())
     }
-
-    /// Return the module_id along with the capability associated with a given (channel-id, port_id)
-    fn lookup_module_by_channel(
-        &self,
-        channel_id: &ChannelId,
-        port_id: &PortId,
-    ) -> Result<(ModuleId, ChannelCapability), Error>;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
@@ -155,9 +168,7 @@ pub trait ChannelKeeper {
 
                 self.store_packet_commitment(
                     (res.port_id.clone(), res.channel_id, res.seq),
-                    res.timeout_timestamp,
-                    res.timeout_height,
-                    res.data,
+                    res.commitment,
                 )?;
             }
             PacketResult::Recv(res) => {
@@ -185,7 +196,7 @@ pub trait ChannelKeeper {
             PacketResult::WriteAck(res) => {
                 self.store_packet_acknowledgement(
                     (res.port_id.clone(), res.channel_id, res.seq),
-                    res.ack,
+                    res.ack_commitment,
                 )?;
             }
             PacketResult::Ack(res) => {
@@ -218,9 +229,7 @@ pub trait ChannelKeeper {
     fn store_packet_commitment(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        timestamp: Timestamp,
-        heigh: Height,
-        data: Vec<u8>,
+        commitment: PacketCommitment,
     ) -> Result<(), Error>;
 
     fn delete_packet_commitment(&mut self, key: (PortId, ChannelId, Sequence))
@@ -235,7 +244,7 @@ pub trait ChannelKeeper {
     fn store_packet_acknowledgement(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        ack: Vec<u8>,
+        ack_commitment: AcknowledgementCommitment,
     ) -> Result<(), Error>;
 
     fn delete_packet_acknowledgement(

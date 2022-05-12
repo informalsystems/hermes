@@ -50,46 +50,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         })
     }
 
-    pub fn is_closed(&self) -> Result<bool, LinkError> {
-        let a_channel_id = self.a_to_b.src_channel_id();
-
-        let a_channel = self
-            .a_to_b
-            .src_chain()
-            .query_channel(self.a_to_b.src_port_id(), a_channel_id, Height::default())
-            .map_err(|e| {
-                LinkError::channel_not_found(
-                    self.a_to_b.src_port_id().clone(),
-                    *a_channel_id,
-                    self.a_to_b.src_chain().id(),
-                    e,
-                )
-            })?;
-
-        let b_channel_id = self.a_to_b.dst_channel_id();
-
-        let b_channel = self
-            .a_to_b
-            .dst_chain()
-            .query_channel(self.a_to_b.dst_port_id(), b_channel_id, Height::default())
-            .map_err(|e| {
-                LinkError::channel_not_found(
-                    self.a_to_b.dst_port_id().clone(),
-                    *b_channel_id,
-                    self.a_to_b.dst_chain().id(),
-                    e,
-                )
-            })?;
-
-        if a_channel.state_matches(&ChannelState::Closed)
-            && b_channel.state_matches(&ChannelState::Closed)
-        {
-            Ok(true)
-        } else {
-            Ok(false)
-        }
-    }
-
     pub fn new_from_opts(
         a_chain: ChainA,
         b_chain: ChainB,

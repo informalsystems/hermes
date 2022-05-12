@@ -39,28 +39,30 @@ pub(crate) fn process(
     let prev_counterparty = conn_end.counterparty();
     let counterparty = Counterparty::new(
         prev_counterparty.client_id().clone(),
-        Some(msg.connection_id.clone()),
+        Some(msg.counterparty_connection_id.clone()),
         prev_counterparty.prefix().clone(),
     );
     conn_end.set_state(State::Open);
     conn_end.set_version(msg.version.clone());
     conn_end.set_counterparty(counterparty);
 
-    // The counterparty is the local chain.
-    let counterparty = Counterparty::new(
-        conn_end.client_id().clone(), // The local client identifier.
-        Some(msg.counterparty_connection_id.clone()), // This chain's connection id as known on counterparty.
-        ctx.commitment_prefix(),                      // Local commitment prefix.
-    );
-
     // Proof verification.
-    let expected_conn = ConnectionEnd::new(
-        State::TryOpen,
-        conn_end.counterparty().client_id().clone(),
-        counterparty,
-        vec![msg.version.clone()],
-        conn_end.delay_period(),
-    );
+    let expected_conn = {
+        // The counterparty is the local chain.
+        let counterparty = Counterparty::new(
+            conn_end.client_id().clone(),    // The local client identifier.
+            Some(msg.connection_id.clone()), // This chain's connection id as known on counterparty.
+            ctx.commitment_prefix(),         // Local commitment prefix.
+        );
+
+        ConnectionEnd::new(
+            State::TryOpen,
+            conn_end.counterparty().client_id().clone(),
+            counterparty,
+            vec![msg.version.clone()],
+            conn_end.delay_period(),
+        )
+    };
 
     // 2. Pass the details to the verification function.
     verify_proofs(
@@ -124,6 +126,7 @@ mod tests {
         let msg_ack =
             MsgConnectionOpenAck::try_from(get_dummy_raw_msg_conn_open_ack(10, 10)).unwrap();
         let conn_id = msg_ack.connection_id.clone();
+        let counterparty_conn_id = msg_ack.counterparty_connection_id.clone();
 
         // Client parameters -- identifier and correct height (matching the proof height)
         let client_id = ClientId::from_str("mock_clientid").unwrap();
@@ -237,6 +240,12 @@ mod tests {
                     // The object in the output is a ConnectionEnd, should have OPEN state.
                     let res: ConnectionResult = proto_output.result;
                     assert_eq!(res.connection_end.state().clone(), State::Open);
+
+                    // assert that counterparty connection id is correct
+                    assert_eq!(
+                        res.connection_end.counterparty().connection_id,
+                        Some(counterparty_conn_id.clone())
+                    );
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenAckConnection(_)));
