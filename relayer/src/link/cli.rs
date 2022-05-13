@@ -2,6 +2,7 @@ use std::convert::TryInto;
 use std::thread;
 use std::time::{Duration, Instant};
 
+use ibc::core::ics04_channel::packet::Sequence;
 use tracing::{error_span, info};
 
 use ibc::events::IbcEvent;
@@ -10,13 +11,14 @@ use ibc::Height;
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
 use crate::link::error::LinkError;
-use crate::link::operational_data::OperationalData;
+use crate::link::operational_data::{OperationalData, TrackedEvents};
 use crate::link::packet_events::{
     query_packet_events_with, query_send_packet_events, query_write_ack_events,
 };
 use crate::link::relay_path::RelayPath;
 use crate::link::relay_sender::SyncSender;
 use crate::link::Link;
+use crate::path::PathIdentifiers;
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
@@ -89,30 +91,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         info!("unreceived packets found: {} ", sequences.len());
 
-        // Schedule and try to relay
-        let mut results = vec![];
-        for events_chunk in query_packet_events_with(
-            &sequences,
-            src_response_height,
-            self.a_to_b.src_chain(),
-            &self.a_to_b.path_id,
-            query_send_packet_events,
-        ) {
-            self.a_to_b.events_to_operational_data(events_chunk)?;
-
-            let (src_ods, dst_ods) = self.a_to_b.try_fetch_scheduled_operational_data()?;
-            self.a_to_b
-                .relay_and_accumulate_results(Vec::from(src_ods), &mut results)?;
-            self.a_to_b
-                .relay_and_accumulate_results(Vec::from(dst_ods), &mut results)?;
-        }
-
-        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
-            self.a_to_b
-                .relay_and_accumulate_results(vec![odata], &mut results)?;
-        }
-
-        Ok(results)
+        self.relay_packet_messages(sequences, src_response_height, query_send_packet_events)
     }
 
     /// Implements the `packet-ack` CLI
@@ -140,14 +119,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         info!("unreceived acknowledgements found: {} ", sequences.len());
 
-        // Relay
+        self.relay_packet_messages(sequences, src_response_height, query_write_ack_events)
+    }
+
+    fn relay_packet_messages(
+        &self,
+        sequences: Vec<u64>,
+        src_response_height: Height,
+        query_fn: impl Fn(
+            &ChainA,
+            &PathIdentifiers,
+            Vec<Sequence>,
+            Height,
+        ) -> Result<TrackedEvents, LinkError>,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
+        dbg!(src_response_height);
         let mut results = vec![];
         for events_chunk in query_packet_events_with(
             &sequences,
             src_response_height,
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
-            query_write_ack_events,
+            query_fn,
         ) {
             self.a_to_b.events_to_operational_data(events_chunk)?;
 
