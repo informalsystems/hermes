@@ -8,7 +8,7 @@ pub mod error;
 pub mod events;
 pub mod msgs;
 pub mod packet;
-pub mod relay_application_logic;
+pub mod relay;
 
 pub use denom::*;
 

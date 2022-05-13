@@ -5,9 +5,9 @@ use super::error::Error as Ics20Error;
 use crate::applications::transfer::acknowledgement::Acknowledgement;
 use crate::applications::transfer::events::{AckEvent, AckStatusEvent, RecvEvent, TimeoutEvent};
 use crate::applications::transfer::packet::PacketData;
-use crate::applications::transfer::relay_application_logic::on_ack_packet::process_ack_packet;
-use crate::applications::transfer::relay_application_logic::on_recv_packet::process_recv_packet;
-use crate::applications::transfer::relay_application_logic::on_timeout_packet::process_timeout_packet;
+use crate::applications::transfer::relay::on_ack_packet::process_ack_packet;
+use crate::applications::transfer::relay::on_recv_packet::process_recv_packet;
+use crate::applications::transfer::relay::on_timeout_packet::process_timeout_packet;
 use crate::applications::transfer::{DenomTrace, HashedDenom, IbcCoin, VERSION};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
@@ -328,7 +328,7 @@ pub(crate) mod test {
     use ibc_proto::google::protobuf::Any;
 
     use crate::applications::transfer::error::Error as Ics20Error;
-    use crate::applications::transfer::relay_application_logic::send_transfer::send_transfer;
+    use crate::applications::transfer::relay::send_transfer::send_transfer;
 
     use crate::core::ics04_channel::error::Error;
     use crate::handler::HandlerOutputBuilder;
