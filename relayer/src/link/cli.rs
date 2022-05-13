@@ -49,8 +49,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Given a vector of [`OperationalData`], this method proceeds to relaying
     /// all the messages therein. It accumulates all events generated in the
     /// mutable vector of [`IbcEvent`]s.
-    ///
-    /// This method relays the operational data using a [`SyncSender`].
     pub fn relay_and_accumulate_results(
         &self,
         from: Vec<OperationalData>,
