@@ -324,3 +324,27 @@ pub fn on_timeout_packet(
 
     Ok(())
 }
+
+#[cfg(test)]
+pub(crate) mod test {
+    use ibc_proto::google::protobuf::Any;
+
+    use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer;
+    use crate::applications::ics20_fungible_token_transfer::error::Error as Ics20Error;
+
+    use crate::core::ics04_channel::error::Error;
+    use crate::handler::HandlerOutputBuilder;
+    use crate::prelude::*;
+    use crate::test_utils::DummyTransferModule;
+
+    pub(crate) fn deliver(
+        ctx: &mut DummyTransferModule,
+        output: &mut HandlerOutputBuilder<()>,
+        msg: Any,
+    ) -> Result<(), Error> {
+        let msg = msg
+            .try_into()
+            .map_err(|e: Ics20Error| Error::app_module(e.to_string()))?;
+        send_transfer(ctx, output, msg).map_err(|e: Ics20Error| Error::app_module(e.to_string()))
+    }
+}

@@ -2,13 +2,11 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use ibc_proto::google::protobuf::Any as ProtobufAny;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
 use crate::applications::ics20_fungible_token_transfer::context::{
     AccountReader, BankKeeper, BankReader, Ics20Context, Ics20Keeper, Ics20Reader,
 };
-use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer;
 use crate::applications::ics20_fungible_token_transfer::{
     error::Error as Ics20Error, DenomTrace, HashedDenom, IbcCoin,
 };
@@ -27,7 +25,6 @@ use crate::core::ics05_port::context::PortReader;
 use crate::core::ics05_port::error::Error as PortError;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{Module, ModuleId, ModuleOutputBuilder};
-use crate::handler::HandlerOutputBuilder;
 use crate::mock::context::MockIbcStore;
 use crate::prelude::*;
 use crate::signer::Signer;
@@ -96,17 +93,6 @@ impl Module for DummyTransferModule {
         counterparty_version: &Version,
     ) -> Result<Version, Error> {
         Ok(counterparty_version.clone())
-    }
-
-    fn deliver(
-        &mut self,
-        output: &mut HandlerOutputBuilder<()>,
-        msg: ProtobufAny,
-    ) -> Result<(), Error> {
-        let msg = msg
-            .try_into()
-            .map_err(|e: Ics20Error| Error::app_module(e.to_string()))?;
-        send_transfer(self, output, msg).map_err(|e: Ics20Error| Error::app_module(e.to_string()))
     }
 }
 

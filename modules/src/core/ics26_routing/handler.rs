@@ -133,6 +133,7 @@ mod tests {
 
     use test_log::test;
 
+    use crate::applications::ics20_fungible_token_transfer::context::test::deliver as ics20_deliver;
     use crate::applications::ics20_fungible_token_transfer::{IbcCoin, PrefixedCoin};
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
@@ -540,10 +541,16 @@ mod tests {
                 TestMsg::Ics20(msg) => {
                     let transfer_module =
                         ctx.router_mut().get_route_mut(&transfer_module_id).unwrap();
-                    transfer_module
-                        .deliver(&mut HandlerOutputBuilder::new(), msg.into())
-                        .map(|_| ())
-                        .map_err(Error::ics04_channel)
+                    ics20_deliver(
+                        transfer_module
+                            .as_any_mut()
+                            .downcast_mut::<DummyTransferModule>()
+                            .unwrap(),
+                        &mut HandlerOutputBuilder::new(),
+                        msg.into(),
+                    )
+                    .map(|_| ())
+                    .map_err(Error::ics04_channel)
                 }
             };
 
