@@ -1,27 +1,37 @@
+use core::str::FromStr;
+
 use crate::prelude::*;
-use derive_more::{Display, From, FromStr, Into};
+
+use derive_more::Display;
+use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
-#[derive(
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-    Display,
-    FromStr,
-    From,
-    Into,
-)]
+define_error! {
+    #[derive(Debug, PartialEq, Eq)]
+    SignerError {
+        EmptySigner
+            | _ | { "signer cannot be empty" },
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Display)]
 pub struct Signer(String);
 
 impl Signer {
     pub fn new(s: impl ToString) -> Self {
         Self(s.to_string())
+    }
+}
+
+impl FromStr for Signer {
+    type Err = SignerError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_string();
+        if s.trim().is_empty() {
+            return Err(SignerError::empty_signer());
+        }
+        Ok(Self(s))
     }
 }
 

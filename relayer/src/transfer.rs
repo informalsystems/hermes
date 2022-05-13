@@ -148,19 +148,9 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
     opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, TransferError> {
-    let receiver = packet_dst_chain
-        .get_signer()
-        .map_err(TransferError::key)?
-        .as_ref()
-        .parse()
-        .map_err(TransferError::token_transfer)?;
+    let receiver = packet_dst_chain.get_signer().map_err(TransferError::key)?;
 
-    let sender = packet_src_chain
-        .get_signer()
-        .map_err(TransferError::key)?
-        .as_ref()
-        .parse()
-        .map_err(TransferError::token_transfer)?;
+    let sender = packet_src_chain.get_signer().map_err(TransferError::key)?;
 
     let destination_chain_status = packet_dst_chain
         .query_application_status()

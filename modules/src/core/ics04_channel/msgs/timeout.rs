@@ -81,7 +81,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
                 .ok_or_else(Error::missing_packet)?
                 .try_into()?,
             next_sequence_recv: Sequence::from(raw_msg.next_sequence_recv),
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(Error::signer)?,
             proofs,
         })
     }

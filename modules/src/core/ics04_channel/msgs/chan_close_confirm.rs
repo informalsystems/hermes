@@ -73,7 +73,7 @@ impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
             port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             proofs,
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(Error::signer)?,
         })
     }
 }

@@ -72,7 +72,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
                 .ok_or_else(Error::missing_packet)?
                 .try_into()?,
             proofs,
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(Error::signer)?,
         })
     }
 }

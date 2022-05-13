@@ -5,13 +5,13 @@ use subtle_encoding::Error as EncodingError;
 use tendermint_proto::Error as TendermintProtoError;
 use uint::FromStrRadixErr;
 
-use super::address::Address;
 use crate::core::ics04_channel::channel::Order;
 use crate::core::ics04_channel::error as channel_error;
 use crate::core::ics04_channel::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
+use crate::signer::{Signer, SignerError};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -74,8 +74,9 @@ define_error! {
         InvalidToken
             | _ | { "invalid token" },
 
-        EmptySigner
-            | _ | { "signer cannot be empty" },
+        Signer
+            [ SignerError ]
+            | _ | { "failed to parse signer" },
 
         MissingDenomIbcPrefix
             | _ | { "missing 'ibc/' prefix in denomination" },
@@ -112,10 +113,6 @@ define_error! {
         AckDeserialization
             | _ | { "failed to deserialize acknowledgement" },
 
-        AddressNotValidBech32
-            [ TraceError<EncodingError> ]
-            | _ | { "address isn't valid bech32" },
-
         ReceiveDisabled
             | _ | { "receive is not enabled" },
 
@@ -123,7 +120,7 @@ define_error! {
             | _ | { "send is not enabled" },
 
         UnauthorisedReceive
-            { receiver: Address }
+            { receiver: Signer }
             | e | { format_args!("'{0}' is not allowed to receive funds", e.receiver) },
 
         ParseAccountFailure

@@ -113,7 +113,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
                 .ok_or_else(Error::missing_packet)?
                 .try_into()?,
             acknowledgement: raw_msg.acknowledgement.into(),
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(Error::signer)?,
             proofs,
         })
     }

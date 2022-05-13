@@ -1,10 +1,10 @@
 use crate::applications::ics20_fungible_token_transfer::acknowledgement::Acknowledgement;
-use crate::applications::ics20_fungible_token_transfer::address::Address;
 use crate::applications::ics20_fungible_token_transfer::{
     Amount, DenomTrace, HashedDenom, MODULE_ID_STR,
 };
 use crate::events::ModuleEvent;
 use crate::prelude::*;
+use crate::signer::Signer;
 
 const EVENT_TYPE_PACKET: &str = "fungible_token_packet";
 const EVENT_TYPE_TIMEOUT: &str = "timeout";
@@ -21,7 +21,7 @@ pub enum Event {
 }
 
 pub struct RecvEvent {
-    pub receiver: Address,
+    pub receiver: Signer,
     pub denom: DenomTrace,
     pub amount: Amount,
     pub success: bool,
@@ -49,7 +49,7 @@ impl From<RecvEvent> for ModuleEvent {
 }
 
 pub struct AckEvent {
-    pub receiver: Address,
+    pub receiver: Signer,
     pub denom: DenomTrace,
     pub amount: Amount,
     pub acknowledgement: Acknowledgement,
@@ -100,7 +100,7 @@ impl From<AckStatusEvent> for ModuleEvent {
 }
 
 pub struct TimeoutEvent {
-    pub refund_receiver: Address,
+    pub refund_receiver: Signer,
     pub refund_denom: DenomTrace,
     pub refund_amount: Amount,
 }
@@ -141,8 +141,8 @@ impl From<DenomTraceEvent> for ModuleEvent {
 }
 
 pub struct TransferEvent {
-    pub sender: Address,
-    pub receiver: Address,
+    pub sender: Signer,
+    pub receiver: Signer,
 }
 
 impl From<TransferEvent> for ModuleEvent {

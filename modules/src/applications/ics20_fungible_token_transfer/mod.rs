@@ -2,7 +2,6 @@
 //! constitutes a "fungible token transfer bridge module" between the IBC routing module and an
 //! asset tracking module.
 pub mod acknowledgement;
-pub mod address;
 pub mod context;
 pub mod denom;
 pub mod error;

@@ -6,11 +6,11 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 use tendermint_proto::Protobuf;
 
-use crate::applications::ics20_fungible_token_transfer::address::Address;
 use crate::applications::ics20_fungible_token_transfer::error::Error;
 use crate::applications::ics20_fungible_token_transfer::IbcCoin;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::tx_msg::Msg;
 
@@ -26,9 +26,9 @@ pub struct MsgTransfer {
     /// the tokens to be transferred
     pub token: IbcCoin,
     /// the sender address
-    pub sender: Address,
+    pub sender: Signer,
     /// the recipient address on the destination chain
-    pub receiver: Address,
+    pub receiver: Signer,
     /// Timeout height relative to the current block height.
     /// The timeout is disabled when set to 0.
     pub timeout_height: Height,
@@ -76,8 +76,8 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
                 .parse()
                 .map_err(|e| Error::invalid_channel_id(raw_msg.source_channel.clone(), e))?,
             token,
-            sender: raw_msg.sender.parse()?,
-            receiver: raw_msg.receiver.parse()?,
+            sender: raw_msg.sender.parse().map_err(Error::signer)?,
+            receiver: raw_msg.receiver.parse().map_err(Error::signer)?,
             timeout_height,
             timeout_timestamp,
         })
@@ -128,8 +128,8 @@ pub mod test_util {
     use core::time::Duration;
 
     use super::MsgTransfer;
-    use crate::applications::ics20_fungible_token_transfer::address::Address;
     use crate::bigint::U256;
+    use crate::signer::Signer;
     use crate::{
         applications::ics20_fungible_token_transfer::{BaseCoin, IbcCoin},
         core::ics24_host::identifier::{ChannelId, PortId},
@@ -140,7 +140,7 @@ pub mod test_util {
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
-        let address: Address = get_dummy_bech32_account().as_str().parse().unwrap();
+        let address: Signer = get_dummy_bech32_account().as_str().parse().unwrap();
         MsgTransfer {
             source_port: PortId::default(),
             source_channel: ChannelId::default(),

@@ -10,6 +10,7 @@ use crate::core::ics02_client::height::HeightError;
 use crate::core::ics23_commitment::error::Error as Ics23Error;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;
+use crate::signer::SignerError;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
@@ -267,6 +268,10 @@ define_error! {
         InvalidAnyConsensusState
             [ TraceError<TendermintProtoError> ]
             | _ | { "invalid any client consensus state" },
+
+        Signer
+            [ SignerError ]
+            | _ | { "failed to parse signer" },
     }
 }
 
