@@ -2,15 +2,13 @@ use sha2::{Digest, Sha256};
 use subtle_encoding::hex;
 
 use super::error::Error as Ics20Error;
-use crate::applications::ics20_fungible_token_transfer::acknowledgement::Acknowledgement;
-use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
-use crate::applications::ics20_fungible_token_transfer::relay_application_logic::on_ack_packet::process_ack_packet;
-use crate::applications::ics20_fungible_token_transfer::relay_application_logic::on_recv_packet::process_recv_packet;
-use crate::applications::ics20_fungible_token_transfer::{
-    DenomTrace, HashedDenom, IbcCoin, VERSION,
-};
-use crate::applications::ics20_fungible_token_transfer::events::{AckEvent, AckStatusEvent, RecvEvent, TimeoutEvent};
-use crate::applications::ics20_fungible_token_transfer::relay_application_logic::on_timeout_packet::process_timeout_packet;
+use crate::applications::transfer::acknowledgement::Acknowledgement;
+use crate::applications::transfer::events::{AckEvent, AckStatusEvent, RecvEvent, TimeoutEvent};
+use crate::applications::transfer::packet::PacketData;
+use crate::applications::transfer::relay_application_logic::on_ack_packet::process_ack_packet;
+use crate::applications::transfer::relay_application_logic::on_recv_packet::process_recv_packet;
+use crate::applications::transfer::relay_application_logic::on_timeout_packet::process_timeout_packet;
+use crate::applications::transfer::{DenomTrace, HashedDenom, IbcCoin, VERSION};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
@@ -329,8 +327,8 @@ pub fn on_timeout_packet(
 pub(crate) mod test {
     use ibc_proto::google::protobuf::Any;
 
-    use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer;
-    use crate::applications::ics20_fungible_token_transfer::error::Error as Ics20Error;
+    use crate::applications::transfer::error::Error as Ics20Error;
+    use crate::applications::transfer::relay_application_logic::send_transfer::send_transfer;
 
     use crate::core::ics04_channel::error::Error;
     use crate::handler::HandlerOutputBuilder;

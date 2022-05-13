@@ -1,9 +1,9 @@
-use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
-use crate::applications::ics20_fungible_token_transfer::error::Error;
-use crate::applications::ics20_fungible_token_transfer::events::TransferEvent;
-use crate::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
-use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
-use crate::applications::ics20_fungible_token_transfer::{Coin, IbcCoin, Source, TracePrefix};
+use crate::applications::transfer::context::Ics20Context;
+use crate::applications::transfer::error::Error;
+use crate::applications::transfer::events::TransferEvent;
+use crate::applications::transfer::msgs::transfer::MsgTransfer;
+use crate::applications::transfer::packet::PacketData;
+use crate::applications::transfer::{Coin, IbcCoin, Source, TracePrefix};
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
 use crate::events::ModuleEvent;

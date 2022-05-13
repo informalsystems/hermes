@@ -4,12 +4,10 @@ use std::time::Duration;
 
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
-use crate::applications::ics20_fungible_token_transfer::context::{
+use crate::applications::transfer::context::{
     AccountReader, BankKeeper, BankReader, Ics20Context, Ics20Keeper, Ics20Reader,
 };
-use crate::applications::ics20_fungible_token_transfer::{
-    error::Error as Ics20Error, DenomTrace, HashedDenom, IbcCoin,
-};
+use crate::applications::transfer::{error::Error as Ics20Error, DenomTrace, HashedDenom, IbcCoin};
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::error::Error as Ics02Error;

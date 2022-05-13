@@ -1,8 +1,8 @@
-use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
-use crate::applications::ics20_fungible_token_transfer::error::Error as Ics20Error;
-use crate::applications::ics20_fungible_token_transfer::events::DenomTraceEvent;
-use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
-use crate::applications::ics20_fungible_token_transfer::{IbcCoin, Source, TracePrefix};
+use crate::applications::transfer::context::Ics20Context;
+use crate::applications::transfer::error::Error as Ics20Error;
+use crate::applications::transfer::events::DenomTraceEvent;
+use crate::applications::transfer::packet::PacketData;
+use crate::applications::transfer::{IbcCoin, Source, TracePrefix};
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics26_routing::context::{ModuleOutputBuilder, WriteFn};
 use crate::prelude::*;

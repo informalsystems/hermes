@@ -6,8 +6,8 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 use tendermint_proto::Protobuf;
 
-use crate::applications::ics20_fungible_token_transfer::error::Error;
-use crate::applications::ics20_fungible_token_transfer::IbcCoin;
+use crate::applications::transfer::error::Error;
+use crate::applications::transfer::IbcCoin;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
@@ -131,7 +131,7 @@ pub mod test_util {
     use crate::bigint::U256;
     use crate::signer::Signer;
     use crate::{
-        applications::ics20_fungible_token_transfer::{BaseCoin, IbcCoin},
+        applications::transfer::{BaseCoin, IbcCoin},
         core::ics24_host::identifier::{ChannelId, PortId},
         test_utils::get_dummy_bech32_account,
         timestamp::Timestamp,

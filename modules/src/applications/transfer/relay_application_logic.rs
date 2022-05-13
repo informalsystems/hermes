@@ -1,8 +1,8 @@
 //! This module implements the processing logic for ICS20 (token transfer) message.
-use crate::applications::ics20_fungible_token_transfer::context::Ics20Context;
-use crate::applications::ics20_fungible_token_transfer::error::Error as Ics20Error;
-use crate::applications::ics20_fungible_token_transfer::packet::PacketData;
-use crate::applications::ics20_fungible_token_transfer::{IbcCoin, Source, TracePrefix};
+use crate::applications::transfer::context::Ics20Context;
+use crate::applications::transfer::error::Error as Ics20Error;
+use crate::applications::transfer::packet::PacketData;
+use crate::applications::transfer::{IbcCoin, Source, TracePrefix};
 use crate::core::ics04_channel::packet::Packet;
 use crate::prelude::*;
 

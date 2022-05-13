@@ -6,7 +6,7 @@
 use core::ops::Add;
 use core::time::Duration;
 
-use ibc::applications::ics20_fungible_token_transfer::error::Error as Ics20Error;
+use ibc::applications::transfer::error::Error as Ics20Error;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;

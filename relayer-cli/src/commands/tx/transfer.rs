@@ -3,7 +3,7 @@ use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
 
 use core::time::Duration;
 use ibc::{
-    applications::ics20_fungible_token_transfer::Amount,
+    applications::transfer::Amount,
     core::{
         ics02_client::client_state::ClientState,
         ics02_client::height::Height,

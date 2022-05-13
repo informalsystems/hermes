@@ -133,8 +133,8 @@ mod tests {
 
     use test_log::test;
 
-    use crate::applications::ics20_fungible_token_transfer::context::test::deliver as ics20_deliver;
-    use crate::applications::ics20_fungible_token_transfer::{IbcCoin, PrefixedCoin};
+    use crate::applications::transfer::context::test::deliver as ics20_deliver;
+    use crate::applications::transfer::{IbcCoin, PrefixedCoin};
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
     use crate::core::ics02_client::msgs::{
@@ -162,10 +162,9 @@ mod tests {
     use crate::core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof;
     use crate::events::IbcEvent;
     use crate::{
-        applications::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer,
-        applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer,
-        applications::ics20_fungible_token_transfer::packet::PacketData,
-        applications::ics20_fungible_token_transfer::MODULE_ID_STR,
+        applications::transfer::msgs::transfer::test_util::get_dummy_msg_transfer,
+        applications::transfer::msgs::transfer::MsgTransfer,
+        applications::transfer::packet::PacketData, applications::transfer::MODULE_ID_STR,
     };
 
     use crate::core::ics24_host::identifier::ConnectionId;

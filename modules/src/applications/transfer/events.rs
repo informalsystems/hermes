@@ -1,7 +1,5 @@
-use crate::applications::ics20_fungible_token_transfer::acknowledgement::Acknowledgement;
-use crate::applications::ics20_fungible_token_transfer::{
-    Amount, DenomTrace, HashedDenom, MODULE_ID_STR,
-};
+use crate::applications::transfer::acknowledgement::Acknowledgement;
+use crate::applications::transfer::{Amount, DenomTrace, HashedDenom, MODULE_ID_STR};
 use crate::events::ModuleEvent;
 use crate::prelude::*;
 use crate::signer::Signer;

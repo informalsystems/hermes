@@ -2,10 +2,8 @@ use core::convert::TryInto;
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
-use ibc::applications::ics20_fungible_token_transfer::{
-    error::Error as Ics20Error, msgs::transfer::MsgTransfer,
-};
-use ibc::applications::ics20_fungible_token_transfer::{Amount, IbcCoin};
+use ibc::applications::transfer::{error::Error as Ics20Error, msgs::transfer::MsgTransfer};
+use ibc::applications::transfer::{Amount, IbcCoin};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::signer::Signer;
