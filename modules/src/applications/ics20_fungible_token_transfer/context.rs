@@ -27,7 +27,7 @@ use crate::signer::Signer;
 pub trait Ics20Keeper:
     ChannelKeeper + PortKeeper + BankKeeper<AccountId = <Self as Ics20Keeper>::AccountId>
 {
-    type AccountId: Into<String>;
+    type AccountId: ToString;
 
     /// Sets a new {trace hash -> denom trace} pair to the store.
     fn set_denom_trace(&mut self, denom_trace: &DenomTrace) -> Result<(), Ics20Error>;
@@ -39,7 +39,7 @@ pub trait Ics20Reader:
     + ChannelReader
     + PortReader
 {
-    type AccountId: Into<String> + FromStr;
+    type AccountId: ToString + FromStr;
 
     /// get_port returns the portID for the transfer module.
     fn get_port(&self) -> Result<PortId, Ics20Error>;
@@ -81,7 +81,7 @@ pub trait Ics20Reader:
 }
 
 pub trait BankKeeper {
-    type AccountId: Into<String>;
+    type AccountId: ToString;
 
     /// This function should enable sending ibc fungible tokens from one account to another
     fn send_coins(
@@ -115,7 +115,7 @@ pub trait BankKeeper {
 }
 
 pub trait BankReader {
-    type AccountId: Into<String> + FromStr;
+    type AccountId: ToString + FromStr;
 
     /// Returns true if the specified account is not allowed to receive funds and false otherwise.
     fn is_blocked_account(&self, account: &Self::AccountId) -> bool;
@@ -125,7 +125,7 @@ pub trait BankReader {
 }
 
 pub trait AccountReader {
-    type AccountId: Into<String>;
+    type AccountId: ToString;
     type Address;
 
     fn get_account(&self, address: &Self::Address) -> Option<Self::AccountId>;
@@ -137,7 +137,7 @@ pub trait Ics20Context:
     Ics20Keeper<AccountId = <Self as Ics20Context>::AccountId>
     + Ics20Reader<AccountId = <Self as Ics20Context>::AccountId>
 {
-    type AccountId: Into<String> + FromStr;
+    type AccountId: ToString + FromStr;
 }
 
 fn validate_transfer_channel_params(
