@@ -100,7 +100,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
         chains.node_b.value().kill()?;
 
         match relay_path_a_to_b.execute_schedule() {
-            Ok(_) => panic!("Expected an error"),
+            Ok(_) => panic!("Expected an error when relaying tx from A to B"),
             Err(_e) => {
                 assert_eq!(relay_path_a_to_b.dst_operational_data.len(), 0);
                 assert_eq!(relay_path_b_to_a.dst_operational_data.len(), 1);
