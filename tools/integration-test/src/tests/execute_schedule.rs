@@ -1,3 +1,14 @@
+//! This test ensures that the `RelayPath::execute_schedule` method does not
+//! drop any pending scheduled operational data when a prior transaction fails
+//! to send. Subsequent pieces of operational data that were scheduled should
+//! be re-queued and not dropped.
+//!
+//! In order to test this behavior, the test manually relays two IBC transfers
+//! between two chains, one transaction going from chain A to chain B, the other
+//! going from chain B to chain A. Chain B is then shut down and the transactions
+//! queued up again. The first of the two transactions should fail because the
+//! chain was shut down. The second transaction should still be queued up.
+
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
