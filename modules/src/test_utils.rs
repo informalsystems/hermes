@@ -23,7 +23,7 @@ use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::{Receipt, Sequence};
 use crate::core::ics04_channel::Version;
-use crate::core::ics05_port::context::{PortKeeper, PortReader};
+use crate::core::ics05_port::context::PortReader;
 use crate::core::ics05_port::error::Error as PortError;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{Module, ModuleId, ModuleOutputBuilder};
@@ -210,16 +210,6 @@ impl ChannelKeeper for DummyTransferModule {
     }
 
     fn increase_channel_counter(&mut self) {
-        unimplemented!()
-    }
-}
-
-impl PortKeeper for DummyTransferModule {
-    fn bind_module_to_port(
-        &mut self,
-        _module_id: ModuleId,
-        _port_id: PortId,
-    ) -> Result<(), PortError> {
         unimplemented!()
     }
 }
