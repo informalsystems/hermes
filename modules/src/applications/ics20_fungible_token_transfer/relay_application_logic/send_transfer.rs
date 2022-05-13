@@ -39,8 +39,6 @@ where
         .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel))
         .map_err(Error::ics04_channel)?;
 
-    // TODO(hu55a1n1): get channel capability
-
     let denom = match msg.token.clone() {
         IbcCoin::Hashed(coin) => ctx
             .get_denom_trace(&coin.denom)
