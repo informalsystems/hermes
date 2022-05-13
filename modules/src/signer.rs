@@ -17,12 +17,6 @@ define_error! {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Display)]
 pub struct Signer(String);
 
-impl Signer {
-    pub fn new(s: impl ToString) -> Self {
-        Self(s.to_string())
-    }
-}
-
 impl FromStr for Signer {
     type Err = SignerError;
 

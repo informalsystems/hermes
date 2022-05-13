@@ -1321,6 +1321,7 @@ mod tests {
     use crate::mock::host::HostType;
     use crate::prelude::*;
     use crate::signer::Signer;
+    use crate::test_utils::get_dummy_bech32_account;
     use crate::Height;
 
     #[test]
@@ -1553,7 +1554,7 @@ mod tests {
             let result = m.on_recv_packet(
                 &mut ModuleOutputBuilder::new(),
                 &Packet::default(),
-                &Signer::new(""),
+                &get_dummy_bech32_account().parse().unwrap(),
             );
             (module_id, result)
         };

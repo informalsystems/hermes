@@ -6,6 +6,7 @@
 use core::ops::Add;
 use core::time::Duration;
 
+use ibc::applications::ics20_fungible_token_transfer::error::Error as Ics20Error;
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
@@ -40,12 +41,25 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     .try_into()
     .map_err(TransferError::token_transfer)?;
 
+    let sender = sender
+        .value()
+        .address
+        .0
+        .parse()
+        .map_err(|e| TransferError::token_transfer(Ics20Error::signer(e)))?;
+
+    let receiver = recipient
+        .value()
+        .0
+        .parse()
+        .map_err(|e| TransferError::token_transfer(Ics20Error::signer(e)))?;
+
     Ok(raw_build_transfer_message(
         (*port_id.value()).clone(),
         **channel_id.value(),
         token,
-        Signer::new(sender.value().address.0.clone()),
-        Signer::new(recipient.value().0.clone()),
+        sender,
+        receiver,
         Height::zero(),
         timeout_timestamp,
     ))

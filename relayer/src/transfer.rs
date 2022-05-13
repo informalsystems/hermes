@@ -127,9 +127,6 @@ pub fn build_transfer_message(
     timeout_height: Height,
     timeout_timestamp: Timestamp,
 ) -> Any {
-    let sender = sender.as_ref().parse().unwrap();
-    let receiver = receiver.as_ref().parse().unwrap();
-
     let msg = MsgTransfer {
         source_port: packet_src_port_id,
         source_channel: packet_src_channel_id,
