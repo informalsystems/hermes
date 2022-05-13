@@ -3,10 +3,12 @@ use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 use std::process;
 
+use argh::FromArgs;
 use tempdir::TempDir;
 use walkdir::WalkDir;
 
-use argh::FromArgs;
+use crate::buf_build::{export_dep_module, read_locked_deps};
+
 #[derive(Debug, FromArgs)]
 #[argh(subcommand, name = "compile")]
 /// Compile
@@ -27,7 +29,7 @@ pub struct CompileCmd {
 impl CompileCmd {
     pub fn run(&self) {
         let tmp_sdk = TempDir::new("ibc-proto-sdk").unwrap();
-        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref(), self.ibc.clone());
+        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref(), self.ibc.as_deref());
 
         match &self.ibc {
             None => {
@@ -179,17 +181,41 @@ impl CompileCmd {
         }
     }
 
-    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<PathBuf>) {
+    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, ibc_dep: Option<&Path>) {
+        // Export dependency modules required by the SDK .proto files
+        // into temporary directories, which will be added to the include list.
+        let sdk_lockfile = sdk_dir.join("proto/buf.lock");
+        let sdk_dep_dirs = match read_locked_deps(&sdk_lockfile) {
+            Ok(deps) => deps
+                .iter()
+                .map(|dep| {
+                    let mod_dir = TempDir::new(&dep.repository).unwrap();
+                    if let Err(e) = export_dep_module(dep, mod_dir.as_ref()) {
+                        eprintln!(
+                            "Failed to export module {}/{}/{}: {}",
+                            dep.remote, dep.owner, dep.repository, e,
+                        );
+                        process::exit(1);
+                    }
+                    mod_dir
+                })
+                .collect::<Vec<_>>(),
+            Err(e) => {
+                eprintln!("Failed to read {}: {}", sdk_lockfile.display(), e);
+                process::exit(1);
+            }
+        };
+
         println!(
             "[info ] Compiling Cosmos-SDK .proto files to Rust into '{}'...",
             out_dir.display()
         );
 
-        let root = env!("CARGO_MANIFEST_DIR");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
 
         // Paths
         let proto_paths = vec![
-            format!("{}/../proto/definitions/mock", root),
+            format!("{}/../proto/definitions/mock", root.display()),
             format!("{}/proto/cosmos/auth", sdk_dir.display()),
             format!("{}/proto/cosmos/gov", sdk_dir.display()),
             format!("{}/proto/cosmos/tx", sdk_dir.display()),
@@ -198,15 +224,15 @@ impl CompileCmd {
             format!("{}/proto/cosmos/upgrade", sdk_dir.display()),
         ];
 
-        let mut proto_includes_paths = vec![
-            format!("{}/../proto", root),
-            format!("{}/proto", sdk_dir.display()),
-            format!("{}/third_party/proto", sdk_dir.display()),
-        ];
+        let mut includes = vec![root.join("../proto"), sdk_dir.join("proto")];
+
+        for mod_dir in &sdk_dep_dirs {
+            includes.push(mod_dir.path().to_owned());
+        }
 
         if let Some(ibc_dir) = ibc_dep {
             // Use the IBC proto files from the SDK
-            proto_includes_paths.push(format!("{}/proto", ibc_dir.display()));
+            includes.push(ibc_dir.join("proto"));
         }
 
         // List available proto files
@@ -235,7 +261,6 @@ impl CompileCmd {
         println!("[info ] Compiling..");
 
         // List available paths for dependencies
-        let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
         let attrs_serde = r#"#[derive(::serde::Serialize, ::serde::Deserialize)]"#;
         let compilation = tonic_build::configure()
             .build_client(true)

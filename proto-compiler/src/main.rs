@@ -1,5 +1,7 @@
 use argh::FromArgs;
 
+mod buf_build;
+
 mod cmd;
 use cmd::clone::CloneCmd;
 use cmd::compile::CompileCmd;
