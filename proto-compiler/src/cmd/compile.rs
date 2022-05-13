@@ -55,13 +55,11 @@ impl CompileCmd {
         // Paths
         let proto_paths = [
             // ibc-go proto files
-            format!("{}/proto/ibc", ibc_dir.display()),
+            ibc_dir.join("proto/ibc"),
         ];
 
-        let proto_includes_paths = [
-            format!("{}/proto", ibc_dir.display()),
-            format!("{}/third_party/proto", ibc_dir.display()),
-        ];
+        // List available paths for dependencies
+        let includes = [ibc_dir.join("proto"), ibc_dir.join("third_party/proto")];
 
         // List available proto files
         let mut protos: Vec<PathBuf> = vec![];
@@ -87,9 +85,6 @@ impl CompileCmd {
             println!("\t-> {:?}", proto);
         }
         println!("[info ] Compiling..");
-
-        // List available paths for dependencies
-        let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
         let attrs_serde = r#"#[derive(::serde::Serialize, ::serde::Deserialize)]"#;
         let attrs_jsonschema =
@@ -215,13 +210,13 @@ impl CompileCmd {
 
         // Paths
         let proto_paths = vec![
-            format!("{}/../proto/definitions/mock", root.display()),
-            format!("{}/proto/cosmos/auth", sdk_dir.display()),
-            format!("{}/proto/cosmos/gov", sdk_dir.display()),
-            format!("{}/proto/cosmos/tx", sdk_dir.display()),
-            format!("{}/proto/cosmos/base", sdk_dir.display()),
-            format!("{}/proto/cosmos/staking", sdk_dir.display()),
-            format!("{}/proto/cosmos/upgrade", sdk_dir.display()),
+            root.join("../proto/definitions/mock"),
+            sdk_dir.join("proto/cosmos/auth"),
+            sdk_dir.join("proto/cosmos/gov"),
+            sdk_dir.join("proto/cosmos/tx"),
+            sdk_dir.join("proto/cosmos/base"),
+            sdk_dir.join("proto/cosmos/staking"),
+            sdk_dir.join("proto/cosmos/upgrade"),
         ];
 
         let mut includes = vec![root.join("../proto"), sdk_dir.join("proto")];
