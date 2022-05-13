@@ -4,8 +4,9 @@ use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::commitment::PacketCommitment;
 use crate::core::ics04_channel::events::SendPacket;
 use crate::core::ics04_channel::packet::{PacketResult, Sequence};
-use crate::core::ics04_channel::{context::ChannelReader, error::Error, packet::Packet};
+use crate::core::ics04_channel::{error::Error, packet::Packet};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
@@ -20,7 +21,10 @@ pub struct SendPacketResult {
     pub commitment: PacketCommitment,
 }
 
-pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
+pub fn send_packet(
+    ctx: &dyn LightClientContext,
+    packet: Packet,
+) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let source_channel_end =
@@ -42,11 +46,15 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         ));
     }
 
-    let connection_end = ctx.connection_end(&source_channel_end.connection_hops()[0])?;
+    let connection_end = ctx
+        .connection_end(&source_channel_end.connection_hops()[0])
+        .map_err(|_| Error::connection_not_open(source_channel_end.connection_hops()[0].clone()))?;
 
     let client_id = connection_end.client_id().clone();
 
-    let client_state = ctx.client_state(&client_id)?;
+    let client_state = ctx
+        .client_state(&client_id)
+        .map_err(|_| Error::implementation_specific())?;
 
     // prevent accidental sends with clients that cannot be updated
     if client_state.is_frozen() {
@@ -62,7 +70,9 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         ));
     }
 
-    let consensus_state = ctx.client_consensus_state(&client_id, latest_height)?;
+    let consensus_state = ctx
+        .consensus_state(&client_id, latest_height)
+        .map_err(|_| Error::error_invalid_consensus_state())?;
     let latest_timestamp = consensus_state.timestamp();
     let packet_timestamp = packet.timeout_timestamp;
     if let Expiry::Expired = latest_timestamp.check_expiry(&packet_timestamp) {
@@ -114,7 +124,6 @@ mod tests {
     use crate::core::ics03_connection::connection::State as ConnectionState;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::core::ics04_channel::handler::send_packet::send_packet;
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::core::ics04_channel::packet::Packet;

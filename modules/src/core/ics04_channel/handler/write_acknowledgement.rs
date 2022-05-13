@@ -1,9 +1,10 @@
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::commitment::AcknowledgementCommitment;
+use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::WriteAcknowledgement;
 use crate::core::ics04_channel::packet::{Packet, PacketResult, Sequence};
-use crate::core::ics04_channel::{context::ChannelReader, error::Error};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::prelude::*;
 use crate::{
     events::IbcEvent,
@@ -19,7 +20,7 @@ pub struct WriteAckPacketResult {
 }
 
 pub fn process(
-    ctx: &dyn ChannelReader,
+    ctx: &dyn LightClientContext,
     packet: Packet,
     ack: Vec<u8>,
 ) -> HandlerResult<PacketResult, Error> {
@@ -73,7 +74,6 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::prelude::*;
 
     use test_log::test;

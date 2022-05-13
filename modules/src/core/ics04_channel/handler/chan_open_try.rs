@@ -1,21 +1,21 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenTry`.
 
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
-use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use crate::core::ics24_host::identifier::ChannelId;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Beefy: BeefyTraits>(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: &MsgChannelOpenTry,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -70,7 +70,9 @@ pub(crate) fn process<Beefy: BeefyTraits>(
         ));
     }
 
-    let conn = ctx.connection_end(&msg.channel.connection_hops()[0])?;
+    let conn = ctx
+        .connection_end(&msg.channel.connection_hops()[0])
+        .map_err(|_| Error::connection_not_open(msg.channel.connection_hops()[0].clone()))?;
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
             msg.channel.connection_hops()[0].clone(),
@@ -109,7 +111,7 @@ pub(crate) fn process<Beefy: BeefyTraits>(
     );
 
     // 2. Actual proofs are verified now.
-    verify_channel_proofs::<Beefy>(
+    verify_channel_proofs::<Crypto>(
         ctx,
         msg.proofs.height(),
         &new_channel_end,

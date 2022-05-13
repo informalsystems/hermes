@@ -2,7 +2,7 @@ use crate::core::ics24_host::identifier::PortId;
 use flex_error::define_error;
 
 define_error! {
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, derive_more::From)]
     Error {
         UnknownPort
             { port_id: PortId }

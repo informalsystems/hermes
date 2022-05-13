@@ -4,9 +4,6 @@
 use core::time::Duration;
 use num_traits::float::FloatCore;
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_state::AnyClientState;
-use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
@@ -25,20 +22,7 @@ pub trait ChannelReader {
     /// Returns the ChannelEnd for the given `port_id` and `chan_id`.
     fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Error>;
 
-    /// Returns the ConnectionState for the given identifier `connection_id`.
-    fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Error>;
-
     fn connection_channels(&self, cid: &ConnectionId) -> Result<Vec<(PortId, ChannelId)>, Error>;
-
-    /// Returns the ClientState for the given identifier `client_id`. Necessary dependency towards
-    /// proof verification.
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error>;
-
-    fn client_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<AnyConsensusState, Error>;
 
     fn get_next_sequence_send(
         &self,
@@ -89,23 +73,6 @@ pub trait ChannelReader {
 
     /// A hashing function for packet commitments
     fn hash(&self, value: Vec<u8>) -> Vec<u8>;
-
-    /// Returns the current height of the local chain.
-    fn host_height(&self) -> Height;
-
-    /// Returns the current timestamp of the local chain.
-    fn host_timestamp(&self) -> Timestamp {
-        let pending_consensus_state = self
-            .pending_host_consensus_state()
-            .expect("host must have pending consensus state");
-        pending_consensus_state.timestamp()
-    }
-
-    /// Returns the `ConsensusState` of the host (local) chain at a specific height.
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
-
-    /// Returns the pending `ConsensusState` of the host (local) chain.
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Error>;
 
     /// Returns the time when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
     fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, Error>;

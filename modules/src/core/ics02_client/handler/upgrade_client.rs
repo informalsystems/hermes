@@ -1,14 +1,14 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 //!
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
-use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
 use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
@@ -22,8 +22,8 @@ pub struct Result {
     pub consensus_state: Option<ConsensusUpdateResult>,
 }
 
-pub fn process<Beefy: BeefyTraits>(
-    ctx: &dyn ClientReader,
+pub fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: MsgUpgradeAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -47,7 +47,7 @@ pub fn process<Beefy: BeefyTraits>(
 
     let client_type = ctx.client_type(&client_id)?;
 
-    let client_def = AnyClient::<Beefy>::from_client_type(client_type);
+    let client_def = AnyClient::<Crypto>::from_client_type(client_type);
 
     let (new_client_state, new_consensus_state) = client_def.verify_upgrade_and_update_state(
         &upgrade_client_state,

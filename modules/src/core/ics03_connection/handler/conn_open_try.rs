@@ -1,8 +1,7 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
 
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
-use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::events::Attributes;
 use crate::core::ics03_connection::handler::verify::{
@@ -11,12 +10,13 @@ use crate::core::ics03_connection::handler::verify::{
 use crate::core::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use crate::core::ics24_host::identifier::ConnectionId;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Beefy: BeefyTraits>(
-    ctx: &dyn ConnectionReader,
+pub(crate) fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: MsgConnectionOpenTry,
 ) -> HandlerResult<ConnectionResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -79,7 +79,7 @@ pub(crate) fn process<Beefy: BeefyTraits>(
     );
 
     // 2. Pass the details to the verification function.
-    verify_proofs::<Beefy>(
+    verify_proofs::<Crypto>(
         ctx,
         msg.client_state.clone(),
         msg.proofs.height(),
@@ -113,7 +113,7 @@ pub(crate) fn process<Beefy: BeefyTraits>(
 
     let event_attributes = Attributes {
         connection_id: Some(conn_id),
-        height: ctx.host_current_height(),
+        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenTryConnection(event_attributes.into()));
@@ -251,7 +251,7 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenTryConnection(_)));
-                        assert_eq!(e.height(), test.ctx.host_current_height());
+                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

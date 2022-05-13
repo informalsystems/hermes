@@ -1,4 +1,4 @@
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
 use crate::core::ics04_channel::events::TimeoutOnClosePacket;
@@ -8,15 +8,14 @@ use crate::core::ics04_channel::handler::verify::{
 };
 use crate::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use crate::core::ics04_channel::packet::PacketResult;
-use crate::core::ics04_channel::{
-    context::ChannelReader, error::Error, handler::timeout::TimeoutPacketResult,
-};
+use crate::core::ics04_channel::{error::Error, handler::timeout::TimeoutPacketResult};
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub fn process<Beefy: BeefyTraits>(
-    ctx: &dyn ChannelReader,
+pub fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: &MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -38,7 +37,9 @@ pub fn process<Beefy: BeefyTraits>(
         ));
     }
 
-    let connection_end = ctx.connection_end(&source_channel_end.connection_hops()[0])?;
+    let connection_end = ctx
+        .connection_end(&source_channel_end.connection_hops()[0])
+        .map_err(|_| Error::connection_not_open(source_channel_end.connection_hops()[0].clone()))?;
 
     //verify the packet was sent, check the store
     let packet_commitment = ctx.get_packet_commitment(&(
@@ -74,7 +75,7 @@ pub fn process<Beefy: BeefyTraits>(
         source_channel_end.version().clone(),
     );
 
-    verify_channel_proofs::<Beefy>(
+    verify_channel_proofs::<Crypto>(
         ctx,
         msg.proofs.height(),
         &source_channel_end,
@@ -90,7 +91,7 @@ pub fn process<Beefy: BeefyTraits>(
                 msg.next_sequence_recv,
             ));
         }
-        verify_next_sequence_recv::<Beefy>(
+        verify_next_sequence_recv::<Crypto>(
             ctx,
             msg.proofs.height(),
             &connection_end,
@@ -106,7 +107,7 @@ pub fn process<Beefy: BeefyTraits>(
             channel: Some(source_channel_end),
         })
     } else {
-        verify_packet_receipt_absence::<Beefy>(
+        verify_packet_receipt_absence::<Crypto>(
             ctx,
             msg.proofs.height(),
             &connection_end,

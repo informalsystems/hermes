@@ -1,9 +1,8 @@
 //! This module implements the processing logic for ICS2 (client abstractions and functions) msgs.
-
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
-use crate::core::ics02_client::context::ClientReader;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::msgs::ClientMsg;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::handler::HandlerOutput;
 
 pub mod create_client;
@@ -18,15 +17,18 @@ pub enum ClientResult {
 }
 
 /// General entry point for processing any message related to ICS2 (client functions) protocols.
-pub fn dispatch<Ctx, Beefy>(ctx: &Ctx, msg: ClientMsg) -> Result<HandlerOutput<ClientResult>, Error>
+pub fn dispatch<Ctx, Crypto>(
+    ctx: &Ctx,
+    msg: ClientMsg,
+) -> Result<HandlerOutput<ClientResult>, Error>
 where
-    Ctx: ClientReader,
-    Beefy: BeefyTraits,
+    Ctx: LightClientContext,
+    Crypto: CryptoOps,
 {
     match msg {
         ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),
-        ClientMsg::UpdateClient(msg) => update_client::process::<Beefy>(ctx, msg),
-        ClientMsg::UpgradeClient(msg) => upgrade_client::process::<Beefy>(ctx, msg),
+        ClientMsg::UpdateClient(msg) => update_client::process::<Crypto>(ctx, msg),
+        ClientMsg::UpgradeClient(msg) => upgrade_client::process::<Crypto>(ctx, msg),
         _ => {
             unimplemented!()
         }

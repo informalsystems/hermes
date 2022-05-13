@@ -1,13 +1,13 @@
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{Counterparty, Order, State};
-use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::ReceivePacket;
 use crate::core::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::core::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Expiry;
@@ -28,8 +28,8 @@ pub enum RecvPacketResult {
     NoOp,
 }
 
-pub fn process<Beefy: BeefyTraits>(
-    ctx: &dyn ChannelReader,
+pub fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: &MsgRecvPacket,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -55,7 +55,9 @@ pub fn process<Beefy: BeefyTraits>(
         ));
     }
 
-    let connection_end = ctx.connection_end(&dest_channel_end.connection_hops()[0])?;
+    let connection_end = ctx
+        .connection_end(&dest_channel_end.connection_hops()[0])
+        .map_err(|_| Error::connection_not_open(dest_channel_end.connection_hops()[0].clone()))?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -76,7 +78,7 @@ pub fn process<Beefy: BeefyTraits>(
         return Err(Error::low_packet_timestamp());
     }
 
-    verify_packet_recv_proofs::<Beefy>(
+    verify_packet_recv_proofs::<Crypto>(
         ctx,
         msg.proofs.height(),
         packet,
@@ -149,7 +151,6 @@ pub fn process<Beefy: BeefyTraits>(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::prelude::*;
 
     use test_log::test;

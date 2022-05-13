@@ -1,19 +1,19 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenConfirm`.
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
-use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Beefy: BeefyTraits>(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: &MsgChannelOpenConfirm,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -37,7 +37,9 @@ pub(crate) fn process<Beefy: BeefyTraits>(
         ));
     }
 
-    let conn = ctx.connection_end(&channel_end.connection_hops()[0])?;
+    let conn = ctx
+        .connection_end(&channel_end.connection_hops()[0])
+        .map_err(|_| Error::connection_not_open(channel_end.connection_hops()[0].clone()))?;
 
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -65,7 +67,7 @@ pub(crate) fn process<Beefy: BeefyTraits>(
         channel_end.version().clone(),
     );
     //2. Verify proofs
-    verify_channel_proofs::<Beefy>(
+    verify_channel_proofs::<Crypto>(
         ctx,
         msg.proofs.height(),
         &channel_end,
@@ -111,7 +113,6 @@ mod tests {
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::core::ics03_connection::connection::State as ConnectionState;
-    use crate::core::ics03_connection::context::ConnectionReader;
     use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
@@ -139,7 +140,7 @@ mod tests {
         let client_id = ClientId::new(ClientType::Mock, 24).unwrap();
         let conn_id = ConnectionId::new(2);
         let context = MockContext::default();
-        let client_consensus_state_height = context.host_current_height().revision_height;
+        let client_consensus_state_height = context.host_height().revision_height;
 
         // The connection underlying the channel we're trying to open.
         let conn_end = ConnectionEnd::new(

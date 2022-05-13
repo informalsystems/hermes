@@ -304,6 +304,25 @@ impl From<ClientState> for RawClientState {
     }
 }
 
+#[cfg(any(test, feature = "mocks"))]
+pub mod test_util {
+    use super::*;
+    use crate::core::ics02_client::client_state::AnyClientState;
+
+    pub fn get_dummy_beefy_state() -> AnyClientState {
+        AnyClientState::Beefy(
+            ClientState::new(
+                ChainId::new("polkadot".to_string(), 1),
+                Default::default(),
+                0,
+                1,
+                Default::default(),
+                Default::default(),
+            )
+            .unwrap(),
+        )
+    }
+}
 #[cfg(test)]
 mod tests {
     #[test]

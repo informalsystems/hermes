@@ -1,9 +1,11 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap;
 use alloc::sync::Arc;
+use beefy_client::traits::HostFunctions;
 use core::borrow::Borrow;
 use core::cmp::min;
 use core::fmt::Debug;
@@ -16,6 +18,8 @@ use sha2::Digest;
 use tracing::debug;
 
 use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
+use crate::clients::ics11_beefy::client_state::test_util::get_dummy_beefy_state;
+use crate::clients::ics11_beefy::consensus_state::test_util::get_dummy_beefy_consensus_state;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
@@ -35,7 +39,9 @@ use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::{Ics26Context, Module, ModuleId, Router, RouterBuilder};
+use crate::core::ics26_routing::context::{
+    Ics26Context, LightClientContext, Module, ModuleId, Router, RouterBuilder,
+};
 use crate::core::ics26_routing::handler::{deliver, dispatch, MsgReceipt};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
 use crate::events::IbcEvent;
@@ -198,6 +204,10 @@ impl MockContext {
                 Some(MockClientState::new(MockHeader::new(client_state_height)).into()),
                 MockConsensusState::new(MockHeader::new(cs_height)).into(),
             ),
+            ClientType::Beefy => (
+                Some(get_dummy_beefy_state()),
+                get_dummy_beefy_consensus_state(),
+            ),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(
@@ -250,6 +260,11 @@ impl MockContext {
                 Some(MockClientState::new(MockHeader::new(client_state_height)).into()),
                 MockConsensusState::new(MockHeader::new(cs_height)).into(),
             ),
+
+            ClientType::Beefy => (
+                Some(get_dummy_beefy_state()),
+                get_dummy_beefy_consensus_state(),
+            ),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(
@@ -271,6 +286,7 @@ impl MockContext {
             // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => MockConsensusState::new(MockHeader::new(prev_cs_height)).into(),
             // If it's a Tendermint client, we need TM states.
+            ClientType::Beefy => get_dummy_beefy_consensus_state(),
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
@@ -444,7 +460,7 @@ impl MockContext {
     /// Alternative method to `Ics18Context::send` that does not exercise any serialization.
     /// Used in testing the Ics18 algorithms, hence this may return a Ics18Error.
     pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), Ics18Error> {
-        dispatch(self, msg).map_err(Ics18Error::transaction_failed)?;
+        dispatch::<_, Self>(self, msg).map_err(Ics18Error::transaction_failed)?;
         // Create a new block.
         self.advance_host_chain_height();
         Ok(())
@@ -625,6 +641,40 @@ impl Router for MockRouter {
     }
 }
 
+impl HostFunctions for MockContext {
+    fn keccak_256(input: &[u8]) -> [u8; 32] {
+        todo!()
+    }
+
+    fn secp256k1_ecdsa_recover_compressed(
+        signature: &[u8; 65],
+        value: &[u8; 32],
+    ) -> Option<Vec<u8>> {
+        todo!()
+    }
+}
+
+impl LightClientContext for MockContext {}
+
+impl CryptoOps for MockContext {
+    fn verify_membership_trie_proof(
+        root: &sp_core::H256,
+        proof: &Vec<Vec<u8>>,
+        key: &[u8],
+        value: &[u8],
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn verify_non_membership_trie_proof(
+        root: &sp_core::H256,
+        proof: &Vec<Vec<u8>>,
+        key: &[u8],
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+}
+
 impl Ics26Context for MockContext {
     type Router = MockRouter;
 
@@ -654,10 +704,6 @@ impl ChannelReader for MockContext {
         }
     }
 
-    fn connection_end(&self, cid: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
-        ConnectionReader::connection_end(self, cid).map_err(Ics04Error::ics03_connection)
-    }
-
     fn connection_channels(
         &self,
         cid: &ConnectionId,
@@ -666,20 +712,6 @@ impl ChannelReader for MockContext {
             Some(pcid) => Ok(pcid.clone()),
             None => Err(Ics04Error::missing_channel()),
         }
-    }
-
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
-        ClientReader::client_state(self, client_id)
-            .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
-    }
-
-    fn client_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<AnyConsensusState, Ics04Error> {
-        ClientReader::consensus_state(self, client_id, height)
-            .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
     fn get_next_sequence_send(
@@ -768,23 +800,6 @@ impl ChannelReader for MockContext {
 
     fn hash(&self, value: Vec<u8>) -> Vec<u8> {
         sha2::Sha256::digest(value).to_vec()
-    }
-
-    fn host_height(&self) -> Height {
-        self.latest_height()
-    }
-
-    fn host_timestamp(&self) -> Timestamp {
-        ClientReader::host_timestamp(self)
-    }
-
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
-        ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
-    }
-
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics04Error> {
-        ClientReader::pending_host_consensus_state(self)
-            .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
     fn client_update_time(
@@ -980,15 +995,6 @@ impl ConnectionReader for MockContext {
         }
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
-        // Forward method call to the Ics2 Client-specific method.
-        ClientReader::client_state(self, client_id).map_err(Ics03Error::ics02_client)
-    }
-
-    fn host_current_height(&self) -> Height {
-        self.latest_height()
-    }
-
     fn host_oldest_height(&self) -> Height {
         // history must be non-empty, so `self.history[0]` is valid
         self.history[0].height()
@@ -996,20 +1002,6 @@ impl ConnectionReader for MockContext {
 
     fn commitment_prefix(&self) -> CommitmentPrefix {
         CommitmentPrefix::try_from(b"mock".to_vec()).unwrap()
-    }
-
-    fn client_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<AnyConsensusState, Ics03Error> {
-        // Forward method call to the Ics2Client-specific method.
-        self.consensus_state(client_id, height)
-            .map_err(Ics03Error::ics02_client)
-    }
-
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics03Error> {
-        ClientReader::host_consensus_state(self, height).map_err(Ics03Error::ics02_client)
     }
 
     fn connection_counter(&self) -> Result<u64, Ics03Error> {
@@ -1272,7 +1264,7 @@ impl ClientKeeper for MockContext {
 
 impl Ics18Context for MockContext {
     fn query_latest_height(&self) -> Height {
-        self.host_current_height()
+        self.host_height()
     }
 
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
@@ -1281,7 +1273,7 @@ impl Ics18Context for MockContext {
     }
 
     fn query_latest_header(&self) -> Option<AnyHeader> {
-        let block_ref = self.host_block(self.host_current_height());
+        let block_ref = self.host_block(self.host_height());
         block_ref.cloned().map(Into::into)
     }
 
@@ -1289,8 +1281,8 @@ impl Ics18Context for MockContext {
         // Forward call to Ics26 delivery method.
         let mut all_events = vec![];
         for msg in msgs {
-            let MsgReceipt { mut events, .. } =
-                deliver(self, msg).map_err(Ics18Error::transaction_failed)?;
+            let (mut events, _) =
+                deliver::<_, Self>(self, msg).map_err(Ics18Error::transaction_failed)?;
             all_events.append(&mut events);
         }
         self.advance_host_chain_height(); // Advance chain height

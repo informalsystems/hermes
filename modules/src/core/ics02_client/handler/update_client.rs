@@ -1,18 +1,17 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
-
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
 use tracing::debug;
 
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
@@ -29,8 +28,8 @@ pub struct Result {
     pub processed_height: Height,
 }
 
-pub fn process<Beefy: BeefyTraits>(
-    ctx: &dyn ClientReader,
+pub fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: MsgUpdateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -44,7 +43,7 @@ pub fn process<Beefy: BeefyTraits>(
     // Read client type from the host chain store. The client should already exist.
     let client_type = ctx.client_type(&client_id)?;
 
-    let client_def = AnyClient::<Beefy>::from_client_type(client_type);
+    let client_def = AnyClient::<Crypto>::from_client_type(client_type);
 
     // Read client state from the host chain store.
     let client_state = ctx.client_state(&client_id)?;

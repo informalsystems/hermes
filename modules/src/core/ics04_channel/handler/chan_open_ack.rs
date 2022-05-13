@@ -1,19 +1,19 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenAck`.
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
-use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Beefy: BeefyTraits>(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: &MsgChannelOpenAck,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -38,7 +38,9 @@ pub(crate) fn process<Beefy: BeefyTraits>(
         ));
     }
 
-    let conn = ctx.connection_end(&channel_end.connection_hops()[0])?;
+    let conn = ctx
+        .connection_end(&channel_end.connection_hops()[0])
+        .map_err(|_| Error::connection_not_open(channel_end.connection_hops()[0].clone()))?;
 
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -70,7 +72,7 @@ pub(crate) fn process<Beefy: BeefyTraits>(
     channel_end.set_counterparty_channel_id(msg.counterparty_channel_id);
 
     //2. Verify proofs
-    verify_channel_proofs::<Beefy>(
+    verify_channel_proofs::<Crypto>(
         ctx,
         msg.proofs.height(),
         &channel_end,

@@ -1,11 +1,11 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::prelude::*;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
@@ -29,7 +29,7 @@ pub struct Result {
 }
 
 pub fn process(
-    ctx: &dyn ClientReader,
+    ctx: &dyn LightClientContext,
     msg: MsgCreateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();

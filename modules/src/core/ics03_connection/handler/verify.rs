@@ -1,26 +1,25 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
-
-use crate::clients::ics11_beefy::client_def::BeefyTraits;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
-use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS3 message.
-pub fn verify_proofs<Beefy: BeefyTraits>(
-    ctx: &dyn ConnectionReader,
+pub fn verify_proofs<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     client_state: Option<AnyClientState>,
     height: Height,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    verify_connection_proof::<Beefy>(
+    verify_connection_proof::<Crypto>(
         ctx,
         height,
         connection_end,
@@ -31,7 +30,7 @@ pub fn verify_proofs<Beefy: BeefyTraits>(
 
     // If the message includes a client state, then verify the proof for that state.
     if let Some(expected_client_state) = client_state {
-        verify_client_proof::<Beefy>(
+        verify_client_proof::<Crypto>(
             ctx,
             height,
             connection_end,
@@ -46,7 +45,7 @@ pub fn verify_proofs<Beefy: BeefyTraits>(
 
     // If a consensus proof is attached to the message, then verify it.
     if let Some(proof) = proofs.consensus_proof() {
-        Ok(verify_consensus_proof::<Beefy>(
+        Ok(verify_consensus_proof::<Crypto>(
             ctx,
             height,
             connection_end,
@@ -60,8 +59,8 @@ pub fn verify_proofs<Beefy: BeefyTraits>(
 /// Verifies the authenticity and semantic correctness of a commitment `proof`. The commitment
 /// claims to prove that an object of type connection exists on the source chain (i.e., the chain
 /// which created this proof). This object must match the state of `expected_conn`.
-pub fn verify_connection_proof<Beefy: BeefyTraits>(
-    ctx: &dyn ConnectionReader,
+pub fn verify_connection_proof<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
@@ -69,7 +68,9 @@ pub fn verify_connection_proof<Beefy: BeefyTraits>(
     proof: &CommitmentProofBytes,
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local/host chain).
-    let client_state = ctx.client_state(connection_end.client_id())?;
+    let client_state = ctx
+        .client_state(connection_end.client_id())
+        .map_err(|e| Error::ics02_client(e))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -77,7 +78,9 @@ pub fn verify_connection_proof<Beefy: BeefyTraits>(
     }
 
     // The client must have the consensus state for the height where this proof was created.
-    let consensus_state = ctx.client_consensus_state(connection_end.client_id(), proof_height)?;
+    let consensus_state = ctx
+        .consensus_state(connection_end.client_id(), proof_height)
+        .map_err(|e| Error::consensus_state_verification_failure(proof_height, e))?;
 
     // A counterparty connection id of None causes `unwrap()` below and indicates an internal
     // error as this is the connection id on the counterparty chain that must always be present.
@@ -86,7 +89,7 @@ pub fn verify_connection_proof<Beefy: BeefyTraits>(
         .connection_id()
         .ok_or_else(Error::invalid_counterparty)?;
 
-    let client_def = AnyClient::<Beefy>::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<Crypto>::from_client_type(client_state.client_type());
 
     // Verify the proof for the connection state against the expected connection end.
     client_def
@@ -111,8 +114,8 @@ pub fn verify_connection_proof<Beefy: BeefyTraits>(
 /// complete verification: that the client state the counterparty stores is valid (i.e., not frozen,
 /// at the same revision as the current chain, with matching chain identifiers, etc) and that the
 /// `proof` is correct.
-pub fn verify_client_proof<Beefy: BeefyTraits>(
-    ctx: &dyn ConnectionReader,
+pub fn verify_client_proof<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
     expected_client_state: AnyClientState,
@@ -120,15 +123,19 @@ pub fn verify_client_proof<Beefy: BeefyTraits>(
     proof: &CommitmentProofBytes,
 ) -> Result<(), Error> {
     // Fetch the local client state (IBC client running on the host chain).
-    let client_state = ctx.client_state(connection_end.client_id())?;
+    let client_state = ctx
+        .client_state(connection_end.client_id())
+        .map_err(|e| Error::ics02_client(e))?;
 
     if client_state.is_frozen() {
         return Err(Error::frozen_client(connection_end.client_id().clone()));
     }
 
-    let consensus_state = ctx.client_consensus_state(connection_end.client_id(), proof_height)?;
+    let consensus_state = ctx
+        .consensus_state(connection_end.client_id(), proof_height)
+        .map_err(|e| Error::consensus_state_verification_failure(proof_height, e))?;
 
-    let client_def = AnyClient::<Beefy>::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<Crypto>::from_client_type(client_state.client_type());
 
     client_def
         .verify_client_full_state(
@@ -146,25 +153,31 @@ pub fn verify_client_proof<Beefy: BeefyTraits>(
         })
 }
 
-pub fn verify_consensus_proof<Beefy: BeefyTraits>(
-    ctx: &dyn ConnectionReader,
+pub fn verify_consensus_proof<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
     proof: &ConsensusProof,
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
-    let client_state = ctx.client_state(connection_end.client_id())?;
+    let client_state = ctx
+        .client_state(connection_end.client_id())
+        .map_err(|e| Error::ics02_client(e))?;
 
     if client_state.is_frozen() {
         return Err(Error::frozen_client(connection_end.client_id().clone()));
     }
 
     // Fetch the expected consensus state from the historical (local) header data.
-    let expected_consensus = ctx.host_consensus_state(proof.height())?;
+    let expected_consensus = ctx
+        .host_consensus_state(proof.height())
+        .map_err(|e| Error::consensus_state_verification_failure(proof.height(), e))?;
 
-    let consensus_state = ctx.client_consensus_state(connection_end.client_id(), height)?;
+    let consensus_state = ctx
+        .consensus_state(connection_end.client_id(), height)
+        .map_err(|e| Error::consensus_state_verification_failure(height, e))?;
 
-    let client = AnyClient::<Beefy>::from_client_type(client_state.client_type());
+    let client = AnyClient::<Crypto>::from_client_type(client_state.client_type());
 
     client
         .verify_client_consensus_state(
@@ -184,14 +197,14 @@ pub fn verify_consensus_proof<Beefy: BeefyTraits>(
 /// Checks that `claimed_height` is within normal bounds, i.e., fresh enough so that the chain has
 /// not pruned it yet, but not newer than the current (actual) height of the local chain.
 pub fn check_client_consensus_height(
-    ctx: &dyn ConnectionReader,
+    ctx: &dyn LightClientContext,
     claimed_height: Height,
 ) -> Result<(), Error> {
-    if claimed_height > ctx.host_current_height() {
+    if claimed_height > ctx.host_height() {
         // Fail if the consensus height is too advanced.
         return Err(Error::invalid_consensus_height(
             claimed_height,
-            ctx.host_current_height(),
+            ctx.host_height(),
         ));
     }
 

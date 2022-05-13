@@ -1,21 +1,20 @@
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::clients::ics07_tendermint::client_def::TendermintClient;
-use crate::clients::ics11_beefy::client_def::{BeefyClient, BeefyTraits};
+use crate::clients::ics11_beefy::client_def::BeefyClient;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::{AnyHeader, Header};
 use crate::core::ics03_connection::connection::ConnectionEnd;
-use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
@@ -36,7 +35,7 @@ pub trait ClientDef: Clone {
 
     fn verify_header(
         &self,
-        ctx: &dyn ClientReader,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -44,7 +43,7 @@ pub trait ClientDef: Clone {
 
     fn update_state(
         &self,
-        ctx: &dyn ClientReader,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -58,7 +57,7 @@ pub trait ClientDef: Clone {
 
     fn check_for_misbehaviour(
         &self,
-        ctx: &dyn ClientReader,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -83,7 +82,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_client_consensus_state(
         &self,
-        ctx: &dyn ConnectionReader,
+        ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -98,7 +97,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_connection_state(
         &self,
-        ctx: &dyn ConnectionReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -113,7 +112,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_channel_state(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -129,7 +128,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_client_full_state(
         &self,
-        ctx: &dyn ConnectionReader,
+        ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -143,7 +142,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -160,7 +159,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -177,7 +176,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -193,7 +192,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -207,18 +206,18 @@ pub trait ClientDef: Clone {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum AnyClient<B: BeefyTraits> {
+pub enum AnyClient<Crypto: CryptoOps> {
     Tendermint(TendermintClient),
-    Beefy(BeefyClient<B>),
+    Beefy(BeefyClient<Crypto>),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockClient),
 }
 
-impl<Beefy: BeefyTraits> AnyClient<Beefy> {
+impl<Crypto: CryptoOps> AnyClient<Crypto> {
     pub fn from_client_type(client_type: ClientType) -> Self {
         match client_type {
             ClientType::Tendermint => Self::Tendermint(TendermintClient::default()),
-            ClientType::Beefy => Self::Beefy(BeefyClient::default()),
+            ClientType::Beefy => Self::Beefy(BeefyClient::<Crypto>::default()),
             #[cfg(any(test, feature = "mocks"))]
             ClientType::Mock => Self::Mock(MockClient),
         }
@@ -226,7 +225,7 @@ impl<Beefy: BeefyTraits> AnyClient<Beefy> {
 }
 
 // ⚠️  Beware of the awful boilerplate below ⚠️
-impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
+impl<Crypto: CryptoOps> ClientDef for AnyClient<Crypto> {
     type Header = AnyHeader;
     type ClientState = AnyClientState;
     type ConsensusState = AnyConsensusState;
@@ -234,7 +233,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
     /// Validate an incoming header
     fn verify_header(
         &self,
-        ctx: &dyn ClientReader,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -276,7 +275,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
     /// Validates an incoming `header` against the latest consensus state of this client.
     fn update_state(
         &self,
-        ctx: &dyn ClientReader,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: AnyClientState,
         header: AnyHeader,
@@ -366,7 +365,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
     /// Checks for misbehaviour in an incoming header
     fn check_for_misbehaviour(
         &self,
-        ctx: &dyn ClientReader,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -466,7 +465,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
 
     fn verify_client_consensus_state(
         &self,
-        ctx: &dyn ConnectionReader,
+        ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -538,7 +537,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
 
     fn verify_connection_state(
         &self,
-        ctx: &dyn ConnectionReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &AnyClientState,
         height: Height,
@@ -603,7 +602,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
 
     fn verify_channel_state(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &AnyClientState,
         height: Height,
@@ -673,7 +672,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
     }
     fn verify_client_full_state(
         &self,
-        ctx: &dyn ConnectionReader,
+        ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -740,7 +739,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -821,7 +820,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -900,7 +899,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
     }
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -977,7 +976,7 @@ impl<Beefy: BeefyTraits> ClientDef for AnyClient<Beefy> {
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,

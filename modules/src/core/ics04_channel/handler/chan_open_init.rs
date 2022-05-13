@@ -1,18 +1,18 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenInit`.
 
 use crate::core::ics04_channel::channel::{ChannelEnd, State};
-use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::core::ics24_host::identifier::ChannelId;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
 pub(crate) fn process(
-    ctx: &dyn ChannelReader,
+    ctx: &dyn LightClientContext,
     msg: &MsgChannelOpenInit,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -25,7 +25,9 @@ pub(crate) fn process(
     }
 
     // An IBC connection running on the local (host) chain should exist.
-    let conn = ctx.connection_end(&msg.channel.connection_hops()[0])?;
+    let conn = ctx
+        .connection_end(&msg.channel.connection_hops()[0])
+        .map_err(|_| Error::connection_not_open(msg.channel.connection_hops()[0].clone()))?;
     let get_versions = conn.versions();
     let version = match get_versions {
         [version] => version,
@@ -89,7 +91,6 @@ mod tests {
     use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::State;
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::core::ics04_channel::handler::channel_dispatch;
     use crate::core::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
     use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
