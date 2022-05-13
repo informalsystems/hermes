@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
 use crate::channel::ChannelError;
+use crate::path::PathIdentifiers;
 use crate::supervisor::Error;
 use ibc::{
     core::{
@@ -399,25 +400,26 @@ pub fn unreceived_acknowledgements_sequences(
         .map_err(Error::relayer)
 }
 
-/// This method returns a vector of sequence numbers for all the packets
-/// which the counterparty chain _sent_ on the given channel and which the
-/// (target) chain did not yet _receive_.
-/// Expects an [`IdentifiedChannelEnd`] plus a pair of
-/// [`ChainHandle`]s representing the chains at the two ends of this
-/// channel, called a (target) chain and a counterparty chain.
+/// Given a channel, this method returns:
+/// - The sequences of the packets _sent_ on the counterparty chain and not _received_ by
+///   the (target) chain.
+/// - The counterparty height at which the query was made.
+///
+/// Expects an [`IdentifiedChannelEnd`] and a pair of [`ChainHandle`]s representing the chains
+/// at the two ends of this channel, called a (target) chain and a counterparty chain.
 ///
 /// ### Implementation details
 /// This method involves two separate queries:
 ///
 /// 1. It performs a [`QueryPacketCommitmentsRequest`] on the counterparty chain.
-///     This query returns the vector of all sequence numbers for those packets that have
-///     commitments written on-chain in the counterparty chain's state.
+///     This query returns the sequences for the packets with stored
+///     commitments in the counterparty chain's state, and the height at which the query was made
 ///
 ///     This step relies on [`commitments_on_chain`], see that method for more details.
 ///
 /// 2. It performs a [`QueryUnreceivedPacketsRequest`] on the (target) chain.
-///     Given the sequence numbers of packet commitments on the counterparty (query #1),
-///     this query returns a subset of these sequence numbers, all of which the target
+///     Given the sequences of packet commitments on the counterparty (query #1),
+///     this query returns the sequences of the packets which the target
 ///     chain has not yet _received_.
 ///
 ///    This step relies on [`unreceived_packets_sequences`], see that method for more details.
@@ -425,26 +427,18 @@ pub fn unreceived_acknowledgements_sequences(
 pub fn unreceived_packets(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
-    channel: &IdentifiedChannelEnd,
-) -> Result<Vec<u64>, Error> {
-    let counterparty = channel.channel_end.counterparty();
-    let counterparty_channel_id = counterparty
-        .channel_id
-        .as_ref()
-        .ok_or_else(Error::missing_counterparty_channel_id)?;
-
-    let (commit_sequences, _) = commitments_on_chain(
+    path: &PathIdentifiers,
+) -> Result<(Vec<u64>, Height), Error> {
+    let (commit_sequences, h) = commitments_on_chain(
         counterparty_chain,
-        &counterparty.port_id,
-        counterparty_channel_id,
+        &path.counterparty_port_id,
+        &path.counterparty_channel_id,
     )?;
 
-    unreceived_packets_sequences(
-        chain,
-        &channel.port_id,
-        &channel.channel_id,
-        commit_sequences,
-    )
+    let packet_seq_nrs =
+        unreceived_packets_sequences(chain, &path.port_id, &path.channel_id, commit_sequences)?;
+
+    Ok((packet_seq_nrs, h))
 }
 
 pub fn acknowledgements_on_chain(
@@ -474,61 +468,57 @@ pub fn acknowledgements_on_chain(
     Ok((sequences, height))
 }
 
-/// This method returns a vector of sequence numbers for those packets
-/// which the counterparty chain _received_ on the given channel and which the
-/// (target) chain did not yet _acknowledge_.
-/// Expects an [`IdentifiedChannelEnd`] plus a pair of
-/// [`ChainHandle`]s representing the chains at the two ends of this
-/// channel, called a (target) chain and a counterparty chain.
+/// Given a channel, this method returns:
+/// - The sequences of all packets _received on the counterparty chain and not _acknowledged_ by
+///   the (target) chain.
+/// - The counterparty height at which the query was made.
+///
+/// Expects an [`IdentifiedChannelEnd`] and a pair of [`ChainHandle`]s representing the chains
+/// at the two ends of this channel, called a (target) chain and a counterparty chain.
 ///
 /// ### Implementation details
 /// This method involves two separate queries:
 ///
 /// 1. It performs a [`QueryPacketCommitmentsRequest`] on the target chain.
-///     This query returns the vector of all sequence numbers for those packets that have
-///     commitments written on-chain in the (target) chain's state.
+///     This query returns the sequences for the packets with stored
+///     commitments in the target chain's state, and the height at which the query was made
 ///
 ///     This step relies on [`commitments_on_chain`], see that method for more details.
 ///
 /// 2. It performs a [`QueryPacketAcknowledgementsRequest`] on the counterparty chain.
-///     Given the sequence numbers of packet commitments on the target chain (from step #1),
-///     this query returns a subset of these sequence numbers, all of which the counterparty
-///     chain has _received_ (i.e., it stores acknowledgments for these sequence numbers).
+///     Given the sequences of packet commitments on the target chain (query #1),
+///     this query returns the sequences of the packets which the counterparty chain has
+///     _acknowledged_.
 ///
 ///     This step relies on [`packet_acknowledgements`], see that method for more details.
 ///
 /// 3. It performs a [`QueryUnreceivedAcksRequest`] on the target chain.
-///     Given the sequence numbers of packet acknowledgements on the counterparty (step #3),
-///     this query fetches the subset among these acknowledgements which have not been
-///     relayed yet to the target chain.
+///     Given the sequences of packet acknowledgements on the counterparty (step #2),
+///     this query fetches the subset for which acknowledgements have not been
+///     received by the target chain.
 ///     This step relies on [`unreceived_acknowledgements_sequences`].
 pub fn unreceived_acknowledgements(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
-    channel: &IdentifiedChannelEnd,
-) -> Result<Vec<u64>, Error> {
-    let counterparty = channel.channel_end.counterparty();
-    let counterparty_channel_id = counterparty
-        .channel_id
-        .as_ref()
-        .ok_or_else(Error::missing_counterparty_channel_id)?;
+    path: &PathIdentifiers,
+) -> Result<(Vec<u64>, Height), Error> {
+    let (commitments_on_src, _) = commitments_on_chain(chain, &path.port_id, &path.channel_id)?;
 
-    let (commitments_on_src, _) =
-        commitments_on_chain(chain, &channel.port_id, &channel.channel_id)?;
-
-    let (acks_on_counterparty, _) = packet_acknowledgements(
+    let (acks_on_counterparty, src_response_height) = packet_acknowledgements(
         counterparty_chain,
-        &counterparty.port_id,
-        counterparty_channel_id,
+        &path.counterparty_port_id,
+        &path.counterparty_channel_id,
         commitments_on_src,
     )?;
 
-    unreceived_acknowledgements_sequences(
+    let sns = unreceived_acknowledgements_sequences(
         chain,
-        &channel.port_id,
-        &channel.channel_id,
+        &path.port_id,
+        &path.channel_id,
         acks_on_counterparty,
-    )
+    )?;
+
+    Ok((sns, src_response_height))
 }
 
 /// A structure to display pending packet commitment IDs
