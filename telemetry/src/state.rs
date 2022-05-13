@@ -241,7 +241,7 @@ impl TelemetryState {
             let latency = start.elapsed().as_millis() as u64;
 
             let labels = &[
-                KeyValue::new("tracking_id", tracking_id),
+                // KeyValue::new("tracking_id", tracking_id),
                 KeyValue::new("chain", chain_id.to_string()),
                 KeyValue::new("counterparty", counterparty_chain_id.to_string()),
                 KeyValue::new("channel", channel_id.to_string()),
@@ -266,7 +266,7 @@ impl TelemetryState {
             let latency = start.elapsed().as_millis() as u64;
 
             let labels = &[
-                KeyValue::new("tracking_id", tracking_id),
+                // KeyValue::new("tracking_id", tracking_id),
                 KeyValue::new("chain", chain_id.to_string()),
                 KeyValue::new("counterparty", counterparty_chain_id.to_string()),
                 KeyValue::new("channel", channel_id.to_string()),
