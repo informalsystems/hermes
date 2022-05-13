@@ -28,7 +28,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
         let amount2 = random_u64_range(1000, 5000);
 
         info!(
-            "Performing first IBC transfer with amount {}, which should be relayed because its an ordered channel",
+            "Performing first IBC transfer from chain A to chain B with amount {}",
             amount1
         );
 
@@ -42,43 +42,57 @@ impl BinaryChannelTest for ExecuteScheduleTest {
         )?;
 
         info!(
-            "Performing second IBC transfer with amount {}, which should be relayed because its an ordered channel",
+            "Performing second IBC transfer from chain B to chain A with amount {}",
             amount2
         );
 
-        chains.node_a.chain_driver().ibc_transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            &chains.node_a.wallets().user1(),
-            &chains.node_b.wallets().user1().address(),
-            &chains.node_a.denom(),
+        chains.node_b.chain_driver().ibc_transfer_token(
+            &channel.port_b.as_ref(),
+            &channel.channel_id_b.as_ref(),
+            &chains.node_b.wallets().user1(),
+            &chains.node_a.wallets().user1().address(),
+            &chains.node_b.denom(),
             amount2,
         )?;
 
-        let link_opts = LinkParameters {
+        let chain_a_link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
             src_channel_id: channel.channel_id_a.clone().into_value(),
         };
-        let link = Link::new_from_opts(
+        let chain_b_link_opts = LinkParameters {
+            src_port_id: channel.port_b.clone().into_value(),
+            src_channel_id: channel.channel_id_b.clone().into_value(),
+        };
+
+        let chain_a_link = Link::new_from_opts(
             chains.handle_a().clone(),
             chains.handle_b().clone(),
-            link_opts,
+            chain_a_link_opts,
             true,
         )?;
-        let relay_path = link.a_to_b;
+        let chain_b_link = Link::new_from_opts(
+            chains.handle_b().clone(),
+            chains.handle_a().clone(),
+            chain_b_link_opts,
+            true,
+        )?;
 
-        relay_path.schedule_packet_clearing(None)?;
+        let relay_path_a_to_b = chain_a_link.a_to_b;
+        let relay_path_b_to_a = chain_b_link.a_to_b;
 
-        // assert_eq!(relay_path.dst_operational_data.len(), 2);
-        assert_eq!(relay_path.dst_operational_data.len(), 1);
+        relay_path_a_to_b.schedule_packet_clearing(None)?;
+        relay_path_b_to_a.schedule_packet_clearing(None)?;
+
+        assert_eq!(relay_path_a_to_b.dst_operational_data.len(), 1);
+        assert_eq!(relay_path_b_to_a.dst_operational_data.len(), 1);
 
         chains.node_b.value().kill()?;
 
-        match relay_path.execute_schedule() {
+        match relay_path_a_to_b.execute_schedule() {
             Ok(_) => panic!("Expected an error"),
             Err(_e) => {
-                // assert_eq!(relay_path.dst_operational_data.len(), 1);
-                assert_eq!(relay_path.dst_operational_data.len(), 0);
+                assert_eq!(relay_path_a_to_b.dst_operational_data.len(), 0);
+                assert_eq!(relay_path_b_to_a.dst_operational_data.len(), 1);
             }
         }
 
