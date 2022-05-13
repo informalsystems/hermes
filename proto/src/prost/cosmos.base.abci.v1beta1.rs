@@ -95,6 +95,9 @@ pub struct GasInfo {
 pub struct Result {
     /// Data is any data returned from message or handler execution. It MUST be
     /// length prefixed in order to separate data from multiple message executions.
+    /// Deprecated. This field is still populated, but prefer msg_response instead
+    /// because it also contains the Msg response typeURL.
+    #[deprecated]
     #[prost(bytes="vec", tag="1")]
     pub data: ::prost::alloc::vec::Vec<u8>,
     /// Log contains the log information from message or handler execution.
@@ -104,6 +107,11 @@ pub struct Result {
     /// or handler execution.
     #[prost(message, repeated, tag="3")]
     pub events: ::prost::alloc::vec::Vec<::tendermint_proto::abci::Event>,
+    /// msg_responses contains the Msg handler responses type packed in Anys.
+    ///
+    /// Since: cosmos-sdk 0.46
+    #[prost(message, repeated, tag="4")]
+    pub msg_responses: ::prost::alloc::vec::Vec<super::super::super::super::google::protobuf::Any>,
 }
 /// SimulationResponse defines the response generated when a transaction is
 /// successfully simulated.
@@ -127,8 +135,15 @@ pub struct MsgData {
 /// for each message.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxMsgData {
+    /// data field is deprecated and not populated.
+    #[deprecated]
     #[prost(message, repeated, tag="1")]
     pub data: ::prost::alloc::vec::Vec<MsgData>,
+    /// msg_responses contains the Msg handler responses packed into Anys.
+    ///
+    /// Since: cosmos-sdk 0.46
+    #[prost(message, repeated, tag="2")]
+    pub msg_responses: ::prost::alloc::vec::Vec<super::super::super::super::google::protobuf::Any>,
 }
 /// SearchTxsResult defines a structure for querying txs pageable
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -64,6 +64,17 @@ pub struct QueryAccountRequest {
     #[prost(string, tag="1")]
     pub address: ::prost::alloc::string::String,
 }
+/// QueryModuleAccountsRequest is the request type for the Query/ModuleAccounts RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryModuleAccountsRequest {
+}
+/// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsResponse {
+    /// params defines the parameters of the module.
+    #[prost(message, optional, tag="1")]
+    pub params: ::core::option::Option<Params>,
+}
 /// QueryAccountResponse is the response type for the Query/Account RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAccountResponse {
@@ -75,12 +86,45 @@ pub struct QueryAccountResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {
 }
-/// QueryParamsResponse is the response type for the Query/Params RPC method.
+/// QueryModuleAccountsResponse is the response type for the Query/ModuleAccounts RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsResponse {
-    /// params defines the parameters of the module.
-    #[prost(message, optional, tag="1")]
-    pub params: ::core::option::Option<Params>,
+pub struct QueryModuleAccountsResponse {
+    #[prost(message, repeated, tag="1")]
+    pub accounts: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+}
+/// Bech32PrefixRequest is the request type for Bech32Prefix rpc method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bech32PrefixRequest {
+}
+/// Bech32PrefixResponse is the response type for Bech32Prefix rpc method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bech32PrefixResponse {
+    #[prost(string, tag="1")]
+    pub bech32_prefix: ::prost::alloc::string::String,
+}
+/// AddressBytesToStringRequest is the request type for AddressString rpc method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressBytesToStringRequest {
+    #[prost(bytes="vec", tag="1")]
+    pub address_bytes: ::prost::alloc::vec::Vec<u8>,
+}
+/// AddressBytesToStringResponse is the response type for AddressString rpc method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressBytesToStringResponse {
+    #[prost(string, tag="1")]
+    pub address_string: ::prost::alloc::string::String,
+}
+/// AddressStringToBytesRequest is the request type for AccountBytes rpc method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressStringToBytesRequest {
+    #[prost(string, tag="1")]
+    pub address_string: ::prost::alloc::string::String,
+}
+/// AddressStringToBytesResponse is the response type for AddressBytes rpc method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressStringToBytesResponse {
+    #[prost(bytes="vec", tag="1")]
+    pub address_bytes: ::prost::alloc::vec::Vec<u8>,
 }
 /// Generated client implementations.
 #[cfg(feature = "client")]
@@ -206,6 +250,92 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.auth.v1beta1.Query/Params",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// ModuleAccounts returns all the existing module accounts.
+        pub async fn module_accounts(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryModuleAccountsRequest>,
+        ) -> Result<tonic::Response<super::QueryModuleAccountsResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.auth.v1beta1.Query/ModuleAccounts",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// Bech32 queries bech32Prefix
+        pub async fn bech32_prefix(
+            &mut self,
+            request: impl tonic::IntoRequest<super::Bech32PrefixRequest>,
+        ) -> Result<tonic::Response<super::Bech32PrefixResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.auth.v1beta1.Query/Bech32Prefix",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// AddressBytesToString converts Account Address bytes to string
+        pub async fn address_bytes_to_string(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AddressBytesToStringRequest>,
+        ) -> Result<
+                tonic::Response<super::AddressBytesToStringResponse>,
+                tonic::Status,
+            > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.auth.v1beta1.Query/AddressBytesToString",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// AddressStringToBytes converts Address string to bytes
+        pub async fn address_string_to_bytes(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AddressStringToBytesRequest>,
+        ) -> Result<
+                tonic::Response<super::AddressStringToBytesResponse>,
+                tonic::Status,
+            > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.auth.v1beta1.Query/AddressStringToBytes",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }

@@ -55,6 +55,35 @@ pub struct SignDoc {
     #[prost(uint64, tag="4")]
     pub account_number: u64,
 }
+/// SignDocDirectAux is the type used for generating sign bytes for
+/// SIGN_MODE_DIRECT_AUX.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SignDocDirectAux {
+    /// body_bytes is protobuf serialization of a TxBody that matches the
+    /// representation in TxRaw.
+    #[prost(bytes="vec", tag="1")]
+    pub body_bytes: ::prost::alloc::vec::Vec<u8>,
+    /// public_key is the public key of the signing account.
+    #[prost(message, optional, tag="2")]
+    pub public_key: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    /// chain_id is the identifier of the chain this transaction targets.
+    /// It prevents signed transactions from being used on another chain by an
+    /// attacker.
+    #[prost(string, tag="3")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// account_number is the account number of the account in state.
+    #[prost(uint64, tag="4")]
+    pub account_number: u64,
+    /// sequence is the sequence number of the signing account.
+    #[prost(uint64, tag="5")]
+    pub sequence: u64,
+    /// Tip is the optional tip used for meta-transactions. It should be left
+    /// empty if the signer is not the tipper for this transaction.
+    #[prost(message, optional, tag="6")]
+    pub tip: ::core::option::Option<Tip>,
+}
 /// TxBody is the body of a transaction that all signers sign over.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxBody {
@@ -103,6 +132,11 @@ pub struct AuthInfo {
     /// of the signers. This can be estimated via simulation.
     #[prost(message, optional, tag="2")]
     pub fee: ::core::option::Option<Fee>,
+    /// Tip is the optional tip used for meta-transactions.
+    ///
+    /// Since: cosmos-sdk 0.46
+    #[prost(message, optional, tag="3")]
+    pub tip: ::core::option::Option<Tip>,
 }
 /// SignerInfo describes the public key and signing mode of a single top-level
 /// signer.
@@ -188,6 +222,43 @@ pub struct Fee {
     #[prost(string, tag="4")]
     pub granter: ::prost::alloc::string::String,
 }
+/// Tip is the tip used for meta-transactions.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Tip {
+    /// amount is the amount of the tip
+    #[prost(message, repeated, tag="1")]
+    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+    /// tipper is the address of the account paying for the tip
+    #[prost(string, tag="2")]
+    pub tipper: ::prost::alloc::string::String,
+}
+/// AuxSignerData is the intermediary format that an auxiliary signer (e.g. a
+/// tipper) builds and sends to the fee payer (who will build and broadcast the
+/// actual tx). AuxSignerData is not a valid tx in itself, and will be rejected
+/// by the node if sent directly as-is.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuxSignerData {
+    /// address is the bech32-encoded address of the auxiliary signer. If using
+    /// AuxSignerData across different chains, the bech32 prefix of the target
+    /// chain (where the final transaction is broadcasted) should be used.
+    #[prost(string, tag="1")]
+    pub address: ::prost::alloc::string::String,
+    /// sign_doc is the SIGN_MOD_DIRECT_AUX sign doc that the auxiliary signer
+    /// signs. Note: we use the same sign doc even if we're signing with
+    /// LEGACY_AMINO_JSON.
+    #[prost(message, optional, tag="2")]
+    pub sign_doc: ::core::option::Option<SignDocDirectAux>,
+    /// mode is the signing mode of the single signer
+    #[prost(enumeration="super::signing::v1beta1::SignMode", tag="3")]
+    pub mode: i32,
+    /// sig is the signature of the sign doc.
+    #[prost(bytes="vec", tag="4")]
+    pub sig: ::prost::alloc::vec::Vec<u8>,
+}
 /// GetTxsEventRequest is the request type for the Service.TxsByEvents
 /// RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -195,7 +266,7 @@ pub struct GetTxsEventRequest {
     /// events is the list of transaction event type.
     #[prost(string, repeated, tag="1")]
     pub events: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    /// pagination defines an pagination for the request.
+    /// pagination defines a pagination for the request.
     #[prost(message, optional, tag="2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
     #[prost(enumeration="OrderBy", tag="3")]
@@ -211,7 +282,7 @@ pub struct GetTxsEventResponse {
     /// tx_responses is the list of queried TxResponses.
     #[prost(message, repeated, tag="2")]
     pub tx_responses: ::prost::alloc::vec::Vec<super::super::base::abci::v1beta1::TxResponse>,
-    /// pagination defines an pagination for the response.
+    /// pagination defines a pagination for the response.
     #[prost(message, optional, tag="3")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
@@ -276,6 +347,35 @@ pub struct GetTxResponse {
     /// tx_response is the queried TxResponses.
     #[prost(message, optional, tag="2")]
     pub tx_response: ::core::option::Option<super::super::base::abci::v1beta1::TxResponse>,
+}
+/// GetBlockWithTxsRequest is the request type for the Service.GetBlockWithTxs
+/// RPC method.
+///
+/// Since: cosmos-sdk 0.45.2
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetBlockWithTxsRequest {
+    /// height is the height of the block to query.
+    #[prost(int64, tag="1")]
+    pub height: i64,
+    /// pagination defines a pagination for the request.
+    #[prost(message, optional, tag="2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+/// GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs method.
+///
+/// Since: cosmos-sdk 0.45.2
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetBlockWithTxsResponse {
+    /// txs are the transactions in the block.
+    #[prost(message, repeated, tag="1")]
+    pub txs: ::prost::alloc::vec::Vec<Tx>,
+    #[prost(message, optional, tag="2")]
+    pub block_id: ::core::option::Option<::tendermint_proto::types::BlockId>,
+    #[prost(message, optional, tag="3")]
+    pub block: ::core::option::Option<::tendermint_proto::types::Block>,
+    /// pagination defines a pagination for the response.
+    #[prost(message, optional, tag="4")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 /// OrderBy defines the sorting order
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -446,6 +546,28 @@ pub mod service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.tx.v1beta1.Service/GetTxsEvent",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// GetBlockWithTxs fetches a block with decoded txs.
+        ///
+        /// Since: cosmos-sdk 0.45.2
+        pub async fn get_block_with_txs(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetBlockWithTxsRequest>,
+        ) -> Result<tonic::Response<super::GetBlockWithTxsResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.tx.v1beta1.Service/GetBlockWithTxs",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
