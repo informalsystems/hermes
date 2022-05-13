@@ -50,7 +50,7 @@ pub fn process<Crypto: CryptoOps>(
 
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
-        .map_err(|_| Error::connection_not_open(source_channel_end.connection_hops()[0].clone()))?;
+        .map_err(|e| Error::ics03_connection(e))?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -125,6 +125,7 @@ pub fn process<Crypto: CryptoOps>(
 mod tests {
     use test_log::test;
 
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -140,6 +141,7 @@ mod tests {
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::prelude::*;
+    use crate::test_utils::Crypto;
     use crate::timestamp::ZERO_DURATION;
 
     #[test]
@@ -226,7 +228,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = process(&test.ctx, &test.msg);
+            let res = process::<Crypto>(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {

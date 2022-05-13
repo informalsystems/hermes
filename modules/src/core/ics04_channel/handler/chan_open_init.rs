@@ -27,7 +27,7 @@ pub(crate) fn process(
     // An IBC connection running on the local (host) chain should exist.
     let conn = ctx
         .connection_end(&msg.channel.connection_hops()[0])
-        .map_err(|_| Error::connection_not_open(msg.channel.connection_hops()[0].clone()))?;
+        .map_err(|e| Error::ics03_connection(e))?;
     let get_versions = conn.versions();
     let version = match get_versions {
         [version] => version,
@@ -85,6 +85,7 @@ mod tests {
 
     use test_log::test;
 
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::State as ConnectionState;
     use crate::core::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
@@ -98,6 +99,7 @@ mod tests {
     use crate::core::ics24_host::identifier::ConnectionId;
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
+    use crate::test_utils::Crypto;
 
     #[test]
     fn chan_open_init_msg_processing() {
@@ -144,7 +146,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = channel_dispatch(&test.ctx, &test.msg);
+            let res = channel_dispatch::<_, Crypto>(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok((proto_output, res)) => {

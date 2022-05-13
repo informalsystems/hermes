@@ -78,6 +78,7 @@ mod tests {
 
     use test_log::test;
 
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;

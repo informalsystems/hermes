@@ -16,6 +16,8 @@ define_error! {
     Error {
         InvalidAddress
             |_| { "invalid address" },
+        InvalidTrieProof
+            |_| { "invalid trie proof" },
         InvalidMmrUpdate
             { reason: String }
             |e| { format_args!("invalid mmr update {}", e.reason) },

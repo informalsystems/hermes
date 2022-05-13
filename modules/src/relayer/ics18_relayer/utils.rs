@@ -159,6 +159,7 @@ mod tests {
                     hheader.trusted_height = th.decrement().unwrap();
                     hheader.wrap_any()
                 }
+                AnyHeader::Beefy(h) => h.wrap_any(),
                 AnyHeader::Mock(header) => header.wrap_any(),
             };
 

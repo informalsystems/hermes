@@ -21,6 +21,10 @@ define_error! {
             [ connection_error::Error ]
             | _ | { "ics03 connection error" },
 
+        Ics02Client
+            [ client_error::Error ]
+            | _ | { "ics02 client error" },
+
         Ics05Port
             [ port_error::Error ]
             | _ | { "ics05 port error" },

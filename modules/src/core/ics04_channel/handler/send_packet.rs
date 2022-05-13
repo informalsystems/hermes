@@ -48,7 +48,7 @@ pub fn send_packet(
 
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
-        .map_err(|_| Error::connection_not_open(source_channel_end.connection_hops()[0].clone()))?;
+        .map_err(|e| Error::ics03_connection(e))?;
 
     let client_id = connection_end.client_id().clone();
 
@@ -118,6 +118,7 @@ mod tests {
 
     use test_log::test;
 
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::height::Height;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;

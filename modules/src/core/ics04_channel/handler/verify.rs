@@ -26,7 +26,7 @@ pub fn verify_channel_proofs<Crypto: CryptoOps>(
 
     let client_state = ctx
         .client_state(&client_id)
-        .map_err(|_| Error::implementation_specific())?;
+        .map_err(|e| Error::ics02_client(e))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -68,7 +68,7 @@ pub fn verify_packet_recv_proofs<Crypto: CryptoOps>(
     let client_id = connection_end.client_id();
     let client_state = ctx
         .client_state(client_id)
-        .map_err(|_| Error::implementation_specific())?;
+        .map_err(|e| Error::ics02_client(e))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -119,7 +119,7 @@ pub fn verify_packet_acknowledgement_proofs<Crypto: CryptoOps>(
     let client_id = connection_end.client_id();
     let client_state = ctx
         .client_state(client_id)
-        .map_err(|_| Error::implementation_specific())?;
+        .map_err(|e| Error::ics02_client(e))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -166,7 +166,7 @@ pub fn verify_next_sequence_recv<Crypto: CryptoOps>(
     let client_id = connection_end.client_id();
     let client_state = ctx
         .client_state(client_id)
-        .map_err(|_| Error::implementation_specific())?;
+        .map_err(|e| Error::ics02_client(e))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -208,7 +208,7 @@ pub fn verify_packet_receipt_absence<Crypto: CryptoOps>(
     let client_id = connection_end.client_id();
     let client_state = ctx
         .client_state(client_id)
-        .map_err(|_| Error::implementation_specific())?;
+        .map_err(|e| Error::ics02_client(e))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {

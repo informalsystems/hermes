@@ -17,6 +17,7 @@ use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::core::ics02_client::msgs::ClientMsg;
 use ibc::core::ics03_connection::connection::{Counterparty, State as ConnectionState};
+use ibc::core::ics03_connection::context::ConnectionReader;
 use ibc::core::ics03_connection::error as connection_error;
 use ibc::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
@@ -24,7 +25,6 @@ use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::core::ics03_connection::msgs::ConnectionMsg;
 use ibc::core::ics03_connection::version::Version;
-use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::core::ics26_routing::error as routing_error;
@@ -311,7 +311,7 @@ impl IbcTestRunner {
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
                     client_state: Self::client_state(client_state),
-                    consensus_state: Self::consensus_state(consensus_state),
+                    consensus_state: Some(Self::consensus_state(consensus_state)),
                     signer: Self::signer(),
                 }));
                 ctx.deliver(msg)

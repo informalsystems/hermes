@@ -127,8 +127,8 @@ mod tests {
 
     use test_log::test;
 
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics03_connection::connection::State;
-    use crate::core::ics03_connection::context::ConnectionReader;
     use crate::core::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::core::ics03_connection::msgs::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
     use crate::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -137,6 +137,7 @@ mod tests {
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::mock::host::HostType;
+    use crate::test_utils::Crypto;
     use crate::Height;
 
     #[test]
@@ -231,7 +232,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = dispatch(&test.ctx, test.msg.clone());
+            let res = dispatch::<_, Crypto>(&test.ctx, test.msg.clone());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {

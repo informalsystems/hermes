@@ -1,13 +1,10 @@
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::AnyClientState;
-use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
-use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -16,6 +13,7 @@ use crate::core::ics23_commitment::merkle::apply_prefix;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics24_host::path::ClientConsensusStatePath;
 use crate::core::ics24_host::Path;
+use crate::core::ics26_routing::context::LightClientContext;
 use crate::mock::client_state::{MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
@@ -31,7 +29,7 @@ impl ClientDef for MockClient {
 
     fn update_state(
         &self,
-        _ctx: &dyn ClientReader,
+        _ctx: &dyn LightClientContext,
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -51,7 +49,7 @@ impl ClientDef for MockClient {
 
     fn verify_client_consensus_state(
         &self,
-        _ctx: &dyn ConnectionReader,
+        _ctx: &dyn LightClientContext,
         _client_state: &Self::ClientState,
         _height: Height,
         prefix: &CommitmentPrefix,
@@ -75,7 +73,7 @@ impl ClientDef for MockClient {
 
     fn verify_connection_state(
         &self,
-        _ctx: &dyn ConnectionReader,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -90,7 +88,7 @@ impl ClientDef for MockClient {
 
     fn verify_channel_state(
         &self,
-        _ctx: &dyn ClientReader,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -106,7 +104,7 @@ impl ClientDef for MockClient {
 
     fn verify_client_full_state(
         &self,
-        _ctx: &dyn ConnectionReader,
+        _ctx: &dyn LightClientContext,
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
@@ -120,7 +118,7 @@ impl ClientDef for MockClient {
 
     fn verify_packet_data(
         &self,
-        _ctx: &dyn ChannelReader,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -137,7 +135,7 @@ impl ClientDef for MockClient {
 
     fn verify_packet_acknowledgement(
         &self,
-        _ctx: &dyn ChannelReader,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -154,7 +152,7 @@ impl ClientDef for MockClient {
 
     fn verify_next_sequence_recv(
         &self,
-        _ctx: &dyn ChannelReader,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -170,7 +168,7 @@ impl ClientDef for MockClient {
 
     fn verify_packet_receipt_absence(
         &self,
-        _ctx: &dyn ChannelReader,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -199,7 +197,7 @@ impl ClientDef for MockClient {
 
     fn verify_header(
         &self,
-        _ctx: &dyn ClientReader,
+        _ctx: &dyn LightClientContext,
         _client_id: ClientId,
         _client_state: Self::ClientState,
         _header: Self::Header,
@@ -217,7 +215,7 @@ impl ClientDef for MockClient {
 
     fn check_for_misbehaviour(
         &self,
-        _ctx: &dyn ClientReader,
+        _ctx: &dyn LightClientContext,
         _client_id: ClientId,
         _client_state: Self::ClientState,
         _header: Self::Header,

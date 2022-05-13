@@ -35,7 +35,7 @@ clock = ["tendermint/clock", "time/std"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = ["tendermint-testgen", "clock", "std"]
+mocks = ["tendermint-testgen", "clock", "std", "sp-io", "sp-io/std"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
@@ -57,12 +57,13 @@ num-traits = { version = "0.2.14", default-features = false }
 derive_more = { version = "0.99.17", default-features = false, features = ["from", "display"] }
 uint = { version = "0.9", default-features = false }
 beefy-client = { package = "beefy-generic-client",  git = "https://github.com/ComposableFi/beefy-client", branch = "david/refactor-traits", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" , default-features = false }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" , default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 pallet-mmr-primitives = { package = "sp-mmr-primitives", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" , default-features = false }
-beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" , default-features = false }
+beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false }
-sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" , default-features = false }
+sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", optional = true }
 
 [dependencies.tendermint]
 version = "=0.23.7"
@@ -89,6 +90,7 @@ modelator = "0.4.2"
 sha2 = { version = "0.10.2" }
 tendermint-rpc = { version = "=0.23.7", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.23.7" } # Needed for generating (synthetic) light blocks.
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22"}
 
 [[test]]
 name = "mbt"

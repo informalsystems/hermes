@@ -1,11 +1,8 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
-
-use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap;
 use alloc::sync::Arc;
-use beefy_client::traits::HostFunctions;
 use core::borrow::Borrow;
 use core::cmp::min;
 use core::fmt::Debug;
@@ -51,6 +48,7 @@ use crate::mock::host::{HostBlock, HostType};
 use crate::relayer::ics18_relayer::context::Ics18Context;
 use crate::relayer::ics18_relayer::error::Error as Ics18Error;
 use crate::signer::Signer;
+use crate::test_utils::Crypto;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
@@ -460,7 +458,7 @@ impl MockContext {
     /// Alternative method to `Ics18Context::send` that does not exercise any serialization.
     /// Used in testing the Ics18 algorithms, hence this may return a Ics18Error.
     pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), Ics18Error> {
-        dispatch::<_, Self>(self, msg).map_err(Ics18Error::transaction_failed)?;
+        dispatch::<_, Crypto>(self, msg).map_err(Ics18Error::transaction_failed)?;
         // Create a new block.
         self.advance_host_chain_height();
         Ok(())
@@ -641,39 +639,7 @@ impl Router for MockRouter {
     }
 }
 
-impl HostFunctions for MockContext {
-    fn keccak_256(input: &[u8]) -> [u8; 32] {
-        todo!()
-    }
-
-    fn secp256k1_ecdsa_recover_compressed(
-        signature: &[u8; 65],
-        value: &[u8; 32],
-    ) -> Option<Vec<u8>> {
-        todo!()
-    }
-}
-
 impl LightClientContext for MockContext {}
-
-impl CryptoOps for MockContext {
-    fn verify_membership_trie_proof(
-        root: &sp_core::H256,
-        proof: &Vec<Vec<u8>>,
-        key: &[u8],
-        value: &[u8],
-    ) -> Result<(), Ics02Error> {
-        todo!()
-    }
-
-    fn verify_non_membership_trie_proof(
-        root: &sp_core::H256,
-        proof: &Vec<Vec<u8>>,
-        key: &[u8],
-    ) -> Result<(), Ics02Error> {
-        todo!()
-    }
-}
 
 impl Ics26Context for MockContext {
     type Router = MockRouter;
@@ -1282,7 +1248,7 @@ impl Ics18Context for MockContext {
         let mut all_events = vec![];
         for msg in msgs {
             let (mut events, _) =
-                deliver::<_, Self>(self, msg).map_err(Ics18Error::transaction_failed)?;
+                deliver::<_, Crypto>(self, msg).map_err(Ics18Error::transaction_failed)?;
             all_events.append(&mut events);
         }
         self.advance_host_chain_height(); // Advance chain height

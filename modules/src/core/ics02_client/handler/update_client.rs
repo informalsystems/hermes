@@ -147,7 +147,7 @@ mod tests {
     use crate::mock::header::MockHeader;
     use crate::mock::host::HostType;
     use crate::prelude::*;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::{get_dummy_account_id, Crypto};
     use crate::timestamp::Timestamp;
     use crate::Height;
 
@@ -167,7 +167,7 @@ mod tests {
             signer,
         };
 
-        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+        let output = dispatch::<_, Crypto>(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -215,7 +215,7 @@ mod tests {
             signer,
         };
 
-        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+        let output = dispatch::<_, Crypto>(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
             Err(Error(ErrorDetail::ClientNotFound(e), _)) => {
@@ -251,7 +251,7 @@ mod tests {
                 signer: signer.clone(),
             };
 
-            let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+            let output = dispatch::<_, Crypto>(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
             match output {
                 Ok(HandlerOutput {
@@ -310,6 +310,7 @@ mod tests {
                 theader.trusted_height = client_height;
                 AnyHeader::Tendermint(theader)
             }
+            AnyHeader::Beefy(h) => AnyHeader::Beefy(h),
             AnyHeader::Mock(m) => AnyHeader::Mock(m),
         };
 
@@ -319,7 +320,7 @@ mod tests {
             signer,
         };
 
-        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+        let output = dispatch::<_, Crypto>(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -388,6 +389,7 @@ mod tests {
                 theader.trusted_height = trusted_height;
                 AnyHeader::Tendermint(theader)
             }
+            AnyHeader::Beefy(h) => AnyHeader::Beefy(h),
             AnyHeader::Mock(m) => AnyHeader::Mock(m),
         };
 
@@ -397,7 +399,7 @@ mod tests {
             signer,
         };
 
-        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+        let output = dispatch::<_, Crypto>(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -467,6 +469,7 @@ mod tests {
                 }
                 AnyHeader::Tendermint(theader)
             }
+            AnyHeader::Beefy(h) => AnyHeader::Beefy(h),
             AnyHeader::Mock(header) => AnyHeader::Mock(header),
         };
 
@@ -476,7 +479,7 @@ mod tests {
             signer,
         };
 
-        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+        let output = dispatch::<_, Crypto>(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -548,7 +551,7 @@ mod tests {
             signer,
         };
 
-        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg));
+        let output = dispatch::<_, Crypto>(&ctx, ClientMsg::UpdateClient(msg));
 
         match output {
             Ok(_) => {

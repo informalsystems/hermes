@@ -57,7 +57,7 @@ pub fn process<Crypto: CryptoOps>(
 
     let connection_end = ctx
         .connection_end(&dest_channel_end.connection_hops()[0])
-        .map_err(|_| Error::connection_not_open(dest_channel_end.connection_hops()[0].clone()))?;
+        .map_err(|e| Error::ics03_connection(e))?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -155,6 +155,7 @@ mod tests {
 
     use test_log::test;
 
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::core::ics03_connection::connection::State as ConnectionState;
@@ -168,6 +169,7 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::relayer::ics18_relayer::context::Ics18Context;
     use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::Crypto;
     use crate::timestamp::Timestamp;
     use crate::timestamp::ZERO_DURATION;
     use crate::{core::ics04_channel::packet::Packet, events::IbcEvent};
@@ -276,7 +278,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = process(&test.ctx, &test.msg);
+            let res = process::<Crypto>(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {

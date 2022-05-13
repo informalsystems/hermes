@@ -146,6 +146,7 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
 
+    use alloc::vec::Vec;
     use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 
     use crate::{
@@ -176,13 +177,14 @@ mod tests {
             AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height)));
 
         let proof = get_dummy_merkle_proof();
-
+        let mut proof_buf = Vec::new();
+        prost::Message::encode(&proof, &mut proof_buf).unwrap();
         let msg = MsgUpgradeAnyClient::new(
             client_id,
             client_state,
             consensus_state,
-            proof.clone(),
-            proof,
+            proof_buf.clone(),
+            proof_buf,
             signer,
         );
         let raw: RawMsgUpgradeClient = RawMsgUpgradeClient::from(msg.clone());

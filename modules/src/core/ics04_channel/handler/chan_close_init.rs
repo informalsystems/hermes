@@ -36,7 +36,7 @@ pub(crate) fn process(
 
     let conn = ctx
         .connection_end(&channel_end.connection_hops()[0])
-        .map_err(|_| Error::connection_not_open(channel_end.connection_hops()[0].clone()))?;
+        .map_err(|e| Error::ics03_connection(e))?;
 
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -91,7 +91,9 @@ mod tests {
     use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 
+    use crate::core::ics02_client::context::ClientReader;
     use crate::mock::context::MockContext;
+    use crate::test_utils::Crypto;
     use crate::timestamp::ZERO_DURATION;
 
     #[test]
@@ -135,8 +137,11 @@ mod tests {
                 )
         };
 
-        let (handler_output_builder, _) =
-            channel_dispatch(&context, &ChannelMsg::ChannelCloseInit(msg_chan_close_init)).unwrap();
+        let (handler_output_builder, _) = channel_dispatch::<_, Crypto>(
+            &context,
+            &ChannelMsg::ChannelCloseInit(msg_chan_close_init),
+        )
+        .unwrap();
         let handler_output = handler_output_builder.with_result(());
 
         assert!(!handler_output.events.is_empty()); // Some events must exist.

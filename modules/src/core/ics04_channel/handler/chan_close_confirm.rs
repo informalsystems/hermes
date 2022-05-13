@@ -37,7 +37,7 @@ pub(crate) fn process<Crypto: CryptoOps>(
 
     let conn = ctx
         .connection_end(&channel_end.connection_hops()[0])
-        .map_err(|_| Error::connection_not_open(channel_end.connection_hops()[0].clone()))?;
+        .map_err(|e| Error::ics03_connection(e))?;
 
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -109,6 +109,7 @@ mod tests {
     use crate::prelude::*;
 
     use crate::core::ics02_client::client_type::ClientType;
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::core::ics03_connection::connection::State as ConnectionState;
@@ -120,6 +121,7 @@ mod tests {
     use crate::core::ics04_channel::handler::channel_dispatch;
     use crate::core::ics04_channel::Version;
     use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
+    use crate::test_utils::Crypto;
 
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
@@ -164,7 +166,7 @@ mod tests {
                 chan_end,
             );
 
-        let (handler_output_builder, _) = channel_dispatch(
+        let (handler_output_builder, _) = channel_dispatch::<_, Crypto>(
             &context,
             &ChannelMsg::ChannelCloseConfirm(msg_chan_close_confirm),
         )

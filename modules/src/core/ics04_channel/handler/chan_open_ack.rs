@@ -40,7 +40,7 @@ pub(crate) fn process<Crypto: CryptoOps>(
 
     let conn = ctx
         .connection_end(&channel_end.connection_hops()[0])
-        .map_err(|_| Error::connection_not_open(channel_end.connection_hops()[0].clone()))?;
+        .map_err(|e| Error::ics03_connection(e))?;
 
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -114,6 +114,7 @@ mod tests {
 
     use test_log::test;
 
+    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics03_connection::connection::ConnectionEnd;
     use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::core::ics03_connection::connection::State as ConnectionState;
@@ -123,7 +124,6 @@ mod tests {
     use crate::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::core::ics04_channel::handler::channel_dispatch;
     use crate::core::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
     use crate::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
@@ -134,6 +134,7 @@ mod tests {
     use crate::events::IbcEvent;
     use crate::mock::context::MockContext;
     use crate::prelude::*;
+    use crate::test_utils::Crypto;
     use crate::Height;
 
     // TODO: The tests here are very fragile and complex.
@@ -283,7 +284,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = channel_dispatch(&test.ctx, &test.msg);
+            let res = channel_dispatch::<_, Crypto>(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok((proto_output, res)) => {

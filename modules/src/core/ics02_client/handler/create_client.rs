@@ -90,7 +90,7 @@ mod tests {
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::{get_dummy_account_id, Crypto};
     use crate::Height;
 
     #[test]
@@ -101,12 +101,12 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             MockClientState::new(MockHeader::new(height)).into(),
-            MockConsensusState::new(MockHeader::new(height)).into(),
+            Some(MockConsensusState::new(MockHeader::new(height)).into()),
             signer,
         )
         .unwrap();
 
-        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch::<_, Crypto>(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -152,11 +152,13 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState::new(MockHeader::new(Height {
-                    revision_height: 42,
-                    ..height
-                }))
-                .into(),
+                Some(
+                    MockConsensusState::new(MockHeader::new(Height {
+                        revision_height: 42,
+                        ..height
+                    }))
+                    .into(),
+                ),
                 signer.clone(),
             )
             .unwrap(),
@@ -166,11 +168,13 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState::new(MockHeader::new(Height {
-                    revision_height: 42,
-                    ..height
-                }))
-                .into(),
+                Some(
+                    MockConsensusState::new(MockHeader::new(Height {
+                        revision_height: 42,
+                        ..height
+                    }))
+                    .into(),
+                ),
                 signer.clone(),
             )
             .unwrap(),
@@ -180,11 +184,13 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState::new(MockHeader::new(Height {
-                    revision_height: 50,
-                    ..height
-                }))
-                .into(),
+                Some(
+                    MockConsensusState::new(MockHeader::new(Height {
+                        revision_height: 50,
+                        ..height
+                    }))
+                    .into(),
+                ),
                 signer,
             )
             .unwrap(),
@@ -198,7 +204,7 @@ mod tests {
         let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
 
         for msg in create_client_msgs {
-            let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
+            let output = dispatch::<_, Crypto>(&ctx, ClientMsg::CreateClient(msg.clone()));
 
             match output {
                 Ok(HandlerOutput {
@@ -256,12 +262,12 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             tm_client_state,
-            AnyConsensusState::Tendermint(tm_header.try_into().unwrap()),
+            Some(AnyConsensusState::Tendermint(tm_header.try_into().unwrap())),
             signer,
         )
         .unwrap();
 
-        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch::<_, Crypto>(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
