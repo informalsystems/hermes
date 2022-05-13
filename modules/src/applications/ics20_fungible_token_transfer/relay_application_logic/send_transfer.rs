@@ -50,8 +50,8 @@ where
 
     let sender = msg
         .sender
-        .to_string()
-        .parse()
+        .clone()
+        .try_into()
         .map_err(|_| Error::parse_account_failure())?;
 
     let prefix = TracePrefix::new(msg.source_port.clone(), msg.source_channel);

@@ -18,8 +18,8 @@ fn refund_packet_token(
 ) -> Result<(), Ics20Error> {
     let sender = data
         .sender
-        .to_string()
-        .parse()
+        .clone()
+        .try_into()
         .map_err(|_| Ics20Error::parse_account_failure())?;
     let amount: IbcCoin = data.token.clone().into();
 

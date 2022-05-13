@@ -19,8 +19,8 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
 
     let receiver = data
         .receiver
-        .to_string()
-        .parse()
+        .clone()
+        .try_into()
         .map_err(|_| Ics20Error::parse_account_failure())?;
 
     let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);

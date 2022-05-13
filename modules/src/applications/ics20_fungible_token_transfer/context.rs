@@ -1,5 +1,3 @@
-use core::str::FromStr;
-
 use sha2::{Digest, Sha256};
 use subtle_encoding::hex;
 
@@ -39,7 +37,7 @@ pub trait Ics20Reader:
     + ChannelReader
     + PortReader
 {
-    type AccountId: ToString + FromStr;
+    type AccountId: ToString + TryFrom<Signer>;
 
     /// get_port returns the portID for the transfer module.
     fn get_port(&self) -> Result<PortId, Ics20Error>;
@@ -61,7 +59,9 @@ pub trait Ics20Reader:
 
         String::from_utf8(hex::encode_upper(hash))
             .expect("hex encoded bytes are not valid UTF8")
-            .parse()
+            .parse::<Signer>()
+            .map_err(Ics20Error::signer)?
+            .try_into()
             .map_err(|_| Ics20Error::parse_account_failure())
     }
 
@@ -115,7 +115,7 @@ pub trait BankKeeper {
 }
 
 pub trait BankReader {
-    type AccountId: ToString + FromStr;
+    type AccountId: ToString + TryFrom<Signer>;
 
     /// Returns true if the specified account is not allowed to receive funds and false otherwise.
     fn is_blocked_account(&self, account: &Self::AccountId) -> bool;
@@ -137,7 +137,7 @@ pub trait Ics20Context:
     Ics20Keeper<AccountId = <Self as Ics20Context>::AccountId>
     + Ics20Reader<AccountId = <Self as Ics20Context>::AccountId>
 {
-    type AccountId: ToString + FromStr;
+    type AccountId: ToString + TryFrom<Signer>;
 }
 
 fn validate_transfer_channel_params(
