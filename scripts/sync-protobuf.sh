@@ -2,7 +2,7 @@
 
 set -eou pipefail
 
-# syn-protobuf.sh is a bash script to sync the protobuf
+# sync-protobuf.sh is a bash script to sync the protobuf
 # files using the proto-compiler project. It will check
 # out the protobuf files from the git versions specified in
 # proto/src/prost/COSMOS_SDK_COMMIT and
@@ -10,11 +10,12 @@ set -eou pipefail
 # the protobuf files to a newer version, modify the
 # relevant files with the new commit IDs.
 
-# This script should be run from the root directory of ibc-rs
+# This script should be run from the root directory of ibc-rs.
+# The buf tool should be installed and available in PATH.
 
 # We can specify where to clone the git repositories
 # for cosmos-sdk and ibc-go. By default they are cloned
-# to /tmp/cosmos-sdk.git and /tmp/ibc-go.git.
+# to ~/.cache/cosmos/cosmos-sdk.git and ~/.cache/ibc-go.git.
 # We can override this to existing directories
 # that already have a clone of the repositories,
 # so that there is no need to clone the entire
