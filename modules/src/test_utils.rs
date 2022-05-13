@@ -106,7 +106,7 @@ impl HostFunctions for Crypto {
 impl CryptoOps for Crypto {
     fn verify_membership_trie_proof(
         root: &sp_core::H256,
-        proof: &Vec<Vec<u8>>,
+        proof: &[Vec<u8>],
         key: &[u8],
         value: &[u8],
     ) -> Result<(), Ics02Error> {
@@ -119,7 +119,7 @@ impl CryptoOps for Crypto {
 
     fn verify_non_membership_trie_proof(
         root: &sp_core::H256,
-        proof: &Vec<Vec<u8>>,
+        proof: &[Vec<u8>],
         key: &[u8],
     ) -> Result<(), Ics02Error> {
         let item: Vec<(&[u8], Option<&[u8]>)> = vec![(key, None)];

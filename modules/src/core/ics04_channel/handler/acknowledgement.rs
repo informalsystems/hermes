@@ -50,7 +50,7 @@ pub fn process<Crypto: CryptoOps>(
 
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
-        .map_err(|e| Error::ics03_connection(e))?;
+        .map_err(Error::ics03_connection)?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(

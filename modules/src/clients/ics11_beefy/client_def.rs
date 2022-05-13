@@ -1,5 +1,5 @@
 use beefy_client::primitives::{ParachainHeader, ParachainsUpdateProof};
-use beefy_client::traits::{ClientState as LightClientState, HostFunctions as BeefyHostFunctions};
+use beefy_client::traits::ClientState as LightClientState;
 use beefy_client::BeefyLightClient;
 use codec::Encode;
 use core::convert::TryInto;
@@ -39,9 +39,6 @@ use crate::core::ics24_host::path::{
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
 use crate::downcast;
-
-/// Methods definitions specific to Beefy Light Client operation
-pub trait BeefyTraits: BeefyHostFunctions + Clone + Default {}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BeefyClient<Crypto: CryptoOps>(PhantomData<Crypto>);
@@ -133,11 +130,11 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
         let mut parachain_cs_states = vec![];
         let client_state = client_state
             .from_header(header.clone())
-            .map_err(|e| Error::beefy(e))?;
+            .map_err(Error::beefy)?;
         for header in header.parachain_headers {
             let height = Height::new(header.para_id as u64, header.parachain_header.number as u64);
             // Skip duplicate consensus states
-            if let Ok(_) = ctx.consensus_state(&client_id, height) {
+            if ctx.consensus_state(&client_id, height).is_ok() {
                 continue;
             }
             parachain_cs_states.push((
@@ -232,7 +229,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
         channel_id: &ChannelId,
         expected_channel_end: &ChannelEnd,
     ) -> Result<(), Error> {
-        let path = ChannelEndsPath(port_id.clone(), channel_id.clone());
+        let path = ChannelEndsPath(port_id.clone(), *channel_id);
         let value = expected_channel_end.encode_vec().unwrap();
         verify_membership::<Crypto, _>(prefix, proof, root, path, value)
     }
@@ -271,7 +268,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
 
         let commitment_path = CommitmentsPath {
             port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
+            channel_id: *channel_id,
             sequence,
         };
 
@@ -302,7 +299,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
 
         let ack_path = AcksPath {
             port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
+            channel_id: *channel_id,
             sequence,
         };
         verify_membership::<Crypto, _>(
@@ -331,7 +328,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
 
         let seq_bytes = codec::Encode::encode(&u64::from(sequence));
 
-        let seq_path = SeqRecvsPath(port_id.clone(), channel_id.clone());
+        let seq_path = SeqRecvsPath(port_id.clone(), *channel_id);
         verify_membership::<Crypto, _>(
             connection_end.counterparty().prefix(),
             proof,
@@ -358,7 +355,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
 
         let receipt_path = ReceiptsPath {
             port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
+            channel_id: *channel_id,
             sequence,
         };
         verify_non_membership::<Crypto, _>(
@@ -461,5 +458,5 @@ pub fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState,
     downcast!(
         cs => AnyConsensusState::Beefy
     )
-    .ok_or(Error::client_args_type_mismatch(ClientType::Beefy))
+    .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Beefy))
 }

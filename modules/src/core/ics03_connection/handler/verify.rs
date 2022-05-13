@@ -70,7 +70,7 @@ pub fn verify_connection_proof<Crypto: CryptoOps>(
     // Fetch the client state (IBC client on the local/host chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
-        .map_err(|e| Error::ics02_client(e))?;
+        .map_err(Error::ics02_client)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -125,7 +125,7 @@ pub fn verify_client_proof<Crypto: CryptoOps>(
     // Fetch the local client state (IBC client running on the host chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
-        .map_err(|e| Error::ics02_client(e))?;
+        .map_err(Error::ics02_client)?;
 
     if client_state.is_frozen() {
         return Err(Error::frozen_client(connection_end.client_id().clone()));
@@ -162,7 +162,7 @@ pub fn verify_consensus_proof<Crypto: CryptoOps>(
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
-        .map_err(|e| Error::ics02_client(e))?;
+        .map_err(Error::ics02_client)?;
 
     if client_state.is_frozen() {
         return Err(Error::frozen_client(connection_end.client_id().clone()));

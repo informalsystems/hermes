@@ -24,9 +24,7 @@ pub fn verify_channel_proofs<Crypto: CryptoOps>(
     // This is the client which will perform proof verification.
     let client_id = connection_end.client_id().clone();
 
-    let client_state = ctx
-        .client_state(&client_id)
-        .map_err(|e| Error::ics02_client(e))?;
+    let client_state = ctx.client_state(&client_id).map_err(Error::ics02_client)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -66,9 +64,7 @@ pub fn verify_packet_recv_proofs<Crypto: CryptoOps>(
     proofs: &Proofs,
 ) -> Result<(), Error> {
     let client_id = connection_end.client_id();
-    let client_state = ctx
-        .client_state(client_id)
-        .map_err(|e| Error::ics02_client(e))?;
+    let client_state = ctx.client_state(client_id).map_err(Error::ics02_client)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -117,9 +113,7 @@ pub fn verify_packet_acknowledgement_proofs<Crypto: CryptoOps>(
     proofs: &Proofs,
 ) -> Result<(), Error> {
     let client_id = connection_end.client_id();
-    let client_state = ctx
-        .client_state(client_id)
-        .map_err(|e| Error::ics02_client(e))?;
+    let client_state = ctx.client_state(client_id).map_err(Error::ics02_client)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -164,9 +158,7 @@ pub fn verify_next_sequence_recv<Crypto: CryptoOps>(
     proofs: &Proofs,
 ) -> Result<(), Error> {
     let client_id = connection_end.client_id();
-    let client_state = ctx
-        .client_state(client_id)
-        .map_err(|e| Error::ics02_client(e))?;
+    let client_state = ctx.client_state(client_id).map_err(Error::ics02_client)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
@@ -206,9 +198,7 @@ pub fn verify_packet_receipt_absence<Crypto: CryptoOps>(
     proofs: &Proofs,
 ) -> Result<(), Error> {
     let client_id = connection_end.client_id();
-    let client_state = ctx
-        .client_state(client_id)
-        .map_err(|e| Error::ics02_client(e))?;
+    let client_state = ctx.client_state(client_id).map_err(Error::ics02_client)?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {

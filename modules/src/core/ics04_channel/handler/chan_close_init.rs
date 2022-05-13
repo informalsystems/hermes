@@ -36,7 +36,7 @@ pub(crate) fn process(
 
     let conn = ctx
         .connection_end(&channel_end.connection_hops()[0])
-        .map_err(|e| Error::ics03_connection(e))?;
+        .map_err(Error::ics03_connection)?;
 
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(

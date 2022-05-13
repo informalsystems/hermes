@@ -27,7 +27,7 @@ pub(crate) fn process(
     // An IBC connection running on the local (host) chain should exist.
     let conn = ctx
         .connection_end(&msg.channel.connection_hops()[0])
-        .map_err(|e| Error::ics03_connection(e))?;
+        .map_err(Error::ics03_connection)?;
     let get_versions = conn.versions();
     let version = match get_versions {
         [version] => version,

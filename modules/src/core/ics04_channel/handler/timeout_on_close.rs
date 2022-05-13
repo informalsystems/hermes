@@ -39,7 +39,7 @@ pub fn process<Crypto: CryptoOps>(
 
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
-        .map_err(|e| Error::ics03_connection(e))?;
+        .map_err(Error::ics03_connection)?;
 
     //verify the packet was sent, check the store
     let packet_commitment = ctx.get_packet_commitment(&(

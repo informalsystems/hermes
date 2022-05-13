@@ -92,10 +92,9 @@ pub fn process<Crypto: CryptoOps>(
     };
 
     if found_misbehaviour {
-        let client_state =
-            client_def.update_state_on_misbehaviour(client_state.clone(), header.clone())?;
+        let client_state = client_def.update_state_on_misbehaviour(client_state, header)?;
         let result = ClientResult::Update(Result {
-            client_id: client_id.clone(),
+            client_id,
             client_state,
             consensus_state: None,
             processed_time: ctx.host_timestamp(),
@@ -112,7 +111,7 @@ pub fn process<Crypto: CryptoOps>(
         .map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
     let result = ClientResult::Update(Result {
-        client_id: client_id.clone(),
+        client_id,
         client_state: new_client_state,
         consensus_state: Some(new_consensus_state),
         processed_time: ctx.host_timestamp(),

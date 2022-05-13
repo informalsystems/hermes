@@ -72,7 +72,7 @@ pub(crate) fn process<Crypto: CryptoOps>(
 
     let conn = ctx
         .connection_end(&msg.channel.connection_hops()[0])
-        .map_err(|e| Error::ics03_connection(e))?;
+        .map_err(Error::ics03_connection)?;
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
             msg.channel.connection_hops()[0].clone(),

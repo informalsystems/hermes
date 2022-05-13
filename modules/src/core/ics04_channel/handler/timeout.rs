@@ -52,7 +52,7 @@ pub fn process<Crypto: CryptoOps>(
 
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
-        .map_err(|e| Error::ics03_connection(e))?;
+        .map_err(Error::ics03_connection)?;
 
     let client_id = connection_end.client_id().clone();
 

@@ -116,7 +116,7 @@ impl ClientState {
                             .commitment
                             .payload
                             .get_raw(&MMR_ROOT_ID)
-                            .ok_or(Error::invalid_raw_header())?,
+                            .ok_or_else(Error::invalid_raw_header)?,
                     ),
                     mmr_update.signed_commitment.commitment.block_number,
                     mmr_update.latest_mmr_leaf.beefy_next_authority_set,
@@ -252,7 +252,7 @@ impl TryFrom<RawClientState> for ClientState {
                     root: H256::decode(&mut &*set.authority_root).ok()?,
                 })
             })
-            .ok_or(Error::missing_beefy_authority_set())?;
+            .ok_or_else(Error::missing_beefy_authority_set)?;
 
         let next_authority_set = raw
             .next_authority_set
@@ -263,10 +263,9 @@ impl TryFrom<RawClientState> for ClientState {
                     root: H256::decode(&mut &*set.authority_root).ok()?,
                 })
             })
-            .ok_or(Error::missing_beefy_authority_set())?;
+            .ok_or_else(Error::missing_beefy_authority_set)?;
 
-        let mmr_root_hash =
-            H256::decode(&mut &*raw.mmr_root_hash).map_err(|e| Error::scale_decode(e))?;
+        let mmr_root_hash = H256::decode(&mut &*raw.mmr_root_hash).map_err(Error::scale_decode)?;
 
         Ok(Self {
             chain_id: ChainId::default(),

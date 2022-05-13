@@ -126,9 +126,7 @@ impl ClientDef for TendermintClient {
         let header_consensus_state = ConsensusState::from(header.clone());
         Ok((
             client_state.with_header(header),
-            ConsensusUpdateResult::Single(AnyConsensusState::Tendermint(
-                header_consensus_state.into(),
-            )),
+            ConsensusUpdateResult::Single(AnyConsensusState::Tendermint(header_consensus_state)),
         ))
     }
 

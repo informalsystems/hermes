@@ -73,8 +73,7 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
 
         let consensus_state = raw
             .consensus_state
-            .map(|cs| AnyConsensusState::try_from(cs).ok())
-            .flatten();
+            .and_then(|cs| AnyConsensusState::try_from(cs).ok());
 
         MsgCreateAnyClient::new(
             AnyClientState::try_from(raw_client_state)?,
@@ -88,7 +87,7 @@ impl From<MsgCreateAnyClient> for RawMsgCreateClient {
     fn from(ics_msg: MsgCreateAnyClient) -> Self {
         RawMsgCreateClient {
             client_state: Some(ics_msg.client_state.into()),
-            consensus_state: ics_msg.consensus_state.and_then(|cs| Some(cs.into())),
+            consensus_state: ics_msg.consensus_state.map(|cs| cs.into()),
             signer: ics_msg.signer.to_string(),
         }
     }

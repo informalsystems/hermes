@@ -19,7 +19,7 @@ pub(crate) fn process(
 
     // An IBC client running on the local (host) chain should exist.
     ctx.client_state(&msg.client_id)
-        .map_err(|e| Error::ics02_client(e))?;
+        .map_err(Error::ics02_client)?;
 
     let versions = match msg.version {
         Some(version) => {
