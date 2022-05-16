@@ -16,11 +16,13 @@ pub mod cli;
 pub mod error;
 pub mod operational_data;
 
+mod packet_events;
 mod pending;
 mod relay_path;
 mod relay_sender;
 mod relay_summary;
 mod tx_hashes;
+
 use tx_hashes::TxHashes;
 
 // Re-export the telemetries summary

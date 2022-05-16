@@ -13,6 +13,10 @@ impl TrackingId {
     pub fn uuid() -> Self {
         Self::Uuid(Uuid::new_v4())
     }
+
+    pub fn str(s: &'static str) -> Self {
+        Self::Static(s)
+    }
 }
 
 impl fmt::Display for TrackingId {

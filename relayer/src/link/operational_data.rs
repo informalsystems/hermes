@@ -50,7 +50,7 @@ impl TrackedEvents {
         self.events.is_empty()
     }
 
-    pub fn events(&self) -> &Vec<IbcEvent> {
+    pub fn events(&self) -> &[IbcEvent] {
         &self.events
     }
 
@@ -58,10 +58,8 @@ impl TrackedEvents {
         self.tracking_id
     }
 
-    pub fn set_height(&mut self, height: Height) {
-        for event in self.events.iter_mut() {
-            event.set_height(height);
-        }
+    pub fn len(&self) -> usize {
+        self.events.len()
     }
 }
 

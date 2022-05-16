@@ -34,6 +34,7 @@ pub mod light_client;
 pub mod link;
 pub mod macros;
 pub mod object;
+pub mod path;
 pub mod registry;
 pub mod rest;
 pub mod sdk_error;
