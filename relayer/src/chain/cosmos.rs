@@ -72,6 +72,7 @@ use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query};
 use crate::chain::cosmos::types::account::Account;
+use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
 use crate::chain::tx::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
@@ -103,6 +104,7 @@ pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
+    tx_config: TxConfig,
     rpc_client: HttpClient,
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
@@ -402,10 +404,9 @@ impl CosmosSdkChain {
             get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
 
         send_batched_messages_and_wait_commit(
-            &self.config,
-            &self.rpc_client,
-            &self.config.rpc_addr,
-            &self.grpc_addr,
+            &self.tx_config,
+            self.config.max_msg_num,
+            self.config.max_tx_size,
             &key_entry,
             account,
             &self.config.memo_prefix,
@@ -431,9 +432,9 @@ impl CosmosSdkChain {
             get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
 
         send_batched_messages_and_wait_check_tx(
-            &self.config,
-            &self.rpc_client,
-            &self.grpc_addr,
+            &self.tx_config,
+            self.config.max_msg_num,
+            self.config.max_tx_size,
             &key_entry,
             account,
             &self.config.memo_prefix,
@@ -461,6 +462,8 @@ impl ChainEndpoint for CosmosSdkChain {
         let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
             .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
 
+        let tx_config = TxConfig::try_from(&config)?;
+
         // Retrieve the version specification of this chain
 
         let chain = Self {
@@ -470,6 +473,7 @@ impl ChainEndpoint for CosmosSdkChain {
             rt,
             keybase,
             account: None,
+            tx_config,
         };
 
         Ok(chain)
@@ -898,7 +902,7 @@ impl ChainEndpoint for CosmosSdkChain {
             height: ICSHeight,
         ) -> Result<ConnectionEnd, Error> {
             use ibc_proto::ibc::core::connection::v1 as connection;
-            use tonic::{metadata::MetadataValue, IntoRequest};
+            use tonic::IntoRequest;
 
             let mut client =
                 connection::query_client::QueryClient::connect(chain.grpc_addr.clone())
@@ -910,8 +914,8 @@ impl ChainEndpoint for CosmosSdkChain {
             }
             .into_request();
 
-            let height_param = MetadataValue::from_str(&height.revision_height.to_string())
-                .map_err(Error::invalid_metadata)?;
+            let height_param =
+                str::parse(&height.revision_height.to_string()).map_err(Error::invalid_metadata)?;
 
             request
                 .metadata_mut()

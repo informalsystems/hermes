@@ -7,7 +7,7 @@ use ibc_test_framework::util::random::{random_string, random_u64_range};
 
 #[test]
 fn test_memo() -> Result<(), Error> {
-    let memo = Memo::new(&random_string());
+    let memo = Memo::new(random_string()).unwrap();
     let test = MemoTest { memo };
     run_binary_channel_test(&test)
 }
@@ -41,13 +41,13 @@ impl BinaryChannelTest for MemoTest {
 
         let a_to_b_amount = random_u64_range(1000, 5000);
 
-        chains.node_a.chain_driver().transfer_token(
+        chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &chains.node_a.wallets().user1().address(),
+            &chains.node_a.wallets().user1(),
             &chains.node_b.wallets().user1().address(),
-            a_to_b_amount,
             &denom_a,
+            a_to_b_amount,
         )?;
 
         let denom_b = derive_ibc_denom(

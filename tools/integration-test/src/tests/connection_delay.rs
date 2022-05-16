@@ -49,13 +49,13 @@ impl BinaryChannelTest for ConnectionDelayTest {
                 denom_a
             );
 
-            chains.node_a.chain_driver().transfer_token(
+            chains.node_a.chain_driver().ibc_transfer_token(
                 &channel.port_a.as_ref(),
                 &channel.channel_id_a.as_ref(),
-                &wallet_a.address(),
+                &wallet_a.as_ref(),
                 &wallet_b.address(),
-                a_to_b_amount,
                 &denom_a,
+                a_to_b_amount,
             )?;
 
             let time1 = OffsetDateTime::now_utc();

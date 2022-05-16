@@ -46,7 +46,7 @@ enabled = true
 
 # Parametrize the periodic packet clearing feature.
 # Interval (in number of blocks) at which pending packets
-# should be eagerly cleared. A value of '0' will disable
+# should be periodically cleared. A value of '0' will disable
 # periodic packet clearing. [Default: 100]
 clear_interval = 100
 

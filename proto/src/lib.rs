@@ -79,6 +79,14 @@ pub mod cosmos {
                         ..Default::default()
                     })
                 }
+
+                pub fn latest_limited(limit: u64) -> Option<PageRequest> {
+                    Some(PageRequest {
+                        limit,
+                        reverse: true,
+                        ..Default::default()
+                    })
+                }
             }
         }
         pub mod reflection {

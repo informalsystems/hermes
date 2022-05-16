@@ -41,6 +41,8 @@ pub fn init_test() -> Result<TestConfig, Error> {
 
     let base_chain_store_dir = env::var("CHAIN_STORE_DIR").unwrap_or_else(|_| "data".to_string());
 
+    let account_prefix = env::var("ACCOUNT_PREFIX").unwrap_or_else(|_| "cosmos".to_string());
+
     let chain_store_dir = format!("{}/test-{}", base_chain_store_dir, random_u32());
 
     fs::create_dir_all(&chain_store_dir)?;
@@ -55,6 +57,7 @@ pub fn init_test() -> Result<TestConfig, Error> {
     Ok(TestConfig {
         chain_command_path,
         chain_store_dir,
+        account_prefix,
         hang_on_fail,
         bootstrap_with_random_ids: true,
     })
