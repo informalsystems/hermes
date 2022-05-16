@@ -760,7 +760,7 @@ impl_try_from_raw_obj_for_event!(
     CloseConfirm
 );
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct SendPacket {
     pub height: Height,
     pub packet: Packet,
@@ -811,6 +811,12 @@ impl core::fmt::Display for SendPacket {
     }
 }
 
+impl core::fmt::Debug for SendPacket {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "SendPacket - h:{}, {}", self.height, self.packet)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct ReceivePacket {
     pub height: Height,
@@ -850,7 +856,7 @@ impl core::fmt::Display for ReceivePacket {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct WriteAcknowledgement {
     pub height: Height,
     pub packet: Packet,
@@ -915,7 +921,17 @@ impl core::fmt::Display for WriteAcknowledgement {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+impl core::fmt::Debug for WriteAcknowledgement {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "WriteAcknowledgement - h:{}, {}",
+            self.height, self.packet
+        )
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct AcknowledgePacket {
     pub height: Height,
     pub packet: Packet,
@@ -957,6 +973,12 @@ impl TryFrom<AcknowledgePacket> for AbciEvent {
 impl core::fmt::Display for AcknowledgePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(f, "h:{}, {}", self.height, self.packet)
+    }
+}
+
+impl core::fmt::Debug for AcknowledgePacket {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "AcknowledgePacket - h:{}, {}", self.height, self.packet)
     }
 }
 

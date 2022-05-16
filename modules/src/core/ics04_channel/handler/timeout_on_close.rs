@@ -25,8 +25,6 @@ pub fn process(
     let source_channel_end =
         ctx.channel_end(&(packet.source_port.clone(), packet.source_channel))?;
 
-    let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
-
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
         Some(packet.destination_channel),
@@ -222,7 +220,6 @@ mod tests {
                         ChannelId::default(),
                         source_channel_end.clone(),
                     )
-                    .with_port_capability(packet.destination_port.clone())
                     .with_connection(ConnectionId::default(), connection_end.clone()),
                 msg: msg.clone(),
                 want_pass: false,
@@ -232,7 +229,6 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(packet.destination_port.clone())
                     .with_channel(
                         packet.source_port.clone(),
                         packet.source_channel,

@@ -66,19 +66,15 @@ impl Runnable for ClearPacketsCmd {
         // Schedule RecvPacket messages for pending packets in both directions.
         // This may produce pending acks which will be processed in the next phase.
         run_and_collect_events(&mut ev_list, || {
-            fwd_link.build_and_send_recv_packet_messages()
+            fwd_link.relay_recv_packet_and_timeout_messages()
         });
         run_and_collect_events(&mut ev_list, || {
-            rev_link.build_and_send_recv_packet_messages()
+            rev_link.relay_recv_packet_and_timeout_messages()
         });
 
         // Schedule AckPacket messages in both directions.
-        run_and_collect_events(&mut ev_list, || {
-            fwd_link.build_and_send_ack_packet_messages()
-        });
-        run_and_collect_events(&mut ev_list, || {
-            rev_link.build_and_send_ack_packet_messages()
-        });
+        run_and_collect_events(&mut ev_list, || fwd_link.relay_ack_packet_messages());
+        run_and_collect_events(&mut ev_list, || rev_link.relay_ack_packet_messages());
 
         Output::success(ev_list).exit()
     }

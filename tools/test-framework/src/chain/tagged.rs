@@ -2,20 +2,24 @@
    Methods for tagged version of the chain driver.
 */
 
+use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use serde::Serialize;
 use serde_json as json;
 
+use crate::chain::driver::interchain::{
+    interchain_submit, query_interchain_account, register_interchain_account,
+};
+use crate::chain::driver::query_txs::query_recipient_transactions;
+use crate::chain::driver::transfer::local_transfer_token;
+use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::prelude::TaggedConnectionIdRef;
-use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
+use crate::relayer::transfer::ibc_token_transfer;
+use crate::types::id::{TaggedChainIdRef, TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
-use crate::types::wallet::WalletAddress;
-
-use super::interchain::{interchain_submit, query_interchain_account, register_interchain_account};
-use super::query_txs::query_recipient_transactions;
-use super::transfer::{local_transfer_token, transfer_token};
-use super::ChainDriver;
+use crate::types::wallet::{Wallet, WalletAddress};
 
 /**
    A [`ChainDriver`] may be tagged with a `Chain` tag in the form
@@ -28,6 +32,13 @@ use super::ChainDriver;
    methods are used with the values associated to the correct chain.
 */
 pub trait TaggedChainDriverExt<Chain> {
+    fn chain_id(&self) -> TaggedChainIdRef<Chain>;
+
+    fn tx_config(&self) -> MonoTagged<Chain, &TxConfig>;
+
+    fn send_tx(&self, wallet: &MonoTagged<Chain, &Wallet>, messages: Vec<Any>)
+        -> Result<(), Error>;
+
     /**
        Tagged version of [`ChainDriver::query_balance`].
 
@@ -54,8 +65,8 @@ pub trait TaggedChainDriverExt<Chain> {
     ) -> Result<(), Error>;
 
     /**
-       Tagged version of [`transfer_token`]. Submits an IBC token transfer
-       transaction to `Chain` to any other `Counterparty` chain.
+       Submits an IBC token transfer transaction to `Chain` to any other
+       `Counterparty` chain.
 
        The following parameters are accepted:
 
@@ -65,27 +76,27 @@ pub trait TaggedChainDriverExt<Chain> {
        - A `ChannelId` on `Chain` that corresponds to a channel connected to
          `Counterparty`.
 
-       - The wallet address of the sender on `Chain`.
+       - The [`Wallet`] of the sender on `Chain`.
 
-       - The wallet address of the recipient on `Counterparty`.
-
-       - The transfer amount.
+       - The [`WalletAddress`] address of the recipient on `Counterparty`.
 
        - The denomination of the amount on `Chain`.
+
+       - The transfer amount.
     */
-    fn transfer_token<Counterparty>(
+    fn ibc_transfer_token<Counterparty>(
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
-        sender: &MonoTagged<Chain, &WalletAddress>,
+        sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
+        amount: u64,
     ) -> Result<(), Error>;
 
     fn local_transfer_token(
         &self,
-        sender: &MonoTagged<Chain, &WalletAddress>,
+        sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
         amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
@@ -122,7 +133,23 @@ pub trait TaggedChainDriverExt<Chain> {
     ) -> Result<(), Error>;
 }
 
-impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+    fn chain_id(&self) -> TaggedChainIdRef<Chain> {
+        self.map_ref(|val| &val.chain_id)
+    }
+
+    fn tx_config(&self) -> MonoTagged<Chain, &TxConfig> {
+        self.map_ref(|val| &val.tx_config)
+    }
+
+    fn send_tx(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        messages: Vec<Any>,
+    ) -> Result<(), Error> {
+        self.value().send_tx(wallet.value(), messages)
+    }
+
     fn query_balance(
         &self,
         wallet_id: &MonoTagged<Chain, &WalletAddress>,
@@ -141,29 +168,29 @@ impl<'a, Chain> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDrive
             .assert_eventual_wallet_amount(user.value(), target_amount, denom.value())
     }
 
-    fn transfer_token<Counterparty>(
+    fn ibc_transfer_token<Counterparty>(
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
-        sender: &MonoTagged<Chain, &WalletAddress>,
+        sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        amount: u64,
         denom: &MonoTagged<Chain, &Denom>,
+        amount: u64,
     ) -> Result<(), Error> {
-        transfer_token(
-            self.value(),
-            port_id.value(),
-            channel_id.value(),
-            sender.value(),
-            recipient.value(),
+        self.value().runtime.block_on(ibc_token_transfer(
+            &self.tx_config(),
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            denom,
             amount,
-            denom.value(),
-        )
+        ))
     }
 
     fn local_transfer_token(
         &self,
-        sender: &MonoTagged<Chain, &WalletAddress>,
+        sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
         amount: u64,
         denom: &MonoTagged<Chain, &Denom>,

@@ -117,7 +117,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         let ica_fund = 42000;
 
         chains.node_b.chain_driver().local_transfer_token(
-            &chains.node_b.wallets().user1().address(),
+            &chains.node_b.wallets().user1(),
             &ica_address.as_ref(),
             ica_fund,
             &stake_denom.as_ref(),

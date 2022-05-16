@@ -49,7 +49,10 @@ pub async fn refresh_account<'a>(
 }
 
 /// Uses the GRPC client to retrieve the account sequence
-async fn query_account(grpc_address: &Uri, account_address: &str) -> Result<BaseAccount, Error> {
+pub async fn query_account(
+    grpc_address: &Uri,
+    account_address: &str,
+) -> Result<BaseAccount, Error> {
     let mut client = QueryClient::connect(grpc_address.clone())
         .await
         .map_err(Error::grpc_transport)?;

@@ -57,13 +57,13 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             denom_a
         );
 
-        node_a.chain_driver().transfer_token(
+        node_a.chain_driver().ibc_transfer_token(
             &channel_a_to_b.port_a.as_ref(),
             &channel_a_to_b.channel_id_a.as_ref(),
-            &wallet_a1.address(),
+            &wallet_a1.as_ref(),
             &wallet_b1.address(),
-            a_to_b_amount,
             &denom_a,
+            a_to_b_amount,
         )?;
 
         let denom_a_to_b = derive_ibc_denom(
@@ -107,13 +107,13 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         let b_to_c_amount = 2500;
 
-        node_b.chain_driver().transfer_token(
+        node_b.chain_driver().ibc_transfer_token(
             &channel_b_to_c.port_a.as_ref(),
             &channel_b_to_c.channel_id_a.as_ref(),
-            &wallet_b1.address(),
+            &wallet_b1.as_ref(),
             &wallet_c1.address(),
-            b_to_c_amount,
             &denom_a_to_b.as_ref(),
+            b_to_c_amount,
         )?;
 
         // Chain C will receive ibc/port-c/channel-c/port-b/channel-b/denom
@@ -145,13 +145,13 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         let c_to_a_amount = 800;
 
-        node_c.chain_driver().transfer_token(
+        node_c.chain_driver().ibc_transfer_token(
             &channel_c_to_a.port_a.as_ref(),
             &channel_c_to_a.channel_id_a.as_ref(),
-            &wallet_c1.address(),
+            &wallet_c1.as_ref(),
             &wallet_a1.address(),
-            c_to_a_amount,
             &denom_a_to_c.as_ref(),
+            c_to_a_amount,
         )?;
 
         // Chain A will receive ibc/port-a/channel-a/port-c/channel-c/port-b/channel-b/denom
@@ -175,13 +175,13 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         let c_to_b_amount = 500;
 
-        node_c.chain_driver().transfer_token(
+        node_c.chain_driver().ibc_transfer_token(
             &channel_b_to_c.port_b.as_ref(),
             &channel_b_to_c.channel_id_b.as_ref(),
-            &wallet_c1.address(),
+            &wallet_c1.as_ref(),
             &wallet_b2.address(),
-            c_to_b_amount,
             &denom_a_to_c.as_ref(),
+            c_to_b_amount,
         )?;
 
         // Chain B will receive ibc/port-b/channel-b/denom

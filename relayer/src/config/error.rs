@@ -13,6 +13,5 @@ define_error! {
         Encode
             [ TraceError<toml::ser::Error> ]
             |_| { "invalid configuration" },
-
     }
 }
