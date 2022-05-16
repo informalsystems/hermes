@@ -61,6 +61,24 @@ impl ClientDef for TendermintClient {
             ));
         }
 
+        // Check if a consensus state is already installed; if so skip
+        let header_consensus_state = ConsensusState::from(header.clone());
+
+        let _ = match ctx.maybe_consensus_state(&client_id, header.height())? {
+            Some(cs) => {
+                let cs = downcast_consensus_state(cs)?;
+                // If this consensus state matches, skip verification
+                // (optimization)
+                if cs == header_consensus_state {
+                    // Header is already installed and matches the incoming
+                    // header (already verified)
+                    return Ok(());
+                }
+                Some(cs)
+            }
+            None => None,
+        };
+
         let trusted_consensus_state =
             downcast_consensus_state(ctx.consensus_state(&client_id, header.trusted_height)?)?;
 
