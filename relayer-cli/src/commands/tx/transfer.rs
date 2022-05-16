@@ -171,18 +171,14 @@ impl Runnable for TxIcs20MsgTransferCmd {
         // To do this, fetch from the source chain the channel end, then the associated connection
         // end, and then the underlying client state; finally, check that this client is verifying
         // headers for the destination chain.
-        let channel_end_src = {
-            let request = QueryChannelRequest {
+        let channel_end_src = chains
+            .src
+            .query_channel(QueryChannelRequest {
                 port_id: opts.packet_src_port_id.clone(),
                 channel_id: opts.packet_src_channel_id,
                 height: Height::zero(),
-            };
-
-            chains
-                .src
-                .query_channel(request)
-                .unwrap_or_else(exit_with_unrecoverable_error)
-        };
+            })
+            .unwrap_or_else(exit_with_unrecoverable_error);
         if !channel_end_src.is_open() {
             Output::error(format!(
                 "the requested port/channel ('{}'/'{}') on chain id '{}' is in state '{}'; expected 'open' state",
@@ -215,16 +211,13 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         debug!("connection hop underlying the channel: {:?}", conn_end);
 
-        let src_chain_client_state = {
-            let request = QueryClientStateRequest {
+        let src_chain_client_state = chains
+            .src
+            .query_client_state(QueryClientStateRequest {
                 client_id: conn_end.client_id().clone(),
                 height: Height::zero(),
-            };
-            chains
-                .src
-                .query_client_state(request)
-                .unwrap_or_else(exit_with_unrecoverable_error)
-        };
+            })
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         debug!(
             "client state underlying the channel: {:?}",

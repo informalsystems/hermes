@@ -366,11 +366,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         if a_connection.state_matches(&State::Init) && counterparty_connection_id.is_none() {
-            let request = QueryConnectionsRequest {
-                pagination: Some(PageRequest::all()),
-            };
             let connections: Vec<IdentifiedConnectionEnd> = counterparty_chain
-                .query_connections(request)
+                .query_connections(QueryConnectionsRequest {
+                    pagination: Some(PageRequest::all()),
+                })
                 .map_err(ConnectionError::relayer)?;
 
             for conn in connections {

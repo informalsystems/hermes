@@ -55,13 +55,10 @@ impl Runnable for QueryClientStateCmd {
             .unwrap_or_else(exit_with_unrecoverable_error);
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
-        match {
-            let request = QueryClientStateRequest {
-                client_id: self.client_id.clone(),
-                height,
-            };
-            chain.query_client_state(request)
-        } {
+        match chain.query_client_state(QueryClientStateRequest {
+            client_id: self.client_id.clone(),
+            height,
+        }) {
             Ok(cs) => Output::success(cs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -116,13 +113,10 @@ impl Runnable for QueryClientConsensusCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match {
-            let request = QueryClientStateRequest {
-                client_id: self.client_id.clone(),
-                height: Height::zero(),
-            };
-            chain.query_client_state(request)
-        } {
+        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
+            client_id: self.client_id.clone(),
+            height: Height::zero(),
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
@@ -205,13 +199,10 @@ impl Runnable for QueryClientHeaderCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match {
-            let request = QueryClientStateRequest {
-                client_id: self.client_id.clone(),
-                height: Height::zero(),
-            };
-            chain.query_client_state(request)
-        } {
+        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
+            client_id: self.client_id.clone(),
+            height: Height::zero(),
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",

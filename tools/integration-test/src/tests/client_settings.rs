@@ -106,11 +106,10 @@ fn query_client_state<Chain: ChainHandle>(
     handle: Chain,
     id: &ClientId,
 ) -> Result<TendermintClientState, Error> {
-    let request = QueryClientStateRequest {
+    let state = handle.query_client_state(QueryClientStateRequest {
         client_id: id.clone(),
         height: Height::zero(),
-    };
-    let state = handle.query_client_state(request)?;
+    })?;
     #[allow(unreachable_patterns)]
     match state {
         AnyClientState::Tendermint(state) => Ok(state),

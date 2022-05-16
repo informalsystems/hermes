@@ -131,13 +131,10 @@ fn query_channel_ends<Chain: ChainHandle>(
         height: chain_height,
     })?;
     let client_id = connection_end.client_id().clone();
-    let client_state = {
-        let request = QueryClientStateRequest {
-            client_id,
-            height: chain_height,
-        };
-        chain.query_client_state(request)?
-    };
+    let client_state = chain.query_client_state(QueryClientStateRequest {
+        client_id,
+        height: chain_height,
+    })?;
     let counterparty_chain_id = client_state.chain_id();
 
     if let Some(dst_chain_id) = destination_chain {
@@ -182,23 +179,17 @@ fn query_channel_ends<Chain: ChainHandle>(
             height: counterparty_chain_height,
         })?;
 
-    let counterparty_client_state = {
-        let request = QueryClientStateRequest {
+    let counterparty_client_state =
+        counterparty_chain.query_client_state(QueryClientStateRequest {
             client_id: counterparty_client_id,
             height: counterparty_chain_height,
-        };
-        counterparty_chain.query_client_state(request)?
-    };
+        })?;
 
-    let counterparty_channel_end = {
-        let request = QueryChannelRequest {
-            port_id: counterparty_port_id,
-            channel_id: counterparty_channel_id,
-            height: counterparty_chain_height,
-        };
-
-        counterparty_chain.query_channel(request)?
-    };
+    let counterparty_channel_end = counterparty_chain.query_channel(QueryChannelRequest {
+        port_id: counterparty_port_id,
+        channel_id: counterparty_channel_id,
+        height: counterparty_chain_height,
+    })?;
 
     Ok(ChannelEnds {
         channel_end,

@@ -195,16 +195,13 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Query the client state, obtain the identifier of chain b.
-        let chain_b = {
-            let request = QueryClientStateRequest {
+        let chain_b = chain_a
+            .query_client_state(QueryClientStateRequest {
                 client_id: conn_end.client_id().clone(),
                 height,
-            };
-            chain_a
-                .query_client_state(request)
-                .map(|cs| cs.chain_id())
-                .unwrap_or_else(exit_with_unrecoverable_error)
-        };
+            })
+            .map(|cs| cs.chain_id())
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Spawn the runtime for side b.
         let chain_b =

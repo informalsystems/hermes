@@ -111,12 +111,11 @@ impl FilterPolicy {
             .map_err(FilterError::spawn)?;
         let counterparty_client_id = connection.counterparty().client_id();
         let counterparty_client_state = {
-            let request = QueryClientStateRequest {
-                client_id: counterparty_client_id.clone(),
-                height: Height::zero(),
-            };
             counterparty_chain
-                .query_client_state(request)
+                .query_client_state(QueryClientStateRequest {
+                    client_id: counterparty_client_id.clone(),
+                    height: Height::zero(),
+                })
                 .map_err(FilterError::relayer)?
         };
 
@@ -226,15 +225,12 @@ impl FilterPolicy {
             obj.dst_chain_id
         );
 
-        let client_state = {
-            let request = QueryClientStateRequest {
+        let client_state = chain
+            .query_client_state(QueryClientStateRequest {
                 client_id: obj.dst_client_id.clone(),
                 height: Height::zero(),
-            };
-            chain
-                .query_client_state(request)
-                .map_err(FilterError::relayer)?
-        };
+            })
+            .map_err(FilterError::relayer)?;
 
         Ok(self.control_client(&obj.dst_chain_id, &obj.dst_client_id, &client_state))
     }
@@ -275,15 +271,12 @@ impl FilterPolicy {
             })
             .map_err(FilterError::relayer)?;
 
-        let client_state = {
-            let request = QueryClientStateRequest {
+        let client_state = src_chain
+            .query_client_state(QueryClientStateRequest {
                 client_id: connection_end.client_id().clone(),
                 height: Height::zero(),
-            };
-            src_chain
-                .query_client_state(request)
-                .map_err(FilterError::relayer)?
-        };
+            })
+            .map_err(FilterError::relayer)?;
 
         self.control_connection_end_and_client(
             registry,
@@ -318,17 +311,13 @@ impl FilterPolicy {
             .get_or_spawn(chain_id)
             .map_err(FilterError::spawn)?;
 
-        let channel_end = {
-            let request = QueryChannelRequest {
+        let channel_end = src_chain
+            .query_channel(QueryChannelRequest {
                 port_id: port_id.clone(),
                 channel_id: *channel_id,
                 height: Height::zero(),
-            };
-
-            src_chain
-                .query_channel(request)
-                .map_err(FilterError::relayer)?
-        };
+            })
+            .map_err(FilterError::relayer)?;
 
         let conn_id = channel_end.connection_hops.first().ok_or_else(|| {
             FilterError::channel(ChannelError::invalid_connection_hops_length(
@@ -344,15 +333,12 @@ impl FilterPolicy {
             })
             .map_err(FilterError::relayer)?;
 
-        let client_state = {
-            let request = QueryClientStateRequest {
+        let client_state = src_chain
+            .query_client_state(QueryClientStateRequest {
                 client_id: connection_end.client_id().clone(),
                 height: Height::zero(),
-            };
-            src_chain
-                .query_client_state(request)
-                .map_err(FilterError::relayer)?
-        };
+            })
+            .map_err(FilterError::relayer)?;
 
         let permission = self.control_connection_end_and_client(
             registry,

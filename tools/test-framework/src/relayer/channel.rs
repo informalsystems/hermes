@@ -77,12 +77,11 @@ pub fn query_channel_end<ChainA: ChainHandle, ChainB>(
     channel_id: &TaggedChannelIdRef<ChainA, ChainB>,
     port_id: &TaggedPortIdRef<ChainA, ChainB>,
 ) -> Result<DualTagged<ChainA, ChainB, ChannelEnd>, Error> {
-    let request = QueryChannelRequest {
+    let channel_end = handle.query_channel(QueryChannelRequest {
         port_id: port_id.into_value().clone(),
         channel_id: *channel_id.into_value(),
         height: Height::zero(),
-    };
-    let channel_end = handle.query_channel(request)?;
+    })?;
 
     Ok(DualTagged::new(channel_end))
 }
@@ -92,12 +91,11 @@ pub fn query_identified_channel_end<ChainA: ChainHandle, ChainB>(
     channel_id: TaggedChannelIdRef<ChainA, ChainB>,
     port_id: TaggedPortIdRef<ChainA, ChainB>,
 ) -> Result<DualTagged<ChainA, ChainB, IdentifiedChannelEnd>, Error> {
-    let request = QueryChannelRequest {
+    let channel_end = handle.query_channel(QueryChannelRequest {
         port_id: port_id.into_value().clone(),
         channel_id: *channel_id.into_value(),
         height: Height::zero(),
-    };
-    let channel_end = handle.query_channel(request)?;
+    })?;
     Ok(DualTagged::new(IdentifiedChannelEnd::new(
         port_id.into_value().clone(),
         *channel_id.into_value(),

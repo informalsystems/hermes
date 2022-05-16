@@ -164,11 +164,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
             let (result, in_cache) =
                 self.cache
                     .get_or_try_insert_client_state_with(&request.client_id, || {
-                        let request = QueryClientStateRequest {
+                        handle.query_client_state(QueryClientStateRequest {
                             client_id: request.client_id.clone(),
                             height: request.height,
-                        };
-                        handle.query_client_state(request)
+                        })
                     })?;
 
             if in_cache == CacheStatus::Hit {

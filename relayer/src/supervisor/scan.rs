@@ -690,11 +690,12 @@ fn query_client<Chain: ChainHandle>(
     chain: &Chain,
     client_id: &ClientId,
 ) -> Result<IdentifiedAnyClientState, Error> {
-    let request = QueryClientStateRequest {
-        client_id: client_id.clone(),
-        height: Height::zero(),
-    };
-    let client = chain.query_client_state(request).map_err(Error::query)?;
+    let client = chain
+        .query_client_state(QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: Height::zero(),
+        })
+        .map_err(Error::query)?;
 
     Ok(IdentifiedAnyClientState::new(client_id.clone(), client))
 }
@@ -704,12 +705,13 @@ fn query_channel<Chain: ChainHandle>(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<IdentifiedChannelEnd, Error> {
-    let request = QueryChannelRequest {
-        port_id: port_id.clone(),
-        channel_id: *channel_id,
-        height: Height::zero(),
-    };
-    let channel_end = chain.query_channel(request).map_err(Error::query)?;
+    let channel_end = chain
+        .query_channel(QueryChannelRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            height: Height::zero(),
+        })
+        .map_err(Error::query)?;
 
     Ok(IdentifiedChannelEnd::new(
         port_id.clone(),

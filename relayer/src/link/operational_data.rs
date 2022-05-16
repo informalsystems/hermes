@@ -171,26 +171,21 @@ impl OperationalData {
             client_update_opt.pop()
         } else {
             let client_state = match self.target {
-                OperationalDataTarget::Source => {
-                    let request = QueryClientStateRequest {
+                OperationalDataTarget::Source => relay_path
+                    .src_chain()
+                    .query_client_state(QueryClientStateRequest {
                         client_id: relay_path.src_client_id().clone(),
                         height: Height::zero(),
-                    };
-                    relay_path
-                        .src_chain()
-                        .query_client_state(request)
-                        .map_err(|e| LinkError::query(relay_path.src_chain().id(), e))?
-                }
-                OperationalDataTarget::Destination => {
-                    let request = QueryClientStateRequest {
+                    })
+                    .map_err(|e| LinkError::query(relay_path.src_chain().id(), e))?,
+
+                OperationalDataTarget::Destination => relay_path
+                    .dst_chain()
+                    .query_client_state(QueryClientStateRequest {
                         client_id: relay_path.dst_client_id().clone(),
                         height: Height::zero(),
-                    };
-                    relay_path
-                        .dst_chain()
-                        .query_client_state(request)
-                        .map_err(|e| LinkError::query(relay_path.dst_chain().id(), e))?
-                }
+                    })
+                    .map_err(|e| LinkError::query(relay_path.dst_chain().id(), e))?,
             };
 
             if client_state.is_frozen() {

@@ -115,13 +115,10 @@ impl CreateConnectionCommand {
 
         // Query client state. Extract the target chain (chain_id which this client is verifying).
         let height = Height::new(chain_a.id().version(), 0);
-        let chain_b_id = match {
-            let request = QueryClientStateRequest {
-                client_id: client_a_id.clone(),
-                height,
-            };
-            chain_a.query_client_state(request)
-        } {
+        let chain_b_id = match chain_a.query_client_state(QueryClientStateRequest {
+            client_id: client_a_id.clone(),
+            height,
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",

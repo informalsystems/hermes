@@ -287,15 +287,12 @@ impl Object {
         e: &UpdateClient,
         dst_chain: &impl ChainHandle,
     ) -> Result<Self, ObjectError> {
-        let client_state = {
-            let request = QueryClientStateRequest {
+        let client_state = dst_chain
+            .query_client_state(QueryClientStateRequest {
                 client_id: e.client_id().clone(),
                 height: Height::zero(),
-            };
-            dst_chain
-                .query_client_state(request)
-                .map_err(ObjectError::relayer)?
-        };
+            })
+            .map_err(ObjectError::relayer)?;
 
         if client_state.refresh_period().is_none() {
             return Err(ObjectError::refresh_not_required(

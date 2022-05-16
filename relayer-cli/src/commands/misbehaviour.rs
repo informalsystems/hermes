@@ -101,8 +101,8 @@ fn misbehaviour_handling<Chain: ChainHandle>(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let client_state = chain
         .query_client_state(QueryClientStateRequest {
-          client_id: client_id.clone(),
-          height: Height::zero(),
+            client_id: client_id.clone(),
+            height: Height::zero(),
         })
         .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;
 

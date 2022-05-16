@@ -116,11 +116,10 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let request = QueryClientStateRequest {
+        let src_chain_id = match dst_chain.query_client_state(QueryClientStateRequest {
             client_id: self.dst_client_id.clone(),
             height: ibc::Height::zero(),
-        };
-        let src_chain_id = match dst_chain.query_client_state(request) {
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
                 Output::error(format!(
@@ -181,11 +180,10 @@ impl Runnable for TxUpgradeClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let request = QueryClientStateRequest {
+        let src_chain_id = match dst_chain.query_client_state(QueryClientStateRequest {
             client_id: self.client_id.clone(),
             height: ibc::Height::zero(),
-        };
-        let src_chain_id = match dst_chain.query_client_state(request) {
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
                 Output::error(format!(

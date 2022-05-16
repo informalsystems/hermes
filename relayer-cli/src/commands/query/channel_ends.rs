@@ -81,14 +81,11 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         None => chain.query_latest_height()?,
     };
 
-    let channel_end = {
-        let request = QueryChannelRequest {
-            port_id: port_id.clone(),
-            channel_id,
-            height: chain_height,
-        };
-        chain.query_channel(request)?
-    };
+    let channel_end = chain.query_channel(QueryChannelRequest {
+        port_id: port_id.clone(),
+        channel_id,
+        height: chain_height,
+    })?;
     if channel_end.state_matches(&State::Uninitialized) {
         return Err(format!(
             "{}/{} on chain {} @ {:?} is uninitialized",
@@ -115,13 +112,10 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
 
     let client_id = connection_end.client_id().clone();
 
-    let client_state = {
-        let request = QueryClientStateRequest {
-            client_id: client_id.clone(),
-            height: chain_height,
-        };
-        chain.query_client_state(request)?
-    };
+    let client_state = chain.query_client_state(QueryClientStateRequest {
+        client_id: client_id.clone(),
+        height: chain_height,
+    })?;
 
     let channel_counterparty = channel_end.counterparty().clone();
     let connection_counterparty = connection_end.counterparty().clone();
@@ -157,23 +151,17 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
             height: counterparty_chain_height,
         })?;
 
-    let counterparty_client_state = {
-        let request = QueryClientStateRequest {
+    let counterparty_client_state =
+        counterparty_chain.query_client_state(QueryClientStateRequest {
             client_id: counterparty_client_id.clone(),
             height: counterparty_chain_height,
-        };
-        counterparty_chain.query_client_state(request)?
-    };
+        })?;
 
-    let counterparty_channel_end = {
-        let request = QueryChannelRequest {
-            port_id: counterparty_port_id.clone(),
-            channel_id: counterparty_channel_id,
-            height: counterparty_chain_height,
-        };
-
-        counterparty_chain.query_channel(request)?
-    };
+    let counterparty_channel_end = counterparty_chain.query_channel(QueryChannelRequest {
+        port_id: counterparty_port_id.clone(),
+        channel_id: counterparty_channel_id,
+        height: counterparty_chain_height,
+    })?;
 
     if cmd.verbose {
         let res = ChannelEnds {

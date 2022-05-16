@@ -195,26 +195,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        let request = QueryChannelRequest {
-            port_id: self.src_port_id().clone(),
-            channel_id: *self.src_channel_id(),
-            height,
-        };
-
         self.src_chain()
-            .query_channel(request)
+            .query_channel(QueryChannelRequest {
+                port_id: self.src_port_id().clone(),
+                channel_id: *self.src_channel_id(),
+                height,
+            })
             .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        let request = QueryChannelRequest {
-            port_id: self.dst_port_id().clone(),
-            channel_id: *self.dst_channel_id(),
-            height,
-        };
-
         self.dst_chain()
-            .query_channel(request)
+            .query_channel(QueryChannelRequest {
+                port_id: self.dst_port_id().clone(),
+                channel_id: *self.dst_channel_id(),
+                height,
+            })
             .map_err(|e| LinkError::channel(ChannelError::query(self.dst_chain().id(), e)))
     }
 

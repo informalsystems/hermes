@@ -40,15 +40,12 @@ pub fn counterparty_chain_from_connection(
         .map_err(Error::relayer)?;
 
     let client_id = connection_end.client_id();
-    let client_state = {
-        let request = QueryClientStateRequest {
+    let client_state = src_chain
+        .query_client_state(QueryClientStateRequest {
             client_id: client_id.clone(),
             height: Height::zero(),
-        };
-        src_chain
-            .query_client_state(request)
-            .map_err(Error::relayer)?
-    };
+        })
+        .map_err(Error::relayer)?;
 
     trace!(
         chain_id=%src_chain.id(), connection_id=%src_connection_id,
@@ -145,14 +142,13 @@ pub fn channel_connection_client(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
-    let channel_end = {
-        let request = QueryChannelRequest {
+    let channel_end = chain
+        .query_channel(QueryChannelRequest {
             port_id: port_id.clone(),
             channel_id: *channel_id,
             height: Height::zero(),
-        };
-        chain.query_channel(request).map_err(Error::relayer)?
-    };
+        })
+        .map_err(Error::relayer)?;
 
     if channel_end.state_matches(&State::Uninitialized) {
         return Err(Error::channel_uninitialized(
@@ -183,13 +179,12 @@ pub fn channel_connection_client(
     }
 
     let client_id = connection_end.client_id();
-    let client_state = {
-        let request = QueryClientStateRequest {
+    let client_state = chain
+        .query_client_state(QueryClientStateRequest {
             client_id: client_id.clone(),
             height: Height::zero(),
-        };
-        chain.query_client_state(request).map_err(Error::relayer)?
-    };
+        })
+        .map_err(Error::relayer)?;
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
     let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
@@ -249,14 +244,12 @@ pub fn channel_on_destination(
     counterparty_chain: &impl ChainHandle,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     if let Some(remote_channel_id) = channel.channel_end.counterparty().channel_id() {
-        let request = QueryChannelRequest {
-            port_id: channel.channel_end.counterparty().port_id().clone(),
-            channel_id: *remote_channel_id,
-            height: Height::zero(),
-        };
-
         let counterparty = counterparty_chain
-            .query_channel(request)
+            .query_channel(QueryChannelRequest {
+                port_id: channel.channel_end.counterparty().port_id().clone(),
+                channel_id: *remote_channel_id,
+                height: Height::zero(),
+            })
             .map(|c| IdentifiedChannelEnd {
                 port_id: channel.channel_end.counterparty().port_id().clone(),
                 channel_id: *remote_channel_id,
@@ -286,17 +279,13 @@ pub fn check_channel_counterparty(
     target_pchan: &PortChannelId,
     expected: &PortChannelId,
 ) -> Result<(), ChannelError> {
-    let channel_end_dst = {
-        let request = QueryChannelRequest {
+    let channel_end_dst = target_chain
+        .query_channel(QueryChannelRequest {
             port_id: target_pchan.port_id.clone(),
             channel_id: target_pchan.channel_id,
             height: Height::zero(),
-        };
-
-        target_chain
-            .query_channel(request)
-            .map_err(|e| ChannelError::query(target_chain.id(), e))?
-    };
+        })
+        .map_err(|e| ChannelError::query(target_chain.id(), e))?;
 
     let counterparty = channel_end_dst.remote;
     match counterparty.channel_id {

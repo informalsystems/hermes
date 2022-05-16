@@ -75,15 +75,12 @@ pub fn build_and_send_ibc_upgrade_proposal(
         .map_err(UpgradeChainError::query)?
         .add(opts.height_offset);
 
-    let client_state = {
-        let request = QueryClientStateRequest {
+    let client_state = src_chain
+        .query_client_state(QueryClientStateRequest {
             client_id: opts.src_client_id.clone(),
             height: Height::zero(),
-        };
-        src_chain
-            .query_client_state(request)
-            .map_err(UpgradeChainError::query)?
-    };
+        })
+        .map_err(UpgradeChainError::query)?;
 
     let client_state = downcast!(client_state => AnyClientState::Tendermint)
         .ok_or_else(UpgradeChainError::tendermint_only)?;

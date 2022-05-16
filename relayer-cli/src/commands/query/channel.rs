@@ -47,15 +47,11 @@ impl Runnable for QueryChannelEndCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let res = {
-            let request = QueryChannelRequest {
-                port_id: self.port_id.clone(),
-                channel_id: self.channel_id,
-                height: ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
-            };
-
-            chain.query_channel(request)
-        };
+        let res = chain.query_channel(QueryChannelRequest {
+            port_id: self.port_id.clone(),
+            channel_id: self.channel_id,
+            height: ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
+        });
         match res {
             Ok(channel_end) => {
                 if channel_end.state_matches(&State::Uninitialized) {
