@@ -99,15 +99,12 @@ fn misbehaviour_handling<Chain: ChainHandle>(
     client_id: ClientId,
     update: Option<UpdateClient>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let client_state = {
-        let request = QueryClientStateRequest {
-            client_id: client_id.clone(),
-            height: Height::zero(),
-        };
-        chain
-            .query_client_state(request)
-            .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?
-    };
+    let client_state = chain
+        .query_client_state(QueryClientStateRequest {
+          client_id: client_id.clone(),
+          height: Height::zero(),
+        })
+        .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;
 
     if client_state.is_frozen() {
         return Err(format!("client {} is already frozen", client_id).into());
