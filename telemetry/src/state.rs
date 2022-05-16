@@ -278,9 +278,31 @@ impl TelemetryState {
     }
 }
 
+use std::sync::Arc;
+
+use opentelemetry::metrics::Descriptor;
+use opentelemetry::sdk::export::metrics::{Aggregator, AggregatorSelector};
+use opentelemetry::sdk::metrics::aggregators::{histogram, last_value, sum};
+
+#[derive(Debug)]
+struct CustomAggregatorSelector;
+impl AggregatorSelector for CustomAggregatorSelector {
+    fn aggregator_for(&self, descriptor: &Descriptor) -> Option<Arc<dyn Aggregator + Send + Sync>> {
+        match descriptor.name() {
+            "wallet_balance" => Some(Arc::new(last_value())),
+            "tx_latency_submitted" => Some(Arc::new(histogram(descriptor, &[0.5, 0.9, 0.99]))),
+            "tx_latency_confirmed" => Some(Arc::new(histogram(descriptor, &[0.5, 0.9, 0.99]))),
+            _ => Some(Arc::new(sum())),
+        }
+    }
+}
+
 impl Default for TelemetryState {
     fn default() -> Self {
-        let exporter = opentelemetry_prometheus::exporter().init();
+        let exporter = opentelemetry_prometheus::ExporterBuilder::default()
+            .with_aggregator_selector(CustomAggregatorSelector)
+            .init();
+
         let meter = global::meter("hermes");
 
         Self {
