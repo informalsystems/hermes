@@ -27,11 +27,22 @@ pub fn set_rpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
 
 pub fn set_grpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
     config
-        .get_mut("grpc-web")
-        .ok_or_else(|| eyre!("expect grpc-web section"))?
+        .get_mut("grpc")
+        .ok_or_else(|| eyre!("expect grpc section"))?
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
         .insert("address".to_string(), format!("0.0.0.0:{}", port).into());
+
+    Ok(())
+}
+
+pub fn disable_grpc_web(config: &mut Value) -> Result<(), Error> {
+    if let Some(field) = config.get_mut("grpc-web") {
+        field
+            .as_table_mut()
+            .ok_or_else(|| eyre!("expect object"))?
+            .insert("enable".to_string(), false.into());
+    }
 
     Ok(())
 }

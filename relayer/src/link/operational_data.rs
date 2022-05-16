@@ -49,6 +49,10 @@ impl TrackedEvents {
         &self.list
     }
 
+    pub fn len(&self) -> usize {
+        self.list.len()
+    }
+
     pub fn tracking_id(&self) -> &str {
         &self.tracking_id
     }

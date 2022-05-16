@@ -33,7 +33,7 @@ pub struct PendingData {
     pub error_events: Vec<IbcEvent>,
 }
 
-/// The mediator stores all pending data
+/// Stores all pending data
 /// and tries to confirm them asynchronously.
 pub struct PendingTxs<Chain> {
     pub chain: Chain,

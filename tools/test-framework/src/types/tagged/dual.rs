@@ -391,6 +391,9 @@ impl<TagA, TagB, Value> AsRef<Value> for Tagged<TagA, TagB, Value> {
 
 impl<TagA, TagB, Value: Copy> Copy for Tagged<TagA, TagB, Value> {}
 
+unsafe impl<TagA, TagB, Value: Send> Send for Tagged<TagA, TagB, Value> {}
+unsafe impl<TagA, TagB, Value: Sync> Sync for Tagged<TagA, TagB, Value> {}
+
 impl<TagA, TagB, Value: Clone> Clone for Tagged<TagA, TagB, Value> {
     fn clone(&self) -> Self {
         Self::new(self.0.clone())
