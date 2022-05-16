@@ -59,24 +59,24 @@ For example, with two channels and after transferring some tokens between the ch
 ```text
 # HELP cache_hits Number of cache hits for queries emitted by the relayer, per chain and query type
 # TYPE cache_hits counter
-cache_hits{chain="ibc-0",query_type="query_channel"} 189
-cache_hits{chain="ibc-0",query_type="query_client_state"} 115
-cache_hits{chain="ibc-0",query_type="query_connection"} 107
-cache_hits{chain="ibc-1",query_type="query_channel"} 176
-cache_hits{chain="ibc-1",query_type="query_client_state"} 64
-cache_hits{chain="ibc-1",query_type="query_connection"} 49
+cache_hits{chain="ibc-0",query_type="query_channel"} 276
+cache_hits{chain="ibc-0",query_type="query_client_state"} 177
+cache_hits{chain="ibc-0",query_type="query_connection"} 160
+cache_hits{chain="ibc-1",query_type="query_channel"} 240
+cache_hits{chain="ibc-1",query_type="query_client_state"} 173
+cache_hits{chain="ibc-1",query_type="query_connection"} 160
 # HELP ibc_acknowledgment_packets Number of acknowledgment packets relayed per channel
 # TYPE ibc_acknowledgment_packets counter
-ibc_acknowledgment_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 100
-ibc_acknowledgment_packets{src_chain="ibc-0",src_channel="channel-1",src_port="transfer"} 0
-ibc_acknowledgment_packets{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 0
-ibc_acknowledgment_packets{src_chain="ibc-1",src_channel="channel-1",src_port="transfer"} 42
+ibc_acknowledgment_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 0
+ibc_acknowledgment_packets{src_chain="ibc-0",src_channel="channel-1",src_port="transfer"} 42
+ibc_acknowledgment_packets{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 110
+ibc_acknowledgment_packets{src_chain="ibc-1",src_channel="channel-1",src_port="transfer"} 0
 # HELP ibc_receive_packets Number of receive packets relayed per channel
 # TYPE ibc_receive_packets counter
-ibc_receive_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 0
-ibc_receive_packets{src_chain="ibc-0",src_channel="channel-1",src_port="transfer"} 42
-ibc_receive_packets{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 100
-ibc_receive_packets{src_chain="ibc-1",src_channel="channel-1",src_port="transfer"} 0
+ibc_receive_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 110
+ibc_receive_packets{src_chain="ibc-0",src_channel="channel-1",src_port="transfer"} 0
+ibc_receive_packets{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 0
+ibc_receive_packets{src_chain="ibc-1",src_channel="channel-1",src_port="transfer"} 42
 # HELP ibc_timeout_packets Number of timeout packets relayed per channel
 # TYPE ibc_timeout_packets counter
 ibc_timeout_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 0
@@ -85,120 +85,98 @@ ibc_timeout_packets{src_chain="ibc-1",src_channel="channel-0",src_port="transfer
 ibc_timeout_packets{src_chain="ibc-1",src_channel="channel-1",src_port="transfer"} 0
 # HELP msg_num How many messages Hermes submitted to the chain, per chain
 # TYPE msg_num counter
-msg_num{chain="ibc-0"} 144
-msg_num{chain="ibc-1"} 147
+msg_num{chain="ibc-0"} 168
+msg_num{chain="ibc-1"} 156
 # HELP queries Number of queries emitted by the relayer, per chain and query type
 # TYPE queries counter
-queries{chain="ibc-0",query_type="query_application_status"} 12
-queries{chain="ibc-0",query_type="query_channel"} 202
+queries{chain="ibc-0",query_type="query_application_status"} 23
+queries{chain="ibc-0",query_type="query_channel"} 88
 queries{chain="ibc-0",query_type="query_client_connections"} 2
-queries{chain="ibc-0",query_type="query_client_state"} 70
+queries{chain="ibc-0",query_type="query_client_state"} 383
 queries{chain="ibc-0",query_type="query_clients"} 1
 queries{chain="ibc-0",query_type="query_connection"} 2
 queries{chain="ibc-0",query_type="query_connection_channels"} 2
-queries{chain="ibc-0",query_type="query_consensus_state"} 76
+queries{chain="ibc-0",query_type="query_consensus_state"} 392
 queries{chain="ibc-0",query_type="query_consensus_states"} 2
 queries{chain="ibc-0",query_type="query_latest_height"} 1
 queries{chain="ibc-0",query_type="query_packet_acknowledgements"} 5
-queries{chain="ibc-0",query_type="query_packet_commitments"} 9
+queries{chain="ibc-0",query_type="query_packet_commitments"} 10
 queries{chain="ibc-0",query_type="query_staking_params"} 2
-queries{chain="ibc-0",query_type="query_txs"} 44
-queries{chain="ibc-0",query_type="query_unreceived_acknowledgements"} 127
-queries{chain="ibc-0",query_type="query_unreceived_packets"} 202
-queries{chain="ibc-1",query_type="query_application_status"} 18
-queries{chain="ibc-1",query_type="query_channel"} 86
+queries{chain="ibc-0",query_type="query_txs"} 76
+queries{chain="ibc-0",query_type="query_unreceived_acknowledgements"} 241
+queries{chain="ibc-0",query_type="query_unreceived_packets"} 127
+queries{chain="ibc-1",query_type="query_application_status"} 20
+queries{chain="ibc-1",query_type="query_channel"} 224
 queries{chain="ibc-1",query_type="query_client_connections"} 2
-queries{chain="ibc-1",query_type="query_client_state"} 82
+queries{chain="ibc-1",query_type="query_client_state"} 387
 queries{chain="ibc-1",query_type="query_clients"} 1
 queries{chain="ibc-1",query_type="query_connection"} 2
 queries{chain="ibc-1",query_type="query_connection_channels"} 2
-queries{chain="ibc-1",query_type="query_consensus_state"} 89
-queries{chain="ibc-1",query_type="query_consensus_states"} 4
+queries{chain="ibc-1",query_type="query_consensus_state"} 394
+queries{chain="ibc-1",query_type="query_consensus_states"} 3
 queries{chain="ibc-1",query_type="query_latest_height"} 1
-queries{chain="ibc-1",query_type="query_packet_acknowledgements"} 3
-queries{chain="ibc-1",query_type="query_packet_commitments"} 9
+queries{chain="ibc-1",query_type="query_packet_acknowledgements"} 5
+queries{chain="ibc-1",query_type="query_packet_commitments"} 10
 queries{chain="ibc-1",query_type="query_staking_params"} 2
-queries{chain="ibc-1",query_type="query_txs"} 58
-queries{chain="ibc-1",query_type="query_unreceived_acknowledgements"} 230
-queries{chain="ibc-1",query_type="query_unreceived_packets"} 86
+queries{chain="ibc-1",query_type="query_txs"} 56
+queries{chain="ibc-1",query_type="query_unreceived_acknowledgements"} 127
+queries{chain="ibc-1",query_type="query_unreceived_packets"} 292
 # HELP tx_latency_confirmed The latency for all transactions submitted to a specific chain, i.e. the difference between the moment when Hermes received a batch of events until the corresponding transaction(s) were confirmed. Milliseconds.
 # TYPE tx_latency_confirmed histogram
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6",le="0.5"} 0
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6",le="0.9"} 0
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6",le="0.99"} 0
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6",le="+Inf"} 1
-tx_latency_confirmed_sum{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6"} 3377
-tx_latency_confirmed_count{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6"} 1
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35",le="0.5"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35",le="0.9"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35",le="0.99"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35",le="+Inf"} 1
-tx_latency_confirmed_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35"} 8254
-tx_latency_confirmed_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35"} 1
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0",le="0.5"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0",le="0.9"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0",le="0.99"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0",le="+Inf"} 1
-tx_latency_confirmed_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0"} 9311
-tx_latency_confirmed_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0"} 1
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5",le="0.5"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5",le="0.9"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5",le="0.99"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5",le="+Inf"} 1
-tx_latency_confirmed_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5"} 10138
-tx_latency_confirmed_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5"} 1
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625",le="0.5"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625",le="0.9"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625",le="0.99"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625",le="+Inf"} 1
-tx_latency_confirmed_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625"} 9620
-tx_latency_confirmed_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625"} 1
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="0.5"} 0
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="0.9"} 0
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="0.99"} 0
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="+Inf"} 4
+tx_latency_confirmed_sum{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 22466
+tx_latency_confirmed_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 4
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",le="0.5"} 0
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",le="0.9"} 0
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",le="0.99"} 0
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",le="+Inf"} 1
+tx_latency_confirmed_sum{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer"} 4256
+tx_latency_confirmed_count{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer"} 1
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="0.5"} 0
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="0.9"} 0
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="0.99"} 0
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="+Inf"} 2
+tx_latency_confirmed_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 9408
+tx_latency_confirmed_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 2
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer",le="0.5"} 0
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer",le="0.9"} 0
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer",le="0.99"} 0
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer",le="+Inf"} 1
+tx_latency_confirmed_sum{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer"} 3173
+tx_latency_confirmed_count{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer"} 1
 # HELP tx_latency_submitted The latency for all transactions submitted to a specific chain, i.e. the difference between the moment when Hermes received a batch of events and when it submitted the corresponding transaction(s). Milliseconds.
 # TYPE tx_latency_submitted histogram
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6",le="0.5"} 0
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6",le="0.9"} 0
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6",le="0.99"} 0
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6",le="+Inf"} 1
-tx_latency_submitted_sum{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6"} 944
-tx_latency_submitted_count{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",tracking_id="e30b07e6"} 1
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35",le="0.5"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35",le="0.9"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35",le="0.99"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35",le="+Inf"} 1
-tx_latency_submitted_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35"} 3031
-tx_latency_submitted_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="14c90b35"} 1
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0",le="0.5"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0",le="0.9"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0",le="0.99"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0",le="+Inf"} 1
-tx_latency_submitted_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0"} 8227
-tx_latency_submitted_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="20415bf0"} 1
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5",le="0.5"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5",le="0.9"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5",le="0.99"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5",le="+Inf"} 1
-tx_latency_submitted_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5"} 8618
-tx_latency_submitted_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="430eb5b5"} 1
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625",le="0.5"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625",le="0.9"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625",le="0.99"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625",le="+Inf"} 1
-tx_latency_submitted_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625"} 8036
-tx_latency_submitted_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",tracking_id="7ec22625"} 1
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="0.5"} 0
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="0.9"} 0
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="0.99"} 0
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="+Inf"} 5
+tx_latency_submitted_sum{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 14428
+tx_latency_submitted_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 5
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",le="0.5"} 0
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",le="0.9"} 0
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",le="0.99"} 0
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer",le="+Inf"} 1
+tx_latency_submitted_sum{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer"} 729
+tx_latency_submitted_count{chain="ibc-0",channel="channel-1",counterparty="ibc-1",port="transfer"} 1
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="0.5"} 0
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="0.9"} 0
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="0.99"} 0
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="+Inf"} 2
+tx_latency_submitted_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 1706
+tx_latency_submitted_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 2
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer",le="0.5"} 0
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer",le="0.9"} 0
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer",le="0.99"} 0
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer",le="+Inf"} 1
+tx_latency_submitted_sum{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer"} 791
+tx_latency_submitted_count{chain="ibc-1",channel="channel-1",counterparty="ibc-0",port="transfer"} 1
 # HELP wallet_balance The balance in each wallet that Hermes is using, per wallet, denom and chain
-# TYPE wallet_balance histogram
-wallet_balance_bucket{account="cosmos1cm54ux4f4709tuz3y0f837wku3qez6d9e8der2",chain="ibc-1",denom="stake",le="0.5"} 0
-wallet_balance_bucket{account="cosmos1cm54ux4f4709tuz3y0f837wku3qez6d9e8der2",chain="ibc-1",denom="stake",le="0.9"} 0
-wallet_balance_bucket{account="cosmos1cm54ux4f4709tuz3y0f837wku3qez6d9e8der2",chain="ibc-1",denom="stake",le="0.99"} 0
-wallet_balance_bucket{account="cosmos1cm54ux4f4709tuz3y0f837wku3qez6d9e8der2",chain="ibc-1",denom="stake",le="+Inf"} 9
-wallet_balance_sum{account="cosmos1cm54ux4f4709tuz3y0f837wku3qez6d9e8der2",chain="ibc-1",denom="stake"} 899999943142
-wallet_balance_count{account="cosmos1cm54ux4f4709tuz3y0f837wku3qez6d9e8der2",chain="ibc-1",denom="stake"} 9
-wallet_balance_bucket{account="cosmos1d0hz45lc7w4g2dgduu2wxf24x5fwmd6zxn2e4v",chain="ibc-0",denom="stake",le="0.5"} 0
-wallet_balance_bucket{account="cosmos1d0hz45lc7w4g2dgduu2wxf24x5fwmd6zxn2e4v",chain="ibc-0",denom="stake",le="0.9"} 0
-wallet_balance_bucket{account="cosmos1d0hz45lc7w4g2dgduu2wxf24x5fwmd6zxn2e4v",chain="ibc-0",denom="stake",le="0.99"} 0
-wallet_balance_bucket{account="cosmos1d0hz45lc7w4g2dgduu2wxf24x5fwmd6zxn2e4v",chain="ibc-0",denom="stake",le="+Inf"} 9
-wallet_balance_sum{account="cosmos1d0hz45lc7w4g2dgduu2wxf24x5fwmd6zxn2e4v",chain="ibc-0",denom="stake"} 899999875725
-wallet_balance_count{account="cosmos1d0hz45lc7w4g2dgduu2wxf24x5fwmd6zxn2e4v",chain="ibc-0",denom="stake"} 9
+# TYPE wallet_balance gauge
+wallet_balance{account="cosmos1934akx97773lsjjs9x74dr03uuam29hcc9grp3",chain="ibc-0",denom="stake"} 99999970473
+wallet_balance{account="cosmos1hngzqscyg476nd68qggxps8r2aq56lne45ps8n",chain="ibc-1",denom="stake"} 99999978431
 # HELP workers Number of workers per object
 # TYPE workers gauge
 workers{type="client"} 4
@@ -206,7 +184,7 @@ workers{type="packet"} 4
 workers{type="wallet"} 2
 # HELP ws_events How many IBC events did Hermes receive via the WebSocket subscription, per chain
 # TYPE ws_events counter
-ws_events{chain="ibc-0"} 183
-ws_events{chain="ibc-1"} 184
+ws_events{chain="ibc-0"} 443
+ws_events{chain="ibc-1"} 370
 ```
 
