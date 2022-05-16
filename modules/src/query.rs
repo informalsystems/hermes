@@ -1,4 +1,4 @@
-use tendermint::abci::transaction::Hash;
+use tendermint_rpc::abci::transaction::Hash;
 
 use crate::core::ics02_client::client_consensus::QueryClientEventRequest;
 use crate::core::ics04_channel::channel::QueryPacketEventDataRequest;

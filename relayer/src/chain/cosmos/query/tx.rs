@@ -7,7 +7,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::QueryTxRequest;
 use ibc::Height as ICSHeight;
-use tendermint::abci::Event;
+use tendermint_rpc::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 

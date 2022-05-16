@@ -1,6 +1,6 @@
 use core::fmt;
 
-use tendermint::abci::transaction;
+use tendermint_rpc::abci::transaction;
 
 use crate::link::relay_sender::AsyncReply;
 

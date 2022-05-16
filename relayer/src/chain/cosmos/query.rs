@@ -7,8 +7,8 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc::query::QueryTxHash;
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
-use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::block::Height;
+use tendermint_rpc::abci::Path as TendermintABCIPath;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{Client, HttpClient, Url};
 

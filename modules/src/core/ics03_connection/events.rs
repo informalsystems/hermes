@@ -1,8 +1,8 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::abci::tag::Tag;
-use tendermint::abci::Event as AbciEvent;
+use tendermint_rpc::abci::tag::Tag;
+use tendermint_rpc::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::height::Height;
@@ -18,7 +18,7 @@ const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 const COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY: &str = "counterparty_connection_id";
 const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
-pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
+pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
     match event.type_str.parse() {
         Ok(IbcEventType::OpenInitConnection) => extract_attributes_from_tx(event)
             .map(OpenInit::from)
@@ -40,7 +40,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     }
 }
 
-fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attributes, Error> {
+fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
     let mut attr = Attributes::default();
 
     for tag in &event.attributes {

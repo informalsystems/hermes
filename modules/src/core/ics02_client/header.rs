@@ -75,7 +75,7 @@ impl Header for AnyHeader {
 
 impl AnyHeader {
     pub fn encode_to_string(&self) -> String {
-        let buf = Protobuf::encode_vec(self).expect("encoding shouldn't fail");
+        let buf = Protobuf::encode_vec(self);
         let encoded = hex::encode(buf);
         String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8")
     }
@@ -114,16 +114,12 @@ impl From<AnyHeader> for Any {
         match value {
             AnyHeader::Tendermint(header) => Any {
                 type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-                value: header
-                    .encode_vec()
-                    .expect("encoding to `Any` from `AnyHeader::Tendermint`"),
+                value: header.encode_vec(),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyHeader::Mock(header) => Any {
                 type_url: MOCK_HEADER_TYPE_URL.to_string(),
-                value: header
-                    .encode_vec()
-                    .expect("encoding to `Any` from `AnyHeader::Mock`"),
+                value: header.encode_vec(),
             },
         }
     }

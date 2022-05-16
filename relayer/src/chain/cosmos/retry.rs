@@ -3,7 +3,7 @@ use core::pin::Pin;
 use core::time::Duration;
 use ibc_proto::google::protobuf::Any;
 use std::thread;
-use tendermint::abci::Code;
+use tendermint_rpc::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tracing::{debug, error, span, warn, Level};
 
@@ -105,7 +105,7 @@ fn do_send_tx_with_account_sequence_retry<'a>(
             }
 
             // Gas estimation succeeded. Broadcasting failed with a retry-able error.
-            Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
+            Ok(response) if response.code.value() == INCORRECT_ACCOUNT_SEQUENCE_ERR => {
                 if retry_counter < MAX_ACCOUNT_SEQUENCE_RETRY {
                     let retry_counter = retry_counter + 1;
                     warn!("failed at broadcast step with incorrect account sequence. retrying ({}/{})",
@@ -154,7 +154,7 @@ fn do_send_tx_with_account_sequence_retry<'a>(
                         error!(
                             "broadcast_tx_sync: {:?}: diagnostic: {:?}",
                             response,
-                            sdk_error_from_tx_sync_error_code(code)
+                            sdk_error_from_tx_sync_error_code(code.get())
                         );
                         Ok(response)
                     }

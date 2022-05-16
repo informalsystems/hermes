@@ -6,7 +6,7 @@ use core::time::Duration;
 use bytes::BufMut;
 use flex_error::define_error;
 
-use tendermint::abci::transaction::Hash as TxHash;
+use tendermint_rpc::abci::transaction::Hash as TxHash;
 
 use ibc::clients::ics07_tendermint::client_state::UpgradeOptions;
 use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};

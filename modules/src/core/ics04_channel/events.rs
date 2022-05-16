@@ -1,8 +1,8 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::abci::tag::Tag;
-use tendermint::abci::Event as AbciEvent;
+use tendermint_rpc::abci::tag::Tag;
+use tendermint_rpc::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::error::Error;
@@ -33,7 +33,7 @@ const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
 const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
-pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
+pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
     match event.type_str.parse() {
         Ok(IbcEventType::OpenInitChannel) => extract_attributes_from_tx(event)
             .map(OpenInit::try_from)
@@ -114,7 +114,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     }
 }
 
-fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attributes, Error> {
+fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
     let mut attr = Attributes::default();
 
     for tag in &event.attributes {
@@ -141,9 +141,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attribu
     Ok(attr)
 }
 
-fn extract_packet_and_write_ack_from_tx(
-    event: &tendermint::abci::Event,
-) -> Result<(Packet, Vec<u8>), Error> {
+fn extract_packet_and_write_ack_from_tx(event: &AbciEvent) -> Result<(Packet, Vec<u8>), Error> {
     let mut packet = Packet::default();
     let mut write_ack: Vec<u8> = Vec::new();
     for tag in &event.attributes {

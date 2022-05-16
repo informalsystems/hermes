@@ -10,12 +10,11 @@ use std::thread;
 
 use bitcoin::hashes::hex::ToHex;
 use tendermint::block::Height;
-use tendermint::{
-    abci::{Event, Path as TendermintABCIPath},
-    node::info::TxIndexStatus,
-};
+use tendermint::node::info::TxIndexStatus;
 use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
+use tendermint_rpc::abci::responses::Event;
+use tendermint_rpc::abci::Path as TendermintABCIPath;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };
