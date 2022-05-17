@@ -3,17 +3,26 @@ use core::fmt;
 use ibc_proto::google::protobuf::Any;
 use uuid::Uuid;
 
+/// Identifier used to track an `EventBatch` along
+/// the relaying pipeline until the corresponding
+/// transactions are submitted and/or confirmed.
 #[derive(Copy, Clone, Debug)]
 pub enum TrackingId {
+    /// Random identifier, used for tracking an event batch received over WebSocket.
     Uuid(Uuid),
+    /// Static identifier, used as a placeholder for when there is no
+    /// corresponding event batch, eg. when performing actions from
+    /// the CLI or during packet clearing.
     Static(&'static str),
 }
 
 impl TrackingId {
+    /// See [`TrackingId::Uuid`]
     pub fn uuid() -> Self {
         Self::Uuid(Uuid::new_v4())
     }
 
+    /// See [`TrackingId::Static`]
     pub fn str(s: &'static str) -> Self {
         Self::Static(s)
     }
