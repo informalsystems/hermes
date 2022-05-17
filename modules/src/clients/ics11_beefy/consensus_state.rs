@@ -130,8 +130,9 @@ impl From<ConsensusState> for RawConsensusState {
     }
 }
 
-impl From<ParachainHeader> for ConsensusState {
-    fn from(header: ParachainHeader) -> Self {
+impl TryFrom<ParachainHeader> for ConsensusState {
+    type Error = Error;
+    fn try_from(header: ParachainHeader) -> Result<Self, Self::Error> {
         let root = {
             header
                 .parachain_header
@@ -141,7 +142,7 @@ impl From<ParachainHeader> for ConsensusState {
                 .filter_map(|digest| digest.as_consensus())
                 .find(|(id, _value)| id == &IBC_CONSENSUS_ID)
                 .map(|(.., root)| root.to_vec())
-                .unwrap_or_default()
+                .ok_or(Error::invalid_header("cannot find ibc commitment root".to_string()))?
         };
 
         let timestamp = decode_timestamp_extrinsic(&header).unwrap_or_default();
@@ -149,12 +150,12 @@ impl From<ParachainHeader> for ConsensusState {
         let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
             .unwrap_or_default()
             .into_tm_time()
-            .unwrap();
+            .ok_or(Error::invalid_header("cannot decode timestamp extrinsic".to_string()))?;
 
-        Self {
+        Ok(Self {
             root: root.into(),
             timestamp,
-        }
+        })
     }
 }
 

@@ -7,3 +7,6 @@ pub mod consensus_state;
 pub mod error;
 pub mod header;
 pub mod misbehaviour;
+
+#[cfg(test)]
+pub mod polkadot_runtime;

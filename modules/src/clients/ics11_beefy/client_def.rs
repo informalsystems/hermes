@@ -87,7 +87,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
             .into_iter()
             .map(|header| {
                 let leaf_index =
-                    client_state.to_leaf_index(header.partial_mmr_leaf.parent_number_and_hash.0);
+                    client_state.to_leaf_index(header.partial_mmr_leaf.parent_number_and_hash.0 + 1);
                 leaf_indices.push(leaf_index as u64);
                 ParachainHeader {
                     parachain_header: header.parachain_header.encode(),
@@ -143,7 +143,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
             }
             parachain_cs_states.push((
                 height,
-                AnyConsensusState::Beefy(ConsensusState::from(header)),
+                AnyConsensusState::Beefy(ConsensusState::try_from(header)?),
             ))
         }
 

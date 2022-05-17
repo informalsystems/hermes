@@ -93,9 +93,9 @@ impl ClientState {
 
     pub fn to_leaf_index(&self, block_number: u32) -> u32 {
         if self.beefy_activation_block == 0 {
-            return block_number - 1;
+            return block_number.saturating_sub(1);
         }
-        self.beefy_activation_block - (block_number + 1)
+        self.beefy_activation_block.saturating_sub(block_number + 1)
     }
 
     /// Should only be called if this header has been verified successfully
@@ -314,22 +314,11 @@ pub mod test_util {
                 ChainId::new("polkadot".to_string(), 1),
                 Default::default(),
                 0,
-                1,
+                0,
                 Default::default(),
                 Default::default(),
             )
             .unwrap(),
         )
     }
-}
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn client_state_new() {}
-
-    #[test]
-    fn client_state_verify_delay_passed() {}
-
-    #[test]
-    fn client_state_verify_height() {}
 }

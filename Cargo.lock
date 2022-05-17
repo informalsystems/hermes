@@ -141,7 +141,7 @@ dependencies = [
  "log",
  "pin-project-lite",
  "tokio",
- "tokio-rustls",
+ "tokio-rustls 0.22.0",
  "tungstenite",
  "webpki-roots 0.21.1",
 ]
@@ -412,6 +412,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "bstr"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -1560,9 +1569,9 @@ dependencies = [
  "http",
  "hyper",
  "hyper-rustls",
- "rustls-native-certs",
+ "rustls-native-certs 0.5.0",
  "tokio",
- "tokio-rustls",
+ "tokio-rustls 0.22.0",
  "tower-service",
  "webpki 0.21.4",
 ]
@@ -1578,9 +1587,9 @@ dependencies = [
  "hyper",
  "log",
  "rustls 0.19.1",
- "rustls-native-certs",
+ "rustls-native-certs 0.5.0",
  "tokio",
- "tokio-rustls",
+ "tokio-rustls 0.22.0",
  "webpki 0.21.4",
  "webpki-roots 0.21.1",
 ]
@@ -1608,10 +1617,14 @@ dependencies = [
  "derive_more",
  "env_logger",
  "flex-error",
+ "frame-support",
+ "hex-literal",
  "ibc-proto",
  "ics23",
  "modelator",
  "num-traits",
+ "pallet-beefy-mmr",
+ "pallet-mmr-rpc",
  "parity-scale-codec",
  "prost",
  "prost-types",
@@ -1668,6 +1681,12 @@ dependencies = [
  "prost",
  "sp-std 4.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22)",
 ]
+
+[[package]]
+name = "ident_case"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "idna"
@@ -3653,8 +3672,6 @@ name = "sp-arithmetic"
 version = "5.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
 dependencies = [
- "integer-sqrt",
- "num-traits",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -4796,6 +4813,7 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2",
  "tokio-macros",
  "winapi",
@@ -5151,6 +5169,15 @@ dependencies = [
  "crunchy",
  "hex",
  "static_assertions",
+]
+
+[[package]]
+name = "unicase"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
+dependencies = [
+ "version_check",
 ]
 
 [[package]]
