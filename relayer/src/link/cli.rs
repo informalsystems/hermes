@@ -94,7 +94,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             sequences,
             src_response_height,
             query_send_packet_events,
-            TrackingId::str("packet-recv"),
+            TrackingId::new_static("packet-recv"),
         )
     }
 
@@ -127,7 +127,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             sequences,
             src_response_height,
             query_write_ack_events,
-            TrackingId::str("packet-ack"),
+            TrackingId::new_static("packet-ack"),
         )
     }
 

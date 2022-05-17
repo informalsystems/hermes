@@ -18,12 +18,12 @@ pub enum TrackingId {
 
 impl TrackingId {
     /// See [`TrackingId::Uuid`]
-    pub fn uuid() -> Self {
+    pub fn new_uuid() -> Self {
         Self::Uuid(Uuid::new_v4())
     }
 
     /// See [`TrackingId::Static`]
-    pub fn str(s: &'static str) -> Self {
+    pub fn new_static(s: &'static str) -> Self {
         Self::Static(s)
     }
 }

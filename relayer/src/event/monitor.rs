@@ -456,7 +456,7 @@ fn stream_batches(
             height,
             events,
             chain_id: chain_id.clone(),
-            tracking_id: TrackingId::uuid(),
+            tracking_id: TrackingId::new_uuid(),
         }
     })
 }

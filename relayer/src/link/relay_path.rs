@@ -376,7 +376,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
-        let tracking_id = TrackingId::uuid();
+        let tracking_id = TrackingId::new_static("relay pending packets");
 
         for i in 1..=MAX_RETRIES {
             let cleared = self
