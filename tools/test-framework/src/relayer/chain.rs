@@ -46,6 +46,7 @@ use ibc::{
 };
 use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::requests::{
@@ -57,7 +58,7 @@ use ibc_relayer::chain::requests::{
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
-use ibc_relayer::chain::tx::TrackedMsgs;
+use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::chain::{ChainStatus, HealthCheck};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::error::Error;
@@ -382,5 +383,9 @@ where
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         self.value().query_host_consensus_state(request)
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        self.value().query_balance()
     }
 }

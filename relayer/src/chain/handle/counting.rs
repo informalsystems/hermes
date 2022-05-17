@@ -27,6 +27,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use tracing::debug;
 
+use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
@@ -38,7 +39,7 @@ use crate::chain::requests::{
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -154,6 +155,11 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         self.inc_metric("ibc_version");
         self.inner().ibc_version()
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        self.inc_metric("query_balance");
+        self.inner().query_balance()
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

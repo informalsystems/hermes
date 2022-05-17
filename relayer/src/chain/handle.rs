@@ -34,6 +34,7 @@ use ibc::{
 use ibc_proto::ibc::core::{channel::v1::PacketState, commitment::v1::MerkleProof};
 
 use crate::{
+    account::Balance,
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -52,7 +53,7 @@ use super::{
         QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
         QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
     },
-    tx::TrackedMsgs,
+    tracking::TrackedMsgs,
 };
 use super::{ChainStatus, HealthCheck};
 
@@ -148,6 +149,10 @@ pub enum ChainRequest {
 
     IbcVersion {
         reply_to: ReplyTo<Option<semver::Version>>,
+    },
+
+    QueryBalance {
+        reply_to: ReplyTo<Balance>,
     },
 
     QueryApplicationStatus {
@@ -378,6 +383,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
 
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
+
+    /// Query the balance of the current account for the denom used to pay tx fees.
+    fn query_balance(&self) -> Result<Balance, Error>;
 
     fn query_application_status(&self) -> Result<ChainStatus, Error>;
 

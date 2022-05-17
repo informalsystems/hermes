@@ -29,6 +29,7 @@ use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::{
+    account::Balance,
     chain::{
         client::ClientSettings,
         requests::{
@@ -41,7 +42,7 @@ use crate::{
             QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
             QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
         },
-        tx::TrackedMsgs,
+        tracking::TrackedMsgs,
         ChainStatus,
     },
     config::ChainConfig,
@@ -148,6 +149,10 @@ impl ChainHandle for BaseChainHandle {
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        self.send(|reply_to| ChainRequest::QueryBalance { reply_to })
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

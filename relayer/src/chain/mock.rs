@@ -30,6 +30,7 @@ use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
+use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
@@ -50,7 +51,7 @@ use super::requests::{
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
-use super::tx::TrackedMsgs;
+use super::tracking::TrackedMsgs;
 use super::HealthCheck;
 
 /// The representation of a mocked chain as the relayer sees it.
@@ -133,10 +134,7 @@ impl ChainEndpoint for MockChain {
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        let events = self
-            .context
-            .send(tracked_msgs.into())
-            .map_err(Error::ics18)?;
+        let events = self.context.send(tracked_msgs.msgs).map_err(Error::ics18)?;
 
         Ok(events)
     }
@@ -166,6 +164,10 @@ impl ChainEndpoint for MockChain {
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         Ok(Some(semver::Version::new(3, 0, 0)))
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        unimplemented!()
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {

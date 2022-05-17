@@ -29,6 +29,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
+use crate::account::Balance;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
@@ -46,7 +47,7 @@ use self::requests::{
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
-use self::tx::TrackedMsgs;
+use self::tracking::TrackedMsgs;
 
 pub mod client;
 pub mod cosmos;
@@ -54,7 +55,7 @@ pub mod counterparty;
 pub mod handle;
 pub mod requests;
 pub mod runtime;
-pub mod tx;
+pub mod tracking;
 
 #[cfg(test)]
 pub mod mock;
@@ -152,6 +153,9 @@ pub trait ChainEndpoint: Sized {
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
     // Queries
+
+    /// Query the balance of the current account for the denom used to pay tx fees.
+    fn query_balance(&self) -> Result<Balance, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 

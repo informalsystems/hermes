@@ -34,6 +34,7 @@ use ibc::{
 use ibc_proto::ibc::core::{channel::v1::PacketState, commitment::v1::MerkleProof};
 
 use crate::{
+    account::Balance,
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -57,7 +58,7 @@ use super::{
         QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
         QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
     },
-    tx::TrackedMsgs,
+    tracking::TrackedMsgs,
     ChainEndpoint, ChainStatus, HealthCheck,
 };
 
@@ -277,7 +278,6 @@ where
                             self.ibc_version(reply_to)?
                         }
 
-
                         Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
@@ -301,6 +301,10 @@ where
                         Ok(ChainRequest::BuildChannelProofs { port_id, channel_id, height, reply_to }) => {
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
+
+                        Ok(ChainRequest::QueryBalance { reply_to }) => {
+                            self.query_balance(reply_to)?
+                        }
 
                         Ok(ChainRequest::QueryApplicationStatus { reply_to }) => {
                             self.query_application_status(reply_to)?
@@ -462,6 +466,11 @@ where
     ) -> Result<(), Error> {
         let result = self.chain.send_messages_and_wait_check_tx(tracked_msgs);
         reply_to.send(result).map_err(Error::send)
+    }
+
+    fn query_balance(&self, reply_to: ReplyTo<Balance>) -> Result<(), Error> {
+        let balance = self.chain.query_balance();
+        reply_to.send(balance).map_err(Error::send)
     }
 
     fn query_application_status(&self, reply_to: ReplyTo<ChainStatus>) -> Result<(), Error> {

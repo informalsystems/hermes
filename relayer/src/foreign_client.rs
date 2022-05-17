@@ -41,7 +41,7 @@ use crate::chain::requests::{
     PageRequest, QueryClientStateRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error as RelayerError;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
@@ -474,7 +474,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         msgs.push(msg_upgrade);
 
-        let tm = TrackedMsgs::new(msgs, "upgrade client");
+        let tm = TrackedMsgs::new_static(msgs, "upgrade client");
 
         let res = self
             .dst_chain
@@ -984,7 +984,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             ));
         }
 
-        let tm = TrackedMsgs::new(new_msgs, "update client");
+        let tm = TrackedMsgs::new_static(new_msgs, "update client");
 
         let events = self
             .dst_chain()
@@ -1345,7 +1345,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .to_any(),
         );
 
-        let tm = TrackedMsgs::new(msgs, "evidence");
+        let tm = TrackedMsgs::new_static(msgs, "evidence");
 
         let events = self
             .dst_chain()

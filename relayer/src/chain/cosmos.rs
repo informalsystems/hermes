@@ -52,6 +52,7 @@ use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
+use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
@@ -59,13 +60,14 @@ use crate::chain::cosmos::batch::{
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
+use crate::chain::cosmos::query::balance::query_balance;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{ChainStatus, QueryResponse};
 use crate::config::ChainConfig;
@@ -632,6 +634,18 @@ impl ChainEndpoint for CosmosSdkChain {
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
         Ok(version_specs.ibc_go_version)
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        let key = self.key()?;
+
+        let balance = self.block_on(query_balance(
+            &self.grpc_addr,
+            &key.account,
+            &self.config.gas_price.denom,
+        ))?;
+
+        Ok(balance)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
