@@ -9,7 +9,7 @@
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
-    unused_qualifications,
+    unused_qualifications
 )]
 #![cfg_attr(not(test), deny(rust_2018_idioms))]
 #![forbid(unsafe_code)]

@@ -126,6 +126,7 @@ pub fn process<Crypto: CryptoOps>(
 #[cfg(test)]
 mod tests {
     use core::str::FromStr;
+    use sp_trie::{generate_trie_proof, TrieDBMut, TrieMut};
     use test_log::test;
 
     use crate::clients::ics11_beefy::client_state::ClientState as BeefyClientState;
@@ -156,6 +157,18 @@ mod tests {
     use beefy_primitives::mmr::BeefyNextAuthoritySet;
     use hex_literal::hex;
     use sp_core::H256;
+    use crate::clients::ics11_beefy::header::ParachainHeader as BeefyParachainHeader;
+    use beefy_client::primitives::{
+        MmrLeaf, MmrUpdateProof, ParachainHeader, PartialMmrLeaf, SignatureWithAuthorityIndex,
+        SignedCommitment,
+    };
+    use beefy_client::{MerkleHasher, NodesUtils};
+    use codec::{Decode, Encode};
+    use sp_core::keccak_256;
+    use sp_runtime::traits::{BlakeTwo256, Convert};
+    use std::collections::BTreeMap;
+    use subxt::rpc::ClientT;
+    use subxt::rpc::{rpc_params, JsonValue, Subscription, SubscriptionClientT};
 
     #[test]
     fn test_update_client_ok() {
@@ -570,19 +583,6 @@ mod tests {
         }
     }
 
-    use crate::clients::ics11_beefy::header::ParachainHeader as BeefyParachainHeader;
-    use beefy_client::primitives::{
-        MmrLeaf, MmrUpdateProof, ParachainHeader, PartialMmrLeaf, SignatureWithAuthorityIndex,
-        SignedCommitment,
-    };
-    use beefy_client::{MerkleHasher, NodesUtils};
-    use codec::{Decode, Encode};
-    use sp_core::keccak_256;
-    use sp_runtime::traits::Convert;
-    use std::collections::BTreeMap;
-    use subxt::rpc::ClientT;
-    use subxt::rpc::{rpc_params, JsonValue, Subscription, SubscriptionClientT};
-
     const PARA_ID: u32 = 2000;
 
     /// Construct the mmr update for beefy light client
@@ -730,6 +730,13 @@ mod tests {
             .build::<subxt::DefaultConfig>()
             .await
             .unwrap();
+
+        let para_url = std::env::var("NODE_ENDPOINT").unwrap_or("ws://127.0.0.1:9988".to_string());
+        let para_client = subxt::ClientBuilder::new()
+            .set_url(para_url)
+            .build::<subxt::DefaultConfig>()
+            .await
+            .unwrap();
         let api =
         client.clone().to_runtime_api::<runtime::api::RuntimeApi<
             subxt::DefaultConfig,
@@ -781,7 +788,7 @@ mod tests {
                 beefy_primitives::crypto::Signature,
             > = codec::Decode::decode(&mut &*recv_commitment).unwrap();
 
-            std::println!(
+            println!(
                 "Received signed commitmment for: {:?}",
                 signed_commitment.commitment.block_number
             );
@@ -893,6 +900,45 @@ mod tests {
                     vec![]
                 };
 
+                let block_number = leaf.parent_number_and_hash.0 + 1;
+                let subxt_block_number: subxt::BlockNumber = block_number.into();
+                let block_hash = para_client
+                    .rpc()
+                    .block_hash(Some(subxt_block_number))
+                    .await
+                    .unwrap();
+
+                let block = para_client.rpc().block(block_hash).await.unwrap().unwrap();
+                let extrinsics = block
+                    .block
+                    .extrinsics
+                    .into_iter()
+                    .map(|e| e.encode())
+                    .collect::<Vec<_>>();
+
+                let mut db = sp_trie::MemoryDB::<BlakeTwo256>::default();
+
+                let root = {
+                    let mut root = Default::default();
+                    let mut trie =
+                        <TrieDBMut<sp_trie::LayoutV0<BlakeTwo256>>>::new(&mut db, &mut root);
+
+                    for (i, ext) in extrinsics.clone().into_iter().enumerate() {
+                        let key = codec::Compact::<u32>(i as u32).encode();
+                        trie.insert(&key, &ext).unwrap();
+                    }
+                    *trie.root()
+                };
+
+                let key = codec::Compact::<u32>(0u32).encode();
+                let extrinsic_proof =
+                    generate_trie_proof::<sp_trie::LayoutV0<BlakeTwo256>, _, _, _>(
+                        &db,
+                        root,
+                        vec![&key],
+                    )
+                    .unwrap();
+
                 let header = ParachainHeader {
                     parachain_header: para_headers.get(&PARA_ID).unwrap().clone(),
                     partial_mmr_leaf: PartialMmrLeaf {
@@ -904,7 +950,7 @@ mod tests {
                     parachain_heads_proof: proof,
                     heads_leaf_index: index.unwrap() as u32,
                     heads_total_count: parachain_leaves.len() as u32,
-                    extrinsic_proof: vec![],
+                    extrinsic_proof,
                 };
 
                 parachain_headers.push(header);
@@ -961,7 +1007,7 @@ mod tests {
                     );
                     assert_eq!(event.height(), ctx.host_height());
                     assert!(log.is_empty());
-
+                    ctx.store_client_result(result.clone()).unwrap();
                     match result {
                         Update(upd_res) => {
                             assert_eq!(upd_res.client_id, client_id);
@@ -980,6 +1026,7 @@ mod tests {
                 }
                 Err(e) => panic!("Unexpected error {:?}", e),
             }
+            println!("Updated client successfully");
             latest_beefy_height = signed_commitment.commitment.block_number;
             count += 1;
         }

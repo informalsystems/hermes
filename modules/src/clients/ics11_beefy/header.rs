@@ -438,22 +438,18 @@ pub fn decode_timestamp_extrinsic(header: &ParachainHeader) -> Result<u64, Error
     let proof = header.extrinsic_proof.clone();
     let extrinsic_root = header.parachain_header.extrinsics_root;
     let db = StorageProof::new(proof).into_memory_db::<BlakeTwo256>();
-    let trie =
-        sp_trie::TrieDB::<sp_trie::LayoutV0<BlakeTwo256>>::new(&db, &extrinsic_root).unwrap();
+    let trie = sp_trie::TrieDB::<sp_trie::LayoutV0<BlakeTwo256>>::new(&db, &extrinsic_root)
+        .map_err(|_| Error::timestamp_extrinsic())?;
     // Timestamp extrinsic should be the first inherent and hence the first extrinsic
     // https://github.com/paritytech/substrate/blob/d602397a0bbb24b5d627795b797259a44a5e29e9/primitives/trie/src/lib.rs#L99-L101
     let key = codec::Encode::encode(&Compact(0u32));
     let ext_bytes = trie
         .get(&key)
-        .map_err(|_| Error::timestamp_extrinsic())?
+        .map_err(|e| Error::timestamp_extrinsic())?
         .ok_or_else(Error::timestamp_extrinsic)?;
-
     // Decoding from the [2..] because the timestamp inmherent has two extra bytes before the call that represents the
     // call length and the extrinsic version.
     let (_, _, timestamp): (u8, u8, Compact<u64>) =
         codec::Decode::decode(&mut &ext_bytes[2..]).map_err(|_| Error::timestamp_extrinsic())?;
     Ok(timestamp.into())
 }
-
-#[cfg(test)]
-pub mod test_util {}
