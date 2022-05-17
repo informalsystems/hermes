@@ -326,8 +326,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(new_msg.to_any())
     }
 
-    // Determines if the events received are relevant and should be processed.
-    // Only events for a port/channel matching one of the channel ends should be processed.
+    /// Determines if the events received are relevant and should be processed.
+    /// Only events for a port/channel matching one of the channel ends should be processed.
     fn filter_relaying_events(
         &self,
         events: Vec<IbcEvent>,
