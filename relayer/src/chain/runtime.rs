@@ -59,7 +59,7 @@ use crate::{
 
 use super::{
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
-    tx::TrackedMsgs,
+    tracking::TrackedMsgs,
     ChainEndpoint, HealthCheck,
 };
 

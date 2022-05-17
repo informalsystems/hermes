@@ -38,7 +38,7 @@ use crate::account::Balance;
 use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;
 use crate::error::Error;

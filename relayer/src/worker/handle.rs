@@ -12,7 +12,7 @@ use ibc::{
     Height,
 };
 
-use crate::chain::tx::TrackingId;
+use crate::chain::tracking::TrackingId;
 use crate::util::lock::{LockExt, RwArc};
 use crate::util::task::TaskHandle;
 use crate::{event::monitor::EventBatch, object::Object};

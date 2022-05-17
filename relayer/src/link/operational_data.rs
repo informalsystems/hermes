@@ -11,8 +11,8 @@ use ibc::events::IbcEvent;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
-use crate::chain::tx::TrackingId;
+use crate::chain::tracking::TrackedMsgs;
+use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
 

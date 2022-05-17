@@ -38,7 +38,7 @@ use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error as RelayerError;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);

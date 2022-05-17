@@ -39,8 +39,8 @@ use ibc_proto::ibc::core::channel::v1::{
 
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
-use crate::chain::tx::TrackingId;
+use crate::chain::tracking::TrackedMsgs;
+use crate::chain::tracking::TrackingId;
 use crate::chain::ChainStatus;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;

@@ -47,14 +47,14 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 use self::client::ClientSettings;
-use self::tx::TrackedMsgs;
+use self::tracking::TrackedMsgs;
 
 pub mod client;
 pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
 pub mod runtime;
-pub mod tx;
+pub mod tracking;
 
 #[cfg(test)]
 pub mod mock;

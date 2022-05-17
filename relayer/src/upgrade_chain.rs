@@ -18,7 +18,7 @@ use ibc_proto::cosmos::upgrade::v1beta1::Plan;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::{ChainEndpoint, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::Error;

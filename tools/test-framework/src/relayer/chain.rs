@@ -57,7 +57,7 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use ibc_relayer::chain::tx::TrackedMsgs;
+use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::chain::{ChainStatus, HealthCheck};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::error::Error;

@@ -38,7 +38,7 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{
     account::Balance,
-    chain::{client::ClientSettings, tx::TrackedMsgs, ChainStatus},
+    chain::{client::ClientSettings, tracking::TrackedMsgs, ChainStatus},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,

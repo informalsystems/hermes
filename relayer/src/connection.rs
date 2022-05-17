@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use crate::chain::counterparty::connection_state_on_destination;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::util::retry::RetryResult;
 use flex_error::define_error;
 use ibc_proto::google::protobuf::Any;

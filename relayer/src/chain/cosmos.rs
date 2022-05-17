@@ -76,7 +76,7 @@ use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query}
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{ChainStatus, QueryResponse};
 use crate::config::ChainConfig;

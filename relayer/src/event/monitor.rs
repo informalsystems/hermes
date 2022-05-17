@@ -21,7 +21,7 @@ use ibc::{
 };
 
 use crate::{
-    chain::tx::TrackingId,
+    chain::tracking::TrackingId,
     telemetry,
     util::{
         retry::{retry_count, retry_with_index, RetryResult},

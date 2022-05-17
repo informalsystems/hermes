@@ -53,7 +53,7 @@ use crate::{
 };
 
 use super::client::ClientSettings;
-use super::tx::TrackedMsgs;
+use super::tracking::TrackedMsgs;
 use super::{ChainStatus, HealthCheck};
 
 mod base;

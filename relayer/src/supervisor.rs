@@ -16,7 +16,7 @@ use ibc::{
 };
 
 use crate::{
-    chain::{handle::ChainHandle, tx::TrackingId, HealthCheck},
+    chain::{handle::ChainHandle, tracking::TrackingId, HealthCheck},
     config::Config,
     event::monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,

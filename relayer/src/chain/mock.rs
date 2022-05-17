@@ -49,7 +49,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
-use super::tx::TrackedMsgs;
+use super::tracking::TrackedMsgs;
 use super::HealthCheck;
 
 /// The representation of a mocked chain as the relayer sees it.

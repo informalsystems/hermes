@@ -14,7 +14,7 @@ use ibc_proto::google::protobuf::Any;
 use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::ChainStatus;
 use crate::error::Error;
 use crate::util::bigint::U256;

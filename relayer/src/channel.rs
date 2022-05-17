@@ -23,7 +23,7 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
