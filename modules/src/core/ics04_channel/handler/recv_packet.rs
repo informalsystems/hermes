@@ -12,6 +12,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Expiry;
 use crate::Height;
+use core::fmt::Debug;
 
 #[derive(Clone, Debug)]
 pub struct RecvPacketSuccess {
@@ -28,8 +29,8 @@ pub enum RecvPacketResult {
     NoOp,
 }
 
-pub fn process<Crypto: CryptoOps>(
-    ctx: &dyn LightClientContext,
+pub fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
+    ctx: &dyn LightClientContext<Crypto = Crypto>,
     msg: &MsgRecvPacket,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();

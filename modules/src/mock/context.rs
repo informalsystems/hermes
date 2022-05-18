@@ -457,7 +457,7 @@ impl MockContext {
     /// A datagram passes from the relayer to the IBC module (on host chain).
     /// Alternative method to `Ics18Context::send` that does not exercise any serialization.
     /// Used in testing the Ics18 algorithms, hence this may return a Ics18Error.
-    pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), Ics18Error> {
+    pub fn deliver(&mut self, msg: Ics26Envelope<Crypto>) -> Result<(), Ics18Error> {
         dispatch::<_, Crypto>(self, msg).map_err(Ics18Error::transaction_failed)?;
         // Create a new block.
         self.advance_host_chain_height();
@@ -509,8 +509,11 @@ impl MockContext {
             .insert(port_id, module_id);
     }
 
-    pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
-        self.ibc_store.lock().unwrap().clients[client_id]
+    pub fn consensus_states(
+        &self,
+        client_id: &ClientId,
+    ) -> Vec<AnyConsensusStateWithHeight<Crypto>> {
+        self.clients[client_id]
             .consensus_states
             .iter()
             .map(|(k, v)| AnyConsensusStateWithHeight {
@@ -532,8 +535,8 @@ impl MockContext {
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> AnyConsensusState {
-        self.ibc_store.lock().unwrap().clients[client_id]
+    ) -> &AnyConsensusState<Crypto> {
+        self.clients[client_id]
             .consensus_states
             .get(height)
             .unwrap()
@@ -1008,6 +1011,7 @@ impl ConnectionKeeper for MockContext {
 }
 
 impl ClientReader for MockContext {
+    type Crypto = Crypto;
     fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
         match self.ibc_store.lock().unwrap().clients.get(client_id) {
             Some(client_record) => Ok(client_record.client_type),
@@ -1029,8 +1033,8 @@ impl ClientReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<AnyConsensusState, Ics02Error> {
-        match self.ibc_store.lock().unwrap().clients.get(client_id) {
+    ) -> Result<AnyConsensusState<Self::Crypto>, Ics02Error> {
+        match self.clients.get(client_id) {
             Some(client_record) => match client_record.consensus_states.get(&height) {
                 Some(consensus_state) => Ok(consensus_state.clone()),
                 None => Err(Ics02Error::consensus_state_not_found(
@@ -1050,10 +1054,8 @@ impl ClientReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
-        _filter_fn: Option<Box<dyn Fn(Height) -> bool>>,
-    ) -> Result<Option<AnyConsensusState>, Ics02Error> {
-        let ibc_store = self.ibc_store.lock().unwrap();
-        let client_record = ibc_store
+    ) -> Result<Option<AnyConsensusState<Self::Crypto>>, Ics02Error> {
+        let client_record = self
             .clients
             .get(client_id)
             .ok_or_else(|| Ics02Error::client_not_found(client_id.clone()))?;
@@ -1079,10 +1081,8 @@ impl ClientReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
-        _filter_fn: Option<Box<dyn Fn(Height) -> bool>>,
-    ) -> Result<Option<AnyConsensusState>, Ics02Error> {
-        let ibc_store = self.ibc_store.lock().unwrap();
-        let client_record = ibc_store
+    ) -> Result<Option<AnyConsensusState<Self::Crypto>>, Ics02Error> {
+        let client_record = self
             .clients
             .get(client_id)
             .ok_or_else(|| Ics02Error::client_not_found(client_id.clone()))?;
@@ -1116,14 +1116,17 @@ impl ClientReader for MockContext {
             .unwrap()
     }
 
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics02Error> {
+    fn host_consensus_state(
+        &self,
+        height: Height,
+    ) -> Result<AnyConsensusState<Self::Crypto>, Ics02Error> {
         match self.host_block(height) {
             Some(block_ref) => Ok(block_ref.clone().into()),
             None => Err(Ics02Error::missing_local_consensus_state(height)),
         }
     }
 
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics02Error> {
+    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState<Self::Crypto>, Ics02Error> {
         Err(Ics02Error::missing_local_consensus_state(Height::zero()))
     }
 
@@ -1133,6 +1136,7 @@ impl ClientReader for MockContext {
 }
 
 impl ClientKeeper for MockContext {
+    type Crypto = Crypto;
     fn store_client_type(
         &mut self,
         client_id: ClientId,
@@ -1175,7 +1179,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         height: Height,
-        consensus_state: AnyConsensusState,
+        consensus_state: AnyConsensusState<Self::Crypto>,
     ) -> Result<(), Ics02Error> {
         let mut ibc_store = self.ibc_store.lock().unwrap();
         let client_record = ibc_store

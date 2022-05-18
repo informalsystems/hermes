@@ -18,19 +18,19 @@ pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpgradeClient";
 
 /// A type of message that triggers the upgrade of an on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq)]
-pub struct MsgUpgradeAnyClient {
+pub struct MsgUpgradeAnyClient<Crypto> {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub consensus_state: AnyConsensusState<Crypto>,
     pub proof_upgrade_client: Vec<u8>,
     pub proof_upgrade_consensus_state: Vec<u8>,
     pub signer: Signer,
 }
-impl MsgUpgradeAnyClient {
+impl<Crypto> MsgUpgradeAnyClient<Crypto> {
     pub fn new(
         client_id: ClientId,
         client_state: AnyClientState,
-        consensus_state: AnyConsensusState,
+        consensus_state: AnyConsensusState<Crypto>,
         proof_upgrade_client: Vec<u8>,
         proof_upgrade_consensus_state: Vec<u8>,
         signer: Signer,
@@ -46,7 +46,7 @@ impl MsgUpgradeAnyClient {
     }
 }
 
-impl Msg for MsgUpgradeAnyClient {
+impl<Crypto: Clone> Msg for MsgUpgradeAnyClient<Crypto> {
     type ValidationError = crate::core::ics24_host::error::ValidationError;
     type Raw = RawMsgUpgradeClient;
 
@@ -59,10 +59,10 @@ impl Msg for MsgUpgradeAnyClient {
     }
 }
 
-impl Protobuf<RawMsgUpgradeClient> for MsgUpgradeAnyClient {}
+impl<Crypto: Clone> Protobuf<RawMsgUpgradeClient> for MsgUpgradeAnyClient<Crypto> {}
 
-impl From<MsgUpgradeAnyClient> for RawMsgUpgradeClient {
-    fn from(dm_msg: MsgUpgradeAnyClient) -> RawMsgUpgradeClient {
+impl<Crypto: Clone> From<MsgUpgradeAnyClient<Crypto>> for RawMsgUpgradeClient {
+    fn from(dm_msg: MsgUpgradeAnyClient<Crypto>) -> RawMsgUpgradeClient {
         RawMsgUpgradeClient {
             client_id: dm_msg.client_id.to_string(),
             client_state: Some(dm_msg.client_state.into()),
@@ -74,7 +74,7 @@ impl From<MsgUpgradeAnyClient> for RawMsgUpgradeClient {
     }
 }
 
-impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
+impl<Crypto: Clone> TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient<Crypto> {
     type Error = Error;
 
     fn try_from(proto_msg: RawMsgUpgradeClient) -> Result<Self, Self::Error> {
@@ -113,13 +113,13 @@ pub mod test_util {
             client_state::{MockClientState, MockConsensusState},
             header::MockHeader,
         },
-        test_utils::{get_dummy_bech32_account, get_dummy_proof},
+        test_utils::{get_dummy_bech32_account, get_dummy_proof, Crypto},
     };
 
     use super::MsgUpgradeAnyClient;
 
     /// Extends the implementation with additional helper methods.
-    impl MsgUpgradeAnyClient {
+    impl MsgUpgradeAnyClient<Crypto> {
         /// Setter for `client_id`. Amenable to chaining, since it consumes the input message.
         pub fn with_client_id(self, client_id: ClientId) -> Self {
             MsgUpgradeAnyClient { client_id, ..self }

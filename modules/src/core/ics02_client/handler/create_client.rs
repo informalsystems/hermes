@@ -1,7 +1,9 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics26_routing::context::LightClientContext;
 use crate::prelude::*;
+use core::fmt::Debug;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -19,19 +21,19 @@ use crate::timestamp::Timestamp;
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Result {
+pub struct Result<Crypto> {
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub client_state: AnyClientState,
-    pub consensus_state: Option<AnyConsensusState>,
+    pub consensus_state: Option<AnyConsensusState<Crypto>>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
 
-pub fn process(
-    ctx: &dyn LightClientContext,
-    msg: MsgCreateAnyClient,
-) -> HandlerResult<ClientResult, Error> {
+pub fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
+    ctx: &dyn LightClientContext<Crypto = Crypto>,
+    msg: MsgCreateAnyClient<Crypto>,
+) -> HandlerResult<ClientResult<Crypto>, Error> {
     let mut output = HandlerOutput::builder();
 
     // Construct this client's identifier

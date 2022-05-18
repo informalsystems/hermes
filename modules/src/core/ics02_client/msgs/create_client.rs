@@ -16,16 +16,16 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MsgCreateAnyClient {
+pub struct MsgCreateAnyClient<Crypto> {
     pub client_state: AnyClientState,
-    pub consensus_state: Option<AnyConsensusState>,
+    pub consensus_state: Option<AnyConsensusState<Crypto>>,
     pub signer: Signer,
 }
 
-impl MsgCreateAnyClient {
+impl<Crypto> MsgCreateAnyClient<Crypto> {
     pub fn new(
         client_state: AnyClientState,
-        consensus_state: Option<AnyConsensusState>,
+        consensus_state: Option<AnyConsensusState<Crypto>>,
         signer: Signer,
     ) -> Result<Self, Error> {
         match consensus_state.as_ref() {
@@ -48,7 +48,7 @@ impl MsgCreateAnyClient {
     }
 }
 
-impl Msg for MsgCreateAnyClient {
+impl<Crypto: Clone> Msg for MsgCreateAnyClient<Crypto> {
     type ValidationError = crate::core::ics24_host::error::ValidationError;
     type Raw = RawMsgCreateClient;
 
@@ -61,9 +61,9 @@ impl Msg for MsgCreateAnyClient {
     }
 }
 
-impl Protobuf<RawMsgCreateClient> for MsgCreateAnyClient {}
+impl<Crypto: Clone> Protobuf<RawMsgCreateClient> for MsgCreateAnyClient<Crypto> {}
 
-impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
+impl<Crypto: Clone> TryFrom<RawMsgCreateClient> for MsgCreateAnyClient<Crypto> {
     type Error = Error;
 
     fn try_from(raw: RawMsgCreateClient) -> Result<Self, Error> {
@@ -83,8 +83,8 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
     }
 }
 
-impl From<MsgCreateAnyClient> for RawMsgCreateClient {
-    fn from(ics_msg: MsgCreateAnyClient) -> Self {
+impl<Crypto: Clone> From<MsgCreateAnyClient<Crypto>> for RawMsgCreateClient {
+    fn from(ics_msg: MsgCreateAnyClient<Crypto>) -> Self {
         RawMsgCreateClient {
             client_state: Some(ics_msg.client_state.into()),
             consensus_state: ics_msg.consensus_state.map(|cs| cs.into()),

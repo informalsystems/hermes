@@ -12,20 +12,21 @@ use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
+use core::fmt::Debug;
 
 /// The result following the successful processing of a `MsgUpgradeAnyClient` message.
 /// This data type should be used with a qualified name `upgrade_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Result {
+pub struct Result<Crypto> {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
-    pub consensus_state: Option<ConsensusUpdateResult>,
+    pub consensus_state: Option<ConsensusUpdateResult<Crypto>>,
 }
 
-pub fn process<Crypto: CryptoOps>(
-    ctx: &dyn LightClientContext,
-    msg: MsgUpgradeAnyClient,
-) -> HandlerResult<ClientResult, Error> {
+pub fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
+    ctx: &dyn LightClientContext<Crypto = Crypto>,
+    msg: MsgUpgradeAnyClient<Crypto>,
+) -> HandlerResult<ClientResult<Crypto>, Error> {
     let mut output = HandlerOutput::builder();
     let MsgUpgradeAnyClient { client_id, .. } = msg;
 

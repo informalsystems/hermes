@@ -1,3 +1,4 @@
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -19,21 +20,22 @@ use crate::mock::header::MockHeader;
 use crate::prelude::*;
 use crate::Height;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MockClient;
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct MockClient<Crypto>(core::marker::PhantomData<Crypto>);
 
-impl ClientDef for MockClient {
+impl<Crypto: CryptoOps> ClientDef for MockClient<Crypto> {
     type Header = MockHeader;
     type ClientState = MockClientState;
-    type ConsensusState = MockConsensusState;
+    type ConsensusState = MockConsensusState<Self::Crypto>;
+    type Crypto = Crypto;
 
     fn update_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Self::Crypto>), Error> {
         if client_state.latest_height() >= header.height() {
             return Err(Error::low_header_height(
                 header.height(),
@@ -49,7 +51,7 @@ impl ClientDef for MockClient {
 
     fn verify_client_consensus_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_state: &Self::ClientState,
         _height: Height,
         prefix: &CommitmentPrefix,
@@ -57,7 +59,7 @@ impl ClientDef for MockClient {
         _root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        _expected_consensus_state: &AnyConsensusState,
+        _expected_consensus_state: &AnyConsensusState<Self::Crypto>,
     ) -> Result<(), Error> {
         let client_prefixed_path = Path::ClientConsensusState(ClientConsensusStatePath {
             client_id: client_id.clone(),
@@ -73,7 +75,7 @@ impl ClientDef for MockClient {
 
     fn verify_connection_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -88,7 +90,7 @@ impl ClientDef for MockClient {
 
     fn verify_channel_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -104,7 +106,7 @@ impl ClientDef for MockClient {
 
     fn verify_client_full_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
@@ -118,7 +120,7 @@ impl ClientDef for MockClient {
 
     fn verify_packet_data(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -135,7 +137,7 @@ impl ClientDef for MockClient {
 
     fn verify_packet_acknowledgement(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -152,7 +154,7 @@ impl ClientDef for MockClient {
 
     fn verify_next_sequence_recv(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -168,7 +170,7 @@ impl ClientDef for MockClient {
 
     fn verify_packet_receipt_absence(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -188,7 +190,7 @@ impl ClientDef for MockClient {
         consensus_state: &Self::ConsensusState,
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Self::Crypto>), Error> {
         Ok((
             *client_state,
             ConsensusUpdateResult::Single(AnyConsensusState::Mock(consensus_state.clone())),
@@ -197,7 +199,7 @@ impl ClientDef for MockClient {
 
     fn verify_header(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_id: ClientId,
         _client_state: Self::ClientState,
         _header: Self::Header,
@@ -215,7 +217,7 @@ impl ClientDef for MockClient {
 
     fn check_for_misbehaviour(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
         _client_id: ClientId,
         _client_state: Self::ClientState,
         _header: Self::Header,

@@ -10,6 +10,7 @@ use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
+use crate::test_utils::Crypto;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
@@ -83,14 +84,14 @@ impl HostBlock {
     }
 }
 
-impl From<TmLightBlock> for AnyConsensusState {
+impl From<TmLightBlock> for AnyConsensusState<Crypto> {
     fn from(light_block: TmLightBlock) -> Self {
-        let cs = TMConsensusState::from(light_block.signed_header.header);
+        let cs = TMConsensusState::<Crypto>::from(light_block.signed_header.header);
         AnyConsensusState::Tendermint(cs)
     }
 }
 
-impl From<HostBlock> for AnyConsensusState {
+impl From<HostBlock> for AnyConsensusState<Crypto> {
     fn from(any_block: HostBlock) -> Self {
         match any_block {
             HostBlock::Mock(mock_header) => mock_header.into(),

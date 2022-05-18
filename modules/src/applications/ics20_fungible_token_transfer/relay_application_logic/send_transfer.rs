@@ -1,5 +1,6 @@
 use crate::applications::ics20_fungible_token_transfer::error::Error;
 use crate::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::packet::PacketResult;
@@ -7,12 +8,12 @@ use crate::core::ics26_routing::context::LightClientContext;
 use crate::handler::HandlerOutput;
 use crate::prelude::*;
 
-pub(crate) fn send_transfer<Ctx>(
+pub(crate) fn send_transfer<Ctx, Crypto: CryptoOps>(
     ctx: &Ctx,
     msg: MsgTransfer,
 ) -> Result<HandlerOutput<PacketResult>, Error>
 where
-    Ctx: LightClientContext,
+    Ctx: LightClientContext<Crypto = Crypto>,
 {
     let source_channel_end = ctx
         .channel_end(&(msg.source_port.clone(), msg.source_channel))

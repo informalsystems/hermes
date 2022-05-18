@@ -1,4 +1,5 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
+use core::fmt::Debug;
 use tracing::debug;
 
 use crate::clients::crypto_ops::crypto::CryptoOps;
@@ -20,18 +21,18 @@ use crate::timestamp::Timestamp;
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Result {
+pub struct Result<Crypto> {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
-    pub consensus_state: Option<ConsensusUpdateResult>,
+    pub consensus_state: Option<ConsensusUpdateResult<Crypto>>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
 
-pub fn process<Crypto: CryptoOps>(
-    ctx: &dyn LightClientContext,
+pub fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
+    ctx: &dyn LightClientContext<Crypto = Crypto>,
     msg: MsgUpdateAnyClient,
-) -> HandlerResult<ClientResult, Error> {
+) -> HandlerResult<ClientResult<Crypto>, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgUpdateAnyClient {
@@ -131,6 +132,7 @@ mod tests {
 
     use crate::clients::ics11_beefy::client_state::ClientState as BeefyClientState;
     use crate::clients::ics11_beefy::header::BeefyHeader;
+    use crate::clients::ics11_beefy::header::ParachainHeader as BeefyParachainHeader;
     use crate::clients::ics11_beefy::polkadot_runtime as runtime;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
@@ -154,17 +156,16 @@ mod tests {
     use crate::test_utils::{get_dummy_account_id, Crypto};
     use crate::timestamp::Timestamp;
     use crate::Height;
-    use beefy_primitives::mmr::BeefyNextAuthoritySet;
-    use hex_literal::hex;
-    use sp_core::H256;
-    use crate::clients::ics11_beefy::header::ParachainHeader as BeefyParachainHeader;
     use beefy_client::primitives::{
         MmrLeaf, MmrUpdateProof, ParachainHeader, PartialMmrLeaf, SignatureWithAuthorityIndex,
         SignedCommitment,
     };
     use beefy_client::{MerkleHasher, NodesUtils};
+    use beefy_primitives::mmr::BeefyNextAuthoritySet;
     use codec::{Decode, Encode};
+    use hex_literal::hex;
     use sp_core::keccak_256;
+    use sp_core::H256;
     use sp_runtime::traits::{BlakeTwo256, Convert};
     use std::collections::BTreeMap;
     use subxt::rpc::ClientT;

@@ -9,6 +9,7 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
+use crate::test_utils::Crypto;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
@@ -79,7 +80,7 @@ impl Header for MockHeader {
     }
 }
 
-impl From<MockHeader> for AnyConsensusState {
+impl From<MockHeader> for AnyConsensusState<Crypto> {
     fn from(h: MockHeader) -> Self {
         AnyConsensusState::Mock(MockConsensusState::new(h))
     }

@@ -1,8 +1,10 @@
 use crate::prelude::*;
 
 use core::convert::Infallible;
+use core::fmt::Debug;
 use core::marker::{Send, Sync};
 
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use serde::Serialize;
@@ -28,8 +30,9 @@ pub const BEEFY_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.lightclients.beefy.v1.Con
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-pub trait ConsensusState: Clone + core::fmt::Debug + Send + Sync {
+pub trait ConsensusState: Clone + Send + Sync {
     type Error;
+    type Crypto: CryptoOps;
 
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
@@ -38,19 +41,19 @@ pub trait ConsensusState: Clone + core::fmt::Debug + Send + Sync {
     fn root(&self) -> &CommitmentRoot;
 
     /// Wrap into an `AnyConsensusState`
-    fn wrap_any(self) -> AnyConsensusState;
+    fn wrap_any(self) -> AnyConsensusState<Self::Crypto>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
-pub enum AnyConsensusState {
-    Tendermint(consensus_state::ConsensusState),
-    Beefy(beefy_consensus_state::ConsensusState),
+pub enum AnyConsensusState<Crypto> {
+    Tendermint(consensus_state::ConsensusState<Crypto>),
+    Beefy(beefy_consensus_state::ConsensusState<Crypto>),
     #[cfg(any(test, feature = "mocks"))]
-    Mock(MockConsensusState),
+    Mock(MockConsensusState<Crypto>),
 }
 
-impl AnyConsensusState {
+impl<Crypto> AnyConsensusState<Crypto> {
     pub fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(cs_state) => cs_state.timestamp.into(),
@@ -70,9 +73,9 @@ impl AnyConsensusState {
     }
 }
 
-impl Protobuf<Any> for AnyConsensusState {}
+impl<Crypto: Clone> Protobuf<Any> for AnyConsensusState<Crypto> {}
 
-impl TryFrom<Any> for AnyConsensusState {
+impl<Crypto: Clone> TryFrom<Any> for AnyConsensusState<Crypto> {
     type Error = Error;
 
     fn try_from(value: Any) -> Result<Self, Self::Error> {
@@ -100,8 +103,8 @@ impl TryFrom<Any> for AnyConsensusState {
     }
 }
 
-impl From<AnyConsensusState> for Any {
-    fn from(value: AnyConsensusState) -> Self {
+impl<Crypto: Clone> From<AnyConsensusState<Crypto>> for Any {
+    fn from(value: AnyConsensusState<Crypto>) -> Self {
         match value {
             AnyConsensusState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
@@ -128,14 +131,14 @@ impl From<AnyConsensusState> for Any {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct AnyConsensusStateWithHeight {
+pub struct AnyConsensusStateWithHeight<Crypto> {
     pub height: Height,
-    pub consensus_state: AnyConsensusState,
+    pub consensus_state: AnyConsensusState<Crypto>,
 }
 
-impl Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {}
+impl<Crypto: Clone> Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight<Crypto> {}
 
-impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
+impl<Crypto: Clone> TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight<Crypto> {
     type Error = Error;
 
     fn try_from(value: ConsensusStateWithHeight) -> Result<Self, Self::Error> {
@@ -152,8 +155,8 @@ impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
     }
 }
 
-impl From<AnyConsensusStateWithHeight> for ConsensusStateWithHeight {
-    fn from(value: AnyConsensusStateWithHeight) -> Self {
+impl<Crypto: Clone> From<AnyConsensusStateWithHeight<Crypto>> for ConsensusStateWithHeight {
+    fn from(value: AnyConsensusStateWithHeight<Crypto>) -> Self {
         ConsensusStateWithHeight {
             height: Some(value.height.into()),
             consensus_state: Some(value.consensus_state.into()),
@@ -161,7 +164,8 @@ impl From<AnyConsensusStateWithHeight> for ConsensusStateWithHeight {
     }
 }
 
-impl ConsensusState for AnyConsensusState {
+impl<Crypto: CryptoOps + Debug + Send + Sync> ConsensusState for AnyConsensusState<Crypto> {
+    type Crypto = Crypto;
     type Error = Infallible;
 
     fn client_type(&self) -> ClientType {
@@ -177,7 +181,7 @@ impl ConsensusState for AnyConsensusState {
         }
     }
 
-    fn wrap_any(self) -> AnyConsensusState {
+    fn wrap_any(self) -> AnyConsensusState<Self::Crypto> {
         self
     }
 }

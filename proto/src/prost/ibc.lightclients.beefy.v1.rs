@@ -146,8 +146,8 @@ pub struct ParachainHeader {
     pub heads_total_count: u32,
     /// trie merkle proof of inclusion in header.extrinsic_root
     /// this already encodes the actual extrinsic
-    #[prost(bytes = "vec", repeated, tag = "7")]
-    pub extrinsic_proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+    #[prost(bytes = "vec", tag = "7")]
+    pub extrinsic_proof: ::prost::alloc::vec::Vec<u8>,
 }
 /// Partial data for MmrLeaf
 #[derive(Clone, PartialEq, ::prost::Message)]

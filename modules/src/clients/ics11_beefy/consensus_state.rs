@@ -1,11 +1,13 @@
 use crate::prelude::*;
 
 use core::convert::Infallible;
+use core::fmt::Debug;
 use serde::Serialize;
 use tendermint::time::Time;
 use tendermint_proto::google::protobuf as tpb;
 use tendermint_proto::Protobuf;
 
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use ibc_proto::ibc::lightclients::beefy::v1::ConsensusState as RawConsensusState;
 
 use crate::clients::ics11_beefy::error::Error;
@@ -17,22 +19,27 @@ use crate::core::ics23_commitment::commitment::CommitmentRoot;
 // This is a constant that comes from pallet-ibc
 pub const IBC_CONSENSUS_ID: [u8; 4] = *b"/IBC";
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct ConsensusState {
+pub struct ConsensusState<Crypto> {
     pub timestamp: Time,
     pub root: CommitmentRoot,
+    _phantom: core::marker::PhantomData<Crypto>,
 }
 
-impl ConsensusState {
-    pub fn new(root: Vec<u8>, timestamp: Time, parachain_header: ParachainHeader) -> Self {
+impl<Crypto> ConsensusState<Crypto> {
+    pub fn new(root: Vec<u8>, timestamp: Time) -> Self {
         Self {
             timestamp,
             root: root.into(),
+            _phantom: Default::default(),
         }
     }
 }
 
-impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusState {
+impl<Crypto: CryptoOps + Debug + Send + Sync>
+    crate::core::ics02_client::client_consensus::ConsensusState for ConsensusState<Crypto>
+{
     type Error = Infallible;
+    type Crypto = Crypto;
 
     fn client_type(&self) -> ClientType {
         ClientType::Beefy
@@ -42,14 +49,14 @@ impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusSt
         &self.root
     }
 
-    fn wrap_any(self) -> AnyConsensusState {
+    fn wrap_any(self) -> AnyConsensusState<Crypto> {
         AnyConsensusState::Beefy(self)
     }
 }
 
-impl Protobuf<RawConsensusState> for ConsensusState {}
+impl<Crypto: Clone> Protobuf<RawConsensusState> for ConsensusState<Crypto> {}
 
-impl TryFrom<RawConsensusState> for ConsensusState {
+impl<Crypto> TryFrom<RawConsensusState> for ConsensusState<Crypto> {
     type Error = Error;
 
     fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
@@ -112,12 +119,13 @@ impl TryFrom<RawConsensusState> for ConsensusState {
         Ok(Self {
             root: raw.root.into(),
             timestamp,
+            _phantom: Default::default(),
         })
     }
 }
 
-impl From<ConsensusState> for RawConsensusState {
-    fn from(value: ConsensusState) -> Self {
+impl<Crypto> From<ConsensusState<Crypto>> for RawConsensusState {
+    fn from(value: ConsensusState<Crypto>) -> Self {
         let tpb::Timestamp { seconds, nanos } = value.timestamp.into();
         let timestamp = ibc_proto::google::protobuf::Timestamp { seconds, nanos };
 
@@ -128,7 +136,7 @@ impl From<ConsensusState> for RawConsensusState {
     }
 }
 
-impl TryFrom<ParachainHeader> for ConsensusState {
+impl<Crypto: CryptoOps> TryFrom<ParachainHeader> for ConsensusState<Crypto> {
     type Error = Error;
     #[cfg(not(test))]
     fn try_from(header: ParachainHeader) -> Result<Self, Self::Error> {
@@ -149,7 +157,7 @@ impl TryFrom<ParachainHeader> for ConsensusState {
                 ))?
         };
 
-        let timestamp = decode_timestamp_extrinsic(&header).unwrap_or_default();
+        let timestamp = decode_timestamp_extrinsic::<Crypto>(&header).unwrap_or_default();
         let duration = core::time::Duration::from_millis(timestamp);
         let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
             .unwrap_or_default()
@@ -161,11 +169,15 @@ impl TryFrom<ParachainHeader> for ConsensusState {
         Ok(Self {
             root: root.into(),
             timestamp,
+            _phantom: Default::default(),
         })
     }
 
     #[cfg(test)]
     fn try_from(header: ParachainHeader) -> Result<Self, Self::Error> {
+        use crate::clients::ics11_beefy::header::decode_timestamp_extrinsic;
+        use crate::timestamp::Timestamp;
+        use sp_runtime::SaturatedConversion;
         let root = {
             header
                 .parachain_header
@@ -178,12 +190,19 @@ impl TryFrom<ParachainHeader> for ConsensusState {
                 .unwrap_or_default()
         };
 
-        // Todo: this is a placeholder for now until decoding extrinsic from extrinsic proof is figured out
-        let timestamp = Time::now();
+        let timestamp = decode_timestamp_extrinsic::<Crypto>(&header).unwrap_or_default();
+        let duration = core::time::Duration::from_millis(timestamp);
+        let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
+            .unwrap_or_default()
+            .into_tm_time()
+            .ok_or(Error::invalid_header(
+                "cannot decode timestamp extrinsic".to_string(),
+            ))?;
 
         Ok(Self {
             root: root.into(),
             timestamp,
+            _phantom: Default::default(),
         })
     }
 }
@@ -192,12 +211,11 @@ impl TryFrom<ParachainHeader> for ConsensusState {
 pub mod test_util {
     use super::*;
 
-    pub fn get_dummy_beefy_consensus_state() -> AnyConsensusState {
+    pub fn get_dummy_beefy_consensus_state<Crypto>() -> AnyConsensusState<Crypto> {
         AnyConsensusState::Beefy(ConsensusState {
             timestamp: Time::now(),
             root: vec![0; 32].into(),
+            _phantom: Default::default(),
         })
     }
 }
-#[cfg(test)]
-mod tests {}

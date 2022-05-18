@@ -1,6 +1,7 @@
 use prost::Message;
 use tendermint_proto::Protobuf;
 
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::clients::ics11_beefy::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::header::AnyHeader;
@@ -26,7 +27,6 @@ use pallet_mmr_primitives::Proof;
 use sp_core::H256;
 use sp_runtime::generic::Header as SubstrateHeader;
 use sp_runtime::traits::{BlakeTwo256, SaturatedConversion};
-use sp_trie::{StorageProof, Trie};
 
 /// Beefy consensus header
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -48,6 +48,9 @@ impl crate::core::ics02_client::header::Header for BeefyHeader {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, codec::Encode, codec::Decode)]
+pub struct ExtrinsicProof(pub Vec<u8>, pub Vec<Vec<u8>>);
+
+#[derive(Clone, PartialEq, Eq, Debug, codec::Encode, codec::Decode)]
 pub struct ParachainHeader {
     pub parachain_header: SubstrateHeader<u32, BlakeTwo256>,
     /// Reconstructed mmr leaf
@@ -62,7 +65,7 @@ pub struct ParachainHeader {
     pub heads_total_count: u32,
     /// Trie merkle proof of inclusion of the set timestamp extrinsic in header.extrinsic_root
     /// this already encodes the actual extrinsic
-    pub extrinsic_proof: Vec<Vec<u8>>,
+    pub extrinsic_proof: ExtrinsicProof,
 }
 
 pub fn split_leaf_version(version: u8) -> (u8, u8) {
@@ -126,7 +129,8 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                         .collect::<Result<Vec<_>, Error>>()?,
                     heads_leaf_index: raw_para_header.heads_leaf_index,
                     heads_total_count: raw_para_header.heads_total_count,
-                    extrinsic_proof: raw_para_header.extrinsic_proof,
+                    extrinsic_proof: Decode::decode(&mut &*raw_para_header.extrinsic_proof)
+                        .map_err(|_| Error::invalid_raw_header())?,
                 })
             })
             .collect::<Result<Vec<_>, Error>>()?;
@@ -344,7 +348,7 @@ impl From<BeefyHeader> for RawBeefyHeader {
                             .collect(),
                         heads_leaf_index: para_header.heads_leaf_index,
                         heads_total_count: para_header.heads_total_count,
-                        extrinsic_proof: para_header.extrinsic_proof,
+                        extrinsic_proof: para_header.extrinsic_proof.encode(),
                     },
                 )
                 .collect(),
@@ -434,22 +438,19 @@ pub fn decode_header<B: Buf>(buf: B) -> Result<BeefyHeader, Error> {
 }
 
 /// Attempt to extract the timestamp extrinsic from the parachain header
-pub fn decode_timestamp_extrinsic(header: &ParachainHeader) -> Result<u64, Error> {
-    let proof = header.extrinsic_proof.clone();
+pub fn decode_timestamp_extrinsic<Crypto: CryptoOps>(
+    header: &ParachainHeader,
+) -> Result<u64, Error> {
+    let proof = &*header.extrinsic_proof.1;
+    let ext = &*header.extrinsic_proof.0;
     let extrinsic_root = header.parachain_header.extrinsics_root;
-    let db = StorageProof::new(proof).into_memory_db::<BlakeTwo256>();
-    let trie = sp_trie::TrieDB::<sp_trie::LayoutV0<BlakeTwo256>>::new(&db, &extrinsic_root)
-        .map_err(|_| Error::timestamp_extrinsic())?;
-    // Timestamp extrinsic should be the first inherent and hence the first extrinsic
-    // https://github.com/paritytech/substrate/blob/d602397a0bbb24b5d627795b797259a44a5e29e9/primitives/trie/src/lib.rs#L99-L101
+
     let key = codec::Encode::encode(&Compact(0u32));
-    let ext_bytes = trie
-        .get(&key)
-        .map_err(|e| Error::timestamp_extrinsic())?
-        .ok_or_else(Error::timestamp_extrinsic)?;
+    Crypto::verify_membership_trie_proof(&extrinsic_root, proof, &*key, ext)
+        .map_err(|_| Error::timestamp_extrinsic())?;
     // Decoding from the [2..] because the timestamp inmherent has two extra bytes before the call that represents the
     // call length and the extrinsic version.
     let (_, _, timestamp): (u8, u8, Compact<u64>) =
-        codec::Decode::decode(&mut &ext_bytes[2..]).map_err(|_| Error::timestamp_extrinsic())?;
+        codec::Decode::decode(&mut &ext[2..]).map_err(|_| Error::timestamp_extrinsic())?;
     Ok(timestamp.into())
 }

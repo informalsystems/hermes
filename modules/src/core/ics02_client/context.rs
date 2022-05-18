@@ -2,6 +2,7 @@
 //! that any host chain must implement to be able to process any `ClientMsg`. See
 //! "ADR 003: IBC protocol implementation" for more details.
 
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::ConsensusUpdateResult;
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -11,10 +12,10 @@ use crate::core::ics02_client::handler::ClientResult::{self, Create, Update, Upg
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use alloc::boxed::Box;
 
 /// Defines the read-only part of ICS2 (client functions) context.
 pub trait ClientReader {
+    type Crypto: CryptoOps;
     fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Error>;
     fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error>;
 
@@ -26,7 +27,7 @@ pub trait ClientReader {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<AnyConsensusState, Error>;
+    ) -> Result<AnyConsensusState<Self::Crypto>, Error>;
 
     /// Similar to `consensus_state`, attempt to retrieve the consensus state,
     /// but return `None` if no state exists at the given height.
@@ -34,7 +35,7 @@ pub trait ClientReader {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error> {
+    ) -> Result<Option<AnyConsensusState<Self::Crypto>>, Error> {
         match self.consensus_state(client_id, height) {
             Ok(cs) => Ok(Some(cs)),
             Err(e) => match e.detail() {
@@ -49,16 +50,14 @@ pub trait ClientReader {
         &self,
         client_id: &ClientId,
         height: Height,
-        filter_fn: Option<Box<dyn Fn(Height) -> bool>>,
-    ) -> Result<Option<AnyConsensusState>, Error>;
+    ) -> Result<Option<AnyConsensusState<Self::Crypto>>, Error>;
 
     /// Search for the highest consensus state lower than `height`.
     fn prev_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
-        filter_fn: Option<Box<dyn Fn(Height) -> bool>>,
-    ) -> Result<Option<AnyConsensusState>, Error>;
+    ) -> Result<Option<AnyConsensusState<Self::Crypto>>, Error>;
 
     /// Returns the current height of the local chain.
     fn host_height(&self) -> Height;
@@ -72,10 +71,13 @@ pub trait ClientReader {
     }
 
     /// Returns the `ConsensusState` of the host (local) chain at a specific height.
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    fn host_consensus_state(
+        &self,
+        height: Height,
+    ) -> Result<AnyConsensusState<Self::Crypto>, Error>;
 
     /// Returns the pending `ConsensusState` of the host (local) chain.
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Error>;
+    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState<Self::Crypto>, Error>;
 
     /// Returns a natural number, counting how many clients have been created thus far.
     /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.
@@ -84,7 +86,12 @@ pub trait ClientReader {
 
 /// Defines the write-only part of ICS2 (client functions) context.
 pub trait ClientKeeper {
-    fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
+    type Crypto: CryptoOps;
+
+    fn store_client_result(
+        &mut self,
+        handler_res: ClientResult<Self::Crypto>,
+    ) -> Result<(), Error> {
         match handler_res {
             Create(res) => {
                 let client_id = res.client_id.clone();
@@ -197,7 +204,7 @@ pub trait ClientKeeper {
         &mut self,
         client_id: ClientId,
         height: Height,
-        consensus_state: AnyConsensusState,
+        consensus_state: AnyConsensusState<Self::Crypto>,
     ) -> Result<(), Error>;
 
     /// Called upon client creation.

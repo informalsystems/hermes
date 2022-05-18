@@ -12,9 +12,10 @@ use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
+use core::fmt::Debug;
 
-pub(crate) fn process<Crypto: CryptoOps>(
-    ctx: &dyn LightClientContext,
+pub(crate) fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
+    ctx: &dyn LightClientContext<Crypto = Crypto>,
     msg: &MsgChannelCloseConfirm,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();

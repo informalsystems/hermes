@@ -1,8 +1,10 @@
 use crate::prelude::*;
+use crate::test_utils::Crypto;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
 
 use core::convert::Infallible;
+use core::fmt::Debug;
 use core::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -32,7 +34,7 @@ pub struct MockClientRecord {
     pub client_state: Option<AnyClientState>,
 
     /// Mapping of heights to consensus states for this client.
-    pub consensus_states: HashMap<Height, AnyConsensusState>,
+    pub consensus_states: HashMap<Height, AnyConsensusState<Crypto>>,
 }
 
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
@@ -119,23 +121,25 @@ impl ClientState for MockClientState {
     }
 }
 
-impl From<MockConsensusState> for MockClientState {
-    fn from(cs: MockConsensusState) -> Self {
+impl<Crypto> From<MockConsensusState<Crypto>> for MockClientState {
+    fn from(cs: MockConsensusState<Crypto>) -> Self {
         Self::new(cs.header)
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct MockConsensusState {
+pub struct MockConsensusState<Crypto> {
     pub header: MockHeader,
     pub root: CommitmentRoot,
+    _phantom: core::marker::PhantomData<Crypto>,
 }
 
-impl MockConsensusState {
+impl<Crypto> MockConsensusState<Crypto> {
     pub fn new(header: MockHeader) -> Self {
         MockConsensusState {
             header,
             root: CommitmentRoot::from(vec![0]),
+            _phantom: Default::default(),
         }
     }
 
@@ -144,9 +148,9 @@ impl MockConsensusState {
     }
 }
 
-impl Protobuf<RawMockConsensusState> for MockConsensusState {}
+impl<Crypto> Protobuf<RawMockConsensusState> for MockConsensusState<Crypto> {}
 
-impl TryFrom<RawMockConsensusState> for MockConsensusState {
+impl<Crypto> TryFrom<RawMockConsensusState> for MockConsensusState<Crypto> {
     type Error = Error;
 
     fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
@@ -155,12 +159,13 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
         Ok(Self {
             header: MockHeader::try_from(raw_header)?,
             root: CommitmentRoot::from(vec![0]),
+            _phantom: Default::default(),
         })
     }
 }
 
-impl From<MockConsensusState> for RawMockConsensusState {
-    fn from(value: MockConsensusState) -> Self {
+impl<Crypto> From<MockConsensusState<Crypto>> for RawMockConsensusState {
+    fn from(value: MockConsensusState<Crypto>) -> Self {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.header.height().into()),
@@ -170,13 +175,13 @@ impl From<MockConsensusState> for RawMockConsensusState {
     }
 }
 
-impl From<MockConsensusState> for AnyConsensusState {
-    fn from(mcs: MockConsensusState) -> Self {
+impl<Crypto> From<MockConsensusState<Crypto>> for AnyConsensusState<Crypto> {
+    fn from(mcs: MockConsensusState<Crypto>) -> Self {
         Self::Mock(mcs)
     }
 }
 
-impl ConsensusState for MockConsensusState {
+impl<Crypto: Debug + Clone> ConsensusState for MockConsensusState<Crypto> {
     type Error = Infallible;
 
     fn client_type(&self) -> ClientType {
@@ -187,7 +192,7 @@ impl ConsensusState for MockConsensusState {
         &self.root
     }
 
-    fn wrap_any(self) -> AnyConsensusState {
+    fn wrap_any(self) -> AnyConsensusState<Crypto> {
         AnyConsensusState::Mock(self)
     }
 }

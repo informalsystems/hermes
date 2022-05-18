@@ -1,3 +1,4 @@
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics02_client::msgs::ClientMsg;
@@ -7,13 +8,14 @@ use crate::relayer::ics18_relayer::error::Error;
 
 /// Builds a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`
 /// context, assuming that the latest header on the source context is `src_header`.
-pub fn build_client_update_datagram<Ctx>(
+pub fn build_client_update_datagram<Ctx, Crypto>(
     dest: &Ctx,
     client_id: &ClientId,
     src_header: AnyHeader,
-) -> Result<ClientMsg, Error>
+) -> Result<ClientMsg<Crypto>, Error>
 where
     Ctx: Ics18Context,
+    Crypto: CryptoOps,
 {
     // Check if client for ibc0 on ibc1 has been updated to latest height:
     // - query client state on destination chain
@@ -58,6 +60,7 @@ mod tests {
     use crate::prelude::*;
     use crate::relayer::ics18_relayer::context::Ics18Context;
     use crate::relayer::ics18_relayer::utils::build_client_update_datagram;
+    use crate::test_utils::Crypto;
     use crate::Height;
     use test_log::test;
     use tracing::debug;
@@ -171,8 +174,11 @@ mod tests {
                 ClientType::Tendermint
             );
 
-            let client_msg_a_res =
-                build_client_update_datagram(&ctx_a, &client_on_a_for_b, b_latest_header);
+            let client_msg_a_res = build_client_update_datagram::<_, Crypto>(
+                &ctx_a,
+                &client_on_a_for_b,
+                b_latest_header,
+            );
 
             assert!(
                 client_msg_a_res.is_ok(),

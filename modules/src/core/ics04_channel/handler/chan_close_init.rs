@@ -1,4 +1,5 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelCloseInit`.
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::error::Error;
@@ -9,8 +10,8 @@ use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 
-pub(crate) fn process(
-    ctx: &dyn LightClientContext,
+pub(crate) fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext<Crypto = Crypto>,
     msg: &MsgChannelCloseInit,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();

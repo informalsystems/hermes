@@ -6,6 +6,7 @@ use crate::core::ics03_connection::msgs::ConnectionMsg;
 use crate::core::ics24_host::identifier::ConnectionId;
 use crate::core::ics26_routing::context::LightClientContext;
 use crate::handler::HandlerOutput;
+use core::fmt::Debug;
 
 pub mod conn_open_ack;
 pub mod conn_open_confirm;
@@ -46,8 +47,8 @@ pub fn dispatch<Ctx, Crypto>(
     msg: ConnectionMsg,
 ) -> Result<HandlerOutput<ConnectionResult>, Error>
 where
-    Ctx: LightClientContext,
-    Crypto: CryptoOps,
+    Ctx: LightClientContext<Crypto = Crypto>,
+    Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq,
 {
     match msg {
         ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),
