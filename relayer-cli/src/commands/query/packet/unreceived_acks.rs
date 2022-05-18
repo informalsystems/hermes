@@ -1,6 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
 use ibc_relayer::chain::handle::BaseChainHandle;
@@ -30,7 +31,7 @@ pub struct QueryUnreceivedAcknowledgementCmd {
 }
 
 impl QueryUnreceivedAcknowledgementCmd {
-    fn execute(&self) -> Result<Vec<u64>, Error> {
+    fn execute(&self) -> Result<Vec<Sequence>, Error> {
         let config = app_config();
         debug!("Options: {:?}", self);
 

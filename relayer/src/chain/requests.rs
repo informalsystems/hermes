@@ -1,3 +1,4 @@
+use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
@@ -219,7 +220,7 @@ impl From<QueryPacketCommitmentsRequest> for RawQueryPacketCommitmentsRequest {
 pub struct QueryUnreceivedPacketsRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub packet_commitment_sequences: Vec<u64>,
+    pub packet_commitment_sequences: Vec<Sequence>,
 }
 
 impl From<QueryUnreceivedPacketsRequest> for RawQueryUnreceivedPacketsRequest {
@@ -227,7 +228,11 @@ impl From<QueryUnreceivedPacketsRequest> for RawQueryUnreceivedPacketsRequest {
         RawQueryUnreceivedPacketsRequest {
             port_id: request.port_id.to_string(),
             channel_id: request.channel_id.to_string(),
-            packet_commitment_sequences: request.packet_commitment_sequences,
+            packet_commitment_sequences: request
+                .packet_commitment_sequences
+                .into_iter()
+                .map(|seq| seq.into())
+                .collect(),
         }
     }
 }
@@ -237,7 +242,7 @@ pub struct QueryPacketAcknowledgementsRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub pagination: Option<PageRequest>,
-    pub packet_commitment_sequences: Vec<u64>,
+    pub packet_commitment_sequences: Vec<Sequence>,
 }
 
 impl From<QueryPacketAcknowledgementsRequest> for RawQueryPacketAcknowledgementsRequest {
@@ -246,7 +251,11 @@ impl From<QueryPacketAcknowledgementsRequest> for RawQueryPacketAcknowledgements
             port_id: request.port_id.to_string(),
             channel_id: request.channel_id.to_string(),
             pagination: request.pagination.map(|pagination| pagination.into()),
-            packet_commitment_sequences: request.packet_commitment_sequences,
+            packet_commitment_sequences: request
+                .packet_commitment_sequences
+                .into_iter()
+                .map(|seq| seq.into())
+                .collect(),
         }
     }
 }
@@ -255,7 +264,7 @@ impl From<QueryPacketAcknowledgementsRequest> for RawQueryPacketAcknowledgements
 pub struct QueryUnreceivedAcksRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub packet_ack_sequences: Vec<u64>,
+    pub packet_ack_sequences: Vec<Sequence>,
 }
 
 impl From<QueryUnreceivedAcksRequest> for RawQueryUnreceivedAcksRequest {
@@ -263,7 +272,11 @@ impl From<QueryUnreceivedAcksRequest> for RawQueryUnreceivedAcksRequest {
         RawQueryUnreceivedAcksRequest {
             port_id: request.port_id.to_string(),
             channel_id: request.channel_id.to_string(),
-            packet_ack_sequences: request.packet_ack_sequences,
+            packet_ack_sequences: request
+                .packet_ack_sequences
+                .into_iter()
+                .map(|seq| seq.into())
+                .collect(),
         }
     }
 }

@@ -811,7 +811,7 @@ where
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-        reply_to: ReplyTo<(Vec<u64>, Height)>,
+        reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_commitments(request);
         reply_to.send(result).map_err(Error::send)
@@ -820,7 +820,7 @@ where
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-        reply_to: ReplyTo<Vec<u64>>,
+        reply_to: ReplyTo<Vec<Sequence>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
         reply_to.send(result).map_err(Error::send)
@@ -829,7 +829,7 @@ where
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-        reply_to: ReplyTo<(Vec<u64>, Height)>,
+        reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_acknowledgements(request);
         reply_to.send(result).map_err(Error::send)
@@ -838,7 +838,7 @@ where
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
-        reply_to: ReplyTo<Vec<u64>>,
+        reply_to: ReplyTo<Vec<Sequence>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_acknowledgements(request);
         reply_to.send(result).map_err(Error::send)

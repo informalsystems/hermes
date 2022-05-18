@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use ibc::core::ics04_channel::packet::Sequence;
 use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
@@ -328,7 +329,7 @@ pub fn commitments_on_chain(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     // get the packet commitments on the counterparty/ source chain
     let (mut commit_sequences, response_height) = chain
         .query_packet_commitments(QueryPacketCommitmentsRequest {
@@ -349,8 +350,8 @@ pub fn unreceived_packets_sequences(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-    commitments_on_counterparty: Vec<u64>,
-) -> Result<Vec<u64>, Error> {
+    commitments_on_counterparty: Vec<Sequence>,
+) -> Result<Vec<Sequence>, Error> {
     if commitments_on_counterparty.is_empty() {
         return Ok(vec![]);
     }
@@ -370,8 +371,8 @@ pub fn packet_acknowledgements(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-    commit_sequences: Vec<u64>,
-) -> Result<(Vec<u64>, Height), Error> {
+    commit_sequences: Vec<Sequence>,
+) -> Result<(Vec<Sequence>, Height), Error> {
     let commit_set = commit_sequences.iter().cloned().collect::<HashSet<_>>();
 
     // Get the packet acknowledgments on counterparty/source chain
@@ -397,8 +398,8 @@ pub fn unreceived_acknowledgements_sequences(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-    acks_on_counterparty: Vec<u64>,
-) -> Result<Vec<u64>, Error> {
+    acks_on_counterparty: Vec<Sequence>,
+) -> Result<Vec<Sequence>, Error> {
     if acks_on_counterparty.is_empty() {
         return Ok(vec![]);
     }
@@ -440,7 +441,7 @@ pub fn unreceived_packets(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
     path: &PathIdentifiers,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     let (commit_sequences, h) = commitments_on_chain(
         counterparty_chain,
         &path.counterparty_port_id,
@@ -457,7 +458,7 @@ pub fn acknowledgements_on_chain(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
     channel: &IdentifiedChannelEnd,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     let counterparty = channel.channel_end.counterparty();
     let counterparty_channel_id = counterparty
         .channel_id
@@ -513,7 +514,7 @@ pub fn unreceived_acknowledgements(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
     path: &PathIdentifiers,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     let (commitments_on_src, _) = commitments_on_chain(chain, &path.port_id, &path.channel_id)?;
 
     let (acks_on_counterparty, src_response_height) = packet_acknowledgements(
@@ -538,10 +539,10 @@ pub fn unreceived_acknowledgements(
 #[derive(Debug, Serialize)]
 pub struct PendingPackets {
     /// Not yet received on the counterparty chain.
-    pub unreceived_packets: Vec<u64>,
+    pub unreceived_packets: Vec<Sequence>,
     /// Received on the counterparty chain,
     /// but the acknowledgement is not yet received on the local chain.
-    pub unreceived_acks: Vec<u64>,
+    pub unreceived_acks: Vec<Sequence>,
 }
 
 pub fn pending_packet_summary(

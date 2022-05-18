@@ -253,28 +253,28 @@ impl ChainEndpoint for MockChain {
     fn query_packet_commitments(
         &self,
         _request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<u64>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         unimplemented!()
     }
 
     fn query_unreceived_packets(
         &self,
         _request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         unimplemented!()
     }
 
     fn query_packet_acknowledgements(
         &self,
         _request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<u64>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         unimplemented!()
     }
 
     fn query_unreceived_acknowledgements(
         &self,
         _request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         unimplemented!()
     }
 

@@ -306,22 +306,22 @@ pub enum ChainRequest {
 
     QueryPacketCommitments {
         request: QueryPacketCommitmentsRequest,
-        reply_to: ReplyTo<(Vec<u64>, Height)>,
+        reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     },
 
     QueryUnreceivedPackets {
         request: QueryUnreceivedPacketsRequest,
-        reply_to: ReplyTo<Vec<u64>>,
+        reply_to: ReplyTo<Vec<Sequence>>,
     },
 
     QueryPacketAcknowledgement {
         request: QueryPacketAcknowledgementsRequest,
-        reply_to: ReplyTo<(Vec<u64>, Height)>,
+        reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     },
 
     QueryUnreceivedAcknowledgement {
         request: QueryUnreceivedAcksRequest,
-        reply_to: ReplyTo<Vec<u64>>,
+        reply_to: ReplyTo<Vec<Sequence>>,
     },
 
     QueryPacketEventDataFromTxs {
@@ -531,22 +531,22 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<u64>, Height), Error>;
+    ) -> Result<(Vec<Sequence>, Height), Error>;
 
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error>;
+    ) -> Result<Vec<Sequence>, Error>;
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<u64>, Height), Error>;
+    ) -> Result<(Vec<Sequence>, Height), Error>;
 
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error>;
+    ) -> Result<Vec<Sequence>, Error>;
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 

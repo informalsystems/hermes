@@ -235,28 +235,28 @@ pub trait ChainEndpoint: Sized {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<u64>, ICSHeight), Error>;
+    ) -> Result<(Vec<Sequence>, ICSHeight), Error>;
 
     /// Queries all the unreceived IBC packets associated with a channel and packet commit sequences.
     /// Returns the corresponding packet sequence numbers.
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error>;
+    ) -> Result<Vec<Sequence>, Error>;
 
     /// Queries all the packet acknowledgements associated with a channel.
     /// Returns the corresponding packet sequence numbers.
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<u64>, ICSHeight), Error>;
+    ) -> Result<(Vec<Sequence>, ICSHeight), Error>;
 
     /// Queries all the unreceived packet acknowledgements associated with a
     /// Returns the corresponding packet sequence numbers.
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error>;
+    ) -> Result<Vec<Sequence>, Error>;
 
     fn query_next_sequence_receive(
         &self,

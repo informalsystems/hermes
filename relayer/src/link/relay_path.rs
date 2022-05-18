@@ -761,7 +761,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
                 port_id: self.dst_port_id().clone(),
                 channel_id: *self.dst_channel_id(),
-                packet_commitment_sequences: vec![packet.sequence.into()],
+                packet_commitment_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
 
@@ -800,7 +800,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
                 port_id: self.dst_port_id().clone(),
                 channel_id: *self.dst_channel_id(),
-                packet_ack_sequences: vec![packet.sequence.into()],
+                packet_ack_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
 

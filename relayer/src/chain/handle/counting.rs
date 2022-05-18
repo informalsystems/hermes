@@ -404,7 +404,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<u64>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.inc_metric("query_packet_commitments");
         self.inner().query_packet_commitments(request)
     }
@@ -412,7 +412,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.inc_metric("query_unreceived_packets");
         self.inner().query_unreceived_packets(request)
     }
@@ -420,7 +420,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<u64>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.inc_metric("query_packet_acknowledgements");
         self.inner().query_packet_acknowledgements(request)
     }
@@ -428,7 +428,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.inc_metric("query_unreceived_acknowledgement");
         self.inner().query_unreceived_acknowledgement(request)
     }

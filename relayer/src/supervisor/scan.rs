@@ -8,7 +8,10 @@ use ibc::{
     core::{
         ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
         ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
-        ics04_channel::channel::{IdentifiedChannelEnd, State as ChannelState},
+        ics04_channel::{
+            channel::{IdentifiedChannelEnd, State as ChannelState},
+            packet::Sequence,
+        },
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
     Height,
@@ -221,7 +224,7 @@ impl ChannelScan {
         &self,
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
-    ) -> Option<Vec<u64>> {
+    ) -> Option<Vec<Sequence>> {
         self.counterparty.as_ref().map(|counterparty| {
             unreceived_packets(counterparty_chain, chain, &counterparty.into())
                 .map(|(seq, _)| seq)
@@ -233,7 +236,7 @@ impl ChannelScan {
         &self,
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
-    ) -> Option<Vec<u64>> {
+    ) -> Option<Vec<Sequence>> {
         self.counterparty.as_ref().map(|counterparty| {
             unreceived_acknowledgements(counterparty_chain, chain, &counterparty.into())
                 .map(|(sns, _)| sns)

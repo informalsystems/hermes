@@ -1074,7 +1074,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<u64>, ICSHeight), Error> {
+    ) -> Result<(Vec<Sequence>, ICSHeight), Error> {
         crate::time!("query_packet_commitments");
         crate::telemetry!(query, self.id(), "query_packet_commitments");
 
@@ -1093,10 +1093,10 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let mut commitment_sequences: Vec<u64> = response
+        let mut commitment_sequences: Vec<Sequence> = response
             .commitments
             .into_iter()
-            .map(|v| v.sequence)
+            .map(|v| v.sequence.into())
             .collect();
         commitment_sequences.sort_unstable();
 
@@ -1112,7 +1112,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         crate::time!("query_unreceived_packets");
         crate::telemetry!(query, self.id(), "query_unreceived_packets");
 
@@ -1132,14 +1132,18 @@ impl ChainEndpoint for CosmosSdkChain {
             .into_inner();
 
         response.sequences.sort_unstable();
-        Ok(response.sequences)
+        Ok(response
+            .sequences
+            .into_iter()
+            .map(|seq| seq.into())
+            .collect())
     }
 
     /// Queries the packet acknowledgment hashes associated with a channel.
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<u64>, ICSHeight), Error> {
+    ) -> Result<(Vec<Sequence>, ICSHeight), Error> {
         crate::time!("query_packet_acknowledgements");
         crate::telemetry!(query, self.id(), "query_packet_acknowledgements");
 
@@ -1161,7 +1165,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let acks_sequences = response
             .acknowledgements
             .into_iter()
-            .map(|v| v.sequence)
+            .map(|v| v.sequence.into())
             .collect();
 
         let height = response
@@ -1176,7 +1180,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         crate::time!("query_unreceived_acknowledgements");
         crate::telemetry!(query, self.id(), "query_unreceived_acknowledgements");
 
@@ -1196,7 +1200,11 @@ impl ChainEndpoint for CosmosSdkChain {
             .into_inner();
 
         response.sequences.sort_unstable();
-        Ok(response.sequences)
+        Ok(response
+            .sequences
+            .into_iter()
+            .map(|seq| seq.into())
+            .collect())
     }
 
     fn query_next_sequence_receive(

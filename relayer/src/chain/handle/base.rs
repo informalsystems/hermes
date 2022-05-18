@@ -400,28 +400,28 @@ impl ChainHandle for BaseChainHandle {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<u64>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketCommitments { request, reply_to })
     }
 
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.send(|reply_to| ChainRequest::QueryUnreceivedPackets { request, reply_to })
     }
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<u64>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })
     }
 
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
     }
 
