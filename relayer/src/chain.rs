@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
+use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -25,7 +26,6 @@ use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::PacketState;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 

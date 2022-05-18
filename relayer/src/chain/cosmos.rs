@@ -23,7 +23,6 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tracing::{error, span, warn, Level};
 
-use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
@@ -48,9 +47,12 @@ use ibc::query::QueryBlockRequest;
 use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
+use ibc::{
+    clients::ics07_tendermint::client_state::{AllowUpdate, ClientState},
+    core::ics23_commitment::merkle::MerkleProof,
+};
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::ibc::core::channel::v1::PacketState;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;

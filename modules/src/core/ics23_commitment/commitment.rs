@@ -7,6 +7,8 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use serde::{Deserialize, Serialize};
 use subtle_encoding::{Encoding, Hex};
 
+use super::merkle::MerkleProof;
+
 #[derive(Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
 pub struct CommitmentRoot {
@@ -85,6 +87,14 @@ impl TryFrom<RawMerkleProof> for CommitmentProofBytes {
         let mut buf = Vec::new();
         prost::Message::encode(&proof, &mut buf).unwrap();
         buf.try_into()
+    }
+}
+
+impl TryFrom<MerkleProof> for CommitmentProofBytes {
+    type Error = ProofError;
+
+    fn try_from(value: MerkleProof) -> Result<Self, Self::Error> {
+        Self::try_from(RawMerkleProof::from(value))
     }
 }
 

@@ -6,6 +6,7 @@ use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::query::QueryTxRequest;
 use ibc::{
     core::ics02_client::header::AnyHeader,
@@ -23,7 +24,6 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::PacketState;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use serde::{Serialize, Serializer};
 
 use crate::account::Balance;

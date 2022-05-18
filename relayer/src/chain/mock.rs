@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use core::ops::Add;
 use core::time::Duration;
+use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use crossbeam_channel as channel;
 use tendermint_testgen::light_block::TmLightBlock;
@@ -28,7 +29,6 @@ use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::PacketState;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;

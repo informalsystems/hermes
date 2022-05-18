@@ -21,7 +21,7 @@ use ibc::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
-        ics23_commitment::commitment::CommitmentPrefix,
+        ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
     events::IbcEvent,
@@ -31,7 +31,7 @@ use ibc::{
     Height,
 };
 
-use ibc_proto::ibc::core::{channel::v1::PacketState, commitment::v1::MerkleProof};
+use ibc_proto::ibc::core::channel::v1::PacketState;
 
 use crate::{
     account::Balance,
