@@ -330,7 +330,7 @@ pub fn commitments_on_chain(
     channel_id: &ChannelId,
 ) -> Result<(Vec<u64>, Height), Error> {
     // get the packet commitments on the counterparty/ source chain
-    let (commitments, response_height) = chain
+    let (mut commit_sequences, response_height) = chain
         .query_packet_commitments(QueryPacketCommitmentsRequest {
             port_id: port_id.clone(),
             channel_id: *channel_id,
@@ -338,8 +338,8 @@ pub fn commitments_on_chain(
         })
         .map_err(Error::relayer)?;
 
-    let mut commit_sequences: Vec<u64> = commitments.into_iter().map(|v| v.sequence).collect();
     commit_sequences.sort_unstable();
+
     Ok((commit_sequences, response_height))
 }
 
@@ -375,7 +375,7 @@ pub fn packet_acknowledgements(
     let commit_set = commit_sequences.iter().cloned().collect::<HashSet<_>>();
 
     // Get the packet acknowledgments on counterparty/source chain
-    let (acks, response_height) = chain
+    let (mut acked_sequences, response_height) = chain
         .query_packet_acknowledgements(QueryPacketAcknowledgementsRequest {
             port_id: port_id.clone(),
             channel_id: *channel_id,
@@ -384,7 +384,6 @@ pub fn packet_acknowledgements(
         })
         .map_err(Error::relayer)?;
 
-    let mut acked_sequences: Vec<u64> = acks.into_iter().map(|v| v.sequence).collect();
     acked_sequences.retain(|s| commit_set.contains(s));
     acked_sequences.sort_unstable();
 

@@ -23,7 +23,6 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::PacketState;
 use serde::{Serialize, Serializer};
 
 use crate::account::Balance;
@@ -404,7 +403,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<u64>, Height), Error> {
         self.inner().query_packet_commitments(request)
     }
 
@@ -418,7 +417,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<u64>, Height), Error> {
         self.inner().query_packet_acknowledgements(request)
     }
 

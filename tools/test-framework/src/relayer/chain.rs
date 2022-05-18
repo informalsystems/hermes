@@ -45,7 +45,6 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::PacketState;
 use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
@@ -342,7 +341,7 @@ where
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<u64>, Height), Error> {
         self.value().query_packet_commitments(request)
     }
 
@@ -356,7 +355,7 @@ where
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<u64>, Height), Error> {
         self.value().query_packet_acknowledgements(request)
     }
 

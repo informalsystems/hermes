@@ -25,7 +25,6 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::PacketState;
 
 use crate::{
     account::Balance,
@@ -401,7 +400,7 @@ impl ChainHandle for BaseChainHandle {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<u64>, Height), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketCommitments { request, reply_to })
     }
 
@@ -415,7 +414,7 @@ impl ChainHandle for BaseChainHandle {
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<u64>, Height), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })
     }
 

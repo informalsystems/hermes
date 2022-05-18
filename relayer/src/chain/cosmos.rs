@@ -52,7 +52,6 @@ use ibc::{
     core::ics23_commitment::merkle::MerkleProof,
 };
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
-use ibc_proto::ibc::core::channel::v1::PacketState;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
@@ -1075,7 +1074,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+    ) -> Result<(Vec<u64>, ICSHeight), Error> {
         crate::time!("query_packet_commitments");
         crate::telemetry!(query, self.id(), "query_packet_commitments");
 
@@ -1094,15 +1093,19 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let mut pc = response.commitments;
-        pc.sort_by_key(|ps| ps.sequence);
+        let mut commitment_sequences: Vec<u64> = response
+            .commitments
+            .into_iter()
+            .map(|v| v.sequence)
+            .collect();
+        commitment_sequences.sort_unstable();
 
         let height = response
             .height
             .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
             .into();
 
-        Ok((pc, height))
+        Ok((commitment_sequences, height))
     }
 
     /// Queries the unreceived packet sequences associated with a channel.
@@ -1136,7 +1139,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+    ) -> Result<(Vec<u64>, ICSHeight), Error> {
         crate::time!("query_packet_acknowledgements");
         crate::telemetry!(query, self.id(), "query_packet_acknowledgements");
 
@@ -1155,14 +1158,18 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let pc = response.acknowledgements;
+        let acks_sequences = response
+            .acknowledgements
+            .into_iter()
+            .map(|v| v.sequence)
+            .collect();
 
         let height = response
             .height
             .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
             .into();
 
-        Ok((pc, height))
+        Ok((acks_sequences, height))
     }
 
     /// Queries the unreceived acknowledgements sequences associated with a channel.

@@ -31,8 +31,6 @@ use ibc::{
     Height,
 };
 
-use ibc_proto::ibc::core::channel::v1::PacketState;
-
 use crate::{
     account::Balance,
     config::ChainConfig,
@@ -308,7 +306,7 @@ pub enum ChainRequest {
 
     QueryPacketCommitments {
         request: QueryPacketCommitmentsRequest,
-        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+        reply_to: ReplyTo<(Vec<u64>, Height)>,
     },
 
     QueryUnreceivedPackets {
@@ -318,7 +316,7 @@ pub enum ChainRequest {
 
     QueryPacketAcknowledgement {
         request: QueryPacketAcknowledgementsRequest,
-        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+        reply_to: ReplyTo<(Vec<u64>, Height)>,
     },
 
     QueryUnreceivedAcknowledgement {
@@ -533,7 +531,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error>;
+    ) -> Result<(Vec<u64>, Height), Error>;
 
     fn query_unreceived_packets(
         &self,
@@ -543,7 +541,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error>;
+    ) -> Result<(Vec<u64>, Height), Error>;
 
     fn query_unreceived_acknowledgement(
         &self,

@@ -31,7 +31,6 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::PacketState;
 
 use crate::{
     account::Balance,
@@ -812,7 +811,7 @@ where
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+        reply_to: ReplyTo<(Vec<u64>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_commitments(request);
         reply_to.send(result).map_err(Error::send)
@@ -830,7 +829,7 @@ where
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+        reply_to: ReplyTo<(Vec<u64>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_acknowledgements(request);
         reply_to.send(result).map_err(Error::send)

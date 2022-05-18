@@ -25,7 +25,6 @@ use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
-use ibc_proto::ibc::core::channel::v1::PacketState;
 use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
@@ -231,21 +230,29 @@ pub trait ChainEndpoint: Sized {
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error>;
 
+    /// Queries all the packet commitments hashes associated with a channel.
+    /// Returns the corresponding packet sequence numbers.
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
+    ) -> Result<(Vec<u64>, ICSHeight), Error>;
 
+    /// Queries all the unreceived IBC packets associated with a channel and packet commit sequences.
+    /// Returns the corresponding packet sequence numbers.
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error>;
 
+    /// Queries all the packet acknowledgements associated with a channel.
+    /// Returns the corresponding packet sequence numbers.
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
+    ) -> Result<(Vec<u64>, ICSHeight), Error>;
 
+    /// Queries all the unreceived packet acknowledgements associated with a
+    /// Returns the corresponding packet sequence numbers.
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,

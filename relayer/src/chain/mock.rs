@@ -28,7 +28,6 @@ use ibc::relayer::ics18_relayer::context::Ics18Context;
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::PacketState;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
@@ -254,7 +253,7 @@ impl ChainEndpoint for MockChain {
     fn query_packet_commitments(
         &self,
         _request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<u64>, Height), Error> {
         unimplemented!()
     }
 
@@ -268,7 +267,7 @@ impl ChainEndpoint for MockChain {
     fn query_packet_acknowledgements(
         &self,
         _request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<u64>, Height), Error> {
         unimplemented!()
     }
 
