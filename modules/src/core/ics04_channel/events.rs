@@ -8,10 +8,7 @@ use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::events::{
-    extract_attribute, maybe_extract_attribute, Error as EventError, IbcEvent, IbcEventType,
-    RawObject,
-};
+use crate::events::{Error as EventError, IbcEvent, IbcEventType};
 use crate::prelude::*;
 
 /// Channel event attribute keys
@@ -184,31 +181,6 @@ fn extract_packet_and_write_ack_from_tx(event: &AbciEvent) -> Result<(Packet, Ve
     }
 
     Ok((packet, write_ack))
-}
-
-fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attributes, EventError> {
-    Ok(Attributes {
-        height: object.height,
-        port_id: extract_attribute(object, &format!("{}.port_id", namespace))?
-            .parse()
-            .map_err(EventError::parse)?,
-        channel_id: maybe_extract_attribute(object, &format!("{}.channel_id", namespace))
-            .and_then(|v| v.parse().ok()),
-        connection_id: extract_attribute(object, &format!("{}.connection_id", namespace))?
-            .parse()
-            .map_err(EventError::parse)?,
-        counterparty_port_id: extract_attribute(
-            object,
-            &format!("{}.counterparty_port_id", namespace),
-        )?
-        .parse()
-        .map_err(EventError::parse)?,
-        counterparty_channel_id: maybe_extract_attribute(
-            object,
-            &format!("{}.counterparty_channel_id", namespace),
-        )
-        .and_then(|v| v.parse().ok()),
-    })
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -737,27 +709,6 @@ impl_from_ibc_to_abci_event!(
     CloseConfirm
 );
 
-macro_rules! impl_try_from_raw_obj_for_event {
-    ($($event:ty),+) => {
-        $(impl TryFrom<RawObject<'_>> for $event {
-            type Error = EventError;
-
-            fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-                extract_attributes(&obj, Self::event_type().as_str())?.try_into()
-            }
-        })+
-    };
-}
-
-impl_try_from_raw_obj_for_event!(
-    OpenInit,
-    OpenTry,
-    OpenAck,
-    OpenConfirm,
-    CloseInit,
-    CloseConfirm
-);
-
 #[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct SendPacket {
     pub height: Height,
@@ -1071,53 +1022,6 @@ impl core::fmt::Display for TimeoutOnClosePacket {
             "TimeoutOnClosePacket - h:{}, {}",
             self.height, self.packet
         )
-    }
-}
-
-macro_rules! impl_try_from_raw_obj_for_packet {
-    ($($packet:ty),+) => {
-        $(impl TryFrom<RawObject<'_>> for $packet {
-            type Error = EventError;
-
-            fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-                let height = obj.height;
-                let data_str: String = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
-
-                let mut packet = Packet::try_from(obj)?;
-                packet.data = Vec::from(data_str.as_str().as_bytes());
-
-                Ok(Self { height, packet })
-            }
-        })+
-    };
-}
-
-impl_try_from_raw_obj_for_packet!(
-    SendPacket,
-    ReceivePacket,
-    AcknowledgePacket,
-    TimeoutPacket,
-    TimeoutOnClosePacket
-);
-
-impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
-    type Error = EventError;
-
-    fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-        let height = obj.height;
-        let data_str: String =
-            extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
-        let ack = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_ACK_ATTRIBUTE_KEY))?
-            .into_bytes();
-
-        let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_str().as_bytes());
-
-        Ok(Self {
-            height,
-            packet,
-            ack,
-        })
     }
 }
 
