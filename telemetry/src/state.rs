@@ -1,14 +1,15 @@
 use core::fmt;
+use std::time::{Duration, Instant};
 
 use opentelemetry::{
     global,
-    metrics::{Counter, UpDownCounter},
+    metrics::{Counter, UpDownCounter, ValueRecorder},
     KeyValue,
 };
 use opentelemetry_prometheus::PrometheusExporter;
+use prometheus::proto::MetricFamily;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
-use prometheus::proto::MetricFamily;
 
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
@@ -16,6 +17,7 @@ pub enum WorkerType {
     Connection,
     Channel,
     Packet,
+    Wallet,
 }
 
 impl fmt::Display for WorkerType {
@@ -25,11 +27,11 @@ impl fmt::Display for WorkerType {
             Self::Connection => write!(f, "connection"),
             Self::Channel => write!(f, "channel"),
             Self::Packet => write!(f, "packet"),
+            Self::Wallet => write!(f, "wallet"),
         }
     }
 }
 
-#[derive(Debug)]
 pub struct TelemetryState {
     exporter: PrometheusExporter,
 
@@ -56,6 +58,32 @@ pub struct TelemetryState {
 
     /// Number of cache hits for queries emitted by the relayer, per chain and query type
     query_cache_hits: Counter<u64>,
+
+    /// Number of time the relayer had to reconnect to the WebSocket endpoint, per chain
+    ws_reconnect: Counter<u64>,
+
+    /// How many IBC events did Hermes receive via the WebSocket subscription, per chain
+    ws_events: Counter<u64>,
+
+    /// How many messages Hermes submitted to the chain, per chain
+    msg_num: Counter<u64>,
+
+    /// The balance in each wallet that Hermes is using, per wallet, denom and chain
+    wallet_balance: ValueRecorder<u64>,
+
+    /// Indicates the latency for all transactions submitted to a specific chain,
+    /// i.e. the difference between the moment when Hermes received a batch of events
+    /// until the corresponding transaction(s) were submitted. Milliseconds.
+    tx_latency_submitted: ValueRecorder<u64>,
+
+    /// Indicates the latency for all transactions submitted to a specific chain,
+    /// i.e. the difference between the moment when Hermes received a batch of events
+    /// until the corresponding transaction(s) were confirmed. Milliseconds.
+    tx_latency_confirmed: ValueRecorder<u64>,
+
+    /// Records the time at which we started processing an event batch.
+    /// Used for computing the `tx_latency` metric.
+    in_flight_events: moka::sync::Cache<String, Instant>,
 }
 
 impl TelemetryState {
@@ -107,6 +135,7 @@ impl TelemetryState {
         self.receive_packets.add(count, labels);
     }
 
+    /// Number of acknowledgment packets relayed, per channel
     pub fn ibc_acknowledgment_packets(
         &self,
         src_chain: &ChainId,
@@ -123,6 +152,7 @@ impl TelemetryState {
         self.acknowledgment_packets.add(count, labels);
     }
 
+    /// Number of timeout packets relayed, per channel
     pub fn ibc_timeout_packets(
         &self,
         src_chain: &ChainId,
@@ -139,6 +169,7 @@ impl TelemetryState {
         self.timeout_packets.add(count, labels);
     }
 
+    /// Number of queries emitted by the relayer, per chain and query type
     pub fn query(&self, chain_id: &ChainId, query_type: &'static str) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
@@ -148,6 +179,7 @@ impl TelemetryState {
         self.queries.add(1, labels);
     }
 
+    /// Number of cache hits for queries emitted by the relayer, per chain and query type
     pub fn query_cache_hit(&self, chain_id: &ChainId, query_type: &'static str) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
@@ -156,11 +188,121 @@ impl TelemetryState {
 
         self.query_cache_hits.add(1, labels);
     }
+
+    /// Number of time the relayer had to reconnect to the WebSocket endpoint, per chain
+    pub fn ws_reconnect(&self, chain_id: &ChainId) {
+        let labels = &[KeyValue::new("chain", chain_id.to_string())];
+
+        self.ws_reconnect.add(1, labels);
+    }
+
+    /// How many IBC events did Hermes receive via the WebSocket subscription, per chain
+    pub fn ws_events(&self, chain_id: &ChainId, count: u64) {
+        let labels = &[KeyValue::new("chain", chain_id.to_string())];
+
+        self.ws_events.add(count, labels);
+    }
+
+    /// How many messages Hermes submitted to the chain, per chain
+    pub fn msg_num(&self, chain_id: &ChainId, count: u64) {
+        let labels = &[KeyValue::new("chain", chain_id.to_string())];
+
+        self.msg_num.add(count, labels);
+    }
+
+    /// The balance in each wallet that Hermes is using, per account, denom and chain
+    pub fn wallet_balance(&self, chain_id: &ChainId, account: &str, amount: u64, denom: &str) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("account", account.to_string()),
+            KeyValue::new("denom", denom.to_string()),
+        ];
+
+        self.wallet_balance.record(amount, labels);
+    }
+
+    pub fn received_event_batch(&self, tracking_id: impl ToString) {
+        self.in_flight_events
+            .insert(tracking_id.to_string(), Instant::now());
+    }
+
+    pub fn tx_submitted(
+        &self,
+
+        tracking_id: impl ToString,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let tracking_id = tracking_id.to_string();
+
+        if let Some(start) = self.in_flight_events.get(&tracking_id) {
+            let latency = start.elapsed().as_millis() as u64;
+
+            let labels = &[
+                // KeyValue::new("tracking_id", tracking_id),
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+                KeyValue::new("channel", channel_id.to_string()),
+                KeyValue::new("port", port_id.to_string()),
+            ];
+
+            self.tx_latency_submitted.record(latency, labels);
+        }
+    }
+
+    pub fn tx_confirmed(
+        &self,
+        tracking_id: impl ToString,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let tracking_id = tracking_id.to_string();
+
+        if let Some(start) = self.in_flight_events.get(&tracking_id) {
+            let latency = start.elapsed().as_millis() as u64;
+
+            let labels = &[
+                // KeyValue::new("tracking_id", tracking_id),
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+                KeyValue::new("channel", channel_id.to_string()),
+                KeyValue::new("port", port_id.to_string()),
+            ];
+
+            self.tx_latency_confirmed.record(latency, labels);
+        }
+    }
+}
+
+use std::sync::Arc;
+
+use opentelemetry::metrics::Descriptor;
+use opentelemetry::sdk::export::metrics::{Aggregator, AggregatorSelector};
+use opentelemetry::sdk::metrics::aggregators::{histogram, last_value, sum};
+
+#[derive(Debug)]
+struct CustomAggregatorSelector;
+impl AggregatorSelector for CustomAggregatorSelector {
+    fn aggregator_for(&self, descriptor: &Descriptor) -> Option<Arc<dyn Aggregator + Send + Sync>> {
+        match descriptor.name() {
+            "wallet_balance" => Some(Arc::new(last_value())),
+            "tx_latency_submitted" => Some(Arc::new(histogram(descriptor, &[0.5, 0.9, 0.99]))),
+            "tx_latency_confirmed" => Some(Arc::new(histogram(descriptor, &[0.5, 0.9, 0.99]))),
+            _ => Some(Arc::new(sum())),
+        }
+    }
 }
 
 impl Default for TelemetryState {
     fn default() -> Self {
-        let exporter = opentelemetry_prometheus::exporter().init();
+        let exporter = opentelemetry_prometheus::ExporterBuilder::default()
+            .with_aggregator_selector(CustomAggregatorSelector)
+            .init();
+
         let meter = global::meter("hermes");
 
         Self {
@@ -207,6 +349,45 @@ impl Default for TelemetryState {
                 .u64_counter("cache_hits")
                 .with_description("Number of cache hits for queries emitted by the relayer, per chain and query type")
                 .init(),
+
+            ws_reconnect: meter
+                .u64_counter("ws_reconnect")
+                .with_description("Number of time the relayer had to reconnect to the WebSocket endpoint, per chain")
+                .init(),
+
+            ws_events: meter
+                .u64_counter("ws_events")
+                .with_description("How many IBC events did Hermes receive via the WebSocket subscription, per chain")
+                .init(),
+
+            msg_num: meter
+                .u64_counter("msg_num")
+                .with_description("How many messages Hermes submitted to the chain, per chain")
+                .init(),
+
+            wallet_balance: meter
+                .u64_value_recorder("wallet_balance")
+                .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain")
+                .init(),
+
+            tx_latency_submitted: meter
+                .u64_value_recorder("tx_latency_submitted")
+                .with_description("The latency for all transactions submitted to a specific chain, \
+                    i.e. the difference between the moment when Hermes received a batch of events \
+                    and when it submitted the corresponding transaction(s). Milliseconds.")
+                .init(),
+
+            tx_latency_confirmed: meter
+                .u64_value_recorder("tx_latency_confirmed")
+                .with_description("The latency for all transactions submitted to a specific chain, \
+                    i.e. the difference between the moment when Hermes received a batch of events \
+                    until the corresponding transaction(s) were confirmed. Milliseconds.")
+                .init(),
+
+            in_flight_events: moka::sync::Cache::builder()
+                    .time_to_live(Duration::from_secs(60 * 60)) // Remove entries after 1 hour
+                    .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
+                    .build(),
         }
     }
 }

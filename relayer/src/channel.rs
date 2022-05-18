@@ -23,7 +23,7 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
@@ -757,7 +757,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_open_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_init()?;
 
-        let tm = TrackedMsgs::new(dst_msgs, "ChannelOpenInit");
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelOpenInit");
 
         let events = self
             .dst_chain()
@@ -924,7 +924,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_try()?;
 
-        let tm = TrackedMsgs::new(dst_msgs, "ChannelOpenTry");
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelOpenTry");
 
         let events = self
             .dst_chain()
@@ -1011,7 +1011,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         ) -> Result<IbcEvent, ChannelError> {
             let dst_msgs = channel.build_chan_open_ack()?;
 
-            let tm = TrackedMsgs::new(dst_msgs, "ChannelOpenAck");
+            let tm = TrackedMsgs::new_static(dst_msgs, "ChannelOpenAck");
 
             let events = channel
                 .dst_chain()
@@ -1109,7 +1109,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         ) -> Result<IbcEvent, ChannelError> {
             let dst_msgs = channel.build_chan_open_confirm()?;
 
-            let tm = TrackedMsgs::new(dst_msgs, "ChannelOpenConfirm");
+            let tm = TrackedMsgs::new_static(dst_msgs, "ChannelOpenConfirm");
             let events = channel
                 .dst_chain()
                 .send_messages_and_wait_commit(tm)
@@ -1173,7 +1173,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_close_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_close_init()?;
 
-        let tm = TrackedMsgs::new(dst_msgs, "ChannelCloseInit");
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelCloseInit");
 
         let events = self
             .dst_chain()
@@ -1254,7 +1254,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn build_chan_close_confirm_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_close_confirm()?;
 
-        let tm = TrackedMsgs::new(dst_msgs, "ChannelCloseConfirm");
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelCloseConfirm");
 
         let events = self
             .dst_chain()

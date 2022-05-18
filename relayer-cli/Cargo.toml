@@ -53,7 +53,7 @@ dirs-next = "2.0.0"
 itertools = "0.10.3"
 atty = "0.2.14"
 flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
-signal-hook = "0.3.13"
+signal-hook = "0.3.14"
 dialoguer = "0.10.1"
 console = "0.15.0"
 
