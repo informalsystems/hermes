@@ -467,7 +467,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             let dst_channel_id = channel
                 .dst_channel_id()
-                .ok_or_else(ChannelError::missing_counterparty_connection)?;
+                .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
             debug!(
                 "do_chan_open_finalize for src_channel_id: {}, dst_channel_id: {}",
