@@ -104,7 +104,7 @@ mod tests {
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::msgs::MsgCreateAnyClient;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::{get_dummy_account_id, Crypto};
 
     #[test]
     fn msg_create_client_serialization() {
@@ -115,7 +115,9 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             tm_client_state,
-            Some(AnyConsensusState::Tendermint(tm_header.try_into().unwrap())),
+            Some(AnyConsensusState::<Crypto>::Tendermint(
+                tm_header.try_into().unwrap(),
+            )),
             signer,
         )
         .unwrap();

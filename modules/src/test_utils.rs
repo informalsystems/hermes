@@ -85,7 +85,7 @@ impl Module for DummyTransferModule {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Crypto;
 
 impl HostFunctions for Crypto {

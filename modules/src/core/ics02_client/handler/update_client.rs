@@ -131,8 +131,8 @@ mod tests {
     use test_log::test;
 
     use crate::clients::ics11_beefy::client_state::ClientState as BeefyClientState;
-    use crate::clients::ics11_beefy::header::BeefyHeader;
     use crate::clients::ics11_beefy::header::ParachainHeader as BeefyParachainHeader;
+    use crate::clients::ics11_beefy::header::{BeefyHeader, ExtrinsicProof};
     use crate::clients::ics11_beefy::polkadot_runtime as runtime;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
@@ -916,6 +916,7 @@ mod tests {
                     .into_iter()
                     .map(|e| e.encode())
                     .collect::<Vec<_>>();
+                let timestamp_ext = extrinsics[0].clone();
 
                 let mut db = sp_trie::MemoryDB::<BlakeTwo256>::default();
 
@@ -939,7 +940,7 @@ mod tests {
                         vec![&key],
                     )
                     .unwrap();
-
+                let extrinsic_proof = ExtrinsicProof(timestamp_ext, extrinsic_proof).encode();
                 let header = ParachainHeader {
                     parachain_header: para_headers.get(&PARA_ID).unwrap().clone(),
                     partial_mmr_leaf: PartialMmrLeaf {
@@ -975,7 +976,8 @@ mod tests {
                         parachain_heads_proof: header.parachain_heads_proof,
                         heads_leaf_index: header.heads_leaf_index,
                         heads_total_count: header.heads_total_count,
-                        extrinsic_proof: header.extrinsic_proof,
+                        extrinsic_proof: ExtrinsicProof::decode(&mut &*header.extrinsic_proof)
+                            .unwrap(),
                     })
                     .collect(),
                 mmr_proofs: batch_proof

@@ -134,7 +134,8 @@ pub mod test_util {
                 AnyClientState::Mock(MockClientState::new(MockHeader::new(height))).into(),
             ),
             consensus_state: Some(
-                AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height))).into(),
+                AnyConsensusState::Mock(MockConsensusState::<Crypto>::new(MockHeader::new(height)))
+                    .into(),
             ),
             proof_upgrade_client: get_dummy_proof(),
             proof_upgrade_consensus_state: get_dummy_proof(),
@@ -149,6 +150,7 @@ mod tests {
     use alloc::vec::Vec;
     use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 
+    use crate::test_utils::Crypto;
     use crate::{
         core::{
             ics02_client::{
@@ -174,7 +176,7 @@ mod tests {
 
         let client_state = AnyClientState::Mock(MockClientState::new(MockHeader::new(height)));
         let consensus_state =
-            AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height)));
+            AnyConsensusState::Mock(MockConsensusState::<Crypto>::new(MockHeader::new(height)));
 
         let proof = get_dummy_merkle_proof();
         let mut proof_buf = Vec::new();

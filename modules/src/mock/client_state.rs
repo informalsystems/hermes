@@ -10,6 +10,7 @@ use core::time::Duration;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
+use crate::clients::crypto_ops::crypto::CryptoOps;
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 
@@ -148,9 +149,9 @@ impl<Crypto> MockConsensusState<Crypto> {
     }
 }
 
-impl<Crypto> Protobuf<RawMockConsensusState> for MockConsensusState<Crypto> {}
+impl<Crypto: Clone> Protobuf<RawMockConsensusState> for MockConsensusState<Crypto> {}
 
-impl<Crypto> TryFrom<RawMockConsensusState> for MockConsensusState<Crypto> {
+impl<Crypto: Clone> TryFrom<RawMockConsensusState> for MockConsensusState<Crypto> {
     type Error = Error;
 
     fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
@@ -164,7 +165,7 @@ impl<Crypto> TryFrom<RawMockConsensusState> for MockConsensusState<Crypto> {
     }
 }
 
-impl<Crypto> From<MockConsensusState<Crypto>> for RawMockConsensusState {
+impl<Crypto: Clone> From<MockConsensusState<Crypto>> for RawMockConsensusState {
     fn from(value: MockConsensusState<Crypto>) -> Self {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
@@ -181,8 +182,11 @@ impl<Crypto> From<MockConsensusState<Crypto>> for AnyConsensusState<Crypto> {
     }
 }
 
-impl<Crypto: Debug + Clone> ConsensusState for MockConsensusState<Crypto> {
+impl<Crypto: Debug + Clone + Send + Sync + CryptoOps> ConsensusState
+    for MockConsensusState<Crypto>
+{
     type Error = Infallible;
+    type Crypto = Crypto;
 
     fn client_type(&self) -> ClientType {
         ClientType::Mock

@@ -210,8 +210,9 @@ impl<Crypto: CryptoOps> TryFrom<ParachainHeader> for ConsensusState<Crypto> {
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
     use super::*;
+    use crate::test_utils::Crypto;
 
-    pub fn get_dummy_beefy_consensus_state<Crypto>() -> AnyConsensusState<Crypto> {
+    pub fn get_dummy_beefy_consensus_state() -> AnyConsensusState<Crypto> {
         AnyConsensusState::Beefy(ConsensusState {
             timestamp: Time::now(),
             root: vec![0; 32].into(),

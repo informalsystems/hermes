@@ -19,11 +19,18 @@ use crate::mock::client_state::{MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
 use crate::Height;
+use core::fmt::Debug;
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MockClient<Crypto>(core::marker::PhantomData<Crypto>);
 
-impl<Crypto: CryptoOps> ClientDef for MockClient<Crypto> {
+impl<Crypto> Default for MockClient<Crypto> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
+impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for MockClient<Crypto> {
     type Header = MockHeader;
     type ClientState = MockClientState;
     type ConsensusState = MockConsensusState<Self::Crypto>;

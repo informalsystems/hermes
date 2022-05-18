@@ -103,7 +103,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             MockClientState::new(MockHeader::new(height)).into(),
-            Some(MockConsensusState::new(MockHeader::new(height)).into()),
+            Some(MockConsensusState::<Crypto>::new(MockHeader::new(height)).into()),
             signer,
         )
         .unwrap();
@@ -147,7 +147,7 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&existing_client_id, height);
 
-        let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
+        let create_client_msgs: Vec<MsgCreateAnyClient<Crypto>> = vec![
             MsgCreateAnyClient::new(
                 MockClientState::new(MockHeader::new(Height {
                     revision_height: 42,
@@ -155,7 +155,7 @@ mod tests {
                 }))
                 .into(),
                 Some(
-                    MockConsensusState::new(MockHeader::new(Height {
+                    MockConsensusState::<Crypto>::new(MockHeader::new(Height {
                         revision_height: 42,
                         ..height
                     }))
@@ -171,7 +171,7 @@ mod tests {
                 }))
                 .into(),
                 Some(
-                    MockConsensusState::new(MockHeader::new(Height {
+                    MockConsensusState::<Crypto>::new(MockHeader::new(Height {
                         revision_height: 42,
                         ..height
                     }))
@@ -264,7 +264,9 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             tm_client_state,
-            Some(AnyConsensusState::Tendermint(tm_header.try_into().unwrap())),
+            Some(AnyConsensusState::<Crypto>::Tendermint(
+                tm_header.try_into().unwrap(),
+            )),
             signer,
         )
         .unwrap();
