@@ -34,6 +34,7 @@ use ibc::{
 };
 use tracing::trace;
 
+use crate::util::block_on;
 use crate::{chain::CosmosSdkChain, config::ChainConfig, error::Error};
 
 use super::Verified;
@@ -71,8 +72,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         let mut state = self.prepare_state(trusted)?;
 
         // Verify the target header
-        let target = client
-            .verify_to_target(target_height, &mut state)
+        let target = block_on(client.verify_to_target(target_height, &mut state))
             .map_err(|e| Error::light_client_verification(self.chain_id.to_string(), e))?;
 
         // Collect the verification trace for the target block
@@ -225,8 +225,7 @@ impl LightClient {
     }
 
     fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, Error> {
-        self.io
-            .fetch_light_block(height)
+        block_on(self.io.fetch_light_block(height))
             .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e))
     }
 
