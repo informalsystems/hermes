@@ -100,6 +100,7 @@ pub fn bootstrap_single_node(
     chain_driver.update_chain_config("app.toml", |config| {
         config::set_grpc_port(config, chain_driver.grpc_port)?;
         config::disable_grpc_web(config)?;
+        config::set_minimum_gas_price(config, "0stake")?;
 
         Ok(())
     })?;

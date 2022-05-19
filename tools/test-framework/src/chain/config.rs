@@ -101,3 +101,12 @@ pub fn set_log_level(config: &mut Value, log_level: &str) -> Result<(), Error> {
 
     Ok(())
 }
+
+pub fn set_minimum_gas_price(config: &mut Value, price: &str) -> Result<(), Error> {
+    config
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("minimum-gas-prices".to_string(), price.into());
+
+    Ok(())
+}
