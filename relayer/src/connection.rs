@@ -1,4 +1,5 @@
 use core::time::Duration;
+use std::{thread, time};
 
 use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::tracking::TrackedMsgs;
@@ -22,6 +23,7 @@ use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
 
 use crate::chain::handle::ChainHandle;
+use crate::connection::error::ConnectionIdMismatchError;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
 use crate::util::retry::retry_with_index;
@@ -332,11 +334,57 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         Ok(())
     }
 
+    fn validate_connection_ends(
+        &self,
+        queried_a_connection: &ConnectionEnd,
+        queried_b_connection: &ConnectionEnd,
+    ) -> Result<(), ConnectionError> {
+        if let (
+            Some(a_connection_id),
+            Some(queried_a_conn_counterparty_id),
+            Some(b_connection_id),
+            Some(queried_b_conn_counterparty_id),
+        ) = (
+            self.a_connection_id(),
+            queried_a_connection.counterparty().connection_id(),
+            self.b_connection_id(),
+            queried_b_connection.counterparty().connection_id(),
+        ) {
+            if queried_a_conn_counterparty_id != b_connection_id {
+                return Err(ConnectionError::connection_id_mismatch(
+                    self.a_chain().id(),
+                    a_connection_id.clone(),
+                    queried_a_conn_counterparty_id.clone(),
+                    self.b_chain().id(),
+                    b_connection_id.clone(),
+                ));
+            }
+            if queried_b_conn_counterparty_id != a_connection_id {
+                return Err(ConnectionError::connection_id_mismatch(
+                    self.b_chain().id(),
+                    b_connection_id.clone(),
+                    queried_b_conn_counterparty_id.clone(),
+                    self.a_chain().id(),
+                    a_connection_id.clone(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
     pub fn src_chain(&self) -> ChainA {
         self.a_side.chain.clone()
     }
 
     pub fn dst_chain(&self) -> ChainB {
+        self.b_side.chain.clone()
+    }
+
+    pub fn a_chain(&self) -> ChainA {
+        self.a_side.chain.clone()
+    }
+
+    pub fn b_chain(&self) -> ChainB {
         self.b_side.chain.clone()
     }
 
@@ -353,6 +401,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     }
 
     pub fn dst_connection_id(&self) -> Option<&ConnectionId> {
+        self.b_side.connection_id()
+    }
+
+    pub fn a_connection_id(&self) -> Option<&ConnectionId> {
+        self.a_side.connection_id()
+    }
+    pub fn b_connection_id(&self) -> Option<&ConnectionId> {
         self.b_side.connection_id()
     }
 
@@ -447,42 +502,54 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         fn query_connection_states<ChainA: ChainHandle, ChainB: ChainHandle>(
             connection: &Connection<ChainA, ChainB>,
         ) -> Result<(State, State), ConnectionError> {
-            let src_connection_id = connection
-                .src_connection_id()
+            let a_connection_id = connection
+                .a_connection_id()
                 .ok_or_else(ConnectionError::missing_local_connection_id)?;
 
-            let dst_connection_id = connection
-                .dst_connection_id()
+            let b_connection_id = connection
+                .b_connection_id()
                 .ok_or_else(ConnectionError::missing_counterparty_connection_id)?;
 
             debug!(
-                "do_conn_open_finalize for src_connection_id: {}, dst_connection_id: {}",
-                src_connection_id, dst_connection_id
+                "query_connection_states for {}/{} and {}/{}",
+                connection.a_chain().id(),
+                a_connection_id,
+                connection.b_chain().id(),
+                b_connection_id,
             );
 
-            // Continue loop if query error
             let a_connection = connection
-                .src_chain()
-                .query_connection(src_connection_id, Height::zero())
+                .a_chain()
+                .query_connection(a_connection_id, Height::zero())
                 .map_err(|e| {
                     ConnectionError::handshake_finalize(
-                        connection.src_chain().id(),
-                        src_connection_id.clone(),
+                        connection.a_chain().id(),
+                        a_connection_id.clone(),
                         e,
                     )
                 })?;
 
             let b_connection = connection
-                .dst_chain()
-                .query_connection(dst_connection_id, Height::zero())
+                .b_chain()
+                .query_connection(b_connection_id, Height::zero())
                 .map_err(|e| {
                     ConnectionError::handshake_finalize(
-                        connection.dst_chain().id(),
-                        dst_connection_id.clone(),
+                        connection.b_chain().id(),
+                        b_connection_id.clone(),
                         e,
                     )
                 })?;
 
+            connection.validate_connection_ends(&a_connection, &b_connection)?;
+            debug!(
+                "query_connection_states results: {}/{}-{} and {}/{}-{}",
+                connection.a_chain().id(),
+                a_connection_id,
+                *a_connection.state(),
+                connection.b_chain().id(),
+                b_connection_id,
+                *b_connection.state(),
+            );
             Ok((*a_connection.state(), *b_connection.state()))
         }
 
@@ -581,7 +648,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     fn do_conn_open_finalize_with_retry(&self) -> Result<(), ConnectionError> {
         retry_with_index(retry_strategy::default(), |_| {
             if let Err(e) = self.do_conn_open_finalize() {
-                if e.is_expired_or_frozen_error() {
+                if e.is_expired_or_frozen_error() || e.is_connection_id_mismatch_error() {
                     RetryResult::Err(e)
                 } else {
                     RetryResult::Retry(e)
@@ -591,7 +658,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             }
         })
         .map_err(|err| {
-            error!("failed to open connection after {} retries", err);
+            error!(
+                "failed to open connection after {} retries",
+                retry_count(&err)
+            );
             from_retry_error(
                 err,
                 format!("failed to finish connection handshake for {:?}", self),
@@ -604,6 +674,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     /// Executes the connection handshake protocol (ICS003)
     fn handshake(&mut self) -> Result<(), ConnectionError> {
         self.do_conn_open_init_and_send_with_retry()?;
+        // TODO - will remove, added to reproduce the crossing handshake msgs with the relayer
+        thread::sleep(time::Duration::from_secs(4));
         self.do_conn_open_try_and_send_with_retry()?;
         self.do_conn_open_finalize_with_retry()
     }
@@ -831,7 +903,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             IbcEvent::OpenInitConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.src_chain().id(), event);
                 Ok(event)
-            },
+            }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
             _ => panic!("internal error"),
         }
@@ -1065,7 +1137,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             IbcEvent::OpenAckConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), event);
                 Ok(event)
-            },
+            }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
             _ => panic!("internal error"),
         }
@@ -1147,7 +1219,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             IbcEvent::OpenConfirmConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), event);
                 Ok(event)
-            },
+            }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
             _ => panic!("internal error"),
         }

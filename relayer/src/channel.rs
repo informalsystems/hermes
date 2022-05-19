@@ -858,7 +858,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.dst_chain().id(),
                 self.dst_port_id().clone(),
                 self.src_chain().id(),
-                src_channel.counterparty().port_id.clone(),
+                src_channel.counterparty().port_id().clone(),
                 *src_channel_id,
             ));
         }
