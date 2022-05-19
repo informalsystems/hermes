@@ -201,12 +201,15 @@ impl Runnable for TxIcs20MsgTransferCmd {
             Some(cid) => cid,
         };
 
-        let conn_end = chains
+        let (conn_end, _) = chains
             .src
-            .query_connection(QueryConnectionRequest {
-                connection_id: conn_id.clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: conn_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         debug!("connection hop underlying the channel: {:?}", conn_end);

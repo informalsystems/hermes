@@ -241,9 +241,13 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().query_compatible_versions()
     }
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
         self.inc_metric("query_connection");
-        self.inner().query_connection(request)
+        self.inner().query_connection(request, include_proof)
     }
 
     fn query_connections(
@@ -289,15 +293,6 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.inc_metric("query_channel_client_state");
         self.inner().query_channel_client_state(request)
-    }
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.inc_metric("proven_connection");
-        self.inner().proven_connection(connection_id, height)
     }
 
     fn proven_client_consensus(

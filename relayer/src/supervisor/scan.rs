@@ -784,11 +784,14 @@ fn query_connection<Chain: ChainHandle>(
     chain: &Chain,
     connection_id: &ConnectionId,
 ) -> Result<IdentifiedConnectionEnd, Error> {
-    let connection_end = chain
-        .query_connection(QueryConnectionRequest {
-            connection_id: connection_id.clone(),
-            height: Height::zero(),
-        })
+    let (connection_end, _) = chain
+        .query_connection(
+            QueryConnectionRequest {
+                connection_id: connection_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::query)?;
 
     Ok(IdentifiedConnectionEnd {

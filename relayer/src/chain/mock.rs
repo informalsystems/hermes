@@ -208,7 +208,11 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_connection(&self, _request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
+    fn query_connection(
+        &self,
+        _request: QueryConnectionRequest,
+        _include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
         unimplemented!()
     }
 
@@ -301,14 +305,6 @@ impl ChainEndpoint for MockChain {
         &self,
         _request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
-        unimplemented!()
-    }
-
-    fn proven_connection(
-        &self,
-        _connection_id: &ConnectionId,
-        _height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
         unimplemented!()
     }
 

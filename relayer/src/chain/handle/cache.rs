@@ -166,20 +166,14 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
         let handle = self.inner();
         match include_proof {
-            IncludeProof::Yes => handle.query_client_state(request, include_proof),
+            IncludeProof::Yes => handle.query_client_state(request, IncludeProof::Yes),
             IncludeProof::No => {
                 if request.height.is_zero() {
                     let (result, in_cache) = self.cache.get_or_try_insert_client_state_with(
                         &request.client_id,
                         || {
                             handle
-                                .query_client_state(
-                                    QueryClientStateRequest {
-                                        client_id: request.client_id.clone(),
-                                        height: request.height,
-                                    },
-                                    IncludeProof::No,
-                                )
+                                .query_client_state(request.clone(), IncludeProof::No)
                                 .map(|(client_state, _)| client_state)
                         },
                     )?;
@@ -190,7 +184,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
                     Ok((result, None))
                 } else {
-                    handle.query_client_state(request, include_proof)
+                    handle.query_client_state(request, IncludeProof::No)
                 }
             }
         }
@@ -239,22 +233,34 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_compatible_versions()
     }
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
         let handle = self.inner();
-        if request.height.is_zero() {
-            let (result, in_cache) = self
-                .cache
-                .get_or_try_insert_connection_with(&request.connection_id, || {
-                    handle.query_connection(request.clone())
-                })?;
+        match include_proof {
+            IncludeProof::Yes => handle.query_connection(request, IncludeProof::Yes),
+            IncludeProof::No => {
+                if request.height.is_zero() {
+                    let (result, in_cache) = self.cache.get_or_try_insert_connection_with(
+                        &request.connection_id,
+                        || {
+                            handle
+                                .query_connection(request.clone(), IncludeProof::No)
+                                .map(|(conn_end, _)| conn_end)
+                        },
+                    )?;
 
-            if in_cache == CacheStatus::Hit {
-                telemetry!(query_cache_hit, &self.id(), "query_connection");
+                    if in_cache == CacheStatus::Hit {
+                        telemetry!(query_cache_hit, &self.id(), "query_connection");
+                    }
+
+                    Ok((result, None))
+                } else {
+                    handle.query_connection(request, IncludeProof::No)
+                }
             }
-
-            Ok(result)
-        } else {
-            handle.query_connection(request)
         }
     }
 
@@ -309,14 +315,6 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.inner().query_channel_client_state(request)
-    }
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.inner().proven_connection(connection_id, height)
     }
 
     fn proven_client_consensus(

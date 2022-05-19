@@ -212,7 +212,11 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error>;
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error>;
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error>;
 
     /// Performs a query to retrieve the identifiers of all channels associated with a connection.
     fn query_connection_channels(
@@ -279,12 +283,6 @@ pub trait ChainEndpoint: Sized {
     ) -> Result<Self::ConsensusState, Error>;
 
     // Provable queries
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: ICSHeight,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error>;
-
     fn proven_client_consensus(
         &self,
         client_id: &ClientId,
@@ -341,7 +339,14 @@ pub trait ChainEndpoint: Sized {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<(Option<AnyClientState>, Proofs), Error> {
-        let (connection_end, connection_proof) = self.proven_connection(connection_id, height)?;
+        let (connection_end, maybe_connection_proof) = self.query_connection(
+            QueryConnectionRequest {
+                connection_id: connection_id.clone(),
+                height,
+            },
+            IncludeProof::Yes,
+        )?;
+        let connection_proof = maybe_connection_proof.expect(QUERY_PROOF_EXPECT_MSG);
 
         // Check that the connection state is compatible with the message
         match message_type {

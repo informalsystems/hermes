@@ -23,7 +23,8 @@ use ibc::Height;
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
-    PageRequest, QueryChannelRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+    IncludeProof, PageRequest, QueryChannelRequest, QueryConnectionChannelsRequest,
+    QueryConnectionRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::connection::Connection;
@@ -206,11 +207,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let channel_id = channel_event_attributes.channel_id;
 
         let connection_id = channel_event_attributes.connection_id.clone();
-        let connection = chain
-            .query_connection(QueryConnectionRequest {
-                connection_id: connection_id.clone(),
-                height: Height::zero(),
-            })
+        let (connection, _) = chain
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: connection_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(ChannelError::relayer)?;
 
         let connection_counterparty = connection.counterparty();
@@ -269,11 +273,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ))
         })?;
 
-        let a_connection = chain
-            .query_connection(QueryConnectionRequest {
-                connection_id: a_connection_id.clone(),
-                height: Height::zero(),
-            })
+        let (a_connection, _) = chain
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: a_connection_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(ChannelError::relayer)?;
 
         let b_connection_id = a_connection
@@ -891,10 +898,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Connection must exist on destination
         self.dst_chain()
-            .query_connection(QueryConnectionRequest {
-                connection_id: self.dst_connection_id().clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: self.dst_connection_id().clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let query_height = self
@@ -1002,10 +1012,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Connection must exist on destination
         self.dst_chain()
-            .query_connection(QueryConnectionRequest {
-                connection_id: self.dst_connection_id().clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: self.dst_connection_id().clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let query_height = self
@@ -1109,10 +1122,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Connection must exist on destination
         self.dst_chain()
-            .query_connection(QueryConnectionRequest {
-                connection_id: self.dst_connection_id().clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: self.dst_connection_id().clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let query_height = self
@@ -1268,10 +1284,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Connection must exist on destination
         self.dst_chain()
-            .query_connection(QueryConnectionRequest {
-                connection_id: self.dst_connection_id().clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: self.dst_connection_id().clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let query_height = self

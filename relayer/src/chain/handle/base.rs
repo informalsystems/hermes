@@ -219,8 +219,16 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryCompatibleVersions { reply_to })
     }
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
-        self.send(|reply_to| ChainRequest::QueryConnection { request, reply_to })
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryConnection {
+            request,
+            include_proof,
+            reply_to,
+        })
     }
 
     fn query_connections(
@@ -260,18 +268,6 @@ impl ChainHandle for BaseChainHandle {
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.send(|reply_to| ChainRequest::QueryChannelClientState { request, reply_to })
-    }
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::ProvenConnection {
-            connection_id: connection_id.clone(),
-            height,
-            reply_to,
-        })
     }
 
     fn proven_client_consensus(

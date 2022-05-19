@@ -237,7 +237,8 @@ pub enum ChainRequest {
 
     QueryConnection {
         request: QueryConnectionRequest,
-        reply_to: ReplyTo<ConnectionEnd>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(ConnectionEnd, Option<MerkleProof>)>,
     },
 
     QueryConnections {
@@ -268,12 +269,6 @@ pub enum ChainRequest {
     QueryNextSequenceReceive {
         request: QueryNextSequenceReceiveRequest,
         reply_to: ReplyTo<Sequence>,
-    },
-
-    ProvenConnection {
-        connection_id: ConnectionId,
-        height: Height,
-        reply_to: ReplyTo<(ConnectionEnd, MerkleProof)>,
     },
 
     ProvenClientConsensus {
@@ -426,7 +421,11 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error>;
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error>;
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error>;
 
     fn query_connections(
         &self,
@@ -454,12 +453,6 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error>;
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error>;
 
     fn proven_client_consensus(
         &self,

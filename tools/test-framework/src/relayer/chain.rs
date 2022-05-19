@@ -195,8 +195,12 @@ where
         self.value().query_compatible_versions()
     }
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
-        self.value().query_connection(request)
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
+        self.value().query_connection(request, include_proof)
     }
 
     fn query_connections(
@@ -236,14 +240,6 @@ where
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.value().query_channel_client_state(request)
-    }
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.value().proven_connection(connection_id, height)
     }
 
     fn proven_client_consensus(

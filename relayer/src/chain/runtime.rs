@@ -345,8 +345,8 @@ where
                             self.query_compatible_versions(reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryConnection { request, reply_to }) => {
-                            self.query_connection(request, reply_to)?
+                        Ok(ChainRequest::QueryConnection { request, include_proof, reply_to }) => {
+                            self.query_connection(request, include_proof, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConnections { request, reply_to }) => {
@@ -367,10 +367,6 @@ where
 
                         Ok(ChainRequest::QueryChannelClientState { request, reply_to }) => {
                             self.query_channel_client_state(request, reply_to)?
-                        },
-
-                        Ok(ChainRequest::ProvenConnection { connection_id, height, reply_to }) => {
-                            self.proven_connection(connection_id, height, reply_to)?
                         },
 
                         Ok(ChainRequest::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
@@ -685,9 +681,10 @@ where
     fn query_connection(
         &self,
         request: QueryConnectionRequest,
-        reply_to: ReplyTo<ConnectionEnd>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(ConnectionEnd, Option<MerkleProof>)>,
     ) -> Result<(), Error> {
-        let connection_end = self.chain.query_connection(request);
+        let connection_end = self.chain.query_connection(request, include_proof);
         reply_to.send(connection_end).map_err(Error::send)
     }
 
@@ -733,16 +730,6 @@ where
         reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel_client_state(request);
-        reply_to.send(result).map_err(Error::send)
-    }
-
-    fn proven_connection(
-        &self,
-        connection_id: ConnectionId,
-        height: Height,
-        reply_to: ReplyTo<(ConnectionEnd, MerkleProof)>,
-    ) -> Result<(), Error> {
-        let result = self.chain.proven_connection(&connection_id, height);
         reply_to.send(result).map_err(Error::send)
     }
 

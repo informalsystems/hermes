@@ -925,7 +925,11 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(connections)
     }
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
         crate::time!("query_connection");
         crate::telemetry!(query, self.id(), "query_connection");
 
@@ -978,9 +982,27 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         }
 
-        self.block_on(async {
-            do_query_connection(self, &request.connection_id, request.height).await
-        })
+        match include_proof {
+            IncludeProof::Yes => {
+                let res = self.query(
+                    ConnectionsPath(request.connection_id.clone()),
+                    request.height,
+                    true,
+                )?;
+                let connection_end =
+                    ConnectionEnd::decode_vec(&res.value).map_err(Error::decode)?;
+
+                Ok((
+                    connection_end,
+                    Some(res.proof.ok_or_else(Error::empty_response_proof)?),
+                ))
+            }
+            IncludeProof::No => self
+                .block_on(async {
+                    do_query_connection(self, &request.connection_id, request.height).await
+                })
+                .map(|conn_end| (conn_end, None)),
+        }
     }
 
     fn query_connection_channels(
@@ -1387,20 +1409,6 @@ impl ChainEndpoint for CosmosSdkChain {
         let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
 
         Ok((consensus_state, proof))
-    }
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: ICSHeight,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        let res = self.query(ConnectionsPath(connection_id.clone()), height, true)?;
-        let connection_end = ConnectionEnd::decode_vec(&res.value).map_err(Error::decode)?;
-
-        Ok((
-            connection_end,
-            res.proof.ok_or_else(Error::empty_response_proof)?,
-        ))
     }
 
     fn proven_channel(

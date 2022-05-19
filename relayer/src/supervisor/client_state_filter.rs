@@ -270,11 +270,14 @@ impl FilterPolicy {
             obj.src_chain_id
         );
 
-        let connection_end = src_chain
-            .query_connection(QueryConnectionRequest {
-                connection_id: obj.src_connection_id.clone(),
-                height: Height::zero(),
-            })
+        let (connection_end, _) = src_chain
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: obj.src_connection_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(FilterError::relayer)?;
 
         let (client_state, _) = src_chain
@@ -335,11 +338,14 @@ impl FilterPolicy {
             ))
         })?;
 
-        let connection_end = src_chain
-            .query_connection(QueryConnectionRequest {
-                connection_id: conn_id.clone(),
-                height: Height::zero(),
-            })
+        let (connection_end, _) = src_chain
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: conn_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(FilterError::relayer)?;
 
         let (client_state, _) = src_chain
