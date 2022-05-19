@@ -1,6 +1,7 @@
 pub mod step;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
+use ibc::test_utils::Crypto;
 
 use core::convert::TryInto;
 use core::fmt::Debug;
@@ -158,8 +159,8 @@ impl IbcTestRunner {
         AnyClientState::Mock(MockClientState::new(Self::mock_header(height)))
     }
 
-    pub fn consensus_state(height: Height) -> AnyConsensusState {
-        AnyConsensusState::Mock(MockConsensusState::new(Self::mock_header(height)))
+    pub fn consensus_state(height: Height) -> AnyConsensusState<Crypto> {
+        AnyConsensusState::Mock(MockConsensusState::<Crypto>::new(Self::mock_header(height)))
     }
 
     fn signer() -> Signer {
