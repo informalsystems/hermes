@@ -97,7 +97,8 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
                     parachain_heads_proof: header.parachain_heads_proof,
                     heads_leaf_index: header.heads_leaf_index,
                     heads_total_count: header.heads_total_count,
-                    extrinsic_proof: header.extrinsic_proof.encode(),
+                    extrinsic_proof: header.extrinsic_proof,
+                    timestamp_extrinsic: header.timestamp_extrinsic,
                 }
             })
             .collect::<Vec<_>>();

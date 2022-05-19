@@ -48,9 +48,6 @@ impl crate::core::ics02_client::header::Header for BeefyHeader {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Default, codec::Encode, codec::Decode)]
-pub struct ExtrinsicProof(pub Vec<u8>, pub Vec<Vec<u8>>);
-
 #[derive(Clone, PartialEq, Eq, Debug, codec::Encode, codec::Decode)]
 pub struct ParachainHeader {
     pub parachain_header: SubstrateHeader<u32, BlakeTwo256>,
@@ -65,8 +62,9 @@ pub struct ParachainHeader {
     /// Total number of parachain heads
     pub heads_total_count: u32,
     /// Trie merkle proof of inclusion of the set timestamp extrinsic in header.extrinsic_root
+    pub extrinsic_proof: Vec<Vec<u8>>,
     /// this already encodes the actual extrinsic
-    pub extrinsic_proof: ExtrinsicProof,
+    pub timestamp_extrinsic: Vec<u8>,
 }
 
 pub fn split_leaf_version(version: u8) -> (u8, u8) {
@@ -130,8 +128,8 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                         .collect::<Result<Vec<_>, Error>>()?,
                     heads_leaf_index: raw_para_header.heads_leaf_index,
                     heads_total_count: raw_para_header.heads_total_count,
-                    extrinsic_proof: Decode::decode(&mut &*raw_para_header.extrinsic_proof)
-                        .map_err(|_| Error::invalid_raw_header())?,
+                    extrinsic_proof: raw_para_header.extrinsic_proof,
+                    timestamp_extrinsic: raw_para_header.timestamp_extrinsic,
                 })
             })
             .collect::<Result<Vec<_>, Error>>()?;
@@ -349,7 +347,8 @@ impl From<BeefyHeader> for RawBeefyHeader {
                             .collect(),
                         heads_leaf_index: para_header.heads_leaf_index,
                         heads_total_count: para_header.heads_total_count,
-                        extrinsic_proof: para_header.extrinsic_proof.encode(),
+                        extrinsic_proof: para_header.extrinsic_proof,
+                        timestamp_extrinsic: para_header.timestamp_extrinsic,
                     },
                 )
                 .collect(),
@@ -442,8 +441,8 @@ pub fn decode_header<B: Buf>(buf: B) -> Result<BeefyHeader, Error> {
 pub fn decode_timestamp_extrinsic<Crypto: CryptoOps>(
     header: &ParachainHeader,
 ) -> Result<u64, Error> {
-    let proof = &*header.extrinsic_proof.1;
-    let ext = &*header.extrinsic_proof.0;
+    let proof = &*header.extrinsic_proof;
+    let ext = &*header.timestamp_extrinsic;
     let extrinsic_root = header.parachain_header.extrinsics_root;
 
     // Timestamp extrinsic should be the first inherent and hence the first extrinsic

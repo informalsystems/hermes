@@ -94,12 +94,8 @@ tendermint-testgen = { version = "=0.23.7" } # Needed for generating (synthetic)
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22"}
 subxt = "0.21.0"
 tokio = { version = "1.17.0", features = ["full"] }
-hex-literal = "0.3.4"
 serde_json = "1.0.74"
-pallet-mmr-rpc = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
-frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
-rs_merkle = { version = "1.2.0" }
-beefy-mmr = { package = "pallet-beefy-mmr", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+beefy-client = { package = "beefy-generic-client",  git = "https://github.com/ComposableFi/beefy-client", branch = "david/refactor-traits", features = ["mocks"]}
 
 [[test]]
 name = "mbt"

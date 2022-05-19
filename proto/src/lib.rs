@@ -181,11 +181,6 @@ pub mod ibc {
         }
     }
     pub mod lightclients {
-        pub mod localhost {
-            pub mod v1 {
-                include_proto!("ibc.lightclients.localhost.v1.rs");
-            }
-        }
         pub mod solomachine {
             pub mod v1 {
                 include_proto!("ibc.lightclients.solomachine.v1.rs");
