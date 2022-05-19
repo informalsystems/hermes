@@ -60,12 +60,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
         let a_port_id = &opts.src_port_id;
-        let a_channel = a_chain
-            .query_channel(QueryChannelRequest {
-                port_id: opts.src_port_id.clone(),
-                channel_id: opts.src_channel_id,
-                height: Height::default(),
-            })
+        let (a_channel, _) = a_chain
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: opts.src_port_id.clone(),
+                    channel_id: opts.src_channel_id,
+                    height: Height::default(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| {
                 LinkError::channel_not_found(a_port_id.clone(), *a_channel_id, a_chain.id(), e)
             })?;

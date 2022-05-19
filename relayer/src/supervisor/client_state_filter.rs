@@ -323,12 +323,15 @@ impl FilterPolicy {
             .get_or_spawn(chain_id)
             .map_err(FilterError::spawn)?;
 
-        let channel_end = src_chain
-            .query_channel(QueryChannelRequest {
-                port_id: port_id.clone(),
-                channel_id: *channel_id,
-                height: Height::zero(),
-            })
+        let (channel_end, _) = src_chain
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: port_id.clone(),
+                    channel_id: *channel_id,
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(FilterError::relayer)?;
 
         let conn_id = channel_end.connection_hops.first().ok_or_else(|| {

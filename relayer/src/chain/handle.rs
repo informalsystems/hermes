@@ -258,7 +258,8 @@ pub enum ChainRequest {
 
     QueryChannel {
         request: QueryChannelRequest,
-        reply_to: ReplyTo<ChannelEnd>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(ChannelEnd, Option<MerkleProof>)>,
     },
 
     QueryChannelClientState {
@@ -447,7 +448,11 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error>;
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error>;
 
     fn query_channel_client_state(
         &self,

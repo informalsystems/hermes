@@ -1068,18 +1068,40 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(channels)
     }
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
         crate::time!("query_channel");
         crate::telemetry!(query, self.id(), "query_channel");
 
-        let res = self.query(
-            ChannelEndsPath(request.port_id, request.channel_id),
-            request.height,
-            false,
-        )?;
-        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+        match include_proof {
+            IncludeProof::Yes => {
+                let res = self.query(
+                    ChannelEndsPath(request.port_id, request.channel_id),
+                    request.height,
+                    true,
+                )?;
 
-        Ok(channel_end)
+                let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+
+                Ok((
+                    channel_end,
+                    Some(res.proof.ok_or_else(Error::empty_response_proof)?),
+                ))
+            }
+            IncludeProof::No => {
+                let res = self.query(
+                    ChannelEndsPath(request.port_id, request.channel_id),
+                    request.height,
+                    false,
+                )?;
+                let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+
+                Ok((channel_end, None))
+            }
+        }
     }
 
     fn query_channel_client_state(
@@ -1409,22 +1431,6 @@ impl ChainEndpoint for CosmosSdkChain {
         let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
 
         Ok((consensus_state, proof))
-    }
-
-    fn proven_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: ICSHeight,
-    ) -> Result<(ChannelEnd, MerkleProof), Error> {
-        let res = self.query(ChannelEndsPath(port_id.clone(), *channel_id), height, true)?;
-
-        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
-
-        Ok((
-            channel_end,
-            res.proof.ok_or_else(Error::empty_response_proof)?,
-        ))
     }
 
     fn proven_packet(

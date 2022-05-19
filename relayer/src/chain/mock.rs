@@ -244,7 +244,11 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_channel(&self, _request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
+    fn query_channel(
+        &self,
+        _request: QueryChannelRequest,
+        _include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
         unimplemented!()
     }
 
@@ -314,15 +318,6 @@ impl ChainEndpoint for MockChain {
         _consensus_height: Height,
         _height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        unimplemented!()
-    }
-
-    fn proven_channel(
-        &self,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _height: Height,
-    ) -> Result<(ChannelEnd, MerkleProof), Error> {
         unimplemented!()
     }
 

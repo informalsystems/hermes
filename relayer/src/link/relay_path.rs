@@ -10,6 +10,7 @@ use tracing::{debug, error, info, span, trace, warn, Level};
 use crate::chain::counterparty::unreceived_acknowledgements;
 use crate::chain::counterparty::unreceived_packets;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::IncludeProof;
 use crate::chain::requests::QueryChannelRequest;
 use crate::chain::requests::QueryHostConsensusStateRequest;
 use crate::chain::requests::QueryNextSequenceReceiveRequest;
@@ -200,21 +201,29 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.src_chain()
-            .query_channel(QueryChannelRequest {
-                port_id: self.src_port_id().clone(),
-                channel_id: *self.src_channel_id(),
-                height,
-            })
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: self.src_port_id().clone(),
+                    channel_id: *self.src_channel_id(),
+                    height,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
             .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.dst_chain()
-            .query_channel(QueryChannelRequest {
-                port_id: self.dst_port_id().clone(),
-                channel_id: *self.dst_channel_id(),
-                height,
-            })
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: self.dst_port_id().clone(),
+                    channel_id: *self.dst_channel_id(),
+                    height,
+                },
+                IncludeProof::No,
+            )
+            .map(|(channel_end, _)| channel_end)
             .map_err(|e| LinkError::channel(ChannelError::query(self.dst_chain().id(), e)))
     }
 

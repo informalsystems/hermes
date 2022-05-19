@@ -171,13 +171,16 @@ impl Runnable for TxIcs20MsgTransferCmd {
         // To do this, fetch from the source chain the channel end, then the associated connection
         // end, and then the underlying client state; finally, check that this client is verifying
         // headers for the destination chain.
-        let channel_end_src = chains
+        let (channel_end_src, _) = chains
             .src
-            .query_channel(QueryChannelRequest {
-                port_id: opts.packet_src_port_id.clone(),
-                channel_id: opts.packet_src_channel_id,
-                height: Height::zero(),
-            })
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: opts.packet_src_port_id.clone(),
+                    channel_id: opts.packet_src_channel_id,
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .unwrap_or_else(exit_with_unrecoverable_error);
         if !channel_end_src.is_open() {
             Output::error(format!(

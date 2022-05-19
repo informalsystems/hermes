@@ -715,12 +715,15 @@ fn query_channel<Chain: ChainHandle>(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<IdentifiedChannelEnd, Error> {
-    let channel_end = chain
-        .query_channel(QueryChannelRequest {
-            port_id: port_id.clone(),
-            channel_id: *channel_id,
-            height: Height::zero(),
-        })
+    let (channel_end, _) = chain
+        .query_channel(
+            QueryChannelRequest {
+                port_id: port_id.clone(),
+                channel_id: *channel_id,
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::query)?;
 
     Ok(IdentifiedChannelEnd::new(

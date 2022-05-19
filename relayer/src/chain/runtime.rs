@@ -361,8 +361,8 @@ where
                             self.query_channels(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryChannel { request, reply_to }) => {
-                            self.query_channel(request, reply_to)?
+                        Ok(ChainRequest::QueryChannel { request, include_proof, reply_to }) => {
+                            self.query_channel(request, include_proof, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannelClientState { request, reply_to }) => {
@@ -718,9 +718,10 @@ where
     fn query_channel(
         &self,
         request: QueryChannelRequest,
-        reply_to: ReplyTo<ChannelEnd>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(ChannelEnd, Option<MerkleProof>)>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_channel(request);
+        let result = self.chain.query_channel(request, include_proof);
         reply_to.send(result).map_err(Error::send)
     }
 

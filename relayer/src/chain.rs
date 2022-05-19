@@ -230,7 +230,11 @@ pub trait ChainEndpoint: Sized {
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error>;
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error>;
 
     fn query_channel_client_state(
         &self,
@@ -289,13 +293,6 @@ pub trait ChainEndpoint: Sized {
         consensus_height: ICSHeight,
         height: ICSHeight,
     ) -> Result<(AnyConsensusState, MerkleProof), Error>;
-
-    fn proven_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: ICSHeight,
-    ) -> Result<(ChannelEnd, MerkleProof), Error>;
 
     fn proven_packet(
         &self,
@@ -430,11 +427,19 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<Proofs, Error> {
         // Collect all proofs as required
-        let channel_proof =
-            CommitmentProofBytes::try_from(self.proven_channel(port_id, channel_id, height)?.1)
-                .map_err(Error::malformed_proof)?;
+        let (_, maybe_channel_proof) = self.query_channel(
+            QueryChannelRequest {
+                port_id: port_id.clone(),
+                channel_id: *channel_id,
+                height,
+            },
+            IncludeProof::Yes,
+        )?;
+        let channel_proof = maybe_channel_proof.expect(QUERY_PROOF_EXPECT_MSG);
+        let channel_proof_bytes =
+            CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?;
 
-        Proofs::new(channel_proof, None, None, None, height.increment())
+        Proofs::new(channel_proof_bytes, None, None, None, height.increment())
             .map_err(Error::malformed_proof)
     }
 
@@ -448,12 +453,16 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<(Vec<u8>, Proofs), Error> {
         let channel_proof = if packet_type == PacketMsgType::TimeoutOnClose {
-            Some(
-                CommitmentProofBytes::try_from(
-                    self.proven_channel(&port_id, &channel_id, height)?.1,
-                )
-                .map_err(Error::malformed_proof)?,
-            )
+            let (_, maybe_channel_proof) = self.query_channel(
+                QueryChannelRequest {
+                    port_id: port_id.clone(),
+                    channel_id,
+                    height,
+                },
+                IncludeProof::Yes,
+            )?;
+            let channel_proof = maybe_channel_proof.expect(QUERY_PROOF_EXPECT_MSG);
+            Some(CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?)
         } else {
             None
         };

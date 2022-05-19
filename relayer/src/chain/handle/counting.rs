@@ -282,9 +282,13 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().query_channels(request)
     }
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
         self.inc_metric("query_channel");
-        self.inner().query_channel(request)
+        self.inner().query_channel(request, include_proof)
     }
 
     fn query_channel_client_state(

@@ -292,21 +292,34 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_channels(request)
     }
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
         let handle = self.inner();
-        if request.height.is_zero() {
-            let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
-                &PortChannelId::new(request.channel_id, request.port_id.clone()),
-                || handle.query_channel(request),
-            )?;
+        match include_proof {
+            IncludeProof::Yes => handle.query_channel(request, IncludeProof::Yes),
+            IncludeProof::No => {
+                if request.height.is_zero() {
+                    let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
+                        &PortChannelId::new(request.channel_id, request.port_id.clone()),
+                        || {
+                            handle
+                                .query_channel(request, IncludeProof::No)
+                                .map(|(channel_end, _)| channel_end)
+                        },
+                    )?;
 
-            if in_cache == CacheStatus::Hit {
-                telemetry!(query_cache_hit, &self.id(), "query_channel");
+                    if in_cache == CacheStatus::Hit {
+                        telemetry!(query_cache_hit, &self.id(), "query_channel");
+                    }
+
+                    Ok((result, None))
+                } else {
+                    handle.query_channel(request, IncludeProof::No)
+                }
             }
-
-            Ok(result)
-        } else {
-            handle.query_channel(request)
         }
     }
 

@@ -231,8 +231,12 @@ where
         self.value().query_channels(request)
     }
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
-        self.value().query_channel(request)
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
+        self.value().query_channel(request, include_proof)
     }
 
     fn query_channel_client_state(

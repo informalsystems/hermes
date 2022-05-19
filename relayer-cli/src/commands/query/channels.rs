@@ -195,11 +195,14 @@ fn query_channel_ends<Chain: ChainHandle>(
         IncludeProof::No,
     )?;
 
-    let counterparty_channel_end = counterparty_chain.query_channel(QueryChannelRequest {
-        port_id: counterparty_port_id,
-        channel_id: counterparty_channel_id,
-        height: counterparty_chain_height,
-    })?;
+    let (counterparty_channel_end, _) = counterparty_chain.query_channel(
+        QueryChannelRequest {
+            port_id: counterparty_port_id,
+            channel_id: counterparty_channel_id,
+            height: counterparty_chain_height,
+        },
+        IncludeProof::No,
+    )?;
 
     Ok(ChannelEnds {
         channel_end,

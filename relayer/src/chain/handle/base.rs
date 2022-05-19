@@ -259,8 +259,16 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryChannels { request, reply_to })
     }
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
-        self.send(|reply_to| ChainRequest::QueryChannel { request, reply_to })
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryChannel {
+            request,
+            include_proof,
+            reply_to,
+        })
     }
 
     fn query_channel_client_state(
