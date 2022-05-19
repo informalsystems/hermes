@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use tracing::{debug, error_span};
+use tracing::{error_span, trace};
 
 use crate::{
     chain::handle::ChainHandle,
@@ -28,7 +28,7 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
             ))
         })?;
 
-        debug!(%amount, denom = %balance.denom, account = %key.account, "wallet balance");
+        trace!(%amount, denom = %balance.denom, account = %key.account, "wallet balance");
 
         telemetry!(
             wallet_balance,

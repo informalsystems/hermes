@@ -10,7 +10,7 @@ use std::time::Instant;
 
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use tracing::{debug, error, info, span, trace, warn};
+use tracing::{debug, error, info, span, trace, warn, Level};
 
 use flex_error::define_error;
 use ibc::core::ics02_client::client_consensus::{
@@ -223,6 +223,16 @@ define_error! {
                     e.client_id, e.chain_id, e.description)
             },
 
+        ConsensusStateNotTrusted
+            {
+                height: Height,
+                elapsed: Duration,
+            }
+            |e| {
+                format_args!("the consensus state at height {} is outside of trusting period: elapsed {:?}",
+                    e.height, e.elapsed)
+            },
+
         Misbehaviour
             {
                 description: String,
@@ -290,6 +300,20 @@ pub struct CreateOptions {
     pub max_clock_drift: Option<Duration>,
     pub trusting_period: Option<Duration>,
     pub trust_threshold: Option<TrustThreshold>,
+}
+
+/// Captures the diagnostic of verifying whether a certain
+/// consensus state is within the trusting period (i.e., trusted)
+/// or it's not within the trusting period (not trusted).
+pub enum ConsensusStateTrusted {
+    NotTrusted {
+        elapsed: Duration,
+        network_timestamp: Timestamp,
+        consensus_state_timestmap: Timestamp,
+    },
+    Trusted {
+        elapsed: Duration,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -650,25 +674,79 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             ));
         }
 
-        let last_update_time = self
-            .consensus_state(client_state.latest_height())?
-            .timestamp();
+        match self
+            .check_consensus_state_trusting_period(&client_state, &client_state.latest_height())?
+        {
+            ConsensusStateTrusted::NotTrusted {
+                elapsed,
+                network_timestamp,
+                consensus_state_timestmap,
+            } => {
+                error!(
+                    latest_height = %client_state.latest_height(),
+                    network_timestmap = %network_timestamp,
+                    consensus_state_timestamp = %consensus_state_timestmap,
+                    elapsed = ?elapsed,
+                    "[{}] client state is not valid: latest height is outside of trusting period!",
+                    self
+                );
+                return Err(ForeignClientError::expired_or_frozen(
+                    self.id().clone(),
+                    self.dst_chain.id(),
+                    format!(
+                        "expired: time elapsed since last client update: {:?}",
+                        elapsed
+                    ),
+                ));
+            }
+            ConsensusStateTrusted::Trusted { elapsed } => Ok((client_state, Some(elapsed))),
+        }
+    }
 
-        // Compute the duration since the last update of this client
-        let elapsed = Timestamp::now().duration_since(&last_update_time);
+    /// Verifies if the consensus state at given [`Height`]
+    /// is within or outside of the client's trusting period.
+    fn check_consensus_state_trusting_period(
+        &self,
+        client_state: &AnyClientState,
+        height: &Height,
+    ) -> Result<ConsensusStateTrusted, ForeignClientError> {
+        let _span = span!(Level::DEBUG, "check_consensus_state_trusting_period", height = %height)
+            .entered();
 
-        if client_state.expired(elapsed.unwrap_or_default()) {
-            return Err(ForeignClientError::expired_or_frozen(
-                self.id().clone(),
-                self.dst_chain.id(),
-                format!(
-                    "expired: time elapsed since last client update: {:?}",
-                    elapsed
-                ),
-            ));
+        // Safety check
+        if client_state.chain_id() != self.src_chain.id() {
+            warn!("the chain id in the client state ('{}') is inconsistent with the client's source chain id ('{}')",
+            client_state.chain_id(), self.src_chain.id());
         }
 
-        Ok((client_state, elapsed))
+        let consensus_state_timestamp = self.consensus_state(*height)?.timestamp();
+
+        let current_src_network_time = self
+            .src_chain
+            .query_application_status()
+            .map_err(|e| {
+                ForeignClientError::client_refresh(
+                    self.id().clone(),
+                    "failed querying the application status of source chain".to_string(),
+                    e,
+                )
+            })?
+            .timestamp;
+
+        // Compute the duration of time elapsed since this consensus state was installed
+        let elapsed = current_src_network_time
+            .duration_since(&consensus_state_timestamp)
+            .unwrap_or_default();
+
+        if client_state.expired(elapsed) {
+            Ok(ConsensusStateTrusted::NotTrusted {
+                elapsed,
+                network_timestamp: current_src_network_time,
+                consensus_state_timestmap: consensus_state_timestamp,
+            })
+        } else {
+            Ok(ConsensusStateTrusted::Trusted { elapsed })
+        }
     }
 
     pub fn is_expired_or_frozen(&self) -> bool {
@@ -862,18 +940,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         target_height: Height,
         trusted_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
-        let latest_height = || {
+        let src_network_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::client_create(
                     self.src_chain.id(),
-                    "failed fetching src chain latest height with error".to_string(),
+                    "failed fetching src network latest height with error".to_string(),
                     e,
                 )
             })
         };
 
-        // Wait for source chain to reach `target_height`
-        while latest_height()? < target_height {
+        // Wait for the source network to produce block(s) & reach `target_height`.
+        while src_network_latest_height()? < target_height {
             thread::sleep(Duration::from_millis(100))
         }
 
@@ -886,6 +964,30 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             self.validate_trusted_height(trusted_height, &client_state)?;
             trusted_height
         };
+
+        if trusted_height != client_state.latest_height() {
+            // If we're using a trusted height that is different from the client latest height,
+            // then check if the consensus state at `trusted_height` is within trusting period
+            if let ConsensusStateTrusted::NotTrusted {
+                elapsed,
+                consensus_state_timestmap,
+                network_timestamp,
+            } = self.check_consensus_state_trusting_period(&client_state, &trusted_height)?
+            {
+                error!(
+                    trusted_height = %trusted_height,
+                    network_timestmap = %network_timestamp,
+                    consensus_state_timestamp = %consensus_state_timestmap,
+                    elapsed = ?elapsed,
+                    "[{}] cannot build client update message because the provided trusted height is outside of trusting period!",
+                    self
+                );
+                return Err(ForeignClientError::consensus_state_not_trusted(
+                    trusted_height,
+                    elapsed,
+                ));
+            }
+        }
 
         if trusted_height >= target_height {
             warn!(
