@@ -87,7 +87,7 @@ define_error! {
                 max_delay_period: Duration
             }
             |e| {
-                format!("Invalid delay period '{:?}': should be at max '{:?}'",
+                format!("invalid delay period '{:?}': should be at max '{:?}'",
                     e.delay_period, e.max_delay_period)
             },
 
@@ -101,7 +101,7 @@ define_error! {
         RetryInternal
             { reason: String }
             | e | {
-                format_args!("Encountered internal error during retry: {}",
+                format_args!("encountered internal error during retry: {}",
                     e.reason)
             },
 
@@ -132,9 +132,9 @@ define_error! {
             }
             |e| {
                 format!(
-                    "The {} on {} has counterparty {} which is different than the expected {} on {}.\
-                    This is typically caused by crossing handshake messages caused by the  presence of \
-                    multiple relayers.",
+                    "the {} on {} has counterparty {} which is different than the expected {} on {}.\
+                    This is typically caused by crossing handshake messages in the presence of \
+                    multiple relayers",
                     e.a_connection_id, e.a_chain_id, e.a_connection_end_counterparty,
                     e.b_connection_id, e.b_chain_id)
             },
