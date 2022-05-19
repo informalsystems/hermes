@@ -555,3 +555,6 @@ impl GrpcStatusSubdetail {
             .starts_with("account sequence mismatch")
     }
 }
+
+pub const QUERY_PROOF_EXPECT_MSG: &str =
+    "Internal error. Requested proof with query but no proof was returned.";

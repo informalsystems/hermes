@@ -30,7 +30,7 @@ use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
@@ -162,25 +162,37 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
-    ) -> Result<AnyClientState, Error> {
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
         let handle = self.inner();
-        if request.height.is_zero() {
-            let (result, in_cache) =
-                self.cache
-                    .get_or_try_insert_client_state_with(&request.client_id, || {
-                        handle.query_client_state(QueryClientStateRequest {
-                            client_id: request.client_id.clone(),
-                            height: request.height,
-                        })
-                    })?;
+        match include_proof {
+            IncludeProof::Yes => handle.query_client_state(request, include_proof),
+            IncludeProof::No => {
+                if request.height.is_zero() {
+                    let (result, in_cache) = self.cache.get_or_try_insert_client_state_with(
+                        &request.client_id,
+                        || {
+                            handle
+                                .query_client_state(
+                                    QueryClientStateRequest {
+                                        client_id: request.client_id.clone(),
+                                        height: request.height,
+                                    },
+                                    IncludeProof::No,
+                                )
+                                .map(|(client_state, _)| client_state)
+                        },
+                    )?;
 
-            if in_cache == CacheStatus::Hit {
-                telemetry!(query_cache_hit, &self.id(), "query_client_state");
+                    if in_cache == CacheStatus::Hit {
+                        telemetry!(query_cache_hit, &self.id(), "query_client_state");
+                    }
+
+                    Ok((result, None))
+                } else {
+                    handle.query_client_state(request, include_proof)
+                }
             }
-
-            Ok(result)
-        } else {
-            handle.query_client_state(request)
         }
     }
 
@@ -297,14 +309,6 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.inner().query_channel_client_state(request)
-    }
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.inner().proven_client_state(client_id, height)
     }
 
     fn proven_connection(

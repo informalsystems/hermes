@@ -49,7 +49,7 @@ use super::{
     client::ClientSettings,
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     requests::{
-        QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+        IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
         QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
         QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
         QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
@@ -317,8 +317,8 @@ where
                             self.query_client_connections(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryClientState { request, reply_to }) => {
-                            self.query_client_state(request, reply_to)?
+                        Ok(ChainRequest::QueryClientState { request, include_proof, reply_to }) => {
+                            self.query_client_state(request, include_proof, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConsensusStates { request, reply_to }) => {
@@ -367,10 +367,6 @@ where
 
                         Ok(ChainRequest::QueryChannelClientState { request, reply_to }) => {
                             self.query_channel_client_state(request, reply_to)?
-                        },
-
-                        Ok(ChainRequest::ProvenClientState { client_id, height, reply_to }) => {
-                            self.proven_client_state(client_id, height, reply_to)?
                         },
 
                         Ok(ChainRequest::ProvenConnection { connection_id, height, reply_to }) => {
@@ -620,14 +616,15 @@ where
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
-        reply_to: ReplyTo<AnyClientState>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(AnyClientState, Option<MerkleProof>)>,
     ) -> Result<(), Error> {
-        let client_state = self
+        let res = self
             .chain
-            .query_client_state(request)
-            .map(|cs| cs.wrap_any());
+            .query_client_state(request, include_proof)
+            .map(|(cs, proof)| (cs.wrap_any(), proof));
 
-        reply_to.send(client_state).map_err(Error::send)
+        reply_to.send(res).map_err(Error::send)
     }
 
     fn query_upgraded_client_state(
@@ -736,20 +733,6 @@ where
         reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel_client_state(request);
-        reply_to.send(result).map_err(Error::send)
-    }
-
-    fn proven_client_state(
-        &self,
-        client_id: ClientId,
-        height: Height,
-        reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
-    ) -> Result<(), Error> {
-        let result = self
-            .chain
-            .proven_client_state(&client_id, height)
-            .map(|(cs, mp)| (cs.wrap_any(), mp));
-
         reply_to.send(result).map_err(Error::send)
     }
 

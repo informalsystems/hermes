@@ -79,7 +79,7 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 
 use super::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
@@ -735,15 +735,34 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
-    ) -> Result<AnyClientState, Error> {
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
         crate::time!("query_client_state");
         crate::telemetry!(query, self.id(), "query_client_state");
 
-        let client_state = self
-            .query(ClientStatePath(request.client_id), request.height, false)
-            .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
+        match include_proof {
+            IncludeProof::Yes => {
+                let res = self.query(
+                    ClientStatePath(request.client_id.clone()),
+                    request.height,
+                    true,
+                )?;
 
-        Ok(client_state)
+                let client_state = AnyClientState::decode_vec(&res.value).map_err(Error::decode)?;
+
+                Ok((
+                    client_state,
+                    Some(res.proof.ok_or_else(Error::empty_response_proof)?),
+                ))
+            }
+            IncludeProof::No => {
+                let client_state = self
+                    .query(ClientStatePath(request.client_id), request.height, false)
+                    .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
+
+                Ok((client_state, None))
+            }
+        }
     }
 
     fn query_upgraded_client_state(
@@ -1336,23 +1355,6 @@ impl ChainEndpoint for CosmosSdkChain {
             .block_on(rpc_call)
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
         Ok(response.block.header.into())
-    }
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
-        crate::time!("proven_client_state");
-
-        let res = self.query(ClientStatePath(client_id.clone()), height, true)?;
-
-        let client_state = AnyClientState::decode_vec(&res.value).map_err(Error::decode)?;
-
-        Ok((
-            client_state,
-            res.proof.ok_or_else(Error::empty_response_proof)?,
-        ))
     }
 
     fn proven_client_consensus(

@@ -49,7 +49,7 @@ use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
@@ -147,8 +147,9 @@ where
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
-    ) -> Result<AnyClientState, Error> {
-        self.value().query_client_state(request)
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
+        self.value().query_client_state(request, include_proof)
     }
 
     fn query_client_connections(
@@ -235,14 +236,6 @@ where
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.value().query_channel_client_state(request)
-    }
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.value().proven_client_state(client_id, height)
     }
 
     fn proven_connection(

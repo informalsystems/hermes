@@ -43,7 +43,7 @@ use crate::{
 use super::{
     client::ClientSettings,
     requests::{
-        QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+        IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
         QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
         QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
         QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
@@ -198,7 +198,8 @@ pub enum ChainRequest {
 
     QueryClientState {
         request: QueryClientStateRequest,
-        reply_to: ReplyTo<AnyClientState>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(AnyClientState, Option<MerkleProof>)>,
     },
 
     QueryClientConnections {
@@ -267,12 +268,6 @@ pub enum ChainRequest {
     QueryNextSequenceReceive {
         request: QueryNextSequenceReceiveRequest,
         reply_to: ReplyTo<Sequence>,
-    },
-
-    ProvenClientState {
-        client_id: ClientId,
-        height: Height,
-        reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
     },
 
     ProvenConnection {
@@ -396,8 +391,11 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
-    fn query_client_state(&self, request: QueryClientStateRequest)
-        -> Result<AnyClientState, Error>;
+    fn query_client_state(
+        &self,
+        request: QueryClientStateRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error>;
 
     fn query_client_connections(
         &self,
@@ -456,12 +454,6 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error>;
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn proven_connection(
         &self,

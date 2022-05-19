@@ -23,6 +23,14 @@ use ibc_proto::ibc::core::connection::v1::{
 
 use serde::{Deserialize, Serialize};
 
+/// Defines a type to be used in select requests to specify whether or not a proof should be
+/// returned along with the response.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum IncludeProof {
+    Yes,
+    No,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin

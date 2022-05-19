@@ -30,7 +30,7 @@ use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
@@ -182,12 +182,13 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
-    ) -> Result<AnyClientState, Error> {
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
         self.inc_metric(&format!(
             "query_client_state({}, {})",
             request.client_id, request.height
         ));
-        self.inner().query_client_state(request)
+        self.inner().query_client_state(request, include_proof)
     }
 
     fn query_client_connections(
@@ -288,15 +289,6 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.inc_metric("query_channel_client_state");
         self.inner().query_channel_client_state(request)
-    }
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.inc_metric("proven_client_state");
-        self.inner().proven_client_state(client_id, height)
     }
 
     fn proven_connection(

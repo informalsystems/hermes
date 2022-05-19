@@ -31,10 +31,10 @@ use crate::{
     chain::{
         client::ClientSettings,
         requests::{
-            QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-            QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-            QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-            QueryConsensusStateRequest, QueryConsensusStatesRequest,
+            IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest,
+            QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+            QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+            QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
             QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
             QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
             QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
@@ -167,8 +167,13 @@ impl ChainHandle for BaseChainHandle {
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
-    ) -> Result<AnyClientState, Error> {
-        self.send(|reply_to| ChainRequest::QueryClientState { request, reply_to })
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryClientState {
+            request,
+            include_proof,
+            reply_to,
+        })
     }
 
     fn query_client_connections(
@@ -255,18 +260,6 @@ impl ChainHandle for BaseChainHandle {
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.send(|reply_to| ChainRequest::QueryChannelClientState { request, reply_to })
-    }
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::ProvenClientState {
-            client_id: client_id.clone(),
-            height,
-            reply_to,
-        })
     }
 
     fn proven_connection(

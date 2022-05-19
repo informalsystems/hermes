@@ -31,14 +31,14 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 use crate::account::Balance;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
-use crate::error::Error;
+use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 use self::client::ClientSettings;
 use self::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
@@ -172,8 +172,11 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
-    fn query_client_state(&self, request: QueryClientStateRequest)
-        -> Result<AnyClientState, Error>;
+    fn query_client_state(
+        &self,
+        request: QueryClientStateRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error>;
 
     fn query_consensus_states(
         &self,
@@ -276,12 +279,6 @@ pub trait ChainEndpoint: Sized {
     ) -> Result<Self::ConsensusState, Error>;
 
     // Provable queries
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<(AnyClientState, MerkleProof), Error>;
-
     fn proven_connection(
         &self,
         connection_id: &ConnectionId,
@@ -375,8 +372,14 @@ pub trait ChainEndpoint: Sized {
 
         match message_type {
             ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
-                let (client_state_value, client_state_proof) =
-                    self.proven_client_state(client_id, height)?;
+                let (client_state_value, maybe_client_state_proof) = self.query_client_state(
+                    QueryClientStateRequest {
+                        client_id: client_id.clone(),
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+                let client_state_proof = maybe_client_state_proof.expect(QUERY_PROOF_EXPECT_MSG);
 
                 client_proof = Some(
                     CommitmentProofBytes::try_from(client_state_proof)

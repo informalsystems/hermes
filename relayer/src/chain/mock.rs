@@ -43,7 +43,7 @@ use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 use super::requests::{
-    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    IncludeProof, QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
     QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
@@ -190,14 +190,15 @@ impl ChainEndpoint for MockChain {
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
-    ) -> Result<AnyClientState, Error> {
+        _include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
         // TODO: unclear what are the scenarios where we need to take height into account.
         let client_state = self
             .context
             .query_client_full_state(&request.client_id)
             .ok_or_else(Error::empty_response_value)?;
 
-        Ok(client_state)
+        Ok((client_state, None))
     }
 
     fn query_upgraded_client_state(
@@ -300,14 +301,6 @@ impl ChainEndpoint for MockChain {
         &self,
         _request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
-        unimplemented!()
-    }
-
-    fn proven_client_state(
-        &self,
-        _client_id: &ClientId,
-        _height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
         unimplemented!()
     }
 

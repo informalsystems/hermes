@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
 use super::requests::{
-    PageRequest, QueryChannelRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryConnectionRequest, QueryPacketAcknowledgementsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
+    QueryClientStateRequest, QueryConnectionRequest, QueryPacketAcknowledgementsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use super::{
     handle::ChainHandle,
@@ -42,11 +42,14 @@ pub fn counterparty_chain_from_connection(
         .map_err(Error::relayer)?;
 
     let client_id = connection_end.client_id();
-    let client_state = src_chain
-        .query_client_state(QueryClientStateRequest {
-            client_id: client_id.clone(),
-            height: Height::zero(),
-        })
+    let (client_state, _) = src_chain
+        .query_client_state(
+            QueryClientStateRequest {
+                client_id: client_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::relayer)?;
 
     trace!(
@@ -181,11 +184,14 @@ pub fn channel_connection_client(
     }
 
     let client_id = connection_end.client_id();
-    let client_state = chain
-        .query_client_state(QueryClientStateRequest {
-            client_id: client_id.clone(),
-            height: Height::zero(),
-        })
+    let (client_state, _) = chain
+        .query_client_state(
+            QueryClientStateRequest {
+                client_id: client_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::relayer)?;
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);

@@ -3,7 +3,7 @@ use alloc::sync::Arc;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use ibc_relayer::chain::requests::{
-    PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    IncludeProof, PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest,
 };
 use tokio::runtime::Runtime as TokioRuntime;
@@ -55,11 +55,14 @@ impl Runnable for QueryClientStateCmd {
             .unwrap_or_else(exit_with_unrecoverable_error);
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
-        match chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height,
-        }) {
-            Ok(cs) => Output::success(cs).exit(),
+        match chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => Output::success(cs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -113,11 +116,14 @@ impl Runnable for QueryClientConsensusCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height: Height::zero(),
-        }) {
-            Ok(cs) => cs.chain_id(),
+        let counterparty_chain = match chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
                 self.client_id, self.chain_id, e
@@ -199,11 +205,14 @@ impl Runnable for QueryClientHeaderCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height: Height::zero(),
-        }) {
-            Ok(cs) => cs.chain_id(),
+        let counterparty_chain = match chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
                 self.client_id, self.chain_id, e
