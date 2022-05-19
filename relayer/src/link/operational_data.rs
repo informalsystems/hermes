@@ -1,10 +1,8 @@
-use alloc::borrow::Cow;
 use core::fmt;
 use core::iter;
 use std::time::{Duration, Instant};
 
 use ibc_proto::google::protobuf::Any;
-use nanoid::nanoid;
 use tracing::{debug, info};
 
 use ibc::core::ics02_client::client_state::ClientState;
@@ -13,7 +11,9 @@ use ibc::events::IbcEvent;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::requests::QueryClientStateRequest;
+use crate::chain::tracking::TrackedMsgs;
+use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
 
@@ -35,36 +35,32 @@ impl fmt::Display for OperationalDataTarget {
 /// A set of [`IbcEvent`]s that have an associated
 /// tracking number to ensure better observability.
 pub struct TrackedEvents {
-    list: Vec<IbcEvent>,
-    tracking_id: String,
+    events: Vec<IbcEvent>,
+    tracking_id: TrackingId,
 }
 
 impl TrackedEvents {
-    pub fn is_empty(&self) -> bool {
-        self.list.is_empty()
-    }
-
-    pub fn events(&self) -> &Vec<IbcEvent> {
-        &self.list
-    }
-
-    pub fn tracking_id(&self) -> &str {
-        &self.tracking_id
-    }
-
-    pub fn set_height(&mut self, height: Height) {
-        for event in self.list.iter_mut() {
-            event.set_height(height);
-        }
-    }
-}
-
-impl From<Vec<IbcEvent>> for TrackedEvents {
-    fn from(list: Vec<IbcEvent>) -> Self {
+    pub fn new(events: Vec<IbcEvent>, tracking_id: TrackingId) -> Self {
         Self {
-            list,
-            tracking_id: nanoid!(10),
+            events,
+            tracking_id,
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.events.is_empty()
+    }
+
+    pub fn events(&self) -> &[IbcEvent] {
+        &self.events
+    }
+
+    pub fn tracking_id(&self) -> TrackingId {
+        self.tracking_id
+    }
+
+    pub fn len(&self) -> usize {
+        self.events.len()
     }
 }
 
@@ -91,7 +87,7 @@ pub struct OperationalData {
     pub proofs_height: Height,
     pub batch: Vec<TransitMessage>,
     pub target: OperationalDataTarget,
-    pub tracking_id: String,
+    pub tracking_id: TrackingId,
     /// Stores `Some(ConnectionDelay)` if the delay is non-zero and `None` otherwise
     connection_delay: Option<ConnectionDelay>,
 }
@@ -100,7 +96,7 @@ impl OperationalData {
     pub fn new(
         proofs_height: Height,
         target: OperationalDataTarget,
-        tracking_id: impl Into<String>,
+        tracking_id: TrackingId,
         connection_delay: Duration,
     ) -> Self {
         let connection_delay = if !connection_delay.is_zero() {
@@ -108,12 +104,13 @@ impl OperationalData {
         } else {
             None
         };
+
         OperationalData {
             proofs_height,
             batch: vec![],
             target,
             connection_delay,
-            tracking_id: tracking_id.into(),
+            tracking_id,
         }
     }
 
@@ -122,9 +119,9 @@ impl OperationalData {
     }
 
     /// Returns displayable information on the operation's data.
-    pub fn info(&self) -> OperationalInfo<'_> {
+    pub fn info(&self) -> OperationalInfo {
         OperationalInfo {
-            tracking_id: Cow::Borrowed(&self.tracking_id),
+            tracking_id: self.tracking_id,
             target: self.target,
             proofs_height: self.proofs_height,
             batch_len: self.batch.len(),
@@ -133,9 +130,10 @@ impl OperationalData {
 
     /// Transforms `self` into the list of events accompanied with the tracking ID.
     pub fn into_events(self) -> TrackedEvents {
-        let list = self.batch.into_iter().map(|gm| gm.event).collect();
+        let events = self.batch.into_iter().map(|gm| gm.event).collect();
+
         TrackedEvents {
-            list,
+            events,
             tracking_id: self.tracking_id,
         }
     }
@@ -172,16 +170,23 @@ impl OperationalData {
             let client_state = match self.target {
                 OperationalDataTarget::Source => relay_path
                     .src_chain()
-                    .query_client_state(relay_path.src_client_id(), Height::zero())
+                    .query_client_state(QueryClientStateRequest {
+                        client_id: relay_path.src_client_id().clone(),
+                        height: Height::zero(),
+                    })
                     .map_err(|e| LinkError::query(relay_path.src_chain().id(), e))?,
+
                 OperationalDataTarget::Destination => relay_path
                     .dst_chain()
-                    .query_client_state(relay_path.dst_client_id(), Height::zero())
+                    .query_client_state(QueryClientStateRequest {
+                        client_id: relay_path.dst_client_id().clone(),
+                        height: Height::zero(),
+                    })
                     .map_err(|e| LinkError::query(relay_path.dst_chain().id(), e))?,
             };
 
             if client_state.is_frozen() {
-                return Ok(TrackedMsgs::new(vec![], &self.tracking_id));
+                return Ok(TrackedMsgs::new(vec![], self.tracking_id));
             } else {
                 None
             }
@@ -194,7 +199,7 @@ impl OperationalData {
             None => self.batch.iter().map(|gm| gm.msg.clone()).collect(),
         };
 
-        let tm = TrackedMsgs::new(msgs, &self.tracking_id);
+        let tm = TrackedMsgs::new(msgs, self.tracking_id);
 
         info!("assembled batch of {} message(s)", tm.messages().len());
 
@@ -353,14 +358,14 @@ impl ConnectionDelay {
 
 /// A lightweight informational data structure that can be extracted
 /// out of [`OperationalData`] for e.g. logging purposes.
-pub struct OperationalInfo<'a> {
-    tracking_id: Cow<'a, str>,
+pub struct OperationalInfo {
+    tracking_id: TrackingId,
     target: OperationalDataTarget,
     proofs_height: Height,
     batch_len: usize,
 }
 
-impl<'a> OperationalInfo<'a> {
+impl OperationalInfo {
     pub fn target(&self) -> OperationalDataTarget {
         self.target
     }
@@ -369,24 +374,9 @@ impl<'a> OperationalInfo<'a> {
     pub fn batch_len(&self) -> usize {
         self.batch_len
     }
-
-    pub fn into_owned(self) -> OperationalInfo<'static> {
-        let Self {
-            tracking_id,
-            target,
-            proofs_height,
-            batch_len,
-        } = self;
-        OperationalInfo {
-            tracking_id: tracking_id.into_owned().into(),
-            target,
-            proofs_height,
-            batch_len,
-        }
-    }
 }
 
-impl<'a> fmt::Display for OperationalInfo<'a> {
+impl fmt::Display for OperationalInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

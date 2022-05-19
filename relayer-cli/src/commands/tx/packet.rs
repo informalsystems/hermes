@@ -44,7 +44,7 @@ impl Runnable for TxRawPacketRecvCmd {
         };
 
         let res: Result<Vec<IbcEvent>, Error> = link
-            .build_and_send_recv_packet_messages()
+            .relay_recv_packet_and_timeout_messages()
             .map_err(Error::link);
 
         match res {
@@ -87,9 +87,8 @@ impl Runnable for TxRawPacketAckCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let res: Result<Vec<IbcEvent>, Error> = link
-            .build_and_send_ack_packet_messages()
-            .map_err(Error::link);
+        let res: Result<Vec<IbcEvent>, Error> =
+            link.relay_ack_packet_messages().map_err(Error::link);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),

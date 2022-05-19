@@ -6,6 +6,7 @@ use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::query::QueryTxRequest;
 use ibc::{
     core::ics02_client::header::AnyHeader,
@@ -22,22 +23,22 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
-    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 
+use crate::account::Balance;
 use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::requests::{
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+};
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -129,6 +130,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
+    fn query_balance(&self) -> Result<Balance, Error> {
+        self.inner().query_balance()
+    }
+
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
         self.inner().query_application_status()
     }
@@ -156,16 +161,18 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     // TODO: Introduce new query_client_state_latest to separate from this one.
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
         let handle = self.inner();
-        if height.is_zero() {
-            let (result, in_cache) = self
-                .cache
-                .get_or_try_insert_client_state_with(client_id, || {
-                    handle.query_client_state(client_id, height)
-                })?;
+        if request.height.is_zero() {
+            let (result, in_cache) =
+                self.cache
+                    .get_or_try_insert_client_state_with(&request.client_id, || {
+                        handle.query_client_state(QueryClientStateRequest {
+                            client_id: request.client_id.clone(),
+                            height: request.height,
+                        })
+                    })?;
 
             if in_cache == CacheStatus::Hit {
                 telemetry!(query_cache_hit, &self.id(), "query_client_state");
@@ -173,7 +180,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
             Ok(result)
         } else {
-            handle.query_client_state(client_id, height)
+            handle.query_client_state(request)
         }
     }
 
@@ -193,26 +200,23 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
-        self.inner()
-            .query_consensus_state(client_id, consensus_height, query_height)
+        self.inner().query_consensus_state(request)
     }
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.inner().query_upgraded_client_state(height)
+        self.inner().query_upgraded_client_state(request)
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.inner().query_upgraded_consensus_state(height)
+        self.inner().query_upgraded_consensus_state(request)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -223,17 +227,13 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_compatible_versions()
     }
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error> {
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
         let handle = self.inner();
-        if height.is_zero() {
+        if request.height.is_zero() {
             let (result, in_cache) = self
                 .cache
-                .get_or_try_insert_connection_with(connection_id, || {
-                    handle.query_connection(connection_id, height)
+                .get_or_try_insert_connection_with(&request.connection_id, || {
+                    handle.query_connection(request.clone())
                 })?;
 
             if in_cache == CacheStatus::Hit {
@@ -242,7 +242,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
             Ok(result)
         } else {
-            handle.query_connection(connection_id, height)
+            handle.query_connection(request)
         }
     }
 
@@ -274,17 +274,12 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_channels(request)
     }
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error> {
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
         let handle = self.inner();
-        if height.is_zero() {
+        if request.height.is_zero() {
             let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
-                &PortChannelId::new(*channel_id, port_id.clone()),
-                || handle.query_channel(port_id, channel_id, height),
+                &PortChannelId::new(request.channel_id, request.port_id.clone()),
+                || handle.query_channel(request),
             )?;
 
             if in_cache == CacheStatus::Hit {
@@ -293,7 +288,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
             Ok(result)
         } else {
-            handle.query_channel(port_id, channel_id, height)
+            handle.query_channel(request)
         }
     }
 
@@ -408,28 +403,28 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.inner().query_packet_commitments(request)
     }
 
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.inner().query_unreceived_packets(request)
     }
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.inner().query_packet_acknowledgements(request)
     }
 
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.inner().query_unreceived_acknowledgement(request)
     }
 
@@ -444,7 +439,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_blocks(request)
     }
 
-    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
-        self.inner.query_host_consensus_state(height)
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<AnyConsensusState, Error> {
+        self.inner.query_host_consensus_state(request)
     }
 }

@@ -2,15 +2,24 @@ use std::convert::TryInto;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use ibc::events::IbcEvent;
-use ibc::Height;
+use ibc::core::ics04_channel::packet::Sequence;
 use tracing::{error_span, info};
 
+use ibc::events::IbcEvent;
+use ibc::Height;
+
+use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
+use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
-use crate::link::operational_data::OperationalData;
+use crate::link::operational_data::{OperationalData, TrackedEvents};
+use crate::link::packet_events::{
+    query_packet_events_with, query_send_packet_events, query_write_ack_events,
+};
 use crate::link::relay_path::RelayPath;
-use crate::link::{relay_sender, Link};
+use crate::link::relay_sender::SyncSender;
+use crate::link::Link;
+use crate::path::PathIdentifiers;
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
@@ -37,11 +46,27 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Ok(None)
         }
     }
+
+    /// Given a vector of [`OperationalData`], this method proceeds to relaying
+    /// all the messages therein. It accumulates all events generated in the
+    /// mutable vector of [`IbcEvent`]s.
+    pub fn relay_and_accumulate_results(
+        &self,
+        from: Vec<OperationalData>,
+        results: &mut Vec<IbcEvent>,
+    ) -> Result<(), LinkError> {
+        for od in from {
+            let mut last_res = self.relay_from_operational_data::<SyncSender>(od)?;
+            results.append(&mut last_res.events);
+        }
+
+        Ok(())
+    }
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     /// Implements the `packet-recv` CLI
-    pub fn build_and_send_recv_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
+    pub fn relay_recv_packet_and_timeout_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
             "PacketRecvCmd",
             src_chain = %self.a_to_b.src_chain().id(),
@@ -51,23 +76,30 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
         .entered();
 
-        self.a_to_b.build_recv_packet_and_timeout_msgs(None)?;
+        // Find the sequence numbers of unreceived packets
+        let (sequences, src_response_height) = unreceived_packets(
+            self.a_to_b.dst_chain(),
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+        )
+        .map_err(LinkError::supervisor)?;
 
-        let mut results = vec![];
-
-        // Block waiting for all of the scheduled data (until `None` is returned)
-        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
-            let mut last_res = self
-                .a_to_b
-                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
-            results.append(&mut last_res.events);
+        if sequences.is_empty() {
+            return Ok(vec![]);
         }
 
-        Ok(results)
+        info!("unreceived packets found: {} ", sequences.len());
+
+        self.relay_packet_messages(
+            sequences,
+            src_response_height,
+            query_send_packet_events,
+            TrackingId::new_static("packet-recv"),
+        )
     }
 
     /// Implements the `packet-ack` CLI
-    pub fn build_and_send_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
+    pub fn relay_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
             "PacketAckCmd",
             src_chain = %self.a_to_b.src_chain().id(),
@@ -77,16 +109,65 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
         .entered();
 
-        self.a_to_b.build_packet_ack_msgs(None)?;
+        // Find the sequence numbers of unreceived acknowledgements
+        let (sequences, src_response_height) = unreceived_acknowledgements(
+            self.a_to_b.dst_chain(),
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+        )
+        .map_err(LinkError::supervisor)?;
 
+        if sequences.is_empty() {
+            return Ok(vec![]);
+        }
+
+        info!("unreceived acknowledgements found: {} ", sequences.len());
+
+        self.relay_packet_messages(
+            sequences,
+            src_response_height,
+            query_write_ack_events,
+            TrackingId::new_static("packet-ack"),
+        )
+    }
+
+    fn relay_packet_messages(
+        &self,
+        sequences: Vec<Sequence>,
+        src_response_height: Height,
+        query_fn: impl Fn(
+            &ChainA,
+            &PathIdentifiers,
+            Vec<Sequence>,
+            Height,
+        ) -> Result<Vec<IbcEvent>, LinkError>,
+        tracking_id: TrackingId,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
+        dbg!(src_response_height);
         let mut results = vec![];
+        for events_chunk in query_packet_events_with(
+            &sequences,
+            src_response_height,
+            self.a_to_b.src_chain(),
+            &self.a_to_b.path_id,
+            query_fn,
+        ) {
+            let tracked_events = TrackedEvents::new(events_chunk, tracking_id);
+            self.a_to_b.events_to_operational_data(tracked_events)?;
 
-        // Block waiting for all of the scheduled data
+            // In case of zero connection delay, the op. data will already be ready
+            let (src_ods, dst_ods) = self.a_to_b.try_fetch_scheduled_operational_data()?;
+            self.a_to_b
+                .relay_and_accumulate_results(Vec::from(src_ods), &mut results)?;
+            self.a_to_b
+                .relay_and_accumulate_results(Vec::from(dst_ods), &mut results)?;
+        }
+
+        // In case of non-zero connection delay, we block here waiting for all op.data
+        // until the connection delay elapses
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data()? {
-            let mut last_res = self
-                .a_to_b
-                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
-            results.append(&mut last_res.events);
+            self.a_to_b
+                .relay_and_accumulate_results(vec![odata], &mut results)?;
         }
 
         Ok(results)

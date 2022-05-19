@@ -28,6 +28,7 @@ use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::query::QueryTxRequest;
 use ibc::{
     core::ics02_client::header::AnyHeader,
@@ -44,19 +45,19 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
-    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
+use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use ibc_relayer::chain::tx::TrackedMsgs;
+use ibc_relayer::chain::requests::{
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+};
+use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::chain::{ChainStatus, HealthCheck};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::error::Error;
@@ -145,10 +146,9 @@ where
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
-        self.value().query_client_state(client_id, height)
+        self.value().query_client_state(request)
     }
 
     fn query_client_connections(
@@ -167,26 +167,23 @@ where
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
-        self.value()
-            .query_consensus_state(client_id, consensus_height, query_height)
+        self.value().query_consensus_state(request)
     }
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.value().query_upgraded_client_state(height)
+        self.value().query_upgraded_client_state(request)
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.value().query_upgraded_consensus_state(height)
+        self.value().query_upgraded_consensus_state(request)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -197,12 +194,8 @@ where
         self.value().query_compatible_versions()
     }
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error> {
-        self.value().query_connection(connection_id, height)
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
+        self.value().query_connection(request)
     }
 
     fn query_connections(
@@ -233,13 +226,8 @@ where
         self.value().query_channels(request)
     }
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error> {
-        self.value().query_channel(port_id, channel_id, height)
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
+        self.value().query_channel(request)
     }
 
     fn query_channel_client_state(
@@ -353,28 +341,28 @@ where
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.value().query_packet_commitments(request)
     }
 
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.value().query_unreceived_packets(request)
     }
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.value().query_packet_acknowledgements(request)
     }
 
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.value().query_unreceived_acknowledgement(request)
     }
 
@@ -389,7 +377,14 @@ where
         self.value().query_blocks(request)
     }
 
-    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
-        self.value().query_host_consensus_state(height)
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<AnyConsensusState, Error> {
+        self.value().query_host_consensus_state(request)
+    }
+
+    fn query_balance(&self) -> Result<Balance, Error> {
+        self.value().query_balance()
     }
 }

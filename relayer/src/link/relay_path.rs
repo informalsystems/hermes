@@ -7,42 +7,16 @@ use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
-use ibc::{
-    core::{
-        ics02_client::{
-            client_consensus::QueryClientEventRequest,
-            events::ClientMisbehaviour as ClientMisbehaviourEvent,
-            events::UpdateClient as UpdateClientEvent,
-        },
-        ics04_channel::{
-            channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
-            events::{SendPacket, WriteAcknowledgement},
-            msgs::{
-                acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
-                recv_packet::MsgRecvPacket, timeout::MsgTimeout,
-                timeout_on_close::MsgTimeoutOnClose,
-            },
-            packet::{Packet, PacketMsgType, Sequence},
-        },
-        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-    },
-    events::{IbcEvent, PrettyEvents, WithBlockDataType},
-    query::{QueryBlockRequest, QueryTxRequest},
-    signer::Signer,
-    timestamp::Timestamp,
-    tx_msg::Msg,
-    Height,
-};
-use ibc_proto::ibc::core::channel::v1::{
-    QueryNextSequenceReceiveRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-
-use crate::chain::counterparty::{
-    commitments_on_chain, packet_acknowledgements, unreceived_acknowledgements_sequences,
-    unreceived_packets_sequences,
-};
+use crate::chain::counterparty::unreceived_acknowledgements;
+use crate::chain::counterparty::unreceived_packets;
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::requests::QueryChannelRequest;
+use crate::chain::requests::QueryHostConsensusStateRequest;
+use crate::chain::requests::QueryNextSequenceReceiveRequest;
+use crate::chain::requests::QueryUnreceivedAcksRequest;
+use crate::chain::requests::QueryUnreceivedPacketsRequest;
+use crate::chain::tracking::TrackedMsgs;
+use crate::chain::tracking::TrackingId;
 use crate::chain::ChainStatus;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
@@ -52,11 +26,42 @@ use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{
     OperationalData, OperationalDataTarget, TrackedEvents, TransitMessage,
 };
+use crate::link::packet_events::query_packet_events_with;
+use crate::link::packet_events::query_send_packet_events;
+use crate::link::packet_events::query_write_ack_events;
 use crate::link::pending::PendingTxs;
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
 use crate::link::{pending, relay_sender};
+use crate::path::PathIdentifiers;
+use crate::telemetry;
 use crate::util::queue::Queue;
+use ibc::{
+    core::{
+        ics02_client::{
+            client_consensus::QueryClientEventRequest,
+            events::ClientMisbehaviour as ClientMisbehaviourEvent,
+            events::UpdateClient as UpdateClientEvent,
+        },
+        ics04_channel::{
+            channel::{ChannelEnd, Order, State as ChannelState},
+            events::{SendPacket, WriteAcknowledgement},
+            msgs::{
+                acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
+                recv_packet::MsgRecvPacket, timeout::MsgTimeout,
+                timeout_on_close::MsgTimeoutOnClose,
+            },
+            packet::{Packet, PacketMsgType},
+        },
+        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+    },
+    events::{IbcEvent, PrettyEvents, WithBlockDataType},
+    query::QueryTxRequest,
+    signer::Signer,
+    timestamp::Timestamp,
+    tx_msg::Msg,
+    Height,
+};
 
 const MAX_RETRIES: usize = 5;
 
@@ -84,11 +89,7 @@ impl Resubmit {
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
 
-    src_channel_id: ChannelId,
-    src_port_id: PortId,
-
-    dst_channel_id: ChannelId,
-    dst_port_id: PortId,
+    pub(crate) path_id: PathIdentifiers,
 
     // Operational data, targeting both the source and destination chain.
     // These vectors of operational data are ordered decreasingly by
@@ -132,13 +133,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_port_id = channel.src_port_id().clone();
         let dst_port_id = channel.dst_port_id().clone();
 
+        let path = PathIdentifiers {
+            port_id: dst_port_id.clone(),
+            channel_id: dst_channel_id,
+            counterparty_port_id: src_port_id.clone(),
+            counterparty_channel_id: src_channel_id,
+        };
+
         Ok(Self {
             channel,
 
-            src_channel_id,
-            src_port_id: src_port_id.clone(),
-            dst_channel_id,
-            dst_port_id: dst_port_id.clone(),
+            path_id: path,
 
             src_operational_data: Queue::new(),
             dst_operational_data: Queue::new(),
@@ -174,19 +179,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub fn src_port_id(&self) -> &PortId {
-        &self.src_port_id
+        &self.path_id.counterparty_port_id
     }
 
     pub fn dst_port_id(&self) -> &PortId {
-        &self.dst_port_id
+        &self.path_id.port_id
     }
 
     pub fn src_channel_id(&self) -> &ChannelId {
-        &self.src_channel_id
+        &self.path_id.counterparty_channel_id
     }
 
     pub fn dst_channel_id(&self) -> &ChannelId {
-        &self.dst_channel_id
+        &self.path_id.channel_id
     }
 
     pub fn channel(&self) -> &Channel<ChainA, ChainB> {
@@ -195,13 +200,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.src_chain()
-            .query_channel(self.src_port_id(), self.src_channel_id(), height)
+            .query_channel(QueryChannelRequest {
+                port_id: self.src_port_id().clone(),
+                channel_id: *self.src_channel_id(),
+                height,
+            })
             .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.dst_chain()
-            .query_channel(self.dst_port_id(), self.dst_channel_id(), height)
+            .query_channel(QueryChannelRequest {
+                port_id: self.dst_port_id().clone(),
+                channel_id: *self.dst_channel_id(),
+                height,
+            })
             .map_err(|e| LinkError::channel(ChannelError::query(self.dst_chain().id(), e)))
     }
 
@@ -238,11 +251,31 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub(crate) fn src_time_latest(&self) -> Result<Instant, LinkError> {
-        self.src_time_at_height(Height::zero())
+        let elapsed = Timestamp::now()
+            .duration_since(
+                &self
+                    .src_chain()
+                    .query_application_status()
+                    .unwrap()
+                    .timestamp,
+            )
+            .unwrap_or_default();
+
+        Ok(Instant::now().sub(elapsed))
     }
 
     pub(crate) fn dst_time_latest(&self) -> Result<Instant, LinkError> {
-        self.dst_time_at_height(Height::zero())
+        let elapsed = Timestamp::now()
+            .duration_since(
+                &self
+                    .dst_chain()
+                    .query_application_status()
+                    .unwrap()
+                    .timestamp,
+            )
+            .unwrap_or_default();
+
+        Ok(Instant::now().sub(elapsed))
     }
 
     pub(crate) fn src_max_block_time(&self) -> Result<Duration, LinkError> {
@@ -303,9 +336,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(new_msg.to_any())
     }
 
-    // Determines if the events received are relevant and should be processed.
-    // Only events for a port/channel matching one of the channel ends should be processed.
-    fn filter_relaying_events(&self, events: Vec<IbcEvent>) -> TrackedEvents {
+    /// Determines if the events received are relevant and should be processed.
+    /// Only events for a port/channel matching one of the channel ends should be processed.
+    fn filter_relaying_events(
+        &self,
+        events: Vec<IbcEvent>,
+        tracking_id: TrackingId,
+    ) -> TrackedEvents {
         let src_channel_id = self.src_channel_id();
 
         let mut result = vec![];
@@ -345,14 +382,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Transform into `TrackedEvents`
-        result.into()
+        TrackedEvents::new(result, tracking_id)
     }
 
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
+        let tracking_id = TrackingId::new_static("relay pending packets");
+
         for i in 1..=MAX_RETRIES {
             let cleared = self
-                .build_recv_packet_and_timeout_msgs(height)
-                .and_then(|()| self.build_packet_ack_msgs(height));
+                .schedule_recv_packet_and_timeout_msgs(height, tracking_id)
+                .and_then(|()| self.schedule_packet_ack_msgs(height, tracking_id));
 
             match cleared {
                 Ok(()) => return Ok(()),
@@ -384,14 +423,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Generate & schedule operational data from the input `batch` of IBC events.
     pub fn update_schedule(&self, batch: EventBatch) -> Result<(), LinkError> {
         // Collect relevant events from the incoming batch & adjust their height.
-        let events = self.filter_relaying_events(batch.events);
+        let events = self.filter_relaying_events(batch.events, batch.tracking_id);
 
         // Transform the events into operational data items
         self.events_to_operational_data(events)
     }
 
     /// Produces and schedules operational data for this relaying path based on the input events.
-    fn events_to_operational_data(&self, events: TrackedEvents) -> Result<(), LinkError> {
+    pub(crate) fn events_to_operational_data(
+        &self,
+        events: TrackedEvents,
+    ) -> Result<(), LinkError> {
         // Obtain the operational data for the source chain (mostly timeout packets) and for the
         // destination chain (e.g., receive packet messages).
         let (src_opt, dst_opt) = self.generate_operational_data(events)?;
@@ -431,7 +473,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .query_application_status()
             .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
+
         let dst_latest_height = dst_latest_info.height;
+
         // Operational data targeting the source chain (e.g., Timeout packets)
         let mut src_od = OperationalData::new(
             dst_latest_height,
@@ -439,6 +483,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             events.tracking_id(),
             self.channel.connection_delay,
         );
+
         // Operational data targeting the destination chain (e.g., SendPacket messages)
         let mut dst_od = OperationalData::new(
             src_height,
@@ -549,7 +594,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             debug!("[try {}/{}]", i + 1, MAX_RETRIES);
 
             // Consume the operational data by attempting to send its messages
-            match self.send_from_operational_data::<S>(odata.clone()) {
+            match self.send_from_operational_data::<S>(&odata) {
                 Ok(reply) => {
                     // Done with this op. data
                     info!("success");
@@ -593,7 +638,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         initial_odata: OperationalData,
     ) -> Option<OperationalData> {
-        let op_info = initial_odata.info().into_owned();
+        let op_info = initial_odata.info();
 
         warn!(
             "failed. Regenerate operational data from {} events",
@@ -667,7 +712,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Propagates any encountered errors.
     fn send_from_operational_data<S: relay_sender::Submit>(
         &self,
-        odata: OperationalData,
+        odata: &OperationalData,
     ) -> Result<S::Reply, LinkError> {
         if odata.batch.is_empty() {
             error!("ignoring empty operational data!");
@@ -675,6 +720,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         let msgs = odata.assemble_msgs(self)?;
+
+        telemetry!({
+            let (chain, counterparty, channel_id, port_id) = self.target_info(odata.target);
+
+            ibc_telemetry::global().tx_submitted(
+                msgs.tracking_id,
+                &chain,
+                channel_id,
+                port_id,
+                &counterparty,
+            );
+        });
 
         match odata.target {
             OperationalDataTarget::Source => S::submit(self.src_chain(), msgs),
@@ -702,9 +759,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let unreceived_packet = self
             .dst_chain()
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
-                port_id: self.dst_port_id().to_string(),
-                channel_id: self.dst_channel_id().to_string(),
-                packet_commitment_sequences: vec![packet.sequence.into()],
+                port_id: self.dst_port_id().clone(),
+                channel_id: *self.dst_channel_id(),
+                packet_commitment_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
 
@@ -741,9 +798,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let unreceived_ack = self
             .dst_chain()
             .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
-                port_id: self.dst_port_id().to_string(),
-                channel_id: self.dst_channel_id().to_string(),
-                packet_ack_sequences: vec![packet.sequence.into()],
+                port_id: self.dst_port_id().clone(),
+                channel_id: *self.dst_channel_id(),
+                packet_ack_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
 
@@ -817,7 +874,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         height: Height,
     ) -> Result<Instant, LinkError> {
         let chain_time = chain
-            .query_host_consensus_state(height)
+            .query_host_consensus_state(QueryHostConsensusStateRequest { height })
             .map_err(LinkError::relayer)?
             .timestamp();
         let duration = Timestamp::now()
@@ -831,7 +888,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn update_client_dst(
         &self,
         src_chain_height: Height,
-        tracking_id: &str,
+        tracking_id: TrackingId,
     ) -> Result<Height, LinkError> {
         self.do_update_client_dst(src_chain_height, tracking_id, MAX_RETRIES)
     }
@@ -845,7 +902,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn do_update_client_dst(
         &self,
         src_chain_height: Height,
-        tracking_id: &str,
+        tracking_id: TrackingId,
         retries_left: usize,
     ) -> Result<Height, LinkError> {
         info!( "sending update_client to client hosted on source chain for height {} (retries left: {})", src_chain_height, retries_left );
@@ -856,6 +913,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
+
         info!("result: {}", PrettyEvents(&dst_tx_events));
 
         let (error, update, misbehaviour) = Self::event_per_type(dst_tx_events);
@@ -897,7 +955,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn update_client_src(
         &self,
         dst_chain_height: Height,
-        tracking_id: &str,
+        tracking_id: TrackingId,
     ) -> Result<Height, LinkError> {
         self.do_update_client_src(dst_chain_height, tracking_id, MAX_RETRIES)
     }
@@ -911,7 +969,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn do_update_client_src(
         &self,
         dst_chain_height: Height,
-        tracking_id: &str,
+        tracking_id: TrackingId,
         retries_left: usize,
     ) -> Result<Height, LinkError> {
         info!( "sending update_client to client hosted on source chain for height {} (retries left: {})", dst_chain_height, retries_left );
@@ -922,6 +980,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .src_chain()
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
+
         info!("result: {}", PrettyEvents(&src_tx_events));
 
         let (error, update, misbehaviour) = Self::event_per_type(src_tx_events);
@@ -953,246 +1012,102 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     _ => Err(LinkError::update_client_failed()),
                 }
             }
-            // Atleast one misbehaviour event, so don't retry.
+            // At least one misbehaviour event, so don't retry.
             (_, _, Some(_misbehaviour)) => Err(LinkError::update_client_failed()),
         }
     }
 
-    /// Returns relevant packet events for building RecvPacket and timeout messages.
-    /// Additionally returns the height (on source chain) corresponding to these events.
-    fn target_height_and_send_packet_events(
+    /// Schedules the relaying of [`MsgRecvPacket`] and [`MsgTimeout`] messages.
+    ///
+    /// The optional [`Height`] parameter allows specify a height on the source
+    /// chain where to query for packet data. If `None`, the latest available
+    /// height on the source chain is used.
+    ///
+    /// Blocks until _all_ outstanding messages have been scheduled.
+    pub fn schedule_recv_packet_and_timeout_msgs(
         &self,
         opt_query_height: Option<Height>,
-    ) -> Result<(TrackedEvents, Height), LinkError> {
-        let mut events_result = vec![];
-
-        let src_channel_id = self.src_channel_id();
-        let dst_channel_id = self.dst_channel_id();
-
-        let (commit_sequences, src_response_height) =
-            commitments_on_chain(self.src_chain(), self.src_port_id(), src_channel_id)
-                .map_err(LinkError::supervisor)?;
-
-        let sequences = unreceived_packets_sequences(
-            self.dst_chain(),
-            self.dst_port_id(),
-            dst_channel_id,
-            commit_sequences,
-        )
-        .map_err(LinkError::supervisor)?;
-
-        let query_height = opt_query_height.unwrap_or(src_response_height);
-
-        let sequences: Vec<Sequence> = sequences.into_iter().map(From::from).collect();
-        if sequences.is_empty() {
-            return Ok((events_result.into(), query_height));
-        }
-
-        debug!(
-            "recv packets to send out to {} of the ones with commitments on {}: {} (first 10 shown here; total={})",
-            self.dst_chain().id(),
-            self.src_chain().id(),
-            sequences.iter().take(10).join(", "), sequences.len()
-        );
-
-        let mut query = QueryPacketEventDataRequest {
-            event_id: WithBlockDataType::SendPacket,
-            source_port_id: self.src_port_id().clone(),
-            source_channel_id: *src_channel_id,
-            destination_port_id: self.dst_port_id().clone(),
-            destination_channel_id: *dst_channel_id,
-            sequences,
-            height: query_height,
-        };
-
-        let tx_events = self
-            .src_chain()
-            .query_txs(QueryTxRequest::Packet(query.clone()))
-            .map_err(LinkError::relayer)?;
-
-        let recvd_sequences: Vec<Sequence> = tx_events
-            .iter()
-            .filter_map(|ev| match ev {
-                IbcEvent::SendPacket(ref send_ev) => Some(send_ev.packet.sequence),
-                IbcEvent::WriteAcknowledgement(ref ack_ev) => Some(ack_ev.packet.sequence),
-                _ => None,
-            })
-            .collect();
-        query.sequences.retain(|seq| !recvd_sequences.contains(seq));
-
-        let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
-            self.src_chain()
-                .query_blocks(QueryBlockRequest::Packet(query))
-                .map_err(LinkError::relayer)?
-        } else {
-            Default::default()
-        };
-
-        trace!("start_block_events {:?}", start_block_events);
-        trace!("tx_events {:?}", tx_events);
-        trace!("end_block_events {:?}", end_block_events);
-
-        // events must be ordered in the following fashion -
-        // start-block events followed by tx-events followed by end-block events
-        events_result.extend(start_block_events);
-        events_result.extend(tx_events);
-        events_result.extend(end_block_events);
-
-        if events_result.is_empty() {
-            info!("found zero unprocessed SendPacket events on source chain, nothing to do");
-        } else {
-            let mut packet_sequences = vec![];
-            for event in events_result.iter() {
-                match event {
-                    IbcEvent::SendPacket(send_event) => {
-                        packet_sequences.push(send_event.packet.sequence);
-                        if packet_sequences.len() >= 10 {
-                            // Enough to print the first 10
-                            break;
-                        }
-                    }
-                    _ => return Err(LinkError::unexpected_event(event.clone())),
-                }
-            }
-            info!(
-                "found unprocessed SendPacket events for {:?} (first 10 shown here; total={})",
-                packet_sequences,
-                events_result.len()
-            );
-        }
-
-        Ok((events_result.into(), query_height))
-    }
-
-    /// Returns relevant packet events for building ack messages.
-    /// Additionally returns the height (on source chain) corresponding to these events.
-    fn target_height_and_write_ack_events(
-        &self,
-        opt_query_height: Option<Height>,
-    ) -> Result<(TrackedEvents, Height), LinkError> {
-        let mut events_result = vec![];
-
-        let src_channel_id = self.src_channel_id();
-        let dst_channel_id = self.dst_channel_id();
-
-        let (commitments_on_counterparty, _) =
-            commitments_on_chain(self.dst_chain(), self.dst_port_id(), dst_channel_id)
-                .map_err(LinkError::supervisor)?;
-
-        let (acks_on_src, src_response_height) = packet_acknowledgements(
-            self.src_chain(),
-            self.src_port_id(),
-            src_channel_id,
-            commitments_on_counterparty,
-        )
-        .map_err(LinkError::supervisor)?;
-
-        let unreceived_acks_by_dst = unreceived_acknowledgements_sequences(
-            self.dst_chain(),
-            self.dst_port_id(),
-            dst_channel_id,
-            acks_on_src,
-        )
-        .map_err(LinkError::supervisor)?;
-
-        let query_height = opt_query_height.unwrap_or(src_response_height);
-
-        let sequences: Vec<Sequence> = unreceived_acks_by_dst.into_iter().map(From::from).collect();
-        if sequences.is_empty() {
-            return Ok((events_result.into(), query_height));
-        }
-
-        debug!(
-            "ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
-            self.dst_chain().id(),
-            self.src_chain().id(),
-            sequences.iter().take(10).join(", "), sequences.len()
-        );
-
-        events_result = self
-            .src_chain()
-            .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
-                event_id: WithBlockDataType::WriteAck,
-                source_port_id: self.dst_port_id().clone(),
-                source_channel_id: *dst_channel_id,
-                destination_port_id: self.src_port_id().clone(),
-                destination_channel_id: *src_channel_id,
-                sequences,
-                height: query_height,
-            }))
-            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
-
-        if events_result.is_empty() {
-            info!(
-                "found zero unprocessed WriteAcknowledgement events on source chain, nothing to do",
-            );
-        } else {
-            let mut packet_sequences = vec![];
-            for event in events_result.iter() {
-                match event {
-                    IbcEvent::WriteAcknowledgement(write_ack_event) => {
-                        packet_sequences.push(write_ack_event.packet.sequence);
-                        if packet_sequences.len() >= 10 {
-                            // Enough to print the first 10
-                            break;
-                        }
-                    }
-                    _ => {
-                        return Err(LinkError::unexpected_event(event.clone()));
-                    }
-                }
-            }
-            info!(
-                "found unprocessed WriteAcknowledgement events for {:?} (first 10 shown here; total={})",
-                packet_sequences,
-                events_result.len(),
-            );
-        }
-
-        Ok((events_result.into(), query_height))
-    }
-
-    /// Schedules the relaying of RecvPacket and Timeout messages.
-    /// The `opt_query_height` parameter allows to optionally use a specific height on the source
-    /// chain where to query for packet data. If `None`, the latest available height on the source
-    /// chain is used.
-    pub fn build_recv_packet_and_timeout_msgs(
-        &self,
-        opt_query_height: Option<Height>,
+        tracking_id: TrackingId,
     ) -> Result<(), LinkError> {
-        // Get the events for the send packets on source chain that have not been received on
-        // destination chain (i.e. ack was not seen on source chain).
-        let (mut events, height) = self.target_height_and_send_packet_events(opt_query_height)?;
+        let _span =
+            span!(Level::DEBUG, "schedule_recv_packet_and_timeout_msgs", query_height = ?opt_query_height)
+                .entered();
+
+        // Pull the s.n. of all packets that the destination chain has not yet received.
+        let (sequences, src_response_height) =
+            unreceived_packets(self.dst_chain(), self.src_chain(), &self.path_id)
+                .map_err(LinkError::supervisor)?;
+
+        let query_height = opt_query_height.unwrap_or(src_response_height);
 
         // Skip: no relevant events found.
-        if events.is_empty() {
+        if sequences.is_empty() {
             return Ok(());
         }
 
-        events.set_height(height);
+        debug!(
+            "sequences of unreceived packets to send out to {} of the ones with commitments on {}: {} (first 10 shown here; total={})",
+            self.dst_chain().id(),
+            self.src_chain().id(),
+            sequences.iter().take(10).format(", "), sequences.len()
+        );
 
-        self.events_to_operational_data(events)?;
+        // Chunk-up the list of sequence nrs. into smaller parts,
+        // and schedule operational data incrementally across each chunk.
+        for events_chunk in query_packet_events_with(
+            &sequences,
+            query_height,
+            self.src_chain(),
+            &self.path_id,
+            query_send_packet_events,
+        ) {
+            self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
+        }
 
         Ok(())
     }
 
-    /// Schedules the relaying of packet acknowledgment messages.
+    /// Schedules the relaying of [`MsgAcknowledgement`] messages.
+    ///
     /// The `opt_query_height` parameter allows to optionally use a specific height on the source
     /// chain where to query for packet data. If `None`, the latest available height on the source
     /// chain is used.
-    pub fn build_packet_ack_msgs(&self, opt_query_height: Option<Height>) -> Result<(), LinkError> {
-        // Get the sequences of packets that have been acknowledged on destination chain but still
-        // have commitments on source chain (i.e. ack was not seen on source chain)
-        let (mut events, height) = self.target_height_and_write_ack_events(opt_query_height)?;
+    pub fn schedule_packet_ack_msgs(
+        &self,
+        opt_query_height: Option<Height>,
+        tracking_id: TrackingId,
+    ) -> Result<(), LinkError> {
+        let _span = span!(Level::DEBUG, "build_packet_ack_msgs", h = ?opt_query_height).entered();
+
+        let (sequences, src_response_height) =
+            unreceived_acknowledgements(self.dst_chain(), self.src_chain(), &self.path_id)
+                .map_err(LinkError::supervisor)?;
+
+        let query_height = opt_query_height.unwrap_or(src_response_height);
 
         // Skip: no relevant events found.
-        if events.is_empty() {
+        if sequences.is_empty() {
             return Ok(());
         }
 
-        events.set_height(height);
+        debug!(
+            "seq. nrs. of ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
+            self.dst_chain().id(),
+            self.src_chain().id(),
+            sequences.iter().take(10).format(", "), sequences.len()
+        );
 
-        self.events_to_operational_data(events)?;
+        // Incrementally process all the available sequence numbers in chunks
+        for events_chunk in query_packet_events_with(
+            &sequences,
+            query_height,
+            self.src_chain(),
+            &self.path_id,
+            query_write_ack_events,
+        ) {
+            self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
+        }
+
         Ok(())
     }
 
@@ -1264,8 +1179,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             let next_seq = self
                 .dst_chain()
                 .query_next_sequence_receive(QueryNextSequenceReceiveRequest {
-                    port_id: self.dst_port_id().to_string(),
-                    channel_id: dst_channel_id.to_string(),
+                    port_id: self.dst_port_id().clone(),
+                    channel_id: *dst_channel_id,
                 })
                 .map_err(|e| LinkError::query(self.dst_chain().id(), e))?;
             (PacketMsgType::TimeoutOrdered, next_seq)
@@ -1494,7 +1409,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                                     OperationalData::new(
                                         dst_current_height,
                                         OperationalDataTarget::Source,
-                                        &odata.tracking_id,
+                                        odata.tracking_id,
                                         self.channel.connection_delay,
                                     )
                                 })
@@ -1570,12 +1485,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             let target_height = od.proofs_height.increment();
             match od.target {
                 OperationalDataTarget::Source => {
-                    let update_height = self.update_client_src(target_height, &od.tracking_id)?;
+                    let update_height = self.update_client_src(target_height, od.tracking_id)?;
                     od.set_update_height(update_height);
                     self.src_time_at_height(update_height)?
                 }
                 OperationalDataTarget::Destination => {
-                    let update_height = self.update_client_dst(target_height, &od.tracking_id)?;
+                    let update_height = self.update_client_dst(target_height, od.tracking_id)?;
                     od.set_update_height(update_height);
                     self.dst_time_at_height(update_height)?
                 }
@@ -1600,7 +1515,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     /// Pulls out the operational elements with elapsed delay period and that can
     /// now be processed.
-    fn try_fetch_scheduled_operational_data(
+    pub(crate) fn try_fetch_scheduled_operational_data(
         &self,
     ) -> Result<(VecDeque<OperationalData>, VecDeque<OperationalData>), LinkError> {
         // Extracts elements from a Vec when the predicate returns true.
@@ -1660,5 +1575,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             self.dst_chain().clone(),
             self.src_chain().clone(),
         )
+    }
+
+    // we need fully qualified ChainId to avoid unneeded imports warnings
+    #[cfg(feature = "telemetry")]
+    fn target_info(
+        &self,
+        target: OperationalDataTarget,
+    ) -> (
+        ibc::core::ics24_host::identifier::ChainId, // source chain
+        ibc::core::ics24_host::identifier::ChainId, // destination chain
+        &ChannelId,
+        &PortId,
+    ) {
+        match target {
+            OperationalDataTarget::Source => (
+                self.src_chain().id(),
+                self.dst_chain().id(),
+                self.src_channel_id(),
+                self.src_port_id(),
+            ),
+            OperationalDataTarget::Destination => (
+                self.dst_chain().id(),
+                self.src_chain().id(),
+                self.dst_channel_id(),
+                self.dst_port_id(),
+            ),
+        }
     }
 }

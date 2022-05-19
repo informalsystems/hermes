@@ -13,7 +13,7 @@ use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::ChainStatus;
 use crate::error::Error;
 
@@ -178,7 +178,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     let msgs = vec![raw_msg; opts.number_msgs];
 
     let events = packet_src_chain
-        .send_messages_and_wait_commit(TrackedMsgs::new(msgs, "ft-transfer"))
+        .send_messages_and_wait_commit(TrackedMsgs::new_static(msgs, "ft-transfer"))
         .map_err(|e| TransferError::submit(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction
