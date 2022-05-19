@@ -211,6 +211,7 @@ pub trait ClientDef: Clone {
 pub enum AnyClient<Crypto: CryptoOps> {
     Tendermint(TendermintClient<Crypto>),
     Beefy(BeefyClient<Crypto>),
+    Near(BeefyClient<Crypto>),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockClient<Crypto>),
 }
@@ -220,6 +221,7 @@ impl<Crypto: CryptoOps> AnyClient<Crypto> {
         match client_type {
             ClientType::Tendermint => Self::Tendermint(TendermintClient::<Crypto>::default()),
             ClientType::Beefy => Self::Beefy(BeefyClient::<Crypto>::default()),
+            ClientType::Near => Self::Near(BeefyClient::<Crypto>::default()),
             #[cfg(any(test, feature = "mocks"))]
             ClientType::Mock => Self::Mock(MockClient::<Crypto>::default()),
         }
@@ -260,6 +262,17 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Beefy))?;
 
                 client.verify_header(ctx, client_id, client_state, header)
+            }
+
+            Self::Near(_) => {
+                // let (client_state, header) = downcast!(
+                //     client_state => AnyClientState::Beefy,
+                //     header => AnyHeader::Beefy,
+                // )
+                // .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Beefy))?;
+
+                // client.verify_header(ctx, client_id, client_state, header)
+                todo!()
             }
 
             #[cfg(any(test, feature = "mocks"))]
@@ -309,6 +322,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
 
                 Ok((AnyClientState::Beefy(new_state), new_consensus))
             }
+            Self::Near(_) => {
+                todo!()
+            }
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
@@ -351,6 +367,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                 let client_state = client.update_state_on_misbehaviour(client_state, header)?;
                 Ok(Self::ClientState::Beefy(client_state))
             }
+            AnyClient::Near(_) => {
+                todo!()
+            }
             #[cfg(any(test, feature = "mocks"))]
             AnyClient::Mock(client) => {
                 let (client_state, header) = downcast!(
@@ -390,6 +409,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Beefy))?;
 
                 client.check_for_misbehaviour(ctx, client_id, client_state, header)
+            }
+            AnyClient::Near(_) => {
+                todo!()
             }
             #[cfg(any(test, feature = "mocks"))]
             AnyClient::Mock(client) => {
@@ -444,6 +466,10 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                 )?;
 
                 Ok((AnyClientState::Beefy(new_state), new_consensus))
+            }
+
+            Self::Near(_) => {
+                todo!()
             }
 
             #[cfg(any(test, feature = "mocks"))]
@@ -516,6 +542,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                     expected_consensus_state,
                 )
             }
+            Self::Near(_) => {
+                todo!()
+            }
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(
@@ -582,6 +611,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                     connection_id,
                     expected_connection_end,
                 )
+            }
+            Self::Near(_) => {
+                todo!()
             }
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
@@ -652,6 +684,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                     expected_channel_end,
                 )
             }
+            Self::Near(_) => {
+                todo!()
+            }
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
@@ -718,6 +753,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                     client_id,
                     client_state_on_counterparty,
                 )
+            }
+            Self::Near(_) => {
+                todo!()
             }
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
@@ -796,7 +834,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                     commitment,
                 )
             }
-
+            Self::Near(_) => {
+                todo!()
+            }
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(
@@ -877,6 +917,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                     ack_commitment,
                 )
             }
+            Self::Near(_) => {
+                todo!()
+            }
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(
@@ -953,7 +996,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                     sequence,
                 )
             }
-
+            Self::Near(_) => {
+                todo!()
+            }
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(
@@ -1030,7 +1075,9 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
                     sequence,
                 )
             }
-
+            Self::Near(_) => {
+                todo!()
+            }
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(

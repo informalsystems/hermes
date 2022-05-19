@@ -102,6 +102,8 @@ pub enum AnyClientState {
     Tendermint(client_state::ClientState),
     #[serde(skip)]
     Beefy(beefy_client_state::ClientState),
+    #[serde(skip)]
+    Near(beefy_client_state::ClientState),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockClientState),
 }
@@ -111,6 +113,7 @@ impl AnyClientState {
         match self {
             Self::Tendermint(tm_state) => tm_state.latest_height(),
             Self::Beefy(bf_state) => bf_state.latest_height(),
+            Self::Near(_) => todo!(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.latest_height(),
         }
@@ -120,6 +123,7 @@ impl AnyClientState {
         match self {
             Self::Tendermint(tm_state) => tm_state.frozen_height(),
             Self::Beefy(bf_state) => bf_state.frozen_height(),
+            Self::Near(_) => todo!(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.frozen_height(),
         }
@@ -129,6 +133,7 @@ impl AnyClientState {
         match self {
             AnyClientState::Tendermint(state) => Some(state.trust_level),
             AnyClientState::Beefy(_) => None,
+            Self::Near(_) => todo!(),
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(_) => None,
         }
@@ -138,6 +143,7 @@ impl AnyClientState {
         match self {
             AnyClientState::Tendermint(state) => state.max_clock_drift,
             AnyClientState::Beefy(_) => Duration::new(0, 0),
+            Self::Near(_) => todo!(),
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(_) => Duration::new(0, 0),
         }
@@ -147,6 +153,7 @@ impl AnyClientState {
         match self {
             Self::Tendermint(state) => state.client_type(),
             Self::Beefy(state) => state.client_type(),
+            Self::Near(_) => todo!(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(state) => state.client_type(),
         }
@@ -156,6 +163,7 @@ impl AnyClientState {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.refresh_time(),
             AnyClientState::Beefy(_) => None,
+            Self::Near(_) => None,
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
         }
@@ -165,6 +173,7 @@ impl AnyClientState {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
             AnyClientState::Beefy(_) => false,
+            Self::Near(_) => false,
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
@@ -215,6 +224,12 @@ impl From<AnyClientState> for Any {
                     .encode_vec()
                     .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
             },
+            AnyClientState::Near(_) => Any {
+                type_url: BEEFY_CLIENT_STATE_TYPE_URL.to_string(),
+                value: value
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyClientState::Near`"),
+            },
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(value) => Any {
                 type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
@@ -233,6 +248,7 @@ impl ClientState for AnyClientState {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
             AnyClientState::Beefy(bf_state) => bf_state.chain_id(),
+            AnyClientState::Near(_) => todo!(),
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.chain_id(),
         }
@@ -261,6 +277,9 @@ impl ClientState for AnyClientState {
                 .upgrade(upgrade_height, upgrade_options.into_tendermint(), chain_id)
                 .wrap_any(),
             AnyClientState::Beefy(bf_state) => bf_state
+                .upgrade(upgrade_height, upgrade_options.into_beefy(), chain_id)
+                .wrap_any(),
+            AnyClientState::Near(near_state) => near_state
                 .upgrade(upgrade_height, upgrade_options.into_beefy(), chain_id)
                 .wrap_any(),
             #[cfg(any(test, feature = "mocks"))]
