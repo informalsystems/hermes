@@ -5,6 +5,7 @@ use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::clients::ics11_beefy::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::header::AnyHeader;
+use alloc::format;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -47,7 +48,7 @@ impl crate::core::ics02_client::header::Header for BeefyHeader {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, codec::Encode, codec::Decode)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, codec::Encode, codec::Decode)]
 pub struct ExtrinsicProof(pub Vec<u8>, pub Vec<Vec<u8>>);
 
 #[derive(Clone, PartialEq, Eq, Debug, codec::Encode, codec::Decode)]
@@ -445,12 +446,14 @@ pub fn decode_timestamp_extrinsic<Crypto: CryptoOps>(
     let ext = &*header.extrinsic_proof.0;
     let extrinsic_root = header.parachain_header.extrinsics_root;
 
+    // Timestamp extrinsic should be the first inherent and hence the first extrinsic
+    // https://github.com/paritytech/substrate/blob/d602397a0bbb24b5d627795b797259a44a5e29e9/primitives/trie/src/lib.rs#L99-L101
     let key = codec::Encode::encode(&Compact(0u32));
     Crypto::verify_membership_trie_proof(&extrinsic_root, proof, &*key, ext)
-        .map_err(|_| Error::timestamp_extrinsic())?;
+        .map_err(|e| Error::timestamp_extrinsic(format!("Proof Verification failed {:?}", e)))?;
     // Decoding from the [2..] because the timestamp inmherent has two extra bytes before the call that represents the
     // call length and the extrinsic version.
-    let (_, _, timestamp): (u8, u8, Compact<u64>) =
-        codec::Decode::decode(&mut &ext[2..]).map_err(|_| Error::timestamp_extrinsic())?;
+    let (_, _, timestamp): (u8, u8, Compact<u64>) = codec::Decode::decode(&mut &ext[2..])
+        .map_err(|_| Error::timestamp_extrinsic("Failed to decode extrinsic".to_string()))?;
     Ok(timestamp.into())
 }

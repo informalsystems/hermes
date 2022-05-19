@@ -24,7 +24,8 @@ define_error! {
         InvalidCommitmentRoot
             |_| { "invalid commitment root" },
         TimestampExtrinsic
-            |_| { "error decoding timestamp extrinsic" },
+            { reason: String }
+            |e| { format_args!("error decoding timestamp extrinsic {}", e.reason) },
         InvalidHeader
             { reason: String }
             |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },

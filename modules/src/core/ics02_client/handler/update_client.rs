@@ -131,7 +131,9 @@ mod tests {
     use test_log::test;
 
     use crate::clients::ics11_beefy::client_state::ClientState as BeefyClientState;
-    use crate::clients::ics11_beefy::header::ParachainHeader as BeefyParachainHeader;
+    use crate::clients::ics11_beefy::header::{
+        decode_parachain_header, ParachainHeader as BeefyParachainHeader,
+    };
     use crate::clients::ics11_beefy::header::{BeefyHeader, ExtrinsicProof};
     use crate::clients::ics11_beefy::polkadot_runtime as runtime;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
@@ -843,7 +845,8 @@ mod tests {
 
                 for (key, value) in changes.changes {
                     if let Some(storage_data) = value {
-                        let key = key.0.to_vec();
+                        let key = key.0;
+                        // Storage prefix and storage key hash take up the first 40 bytes
                         let para_id = u32::decode(&mut &key[40..]).unwrap();
                         let head_data: runtime::api::runtime_types::polkadot_parachain::primitives::HeadData = Decode::decode(&mut &*storage_data.0).unwrap();
                         heads.insert(para_id, head_data.0);
@@ -901,7 +904,10 @@ mod tests {
                     vec![]
                 };
 
-                let block_number = leaf.parent_number_and_hash.0 + 1;
+                let para_head = para_headers.get(&PARA_ID).unwrap().clone();
+                let decoded_para_head = decode_parachain_header(para_head.clone()).unwrap();
+
+                let block_number = decoded_para_head.number;
                 let subxt_block_number: subxt::BlockNumber = block_number.into();
                 let block_hash = para_client
                     .rpc()
@@ -916,33 +922,40 @@ mod tests {
                     .into_iter()
                     .map(|e| e.encode())
                     .collect::<Vec<_>>();
-                let timestamp_ext = extrinsics[0].clone();
+                let extrinsic_proof = {
+                    if extrinsics.is_empty() {
+                        ExtrinsicProof::default().encode()
+                    } else {
+                        let timestamp_ext = extrinsics[0].clone();
 
-                let mut db = sp_trie::MemoryDB::<BlakeTwo256>::default();
+                        let mut db = sp_trie::MemoryDB::<BlakeTwo256>::default();
 
-                let root = {
-                    let mut root = Default::default();
-                    let mut trie =
-                        <TrieDBMut<sp_trie::LayoutV0<BlakeTwo256>>>::new(&mut db, &mut root);
+                        let root = {
+                            let mut root = Default::default();
+                            let mut trie = <TrieDBMut<sp_trie::LayoutV0<BlakeTwo256>>>::new(
+                                &mut db, &mut root,
+                            );
 
-                    for (i, ext) in extrinsics.clone().into_iter().enumerate() {
-                        let key = codec::Compact::<u32>(i as u32).encode();
-                        trie.insert(&key, &ext).unwrap();
+                            for (i, ext) in extrinsics.into_iter().enumerate() {
+                                let key = codec::Compact(i as u32).encode();
+                                trie.insert(&key, &ext).unwrap();
+                            }
+                            *trie.root()
+                        };
+
+                        let key = codec::Compact::<u32>(0u32).encode();
+                        let extrinsic_proof = generate_trie_proof::<
+                            sp_trie::LayoutV0<BlakeTwo256>,
+                            _,
+                            _,
+                            _,
+                        >(&db, root, vec![&key])
+                        .unwrap();
+                        ExtrinsicProof(timestamp_ext, extrinsic_proof).encode()
                     }
-                    *trie.root()
                 };
-
-                let key = codec::Compact::<u32>(0u32).encode();
-                let extrinsic_proof =
-                    generate_trie_proof::<sp_trie::LayoutV0<BlakeTwo256>, _, _, _>(
-                        &db,
-                        root,
-                        vec![&key],
-                    )
-                    .unwrap();
-                let extrinsic_proof = ExtrinsicProof(timestamp_ext, extrinsic_proof).encode();
                 let header = ParachainHeader {
-                    parachain_header: para_headers.get(&PARA_ID).unwrap().clone(),
+                    parachain_header: para_head,
                     partial_mmr_leaf: PartialMmrLeaf {
                         version: leaf.version,
                         parent_number_and_hash: leaf.parent_number_and_hash,

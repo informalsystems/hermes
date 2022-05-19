@@ -152,19 +152,19 @@ impl<Crypto: CryptoOps> TryFrom<ParachainHeader> for ConsensusState<Crypto> {
                 .filter_map(|digest| digest.as_consensus())
                 .find(|(id, _value)| id == &IBC_CONSENSUS_ID)
                 .map(|(.., root)| root.to_vec())
-                .ok_or(Error::invalid_header(
-                    "cannot find ibc commitment root".to_string(),
-                ))?
+                .ok_or_else(|| {
+                    Error::invalid_header("cannot find ibc commitment root".to_string())
+                })?
         };
 
-        let timestamp = decode_timestamp_extrinsic::<Crypto>(&header).unwrap_or_default();
+        let timestamp = decode_timestamp_extrinsic::<Crypto>(&header)?;
         let duration = core::time::Duration::from_millis(timestamp);
         let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
             .unwrap_or_default()
             .into_tm_time()
-            .ok_or(Error::invalid_header(
-                "cannot decode timestamp extrinsic".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                Error::invalid_header("cannot decode timestamp extrinsic".to_string())
+            })?;
 
         Ok(Self {
             root: root.into(),
@@ -190,7 +190,7 @@ impl<Crypto: CryptoOps> TryFrom<ParachainHeader> for ConsensusState<Crypto> {
                 .unwrap_or_default()
         };
 
-        let timestamp = decode_timestamp_extrinsic::<Crypto>(&header).unwrap_or_default();
+        let timestamp = decode_timestamp_extrinsic::<Crypto>(&header)?;
         let duration = core::time::Duration::from_millis(timestamp);
         let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
             .unwrap_or_default()

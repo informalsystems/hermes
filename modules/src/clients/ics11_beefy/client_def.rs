@@ -1,7 +1,7 @@
 use beefy_client::primitives::{ParachainHeader, ParachainsUpdateProof};
 use beefy_client::traits::ClientState as LightClientState;
 use beefy_client::BeefyLightClient;
-use codec::Encode;
+use codec::{Decode, Encode};
 use core::fmt::Debug;
 use pallet_mmr_primitives::BatchProof;
 use sp_core::H256;
@@ -113,8 +113,12 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
                 items: header
                     .mmr_proofs
                     .into_iter()
-                    .map(|item| H256::from_slice(&item))
-                    .collect(),
+                    .map(|item| {
+                        H256::decode(&mut &*item).map_err(|e| {
+                            Error::beefy(BeefyError::invalid_mmr_update(format!("{:?}", e)))
+                        })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
             },
         };
 
@@ -137,6 +141,10 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
             .from_header(header.clone())
             .map_err(Error::beefy)?;
         for header in header.parachain_headers {
+            // Skip genesis block of parachains since it has no timestamp or ibc root
+            if header.parachain_header.number == 0 {
+                continue;
+            }
             let height = Height::new(header.para_id as u64, header.parachain_header.number as u64);
             // Skip duplicate consensus states
             if ctx.consensus_state(&client_id, height).is_ok() {
