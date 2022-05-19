@@ -133,7 +133,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
     fn relay_packet_messages(
         &self,
-        sequences: Vec<u64>,
+        sequences: Vec<Sequence>,
         src_response_height: Height,
         query_fn: impl Fn(
             &ChainA,

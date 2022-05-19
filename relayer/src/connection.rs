@@ -2,10 +2,10 @@ use core::time::Duration;
 use std::{thread, time};
 
 use crate::chain::counterparty::connection_state_on_destination;
+use crate::chain::requests::{PageRequest, QueryConnectionRequest, QueryConnectionsRequest};
 use crate::chain::tracking::TrackedMsgs;
 pub use error::ConnectionError;
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
@@ -206,7 +206,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         height: Height,
     ) -> Result<(Connection<ChainA, ChainB>, State), ConnectionError> {
         let a_connection = chain
-            .query_connection(&connection.src_connection_id, height)
+            .query_connection(QueryConnectionRequest {
+                connection_id: connection.src_connection_id.clone(),
+                height,
+            })
             .map_err(ConnectionError::relayer)?;
 
         let client_id = a_connection.client_id();
@@ -231,11 +234,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         if a_connection.state_matches(&State::Init) && counterparty_connection_id.is_none() {
-            let req = QueryConnectionsRequest {
-                pagination: ibc_proto::cosmos::base::query::pagination::all(),
-            };
             let connections: Vec<IdentifiedConnectionEnd> = counterparty_chain
-                .query_connections(req)
+                .query_connections(QueryConnectionsRequest {
+                    pagination: Some(PageRequest::all()),
+                })
                 .map_err(ConnectionError::relayer)?;
 
             for conn in connections {
@@ -520,7 +522,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
             let a_connection = connection
                 .a_chain()
-                .query_connection(a_connection_id, Height::zero())
+                .query_connection(QueryConnectionRequest {
+                    connection_id: a_connection_id.clone(),
+                    height: Height::zero(),
+                })
                 .map_err(|e| {
                     ConnectionError::handshake_finalize(
                         connection.a_chain().id(),
@@ -531,7 +536,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
             let b_connection = connection
                 .b_chain()
-                .query_connection(b_connection_id, Height::zero())
+                .query_connection(QueryConnectionRequest {
+                    connection_id: b_connection_id.clone(),
+                    height: Height::zero(),
+                })
                 .map_err(|e| {
                     ConnectionError::handshake_finalize(
                         connection.b_chain().id(),
@@ -688,7 +696,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let connection_end = self
             .src_chain()
-            .query_connection(connection_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: connection_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(|e| ConnectionError::connection_query(connection_id.clone(), e))?;
 
         let connection = IdentifiedConnectionEnd {
@@ -805,7 +816,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // Retrieve existing connection if any
         let dst_connection = self
             .dst_chain()
-            .query_connection(dst_connection_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: dst_connection_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
 
         // Check if a connection is expected to exist on destination chain
@@ -917,7 +931,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let src_connection = self
             .src_chain()
-            .query_connection(src_connection_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: src_connection_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the try options
@@ -1057,7 +1074,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let src_connection = self
             .src_chain()
-            .query_connection(src_connection_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: src_connection_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the ack options
@@ -1162,7 +1182,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let _src_connection = self
             .src_chain()
-            .query_connection(src_connection_id, query_height)
+            .query_connection(QueryConnectionRequest {
+                connection_id: src_connection_id.clone(),
+                height: query_height,
+            })
             .map_err(|e| ConnectionError::connection_query(src_connection_id.clone(), e))?;
 
         // TODO - check that the src connection is consistent with the confirm options

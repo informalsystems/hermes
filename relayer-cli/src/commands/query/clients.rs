@@ -7,7 +7,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_relayer::chain::requests::{PageRequest, QueryClientStatesRequest};
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -60,7 +60,7 @@ impl Runnable for QueryAllClientsCmd {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let req = QueryClientStatesRequest {
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
+            pagination: Some(PageRequest::all()),
         };
 
         let res: Result<_, Error> = chain.query_clients(req).map_err(Error::relayer);
