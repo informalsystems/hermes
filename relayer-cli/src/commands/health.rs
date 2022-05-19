@@ -4,7 +4,10 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain, HealthCheck::*};
+use ibc_relayer::chain::{
+    cosmos::CosmosSdkChain,
+    endpoint::{ChainEndpoint, HealthCheck::*},
+};
 
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;

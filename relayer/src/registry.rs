@@ -10,11 +10,11 @@ use tracing::{trace, warn};
 
 use ibc::core::ics24_host::identifier::ChainId;
 
-use crate::util::lock::RwArc;
 use crate::{
-    chain::{handle::ChainHandle, runtime::ChainRuntime, CosmosSdkChain},
+    chain::{cosmos::CosmosSdkChain, handle::ChainHandle, runtime::ChainRuntime},
     config::Config,
     error::Error as RelayerError,
+    util::lock::RwArc,
 };
 
 define_error! {

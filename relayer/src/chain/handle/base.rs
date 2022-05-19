@@ -30,6 +30,7 @@ use crate::{
     account::Balance,
     chain::{
         client::ClientSettings,
+        endpoint::ChainStatus,
         requests::{
             QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
             QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
@@ -41,7 +42,6 @@ use crate::{
             QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
         },
         tracking::TrackedMsgs,
-        ChainStatus,
     },
     config::ChainConfig,
     connection::ConnectionMsgType,

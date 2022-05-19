@@ -7,8 +7,9 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc_relayer::chain::cosmos::CosmosSdkChain;
+use ibc_relayer::chain::endpoint::ChainEndpoint;
 use ibc_relayer::chain::requests::{PageRequest, QueryClientStatesRequest};
-use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;

@@ -16,8 +16,8 @@ use ibc::core::ics24_host::identifier::ClientId;
 use ibc::events::WithBlockDataType;
 use ibc::query::QueryTxRequest;
 use ibc::Height;
-use ibc_relayer::chain::ChainEndpoint;
-use ibc_relayer::chain::CosmosSdkChain;
+use ibc_relayer::chain::cosmos::CosmosSdkChain;
+use ibc_relayer::chain::endpoint::ChainEndpoint;
 
 use crate::application::app_config;
 use crate::conclude::{exit_with_unrecoverable_error, Output};

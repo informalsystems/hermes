@@ -6,8 +6,9 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer::chain::cosmos::CosmosSdkChain;
+use ibc_relayer::chain::endpoint::ChainEndpoint;
 use ibc_relayer::chain::requests::QueryChannelRequest;
-use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;

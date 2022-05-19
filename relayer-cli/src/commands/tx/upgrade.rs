@@ -6,11 +6,10 @@ use abscissa_core::{Command, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc_relayer::chain::cosmos::CosmosSdkChain;
+use ibc_relayer::chain::endpoint::ChainEndpoint;
+use ibc_relayer::config::Config;
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
-use ibc_relayer::{
-    chain::{ChainEndpoint, CosmosSdkChain},
-    config::Config,
-};
 
 use crate::conclude::Output;
 use crate::error::Error;

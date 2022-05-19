@@ -11,9 +11,9 @@ use tendermint::abci::transaction::Hash;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
+use ibc_relayer::chain::cosmos::CosmosSdkChain;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::runtime::ChainRuntime;
-use ibc_relayer::chain::CosmosSdkChain;
 
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;

@@ -12,7 +12,8 @@ use ibc::core::{
     ics24_host::identifier::ConnectionId,
     ics24_host::identifier::{ChainId, PortChannelId},
 };
-use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
+use ibc_relayer::chain::cosmos::CosmosSdkChain;
+use ibc_relayer::chain::endpoint::ChainEndpoint;
 
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
