@@ -17,7 +17,7 @@ pub const QUERY_RESULT_LIMIT: usize = 50;
 
 /// Returns an iterator on batches of packet events.
 pub fn query_packet_events_with<'a, ChainA>(
-    sequence_nrs: &'a [u64],
+    sequence_nrs: &'a [Sequence],
     query_height: Height,
     src_chain: &'a ChainA,
     path: &'a PathIdentifiers,
@@ -33,7 +33,7 @@ where
     sequence_nrs
         .chunks(QUERY_RESULT_LIMIT)
         .map_while(move |c| {
-            let sequences_nrs_chunk = c.iter().map(|&i| Sequence::from(i)).collect();
+            let sequences_nrs_chunk = c.to_vec();
             match query_fn(src_chain, path, sequences_nrs_chunk, query_height) {
                 Ok(mut events) => {
                     events_left_count -= c.len();

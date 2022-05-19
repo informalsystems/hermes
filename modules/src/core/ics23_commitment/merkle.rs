@@ -51,6 +51,22 @@ impl From<RawMerkleProof> for MerkleProof {
     }
 }
 
+impl From<MerkleProof> for RawMerkleProof {
+    fn from(proof: MerkleProof) -> Self {
+        Self {
+            proofs: proof
+                .proofs
+                .into_iter()
+                .map(|p| {
+                    let mut encoded = Vec::new();
+                    prost::Message::encode(&p, &mut encoded).unwrap();
+                    prost::Message::decode(&*encoded).unwrap()
+                })
+                .collect(),
+        }
+    }
+}
+
 impl MerkleProof {
     pub fn verify_membership(
         &self,
@@ -216,7 +232,7 @@ fn calculate_non_existence_root(proof: &NonExistenceProof) -> Result<Vec<u8>, Er
 //     }
 // }
 
-pub fn convert_tm_to_ics_merkle_proof(tm_proof: &TendermintProof) -> Result<RawMerkleProof, Error> {
+pub fn convert_tm_to_ics_merkle_proof(tm_proof: &TendermintProof) -> Result<MerkleProof, Error> {
     let mut proofs = Vec::new();
 
     for op in &tm_proof.ops {
@@ -227,5 +243,5 @@ pub fn convert_tm_to_ics_merkle_proof(tm_proof: &TendermintProof) -> Result<RawM
         proofs.push(parsed);
     }
 
-    Ok(RawMerkleProof { proofs })
+    Ok(MerkleProof::from(RawMerkleProof { proofs }))
 }

@@ -11,6 +11,9 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, Connection
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::{
+    QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+};
 use crate::error::Error as RelayerError;
 use crate::object;
 use crate::registry::{Registry, SpawnError};
@@ -107,9 +110,14 @@ impl FilterPolicy {
             .get_or_spawn(&counterparty_chain_id)
             .map_err(FilterError::spawn)?;
         let counterparty_client_id = connection.counterparty().client_id();
-        let counterparty_client_state = counterparty_chain
-            .query_client_state(counterparty_client_id, Height::zero())
-            .map_err(FilterError::relayer)?;
+        let counterparty_client_state = {
+            counterparty_chain
+                .query_client_state(QueryClientStateRequest {
+                    client_id: counterparty_client_id.clone(),
+                    height: Height::zero(),
+                })
+                .map_err(FilterError::relayer)?
+        };
 
         // Control both clients, cache their results.
         let client_permission = self.control_client(chain_id, connection.client_id(), client_state);
@@ -218,7 +226,10 @@ impl FilterPolicy {
         );
 
         let client_state = chain
-            .query_client_state(&obj.dst_client_id, Height::zero())
+            .query_client_state(QueryClientStateRequest {
+                client_id: obj.dst_client_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(FilterError::relayer)?;
 
         Ok(self.control_client(&obj.dst_chain_id, &obj.dst_client_id, &client_state))
@@ -254,11 +265,17 @@ impl FilterPolicy {
         );
 
         let connection_end = src_chain
-            .query_connection(&obj.src_connection_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: obj.src_connection_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(FilterError::relayer)?;
 
         let client_state = src_chain
-            .query_client_state(connection_end.client_id(), Height::zero())
+            .query_client_state(QueryClientStateRequest {
+                client_id: connection_end.client_id().clone(),
+                height: Height::zero(),
+            })
             .map_err(FilterError::relayer)?;
 
         self.control_connection_end_and_client(
@@ -295,7 +312,11 @@ impl FilterPolicy {
             .map_err(FilterError::spawn)?;
 
         let channel_end = src_chain
-            .query_channel(port_id, channel_id, Height::zero())
+            .query_channel(QueryChannelRequest {
+                port_id: port_id.clone(),
+                channel_id: *channel_id,
+                height: Height::zero(),
+            })
             .map_err(FilterError::relayer)?;
 
         let conn_id = channel_end.connection_hops.first().ok_or_else(|| {
@@ -306,11 +327,17 @@ impl FilterPolicy {
         })?;
 
         let connection_end = src_chain
-            .query_connection(conn_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: conn_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(FilterError::relayer)?;
 
         let client_state = src_chain
-            .query_client_state(connection_end.client_id(), Height::zero())
+            .query_client_state(QueryClientStateRequest {
+                client_id: connection_end.client_id().clone(),
+                height: Height::zero(),
+            })
             .map_err(FilterError::relayer)?;
 
         let permission = self.control_connection_end_and_client(

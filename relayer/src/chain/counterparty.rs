@@ -1,8 +1,18 @@
 use std::collections::HashSet;
 
+use ibc::core::ics04_channel::packet::Sequence;
 use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
+use super::requests::{
+    PageRequest, QueryChannelRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryConnectionRequest, QueryPacketAcknowledgementsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
+};
+use super::{
+    handle::ChainHandle,
+    requests::{QueryConnectionChannelsRequest, QueryPacketCommitmentsRequest},
+};
 use crate::channel::ChannelError;
 use crate::path::PathIdentifiers;
 use crate::supervisor::Error;
@@ -19,25 +29,24 @@ use ibc::{
     },
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
-
-use super::handle::ChainHandle;
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
     src_connection_id: &ConnectionId,
 ) -> Result<ChainId, Error> {
     let connection_end = src_chain
-        .query_connection(src_connection_id, Height::zero())
+        .query_connection(QueryConnectionRequest {
+            connection_id: src_connection_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(Error::relayer)?;
 
     let client_id = connection_end.client_id();
     let client_state = src_chain
-        .query_client_state(client_id, Height::zero())
+        .query_client_state(QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(Error::relayer)?;
 
     trace!(
@@ -52,17 +61,18 @@ fn connection_on_destination(
     counterparty_client_id: &ClientId,
     counterparty_chain: &impl ChainHandle,
 ) -> Result<Option<ConnectionEnd>, Error> {
-    let req = QueryClientConnectionsRequest {
-        client_id: counterparty_client_id.to_string(),
-    };
-
     let counterparty_connections = counterparty_chain
-        .query_client_connections(req)
+        .query_client_connections(QueryClientConnectionsRequest {
+            client_id: counterparty_client_id.clone(),
+        })
         .map_err(Error::relayer)?;
 
     for counterparty_connection in counterparty_connections.into_iter() {
         let counterparty_connection_end = counterparty_chain
-            .query_connection(&counterparty_connection, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: counterparty_connection.clone(),
+                height: Height::zero(),
+            })
             .map_err(Error::relayer)?;
 
         let local_connection_end = &counterparty_connection_end.counterparty();
@@ -81,7 +91,10 @@ pub fn connection_state_on_destination(
 ) -> Result<ConnectionState, Error> {
     if let Some(remote_connection_id) = connection.connection_end.counterparty().connection_id() {
         let connection_end = counterparty_chain
-            .query_connection(remote_connection_id, Height::zero())
+            .query_connection(QueryConnectionRequest {
+                connection_id: remote_connection_id.clone(),
+                height: Height::zero(),
+            })
             .map_err(Error::relayer)?;
 
         Ok(connection_end.state)
@@ -132,7 +145,11 @@ pub fn channel_connection_client(
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
     let channel_end = chain
-        .query_channel(port_id, channel_id, Height::zero())
+        .query_channel(QueryChannelRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            height: Height::zero(),
+        })
         .map_err(Error::relayer)?;
 
     if channel_end.state_matches(&State::Uninitialized) {
@@ -149,7 +166,10 @@ pub fn channel_connection_client(
         .ok_or_else(|| Error::missing_connection_hops(*channel_id, chain.id()))?;
 
     let connection_end = chain
-        .query_connection(connection_id, Height::zero())
+        .query_connection(QueryConnectionRequest {
+            connection_id: connection_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(Error::relayer)?;
 
     if !connection_end.is_open() {
@@ -162,7 +182,10 @@ pub fn channel_connection_client(
 
     let client_id = connection_end.client_id();
     let client_state = chain
-        .query_client_state(client_id, Height::zero())
+        .query_client_state(QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(Error::relayer)?;
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
@@ -187,13 +210,11 @@ fn fetch_channel_on_destination(
     counterparty_chain: &impl ChainHandle,
     remote_connection_id: &ConnectionId,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
-    let req = QueryConnectionChannelsRequest {
-        connection: remote_connection_id.to_string(),
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-    };
-
     let counterparty_channels = counterparty_chain
-        .query_connection_channels(req)
+        .query_connection_channels(QueryConnectionChannelsRequest {
+            connection_id: remote_connection_id.clone(),
+            pagination: Some(PageRequest::all()),
+        })
         .map_err(Error::relayer)?;
 
     for counterparty_channel in counterparty_channels.into_iter() {
@@ -226,11 +247,11 @@ pub fn channel_on_destination(
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     if let Some(remote_channel_id) = channel.channel_end.counterparty().channel_id() {
         let counterparty = counterparty_chain
-            .query_channel(
-                channel.channel_end.counterparty().port_id(),
-                remote_channel_id,
-                Height::zero(),
-            )
+            .query_channel(QueryChannelRequest {
+                port_id: channel.channel_end.counterparty().port_id().clone(),
+                channel_id: *remote_channel_id,
+                height: Height::zero(),
+            })
             .map(|c| IdentifiedChannelEnd {
                 port_id: channel.channel_end.counterparty().port_id().clone(),
                 channel_id: *remote_channel_id,
@@ -261,11 +282,11 @@ pub fn check_channel_counterparty(
     expected: &PortChannelId,
 ) -> Result<(), ChannelError> {
     let channel_end_dst = target_chain
-        .query_channel(
-            &target_pchan.port_id,
-            &target_pchan.channel_id,
-            Height::zero(),
-        )
+        .query_channel(QueryChannelRequest {
+            port_id: target_pchan.port_id.clone(),
+            channel_id: target_pchan.channel_id,
+            height: Height::zero(),
+        })
         .map_err(|e| ChannelError::query(target_chain.id(), e))?;
 
     let counterparty = channel_end_dst.remote;
@@ -308,20 +329,18 @@ pub fn commitments_on_chain(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     // get the packet commitments on the counterparty/ source chain
-    let commitments_request = QueryPacketCommitmentsRequest {
-        port_id: port_id.to_string(),
-        channel_id: channel_id.to_string(),
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-    };
-
-    let (commitments, response_height) = chain
-        .query_packet_commitments(commitments_request)
+    let (mut commit_sequences, response_height) = chain
+        .query_packet_commitments(QueryPacketCommitmentsRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            pagination: Some(PageRequest::all()),
+        })
         .map_err(Error::relayer)?;
 
-    let mut commit_sequences: Vec<u64> = commitments.into_iter().map(|v| v.sequence).collect();
     commit_sequences.sort_unstable();
+
     Ok((commit_sequences, response_height))
 }
 
@@ -331,20 +350,18 @@ pub fn unreceived_packets_sequences(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-    commitments_on_counterparty: Vec<u64>,
-) -> Result<Vec<u64>, Error> {
+    commitments_on_counterparty: Vec<Sequence>,
+) -> Result<Vec<Sequence>, Error> {
     if commitments_on_counterparty.is_empty() {
         return Ok(vec![]);
     }
 
-    let request = QueryUnreceivedPacketsRequest {
-        port_id: port_id.to_string(),
-        channel_id: channel_id.to_string(),
-        packet_commitment_sequences: commitments_on_counterparty,
-    };
-
     chain
-        .query_unreceived_packets(request)
+        .query_unreceived_packets(QueryUnreceivedPacketsRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            packet_commitment_sequences: commitments_on_counterparty,
+        })
         .map_err(Error::relayer)
 }
 
@@ -354,22 +371,20 @@ pub fn packet_acknowledgements(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-    commit_sequences: Vec<u64>,
-) -> Result<(Vec<u64>, Height), Error> {
+    commit_sequences: Vec<Sequence>,
+) -> Result<(Vec<Sequence>, Height), Error> {
     let commit_set = commit_sequences.iter().cloned().collect::<HashSet<_>>();
 
     // Get the packet acknowledgments on counterparty/source chain
-    let acks_request = QueryPacketAcknowledgementsRequest {
-        port_id: port_id.to_string(),
-        channel_id: channel_id.to_string(),
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        packet_commitment_sequences: commit_sequences,
-    };
-    let (acks, response_height) = chain
-        .query_packet_acknowledgements(acks_request)
+    let (mut acked_sequences, response_height) = chain
+        .query_packet_acknowledgements(QueryPacketAcknowledgementsRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            pagination: Some(PageRequest::all()),
+            packet_commitment_sequences: commit_sequences,
+        })
         .map_err(Error::relayer)?;
 
-    let mut acked_sequences: Vec<u64> = acks.into_iter().map(|v| v.sequence).collect();
     acked_sequences.retain(|s| commit_set.contains(s));
     acked_sequences.sort_unstable();
 
@@ -383,20 +398,18 @@ pub fn unreceived_acknowledgements_sequences(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
-    acks_on_counterparty: Vec<u64>,
-) -> Result<Vec<u64>, Error> {
+    acks_on_counterparty: Vec<Sequence>,
+) -> Result<Vec<Sequence>, Error> {
     if acks_on_counterparty.is_empty() {
         return Ok(vec![]);
     }
 
-    let request = QueryUnreceivedAcksRequest {
-        port_id: port_id.to_string(),
-        channel_id: channel_id.to_string(),
-        packet_ack_sequences: acks_on_counterparty,
-    };
-
     chain
-        .query_unreceived_acknowledgement(request)
+        .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            packet_ack_sequences: acks_on_counterparty,
+        })
         .map_err(Error::relayer)
 }
 
@@ -428,7 +441,7 @@ pub fn unreceived_packets(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
     path: &PathIdentifiers,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     let (commit_sequences, h) = commitments_on_chain(
         counterparty_chain,
         &path.counterparty_port_id,
@@ -445,7 +458,7 @@ pub fn acknowledgements_on_chain(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
     channel: &IdentifiedChannelEnd,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     let counterparty = channel.channel_end.counterparty();
     let counterparty_channel_id = counterparty
         .channel_id
@@ -501,7 +514,7 @@ pub fn unreceived_acknowledgements(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
     path: &PathIdentifiers,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     let (commitments_on_src, _) = commitments_on_chain(chain, &path.port_id, &path.channel_id)?;
 
     let (acks_on_counterparty, src_response_height) = packet_acknowledgements(
@@ -526,10 +539,10 @@ pub fn unreceived_acknowledgements(
 #[derive(Debug, Serialize)]
 pub struct PendingPackets {
     /// Not yet received on the counterparty chain.
-    pub unreceived_packets: Vec<u64>,
+    pub unreceived_packets: Vec<Sequence>,
     /// Received on the counterparty chain,
     /// but the acknowledgement is not yet received on the local chain.
-    pub unreceived_acks: Vec<u64>,
+    pub unreceived_acks: Vec<Sequence>,
 }
 
 pub fn pending_packet_summary(

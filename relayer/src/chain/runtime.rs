@@ -22,7 +22,7 @@ use ibc::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
-        ics23_commitment::commitment::CommitmentPrefix,
+        ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
     events::IbcEvent,
@@ -31,21 +31,9 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::{
-    channel::v1::{
-        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
-        QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    },
-    client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
-    commitment::v1::MerkleProof,
-    connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
-};
 
 use crate::{
     account::Balance,
-    chain::{client::ClientSettings, ChainStatus},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -58,9 +46,19 @@ use crate::{
 };
 
 use super::{
+    client::ClientSettings,
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
+    requests::{
+        QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+        QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+        QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+        QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+    },
     tracking::TrackedMsgs,
-    ChainEndpoint, HealthCheck,
+    ChainEndpoint, ChainStatus, HealthCheck,
 };
 
 pub struct Threads {
@@ -319,24 +317,24 @@ where
                             self.query_client_connections(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
-                            self.query_client_state(client_id, height, reply_to)?
+                        Ok(ChainRequest::QueryClientState { request, reply_to }) => {
+                            self.query_client_state(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConsensusStates { request, reply_to }) => {
                             self.query_consensus_states(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryConsensusState { client_id, consensus_height, query_height, reply_to }) => {
-                            self.query_consensus_state(client_id, consensus_height, query_height, reply_to)?
+                        Ok(ChainRequest::QueryConsensusState { request, reply_to }) => {
+                            self.query_consensus_state(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryUpgradedClientState { height, reply_to }) => {
-                            self.query_upgraded_client_state(height, reply_to)?
+                        Ok(ChainRequest::QueryUpgradedClientState { request, reply_to }) => {
+                            self.query_upgraded_client_state(request, reply_to)?
                         }
 
-                       Ok(ChainRequest::QueryUpgradedConsensusState { height, reply_to }) => {
-                            self.query_upgraded_consensus_state(height, reply_to)?
+                       Ok(ChainRequest::QueryUpgradedConsensusState { request, reply_to }) => {
+                            self.query_upgraded_consensus_state(request, reply_to)?
                         }
 
                         Ok(ChainRequest::QueryCommitmentPrefix { reply_to }) => {
@@ -347,8 +345,8 @@ where
                             self.query_compatible_versions(reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryConnection { connection_id, height, reply_to }) => {
-                            self.query_connection(connection_id, height, reply_to)?
+                        Ok(ChainRequest::QueryConnection { request, reply_to }) => {
+                            self.query_connection(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConnections { request, reply_to }) => {
@@ -363,8 +361,8 @@ where
                             self.query_channels(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
-                            self.query_channel(port_id, channel_id, height, reply_to)?
+                        Ok(ChainRequest::QueryChannel { request, reply_to }) => {
+                            self.query_channel(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannelClientState { request, reply_to }) => {
@@ -415,8 +413,8 @@ where
                             self.query_blocks(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryHostConsensusState { height, reply_to }) => {
-                            self.query_host_consensus_state(height, reply_to)?
+                        Ok(ChainRequest::QueryHostConsensusState { request, reply_to }) => {
+                            self.query_host_consensus_state(request, reply_to)?
                         },
 
                         Err(e) => error!("received error via chain request channel: {}", e),
@@ -621,13 +619,12 @@ where
 
     fn query_client_state(
         &self,
-        client_id: ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
         let client_state = self
             .chain
-            .query_client_state(&client_id, height)
+            .query_client_state(request)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(client_state).map_err(Error::send)
@@ -635,12 +632,12 @@ where
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
         reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
     ) -> Result<(), Error> {
         let result = self
             .chain
-            .query_upgraded_client_state(height)
+            .query_upgraded_client_state(request)
             .map(|(cl, proof)| (cl.wrap_any(), proof));
 
         reply_to.send(result).map_err(Error::send)
@@ -657,26 +654,22 @@ where
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let consensus_state =
-            self.chain
-                .query_consensus_state(client_id, consensus_height, query_height);
+        let consensus_state = self.chain.query_consensus_state(request);
 
         reply_to.send(consensus_state).map_err(Error::send)
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
         reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
     ) -> Result<(), Error> {
         let result = self
             .chain
-            .query_upgraded_consensus_state(height)
+            .query_upgraded_consensus_state(request)
             .map(|(cs, proof)| (cs.wrap_any(), proof));
 
         reply_to.send(result).map_err(Error::send)
@@ -694,11 +687,10 @@ where
 
     fn query_connection(
         &self,
-        connection_id: ConnectionId,
-        height: Height,
+        request: QueryConnectionRequest,
         reply_to: ReplyTo<ConnectionEnd>,
     ) -> Result<(), Error> {
-        let connection_end = self.chain.query_connection(&connection_id, height);
+        let connection_end = self.chain.query_connection(request);
         reply_to.send(connection_end).map_err(Error::send)
     }
 
@@ -731,12 +723,10 @@ where
 
     fn query_channel(
         &self,
-        port_id: PortId,
-        channel_id: ChannelId,
-        height: Height,
+        request: QueryChannelRequest,
         reply_to: ReplyTo<ChannelEnd>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_channel(&port_id, &channel_id, height);
+        let result = self.chain.query_channel(request);
         reply_to.send(result).map_err(Error::send)
     }
 
@@ -821,7 +811,7 @@ where
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+        reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_commitments(request);
         reply_to.send(result).map_err(Error::send)
@@ -830,7 +820,7 @@ where
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-        reply_to: ReplyTo<Vec<u64>>,
+        reply_to: ReplyTo<Vec<Sequence>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
         reply_to.send(result).map_err(Error::send)
@@ -839,7 +829,7 @@ where
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+        reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_acknowledgements(request);
         reply_to.send(result).map_err(Error::send)
@@ -848,7 +838,7 @@ where
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
-        reply_to: ReplyTo<Vec<u64>>,
+        reply_to: ReplyTo<Vec<Sequence>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_acknowledgements(request);
         reply_to.send(result).map_err(Error::send)
@@ -886,12 +876,12 @@ where
 
     fn query_host_consensus_state(
         &self,
-        height: Height,
+        request: QueryHostConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
         let result = self
             .chain
-            .query_host_consensus_state(height)
+            .query_host_consensus_state(request)
             .map(|h| h.wrap_any());
 
         reply_to.send(result).map_err(Error::send)?;

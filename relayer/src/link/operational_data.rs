@@ -11,6 +11,7 @@ use ibc::events::IbcEvent;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::QueryClientStateRequest;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
@@ -169,11 +170,18 @@ impl OperationalData {
             let client_state = match self.target {
                 OperationalDataTarget::Source => relay_path
                     .src_chain()
-                    .query_client_state(relay_path.src_client_id(), Height::zero())
+                    .query_client_state(QueryClientStateRequest {
+                        client_id: relay_path.src_client_id().clone(),
+                        height: Height::zero(),
+                    })
                     .map_err(|e| LinkError::query(relay_path.src_chain().id(), e))?,
+
                 OperationalDataTarget::Destination => relay_path
                     .dst_chain()
-                    .query_client_state(relay_path.dst_client_id(), Height::zero())
+                    .query_client_state(QueryClientStateRequest {
+                        client_id: relay_path.dst_client_id().clone(),
+                        height: Height::zero(),
+                    })
                     .map_err(|e| LinkError::query(relay_path.dst_chain().id(), e))?,
             };
 
