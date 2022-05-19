@@ -166,6 +166,7 @@ mod test {
     use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
     use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
+    use crate::test_utils::get_dummy_bech32_account;
 
     #[test]
     fn msg_acknowledgment_try_from_raw() {
@@ -203,7 +204,7 @@ mod test {
             Test {
                 name: "Empty signer".to_string(),
                 raw: RawMsgAcknowledgement {
-                    signer: "".to_string(),
+                    signer: get_dummy_bech32_account(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,
