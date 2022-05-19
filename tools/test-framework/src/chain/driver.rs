@@ -24,6 +24,7 @@ use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
+use crate::ibc::token::Token;
 use crate::relayer::tx::{new_tx_config_for_test, simple_send_tx};
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
@@ -319,14 +320,9 @@ impl ChainDriver {
     pub fn add_genesis_account(
         &self,
         wallet: &WalletAddress,
-        amounts: &[(&Denom, u64)],
+        amounts: &[&Token],
     ) -> Result<(), Error> {
-        let amounts_str = itertools::join(
-            amounts
-                .iter()
-                .map(|(denom, amount)| format!("{}{}", amount, denom)),
-            ",",
-        );
+        let amounts_str = itertools::join(amounts.iter().map(|t| t.to_string()), ",");
 
         self.exec(&[
             "--home",
@@ -343,14 +339,7 @@ impl ChainDriver {
        Add a wallet ID with the given stake amount to be the genesis validator
        for an uninitialized chain.
     */
-    pub fn add_genesis_validator(
-        &self,
-        wallet_id: &WalletId,
-        denom: &Denom,
-        amount: u64,
-    ) -> Result<(), Error> {
-        let amount_str = format!("{}{}", amount, denom);
-
+    pub fn add_genesis_validator(&self, wallet_id: &WalletId, token: &Token) -> Result<(), Error> {
         self.exec(&[
             "--home",
             &self.home_path,
@@ -360,7 +349,7 @@ impl ChainDriver {
             "test",
             "--chain-id",
             self.chain_id.as_str(),
-            &amount_str,
+            &token.to_string(),
         ])?;
 
         Ok(())
@@ -445,7 +434,7 @@ impl ChainDriver {
     /**
        Query for the balances for a given wallet address and denomination
     */
-    pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<u64, Error> {
+    pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<u128, Error> {
         let res = self
             .exec(&[
                 "--node",
@@ -469,7 +458,7 @@ impl ChainDriver {
             .ok_or_else(|| eyre!("expected string field"))?
             .to_string();
 
-        let amount = u64::from_str(&amount_str).map_err(handle_generic_error)?;
+        let amount = u128::from_str(&amount_str).map_err(handle_generic_error)?;
 
         Ok(amount)
     }
@@ -486,24 +475,23 @@ impl ChainDriver {
     pub fn assert_eventual_wallet_amount(
         &self,
         wallet: &WalletAddress,
-        target_amount: u64,
-        denom: &Denom,
+        token: &Token,
     ) -> Result<(), Error> {
         assert_eventually_succeed(
-            &format!("wallet reach {} amount {} {}", wallet, target_amount, denom),
+            &format!("wallet reach {} amount {}", wallet, token),
             WAIT_WALLET_AMOUNT_ATTEMPTS,
             Duration::from_secs(1),
             || {
-                let amount = self.query_balance(wallet, denom)?;
+                let amount = self.query_balance(wallet, &token.denom)?;
 
-                if amount == target_amount {
+                if amount == token.amount {
                     Ok(())
                 } else {
                     Err(Error::generic(eyre!(
                         "current balance of account {} with amount {} does not match the target amount {}",
                         wallet,
                         amount,
-                        target_amount
+                        token
                     )))
                 }
             },

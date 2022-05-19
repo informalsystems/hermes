@@ -15,6 +15,7 @@ use crate::chain::driver::transfer::local_transfer_token;
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
+use crate::ibc::token::{TaggedDenomExt, TaggedToken, TaggedTokenRef};
 use crate::prelude::TaggedConnectionIdRef;
 use crate::relayer::transfer::ibc_token_transfer;
 use crate::types::id::{TaggedChainIdRef, TaggedChannelIdRef, TaggedPortIdRef};
@@ -49,7 +50,7 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         wallet_id: &MonoTagged<Chain, &WalletAddress>,
         denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<u64, Error>;
+    ) -> Result<TaggedToken<Chain>, Error>;
 
     /**
        Tagged version of [`ChainDriver::assert_eventual_wallet_amount`].
@@ -60,8 +61,7 @@ pub trait TaggedChainDriverExt<Chain> {
     fn assert_eventual_wallet_amount(
         &self,
         user: &MonoTagged<Chain, &WalletAddress>,
-        target_amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error>;
 
     /**
@@ -90,16 +90,14 @@ pub trait TaggedChainDriverExt<Chain> {
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        denom: &MonoTagged<Chain, &Denom>,
-        amount: u64,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error>;
 
     fn local_transfer_token(
         &self,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
-        amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error>;
 
     /**
@@ -154,18 +152,20 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         &self,
         wallet_id: &MonoTagged<Chain, &WalletAddress>,
         denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<u64, Error> {
-        self.value().query_balance(wallet_id.value(), denom.value())
+    ) -> Result<TaggedToken<Chain>, Error> {
+        let balance = self
+            .value()
+            .query_balance(wallet_id.value(), denom.value())?;
+        Ok(denom.with_amount(balance))
     }
 
     fn assert_eventual_wallet_amount(
         &self,
         user: &MonoTagged<Chain, &WalletAddress>,
-        target_amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error> {
         self.value()
-            .assert_eventual_wallet_amount(user.value(), target_amount, denom.value())
+            .assert_eventual_wallet_amount(user.value(), token.value())
     }
 
     fn ibc_transfer_token<Counterparty>(
@@ -174,8 +174,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        denom: &MonoTagged<Chain, &Denom>,
-        amount: u64,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error> {
         self.value().runtime.block_on(ibc_token_transfer(
             &self.tx_config(),
@@ -183,8 +182,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
             channel_id,
             sender,
             recipient,
-            denom,
-            amount,
+            token,
         ))
     }
 
@@ -192,15 +190,13 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         &self,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
-        amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error> {
         local_transfer_token(
             self.value(),
             sender.value(),
             recipient.value(),
-            amount,
-            denom.value(),
+            token.value(),
         )
     }
 

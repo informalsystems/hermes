@@ -3,7 +3,7 @@
 */
 
 use crate::error::Error;
-use crate::ibc::denom::Denom;
+use crate::ibc::token::Token;
 use crate::types::wallet::{Wallet, WalletAddress};
 
 use super::ChainDriver;
@@ -12,8 +12,7 @@ pub fn local_transfer_token(
     driver: &ChainDriver,
     sender: &Wallet,
     recipient: &WalletAddress,
-    amount: u64,
-    denom: &Denom,
+    token: &Token,
 ) -> Result<(), Error> {
     driver.exec(&[
         "--node",
@@ -23,7 +22,7 @@ pub fn local_transfer_token(
         "send",
         &sender.address.0,
         &recipient.0,
-        &format!("{}{}", amount, denom),
+        &token.to_string(),
         "--chain-id",
         driver.chain_id.as_str(),
         "--home",

@@ -111,7 +111,11 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
             .chain_driver()
             .query_balance(&ica_address.as_ref(), &stake_denom.as_ref())?;
 
-        assert_eq("balance of ICA account should be 0", &ica_balance, &0)?;
+        assert_eq(
+            "balance of ICA account should be 0",
+            &ica_balance.amount(),
+            &0,
+        )?;
 
         // Send funds to the interchain account.
         let ica_fund = 42000;
@@ -119,15 +123,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         chains.node_b.chain_driver().local_transfer_token(
             &chains.node_b.wallets().user1(),
             &ica_address.as_ref(),
-            ica_fund,
-            &stake_denom.as_ref(),
-        )?;
-
-        // Check that the balance has been updated.
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &ica_address.as_ref(),
-            ica_fund,
-            &stake_denom.as_ref(),
+            &stake_denom.with_amount(ica_fund).as_ref(),
         )?;
 
         #[derive(Serialize)]
@@ -168,8 +164,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         // Check that the ICA account's balance has been debited the sent amount.
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &ica_address.as_ref(),
-            ica_fund - amount,
-            &stake_denom.as_ref(),
+            &stake_denom.with_amount(ica_fund - amount).as_ref(),
         )?;
 
         Ok(())

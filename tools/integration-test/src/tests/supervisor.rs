@@ -97,15 +97,13 @@ impl BinaryChainTest for SupervisorTest {
         chains.node_a.chain_driver().local_transfer_token(
             &chains.node_a.wallets().relayer(),
             &chains.node_a.wallets().user2().address(),
-            1000,
-            &denom_a,
+            &denom_a.with_amount(1000).as_ref(),
         )?;
 
         chains.node_b.chain_driver().local_transfer_token(
             &chains.node_b.wallets().relayer(),
             &chains.node_b.wallets().user2().address(),
-            1000,
-            &chains.node_b.denom(),
+            &chains.node_b.denom().with_amount(1000).as_ref(),
         )?;
 
         info!(
@@ -121,8 +119,7 @@ impl BinaryChainTest for SupervisorTest {
             &channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            transfer_amount,
+            &denom_a.with_amount(transfer_amount).as_ref(),
         )?;
 
         // During the test, you should see error logs showing "account sequence mismatch".
@@ -132,14 +129,12 @@ impl BinaryChainTest for SupervisorTest {
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a.address(),
-            balance_a - transfer_amount,
-            &denom_a,
+            &(balance_a - transfer_amount).as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
-            transfer_amount,
-            &denom_b.as_ref(),
+            &denom_b.with_amount(transfer_amount).as_ref(),
         )?;
 
         std::thread::sleep(core::time::Duration::from_secs(10));

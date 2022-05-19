@@ -1,6 +1,6 @@
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::random::random_u64_range;
+use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
 fn test_ordered_channel() -> Result<(), Error> {
@@ -44,7 +44,7 @@ impl BinaryChannelTest for OrderedChannelTest {
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
 
-        let amount1 = random_u64_range(1000, 5000);
+        let amount1 = random_u128_range(1000, 5000);
 
         info!(
             "Performing IBC transfer with amount {}, which should be relayed because its an ordered channel",
@@ -56,8 +56,7 @@ impl BinaryChannelTest for OrderedChannelTest {
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            amount1,
+            &denom_a.with_amount(amount1).as_ref(),
         )?;
 
         sleep(Duration::from_secs(1));
@@ -65,7 +64,7 @@ impl BinaryChannelTest for OrderedChannelTest {
         relayer.with_supervisor(|| {
             sleep(Duration::from_secs(1));
 
-            let amount2 = random_u64_range(1000, 5000);
+            let amount2 = random_u128_range(1000, 5000);
 
             info!(
                 "Performing IBC transfer with amount {}, which should be relayed",
@@ -77,8 +76,7 @@ impl BinaryChannelTest for OrderedChannelTest {
                 &channel.channel_id_a.as_ref(),
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
-                &denom_a,
-                amount2,
+                &denom_a.with_amount(amount2).as_ref(),
             )?;
 
             sleep(Duration::from_secs(1));
@@ -92,15 +90,13 @@ impl BinaryChannelTest for OrderedChannelTest {
             // Wallet on chain A should have both amount deducted.
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
                 &wallet_a.address(),
-                balance_a - amount1 - amount2,
-                &denom_a,
+                &(balance_a - amount1 - amount2).as_ref(),
             )?;
 
             // Wallet on chain B should receive both IBC transfers
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
                 &wallet_b.address(),
-                amount1 + amount2,
-                &denom_b.as_ref(),
+                &denom_b.with_amount(amount1 + amount2).as_ref(),
             )?;
 
             Ok(())

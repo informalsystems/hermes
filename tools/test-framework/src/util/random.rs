@@ -17,8 +17,19 @@ pub fn random_u64() -> u64 {
     rng.gen()
 }
 
+pub fn random_u128() -> u128 {
+    let mut rng = rand::thread_rng();
+    rng.gen()
+}
+
 /// Generates a random `u64` value between the given min and max.
 pub fn random_u64_range(min: u64, max: u64) -> u64 {
+    let mut rng = rand::thread_rng();
+    rng.gen_range(min..max)
+}
+
+/// Generates a random `u64` value between the given min and max.
+pub fn random_u128_range(min: u128, max: u128) -> u128 {
     let mut rng = rand::thread_rng();
     rng.gen_range(min..max)
 }

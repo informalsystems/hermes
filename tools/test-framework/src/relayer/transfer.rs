@@ -13,7 +13,7 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
 
 use crate::error::{handle_generic_error, Error};
-use crate::ibc::denom::Denom;
+use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::tx::simple_send_tx;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -24,8 +24,7 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
     sender: &MonoTagged<SrcChain, &Wallet>,
     recipient: &MonoTagged<DstChain, &WalletAddress>,
-    denom: &MonoTagged<SrcChain, &Denom>,
-    amount: u64,
+    token: &TaggedTokenRef<'_, SrcChain>,
 ) -> Result<Any, Error> {
     let timeout_timestamp = Timestamp::now()
         .add(Duration::from_secs(60))
@@ -34,8 +33,8 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     Ok(raw_build_transfer_message(
         (*port_id.value()).clone(),
         **channel_id.value(),
-        amount.into(),
-        denom.value().to_string(),
+        token.value().amount.into(),
+        token.value().denom.to_string(),
         Signer::new(sender.value().address.0.clone()),
         Signer::new(recipient.value().0.clone()),
         Height::zero(),
@@ -66,10 +65,9 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
     sender: &MonoTagged<SrcChain, &Wallet>,
     recipient: &MonoTagged<DstChain, &WalletAddress>,
-    denom: &MonoTagged<SrcChain, &Denom>,
-    amount: u64,
+    token: &TaggedTokenRef<'_, SrcChain>,
 ) -> Result<(), Error> {
-    let message = build_transfer_message(port_id, channel_id, sender, recipient, denom, amount)?;
+    let message = build_transfer_message(port_id, channel_id, sender, recipient, token)?;
 
     simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
 

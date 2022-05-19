@@ -84,6 +84,12 @@ impl From<u64> for Amount {
     }
 }
 
+impl From<u128> for Amount {
+    fn from(amount: u128) -> Self {
+        Self(amount.into())
+    }
+}
+
 #[derive(Copy, Clone)]
 pub struct TransferTimeout {
     pub timeout_height: Height,

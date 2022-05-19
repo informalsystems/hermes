@@ -5,7 +5,7 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use prost::{EncodeError, Message};
 
 use crate::error::{handle_generic_error, Error};
-use crate::ibc::denom::Denom;
+use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::transfer::build_transfer_message;
 use crate::relayer::tx::simple_send_tx;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
@@ -19,20 +19,18 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
     sender: &MonoTagged<SrcChain, &Wallet>,
     recipient: &MonoTagged<DstChain, &WalletAddress>,
-    denom: &MonoTagged<SrcChain, &Denom>,
-    send_amount: u64,
-    receive_fee: u64,
-    ack_fee: u64,
-    timeout_fee: u64,
+    send_amount: &TaggedTokenRef<'_, SrcChain>,
+    receive_fee: &TaggedTokenRef<'_, SrcChain>,
+    ack_fee: &TaggedTokenRef<'_, SrcChain>,
+    timeout_fee: &TaggedTokenRef<'_, SrcChain>,
 ) -> Result<(), Error> {
     let transfer_message =
-        build_transfer_message(port_id, channel_id, sender, recipient, denom, send_amount)?;
+        build_transfer_message(port_id, channel_id, sender, recipient, send_amount)?;
 
     let pay_message = build_pay_packet_message(
         port_id,
         channel_id,
         &sender.address(),
-        denom,
         receive_fee,
         ack_fee,
         timeout_fee,
@@ -74,27 +72,24 @@ pub fn build_pay_packet_message<Chain, Counterparty>(
     port_id: &TaggedPortIdRef<Chain, Counterparty>,
     channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
     payer: &MonoTagged<Chain, &WalletAddress>,
-    denom: &MonoTagged<Chain, &Denom>,
-    receive_fee: u64,
-    ack_fee: u64,
-    timeout_fee: u64,
+    receive_fee: &TaggedTokenRef<'_, Chain>,
+    ack_fee: &TaggedTokenRef<'_, Chain>,
+    timeout_fee: &TaggedTokenRef<'_, Chain>,
 ) -> Result<Any, Error> {
     const TYPE_URL: &str = "/ibc.applications.fee.v1.MsgPayPacketFee";
 
-    let denom_str = denom.value().to_string();
-
     let fee = Fee {
         recv_fee: vec![Coin {
-            denom: denom_str.clone(),
-            amount: receive_fee.to_string(),
+            denom: receive_fee.value().denom.to_string(),
+            amount: receive_fee.value().amount.to_string(),
         }],
         ack_fee: vec![Coin {
-            denom: denom_str.clone(),
-            amount: ack_fee.to_string(),
+            denom: ack_fee.value().denom.to_string(),
+            amount: ack_fee.value().amount.to_string(),
         }],
         timeout_fee: vec![Coin {
-            denom: denom_str,
-            amount: timeout_fee.to_string(),
+            denom: timeout_fee.value().denom.to_string(),
+            amount: timeout_fee.value().amount.to_string(),
         }],
     };
 
