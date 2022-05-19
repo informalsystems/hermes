@@ -54,6 +54,11 @@ pub mod cosmos {
             include_proto!("cosmos.staking.v1beta1.rs");
         }
     }
+    pub mod bank {
+        pub mod v1beta1 {
+            include_proto!("cosmos.bank.v1beta1.rs");
+        }
+    }
     pub mod base {
         pub mod abci {
             pub mod v1beta1 {
@@ -76,6 +81,14 @@ pub mod cosmos {
                 pub fn all() -> Option<PageRequest> {
                     Some(PageRequest {
                         limit: u64::MAX,
+                        ..Default::default()
+                    })
+                }
+
+                pub fn latest_limited(limit: u64) -> Option<PageRequest> {
+                    Some(PageRequest {
+                        limit,
+                        reverse: true,
                         ..Default::default()
                     })
                 }

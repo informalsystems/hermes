@@ -10,9 +10,10 @@ use ibc::core::{
 use crate::{
     chain::{counterparty::connection_state_on_destination, handle::ChainHandle},
     config::Config,
-    object::{Channel, Client, Connection, Object, Packet},
+    object::{Channel, Client, Connection, Object, Packet, Wallet},
     registry::Registry,
     supervisor::error::Error as SupervisorError,
+    telemetry,
     worker::WorkerMap,
 };
 
@@ -66,6 +67,23 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         for (_, client_scan) in scan.clients {
             self.spawn_workers_for_client(chain.clone(), client_scan);
         }
+
+        // Let's only spawn the wallet worker if telemetry is enabled,
+        // otherwise the worker just ends up issuing queries to the node
+        // without making anything of the result
+        telemetry!(self.spawn_wallet_worker(chain));
+    }
+
+    pub fn spawn_wallet_worker(&mut self, chain: Chain) {
+        let wallet_object = Object::Wallet(Wallet {
+            chain_id: chain.id(),
+        });
+
+        self.workers
+            .spawn(chain.clone(), chain, &wallet_object, self.config)
+            .then(|| {
+                info!("spawning Wallet worker: {}", wallet_object.short_name());
+            });
     }
 
     pub fn spawn_workers_for_client(&mut self, chain: Chain, client_scan: ClientScan) {
