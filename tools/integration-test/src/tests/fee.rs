@@ -1,8 +1,5 @@
 use ibc::core::ics04_channel::Version;
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::fee::{
-    ibc_token_transfer_with_fee, register_counterparty_address,
-};
 
 #[test]
 fn test_channel_with_fee() -> Result<(), Error> {
@@ -11,7 +8,17 @@ fn test_channel_with_fee() -> Result<(), Error> {
 
 pub struct ChannelWithFeeTest;
 
-impl TestOverrides for ChannelWithFeeTest {
+pub struct FeeOverrides;
+
+impl HasOverrides for ChannelWithFeeTest {
+    type Overrides = FeeOverrides;
+
+    fn get_overrides(&self) -> &Self::Overrides {
+        &FeeOverrides
+    }
+}
+
+impl TestOverrides for FeeOverrides {
     fn should_spawn_supervisor(&self) -> bool {
         false
     }
@@ -36,8 +43,6 @@ impl BinaryChannelTest for ChannelWithFeeTest {
         let chain_id_b = chain_driver_b.chain_id();
 
         let denom_a = chains.node_a.denom();
-        let tx_config_a = chain_driver_a.tx_config();
-        let tx_config_b = chain_driver_b.tx_config();
 
         let port_a = channel.port_a.as_ref();
         let channel_id_a = channel.channel_id_a.as_ref();
@@ -58,15 +63,11 @@ impl BinaryChannelTest for ChannelWithFeeTest {
             chain_id_a
         );
 
-        chain_driver_b
-            .value()
-            .runtime
-            .block_on(register_counterparty_address(
-                &tx_config_b,
-                &relayer_b,
-                &relayer_a.address(),
-                &channel_id_b,
-            ))?;
+        chain_driver_b.register_counterparty_address(
+            &relayer_b,
+            &relayer_a.address(),
+            &channel_id_b,
+        )?;
 
         relayer.with_supervisor(move || {
             let user_a = wallets_a.user1();
@@ -86,20 +87,16 @@ impl BinaryChannelTest for ChannelWithFeeTest {
 
             let balance_a2 = balance_a1 - total_sent;
 
-            chain_driver_a
-                .value()
-                .runtime
-                .block_on(ibc_token_transfer_with_fee(
-                    &tx_config_a,
-                    &port_a,
-                    &channel_id_a,
-                    &user_a,
-                    &user_b.address(),
-                    &denom_a.with_amount(send_amount).as_ref(),
-                    &denom_a.with_amount(receive_fee).as_ref(),
-                    &denom_a.with_amount(ack_fee).as_ref(),
-                    &denom_a.with_amount(timeout_fee).as_ref(),
-                ))?;
+            chain_driver_a.ibc_token_transfer_with_fee(
+                &port_a,
+                &channel_id_a,
+                &user_a,
+                &user_b.address(),
+                &denom_a.with_amount(send_amount).as_ref(),
+                &denom_a.with_amount(receive_fee).as_ref(),
+                &denom_a.with_amount(ack_fee).as_ref(),
+                &denom_a.with_amount(timeout_fee).as_ref(),
+            )?;
 
             let denom_b = derive_ibc_denom(
                 &channel.port_b.as_ref(),

@@ -17,6 +17,7 @@ use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::ibc::token::{TaggedDenomExt, TaggedToken, TaggedTokenRef};
 use crate::prelude::TaggedConnectionIdRef;
+use crate::relayer::fee::{ibc_token_transfer_with_fee, register_counterparty_address};
 use crate::relayer::transfer::ibc_token_transfer;
 use crate::types::id::{TaggedChainIdRef, TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -100,6 +101,18 @@ pub trait TaggedChainDriverExt<Chain> {
         token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error>;
 
+    fn ibc_token_transfer_with_fee<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        send_amount: &TaggedTokenRef<'_, Chain>,
+        receive_fee: &TaggedTokenRef<'_, Chain>,
+        ack_fee: &TaggedTokenRef<'_, Chain>,
+        timeout_fee: &TaggedTokenRef<'_, Chain>,
+    ) -> Result<(), Error>;
+
     /**
         Taggged version of [`query_recipient_transactions`].
 
@@ -110,6 +123,13 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error>;
+
+    fn register_counterparty_address<Counterparty>(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        counterparty_address: &MonoTagged<Counterparty, &WalletAddress>,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+    ) -> Result<(), Error>;
 
     fn register_interchain_account<Counterparty>(
         &self,
@@ -200,11 +220,49 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         )
     }
 
+    fn ibc_token_transfer_with_fee<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        send_amount: &TaggedTokenRef<'_, Chain>,
+        receive_fee: &TaggedTokenRef<'_, Chain>,
+        ack_fee: &TaggedTokenRef<'_, Chain>,
+        timeout_fee: &TaggedTokenRef<'_, Chain>,
+    ) -> Result<(), Error> {
+        self.value().runtime.block_on(ibc_token_transfer_with_fee(
+            &self.tx_config(),
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            send_amount,
+            receive_fee,
+            ack_fee,
+            timeout_fee,
+        ))
+    }
+
     fn query_recipient_transactions(
         &self,
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error> {
         query_recipient_transactions(self.value(), recipient_address.value())
+    }
+
+    fn register_counterparty_address<Counterparty>(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        counterparty_address: &MonoTagged<Counterparty, &WalletAddress>,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+    ) -> Result<(), Error> {
+        self.value().runtime.block_on(register_counterparty_address(
+            &self.tx_config(),
+            wallet,
+            counterparty_address,
+            channel_id,
+        ))
     }
 
     fn register_interchain_account<Counterparty>(
