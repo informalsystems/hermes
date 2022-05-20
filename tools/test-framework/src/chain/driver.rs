@@ -130,8 +130,8 @@ impl ChainDriver {
     ) -> Result<Self, Error> {
         let tx_config = new_tx_config_for_test(
             chain_id.clone(),
-            format!("http://localhost:{}", rpc_port),
-            format!("http://localhost:{}", grpc_port),
+            format!("http://127.0.0.1:{}", rpc_port),
+            format!("http://127.0.0.1:{}", grpc_port),
         )?;
 
         Ok(Self {
@@ -150,17 +150,17 @@ impl ChainDriver {
 
     /// Returns the full URL for the RPC address.
     pub fn rpc_address(&self) -> String {
-        format!("http://localhost:{}", self.rpc_port)
+        format!("http://127.0.0.1:{}", self.rpc_port)
     }
 
     /// Returns the full URL for the WebSocket address.
     pub fn websocket_address(&self) -> String {
-        format!("ws://localhost:{}/websocket", self.rpc_port)
+        format!("ws://127.0.0.1:{}/websocket", self.rpc_port)
     }
 
     /// Returns the full URL for the GRPC address.
     pub fn grpc_address(&self) -> String {
-        format!("http://localhost:{}", self.grpc_port)
+        format!("http://127.0.0.1:{}", self.grpc_port)
     }
 
     /**
@@ -171,7 +171,7 @@ impl ChainDriver {
         as it requires the `"tcp://"` scheme.
     */
     pub fn rpc_listen_address(&self) -> String {
-        format!("tcp://localhost:{}", self.rpc_port)
+        format!("tcp://127.0.0.1:{}", self.rpc_port)
     }
 
     /**
@@ -182,7 +182,7 @@ impl ChainDriver {
         as it requires no scheme to be specified.
     */
     pub fn grpc_listen_address(&self) -> String {
-        format!("localhost:{}", self.grpc_port)
+        format!("127.0.0.1:{}", self.grpc_port)
     }
 
     /**
