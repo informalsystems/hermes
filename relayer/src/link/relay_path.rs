@@ -1327,7 +1327,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             Ok(reply) => self.enqueue_pending_tx(reply, od),
                             Err(e) => {
                                 unprocessed.extend(operations);
-                              
+
                                 return Err((unprocessed, e));
                             }
                         }
@@ -1338,7 +1338,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 Err(e) => {
                     unprocessed.push_back(od);
                     unprocessed.extend(operations);
-                  
+
                     return Err((unprocessed, e));
                 }
             }
@@ -1585,6 +1585,54 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         };
 
         Ok(())
+    }
+
+    /// Pulls out the operational elements with elapsed delay period and that can
+    /// now be processed.
+    pub(crate) fn try_fetch_scheduled_operational_data(
+        &self,
+    ) -> Result<(VecDeque<OperationalData>, VecDeque<OperationalData>), LinkError> {
+        // Extracts elements from a Vec when the predicate returns true.
+        // The mutable vector is then updated to the remaining unextracted elements.
+        fn partition<T>(
+            queue: VecDeque<T>,
+            pred: impl Fn(&T) -> Result<bool, LinkError>,
+        ) -> Result<(VecDeque<T>, VecDeque<T>), LinkError> {
+            let mut true_res = VecDeque::new();
+            let mut false_res = VecDeque::new();
+
+            for e in queue.into_iter() {
+                if pred(&e)? {
+                    true_res.push_back(e);
+                } else {
+                    false_res.push_back(e);
+                }
+            }
+
+            Ok((true_res, false_res))
+        }
+
+        let (elapsed_src_ods, unelapsed_src_ods) =
+            partition(self.src_operational_data.take(), |op| {
+                op.has_conn_delay_elapsed(
+                    &|| self.src_time_latest(),
+                    &|| self.src_max_block_time(),
+                    &|| self.src_latest_height(),
+                )
+            })?;
+
+        let (elapsed_dst_ods, unelapsed_dst_ods) =
+            partition(self.dst_operational_data.take(), |op| {
+                op.has_conn_delay_elapsed(
+                    &|| self.dst_time_latest(),
+                    &|| self.dst_max_block_time(),
+                    &|| self.dst_latest_height(),
+                )
+            })?;
+
+        self.src_operational_data.replace(unelapsed_src_ods);
+        self.dst_operational_data.replace(unelapsed_dst_ods);
+        Ok((elapsed_src_ods, elapsed_dst_ods))
     }
 
     fn restore_src_client(&self) -> ForeignClient<ChainA, ChainB> {
