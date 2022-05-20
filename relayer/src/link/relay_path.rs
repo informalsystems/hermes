@@ -1327,7 +1327,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             Ok(reply) => self.enqueue_pending_tx(reply, od),
                             Err(e) => {
                                 unprocessed.extend(operations);
-
+                              
                                 return Err((unprocessed, e));
                             }
                         }
@@ -1338,7 +1338,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 Err(e) => {
                     unprocessed.push_back(od);
                     unprocessed.extend(operations);
-
+                  
                     return Err((unprocessed, e));
                 }
             }
