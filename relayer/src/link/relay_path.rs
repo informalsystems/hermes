@@ -1280,7 +1280,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Drives the relaying of elapsed operational data items meant for
-    /// the destination chain forward. Should an error occur when attempting
+    /// a specified target chain forward. Should an error occur when attempting
     /// to relay a piece of operational data, this function returns all
     /// subsequent unprocessed pieces of operational data back to the caller
     /// so that they can be re-queued.
@@ -1297,7 +1297,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// This method performs relaying using the asynchronous sender.
     /// Retains the operational data as pending, and associates it
     /// with one or more transaction hash(es).
-    fn do_execute_schedule<I: Iterator<Item = OperationalData>>(
+    fn execute_schedule_for_target_chain<I: Iterator<Item = OperationalData>>(
         &mut self,
         mut operations: I,
         target_chain: OperationalDataTarget,
@@ -1357,7 +1357,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
         let src_od_iter = self.src_operational_data.take().into_iter();
 
-        match self.do_execute_schedule(src_od_iter, OperationalDataTarget::Source) {
+        match self.execute_schedule_for_target_chain(src_od_iter, OperationalDataTarget::Source) {
             Ok(unprocessed_src_data) => self.src_operational_data = unprocessed_src_data.into(),
             Err((unprocessed_src_data, e)) => {
                 self.src_operational_data = unprocessed_src_data.into();
@@ -1367,7 +1367,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let dst_od_iter = self.dst_operational_data.take().into_iter();
 
-        match self.do_execute_schedule(dst_od_iter, OperationalDataTarget::Destination) {
+        match self
+            .execute_schedule_for_target_chain(dst_od_iter, OperationalDataTarget::Destination)
+        {
             Ok(unprocessed_dst_data) => self.dst_operational_data = unprocessed_dst_data.into(),
             Err((unprocessed_dst_data, e)) => {
                 self.dst_operational_data = unprocessed_dst_data.into();
