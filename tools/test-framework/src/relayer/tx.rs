@@ -3,22 +3,16 @@ use core::time::Duration;
 use eyre::eyre;
 use http::uri::Uri;
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::query::QueryTxHash;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
 use ibc_relayer::chain::cosmos::query::account::query_account;
-use ibc_relayer::chain::cosmos::query::tx_hash_query;
 use ibc_relayer::chain::cosmos::tx::estimate_fee_and_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
+use ibc_relayer::chain::cosmos::wait::wait_tx_succeed;
 use ibc_relayer::config::GasPrice;
 use ibc_relayer::keyring::KeyEntry;
-use std::time::Instant;
-use tendermint::abci::transaction::Hash as TxHash;
-use tendermint_rpc::endpoint::tx::Response as TxResponse;
-use tendermint_rpc::Client;
-use tendermint_rpc::Order;
 use tendermint_rpc::{HttpClient, Url};
 
 use crate::error::{handle_generic_error, Error};
@@ -102,54 +96,16 @@ pub async fn simple_send_tx(
             .await?;
 
     if response.code.is_err() {
-        return Err(eyre!("error in TX response: {:?}", response).into());
+        return Err(eyre!("send_tx returns error response: {:?}", response).into());
     }
 
-    wait_tx_succeed(&config.rpc_client, &config.rpc_timeout, &response.hash).await?;
+    wait_tx_succeed(
+        &config.rpc_client,
+        &config.rpc_address,
+        &config.rpc_timeout,
+        &response.hash,
+    )
+    .await?;
 
     Ok(())
-}
-
-pub async fn wait_tx_succeed(
-    rpc_client: &HttpClient,
-    timeout: &Duration,
-    tx_hash: &TxHash,
-) -> Result<(), Error> {
-    let start_time = Instant::now();
-
-    loop {
-        let responses = query_tx_response(rpc_client, tx_hash).await?;
-
-        if responses.is_empty() {
-            let elapsed = start_time.elapsed();
-            if &elapsed > timeout {
-                return Err(eyre!("tx no confirmation").into());
-            }
-        } else {
-            for response in responses.iter() {
-                if response.tx_result.code.is_err() {
-                    return Err(eyre!("error in TX response: {:?}", response).into());
-                }
-            }
-            return Ok(());
-        }
-    }
-}
-
-pub async fn query_tx_response(
-    rpc_client: &HttpClient,
-    tx_hash: &TxHash,
-) -> Result<Vec<TxResponse>, Error> {
-    let response = rpc_client
-        .tx_search(
-            tx_hash_query(&QueryTxHash(*tx_hash)),
-            false,
-            1,
-            1, // get only the first Tx matching the query
-            Order::Ascending,
-        )
-        .await
-        .map_err(handle_generic_error)?;
-
-    Ok(response.txs)
 }

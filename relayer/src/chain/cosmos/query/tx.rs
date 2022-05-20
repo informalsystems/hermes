@@ -5,10 +5,12 @@ use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{from_tx_response_event, IbcEvent};
-use ibc::query::QueryTxRequest;
+use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::Height as ICSHeight;
+use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
+use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 use tracing::trace;
 
@@ -233,7 +235,29 @@ fn filter_matching_event(
     }
 }
 
-fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx) -> Vec<IbcEvent> {
+pub async fn query_tx_response(
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    tx_hash: &TxHash,
+) -> Result<TxSearchResponse, Error> {
+    let response = rpc_client
+        .tx_search(
+            tx_hash_query(&QueryTxHash(*tx_hash)),
+            false,
+            1,
+            1, // get only the first Tx matching the query
+            Order::Ascending,
+        )
+        .await
+        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
+
+    Ok(response)
+}
+
+pub fn all_ibc_events_from_tx_search_response(
+    chain_id: &ChainId,
+    response: ResultTx,
+) -> Vec<IbcEvent> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
     let deliver_tx_result = response.tx_result;
     if deliver_tx_result.code.is_err() {

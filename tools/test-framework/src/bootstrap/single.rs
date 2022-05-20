@@ -86,6 +86,7 @@ pub fn bootstrap_single_node(
         config::set_p2p_port(config, chain_driver.p2p_port)?;
         config::set_timeout_commit(config, Duration::from_secs(1))?;
         config::set_timeout_propose(config, Duration::from_secs(1))?;
+        config::set_mode(config, "validator")?;
 
         config_modifier(config)?;
 

@@ -288,7 +288,7 @@ impl EventMonitor {
     /// Event monitor loop
     #[allow(clippy::while_let_loop)]
     pub fn run(mut self) {
-        debug!("[{}] starting event monitor", self.chain_id);
+        debug!(chain = %self.chain_id, "starting event monitor");
 
         // Continuously run the event loop, so that when it aborts
         // because of WebSocket client restart, we pick up the work again.

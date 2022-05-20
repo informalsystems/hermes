@@ -110,3 +110,12 @@ pub fn set_minimum_gas_price(config: &mut Value, price: &str) -> Result<(), Erro
 
     Ok(())
 }
+
+pub fn set_mode(config: &mut Value, mode: &str) -> Result<(), Error> {
+    config
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("mode".to_string(), mode.into());
+
+    Ok(())
+}
