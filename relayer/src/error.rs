@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
+use flex_error::{define_error, DisplayOnly, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
 use prost::{DecodeError, EncodeError};
@@ -15,6 +15,7 @@ use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
 use tendermint_rpc::Error as TendermintRpcError;
+use tokio::task::JoinError;
 use tonic::{
     metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
     Status as GrpcStatus,
@@ -46,7 +47,7 @@ define_error! {
 
         Rpc
             { url: tendermint_rpc::Url }
-            [ TraceClone<TendermintRpcError> ]
+            [ TendermintRpcError ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -91,7 +92,7 @@ define_error! {
             |e| { format!("missing parameter in GRPC response: {}", e.param) },
 
         Decode
-            [ TraceError<TendermintProtoError> ]
+            [ TendermintProtoError ]
             |_| { "error decoding protobuf" },
 
         LightClientVerification
@@ -122,7 +123,7 @@ define_error! {
             |_| { "bad notification" },
 
         ConversionFromAny
-            [ TraceError<TendermintProtoError> ]
+            [ TendermintProtoError ]
             |_| { "conversion from a protobuf `Any` into a domain type failed" },
 
         EmptyUpgradedClientState
@@ -140,6 +141,10 @@ define_error! {
 
         EmptyResponseProof
             |_| { "empty response proof" },
+
+        RpcResponse
+            { detail: String }
+            | e | { format!("RPC client returns error response: {}", e.detail) },
 
         MalformedProof
             [ ProofError ]
@@ -500,6 +505,10 @@ define_error! {
                     e.chain_id
                 )
             },
+
+        Join
+            [ TraceError<JoinError> ]
+            | _ | { "error joining tokio tasks" },
     }
 }
 

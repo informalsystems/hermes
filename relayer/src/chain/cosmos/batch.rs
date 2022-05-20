@@ -1,12 +1,12 @@
 use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
+use tendermint_rpc::abci::transaction::Hash as TxHash;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::tx::TxSyncResult;
 use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
@@ -25,7 +25,7 @@ pub async fn send_batched_messages_and_wait_commit(
         return Ok(Vec::new());
     }
 
-    let mut tx_sync_results = send_messages_as_batches(
+    let tx_hashes = send_messages_as_batches(
         config,
         max_msg_num,
         max_tx_size,
@@ -36,19 +36,14 @@ pub async fn send_batched_messages_and_wait_commit(
     )
     .await?;
 
-    wait_for_block_commits(
+    let events = wait_for_block_commits(
         &config.chain_id,
         &config.rpc_client,
         &config.rpc_address,
         &config.rpc_timeout,
-        &mut tx_sync_results,
+        &tx_hashes,
     )
     .await?;
-
-    let events = tx_sync_results
-        .into_iter()
-        .flat_map(|el| el.events)
-        .collect();
 
     Ok(events)
 }
@@ -89,31 +84,24 @@ async fn send_messages_as_batches(
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
-) -> Result<Vec<TxSyncResult>, Error> {
+) -> Result<Vec<TxHash>, Error> {
     if messages.is_empty() {
         return Ok(Vec::new());
     }
 
     let batches = batch_messages(max_msg_num, max_tx_size, messages)?;
 
-    let mut tx_sync_results = Vec::new();
+    let mut tx_hashes = Vec::new();
 
     for batch in batches {
-        let events_per_tx = vec![IbcEvent::default(); batch.len()];
-
         let response =
             send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch, 0)
                 .await?;
 
-        let tx_sync_result = TxSyncResult {
-            response,
-            events: events_per_tx,
-        };
-
-        tx_sync_results.push(tx_sync_result);
+        tx_hashes.push(response.hash);
     }
 
-    Ok(tx_sync_results)
+    Ok(tx_hashes)
 }
 
 fn batch_messages(
