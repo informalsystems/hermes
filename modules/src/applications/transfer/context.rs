@@ -332,10 +332,11 @@ pub fn on_timeout_packet(
 #[cfg(test)]
 pub(crate) mod test {
     use ibc_proto::google::protobuf::Any;
+    use subtle_encoding::bech32;
 
+    use crate::applications::transfer::context::cosmos_adr028_escrow_address;
     use crate::applications::transfer::error::Error as Ics20Error;
     use crate::applications::transfer::relay::send_transfer::send_transfer;
-
     use crate::core::ics04_channel::error::Error;
     use crate::handler::HandlerOutputBuilder;
     use crate::prelude::*;
@@ -350,5 +351,35 @@ pub(crate) mod test {
             .try_into()
             .map_err(|e: Ics20Error| Error::app_module(e.to_string()))?;
         send_transfer(ctx, output, msg).map_err(|e: Ics20Error| Error::app_module(e.to_string()))
+    }
+
+    #[test]
+    fn test_cosmos_escrow_address() {
+        fn assert_eq_escrow_address(port_id: &str, channel_id: &str, address: &str) {
+            let port_id = port_id.parse().unwrap();
+            let channel_id = channel_id.parse().unwrap();
+            let gen_address = {
+                let addr = cosmos_adr028_escrow_address(&port_id, channel_id);
+                bech32::encode("cosmos", addr)
+            };
+            assert_eq!(gen_address, address.to_owned())
+        }
+
+        // addresses obtained using `gaiad query ibc-transfer escrow-address [port-id] [channel-id]`
+        assert_eq_escrow_address(
+            "transfer",
+            "channel-141",
+            "cosmos1x54ltnyg88k0ejmk8ytwrhd3ltm84xehrnlslf",
+        );
+        assert_eq_escrow_address(
+            "transfer",
+            "channel-207",
+            "cosmos1ju6tlfclulxumtt2kglvnxduj5d93a64r5czge",
+        );
+        assert_eq_escrow_address(
+            "transfer",
+            "channel-187",
+            "cosmos177x69sver58mcfs74x6dg0tv6ls4s3xmmcaw53",
+        );
     }
 }
