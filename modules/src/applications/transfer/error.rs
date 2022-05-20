@@ -11,7 +11,7 @@ use crate::core::ics04_channel::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
-use crate::signer::{Signer, SignerError};
+use crate::signer::SignerError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -118,10 +118,6 @@ define_error! {
 
         SendDisabled
             | _ | { "send is not enabled" },
-
-        UnauthorisedReceive
-            { receiver: Signer }
-            | e | { format_args!("'{0}' is not allowed to receive funds", e.receiver) },
 
         ParseAccountFailure
             | _ | { "failed to parse as AccountId" },

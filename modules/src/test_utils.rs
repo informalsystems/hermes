@@ -266,10 +266,6 @@ impl Ics20Reader for DummyTransferModule {
 impl BankReader for DummyTransferModule {
     type AccountId = Signer;
 
-    fn is_blocked_account(&self, _account: &Self::AccountId) -> bool {
-        false
-    }
-
     fn get_transfer_account(&self) -> Self::AccountId {
         get_dummy_account_id()
     }

@@ -116,9 +116,6 @@ pub trait BankKeeper {
 pub trait BankReader {
     type AccountId: ToString + TryFrom<Signer>;
 
-    /// Returns true if the specified account is not allowed to receive funds and false otherwise.
-    fn is_blocked_account(&self, account: &Self::AccountId) -> bool;
-
     /// get_transfer_account returns the ICS20 - transfers AccountId.
     fn get_transfer_account(&self) -> Self::AccountId;
 }

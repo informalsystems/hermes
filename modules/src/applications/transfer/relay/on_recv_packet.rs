@@ -28,14 +28,10 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
         Source::Receiver => {
             // sender chain is not the source, unescrow tokens
             let coin = {
-                let mut c = data.token.clone();
+                let mut c = data.token;
                 c.denom.remove_prefix(&prefix);
                 c
             };
-
-            if ctx.is_blocked_account(&receiver_account) {
-                return Err(Ics20Error::unauthorised_receive(data.receiver));
-            }
 
             let escrow_address = ctx
                 .get_channel_escrow_address(&packet.destination_port, packet.destination_channel)?;
