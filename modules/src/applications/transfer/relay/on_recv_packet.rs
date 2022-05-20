@@ -17,7 +17,7 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
         return Err(Ics20Error::receive_disabled());
     }
 
-    let receiver = data
+    let receiver_account = data
         .receiver
         .clone()
         .try_into()
@@ -33,7 +33,7 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
                 c
             };
 
-            if ctx.is_blocked_account(&receiver) {
+            if ctx.is_blocked_account(&receiver_account) {
                 return Err(Ics20Error::unauthorised_receive(data.receiver));
             }
 
@@ -43,7 +43,7 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
 
             Ok(Box::new(move |ctx| {
                 let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                ctx.send_coins(&escrow_address, &receiver, &amount)
+                ctx.send_coins(&escrow_address, &receiver_account, &amount)
                     .map_err(|e| e.to_string())
             }))
         }
@@ -76,7 +76,7 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
                     .map_err(|e| e.to_string())?;
                 ctx.send_coins_from_module_to_account(
                     &ctx.get_transfer_account(),
-                    &receiver,
+                    &receiver_account,
                     &amount,
                 )
                 .map_err(|e| e.to_string())
