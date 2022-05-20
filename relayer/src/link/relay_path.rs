@@ -1373,6 +1373,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Pieces of operational data that have not elapsed yet are also placed
     /// in the 'unprocessed' bucket.
     ///
+    /// A piece of operational data is considered 'elapsed' if it has surpassed
+    /// its target chain's:
+    /// 1. Latest timestamp
+    /// 2. Maximum block time
+    /// 3. Latest height
+    ///
     /// This method performs relaying using the asynchronous sender.
     /// Retains the operational data as pending, and associates it
     /// with one or more transaction hash(es).
@@ -1425,6 +1431,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ///
     /// Pieces of operational data that have not elapsed yet are also placed
     /// in the 'unprocessed' bucket.
+    ///
+    /// A piece of operational data is considered 'elapsed' if it has surpassed
+    /// its target chain's:
+    /// 1. Latest timestamp
+    /// 2. Maximum block time
+    /// 3. Latest height
     ///
     /// This method performs relaying using the asynchronous sender.
     /// Retains the operational data as pending, and associates it
