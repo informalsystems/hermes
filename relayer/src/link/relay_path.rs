@@ -81,15 +81,6 @@ impl Resubmit {
     }
 }
 
-/// Specifies the target chain, typically for a packet that needs to be relayed.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum TargetChain {
-    /// The source chain.
-    Src,
-    /// The destination chain.
-    Dst,
-}
-
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
 
