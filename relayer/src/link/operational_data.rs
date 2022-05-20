@@ -18,7 +18,7 @@ use crate::link::error::LinkError;
 use crate::link::RelayPath;
 
 /// The chain that a piece of `OperationalData` is bound for.
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum OperationalDataTarget {
     /// The source chain.
     Source,
