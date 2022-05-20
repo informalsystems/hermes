@@ -66,7 +66,7 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
             Ok(Box::new(move |ctx| {
                 let ctx = ctx.downcast_mut::<Ctx>().unwrap();
                 let hashed_denom = coin.denom.hashed();
-                if ctx.has_denom_trace(&hashed_denom) {
+                if ctx.get_denom_trace(&hashed_denom).is_some() {
                     ctx.set_denom_trace(&coin.denom)
                         .map_err(|e| e.to_string())?;
                 }

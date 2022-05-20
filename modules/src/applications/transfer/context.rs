@@ -61,11 +61,6 @@ pub trait Ics20Reader:
     /// Returns true iff receive is enabled.
     fn is_receive_enabled(&self) -> bool;
 
-    /// Returns true iff the store contains a `DenomTrace` entry for the specified `HashedDenom`.
-    fn has_denom_trace(&self, hashed_denom: &HashedDenom) -> bool {
-        self.get_denom_trace(hashed_denom).is_some()
-    }
-
     /// Get the denom trace associated with the specified hash in the store.
     fn get_denom_trace(&self, denom_hash: &HashedDenom) -> Option<DenomTrace>;
 }
