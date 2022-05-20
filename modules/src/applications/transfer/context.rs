@@ -46,15 +46,7 @@ pub trait Ics20Reader:
         port_id: &PortId,
         channel_id: ChannelId,
     ) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error> {
-        // https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md
-        let contents = format!("{}/{}", port_id, channel_id);
-
-        let mut hasher = Sha256::new();
-        hasher.update(VERSION.as_bytes());
-        hasher.update(b"0");
-        hasher.update(contents.as_bytes());
-        let hash: Vec<u8> = hasher.finalize().to_vec().drain(20..).collect();
-
+        let hash = cosmos_adr028_escrow_address(port_id, channel_id);
         String::from_utf8(hex::encode_upper(hash))
             .expect("hex encoded bytes are not valid UTF8")
             .parse::<Signer>()
@@ -76,6 +68,20 @@ pub trait Ics20Reader:
 
     /// Get the denom trace associated with the specified hash in the store.
     fn get_denom_trace(&self, denom_hash: &HashedDenom) -> Option<DenomTrace>;
+}
+
+// https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md
+fn cosmos_adr028_escrow_address(port_id: &PortId, channel_id: ChannelId) -> Vec<u8> {
+    let contents = format!("{}/{}", port_id, channel_id);
+
+    let mut hasher = Sha256::new();
+    hasher.update(VERSION.as_bytes());
+    hasher.update([0]);
+    hasher.update(contents.as_bytes());
+
+    let mut hash = hasher.finalize().to_vec();
+    hash.drain(20..);
+    hash
 }
 
 pub trait BankKeeper {
