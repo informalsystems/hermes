@@ -30,10 +30,7 @@ pub trait Ics20Keeper:
 }
 
 pub trait Ics20Reader:
-    BankReader<AccountId = <Self as Ics20Reader>::AccountId>
-    + AccountReader<AccountId = <Self as Ics20Reader>::AccountId>
-    + ChannelReader
-    + PortReader
+    BankReader<AccountId = <Self as Ics20Reader>::AccountId> + ChannelReader + PortReader
 {
     type AccountId: TryFrom<Signer>;
 
@@ -118,13 +115,6 @@ pub trait BankReader {
 
     /// get_transfer_account returns the ICS20 - transfers AccountId.
     fn get_transfer_account(&self) -> Self::AccountId;
-}
-
-pub trait AccountReader {
-    type AccountId;
-    type Address;
-
-    fn get_account(&self, address: &Self::Address) -> Option<Self::AccountId>;
 }
 
 /// Captures all the dependencies which the ICS20 module requires to be able to dispatch and

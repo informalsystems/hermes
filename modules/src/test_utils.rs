@@ -5,7 +5,7 @@ use std::time::Duration;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
 use crate::applications::transfer::context::{
-    AccountReader, BankKeeper, BankReader, Ics20Context, Ics20Keeper, Ics20Reader,
+    BankKeeper, BankReader, Ics20Context, Ics20Keeper, Ics20Reader,
 };
 use crate::applications::transfer::{error::Error as Ics20Error, DenomTrace, HashedDenom, IbcCoin};
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
@@ -268,15 +268,6 @@ impl BankReader for DummyTransferModule {
 
     fn get_transfer_account(&self) -> Self::AccountId {
         get_dummy_account_id()
-    }
-}
-
-impl AccountReader for DummyTransferModule {
-    type AccountId = Signer;
-    type Address = Signer;
-
-    fn get_account(&self, address: &Self::Address) -> Option<Self::AccountId> {
-        Some(address.clone())
     }
 }
 
