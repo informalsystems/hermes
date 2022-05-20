@@ -1,17 +1,14 @@
-use alloc::sync::Arc;
 use core::time::Duration;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer::chain::cosmos::CosmosSdkChain;
-use ibc_relayer::chain::endpoint::ChainEndpoint;
 use ibc_relayer::config::Config;
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 
-use crate::conclude::Output;
+use crate::cli_utils::spawn_chain_runtime;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
@@ -116,23 +113,14 @@ impl Runnable for TxIbcUpgradeChainCmd {
             Err(err) => Output::error(err).exit(),
             Ok(result) => result,
         };
+
         info!("Message {:?}", opts);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let src_chain = spawn_chain_runtime(&config, &self.src_chain_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let src_chain_res = CosmosSdkChain::bootstrap(opts.src_chain_config.clone(), rt.clone())
-            .map_err(Error::relayer);
-        let src_chain = match src_chain_res {
-            Ok(chain) => chain,
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        };
-
-        let dst_chain_res =
-            CosmosSdkChain::bootstrap(opts.dst_chain_config.clone(), rt).map_err(Error::relayer);
-        let dst_chain = match dst_chain_res {
-            Ok(chain) => chain,
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        };
+        let dst_chain = spawn_chain_runtime(&config, &self.dst_chain_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = build_and_send_ibc_upgrade_proposal(dst_chain, src_chain, &opts)
             .map_err(Error::upgrade_chain);

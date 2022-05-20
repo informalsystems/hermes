@@ -4,48 +4,17 @@ use alloc::collections::btree_map::BTreeMap as HashMap;
 use alloc::sync::Arc;
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use flex_error::define_error;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{trace, warn};
 
 use ibc::core::ics24_host::identifier::ChainId;
 
 use crate::{
-    chain::{cosmos::CosmosSdkChain, handle::ChainHandle, runtime::ChainRuntime},
+    chain::handle::ChainHandle,
     config::Config,
-    error::Error as RelayerError,
+    spawn::{spawn_chain_runtime, SpawnError},
     util::lock::RwArc,
 };
-
-define_error! {
-    SpawnError {
-        Relayer
-            [ RelayerError ]
-            | _ | { "relayer error" },
-
-        RuntimeNotFound
-            | _ | { "expected runtime to be found in registry" },
-
-        MissingChainConfig
-            { chain_id: ChainId }
-            | e | {
-                format_args!("missing chain config for '{}' in configuration file",
-                    e.chain_id)
-            }
-    }
-}
-
-impl SpawnError {
-    pub fn log_as_debug(&self) -> bool {
-        self.detail().log_as_debug()
-    }
-}
-
-impl SpawnErrorDetail {
-    pub fn log_as_debug(&self) -> bool {
-        matches!(self, SpawnErrorDetail::MissingChainConfig(_))
-    }
-}
 
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 ///
@@ -105,7 +74,7 @@ impl<Chain: ChainHandle> Registry<Chain> {
         if !self.handles.contains_key(chain_id) {
             let handle = spawn_chain_runtime(&self.config, chain_id, self.rt.clone())?;
             self.handles.insert(chain_id.clone(), handle);
-            trace!("[{}] spawned chain runtime", chain_id);
+            trace!(chain = %chain_id, "spawned chain runtime");
             Ok(true)
         } else {
             Ok(false)
@@ -116,7 +85,7 @@ impl<Chain: ChainHandle> Registry<Chain> {
     pub fn shutdown(&mut self, chain_id: &ChainId) {
         if let Some(handle) = self.handles.remove(chain_id) {
             if let Err(e) = handle.shutdown() {
-                warn!(chain.id = %chain_id, "chain runtime might have failed to shutdown properly: {}", e);
+                warn!(chain = %chain_id, "chain runtime might have failed to shutdown properly: {}", e);
             }
         }
     }
@@ -150,22 +119,4 @@ impl<Chain: ChainHandle> SharedRegistry<Chain> {
     pub fn read(&self) -> RwLockReadGuard<'_, Registry<Chain>> {
         self.registry.read().unwrap()
     }
-}
-
-/// Spawns a chain runtime from the configuration and given a chain identifier.
-/// Returns the corresponding handle if successful.
-pub fn spawn_chain_runtime<Chain: ChainHandle>(
-    config: &Config,
-    chain_id: &ChainId,
-    rt: Arc<TokioRuntime>,
-) -> Result<Chain, SpawnError> {
-    let chain_config = config
-        .find_chain(chain_id)
-        .cloned()
-        .ok_or_else(|| SpawnError::missing_chain_config(chain_id.clone()))?;
-
-    let handle =
-        ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt).map_err(SpawnError::relayer)?;
-
-    Ok(handle)
 }

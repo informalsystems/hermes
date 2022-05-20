@@ -491,14 +491,15 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
 
         match chain {
             Ok(chain) => match chain.health_check() {
-                Ok(Healthy) => info!("[{}] chain is healthy", id),
-                Ok(Unhealthy(e)) => warn!("[{}] chain is unhealthy: {}", id, e),
-                Err(e) => error!("[{}] failed to perform health check: {}", id, e),
+                Ok(Healthy) => info!(chain = %id, "chain is healthy"),
+                Ok(Unhealthy(e)) => warn!(chain = %id, "chain is unhealthy: {}", e),
+                Err(e) => error!(chain = %id, "failed to perform health check: {}", e),
             },
             Err(e) => {
                 error!(
-                    "skipping health check for chain {}, reason: failed to spawn chain runtime with error: {}",
-                    config.id, e
+                    chain = %id,
+                    "skipping health check, reason: failed to spawn chain runtime with error: {}",
+                    e
                 );
             }
         }

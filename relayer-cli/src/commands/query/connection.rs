@@ -1,20 +1,17 @@
-use alloc::sync::Arc;
-
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     PageRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
 };
-use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::{
     ics03_connection::connection::State,
     ics24_host::identifier::ConnectionId,
     ics24_host::identifier::{ChainId, PortChannelId},
 };
-use ibc_relayer::chain::cosmos::CosmosSdkChain;
-use ibc_relayer::chain::endpoint::ChainEndpoint;
 
+use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
@@ -36,19 +33,9 @@ impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => Output::error(format!(
-                "chain '{}' not found in configuration file",
-                self.chain_id
-            ))
-            .exit(),
-            Some(chain_config) => chain_config,
-        };
-
         debug!("Options: {:?}", self);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
@@ -89,19 +76,9 @@ impl Runnable for QueryConnectionChannelsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => Output::error(format!(
-                "chain '{}' not found in configuration file",
-                self.chain_id
-            ))
-            .exit(),
-            Some(chain_config) => chain_config,
-        };
-
         debug!("Options: {:?}", self);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res: Result<_, Error> = chain

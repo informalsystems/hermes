@@ -1,14 +1,10 @@
-use std::sync::Arc;
-
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc_relayer::chain::{
-    cosmos::CosmosSdkChain,
-    endpoint::{ChainEndpoint, HealthCheck::*},
-};
+use ibc_relayer::chain::endpoint::HealthCheck::*;
+use ibc_relayer::chain::handle::ChainHandle;
 
+use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
@@ -19,22 +15,14 @@ impl Runnable for HealthCheckCmd {
     fn run(&self) {
         let config = (*app_config()).clone();
 
-        for ch in config.clone().chains {
-            let rt = Arc::new(TokioRuntime::new().unwrap());
-
-            let chain_config = match config.find_chain(&ch.id) {
-                None => Output::error(format!("chain '{}' not found in configuration file", ch.id))
-                    .exit(),
-                Some(chain_config) => chain_config,
-            };
-
+        for ch in &config.chains {
             info!("[{}] performing health check...", ch.id);
 
-            let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
-                .unwrap_or_else(exit_with_unrecoverable_error);
+            let chain =
+                spawn_chain_runtime(&config, &ch.id).unwrap_or_else(exit_with_unrecoverable_error);
 
             match chain.health_check() {
-                Ok(Healthy) => info!("[{}] chain is healthy", ch.id),
+                Ok(Healthy) => info!(chain = %ch.id, "chain is healthy"),
                 Ok(Unhealthy(_)) => {
                     // No need to print the error here as it's already printed in `Chain::health_check`
                     // TODO(romac): Move the printing code here and in the supervisor/registry

@@ -450,12 +450,16 @@ pub mod test_utils {
 
     use ibc::core::ics24_host::identifier::ChainId;
 
-    use crate::config::{AddressType, ChainConfig, GasPrice, PacketFilter};
+    use crate::{
+        chain::ChainType,
+        config::{AddressType, ChainConfig, GasPrice, PacketFilter},
+    };
 
     /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
         ChainConfig {
             id: ChainId::from_str(id).unwrap(),
+            r#type: ChainType::Mock,
             rpc_addr: "http://127.0.0.1:26656".parse().unwrap(),
             grpc_addr: "http://127.0.0.1:9090".parse().unwrap(),
             websocket_addr: "ws://127.0.0.1:26656/websocket".parse().unwrap(),
