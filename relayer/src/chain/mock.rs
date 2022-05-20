@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use core::ops::Add;
 use core::time::Duration;
+use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use crossbeam_channel as channel;
 use tendermint_testgen::light_block::TmLightBlock;
@@ -27,19 +28,12 @@ use ibc::relayer::ics18_relayer::context::Ics18Context;
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
-    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::{
-    QueryClientConnectionsRequest, QueryConnectionsRequest,
-};
 
+use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::requests::{
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+};
 use crate::chain::{ChainEndpoint, ChainStatus};
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -48,7 +42,15 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
-use super::tx::TrackedMsgs;
+use super::requests::{
+    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+};
+use super::tracking::TrackedMsgs;
 use super::HealthCheck;
 
 /// The representation of a mocked chain as the relayer sees it.
@@ -131,10 +133,7 @@ impl ChainEndpoint for MockChain {
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        let events = self
-            .context
-            .send(tracked_msgs.into())
-            .map_err(Error::ics18)?;
+        let events = self.context.send(tracked_msgs.msgs).map_err(Error::ics18)?;
 
         Ok(events)
     }
@@ -166,6 +165,10 @@ impl ChainEndpoint for MockChain {
         Ok(Some(semver::Version::new(3, 0, 0)))
     }
 
+    fn query_balance(&self) -> Result<Balance, Error> {
+        unimplemented!()
+    }
+
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         unimplemented!()
     }
@@ -186,13 +189,12 @@ impl ChainEndpoint for MockChain {
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        _height: Height,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
         // TODO: unclear what are the scenarios where we need to take height into account.
         let client_state = self
             .context
-            .query_client_full_state(client_id)
+            .query_client_full_state(&request.client_id)
             .ok_or_else(Error::empty_response_value)?;
 
         Ok(client_state)
@@ -200,16 +202,12 @@ impl ChainEndpoint for MockChain {
 
     fn query_upgraded_client_state(
         &self,
-        _height: Height,
+        _request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
         unimplemented!()
     }
 
-    fn query_connection(
-        &self,
-        _connection_id: &ConnectionId,
-        _height: Height,
-    ) -> Result<ConnectionEnd, Error> {
+    fn query_connection(&self, _request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
         unimplemented!()
     }
 
@@ -241,12 +239,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_channel(
-        &self,
-        _port_id: &PortId,
-        _channel_id: &ChannelId,
-        _height: Height,
-    ) -> Result<ChannelEnd, Error> {
+    fn query_channel(&self, _request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
         unimplemented!()
     }
 
@@ -260,28 +253,28 @@ impl ChainEndpoint for MockChain {
     fn query_packet_commitments(
         &self,
         _request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         unimplemented!()
     }
 
     fn query_unreceived_packets(
         &self,
         _request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         unimplemented!()
     }
 
     fn query_packet_acknowledgements(
         &self,
         _request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         unimplemented!()
     }
 
     fn query_unreceived_acknowledgements(
         &self,
         _request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         unimplemented!()
     }
 
@@ -303,7 +296,10 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_host_consensus_state(&self, _height: Height) -> Result<Self::ConsensusState, Error> {
+    fn query_host_consensus_state(
+        &self,
+        _request: QueryHostConsensusStateRequest,
+    ) -> Result<Self::ConsensusState, Error> {
         unimplemented!()
     }
 
@@ -424,28 +420,24 @@ impl ChainEndpoint for MockChain {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        Ok(self
-            .context
-            .consensus_states(&request.client_id.parse().unwrap()))
+        Ok(self.context.consensus_states(&request.client_id))
     }
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        _query_height: Height,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
-        let consensus_states = self.context.consensus_states(&client_id);
+        let consensus_states = self.context.consensus_states(&request.client_id);
         Ok(consensus_states
             .into_iter()
-            .find(|s| s.height == consensus_height)
+            .find(|s| s.height == request.consensus_height)
             .unwrap()
             .consensus_state)
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        _height: Height,
+        _request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
     }

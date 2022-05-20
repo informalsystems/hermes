@@ -23,7 +23,6 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tracing::{error, span, warn, Level};
 
-use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
@@ -48,19 +47,13 @@ use ibc::query::QueryBlockRequest;
 use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
+use ibc::{
+    clients::ics07_tendermint::client_state::{AllowUpdate, ClientState},
+    core::ics23_commitment::merkle::MerkleProof,
+};
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
-    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::{
-    QueryClientConnectionsRequest, QueryConnectionsRequest,
-};
 
+use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
@@ -68,13 +61,14 @@ use crate::chain::cosmos::batch::{
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
+use crate::chain::cosmos::query::balance::query_balance;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{ChainStatus, QueryResponse};
 use crate::config::ChainConfig;
@@ -83,6 +77,16 @@ use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
+
+use super::requests::{
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+};
 
 pub mod batch;
 pub mod client;
@@ -633,6 +637,18 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(version_specs.ibc_go_version)
     }
 
+    fn query_balance(&self) -> Result<Balance, Error> {
+        let key = self.key()?;
+
+        let balance = self.block_on(query_balance(
+            &self.grpc_addr,
+            &key.account,
+            &self.config.gas_price.denom,
+        ))?;
+
+        Ok(balance)
+    }
+
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         crate::time!("query_commitment_prefix");
         crate::telemetry!(query, self.id(), "query_commitment_prefix");
@@ -697,7 +713,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
         let response = self
             .block_on(client.client_states(request))
             .map_err(Error::grpc_status)?
@@ -718,14 +734,13 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: ICSHeight,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
         crate::time!("query_client_state");
         crate::telemetry!(query, self.id(), "query_client_state");
 
         let client_state = self
-            .query(ClientStatePath(client_id.clone()), height, false)
+            .query(ClientStatePath(request.client_id), request.height, false)
             .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
 
         Ok(client_state)
@@ -733,15 +748,16 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn query_upgraded_client_state(
         &self,
-        height: ICSHeight,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
         crate::telemetry!(query, self.id(), "query_upgraded_client_state");
 
         // Query for the value and the proof.
-        let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
+        let tm_height =
+            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
         let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientState(height.revision_height),
+            ClientUpgradePath::UpgradedClientState(request.height.revision_height),
             tm_height,
         )?;
 
@@ -753,16 +769,17 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn query_upgraded_consensus_state(
         &self,
-        height: ICSHeight,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         crate::time!("query_upgraded_consensus_state");
         crate::telemetry!(query, self.id(), "query_upgraded_consensus_state");
 
-        let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
+        let tm_height =
+            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
 
         // Fetch the consensus state and its proof.
         let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientConsensusState(height.revision_height),
+            ClientUpgradePath::UpgradedClientConsensusState(request.height.revision_height),
             tm_height,
         )?;
 
@@ -788,7 +805,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
         let response = self
             .block_on(client.consensus_states(request))
             .map_err(Error::grpc_status)?
@@ -806,15 +823,16 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: ICSHeight,
-        query_height: ICSHeight,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         crate::time!("query_consensus_state");
         crate::telemetry!(query, self.id(), "query_consensus_state");
 
-        let (consensus_state, _proof) =
-            self.proven_client_consensus(&client_id, consensus_height, query_height)?;
+        let (consensus_state, _proof) = self.proven_client_consensus(
+            &request.client_id,
+            request.consensus_height,
+            request.query_height,
+        )?;
 
         Ok(consensus_state)
     }
@@ -834,7 +852,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = match self.block_on(client.client_connections(request)) {
             Ok(res) => res.into_inner(),
@@ -869,7 +887,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.connections(request))
@@ -888,11 +906,7 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(connections)
     }
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: ICSHeight,
-    ) -> Result<ConnectionEnd, Error> {
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
         crate::time!("query_connection");
         crate::telemetry!(query, self.id(), "query_connection");
 
@@ -945,7 +959,9 @@ impl ChainEndpoint for CosmosSdkChain {
             }
         }
 
-        self.block_on(async { do_query_connection(self, connection_id, height).await })
+        self.block_on(async {
+            do_query_connection(self, &request.connection_id, request.height).await
+        })
     }
 
     fn query_connection_channels(
@@ -963,7 +979,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.connection_channels(request))
@@ -996,7 +1012,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.channels(request))
@@ -1011,16 +1027,15 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(channels)
     }
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: ICSHeight,
-    ) -> Result<ChannelEnd, Error> {
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
         crate::time!("query_channel");
         crate::telemetry!(query, self.id(), "query_channel");
 
-        let res = self.query(ChannelEndsPath(port_id.clone(), *channel_id), height, false)?;
+        let res = self.query(
+            ChannelEndsPath(request.port_id, request.channel_id),
+            request.height,
+            false,
+        )?;
         let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok(channel_end)
@@ -1041,7 +1056,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.channel_client_state(request))
@@ -1059,7 +1074,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+    ) -> Result<(Vec<Sequence>, ICSHeight), Error> {
         crate::time!("query_packet_commitments");
         crate::telemetry!(query, self.id(), "query_packet_commitments");
 
@@ -1071,29 +1086,33 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.packet_commitments(request))
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let mut pc = response.commitments;
-        pc.sort_by_key(|ps| ps.sequence);
+        let mut commitment_sequences: Vec<Sequence> = response
+            .commitments
+            .into_iter()
+            .map(|v| v.sequence.into())
+            .collect();
+        commitment_sequences.sort_unstable();
 
         let height = response
             .height
             .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
             .into();
 
-        Ok((pc, height))
+        Ok((commitment_sequences, height))
     }
 
     /// Queries the unreceived packet sequences associated with a channel.
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         crate::time!("query_unreceived_packets");
         crate::telemetry!(query, self.id(), "query_unreceived_packets");
 
@@ -1105,7 +1124,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let mut response = self
             .block_on(client.unreceived_packets(request))
@@ -1113,14 +1132,18 @@ impl ChainEndpoint for CosmosSdkChain {
             .into_inner();
 
         response.sequences.sort_unstable();
-        Ok(response.sequences)
+        Ok(response
+            .sequences
+            .into_iter()
+            .map(|seq| seq.into())
+            .collect())
     }
 
     /// Queries the packet acknowledgment hashes associated with a channel.
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+    ) -> Result<(Vec<Sequence>, ICSHeight), Error> {
         crate::time!("query_packet_acknowledgements");
         crate::telemetry!(query, self.id(), "query_packet_acknowledgements");
 
@@ -1132,28 +1155,32 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.packet_acknowledgements(request))
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let pc = response.acknowledgements;
+        let acks_sequences = response
+            .acknowledgements
+            .into_iter()
+            .map(|v| v.sequence.into())
+            .collect();
 
         let height = response
             .height
             .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
             .into();
 
-        Ok((pc, height))
+        Ok((acks_sequences, height))
     }
 
     /// Queries the unreceived acknowledgements sequences associated with a channel.
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         crate::time!("query_unreceived_acknowledgements");
         crate::telemetry!(query, self.id(), "query_unreceived_acknowledgements");
 
@@ -1165,7 +1192,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let mut response = self
             .block_on(client.unreceived_acks(request))
@@ -1173,7 +1200,11 @@ impl ChainEndpoint for CosmosSdkChain {
             .into_inner();
 
         response.sequences.sort_unstable();
-        Ok(response.sequences)
+        Ok(response
+            .sequences
+            .into_iter()
+            .map(|seq| seq.into())
+            .collect())
     }
 
     fn query_next_sequence_receive(
@@ -1191,7 +1222,7 @@ impl ChainEndpoint for CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(request.into());
 
         let response = self
             .block_on(client.next_sequence_receive(request))
@@ -1289,8 +1320,12 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
-    fn query_host_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error> {
-        let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<Self::ConsensusState, Error> {
+        let height =
+            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
 
         // TODO(hu55a1n1): use the `/header` RPC endpoint instead when we move to tendermint v0.35.x
         let rpc_call = match height.value() {

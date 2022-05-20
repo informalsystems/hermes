@@ -10,8 +10,8 @@ use crate::core::ics04_channel::handler::{
     channel_validate as ics4_validate, recv_packet::RecvPacketResult,
 };
 use crate::core::ics04_channel::handler::{
-    packet_callback as ics4_packet_callback, packet_dispatch as ics4_packet_msg_dispatcher,
-    packet_validate as ics4_packet_validate,
+    get_module_for_packet_msg, packet_callback as ics4_packet_callback,
+    packet_dispatch as ics4_packet_msg_dispatcher,
 };
 use crate::core::ics04_channel::packet::PacketResult;
 use crate::core::ics26_routing::context::Ics26Context;
@@ -111,7 +111,7 @@ where
         }
 
         Ics4PacketMsg(msg) => {
-            let module_id = ics4_packet_validate(ctx, &msg).map_err(Error::ics04_channel)?;
+            let module_id = get_module_for_packet_msg(ctx, &msg).map_err(Error::ics04_channel)?;
             let (mut handler_builder, packet_result) =
                 ics4_packet_msg_dispatcher(ctx, &msg).map_err(Error::ics04_channel)?;
 

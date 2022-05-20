@@ -87,9 +87,6 @@ pub(crate) fn process(
         return Err(Error::channel_feature_not_suported_by_connection());
     }
 
-    // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
-
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.
     //      the port should be identical with the port we're using; the channel id should not be set
@@ -127,7 +124,6 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id.clone(),
-        channel_cap,
         channel_id_state: if matches!(msg.previous_channel_id, None) {
             ChannelIdState::Generated
         } else {
@@ -295,32 +291,11 @@ mod tests {
                 },
             },
             Test {
-                name: "Processing fails because the port does not have a capability associated"
-                    .to_string(),
-                ctx: context
-                    .clone()
-                    .with_connection(conn_id.clone(), conn_end.clone()),
-                msg: ChannelMsg::ChannelOpenTry(msg_vanilla.clone()),
-                want_pass: false,
-                match_error: {
-                    let port_id = msg.port_id.clone();
-                    Box::new(move |e| match e {
-                        error::ErrorDetail::NoPortCapability(e) => {
-                            assert_eq!(e.port_id, port_id);
-                        }
-                        _ => {
-                            panic!("Expected NoPortCapability, instead got {}", e)
-                        }
-                    })
-                },
-            },
-            Test {
                 name: "Processing fails because of inconsistent version with preexisting channel"
                     .to_string(),
                 ctx: context
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port_capability(msg.port_id.clone())
                     .with_channel(msg.port_id.clone(), chan_id, incorrect_chan_end_ver),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
@@ -341,7 +316,6 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port_capability(msg.port_id.clone())
                     .with_channel(msg.port_id.clone(), chan_id, incorrect_chan_end_hops),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
@@ -362,7 +336,6 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port_capability(msg.port_id.clone())
                     .with_channel(msg.port_id.clone(), chan_id, correct_chan_end.clone()),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
@@ -392,9 +365,8 @@ mod tests {
                     .clone()
                     .with_client(&client_id, Height::new(0, proof_height))
                     .with_connection(conn_id.clone(), conn_end.clone())
-                    .with_port_capability(msg.port_id.clone())
                     .with_channel(msg.port_id.clone(), chan_id, correct_chan_end),
-                msg: ChannelMsg::ChannelOpenTry(msg.clone()),
+                msg: ChannelMsg::ChannelOpenTry(msg),
                 want_pass: true,
                 match_error: Box::new(|_| {}),
             },
@@ -403,8 +375,7 @@ mod tests {
                     .to_string(),
                 ctx: context
                     .with_client(&client_id, Height::new(0, proof_height))
-                    .with_connection(conn_id, conn_end)
-                    .with_port_capability(msg.port_id),
+                    .with_connection(conn_id, conn_end),
                 msg: ChannelMsg::ChannelOpenTry(msg_vanilla),
                 want_pass: true,
                 match_error: Box::new(|_| {}),

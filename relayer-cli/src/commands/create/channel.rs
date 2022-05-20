@@ -11,6 +11,7 @@ use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::{QueryClientStateRequest, QueryConnectionRequest};
 use ibc_relayer::channel::Channel;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -187,12 +188,18 @@ impl CreateChannelCommand {
         // Query the connection end.
         let height = Height::new(chain_a.id().version(), 0);
         let conn_end = chain_a
-            .query_connection(connection_a, height)
+            .query_connection(QueryConnectionRequest {
+                connection_id: connection_a.clone(),
+                height,
+            })
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Query the client state, obtain the identifier of chain b.
         let chain_b = chain_a
-            .query_client_state(conn_end.client_id(), height)
+            .query_client_state(QueryClientStateRequest {
+                client_id: conn_end.client_id().clone(),
+                height,
+            })
             .map(|cs| cs.chain_id())
             .unwrap_or_else(exit_with_unrecoverable_error);
 

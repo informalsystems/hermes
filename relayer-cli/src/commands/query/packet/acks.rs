@@ -1,5 +1,6 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use ibc::core::ics04_channel::packet::Sequence;
 use serde::Serialize;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
@@ -15,7 +16,7 @@ use ibc_relayer::chain::counterparty::acknowledgements_on_chain;
 #[derive(Serialize, Debug)]
 struct PacketSeqs {
     height: Height,
-    seqs: Vec<u64>,
+    seqs: Vec<Sequence>,
 }
 
 #[derive(Clone, Command, Debug, Parser)]

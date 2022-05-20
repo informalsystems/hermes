@@ -30,8 +30,6 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         return Err(Error::channel_closed(packet.source_channel));
     }
 
-    let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
-
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
         Some(packet.destination_channel),
@@ -181,23 +179,11 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because the port does not have a capability associated"
-                    .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    channel_end.clone(),
-                ),
-                packet: packet.clone(),
-                want_pass: false,
-            },
-            Test {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .clone()
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end.clone())
-                    .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet,
@@ -208,7 +194,6 @@ mod tests {
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
-                    .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet: packet_old,

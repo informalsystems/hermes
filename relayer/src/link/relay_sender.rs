@@ -6,7 +6,7 @@ use tracing::info;
 use ibc::events::{IbcEvent, PrettyEvents};
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::link::error::LinkError;
 use crate::link::RelaySummary;
 
