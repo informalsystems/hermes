@@ -17,7 +17,7 @@ pub const MODULE_ID_STR: &str = "transfer";
 
 /// The port identifier that the ICS20 applications
 /// typically bind with.
-pub const PORT_ID: &str = "transfer";
+pub const PORT_ID_STR: &str = "transfer";
 
 /// ICS20 application current version.
 pub const VERSION: &str = "ics20-1";
