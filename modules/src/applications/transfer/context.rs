@@ -23,7 +23,7 @@ use crate::signer::Signer;
 pub trait Ics20Keeper:
     ChannelKeeper + BankKeeper<AccountId = <Self as Ics20Keeper>::AccountId>
 {
-    type AccountId: ToString;
+    type AccountId;
 
     /// Sets a new {trace hash -> denom trace} pair to the store.
     fn set_denom_trace(&mut self, denom_trace: &DenomTrace) -> Result<(), Ics20Error>;
@@ -35,7 +35,7 @@ pub trait Ics20Reader:
     + ChannelReader
     + PortReader
 {
-    type AccountId: ToString + TryFrom<Signer>;
+    type AccountId: TryFrom<Signer>;
 
     /// get_port returns the portID for the transfer module.
     fn get_port(&self) -> Result<PortId, Ics20Error>;
@@ -80,7 +80,7 @@ fn cosmos_adr028_escrow_address(port_id: &PortId, channel_id: ChannelId) -> Vec<
 }
 
 pub trait BankKeeper {
-    type AccountId: ToString;
+    type AccountId;
 
     /// This function should enable sending ibc fungible tokens from one account to another
     fn send_coins(
@@ -114,14 +114,14 @@ pub trait BankKeeper {
 }
 
 pub trait BankReader {
-    type AccountId: ToString + TryFrom<Signer>;
+    type AccountId: TryFrom<Signer>;
 
     /// get_transfer_account returns the ICS20 - transfers AccountId.
     fn get_transfer_account(&self) -> Self::AccountId;
 }
 
 pub trait AccountReader {
-    type AccountId: ToString;
+    type AccountId;
     type Address;
 
     fn get_account(&self, address: &Self::Address) -> Option<Self::AccountId>;
@@ -133,7 +133,7 @@ pub trait Ics20Context:
     Ics20Keeper<AccountId = <Self as Ics20Context>::AccountId>
     + Ics20Reader<AccountId = <Self as Ics20Context>::AccountId>
 {
-    type AccountId: ToString + TryFrom<Signer>;
+    type AccountId: TryFrom<Signer>;
 }
 
 fn validate_transfer_channel_params(
