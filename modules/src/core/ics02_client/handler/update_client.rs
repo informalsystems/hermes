@@ -641,7 +641,7 @@ mod tests {
             .unwrap();
 
         while let Some(Ok(commitment)) = subscription.next().await {
-            if count == 10 {
+            if count == 100 {
                 break;
             }
             let recv_commitment: sp_core::Bytes =
