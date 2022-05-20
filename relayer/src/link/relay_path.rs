@@ -81,6 +81,15 @@ impl Resubmit {
     }
 }
 
+/// Specifies the target chain, typically for a packet that needs to be relayed.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum TargetChain {
+    /// The source chain.
+    Src,
+    /// The destination chain.
+    Dst,
+}
+
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
 
@@ -1365,65 +1374,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Drives the relaying of elapsed operational data items meant for
-    /// the source chain forward. Should an error occur when attempting
-    /// to relay a piece of operational data, this function returns all
-    /// subsequent unprocessed pieces of operational data back to the caller
-    /// so that they can be re-queued.
-    ///
-    /// Pieces of operational data that have not elapsed yet are also placed
-    /// in the 'unprocessed' bucket.
-    ///
-    /// A piece of operational data is considered 'elapsed' if it has surpassed
-    /// its target chain's:
-    /// 1. Latest timestamp
-    /// 2. Maximum block time
-    /// 3. Latest height
-    ///
-    /// This method performs relaying using the asynchronous sender.
-    /// Retains the operational data as pending, and associates it
-    /// with one or more transaction hash(es).
-    fn execute_schedule_with_src_operational_data<I: Iterator<Item = OperationalData>>(
-        &mut self,
-        mut operations: I,
-    ) -> Result<VecDeque<OperationalData>, (VecDeque<OperationalData>, LinkError)> {
-        let mut unprocessed = VecDeque::new();
-
-        while let Some(od) = operations.next() {
-            match od.has_conn_delay_elapsed(
-                &|| self.src_time_latest(),
-                &|| self.src_max_block_time(),
-                &|| self.src_latest_height(),
-            ) {
-                Ok(elapsed) => {
-                    if elapsed {
-                        match self
-                            .relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())
-                        {
-                            Ok(reply) => self.enqueue_pending_tx(reply, od),
-                            Err(e) => {
-                                unprocessed.push_back(od);
-                                unprocessed.extend(operations);
-
-                                return Err((unprocessed, e));
-                            }
-                        }
-                    } else {
-                        unprocessed.push_back(od);
-                    }
-                }
-                Err(e) => {
-                    unprocessed.push_back(od);
-                    unprocessed.extend(operations);
-
-                    return Err((unprocessed, e));
-                }
-            }
-        }
-
-        Ok(unprocessed)
-    }
-
-    /// Drives the relaying of elapsed operational data items meant for
     /// the destination chain forward. Should an error occur when attempting
     /// to relay a piece of operational data, this function returns all
     /// subsequent unprocessed pieces of operational data back to the caller
@@ -1441,18 +1391,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// This method performs relaying using the asynchronous sender.
     /// Retains the operational data as pending, and associates it
     /// with one or more transaction hash(es).
-    fn execute_schedule_with_dst_operational_data<I: Iterator<Item = OperationalData>>(
+    fn do_execute_schedule<I: Iterator<Item = OperationalData>>(
         &mut self,
         mut operations: I,
+        target_chain: TargetChain,
     ) -> Result<VecDeque<OperationalData>, (VecDeque<OperationalData>, LinkError)> {
         let mut unprocessed = VecDeque::new();
 
         while let Some(od) = operations.next() {
-            match od.has_conn_delay_elapsed(
-                &|| self.dst_time_latest(),
-                &|| self.dst_max_block_time(),
-                &|| self.dst_latest_height(),
-            ) {
+            let elapsed_result = match target_chain {
+                TargetChain::Src => od.has_conn_delay_elapsed(
+                    &|| self.src_time_latest(),
+                    &|| self.src_max_block_time(),
+                    &|| self.src_latest_height(),
+                ),
+                TargetChain::Dst => od.has_conn_delay_elapsed(
+                    &|| self.dst_time_latest(),
+                    &|| self.dst_max_block_time(),
+                    &|| self.dst_latest_height(),
+                ),
+            };
+
+            match elapsed_result {
                 Ok(elapsed) => {
                     if elapsed {
                         match self
@@ -1460,7 +1420,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         {
                             Ok(reply) => self.enqueue_pending_tx(reply, od),
                             Err(e) => {
-                                unprocessed.push_back(od);
                                 unprocessed.extend(operations);
 
                                 return Err((unprocessed, e));
@@ -1492,7 +1451,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
         let src_od_iter = self.src_operational_data.take().into_iter();
 
-        match self.execute_schedule_with_src_operational_data(src_od_iter) {
+        match self.do_execute_schedule(src_od_iter, TargetChain::Src) {
             Ok(unprocessed_src_data) => self.src_operational_data = unprocessed_src_data.into(),
             Err((unprocessed_src_data, e)) => {
                 self.src_operational_data = unprocessed_src_data.into();
@@ -1502,7 +1461,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let dst_od_iter = self.dst_operational_data.take().into_iter();
 
-        match self.execute_schedule_with_dst_operational_data(dst_od_iter) {
+        match self.do_execute_schedule(dst_od_iter, TargetChain::Dst) {
             Ok(unprocessed_dst_data) => self.dst_operational_data = unprocessed_dst_data.into(),
             Err((unprocessed_dst_data, e)) => {
                 self.dst_operational_data = unprocessed_dst_data.into();
