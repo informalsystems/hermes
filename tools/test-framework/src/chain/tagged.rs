@@ -2,6 +2,7 @@
    Methods for tagged version of the chain driver.
 */
 
+use core::time::Duration;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use serde::Serialize;
@@ -111,6 +112,7 @@ pub trait TaggedChainDriverExt<Chain> {
         receive_fee: &TaggedTokenRef<'_, Chain>,
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
+        timeout: Duration,
     ) -> Result<(), Error>;
 
     /**
@@ -230,6 +232,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         receive_fee: &TaggedTokenRef<'_, Chain>,
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
+        timeout: Duration,
     ) -> Result<(), Error> {
         self.value().runtime.block_on(ibc_token_transfer_with_fee(
             &self.tx_config(),
@@ -241,6 +244,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
             receive_fee,
             ack_fee,
             timeout_fee,
+            timeout,
         ))
     }
 

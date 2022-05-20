@@ -1,3 +1,4 @@
+use core::time::Duration;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::fee::v1::{Fee, MsgPayPacketFee, MsgRegisterCounterpartyAddress};
@@ -23,9 +24,10 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
     receive_fee: &TaggedTokenRef<'_, SrcChain>,
     ack_fee: &TaggedTokenRef<'_, SrcChain>,
     timeout_fee: &TaggedTokenRef<'_, SrcChain>,
+    timeout: Duration,
 ) -> Result<(), Error> {
     let transfer_message =
-        build_transfer_message(port_id, channel_id, sender, recipient, send_amount)?;
+        build_transfer_message(port_id, channel_id, sender, recipient, send_amount, timeout)?;
 
     let pay_message = build_pay_packet_message(
         port_id,

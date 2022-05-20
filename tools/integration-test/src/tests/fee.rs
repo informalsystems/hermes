@@ -1,6 +1,7 @@
 use ibc::core::ics04_channel::Version;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
+use std::thread;
 
 #[test]
 fn test_no_forward_relayer() -> Result<(), Error> {
@@ -12,28 +13,32 @@ fn test_forward_relayer() -> Result<(), Error> {
     run_binary_channel_test(&ForwardRelayerTest)
 }
 
+#[test]
+fn test_timeout_fee() -> Result<(), Error> {
+    run_binary_channel_test(&TimeoutFeeTest)
+}
+
 struct ForwardRelayerTest;
 struct NoForwardRelayerTest;
+struct TimeoutFeeTest;
 
-struct FeeOverrides;
-
-impl HasOverrides for ForwardRelayerTest {
-    type Overrides = FeeOverrides;
-
-    fn get_overrides(&self) -> &Self::Overrides {
-        &FeeOverrides
+impl TestOverrides for ForwardRelayerTest {
+    fn channel_version(&self) -> Version {
+        Version::ics20_with_fee()
     }
 }
 
-impl HasOverrides for NoForwardRelayerTest {
-    type Overrides = FeeOverrides;
-
-    fn get_overrides(&self) -> &Self::Overrides {
-        &FeeOverrides
+impl TestOverrides for NoForwardRelayerTest {
+    fn channel_version(&self) -> Version {
+        Version::ics20_with_fee()
     }
 }
 
-impl TestOverrides for FeeOverrides {
+impl TestOverrides for TimeoutFeeTest {
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+
     fn channel_version(&self) -> Version {
         Version::ics20_with_fee()
     }
@@ -85,6 +90,7 @@ impl BinaryChannelTest for NoForwardRelayerTest {
             &denom_a.with_amount(receive_fee).as_ref(),
             &denom_a.with_amount(ack_fee).as_ref(),
             &denom_a.with_amount(timeout_fee).as_ref(),
+            Duration::from_secs(60),
         )?;
 
         let denom_b = derive_ibc_denom(
@@ -199,6 +205,7 @@ impl BinaryChannelTest for ForwardRelayerTest {
             &denom_a.with_amount(receive_fee).as_ref(),
             &denom_a.with_amount(ack_fee).as_ref(),
             &denom_a.with_amount(timeout_fee).as_ref(),
+            Duration::from_secs(60),
         )?;
 
         let denom_b = derive_ibc_denom(
@@ -223,8 +230,6 @@ impl BinaryChannelTest for ForwardRelayerTest {
             balance_a2.amount() + timeout_fee + ack_fee
         );
 
-        // receive fee and timeout fee should be refunded,
-        // as there is no counterparty address registered.
         chain_driver_a.assert_eventual_wallet_amount(
             &user_a.address(),
             &(balance_a2 + timeout_fee).as_ref(),
@@ -244,5 +249,93 @@ impl BinaryChannelTest for ForwardRelayerTest {
         )?;
 
         Ok(())
+    }
+}
+
+impl BinaryChannelTest for TimeoutFeeTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channel: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let chain_driver_a = chains.node_a.chain_driver();
+        let chain_driver_b = chains.node_b.chain_driver();
+
+        let denom_a = chains.node_a.denom();
+
+        let port_a = channel.port_a.as_ref();
+        let channel_id_a = channel.channel_id_a.as_ref();
+
+        let wallets_a = chains.node_a.wallets();
+        let wallets_b = chains.node_b.wallets();
+
+        let relayer_a = wallets_a.relayer();
+
+        let user_a = wallets_a.user1();
+        let user_b = wallets_b.user1();
+
+        let balance_a1 = chain_driver_a.query_balance(&user_a.address(), &denom_a)?;
+
+        let relayer_balance_a = chain_driver_a.query_balance(&relayer_a.address(), &denom_a)?;
+
+        let send_amount = random_u128_range(1000, 2000);
+        let receive_fee = random_u128_range(300, 400);
+        let ack_fee = random_u128_range(200, 300);
+        let timeout_fee = random_u128_range(100, 200);
+
+        let total_sent = send_amount + receive_fee + ack_fee + timeout_fee;
+
+        let balance_a2 = balance_a1 - total_sent;
+
+        chain_driver_a.ibc_token_transfer_with_fee(
+            &port_a,
+            &channel_id_a,
+            &user_a,
+            &user_b.address(),
+            &denom_a.with_amount(send_amount).as_ref(),
+            &denom_a.with_amount(receive_fee).as_ref(),
+            &denom_a.with_amount(ack_fee).as_ref(),
+            &denom_a.with_amount(timeout_fee).as_ref(),
+            Duration::from_secs(5),
+        )?;
+
+        info!("Expect user A's balance after transfer: {}", balance_a2);
+
+        chain_driver_a.assert_eventual_wallet_amount(&user_a.address(), &balance_a2.as_ref())?;
+
+        // Sleep to wait for IBC packet to timeout before start relaying
+        thread::sleep(Duration::from_secs(6));
+
+        relayer.with_supervisor(|| {
+            info!(
+                "Expect user to be refunded send amount {}, receive fee {} and ack fee {} and go from {} to {}",
+                send_amount,
+                receive_fee,
+                ack_fee,
+                balance_a2,
+                balance_a2.amount() + send_amount + receive_fee + ack_fee
+            );
+
+            chain_driver_a.assert_eventual_wallet_amount(
+                &user_a.address(),
+                &(balance_a2 + send_amount + receive_fee + ack_fee).as_ref(),
+            )?;
+
+            info!(
+                "Expect relayer to receive timeout fee {} and go from {} to {}",
+                timeout_fee,
+                relayer_balance_a,
+                relayer_balance_a.amount() + timeout_fee,
+            );
+
+            chain_driver_a.assert_eventual_wallet_amount(
+                &relayer_a.address(),
+                &(relayer_balance_a + timeout_fee).as_ref(),
+            )?;
+
+            Ok(())
+        })
     }
 }
