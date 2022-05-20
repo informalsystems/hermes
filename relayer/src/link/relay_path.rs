@@ -1394,18 +1394,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn do_execute_schedule<I: Iterator<Item = OperationalData>>(
         &mut self,
         mut operations: I,
-        target_chain: TargetChain,
+        target_chain: OperationalDataTarget,
     ) -> Result<VecDeque<OperationalData>, (VecDeque<OperationalData>, LinkError)> {
         let mut unprocessed = VecDeque::new();
 
         while let Some(od) = operations.next() {
             let elapsed_result = match target_chain {
-                TargetChain::Src => od.has_conn_delay_elapsed(
+                OperationalDataTarget::Source => od.has_conn_delay_elapsed(
                     &|| self.src_time_latest(),
                     &|| self.src_max_block_time(),
                     &|| self.src_latest_height(),
                 ),
-                TargetChain::Dst => od.has_conn_delay_elapsed(
+                OperationalDataTarget::Destination => od.has_conn_delay_elapsed(
                     &|| self.dst_time_latest(),
                     &|| self.dst_max_block_time(),
                     &|| self.dst_latest_height(),
@@ -1451,7 +1451,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
         let src_od_iter = self.src_operational_data.take().into_iter();
 
-        match self.do_execute_schedule(src_od_iter, TargetChain::Src) {
+        match self.do_execute_schedule(src_od_iter, OperationalDataTarget::Source) {
             Ok(unprocessed_src_data) => self.src_operational_data = unprocessed_src_data.into(),
             Err((unprocessed_src_data, e)) => {
                 self.src_operational_data = unprocessed_src_data.into();
@@ -1461,7 +1461,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let dst_od_iter = self.dst_operational_data.take().into_iter();
 
-        match self.do_execute_schedule(dst_od_iter, TargetChain::Dst) {
+        match self.do_execute_schedule(dst_od_iter, OperationalDataTarget::Destination) {
             Ok(unprocessed_dst_data) => self.dst_operational_data = unprocessed_dst_data.into(),
             Err((unprocessed_dst_data, e)) => {
                 self.dst_operational_data = unprocessed_dst_data.into();
