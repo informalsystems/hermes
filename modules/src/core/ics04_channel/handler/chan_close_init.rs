@@ -26,10 +26,7 @@ pub(crate) fn process(
         ));
     }
 
-    // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
     // An OPEN IBC connection running on the local (host) chain should exist.
-
     if channel_end.connection_hops().len() != 1 {
         return Err(Error::invalid_connection_hops_length(
             1,
@@ -54,7 +51,6 @@ pub(crate) fn process(
         port_id: msg.port_id.clone(),
         channel_id: msg.channel_id,
         channel_id_state: ChannelIdState::Reused,
-        channel_cap,
         channel_end,
     };
 
@@ -131,7 +127,6 @@ mod tests {
             default_context
                 .with_client(&client_id, client_consensus_state_height)
                 .with_connection(conn_id, conn_end)
-                .with_port_capability(msg_chan_close_init.port_id.clone())
                 .with_channel(
                     msg_chan_close_init.port_id.clone(),
                     msg_chan_close_init.channel_id,

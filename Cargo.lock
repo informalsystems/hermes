@@ -261,12 +261,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
 
 [[package]]
+name = "bech32"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5738be7561b0eeb501ef1d5c5db3f24e01ceb55fededd9b00039aada34966ad"
+
+[[package]]
 name = "bitcoin"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05bba324e6baf655b882df672453dbbc527bc938cadd27750ae510aaccc3a66a"
 dependencies = [
- "bech32",
+ "bech32 0.8.1",
  "bitcoin_hashes",
  "secp256k1",
  "serde",
@@ -442,9 +448,9 @@ checksum = "fff857943da45f546682664a79488be82e69e43c1a7a2307679ab9afb3a66d2e"
 
 [[package]]
 name = "clap"
-version = "3.1.17"
+version = "3.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47582c09be7c8b32c0ab3a6181825ababb713fde6fff20fc573a3870dd45c6a0"
+checksum = "d2dbdf4bdacb33466e854ce889eee8dfd5729abf7ccd7664d0a2d60cd384440b"
 dependencies = [
  "atty",
  "bitflags",
@@ -468,9 +474,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "3.1.7"
+version = "3.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3aab4734e083b809aaf5794e14e756d1c798d2c69c7f7de7a09a2f5214993c1"
+checksum = "25320346e922cffe59c0bbc5410c8d8784509efb321488971081313cb1e1a33c"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -1499,7 +1505,7 @@ version = "0.14.1"
 dependencies = [
  "anyhow",
  "async-stream",
- "bech32",
+ "bech32 0.9.0",
  "bitcoin",
  "bytes",
  "crossbeam-channel 0.5.4",
@@ -1550,6 +1556,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uint",
+ "uuid 1.0.0",
 ]
 
 [[package]]
@@ -1616,11 +1623,13 @@ version = "0.14.1"
 dependencies = [
  "crossbeam-channel 0.5.4",
  "ibc",
+ "moka",
  "once_cell",
  "opentelemetry",
  "opentelemetry-prometheus",
  "prometheus",
  "rouille",
+ "uuid 1.0.0",
 ]
 
 [[package]]
@@ -1943,9 +1952,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.8.2"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef9d038ced38770a867f2300ef21e1193b5e26d8e8e060fa5c034d1dddc57452"
+checksum = "10804a8c28847a5cfded5cf0d76a9ac888fed905400b9b4b870c6f30788ed605"
 dependencies = [
  "crossbeam-channel 0.5.4",
  "crossbeam-epoch 0.8.2",
@@ -1960,7 +1969,7 @@ dependencies = [
  "tagptr",
  "thiserror",
  "triomphe",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -3145,9 +3154,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook"
-version = "0.3.13"
+version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "647c97df271007dcea485bb74ffdb57f2e683f1306c854f468a0c244badabf2d"
+checksum = "a253b5e89e2698464fc26b545c9edceb338e18a89effeeecfea192c3025be29d"
 dependencies = [
  "libc",
  "signal-hook-registry",
@@ -3441,7 +3450,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
- "uuid",
+ "uuid 0.8.2",
  "walkdir",
 ]
 
@@ -4030,6 +4039,15 @@ name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+dependencies = [
+ "getrandom 0.2.6",
+]
+
+[[package]]
+name = "uuid"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cfcd319456c4d6ea10087ed423473267e1a071f3bc0aa89f80d60997843c6f0"
 dependencies = [
  "getrandom 0.2.6",
 ]

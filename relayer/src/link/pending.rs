@@ -8,8 +8,10 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
+use crate::chain::tracking::TrackingId;
 use crate::error::Error as RelayerError;
 use crate::link::{error::LinkError, RelayPath};
+use crate::telemetry;
 use crate::util::queue::Queue;
 use crate::{
     chain::handle::ChainHandle,
@@ -33,7 +35,13 @@ pub struct PendingData {
     pub error_events: Vec<IbcEvent>,
 }
 
-/// The mediator stores all pending data
+impl PendingData {
+    pub fn tracking_id(&self) -> TrackingId {
+        self.original_od.tracking_id
+    }
+}
+
+/// Stores all pending data
 /// and tries to confirm them asynchronously.
 pub struct PendingTxs<Chain> {
     pub chain: Chain,
@@ -114,6 +122,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
             submit_time: Instant::now(),
             error_events,
         };
+
         self.pending_queue.push_back(u);
     }
 
@@ -227,9 +236,19 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                     // to the chain.
 
                     debug!(
-                        "confirmed after {:#?}: {} ",
-                        pending.submit_time.elapsed(),
-                        tx_hashes
+                        tracking_id = %pending.tracking_id(),
+                        elapsed = ?pending.submit_time.elapsed(),
+                        tx_hashes = %tx_hashes,
+                        "transactions confirmed",
+                    );
+
+                    telemetry!(
+                        tx_confirmed,
+                        pending.tracking_id(),
+                        &self.chain.id(),
+                        &self.channel_id,
+                        &self.port_id,
+                        &self.counterparty_chain_id
                     );
 
                     // Convert the events to RelaySummary and return them.

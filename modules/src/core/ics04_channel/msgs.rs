@@ -44,32 +44,24 @@ pub enum ChannelMsg {
 impl ChannelMsg {
     pub(super) fn lookup_module(&self, ctx: &impl Ics26Context) -> Result<ModuleId, Error> {
         let module_id = match self {
-            ChannelMsg::ChannelOpenInit(msg) => {
-                ctx.lookup_module_by_port(&msg.port_id)
-                    .map_err(Error::ics05_port)?
-                    .0
-            }
-            ChannelMsg::ChannelOpenTry(msg) => {
-                ctx.lookup_module_by_port(&msg.port_id)
-                    .map_err(Error::ics05_port)?
-                    .0
-            }
-            ChannelMsg::ChannelOpenAck(msg) => {
-                ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
-                    .0
-            }
-            ChannelMsg::ChannelOpenConfirm(msg) => {
-                ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
-                    .0
-            }
-            ChannelMsg::ChannelCloseInit(msg) => {
-                ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
-                    .0
-            }
-            ChannelMsg::ChannelCloseConfirm(msg) => {
-                ctx.lookup_module_by_channel(&msg.channel_id, &msg.port_id)?
-                    .0
-            }
+            ChannelMsg::ChannelOpenInit(msg) => ctx
+                .lookup_module_by_port(&msg.port_id)
+                .map_err(Error::ics05_port)?,
+            ChannelMsg::ChannelOpenTry(msg) => ctx
+                .lookup_module_by_port(&msg.port_id)
+                .map_err(Error::ics05_port)?,
+            ChannelMsg::ChannelOpenAck(msg) => ctx
+                .lookup_module_by_port(&msg.port_id)
+                .map_err(Error::ics05_port)?,
+            ChannelMsg::ChannelOpenConfirm(msg) => ctx
+                .lookup_module_by_port(&msg.port_id)
+                .map_err(Error::ics05_port)?,
+            ChannelMsg::ChannelCloseInit(msg) => ctx
+                .lookup_module_by_port(&msg.port_id)
+                .map_err(Error::ics05_port)?,
+            ChannelMsg::ChannelCloseConfirm(msg) => ctx
+                .lookup_module_by_port(&msg.port_id)
+                .map_err(Error::ics05_port)?,
         };
         Ok(module_id)
     }

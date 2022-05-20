@@ -1,5 +1,6 @@
 use core::fmt;
 use core::mem;
+
 use crossbeam_channel::Sender;
 use serde::Deserialize;
 use serde::Serialize;
@@ -11,6 +12,7 @@ use ibc::{
     Height,
 };
 
+use crate::chain::tracking::TrackingId;
 use crate::util::lock::{LockExt, RwArc};
 use crate::util::task::TaskHandle;
 use crate::{event::monitor::EventBatch, object::Object};
@@ -62,11 +64,18 @@ impl WorkerHandle {
     }
 
     /// Send a batch of events to the worker.
-    pub fn send_events(&self, height: Height, events: Vec<IbcEvent>, chain_id: ChainId) {
+    pub fn send_events(
+        &self,
+        height: Height,
+        events: Vec<IbcEvent>,
+        chain_id: ChainId,
+        tracking_id: TrackingId,
+    ) {
         let batch = EventBatch {
             chain_id,
             height,
             events,
+            tracking_id,
         };
 
         self.try_send_command(WorkerCmd::IbcEvents { batch });

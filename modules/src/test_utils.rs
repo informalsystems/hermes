@@ -6,7 +6,6 @@ use tendermint::{block, consensus, evidence, public_key::Algorithm};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::Version;
-use crate::core::ics05_port::capabilities::ChannelCapability;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{Module, ModuleOutput};
 use crate::signer::Signer;
@@ -56,7 +55,6 @@ impl Module for DummyModule {
         _connection_hops: &[ConnectionId],
         _port_id: &PortId,
         _channel_id: &ChannelId,
-        _channel_cap: &ChannelCapability,
         _counterparty: &Counterparty,
         counterparty_version: &Version,
     ) -> Result<Version, Error> {
