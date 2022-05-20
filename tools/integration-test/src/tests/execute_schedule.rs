@@ -14,7 +14,7 @@ use ibc_test_framework::util::random::random_u64_range;
 
 use ibc_relayer::link::{Link, LinkParameters};
 
-const NUM_TXS: i32 = 10;
+const NUM_TXS: usize = 10;
 
 #[test]
 fn test_execute_schedule() -> Result<(), Error> {
@@ -51,7 +51,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             true,
         )?;
 
-        let relay_path_a_to_b = chain_a_link.a_to_b;
+        let mut relay_path_a_to_b = chain_a_link.a_to_b;
 
         for i in 0..NUM_TXS {
             chains.node_a.chain_driver().ibc_transfer_token(
@@ -65,7 +65,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
             relay_path_a_to_b.schedule_packet_clearing(None)?;
 
-            info!("Performing IBC transfer #{} from chain A to chain B", i,);
+            info!("Performing IBC transfer #{} from chain A to chain B", i);
         }
 
         assert_eq!(relay_path_a_to_b.dst_operational_data.len(), NUM_TXS);
@@ -74,9 +74,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
         match relay_path_a_to_b.execute_schedule() {
             Ok(_) => panic!("Expected an error when relaying tx from A to B"),
-            Err(_e) => {
-                assert_eq!(relay_path_a_to_b.dst_operational_data.len(), NUM_TXS - 1);
-            }
+            Err(_) => assert_eq!(relay_path_a_to_b.dst_operational_data.len(), NUM_TXS - 1),
         }
 
         Ok(())
