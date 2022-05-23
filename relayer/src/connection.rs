@@ -1,5 +1,4 @@
 use core::time::Duration;
-use std::{thread, time};
 
 use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::requests::{PageRequest, QueryConnectionRequest, QueryConnectionsRequest};
@@ -35,19 +34,25 @@ pub mod error;
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
 
 mod retry_strategy {
+    use crate::util::retry::{clamp_total, ConstantGrowth};
     use core::time::Duration;
 
-    use retry::delay::Fibonacci;
-
-    use crate::util::retry::clamp_total;
-
-    // Default parameters for the retrying mechanism
-    const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
-    const MAX_TOTAL_DELAY: Duration = Duration::from_secs(10 * 60); // 10 minutes
-    const INITIAL_DELAY: Duration = Duration::from_secs(1); // 1 second
+    // Parameters for the retrying mechanism:
+    // - retry for 2 minutes
+    const MAX_RETRY_DURATION: Duration = Duration::from_secs(120);
+    // - start with delay 500 ms
+    const INITIAL_DELAY: Duration = Duration::from_millis(500);
+    // - at each step increment delay by 0
+    const DELAY_INCR: Duration = Duration::from_millis(0);
+    // - cap the delay at 500 ms
+    const MAX_DELAY: Duration = Duration::from_millis(500);
 
     pub fn default() -> impl Iterator<Item = Duration> {
-        clamp_total(Fibonacci::from(INITIAL_DELAY), MAX_DELAY, MAX_TOTAL_DELAY)
+        clamp_total(
+            ConstantGrowth::new(INITIAL_DELAY, DELAY_INCR),
+            MAX_DELAY,
+            MAX_RETRY_DURATION,
+        )
     }
 }
 
@@ -530,7 +535,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 })?;
                 let connection_id = extract_connection_id(&event)?;
                 self.a_side.connection_id = Some(connection_id.clone());
-                thread::sleep(time::Duration::from_secs(7));
             }
 
             // send the Try message to chain a (source)
@@ -542,7 +546,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
                 let connection_id = extract_connection_id(&event)?;
                 self.a_side.connection_id = Some(connection_id.clone());
-                thread::sleep(time::Duration::from_secs(7));
             }
 
             // send the Try message to chain b (destination)
@@ -554,7 +557,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
                 let connection_id = extract_connection_id(&event)?;
                 self.b_side.connection_id = Some(connection_id.clone());
-                thread::sleep(time::Duration::from_secs(7));
             }
 
             // send the Ack message to chain a (source)
