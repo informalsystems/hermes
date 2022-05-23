@@ -242,3 +242,24 @@ If the command is successful a message similar to the one below will be displaye
   "status": "success"
 }
 ```
+### Query balance
+
+In order to retrieve the balance of an account associated with a key use the `keys balance` command
+
+```shell
+USAGE:
+    hermes keys balance <CHAIN_ID> <KEYNAME>
+
+DESCRIPTION:
+    Query balance for a key from a configured chain
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain
+    keyname                   key name
+```
+
+If the command is successful a message with the following format will be displayed:
+
+```
+Success: balance <amount> <denom>
+```
