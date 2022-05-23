@@ -29,7 +29,7 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
             // sender chain is not the source, unescrow tokens
             let coin = {
                 let mut c = data.token;
-                c.denom.remove_prefix(&prefix);
+                c.denom.remove_trace_prefix(&prefix);
                 c
             };
 
@@ -49,7 +49,7 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
                 TracePrefix::new(packet.destination_port.clone(), packet.destination_channel);
             let coin = {
                 let mut c = data.token;
-                c.denom.add_prefix(prefix);
+                c.denom.add_trace_prefix(prefix);
                 c
             };
 

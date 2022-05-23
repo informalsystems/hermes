@@ -68,6 +68,33 @@ impl fmt::Display for TracePrefix {
 #[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord, From)]
 pub struct TracePath(Vec<TracePrefix>);
 
+impl TracePath {
+    /// Returns true iff this path starts with the specified prefix
+    pub fn starts_with(&self, prefix: &TracePrefix) -> bool {
+        self.0
+            .first()
+            .map(|p| p == prefix)
+            .unwrap_or(false)
+    }
+
+    /// Removes the specified prefix from the path if there is a match, otherwise does nothing.
+    pub fn remove_prefix(&mut self, prefix: &TracePrefix) {
+        if self.starts_with(prefix) {
+            self.0.drain(..0);
+        }
+    }
+
+    /// Adds the specified prefix to the path.
+    pub fn add_prefix(&mut self, prefix: TracePrefix) {
+        self.0.push(prefix)
+    }
+
+    /// Returns true if the path is empty and false otherwise.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
 impl<'a> TryFrom<Vec<&'a str>> for TracePath {
     type Error = Error;
 
@@ -146,36 +173,20 @@ impl DenomTrace {
         HashedDenom::from(self)
     }
 
-    /// Returns true iff this path starts with the specified prefix
-    pub fn trace_starts_with(&self, prefix: &TracePrefix) -> bool {
-        self.trace_path
-            .0
-            .first()
-            .map(|p| p == prefix)
-            .unwrap_or(false)
+    /// Removes the specified prefix from the trace path if there is a match, otherwise does nothing.
+    pub fn remove_trace_prefix(&mut self, prefix: &TracePrefix) {
+        self.trace_path.remove_prefix(prefix)
     }
 
-    /// Removes the specified prefix from the `trace_path` if there is a match.
-    pub fn remove_prefix(&mut self, prefix: &TracePrefix) {
-        if self.trace_starts_with(prefix) {
-            self.trace_path.0.drain(..0);
-        }
-    }
-
-    /// Adds the specified prefix to the `trace_path`.
-    pub fn add_prefix(&mut self, prefix: TracePrefix) {
-        self.trace_path.0.push(prefix)
-    }
-
-    /// Returns true if the `trace_path` is empty and false otherwise.
-    pub fn is_trace_empty(&self) -> bool {
-        self.trace_path.0.is_empty()
+    /// Adds the specified prefix to the trace path.
+    pub fn add_trace_prefix(&mut self, prefix: TracePrefix) {
+        self.trace_path.add_prefix(prefix)
     }
 
     /// Returns `Source::Receiver` if the denomination originally came from the receiving chain and
     /// `Source::Sender` otherwise.
     pub fn source_chain(&self, prefix: &TracePrefix) -> Source {
-        if self.trace_starts_with(prefix) {
+        if self.trace_path.starts_with(prefix) {
             Source::Receiver
         } else {
             Source::Sender
@@ -397,7 +408,7 @@ impl From<IbcCoin> for RawCoin {
 impl From<PrefixedCoin> for IbcCoin {
     fn from(prefixed_coin: PrefixedCoin) -> Self {
         let Coin { denom, amount } = prefixed_coin;
-        if !denom.is_trace_empty() {
+        if !denom.trace_path.is_empty() {
             IbcCoin::Hashed(HashedCoin {
                 denom: denom.hashed(),
                 amount,
