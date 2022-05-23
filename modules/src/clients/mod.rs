@@ -3,4 +3,4 @@
 pub mod crypto_ops;
 pub mod ics07_tendermint;
 pub mod ics11_beefy;
-pub mod near;
+pub mod ics12_near;
