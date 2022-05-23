@@ -1,11 +1,11 @@
 use core::time::Duration;
+use futures::stream::{FuturesOrdered, StreamExt};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
 use std::time::Instant;
 use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tendermint_rpc::{HttpClient, Url};
-use tokio::task;
 use tokio::time::sleep;
 use tracing::info;
 
@@ -32,14 +32,14 @@ pub async fn wait_for_block_commits(
 
     let responses = wait_tx_hashes(rpc_client, rpc_address, rpc_timeout, tx_hashes).await?;
 
-    let mut all_events = Vec::new();
-
-    for response in responses.into_iter() {
-        for tx_response in response.txs.into_iter() {
-            let mut events = all_ibc_events_from_tx_search_response(chain_id, tx_response);
-            all_events.append(&mut events);
-        }
-    }
+    let all_events = responses
+        .into_iter()
+        .flat_map(|response| {
+            response.txs.into_iter().flat_map(|tx_response| {
+                all_ibc_events_from_tx_search_response(chain_id, tx_response)
+            })
+        })
+        .collect();
 
     Ok(all_events)
 }
@@ -50,26 +50,16 @@ pub async fn wait_tx_hashes(
     timeout: &Duration,
     tx_hashes: &[TxHash],
 ) -> Result<Vec<TxSearchResponse>, Error> {
-    let mut join_handles = Vec::new();
+    let tasks = tx_hashes
+        .iter()
+        .map(|tx_hash| async { wait_tx_hash(rpc_client, rpc_address, timeout, tx_hash).await })
+        .collect::<FuturesOrdered<_>>();
 
-    for tx_hash in tx_hashes.iter() {
-        let rpc_client = rpc_client.clone();
-        let rpc_address = rpc_address.clone();
-        let timeout = *timeout;
-        let tx_hash = *tx_hash;
-
-        let handle = task::spawn(async move {
-            wait_tx_hash(&rpc_client, &rpc_address, &timeout, &tx_hash).await
-        });
-        join_handles.push(handle);
-    }
-
-    let mut responses = Vec::new();
-
-    for handle in join_handles.into_iter() {
-        let response = handle.await.map_err(Error::join)??;
-        responses.push(response);
-    }
+    let responses = tasks
+        .collect::<Vec<_>>()
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(responses)
 }
