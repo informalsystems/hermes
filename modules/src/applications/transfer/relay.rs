@@ -32,11 +32,7 @@ fn refund_packet_token(
 
             ctx.send_coins(&escrow_address, &sender, &amount)
         }
-        Source::Receiver => {
-            // mint vouchers back to sender
-            ctx.mint_coins(&ctx.get_transfer_account(), &amount)?;
-            ctx.send_coins_from_module_to_account(&ctx.get_transfer_account(), &sender, &amount).expect("unable to send coins from module to account despite previously minting coins to module account");
-            Ok(())
-        }
+        // mint vouchers back to sender
+        Source::Receiver => ctx.mint_coins(&sender, &amount),
     }
 }

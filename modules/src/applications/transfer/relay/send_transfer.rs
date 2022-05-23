@@ -59,15 +59,7 @@ where
                 ctx.get_channel_escrow_address(&msg.source_port, msg.source_channel)?;
             ctx.send_coins(&sender, &escrow_address, &msg.token)?;
         }
-        Source::Receiver => {
-            ctx.send_coins_from_account_to_module(
-                &sender,
-                &ctx.get_transfer_account(),
-                &msg.token,
-            )?;
-            ctx.burn_coins(&ctx.get_transfer_account(), &msg.token)
-                .expect("cannot burn coins after a successful send to a module account");
-        }
+        Source::Receiver => ctx.burn_coins(&sender, &msg.token)?,
     }
 
     let data = {

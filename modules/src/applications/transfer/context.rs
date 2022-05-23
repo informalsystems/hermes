@@ -29,9 +29,7 @@ pub trait Ics20Keeper:
     fn set_denom_trace(&mut self, denom_trace: &DenomTrace) -> Result<(), Ics20Error>;
 }
 
-pub trait Ics20Reader:
-    BankReader<AccountId = <Self as Ics20Reader>::AccountId> + ChannelReader + PortReader
-{
+pub trait Ics20Reader: ChannelReader + PortReader {
     type AccountId: TryFrom<Signer>;
 
     /// get_port returns the portID for the transfer module.
@@ -87,34 +85,11 @@ pub trait BankKeeper {
         amt: &IbcCoin,
     ) -> Result<(), Ics20Error>;
 
-    /// This function to enable minting ibc tokens in a module
-    fn mint_coins(&mut self, module: &Self::AccountId, amt: &IbcCoin) -> Result<(), Ics20Error>;
+    /// This function to enable minting ibc tokens to a user account
+    fn mint_coins(&mut self, account: &Self::AccountId, amt: &IbcCoin) -> Result<(), Ics20Error>;
 
-    /// This function should enable burning of minted tokens
-    fn burn_coins(&mut self, module: &Self::AccountId, amt: &IbcCoin) -> Result<(), Ics20Error>;
-
-    /// This function should enable transfer of tokens from the ibc module to an account
-    fn send_coins_from_module_to_account(
-        &mut self,
-        module: &Self::AccountId,
-        to: &Self::AccountId,
-        amt: &IbcCoin,
-    ) -> Result<(), Ics20Error>;
-
-    /// This function should enable transfer of tokens from an account to the ibc module
-    fn send_coins_from_account_to_module(
-        &mut self,
-        from: &Self::AccountId,
-        module: &Self::AccountId,
-        amt: &IbcCoin,
-    ) -> Result<(), Ics20Error>;
-}
-
-pub trait BankReader {
-    type AccountId: TryFrom<Signer>;
-
-    /// get_transfer_account returns the ICS20 - transfers AccountId.
-    fn get_transfer_account(&self) -> Self::AccountId;
+    /// This function should enable burning of minted tokens in a user account
+    fn burn_coins(&mut self, account: &Self::AccountId, amt: &IbcCoin) -> Result<(), Ics20Error>;
 }
 
 /// Captures all the dependencies which the ICS20 module requires to be able to dispatch and

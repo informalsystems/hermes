@@ -4,9 +4,7 @@ use std::time::Duration;
 
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
-use crate::applications::transfer::context::{
-    BankKeeper, BankReader, Ics20Context, Ics20Keeper, Ics20Reader,
-};
+use crate::applications::transfer::context::{BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader};
 use crate::applications::transfer::{error::Error as Ics20Error, DenomTrace, HashedDenom, IbcCoin};
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -216,29 +214,11 @@ impl BankKeeper for DummyTransferModule {
         Ok(())
     }
 
-    fn mint_coins(&mut self, _module: &Self::AccountId, _amt: &IbcCoin) -> Result<(), Ics20Error> {
+    fn mint_coins(&mut self, _account: &Self::AccountId, _amt: &IbcCoin) -> Result<(), Ics20Error> {
         Ok(())
     }
 
-    fn burn_coins(&mut self, _module: &Self::AccountId, _amt: &IbcCoin) -> Result<(), Ics20Error> {
-        Ok(())
-    }
-
-    fn send_coins_from_module_to_account(
-        &mut self,
-        _module: &Self::AccountId,
-        _to: &Self::AccountId,
-        _amt: &IbcCoin,
-    ) -> Result<(), Ics20Error> {
-        Ok(())
-    }
-
-    fn send_coins_from_account_to_module(
-        &mut self,
-        _from: &Self::AccountId,
-        _module: &Self::AccountId,
-        _amt: &IbcCoin,
-    ) -> Result<(), Ics20Error> {
+    fn burn_coins(&mut self, _account: &Self::AccountId, _amt: &IbcCoin) -> Result<(), Ics20Error> {
         Ok(())
     }
 }
@@ -260,14 +240,6 @@ impl Ics20Reader for DummyTransferModule {
 
     fn get_denom_trace(&self, denom_hash: &HashedDenom) -> Option<DenomTrace> {
         self.denom_traces.get(denom_hash).map(Clone::clone)
-    }
-}
-
-impl BankReader for DummyTransferModule {
-    type AccountId = Signer;
-
-    fn get_transfer_account(&self) -> Self::AccountId {
-        get_dummy_account_id()
     }
 }
 

@@ -68,14 +68,8 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
                 }
 
                 let amount = IbcCoin::from(coin);
-                ctx.mint_coins(&ctx.get_transfer_account(), &amount)
-                    .map_err(|e| e.to_string())?;
-                ctx.send_coins_from_module_to_account(
-                    &ctx.get_transfer_account(),
-                    &receiver_account,
-                    &amount,
-                )
-                .map_err(|e| e.to_string())
+                ctx.mint_coins(&receiver_account, &amount)
+                    .map_err(|e| e.to_string())
             }))
         }
     }
