@@ -2,17 +2,22 @@ use crate::core::ics02_client::client_def::ClientDef;
 
 use crate::clients::ics12_near::header::NearHeader;
 
+use super::client_state::NearClientState;
+use super::consensus_state::NearConsensusState;
+use super::crypto_ops::NearCryptoOps;
+use super::error::Error;
+
 #[derive(Debug, Clone)]
 pub struct NearClient {}
 
 impl ClientDef for NearClient {
     type Header = NearHeader;
 
-    type ClientState;
+    type ClientState = NearClientState;
 
-    type ConsensusState;
+    type ConsensusState = NearConsensusState;
 
-    type Crypto;
+    type Crypto = NearCryptoOps;
 
     fn verify_header(
         &self,
