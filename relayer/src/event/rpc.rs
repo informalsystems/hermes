@@ -121,12 +121,10 @@ pub fn get_all_events(
                         let _span = tracing::trace_span!("ibc_channel event").entered();
                         tracing::trace!("extracted {}", chan_event);
                         if matches!(chan_event, IbcEvent::SendPacket(_)) {
-                            // We are interested in the tag "hash" of an event with type "tx",
-                            // but this is trace level, so print the whole list of events.
                             // Should be the same as the hash of tx_result.tx?
-                            // TODO: use a helper function to filter to just the interesting
-                            // information, or remove the whole log event if it's no longer needed.
-                            tracing::trace!(event = "SendPacket", "ABCI events: {:?}", events);
+                            if let Some(hash) = extract_abci_event_tag(&events, "tx", "hash") {
+                                tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
+                            }
                         }
                         vals.push((height, chan_event));
                     }
@@ -147,4 +145,21 @@ fn extract_block_events(height: Height, block_events: &[abci::Event]) -> Vec<(He
         }
     }
     events
+}
+
+fn extract_abci_event_tag<'a>(
+    events: &'a [abci::Event],
+    type_str: &str,
+    key: &str,
+) -> Option<&'a str> {
+    for event in events {
+        if event.type_str == type_str {
+            for tag in &event.attributes {
+                if tag.key.as_ref() == key {
+                    return Some(tag.value.as_ref());
+                }
+            }
+        }
+    }
+    None
 }
