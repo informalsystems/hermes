@@ -65,22 +65,22 @@ impl fmt::Display for TracePrefix {
 }
 
 /// A full trace path modelled as a collection of `TracePrefix`s.
+// Internally, the `TracePath` is modelled as a `Vec<TracePrefix>` but with the order reversed, i.e.
+// "transfer/channel-0/transfer/channel-1/uatom" => `["transfer/channel-1", "transfer/channel-0"]`
+// This is done for ease of addition/removal of prefixes.
 #[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord, From)]
 pub struct TracePath(Vec<TracePrefix>);
 
 impl TracePath {
     /// Returns true iff this path starts with the specified prefix
     pub fn starts_with(&self, prefix: &TracePrefix) -> bool {
-        self.0
-            .first()
-            .map(|p| p == prefix)
-            .unwrap_or(false)
+        self.0.last().map(|p| p == prefix).unwrap_or(false)
     }
 
     /// Removes the specified prefix from the path if there is a match, otherwise does nothing.
     pub fn remove_prefix(&mut self, prefix: &TracePrefix) {
         if self.starts_with(prefix) {
-            self.0.drain(..0);
+            self.0.pop();
         }
     }
 
@@ -105,7 +105,7 @@ impl<'a> TryFrom<Vec<&'a str>> for TracePath {
 
         let mut trace = vec![];
         let id_pairs = v.chunks_exact(2).map(|paths| (paths[0], paths[1]));
-        for (pos, (port_id, channel_id)) in id_pairs.enumerate() {
+        for (pos, (port_id, channel_id)) in id_pairs.rev().enumerate() {
             let port_id =
                 PortId::from_str(port_id).map_err(|e| Error::invalid_trace_port_id(pos, e))?;
             let channel_id = ChannelId::from_str(channel_id)
@@ -141,6 +141,7 @@ impl fmt::Display for TracePath {
         let path = self
             .0
             .iter()
+            .rev()
             .map(|prefix| prefix.to_string())
             .collect::<Vec<String>>()
             .join("/");
