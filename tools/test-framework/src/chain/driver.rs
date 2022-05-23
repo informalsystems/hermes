@@ -17,6 +17,7 @@ use toml;
 use tracing::debug;
 
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
@@ -47,7 +48,7 @@ pub mod transfer;
    test is taking much longer to reach eventual consistency, it might
    be indication of some underlying performance issues.
 */
-const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 60;
+const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 90;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
@@ -463,7 +464,7 @@ impl ChainDriver {
         Ok(amount)
     }
 
-    pub fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<(), Error> {
+    pub fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         self.runtime
             .block_on(simple_send_tx(&self.tx_config, &wallet.key, messages))
     }

@@ -4,6 +4,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
 use std::time::Instant;
 use tendermint::abci::transaction::Hash as TxHash;
+use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tendermint_rpc::{HttpClient, Url};
 use tokio::time::sleep;
@@ -69,17 +70,17 @@ pub async fn wait_tx_succeed(
     rpc_address: &Url,
     timeout: &Duration,
     tx_hash: &TxHash,
-) -> Result<(), Error> {
+) -> Result<Vec<TxResponse>, Error> {
     let response = wait_tx_hash(rpc_client, rpc_address, timeout, tx_hash).await?;
 
-    for response in response.txs {
+    for response in response.txs.iter() {
         let response_code = response.tx_result.code;
         if response_code.is_err() {
             return Err(Error::rpc_response(format!("{}", response_code.value())));
         }
     }
 
-    Ok(())
+    Ok(response.txs)
 }
 
 pub async fn wait_tx_hash(

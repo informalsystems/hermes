@@ -1,12 +1,12 @@
 use core::time::Duration;
 use ibc::core::ics04_channel::packet::Sequence;
+use ibc::events::IbcEvent;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::channel::v1::PacketId;
 use ibc_proto::ibc::applications::fee::v1::{
-    Fee, PacketFee, MsgPayPacketFee,
-    MsgPayPacketFeeAsync, MsgRegisterCounterpartyAddress
+    Fee, MsgPayPacketFee, MsgPayPacketFeeAsync, MsgRegisterCounterpartyAddress, PacketFee,
 };
+use ibc_proto::ibc::core::channel::v1::PacketId;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use prost::{EncodeError, Message};
 
@@ -15,7 +15,7 @@ use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::transfer::build_transfer_message;
 use crate::relayer::tx::simple_send_tx;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
-use crate::types::tagged::{MonoTagged, DualTagged};
+use crate::types::tagged::{DualTagged, MonoTagged};
 use crate::types::wallet::TaggedWallet;
 use crate::types::wallet::{Wallet, WalletAddress};
 
@@ -30,7 +30,7 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
     ack_fee: &TaggedTokenRef<'_, SrcChain>,
     timeout_fee: &TaggedTokenRef<'_, SrcChain>,
     timeout: Duration,
-) -> Result<(), Error> {
+) -> Result<Vec<IbcEvent>, Error> {
     let transfer_message =
         build_transfer_message(port_id, channel_id, sender, recipient, send_amount, timeout)?;
 
@@ -45,11 +45,10 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
 
     let messages = vec![pay_message, transfer_message];
 
-    simple_send_tx(tx_config.value(), &sender.value().key, messages).await?;
+    let events = simple_send_tx(tx_config.value(), &sender.value().key, messages).await?;
 
-    Ok(())
+    Ok(events)
 }
-
 
 pub async fn pay_packet_fee<Chain, Counterparty>(
     tx_config: &MonoTagged<Chain, &TxConfig>,
@@ -141,7 +140,6 @@ pub fn build_pay_packet_message<Chain, Counterparty>(
         value: encoded,
     })
 }
-
 
 pub fn build_pay_packet_fee_async_message<Chain, Counterparty>(
     port_id: &TaggedPortIdRef<Chain, Counterparty>,

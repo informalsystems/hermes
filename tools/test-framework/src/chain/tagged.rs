@@ -3,6 +3,7 @@
 */
 
 use core::time::Duration;
+use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use serde::Serialize;
@@ -39,8 +40,11 @@ pub trait TaggedChainDriverExt<Chain> {
 
     fn tx_config(&self) -> MonoTagged<Chain, &TxConfig>;
 
-    fn send_tx(&self, wallet: &MonoTagged<Chain, &Wallet>, messages: Vec<Any>)
-        -> Result<(), Error>;
+    fn send_tx(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        messages: Vec<Any>,
+    ) -> Result<Vec<IbcEvent>, Error>;
 
     /**
        Tagged version of [`ChainDriver::query_balance`].
@@ -113,7 +117,7 @@ pub trait TaggedChainDriverExt<Chain> {
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
         timeout: Duration,
-    ) -> Result<(), Error>;
+    ) -> Result<Vec<IbcEvent>, Error>;
 
     /**
         Taggged version of [`query_recipient_transactions`].
@@ -166,7 +170,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
         messages: Vec<Any>,
-    ) -> Result<(), Error> {
+    ) -> Result<Vec<IbcEvent>, Error> {
         self.value().send_tx(wallet.value(), messages)
     }
 
@@ -233,7 +237,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
         timeout: Duration,
-    ) -> Result<(), Error> {
+    ) -> Result<Vec<IbcEvent>, Error> {
         self.value().runtime.block_on(ibc_token_transfer_with_fee(
             &self.tx_config(),
             port_id,

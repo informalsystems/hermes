@@ -3,10 +3,12 @@ use core::time::Duration;
 use eyre::eyre;
 use http::uri::Uri;
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc::events::IbcEvent;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
 use ibc_relayer::chain::cosmos::query::account::query_account;
+use ibc_relayer::chain::cosmos::query::tx::all_ibc_events_from_tx_search_response;
 use ibc_relayer::chain::cosmos::tx::estimate_fee_and_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
@@ -86,7 +88,7 @@ pub async fn simple_send_tx(
     config: &TxConfig,
     key_entry: &KeyEntry,
     messages: Vec<Any>,
-) -> Result<(), Error> {
+) -> Result<Vec<IbcEvent>, Error> {
     let account = query_account(&config.grpc_address, &key_entry.account)
         .await?
         .into();
@@ -99,7 +101,7 @@ pub async fn simple_send_tx(
         return Err(eyre!("send_tx returns error response: {:?}", response).into());
     }
 
-    wait_tx_succeed(
+    let responses = wait_tx_succeed(
         &config.rpc_client,
         &config.rpc_address,
         &config.rpc_timeout,
@@ -107,5 +109,10 @@ pub async fn simple_send_tx(
     )
     .await?;
 
-    Ok(())
+    let events = responses
+        .into_iter()
+        .flat_map(|response| all_ibc_events_from_tx_search_response(&config.chain_id, response))
+        .collect();
+
+    Ok(events)
 }
