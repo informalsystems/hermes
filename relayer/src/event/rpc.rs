@@ -70,44 +70,8 @@ use crate::event::monitor::queries;
 /// ```
 ///
 /// Events originating from `BeginBlock` and `EndBlock` methods are extracted via the
-/// `RpcEvent::events` field. Here's an example of what these events look like ->
-/// ```json
-/// {
-///     "channel_open_init.channel_id": [
-///         "channel-0",
-///     ],
-///     "channel_open_init.connection_id": [
-///         "connection-0",
-///     ],
-///     "channel_open_init.counterparty_channel_id": [
-///         "channel-0",
-///     ],
-///     "channel_open_init.counterparty_port_id": [
-///         "transfer",
-///     ],
-///     "channel_open_init.port_id": [
-///         "transfer",
-///     ],
-///     // ...
-/// }
-/// ```
-///
-/// Note: Historically, all events were extracted from the `RpcEvent::events` field. This was
-/// possible because these events had a `message.action` field that allowed us to infer the order in
-/// which these events were triggered ->
-/// ```json
-/// "message.action": [
-///     "update_client",
-///     "channel_open_ack",
-/// ],
-/// "message.module": [
-///     "ibc_client",
-///     "ibc_channel",
-/// ],
-/// ```
-/// {Begin,End}Block events however do not have any such `message.action` associated with them, so
-/// this doesn't work. For this reason, we extract block events in the following order ->
-/// OpenInit -> OpenTry -> OpenAck -> OpenConfirm -> SendPacket -> CloseInit -> CloseConfirm.
+/// `RpcEvent::events` field. As of tendermint-rs 0.24, these also look as shown
+/// in the example above.
 pub fn get_all_events(
     chain_id: &ChainId,
     result: RpcEvent,
