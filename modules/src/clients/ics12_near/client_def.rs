@@ -1,9 +1,12 @@
 use crate::core::ics02_client::client_def::ClientDef;
 
+use crate::clients::ics12_near::header::NearHeader;
+
+#[derive(Debug, Clone)]
 pub struct NearClient {}
 
 impl ClientDef for NearClient {
-    type Header;
+    type Header = NearHeader;
 
     type ClientState;
 
