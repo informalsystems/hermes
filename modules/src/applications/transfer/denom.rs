@@ -513,6 +513,19 @@ mod tests {
             TracePath::from_str("transfer/channel-0/").is_err(),
             "malformed trace path: trailing delimiter"
         );
+
+        let prefix = TracePrefix::new("transfer".parse().unwrap(), "channel-0".parse().unwrap());
+        let mut trace_path = TracePath::from_str("transfer/channel-1")?;
+
+        trace_path.add_prefix(prefix.clone());
+        assert_eq!(
+            TracePath::from_str("transfer/channel-0/transfer/channel-1")?,
+            trace_path
+        );
+
+        trace_path.remove_prefix(&prefix);
+        assert_eq!(TracePath::from_str("transfer/channel-1")?, trace_path);
+
         Ok(())
     }
 
