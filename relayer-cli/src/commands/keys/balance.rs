@@ -9,6 +9,14 @@ use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 use crate::application::app_config;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 
+/// The data structure that represents the arguments when invoking the `keys balance` CLI command.
+/// 
+/// The command must be invoked with the arguments in this order:
+/// 
+/// `keys balance <chain_id> <keyname>
+/// 
+/// If successful the balance and denominator of the account, associated with the given keyname
+/// on the given chain, will be displayed.
 #[derive(Clone, Command, Debug, Parser)]
 pub struct KeyBalanceCmd {
     #[clap(required = true, help = "identifier of the chain")]
@@ -39,7 +47,7 @@ impl Runnable for KeyBalanceCmd {
             Ok(balance) => {
                 Output::success_msg(format!("balance {} {}", balance.amount, balance.denom)).exit()
             }
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("there was a problem querying the chain balance: {}", e)).exit(),
         }
     }
 }
