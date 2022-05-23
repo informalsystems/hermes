@@ -32,7 +32,7 @@ Includes [TLA+ specifications](docs/spec).
 
 | Crate name                                   |   Type                     |     Version                                                                                  | Docs   |
 |:-------------:|:------:|:-------------:|:-----:|
-| [ibc](./modules) (modules)                   | lib                         | [![IBC Crate][ibc-crate-image]][ibc-crate-link]                                              | [![IBC Docs][ibc-docs-image]][ibc-docs-link]                                              |
+| [ibc](./modules)                             | lib                         | [![IBC Crate][ibc-crate-image]][ibc-crate-link]                                              | [![IBC Docs][ibc-docs-image]][ibc-docs-link]                                              |
 | [ibc-relayer](./relayer)                     | lib                         | [![IBC Relayer Crate][relayer-crate-image]][relayer-crate-link]                              | [![IBC Relayer Docs][relayer-docs-image]][relayer-docs-link]                              |
 | [ibc-relayer-cli](./relayer-cli)             | bin: [hermes](relayer-cli/) | [![IBC Relayer CLI Crate][relayer-cli-crate-image]][relayer-cli-crate-link]                  | [![IBC Relayer CLI Docs][relayer-cli-docs-image]][relayer-cli-docs-link]                  |
 | [ibc-relayer-rest](./relayer-rest)           | lib                         | [![IBC Relayer REST Crate][relayer-rest-crate-image]][relayer-rest-crate-link]               | [![IBC Relayer REST Docs][relayer-rest-docs-image]][relayer-rest-docs-link]               |
