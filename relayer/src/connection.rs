@@ -411,16 +411,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     }
 
     /// Queries the chains for latest connection end information. It verifies the relayer connection
-    /// IDs and updates if needed.
+    /// IDs and updates them if needed.
     /// Returns the states of the two connection ends.
     ///
     /// The relayer connection stores the connection identifiers on the two chains a and b.
-    /// These identifiers need to be cross validated with the corresponding on-chain ones at each
-    /// handshake message attempt.
+    /// These identifiers need to be cross validated with the corresponding on-chain ones at some
+    /// handshake steps.
     /// This is required because of crossing handshake messages in the presence of multiple relayers.
+    ///
     /// Chain a is queried with the relayer's a_side connection id (`relayer_a_id`) with result
     /// `a_connection`. If the counterparty id of this connection, `a_counterparty_id`,
-    /// is some id then it must match the relayer's b_side connection id (`relayer_b_id`)
+    /// is some id then it must match the relayer's b_side connection id (`relayer_b_id`).
+    /// A similar check is done for the b_side of the connection.
     ///
     ///  a                                 relayer                                    b
     ///  \                     a_side -- connection -- b_side                         /
@@ -590,7 +592,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             (a_state, b_state) => {
                 warn!(
                     "do_conn_open_finalize does not handle connection end state combination: \
-                    {}-{}, {}-{}. will retry",
+                    {}-{}, {}-{}. will retry to account for RPC node data availability issues.",
                     self.a_chain().id(),
                     a_state,
                     self.b_chain().id(),
