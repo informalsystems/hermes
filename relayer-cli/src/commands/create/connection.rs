@@ -7,6 +7,7 @@ use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::QueryClientStateRequest;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
@@ -114,7 +115,10 @@ impl CreateConnectionCommand {
 
         // Query client state. Extract the target chain (chain_id which this client is verifying).
         let height = Height::new(chain_a.id().version(), 0);
-        let chain_b_id = match chain_a.query_client_state(client_a_id, height) {
+        let chain_b_id = match chain_a.query_client_state(QueryClientStateRequest {
+            client_id: client_a_id.clone(),
+            height,
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",

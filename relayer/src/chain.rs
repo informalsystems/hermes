@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
+use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -24,17 +25,6 @@ use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
-    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::{
-    QueryClientConnectionsRequest, QueryConnectionsRequest,
-};
 use tendermint::block::Height;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
@@ -47,12 +37,22 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 use self::client::ClientSettings;
+use self::requests::{
+    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+};
 use self::tracking::TrackedMsgs;
 
 pub mod client;
 pub mod cosmos;
 pub mod counterparty;
 pub mod handle;
+pub mod requests;
 pub mod runtime;
 pub mod tracking;
 
@@ -172,11 +172,8 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
-    fn query_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<AnyClientState, Error>;
+    fn query_client_state(&self, request: QueryClientStateRequest)
+        -> Result<AnyClientState, Error>;
 
     fn query_consensus_states(
         &self,
@@ -187,19 +184,17 @@ pub trait ChainEndpoint: Sized {
     /// that an on-chain client stores.
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: ICSHeight,
-        query_height: ICSHeight,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
-        height: ICSHeight,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn query_upgraded_consensus_state(
         &self,
-        height: ICSHeight,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     /// Performs a query to retrieve the identifiers of all connections.
@@ -214,11 +209,7 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error>;
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: ICSHeight,
-    ) -> Result<ConnectionEnd, Error>;
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error>;
 
     /// Performs a query to retrieve the identifiers of all channels associated with a connection.
     fn query_connection_channels(
@@ -232,37 +223,40 @@ pub trait ChainEndpoint: Sized {
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: ICSHeight,
-    ) -> Result<ChannelEnd, Error>;
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error>;
 
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error>;
 
+    /// Queries all the packet commitments hashes associated with a channel.
+    /// Returns the corresponding packet sequence numbers.
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
+    ) -> Result<(Vec<Sequence>, ICSHeight), Error>;
 
+    /// Queries all the unreceived IBC packets associated with a channel and packet commit sequences.
+    /// Returns the corresponding packet sequence numbers.
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error>;
+    ) -> Result<Vec<Sequence>, Error>;
 
+    /// Queries all the packet acknowledgements associated with a channel.
+    /// Returns the corresponding packet sequence numbers.
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
+    ) -> Result<(Vec<Sequence>, ICSHeight), Error>;
 
+    /// Queries all the unreceived packet acknowledgements associated with a
+    /// Returns the corresponding packet sequence numbers.
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error>;
+    ) -> Result<Vec<Sequence>, Error>;
 
     fn query_next_sequence_receive(
         &self,
@@ -276,7 +270,10 @@ pub trait ChainEndpoint: Sized {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 
-    fn query_host_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error>;
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<Self::ConsensusState, Error>;
 
     // Provable queries
     fn proven_client_state(

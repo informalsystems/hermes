@@ -5,6 +5,7 @@ use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::QueryClientStateRequest;
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 use std::ops::Deref;
@@ -99,7 +100,10 @@ fn misbehaviour_handling<Chain: ChainHandle>(
     update: Option<UpdateClient>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let client_state = chain
-        .query_client_state(&client_id, Height::zero())
+        .query_client_state(QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;
 
     if client_state.is_frozen() {

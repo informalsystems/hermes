@@ -2,10 +2,10 @@ use alloc::sync::Arc;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::Runnable;
+use ibc_relayer::chain::requests::{PageRequest, QueryConnectionsRequest};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -37,11 +37,9 @@ impl Runnable for QueryConnectionsCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let req = QueryConnectionsRequest {
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
-
-        let res = chain.query_connections(req);
+        let res = chain.query_connections(QueryConnectionsRequest {
+            pagination: Some(PageRequest::all()),
+        });
 
         match res {
             Ok(connections) => {

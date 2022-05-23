@@ -7,6 +7,35 @@ use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
+use crate::chain::counterparty::unreceived_acknowledgements;
+use crate::chain::counterparty::unreceived_packets;
+use crate::chain::handle::ChainHandle;
+use crate::chain::requests::QueryChannelRequest;
+use crate::chain::requests::QueryHostConsensusStateRequest;
+use crate::chain::requests::QueryNextSequenceReceiveRequest;
+use crate::chain::requests::QueryUnreceivedAcksRequest;
+use crate::chain::requests::QueryUnreceivedPacketsRequest;
+use crate::chain::tracking::TrackedMsgs;
+use crate::chain::tracking::TrackingId;
+use crate::chain::ChainStatus;
+use crate::channel::error::ChannelError;
+use crate::channel::Channel;
+use crate::event::monitor::EventBatch;
+use crate::foreign_client::{ForeignClient, ForeignClientError};
+use crate::link::error::{self, LinkError};
+use crate::link::operational_data::{
+    OperationalData, OperationalDataTarget, TrackedEvents, TransitMessage,
+};
+use crate::link::packet_events::query_packet_events_with;
+use crate::link::packet_events::query_send_packet_events;
+use crate::link::packet_events::query_write_ack_events;
+use crate::link::pending::PendingTxs;
+use crate::link::relay_sender::{AsyncReply, SubmitReply};
+use crate::link::relay_summary::RelaySummary;
+use crate::link::{pending, relay_sender};
+use crate::path::PathIdentifiers;
+use crate::telemetry;
+use crate::util::queue::Queue;
 use ibc::{
     core::{
         ics02_client::{
@@ -33,33 +62,6 @@ use ibc::{
     tx_msg::Msg,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    QueryNextSequenceReceiveRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-
-use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
-use crate::chain::handle::ChainHandle;
-use crate::chain::tracking::TrackedMsgs;
-use crate::chain::tracking::TrackingId;
-use crate::chain::ChainStatus;
-use crate::channel::error::ChannelError;
-use crate::channel::Channel;
-use crate::event::monitor::EventBatch;
-use crate::foreign_client::{ForeignClient, ForeignClientError};
-use crate::link::error::{self, LinkError};
-use crate::link::operational_data::{
-    OperationalData, OperationalDataTarget, TrackedEvents, TransitMessage,
-};
-use crate::link::packet_events::{
-    query_packet_events_with, query_send_packet_events, query_write_ack_events,
-};
-use crate::link::pending::PendingTxs;
-use crate::link::relay_sender::{AsyncReply, SubmitReply};
-use crate::link::relay_summary::RelaySummary;
-use crate::link::{pending, relay_sender};
-use crate::path::PathIdentifiers;
-use crate::telemetry;
-use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
 
@@ -198,13 +200,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.src_chain()
-            .query_channel(self.src_port_id(), self.src_channel_id(), height)
+            .query_channel(QueryChannelRequest {
+                port_id: self.src_port_id().clone(),
+                channel_id: *self.src_channel_id(),
+                height,
+            })
             .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.dst_chain()
-            .query_channel(self.dst_port_id(), self.dst_channel_id(), height)
+            .query_channel(QueryChannelRequest {
+                port_id: self.dst_port_id().clone(),
+                channel_id: *self.dst_channel_id(),
+                height,
+            })
             .map_err(|e| LinkError::channel(ChannelError::query(self.dst_chain().id(), e)))
     }
 
@@ -749,9 +759,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let unreceived_packet = self
             .dst_chain()
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
-                port_id: self.dst_port_id().to_string(),
-                channel_id: self.dst_channel_id().to_string(),
-                packet_commitment_sequences: vec![packet.sequence.into()],
+                port_id: self.dst_port_id().clone(),
+                channel_id: *self.dst_channel_id(),
+                packet_commitment_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
 
@@ -788,9 +798,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let unreceived_ack = self
             .dst_chain()
             .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
-                port_id: self.dst_port_id().to_string(),
-                channel_id: self.dst_channel_id().to_string(),
-                packet_ack_sequences: vec![packet.sequence.into()],
+                port_id: self.dst_port_id().clone(),
+                channel_id: *self.dst_channel_id(),
+                packet_ack_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
 
@@ -864,7 +874,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         height: Height,
     ) -> Result<Instant, LinkError> {
         let chain_time = chain
-            .query_host_consensus_state(height)
+            .query_host_consensus_state(QueryHostConsensusStateRequest { height })
             .map_err(LinkError::relayer)?
             .timestamp();
         let duration = Timestamp::now()
@@ -1169,8 +1179,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             let next_seq = self
                 .dst_chain()
                 .query_next_sequence_receive(QueryNextSequenceReceiveRequest {
-                    port_id: self.dst_port_id().to_string(),
-                    channel_id: dst_channel_id.to_string(),
+                    port_id: self.dst_port_id().clone(),
+                    channel_id: *dst_channel_id,
                 })
                 .map_err(|e| LinkError::query(self.dst_chain().id(), e))?;
             (PacketMsgType::TimeoutOrdered, next_seq)
