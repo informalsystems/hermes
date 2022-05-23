@@ -1,11 +1,10 @@
 use crate::core::ics02_client::client_def::ClientDef;
 
-use crate::clients::ics12_near::header::NearHeader;
-
 use super::client_state::NearClientState;
 use super::consensus_state::NearConsensusState;
 use super::crypto_ops::NearCryptoOps;
 use super::error::Error;
+use super::header::NearHeader;
 
 #[derive(Debug, Clone)]
 pub struct NearClient {}

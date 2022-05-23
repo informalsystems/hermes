@@ -1,14 +1,21 @@
-use crate::core::ics02_client::header::Header;
+use crate::core::ics02_client::{
+    client_type::ClientType,
+    header::{AnyHeader, Header},
+};
+
+use super::types::LightClientBlockView;
 
 #[derive(Debug, Clone)]
-pub struct NearHeader {}
+pub struct NearHeader {
+    inner: LightClientBlockView,
+}
 
 impl Header for NearHeader {
-    fn client_type(&self) -> crate::core::ics02_client::client_type::ClientType {
-        todo!()
+    fn client_type(&self) -> ClientType {
+        ClientType::Near
     }
 
-    fn wrap_any(self) -> crate::core::ics02_client::header::AnyHeader {
-        todo!()
+    fn wrap_any(self) -> AnyHeader {
+        AnyHeader::Near(self.inner.clone())
     }
 }

@@ -1,25 +1,29 @@
-use crate::core::ics02_client::client_consensus::ConsensusState;
+use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
+use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::error::Error;
 
 use super::crypto_ops::NearCryptoOps;
-pub struct NearConsensusState {}
+
+#[derive(Debug, Clone)]
+pub struct NearConsensusState {
+    commitment_root: CommitmentRoot,
+}
 
 impl ConsensusState for NearConsensusState {
     type Error = Error;
 
     type Crypto = NearCryptoOps;
 
-    fn client_type(&self) -> crate::core::ics02_client::client_type::ClientType {
-        todo!()
+    fn client_type(&self) -> ClientType {
+        ClientType::Near
     }
 
-    fn root(&self) -> &crate::core::ics23_commitment::commitment::CommitmentRoot {
-        todo!()
+    fn root(&self) -> &CommitmentRoot {
+        &self.commitment_root
     }
 
-    fn wrap_any(
-        self,
-    ) -> crate::core::ics02_client::client_consensus::AnyConsensusState<Self::Crypto> {
+    fn wrap_any(self) -> AnyConsensusState<Self::Crypto> {
         todo!()
     }
 }

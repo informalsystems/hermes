@@ -39,7 +39,8 @@ mocks = ["tendermint-testgen", "clock", "std", "sp-io", "sp-io/std"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.18.0", path = "../proto", default-features = false }
+borsh = { version = "0.9.3", default-features = false }
+ibc-proto = { version = "0.17.1", path = "../proto", default-features = false }
 ics23 = { version = "=0.8.0-alpha", default-features = false }
 time = { version = "0.3", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
@@ -62,6 +63,7 @@ sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-
 pallet-mmr-primitives = { package = "sp-mmr-primitives", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", optional = true }
 

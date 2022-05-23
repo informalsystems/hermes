@@ -7,6 +7,7 @@ use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 use crate::clients::ics11_beefy::header::{decode_header as decode_beefy_header, BeefyHeader};
+use crate::clients::ics12_near::types::LightClientBlockView;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 #[cfg(any(test, feature = "mocks"))]
@@ -17,6 +18,7 @@ use crate::Height;
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const BEEFY_HEADER_TYPE_URL: &str = "/ibc.lightclients.beefy.v1.Header";
+pub const NEAR_HEADER_TYPE_URL: &str = "/ibc.lightclients.near.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 /// Abstract of consensus state update information
@@ -34,6 +36,8 @@ pub enum AnyHeader {
     Tendermint(TendermintHeader),
     #[serde(skip)]
     Beefy(BeefyHeader),
+    #[serde(skip)]
+    Near(LightClientBlockView),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockHeader),
 }
@@ -43,6 +47,7 @@ impl AnyHeader {
         match self {
             Self::Tendermint(header) => header.height(),
             Self::Beefy(_header) => Default::default(),
+            Self::Near(_header) => Default::default(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.height(),
         }
@@ -52,6 +57,7 @@ impl AnyHeader {
         match self {
             Self::Tendermint(header) => header.timestamp(),
             Self::Beefy(_header) => Default::default(),
+            Self::Near(_header) => Default::default(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.timestamp(),
         }
@@ -63,6 +69,7 @@ impl Header for AnyHeader {
         match self {
             Self::Tendermint(header) => header.client_type(),
             Self::Beefy(header) => header.client_type(),
+            Self::Near(header) => header.client_type(),
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.client_type(),
         }
@@ -130,7 +137,12 @@ impl From<AnyHeader> for Any {
                     .encode_vec()
                     .expect("encoding to `Any` from `AnyHeader::Beefy`"),
             },
-
+            AnyHeader::Near(header) => Any {
+                type_url: NEAR_HEADER_TYPE_URL.to_string(),
+                value: header
+                    .encode_vec()
+                    .encode_vec("encodign to `Any` from AnyHeader::Near"),
+            },
             #[cfg(any(test, feature = "mocks"))]
             AnyHeader::Mock(header) => Any {
                 type_url: MOCK_HEADER_TYPE_URL.to_string(),
