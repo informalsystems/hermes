@@ -1280,13 +1280,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Drives the relaying of elapsed operational data items meant for
-    /// a specified target chain forward. Should an error occur when attempting
-    /// to relay a piece of operational data, this function returns all
-    /// subsequent unprocessed pieces of operational data back to the caller
-    /// so that they can be re-queued.
+    /// a specified target chain forward.
     ///
-    /// Pieces of operational data that have not elapsed yet are also placed
-    /// in the 'unprocessed' bucket.
+    /// Given an iterator of `OperationalData` elements, this function
+    /// first determines whether the current piece of operational data
+    /// has elapsed.
     ///
     /// A piece of operational data is considered 'elapsed' if it has surpassed
     /// its target chain's:
@@ -1294,9 +1292,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// 2. Maximum block time
     /// 3. Latest height
     ///
-    /// This method performs relaying using the asynchronous sender.
-    /// Retains the operational data as pending, and associates it
-    /// with one or more transaction hash(es).
+    /// If the current piece of operational data has elapsed, then relaying
+    /// is performed using the asynchronous sender. Operational data is
+    /// retained as pending and is associated with one or more transaction
+    /// hash(es).
+    ///
+    /// Should an error occur when attempting to relay a piece of operational
+    /// data, this function returns all subsequent unprocessed pieces of
+    /// operational data back to the caller so that they can be re-queued
+    /// for processing; the operational data that failed to send is dropped.
+    ///
+    /// Note that pieces of operational data that have not elapsed yet are
+    /// also placed in the 'unprocessed' bucket.
     fn execute_schedule_for_target_chain<I: Iterator<Item = OperationalData>>(
         &mut self,
         mut operations: I,
