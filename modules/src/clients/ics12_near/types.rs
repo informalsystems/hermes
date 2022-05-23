@@ -4,6 +4,8 @@ use sp_std::vec::Vec;
 use borsh::{BorshDeserialize, BorshSerialize};
 use sp_core::ed25519::{Public as Ed25519Public, Signature as Ed25519Signature};
 
+use crate::Height;
+
 #[derive(Debug)]
 pub struct ConversionError(String);
 #[derive(Debug, Clone)]
@@ -226,5 +228,14 @@ impl BorshDeserialize for PublicKey {
     fn deserialize(buf: &mut &[u8]) -> Result<Self, borsh::maybestd::io::Error> {
         let _key_type: [u8; 1] = BorshDeserialize::deserialize(buf)?;
         Ok(Self(BorshDeserialize::deserialize(buf)?))
+    }
+}
+
+impl LightClientBlockView {
+    fn get_height(&self) -> Height {
+        Height {
+            revision_number: 0,
+            revision_height: self.inner_lite.height,
+        }
     }
 }
