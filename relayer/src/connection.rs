@@ -24,7 +24,7 @@ use ibc::tx_msg::Msg;
 use crate::chain::handle::ChainHandle;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
-use crate::util::retry::retry_with_index;
+use crate::util::retry::{clamp_total, retry_with_index, ConstantGrowth};
 use crate::util::retry::{retry_count, RetryResult};
 use crate::util::task::Next;
 
@@ -32,29 +32,6 @@ pub mod error;
 
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
-
-mod retry_strategy {
-    use crate::util::retry::{clamp_total, ConstantGrowth};
-    use core::time::Duration;
-
-    // Parameters for the retrying mechanism:
-    // - retry for 2 minutes
-    const MAX_RETRY_DURATION: Duration = Duration::from_secs(120);
-    // - start with delay 500 ms
-    const INITIAL_DELAY: Duration = Duration::from_millis(500);
-    // - at each step increment delay by 0
-    const DELAY_INCR: Duration = Duration::from_millis(0);
-    // - cap the delay at 500 ms
-    const MAX_DELAY: Duration = Duration::from_millis(500);
-
-    pub fn default() -> impl Iterator<Item = Duration> {
-        clamp_total(
-            ConstantGrowth::new(INITIAL_DELAY, DELAY_INCR),
-            MAX_DELAY,
-            MAX_RETRY_DURATION,
-        )
-    }
-}
 
 pub fn from_retry_error(e: retry::Error<ConnectionError>, description: String) -> ConnectionError {
     match e {
@@ -411,6 +388,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         }
     }
 
+    fn max_block_times(&self) -> Result<Duration, ConnectionError> {
+        let a_block_time = self
+            .a_chain()
+            .config()
+            .map_err(ConnectionError::relayer)?
+            .max_block_time;
+        let b_block_time = self
+            .b_chain()
+            .config()
+            .map_err(ConnectionError::relayer)?
+            .max_block_time;
+        Ok(a_block_time.max(b_block_time))
+    }
+
     pub fn flipped(&self) -> Connection<ChainB, ChainA> {
         Connection {
             a_side: self.b_side.clone(),
@@ -612,7 +603,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
     /// Executes the connection handshake protocol (ICS003)
     fn handshake(&mut self) -> Result<(), ConnectionError> {
-        retry_with_index(retry_strategy::default(), |_| {
+        let max_block_times = self.max_block_times()?;
+        // retry every 1/10th of block time
+        let retry_delay = max_block_times / 10;
+        let strategy = clamp_total(
+            ConstantGrowth::new(retry_delay, Duration::from_secs(0)),
+            retry_delay,
+            max_block_times * 100, // retry for ~100 blocks
+        );
+        retry_with_index(strategy, |_| {
             if let Err(e) = self.do_conn_open_handshake() {
                 if e.is_expired_or_frozen_error() {
                     RetryResult::Err(e)
