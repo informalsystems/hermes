@@ -61,25 +61,7 @@ define_error! {
             },
 
         HandshakeFinalize
-            {
-                chain_id: ChainId,
-                connection_id: ConnectionId,
-            }
-            [ RelayerError ]
-            |e| {
-                format_args!("failed to finalize a connection open handshake while querying for connection end '{1}' on chain '{0}'",
-                    e.connection_id, e.chain_id)
-            },
-
-        PartialOpenHandshake
-            {
-                state: State,
-                counterparty_state: State
-            }
-            | e | {
-                format_args!("the connection is partially open ({0}, {1})",
-                    e.state, e.counterparty_state)
-            },
+            |_| { "continue handshake" },
 
         MaxDelayPeriod
             {
@@ -120,23 +102,6 @@ define_error! {
             |e| {
                 format!("the client id ({}) in the connection end does not match the foreign client id ({})",
                     e.client_id, e.foreign_client_id)
-            },
-
-        ConnectionIdMismatch
-            {
-                a_chain_id: ChainId,
-                a_connection_id: ConnectionId,
-                a_connection_end_counterparty: ConnectionId,
-                b_chain_id: ChainId,
-                b_connection_id: ConnectionId
-            }
-            |e| {
-                format!(
-                    "the {} on {} has counterparty {} which is different than the expected {} on {}.\
-                    This is typically caused by crossing handshake messages in the presence of \
-                    multiple relayers",
-                    e.a_connection_id, e.a_chain_id, e.a_connection_end_counterparty,
-                    e.b_connection_id, e.b_chain_id)
             },
 
         ChainIdMismatch
@@ -198,12 +163,12 @@ define_error! {
             [ RelayerError ]
             |_| { "failed to build connection proofs" },
 
-        ConnectionAlreadyExist
+        ConnectionAlreadyExists
             { connection_id: ConnectionId }
             |e| {
-                format!("connection {} already exist in an incompatible state", e.connection_id)
+                format!("connection {} already exists in an incompatible state", e.connection_id)
             },
-       MaxRetry
+        MaxRetry
             {
                 description: String,
                 tries: u64,
@@ -230,21 +195,5 @@ impl HasExpiredOrFrozenError for ConnectionErrorDetail {
 impl HasExpiredOrFrozenError for ConnectionError {
     fn is_expired_or_frozen_error(&self) -> bool {
         self.detail().is_expired_or_frozen_error()
-    }
-}
-
-pub trait ConnectionIdMismatchError {
-    fn is_connection_id_mismatch_error(&self) -> bool;
-}
-
-impl ConnectionIdMismatchError for ConnectionErrorDetail {
-    fn is_connection_id_mismatch_error(&self) -> bool {
-        matches!(self, Self::ConnectionIdMismatch(_))
-    }
-}
-
-impl ConnectionIdMismatchError for ConnectionError {
-    fn is_connection_id_mismatch_error(&self) -> bool {
-        self.detail().is_connection_id_mismatch_error()
     }
 }
