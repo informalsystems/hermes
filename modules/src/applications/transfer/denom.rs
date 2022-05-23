@@ -146,8 +146,8 @@ impl DenomTrace {
         HashedDenom::from(self)
     }
 
-    /// Returns true iff this path has the specified prefix
-    pub fn has_prefix(&self, prefix: &TracePrefix) -> bool {
+    /// Returns true iff this path starts with the specified prefix
+    pub fn trace_starts_with(&self, prefix: &TracePrefix) -> bool {
         self.trace_path
             .0
             .first()
@@ -157,7 +157,7 @@ impl DenomTrace {
 
     /// Removes the specified prefix from the `trace_path` if there is a match.
     pub fn remove_prefix(&mut self, prefix: &TracePrefix) {
-        if self.has_prefix(prefix) {
+        if self.trace_starts_with(prefix) {
             self.trace_path.0.drain(..0);
         }
     }
@@ -175,7 +175,7 @@ impl DenomTrace {
     /// Returns `Source::Receiver` if the denomination originally came from the receiving chain and
     /// `Source::Sender` otherwise.
     pub fn source_chain(&self, prefix: &TracePrefix) -> Source {
-        if self.has_prefix(prefix) {
+        if self.trace_starts_with(prefix) {
             Source::Receiver
         } else {
             Source::Sender
