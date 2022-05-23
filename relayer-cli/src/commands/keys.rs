@@ -3,6 +3,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
 mod add;
+mod balance;
 mod delete;
 mod list;
 mod restore;
@@ -21,4 +22,7 @@ pub enum KeysCmd {
 
     /// Restore a key to a configured chain using a mnemonic
     Restore(restore::KeyRestoreCmd),
+
+    /// Query balance for a key from a configured chain
+    Balance(balance::KeyBalanceCmd),
 }
