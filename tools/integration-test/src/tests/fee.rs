@@ -261,7 +261,6 @@ impl BinaryChannelTest for TimeoutFeeTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let chain_driver_a = chains.node_a.chain_driver();
-        let chain_driver_b = chains.node_b.chain_driver();
 
         let denom_a = chains.node_a.denom();
 

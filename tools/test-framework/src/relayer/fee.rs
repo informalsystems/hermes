@@ -1,7 +1,12 @@
 use core::time::Duration;
+use ibc::core::ics04_channel::packet::Sequence;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::applications::fee::v1::{Fee, MsgPayPacketFee, MsgRegisterCounterpartyAddress};
+use ibc_proto::ibc::core::channel::v1::PacketId;
+use ibc_proto::ibc::applications::fee::v1::{
+    Fee, PacketFee, MsgPayPacketFee,
+    MsgPayPacketFeeAsync, MsgRegisterCounterpartyAddress
+};
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use prost::{EncodeError, Message};
 
@@ -10,7 +15,7 @@ use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::transfer::build_transfer_message;
 use crate::relayer::tx::simple_send_tx;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
-use crate::types::tagged::MonoTagged;
+use crate::types::tagged::{MonoTagged, DualTagged};
 use crate::types::wallet::TaggedWallet;
 use crate::types::wallet::{Wallet, WalletAddress};
 
@@ -41,6 +46,32 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
     let messages = vec![pay_message, transfer_message];
 
     simple_send_tx(tx_config.value(), &sender.value().key, messages).await?;
+
+    Ok(())
+}
+
+
+pub async fn pay_packet_fee<Chain, Counterparty>(
+    tx_config: &MonoTagged<Chain, &TxConfig>,
+    port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
+    channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+    sequence: &DualTagged<Chain, Counterparty, Sequence>,
+    payer: &MonoTagged<Chain, &Wallet>,
+    receive_fee: &TaggedTokenRef<'_, Chain>,
+    ack_fee: &TaggedTokenRef<'_, Chain>,
+    timeout_fee: &TaggedTokenRef<'_, Chain>,
+) -> Result<(), Error> {
+    let message = build_pay_packet_fee_async_message(
+        port_id,
+        channel_id,
+        sequence,
+        &payer.address(),
+        receive_fee,
+        ack_fee,
+        timeout_fee,
+    )?;
+
+    simple_send_tx(tx_config.value(), &payer.value().key, vec![message]).await?;
 
     Ok(())
 }
@@ -101,6 +132,58 @@ pub fn build_pay_packet_message<Chain, Counterparty>(
         source_channel_id: channel_id.value().to_string(),
         signer: payer.value().0.clone(),
         relayers: Vec::new(),
+    };
+
+    let encoded = encode_message(&message).map_err(handle_generic_error)?;
+
+    Ok(Any {
+        type_url: TYPE_URL.to_string(),
+        value: encoded,
+    })
+}
+
+
+pub fn build_pay_packet_fee_async_message<Chain, Counterparty>(
+    port_id: &TaggedPortIdRef<Chain, Counterparty>,
+    channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+    sequence: &DualTagged<Chain, Counterparty, Sequence>,
+    payer: &MonoTagged<Chain, &WalletAddress>,
+    receive_fee: &TaggedTokenRef<'_, Chain>,
+    ack_fee: &TaggedTokenRef<'_, Chain>,
+    timeout_fee: &TaggedTokenRef<'_, Chain>,
+) -> Result<Any, Error> {
+    const TYPE_URL: &str = "/ibc.applications.fee.v1.MsgPayPacketFeeAsync";
+
+    let fee = Fee {
+        recv_fee: vec![Coin {
+            denom: receive_fee.value().denom.to_string(),
+            amount: receive_fee.value().amount.to_string(),
+        }],
+        ack_fee: vec![Coin {
+            denom: ack_fee.value().denom.to_string(),
+            amount: ack_fee.value().amount.to_string(),
+        }],
+        timeout_fee: vec![Coin {
+            denom: timeout_fee.value().denom.to_string(),
+            amount: timeout_fee.value().amount.to_string(),
+        }],
+    };
+
+    let packet_fee = PacketFee {
+        fee: Some(fee),
+        refund_address: payer.value().0.clone(),
+        relayers: Vec::new(),
+    };
+
+    let packet_id = PacketId {
+        port_id: port_id.value().to_string(),
+        channel_id: channel_id.value().to_string(),
+        sequence: (*sequence.value()).into(),
+    };
+
+    let message = MsgPayPacketFeeAsync {
+        packet_fee: Some(packet_fee),
+        packet_id: Some(packet_id),
     };
 
     let encoded = encode_message(&message).map_err(handle_generic_error)?;
