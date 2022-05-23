@@ -1,5 +1,5 @@
 use core::time::Duration;
-use futures::stream::{FuturesOrdered, StreamExt};
+use futures::stream::{FuturesOrdered, TryStreamExt};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
 use std::time::Instant;
@@ -50,16 +50,12 @@ pub async fn wait_tx_hashes(
     timeout: &Duration,
     tx_hashes: &[TxHash],
 ) -> Result<Vec<TxSearchResponse>, Error> {
-    let tasks = tx_hashes
+    let responses = tx_hashes
         .iter()
-        .map(|tx_hash| async { wait_tx_hash(rpc_client, rpc_address, timeout, tx_hash).await })
-        .collect::<FuturesOrdered<_>>();
-
-    let responses = tasks
-        .collect::<Vec<_>>()
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
+        .map(|tx_hash| wait_tx_hash(rpc_client, rpc_address, timeout, tx_hash))
+        .collect::<FuturesOrdered<_>>()
+        .try_collect()
+        .await?;
 
     Ok(responses)
 }
