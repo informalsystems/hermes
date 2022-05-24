@@ -2,7 +2,7 @@ use crate::applications::transfer::context::Ics20Context;
 use crate::applications::transfer::error::Error as Ics20Error;
 use crate::applications::transfer::events::DenomTraceEvent;
 use crate::applications::transfer::packet::PacketData;
-use crate::applications::transfer::{IbcCoin, Source, TracePrefix};
+use crate::applications::transfer::{Source, TracePrefix};
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics26_routing::context::{ModuleOutputBuilder, WriteFn};
 use crate::prelude::*;
@@ -35,11 +35,10 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
 
             let escrow_address = ctx
                 .get_channel_escrow_address(&packet.destination_port, packet.destination_channel)?;
-            let amount = IbcCoin::from(coin);
 
             Ok(Box::new(move |ctx| {
                 let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                ctx.send_coins(&escrow_address, &receiver_account, &amount)
+                ctx.send_coins(&escrow_address, &receiver_account, &coin)
                     .map_err(|e| e.to_string())
             }))
         }
@@ -67,8 +66,7 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
                         .map_err(|e| e.to_string())?;
                 }
 
-                let amount = IbcCoin::from(coin);
-                ctx.mint_coins(&receiver_account, &amount)
+                ctx.mint_coins(&receiver_account, &coin)
                     .map_err(|e| e.to_string())
             }))
         }

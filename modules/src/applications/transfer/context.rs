@@ -8,7 +8,7 @@ use crate::applications::transfer::packet::PacketData;
 use crate::applications::transfer::relay::on_ack_packet::process_ack_packet;
 use crate::applications::transfer::relay::on_recv_packet::process_recv_packet;
 use crate::applications::transfer::relay::on_timeout_packet::process_timeout_packet;
-use crate::applications::transfer::{HashedDenom, IbcCoin, PrefixedDenom, VERSION};
+use crate::applications::transfer::{HashedDenom, PrefixedCoin, PrefixedDenom, VERSION};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
@@ -82,14 +82,22 @@ pub trait BankKeeper {
         &mut self,
         from: &Self::AccountId,
         to: &Self::AccountId,
-        amt: &IbcCoin,
+        amt: &PrefixedCoin,
     ) -> Result<(), Ics20Error>;
 
     /// This function to enable minting ibc tokens to a user account
-    fn mint_coins(&mut self, account: &Self::AccountId, amt: &IbcCoin) -> Result<(), Ics20Error>;
+    fn mint_coins(
+        &mut self,
+        account: &Self::AccountId,
+        amt: &PrefixedCoin,
+    ) -> Result<(), Ics20Error>;
 
     /// This function should enable burning of minted tokens in a user account
-    fn burn_coins(&mut self, account: &Self::AccountId, amt: &IbcCoin) -> Result<(), Ics20Error>;
+    fn burn_coins(
+        &mut self,
+        account: &Self::AccountId,
+        amt: &PrefixedCoin,
+    ) -> Result<(), Ics20Error>;
 }
 
 /// Captures all the dependencies which the ICS20 module requires to be able to dispatch and

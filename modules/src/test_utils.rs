@@ -6,7 +6,7 @@ use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
 use crate::applications::transfer::context::{BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader};
 use crate::applications::transfer::{
-    error::Error as Ics20Error, HashedDenom, IbcCoin, PrefixedDenom,
+    error::Error as Ics20Error, HashedDenom, PrefixedCoin, PrefixedDenom,
 };
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -211,16 +211,24 @@ impl BankKeeper for DummyTransferModule {
         &mut self,
         _from: &Self::AccountId,
         _to: &Self::AccountId,
-        _amt: &IbcCoin,
+        _amt: &PrefixedCoin,
     ) -> Result<(), Ics20Error> {
         Ok(())
     }
 
-    fn mint_coins(&mut self, _account: &Self::AccountId, _amt: &IbcCoin) -> Result<(), Ics20Error> {
+    fn mint_coins(
+        &mut self,
+        _account: &Self::AccountId,
+        _amt: &PrefixedCoin,
+    ) -> Result<(), Ics20Error> {
         Ok(())
     }
 
-    fn burn_coins(&mut self, _account: &Self::AccountId, _amt: &IbcCoin) -> Result<(), Ics20Error> {
+    fn burn_coins(
+        &mut self,
+        _account: &Self::AccountId,
+        _amt: &PrefixedCoin,
+    ) -> Result<(), Ics20Error> {
         Ok(())
     }
 }

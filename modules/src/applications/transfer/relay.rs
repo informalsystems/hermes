@@ -2,7 +2,7 @@
 use crate::applications::transfer::context::Ics20Context;
 use crate::applications::transfer::error::Error as Ics20Error;
 use crate::applications::transfer::packet::PacketData;
-use crate::applications::transfer::{IbcCoin, Source, TracePrefix};
+use crate::applications::transfer::{Source, TracePrefix};
 use crate::core::ics04_channel::packet::Packet;
 use crate::prelude::*;
 
@@ -21,7 +21,6 @@ fn refund_packet_token(
         .clone()
         .try_into()
         .map_err(|_| Ics20Error::parse_account_failure())?;
-    let amount: IbcCoin = data.token.clone().into();
 
     let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
     match data.token.denom.source_chain(&prefix) {
@@ -30,9 +29,9 @@ fn refund_packet_token(
             let escrow_address =
                 ctx.get_channel_escrow_address(&packet.source_port, packet.source_channel)?;
 
-            ctx.send_coins(&escrow_address, &sender, &amount)
+            ctx.send_coins(&escrow_address, &sender, &data.token)
         }
         // mint vouchers back to sender
-        Source::Receiver => ctx.mint_coins(&sender, &amount),
+        Source::Receiver => ctx.mint_coins(&sender, &data.token),
     }
 }

@@ -45,6 +45,10 @@ where
             .ok_or_else(Error::trace_not_found)?,
         IbcCoin::Base(coin) => coin.denom.into(),
     };
+    let coin = Coin {
+        denom: denom.clone(),
+        amount: msg.token.amount(),
+    };
 
     let sender = msg
         .sender
@@ -57,17 +61,14 @@ where
         Source::Sender => {
             let escrow_address =
                 ctx.get_channel_escrow_address(&msg.source_port, msg.source_channel)?;
-            ctx.send_coins(&sender, &escrow_address, &msg.token)?;
+            ctx.send_coins(&sender, &escrow_address, &coin)?;
         }
-        Source::Receiver => ctx.burn_coins(&sender, &msg.token)?,
+        Source::Receiver => ctx.burn_coins(&sender, &coin)?,
     }
 
     let data = {
         let data = PacketData {
-            token: Coin {
-                denom,
-                amount: msg.token.amount(),
-            },
+            token: coin,
             sender: msg.sender.clone(),
             receiver: msg.receiver.clone(),
         };
