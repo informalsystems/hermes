@@ -10,14 +10,31 @@ use super::header::NearHeader;
 pub struct NearClient {}
 
 impl ClientDef for NearClient {
+    /// The data that we need to update the [`ClientState`] to a new block height
     type Header = NearHeader;
 
+    /// The data that we need to know, to validate incoming headers and update the state
+    /// of our [`ClientState`]. Ususally this will store:
+    ///    - The current epoch
+    ///    - The current validator set
+    ///
+    /// ```rust,no_run
+    /// pub struct NearLightClientState {
+    ///     head: LightClientBlockView,
+    ///     current_validators: Vec<ValidatorStakeView>,
+    ///     next_validators:  Vec<ValidatorStakeView>,
+    /// }
+    /// ```
     type ClientState = NearClientState;
 
+    /// This is usually just two things, that should be derived from the header:
+    ///    - The ibc commitment root hash as described by ics23 (possibly from tx outcome/ state proof)
+    ///    - The timestamp of the header.
     type ConsensusState = NearConsensusState;
 
     type Crypto = NearCryptoOps;
 
+    // rehydrate client from its own storage, then call this function
     fn verify_header(
         &self,
         ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
@@ -25,6 +42,7 @@ impl ClientDef for NearClient {
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(), Error> {
+        // your light client, shouldn't do storage anymore, it should just do verification here.
         todo!()
     }
 
@@ -41,7 +59,15 @@ impl ClientDef for NearClient {
         ),
         Error,
     > {
-        todo!()
+        // 1. create new client state from this header, return that.
+        // 2. as well as all the neccessary consensus states.
+        //
+        //
+        // []--[]--[]--[]--[]--[]--[]--[]--[]--[]
+        // 11  12  13  14  15  16  17  18  19  20 <- block merkle root
+        // ^                                    ^
+        // |    <-------consensus states----->  |
+        // current state                       new state
     }
 
     fn update_state_on_misbehaviour(

@@ -114,6 +114,7 @@ pub struct BlockHeaderInnerLiteView {
     pub timestamp: u64,
     pub timestamp_nanosec: u64,
     pub next_bp_hash: CryptoHash,
+    // lets assume that this is the merkle root of all blocks in this epoch, so far.
     pub block_merkle_root: CryptoHash,
 }
 
@@ -169,10 +170,15 @@ pub struct ExecutionOutcomeView {
 
 #[derive(Debug, BorshDeserialize)]
 pub struct OutcomeProof {
+    /// this is the block merkle proof.
     pub proof: Vec<MerklePathItem>,
+    /// this is the hash of the block.
     pub block_hash: CryptoHash,
+    /// transaction hash
     pub id: CryptoHash,
     pub outcome: ExecutionOutcomeView,
+    // TODO: where are the proofs for the block that this tx belongs
+    // in the block_merkle_root of our light client.
 }
 
 #[cfg_attr(feature = "deepsize_feature", derive(deepsize::DeepSizeOf))]
