@@ -1,15 +1,16 @@
 //! This test ensures that the `RelayPath::execute_schedule` method does not
-//! drop any pending scheduled operational data when a prior transaction fails
-//! to send. Subsequent pieces of operational data that were scheduled should
-//! be re-queued and not dropped.
+//! drop any scheduled `OperationalData` when events associated with a prior
+//! piece of operational data fails to send. Subsequent pieces of operational
+//! data that were scheduled should be re-queued and not dropped.
 //!
 //! In order to test this behavior, the test manually relays a batch (i.e. at least
 //! 2) IBC transfers from chain A to chain B. Chain B is then shut down in order to
-//! force the batch of messages to be queued up again for re-submission.
+//! force the batch of messages (in the form of their associated pieces of operational
+//! data) to be queued up again for re-submission.
 //!
 //! It is expected that the first message of the batch gets dropped (i.e. it is not
-//! present in the pending queue), but all of the subsequent messages should exist
-//! in the pending queue.
+//! later found in the pending queue), but all of the subsequent messages should
+//! exist in the pending queue.
 
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
