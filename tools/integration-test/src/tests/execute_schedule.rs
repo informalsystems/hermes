@@ -3,18 +3,21 @@
 //! to send. Subsequent pieces of operational data that were scheduled should
 //! be re-queued and not dropped.
 //!
-//! In order to test this behavior, the test manually relays at least 2 IBC transfers
-//! from chain A to chain B. Chain B is then shut down in order to force the transactions
-//! to be queued up again for re-submission. It is expected that the first transfer
-//! be dropped and not be present in the pending queue, but all of the subsequent
-//! transactions should exist in the pending queue.
+//! In order to test this behavior, the test manually relays a batch (i.e. at least
+//! 2) IBC transfers from chain A to chain B. Chain B is then shut down in order to
+//! force the batch of messages to be queued up again for re-submission.
+//!
+//! It is expected that the first message of the batch gets dropped (i.e. it is not
+//! present in the pending queue), but all of the subsequent messages should exist
+//! in the pending queue.
 
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
 use ibc_relayer::link::{Link, LinkParameters};
 
-const NUM_TXS: usize = 10;
+/// The number of messages to be sent in a batch contained in a piece of operational data.
+const BATCH_SIZE: usize = 10;
 
 #[test]
 fn test_execute_schedule() -> Result<(), Error> {
@@ -53,7 +56,8 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
         let mut relay_path_a_to_b = chain_a_link.a_to_b;
 
-        for i in 0..NUM_TXS {
+        // Construct `BATCH_SIZE` pieces of operational data and queue them up to be sent to chain B.
+        for i in 0..BATCH_SIZE {
             chains.node_a.chain_driver().ibc_transfer_token(
                 &channel.port_a.as_ref(),
                 &channel.channel_id_a.as_ref(),
@@ -65,16 +69,21 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
             relay_path_a_to_b.schedule_packet_clearing(None)?;
 
-            info!("Performing IBC transfer #{} from chain A to chain B", i);
+            info!("Performing IBC send packet with a token transfer #{} from chain A to be received by chain B", i);
         }
 
-        assert_eq!(relay_path_a_to_b.dst_operational_data.len(), NUM_TXS);
+        // We should see that all of the events in the batch are queued up to be sent to chain B.
+        assert_eq!(relay_path_a_to_b.dst_operational_data.len(), BATCH_SIZE);
 
         chains.node_b.value().kill()?;
 
+        // With chain B inactive, if we attempt to send the batch of messages, we expect to see
+        // `BATCH_SIZE` - 1 messages in the batch since the initial event should have failed to
+        // be relayed and was thus dropped. The subsequent messages in the batch should have all
+        // been re-added to the pending queue.
         match relay_path_a_to_b.execute_schedule() {
             Ok(_) => panic!("Expected an error when relaying tx from A to B"),
-            Err(_) => assert_eq!(relay_path_a_to_b.dst_operational_data.len(), NUM_TXS - 1),
+            Err(_) => assert_eq!(relay_path_a_to_b.dst_operational_data.len(), BATCH_SIZE - 1),
         }
 
         Ok(())

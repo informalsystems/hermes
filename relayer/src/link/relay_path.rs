@@ -1328,10 +1328,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             match elapsed_result {
                 Ok(elapsed) => {
                     if elapsed {
+                        // The current piece of operational data has elapsed; we can go ahead and
+                        // attempt to relay it.
                         match self
                             .relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())
                         {
+                            // The operational data was successfully relayed; enqueue the associated tx.
                             Ok(reply) => self.enqueue_pending_tx(reply, od),
+                            // The relaying process failed; return all of the subsequent pieces of operational
+                            // data along with the underlying error that occurred.
                             Err(e) => {
                                 unprocessed.extend(operations);
 
@@ -1339,10 +1344,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             }
                         }
                     } else {
+                        // The current piece of operational data has not elapsed; add it to the bucket
+                        // of unprocessed operational data and continue processing subsequent pieces
+                        // of operational data.
                         unprocessed.push_back(od);
                     }
                 }
                 Err(e) => {
+                    // An error occurred when attempting to determine whether the current piece of
+                    // operational data has elapsed or not. Add the current piece of data, along with
+                    // all of the subsequent pieces of data, to the unprocessed bucket and return it
+                    // along with the error that resulted.
                     unprocessed.push_back(od);
                     unprocessed.extend(operations);
 

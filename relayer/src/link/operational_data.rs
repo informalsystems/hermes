@@ -17,12 +17,12 @@ use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
 
-/// The chain that a piece of `OperationalData` is bound for.
+/// The chain that a piece of [`OperationalData`] is bound for.
 #[derive(Clone, Copy, PartialEq)]
 pub enum OperationalDataTarget {
-    /// The source chain.
+    /// The chain which generated the events batch in the `OperationalData`.
     Source,
-    /// The destination chain.
+    /// The chain receiving the packets associated with the `OperationalData``.
     Destination,
 }
 
