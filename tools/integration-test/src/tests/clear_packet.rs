@@ -8,18 +8,12 @@ fn test_clear_packet() -> Result<(), Error> {
 }
 
 #[test]
-fn test_clear_packet_recovery_dst() -> Result<(), Error> {
-    run_binary_channel_test(&ClearPacketRecoveryDstTest)
-}
-
-#[test]
-fn test_clear_packet_recovery_src() -> Result<(), Error> {
-    run_binary_channel_test(&ClearPacketRecoverySrcTest)
+fn test_clear_packet_recovery() -> Result<(), Error> {
+    run_binary_channel_test(&ClearPacketRecoveryTest)
 }
 
 pub struct ClearPacketTest;
-pub struct ClearPacketRecoveryDstTest;
-pub struct ClearPacketRecoverySrcTest;
+pub struct ClearPacketRecoveryTest;
 
 impl TestOverrides for ClearPacketTest {
     fn modify_relayer_config(&self, config: &mut Config) {
@@ -39,18 +33,7 @@ impl TestOverrides for ClearPacketTest {
     }
 }
 
-impl TestOverrides for ClearPacketRecoveryDstTest {
-    fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode.packets.enabled = true;
-        config.mode.packets.clear_on_start = true;
-    }
-
-    fn should_spawn_supervisor(&self) -> bool {
-        false
-    }
-}
-
-impl TestOverrides for ClearPacketRecoverySrcTest {
+impl TestOverrides for ClearPacketRecoveryTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.enabled = true;
         config.mode.packets.clear_on_start = true;
@@ -144,7 +127,7 @@ impl BinaryChannelTest for ClearPacketTest {
     }
 }
 
-impl BinaryChannelTest for ClearPacketRecoveryDstTest {
+impl BinaryChannelTest for ClearPacketRecoveryTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
@@ -161,7 +144,6 @@ impl BinaryChannelTest for ClearPacketRecoveryDstTest {
         let relayer_wallet_b = chains.node_b.wallets().relayer().cloned();
 
         // mess up the cached account sequence in ChainHandle of chain B
-        // commenting out this local transfer would make the test pass
         chains.node_b.chain_driver().local_transfer_token(
             &relayer_wallet_b.as_ref(),
             &wallet_b.address(),
@@ -192,63 +174,6 @@ impl BinaryChannelTest for ClearPacketRecoveryDstTest {
                 amount1,
                 &denom_b2.as_ref(),
             )?;
-
-            Ok(())
-        })
-    }
-}
-
-impl BinaryChannelTest for ClearPacketRecoverySrcTest {
-    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
-        &self,
-        _config: &TestConfig,
-        relayer: RelayerDriver,
-        chains: ConnectedChains<ChainA, ChainB>,
-        channel: ConnectedChannel<ChainA, ChainB>,
-    ) -> Result<(), Error> {
-        let denom_a = chains.node_a.denom();
-
-        let wallet_a = chains.node_a.wallets().user1().cloned();
-        let wallet_b = chains.node_b.wallets().user1().cloned();
-
-        let relayer_wallet_a = chains.node_a.wallets().relayer().cloned();
-
-        // mess up the cached account sequence in ChainHandle of chain A
-        // commenting out this local transfer would make the test pass
-        chains.node_a.chain_driver().local_transfer_token(
-            &relayer_wallet_a.as_ref(),
-            &wallet_a.address(),
-            100,
-            &denom_a,
-        )?;
-
-        let amount1 = random_u64_range(1000, 5000);
-
-        chains.node_a.chain_driver().ibc_transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            &wallet_a.as_ref(),
-            &wallet_b.address(),
-            &denom_a,
-            amount1,
-        )?;
-
-        let denom_b2 = derive_ibc_denom(
-            &channel.port_b.as_ref(),
-            &channel.channel_id_b.as_ref(),
-            &denom_a,
-        )?;
-
-        relayer.with_supervisor(|| {
-            chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.address(),
-                amount1,
-                &denom_b2.as_ref(),
-            )?;
-
-            // The test would pass, but the ack probably fails.
-            // Sleep to observe the failure in ack relaying.
-            std::thread::sleep(Duration::from_secs(10));
 
             Ok(())
         })
