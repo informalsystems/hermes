@@ -5,7 +5,9 @@ use std::time::Duration;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
 use crate::applications::transfer::context::{BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader};
-use crate::applications::transfer::{error::Error as Ics20Error, DenomTrace, HashedDenom, IbcCoin};
+use crate::applications::transfer::{
+    error::Error as Ics20Error, HashedDenom, IbcCoin, PrefixedDenom,
+};
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::error::Error as Ics02Error;
@@ -64,7 +66,7 @@ pub fn get_dummy_bech32_account() -> String {
 #[derive(Debug)]
 pub struct DummyTransferModule {
     ibc_store: Arc<Mutex<MockIbcStore>>,
-    denom_traces: BTreeMap<HashedDenom, DenomTrace>,
+    denom_traces: BTreeMap<HashedDenom, PrefixedDenom>,
 }
 
 impl DummyTransferModule {
@@ -95,7 +97,7 @@ impl Module for DummyTransferModule {
 impl Ics20Keeper for DummyTransferModule {
     type AccountId = Signer;
 
-    fn set_denom_trace(&mut self, denom_trace: &DenomTrace) -> Result<(), Ics20Error> {
+    fn set_denom_trace(&mut self, denom_trace: &PrefixedDenom) -> Result<(), Ics20Error> {
         self.denom_traces
             .insert(denom_trace.hashed(), denom_trace.clone());
         Ok(())
@@ -238,7 +240,7 @@ impl Ics20Reader for DummyTransferModule {
         true
     }
 
-    fn get_denom_trace(&self, denom_hash: &HashedDenom) -> Option<DenomTrace> {
+    fn get_denom_trace(&self, denom_hash: &HashedDenom) -> Option<PrefixedDenom> {
         self.denom_traces.get(denom_hash).map(Clone::clone)
     }
 }

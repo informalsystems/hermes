@@ -1,5 +1,5 @@
 use crate::applications::transfer::acknowledgement::Acknowledgement;
-use crate::applications::transfer::{Amount, DenomTrace, HashedDenom, MODULE_ID_STR};
+use crate::applications::transfer::{Amount, HashedDenom, PrefixedDenom, MODULE_ID_STR};
 use crate::events::ModuleEvent;
 use crate::prelude::*;
 use crate::signer::Signer;
@@ -20,7 +20,7 @@ pub enum Event {
 
 pub struct RecvEvent {
     pub receiver: Signer,
-    pub denom: DenomTrace,
+    pub denom: PrefixedDenom,
     pub amount: Amount,
     pub success: bool,
 }
@@ -48,7 +48,7 @@ impl From<RecvEvent> for ModuleEvent {
 
 pub struct AckEvent {
     pub receiver: Signer,
-    pub denom: DenomTrace,
+    pub denom: PrefixedDenom,
     pub amount: Amount,
     pub acknowledgement: Acknowledgement,
 }
@@ -99,7 +99,7 @@ impl From<AckStatusEvent> for ModuleEvent {
 
 pub struct TimeoutEvent {
     pub refund_receiver: Signer,
-    pub refund_denom: DenomTrace,
+    pub refund_denom: PrefixedDenom,
     pub refund_amount: Amount,
 }
 
@@ -124,7 +124,7 @@ impl From<TimeoutEvent> for ModuleEvent {
 
 pub struct DenomTraceEvent {
     pub trace_hash: HashedDenom,
-    pub denom: DenomTrace,
+    pub denom: PrefixedDenom,
 }
 
 impl From<DenomTraceEvent> for ModuleEvent {

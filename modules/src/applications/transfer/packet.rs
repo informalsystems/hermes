@@ -6,7 +6,7 @@ use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPa
 use serde::{Deserialize, Serialize};
 
 use super::error::Error;
-use super::{Amount, DenomTrace, PrefixedCoin};
+use super::{Amount, PrefixedCoin, PrefixedDenom};
 use crate::signer::Signer;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -21,7 +21,7 @@ impl TryFrom<RawPacketData> for PacketData {
 
     fn try_from(raw_pkt_data: RawPacketData) -> Result<Self, Self::Error> {
         // This denom may be prefixed or unprefixed.
-        let denom = DenomTrace::from_str(&raw_pkt_data.denom)?;
+        let denom = PrefixedDenom::from_str(&raw_pkt_data.denom)?;
         let amount = Amount::from_str(&raw_pkt_data.amount)?;
         Ok(Self {
             token: PrefixedCoin { denom, amount },

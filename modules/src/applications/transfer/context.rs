@@ -8,7 +8,7 @@ use crate::applications::transfer::packet::PacketData;
 use crate::applications::transfer::relay::on_ack_packet::process_ack_packet;
 use crate::applications::transfer::relay::on_recv_packet::process_recv_packet;
 use crate::applications::transfer::relay::on_timeout_packet::process_timeout_packet;
-use crate::applications::transfer::{DenomTrace, HashedDenom, IbcCoin, VERSION};
+use crate::applications::transfer::{HashedDenom, IbcCoin, PrefixedDenom, VERSION};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
@@ -26,7 +26,7 @@ pub trait Ics20Keeper:
     type AccountId;
 
     /// Sets a new {trace hash -> denom trace} pair to the store.
-    fn set_denom_trace(&mut self, denom_trace: &DenomTrace) -> Result<(), Ics20Error>;
+    fn set_denom_trace(&mut self, denom_trace: &PrefixedDenom) -> Result<(), Ics20Error>;
 }
 
 pub trait Ics20Reader: ChannelReader + PortReader {
@@ -57,7 +57,7 @@ pub trait Ics20Reader: ChannelReader + PortReader {
     fn is_receive_enabled(&self) -> bool;
 
     /// Get the denom trace associated with the specified hash in the store.
-    fn get_denom_trace(&self, denom_hash: &HashedDenom) -> Option<DenomTrace>;
+    fn get_denom_trace(&self, denom_hash: &HashedDenom) -> Option<PrefixedDenom>;
 }
 
 // https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md

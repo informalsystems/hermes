@@ -17,8 +17,8 @@ use crate::serializers::serde_string;
 
 const IBC_DENOM_PREFIX: &str = "ibc";
 
-/// A `Coin` type with fully qualified `DenomTrace`.
-pub type PrefixedCoin = Coin<DenomTrace>;
+/// A `Coin` type with fully qualified `PrefixedDenom`.
+pub type PrefixedCoin = Coin<PrefixedDenom>;
 
 /// A `Coin` type with a `HashedDenom`.
 pub type HashedCoin = Coin<HashedDenom>;
@@ -159,7 +159,7 @@ pub enum Source {
 
 /// A type that contains the base denomination for ICS20 and the source tracing information path.
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct DenomTrace {
+pub struct PrefixedDenom {
     /// A series of `{port-id}/{channel-id}`s for tracing the source of the token.
     #[serde(with = "serde_string")]
     trace_path: TracePath,
@@ -167,7 +167,7 @@ pub struct DenomTrace {
     base_denom: Denom,
 }
 
-impl DenomTrace {
+impl PrefixedDenom {
     /// Returns a coin denomination for an ICS20 fungible token in the format
     /// 'ibc/{Hash(trace_path/base_denom)}'.
     pub fn hashed(&self) -> HashedDenom {
@@ -195,7 +195,7 @@ impl DenomTrace {
     }
 }
 
-impl FromStr for DenomTrace {
+impl FromStr for PrefixedDenom {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -219,7 +219,7 @@ impl FromStr for DenomTrace {
     }
 }
 
-impl TryFrom<RawDenomTrace> for DenomTrace {
+impl TryFrom<RawDenomTrace> for PrefixedDenom {
     type Error = Error;
 
     fn try_from(value: RawDenomTrace) -> Result<Self, Self::Error> {
@@ -232,8 +232,8 @@ impl TryFrom<RawDenomTrace> for DenomTrace {
     }
 }
 
-impl From<DenomTrace> for RawDenomTrace {
-    fn from(value: DenomTrace) -> Self {
+impl From<PrefixedDenom> for RawDenomTrace {
+    fn from(value: PrefixedDenom) -> Self {
         Self {
             path: value.trace_path.to_string(),
             base_denom: value.base_denom.to_string(),
@@ -241,7 +241,7 @@ impl From<DenomTrace> for RawDenomTrace {
     }
 }
 
-impl From<Denom> for DenomTrace {
+impl From<Denom> for PrefixedDenom {
     fn from(denom: Denom) -> Self {
         Self {
             trace_path: Default::default(),
@@ -250,7 +250,7 @@ impl From<Denom> for DenomTrace {
     }
 }
 
-impl fmt::Display for DenomTrace {
+impl fmt::Display for PrefixedDenom {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.trace_path.0.is_empty() {
             write!(f, "{}", self.base_denom)
@@ -263,8 +263,8 @@ impl fmt::Display for DenomTrace {
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, From)]
 pub struct HashedDenom(Vec<u8>);
 
-impl From<&DenomTrace> for HashedDenom {
-    fn from(value: &DenomTrace) -> Self {
+impl From<&PrefixedDenom> for HashedDenom {
+    fn from(value: &PrefixedDenom) -> Self {
         let mut hasher = Sha256::new();
         hasher.update(value.to_string().as_bytes());
         let denom_bytes = hasher.finalize();
@@ -431,32 +431,35 @@ mod tests {
     fn test_denom_validation() -> Result<(), Error> {
         assert!(Denom::from_str("").is_err(), "empty base denom");
         assert!(Denom::from_str("uatom").is_ok(), "valid base denom");
-        assert!(DenomTrace::from_str("").is_err(), "empty denom trace");
+        assert!(PrefixedDenom::from_str("").is_err(), "empty denom trace");
         assert!(
-            DenomTrace::from_str("transfer/channel-0/").is_err(),
+            PrefixedDenom::from_str("transfer/channel-0/").is_err(),
             "empty base denom with trace"
         );
-        assert!(DenomTrace::from_str("/uatom").is_err(), "empty prefix");
-        assert!(DenomTrace::from_str("//uatom").is_err(), "empty ids");
-        assert!(DenomTrace::from_str("transfer/").is_err(), "single trace");
+        assert!(PrefixedDenom::from_str("/uatom").is_err(), "empty prefix");
+        assert!(PrefixedDenom::from_str("//uatom").is_err(), "empty ids");
         assert!(
-            DenomTrace::from_str("transfer/atom").is_err(),
+            PrefixedDenom::from_str("transfer/").is_err(),
+            "single trace"
+        );
+        assert!(
+            PrefixedDenom::from_str("transfer/atom").is_err(),
             "single trace with base denom"
         );
         assert!(
-            DenomTrace::from_str("transfer/channel-0/uatom").is_ok(),
+            PrefixedDenom::from_str("transfer/channel-0/uatom").is_ok(),
             "valid single trace info"
         );
         assert!(
-            DenomTrace::from_str("transfer/channel-0/transfer/channel-1/uatom").is_ok(),
+            PrefixedDenom::from_str("transfer/channel-0/transfer/channel-1/uatom").is_ok(),
             "valid multiple trace info"
         );
         assert!(
-            DenomTrace::from_str("(transfer)/channel-0/uatom").is_err(),
+            PrefixedDenom::from_str("(transfer)/channel-0/uatom").is_err(),
             "invalid port"
         );
         assert!(
-            DenomTrace::from_str("transfer/(channel-0)/uatom").is_err(),
+            PrefixedDenom::from_str("transfer/(channel-0)/uatom").is_err(),
             "invalid channel"
         );
 
@@ -466,16 +469,16 @@ mod tests {
     #[test]
     fn test_denom_trace() -> Result<(), Error> {
         assert_eq!(
-            DenomTrace::from_str("transfer/channel-0/uatom")?,
-            DenomTrace {
+            PrefixedDenom::from_str("transfer/channel-0/uatom")?,
+            PrefixedDenom {
                 trace_path: "transfer/channel-0".parse()?,
                 base_denom: "uatom".parse()?
             },
             "valid single trace info"
         );
         assert_eq!(
-            DenomTrace::from_str("transfer/channel-0/transfer/channel-1/uatom")?,
-            DenomTrace {
+            PrefixedDenom::from_str("transfer/channel-0/transfer/channel-1/uatom")?,
+            PrefixedDenom {
                 trace_path: "transfer/channel-0/transfer/channel-1".parse()?,
                 base_denom: "uatom".parse()?
             },
@@ -488,11 +491,11 @@ mod tests {
     #[test]
     fn test_denom_serde() -> Result<(), Error> {
         let dt_str = "transfer/channel-0/uatom";
-        let dt = DenomTrace::from_str(dt_str)?;
+        let dt = PrefixedDenom::from_str(dt_str)?;
         assert_eq!(dt.to_string(), dt_str, "valid single trace info");
 
         let dt_str = "transfer/channel-0/transfer/channel-1/uatom";
-        let dt = DenomTrace::from_str(dt_str)?;
+        let dt = PrefixedDenom::from_str(dt_str)?;
         assert_eq!(dt.to_string(), dt_str, "valid multiple trace info");
 
         Ok(())
