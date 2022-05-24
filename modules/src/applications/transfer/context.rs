@@ -70,7 +70,7 @@ fn cosmos_adr028_escrow_address(port_id: &PortId, channel_id: ChannelId) -> Vec<
     hasher.update(contents.as_bytes());
 
     let mut hash = hasher.finalize().to_vec();
-    hash.drain(20..);
+    hash.truncate(20);
     hash
 }
 
