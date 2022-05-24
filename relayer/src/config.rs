@@ -335,6 +335,9 @@ pub struct ChainConfig {
     #[serde(default)]
     pub max_tx_size: MaxTxSize,
 
+    /// Only used for the `Psql` chain type.
+    pub psql_conn: Option<String>,
+
     /// A correction parameter that helps deal with clocks that are only approximately synchronized
     /// between the source and destination chains for a client.
     /// This parameter is used when deciding to accept or reject a new header
@@ -354,6 +357,7 @@ pub struct ChainConfig {
 
     #[serde(default)]
     pub memo_prefix: Memo,
+
     #[serde(default, with = "self::proof_specs")]
     pub proof_specs: ProofSpecs,
 
@@ -362,9 +366,12 @@ pub struct ChainConfig {
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
+
     pub gas_price: GasPrice,
+
     #[serde(default)]
     pub packet_filter: PacketFilter,
+
     #[serde(default)]
     pub address_type: AddressType,
 }

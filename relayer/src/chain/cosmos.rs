@@ -93,6 +93,7 @@ pub mod compatibility;
 pub mod encode;
 pub mod estimate;
 pub mod gas;
+pub mod psql;
 pub mod query;
 pub mod retry;
 pub mod simulate;

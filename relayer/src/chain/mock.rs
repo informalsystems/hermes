@@ -483,6 +483,7 @@ pub mod test_utils {
             address_type: AddressType::default(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
+            psql_conn: Default::default(),
         }
     }
 }

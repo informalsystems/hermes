@@ -34,6 +34,12 @@ CHAIN_0_ID="$2"
 CHAIN_1_ID="$3"
 CHAIN_2_ID="$4"
 
+# remove old DB first so role can be removed and (re)added
+dropdb -U postgres --if-exists ${CHAIN_0_ID//-} --force
+dropdb -U postgres --if-exists ${CHAIN_1_ID//-} --force
+psql -U postgres -c "DROP ROLE IF EXISTS tendermint";
+psql -U postgres -c "CREATE ROLE tendermint WITH LOGIN PASSWORD 'tendermint'"
+
 SETUP_CHAINS="$(dirname "$0")/setup-chains"
 INIT_CLIENTS="$(dirname "$0")/init-hermes"
 

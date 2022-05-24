@@ -77,7 +77,6 @@ pub trait ChainEndpoint: Sized {
     /// Constructs the chain
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
 
-    #[allow(clippy::type_complexity)]
     /// Initializes and returns the light client (if any) associated with this chain.
     fn init_light_client(&self) -> Result<Self::LightClient, Error>;
 

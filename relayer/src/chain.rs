@@ -18,6 +18,9 @@ pub enum ChainType {
     /// Chains based on the Cosmos SDK
     CosmosSdk,
 
+    /// Cosmos chains using the PostgreSQL indexer to fullfill queries
+    CosmosPsql,
+
     /// Mock chain used for testing
     #[cfg(test)]
     Mock,

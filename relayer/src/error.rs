@@ -32,6 +32,7 @@ use ibc::{
     relayer::ics18_relayer::error as relayer_error,
 };
 
+use crate::chain::cosmos::psql::PsqlError;
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
 use crate::event::monitor;
@@ -500,6 +501,20 @@ define_error! {
                     e.chain_id
                 )
             },
+
+        Psql
+            [ TraceError<PsqlError> ]
+            |_| { "Psql" },
+
+        Sqlx
+            [ TraceError<sqlx::Error> ]
+            |_| { "sqlx" }
+    }
+}
+
+impl From<PsqlError> for Error {
+    fn from(e: PsqlError) -> Self {
+        Error::psql(e)
     }
 }
 
