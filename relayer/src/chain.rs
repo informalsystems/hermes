@@ -153,8 +153,9 @@ pub trait ChainEndpoint: Sized {
 
     // Queries
 
-    /// Query the balance of the current account for the denom used to pay tx fees.
-    fn query_balance(&self) -> Result<Balance, Error>;
+    /// Query the balance of the given account for the denom used to pay tx fees.
+    /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
+    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 

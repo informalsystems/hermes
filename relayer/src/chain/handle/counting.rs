@@ -156,9 +156,9 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_balance(&self) -> Result<Balance, Error> {
+    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
         self.inc_metric("query_balance");
-        self.inner().query_balance()
+        self.inner().query_balance(key_name)
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

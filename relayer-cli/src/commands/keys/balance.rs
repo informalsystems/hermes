@@ -1,13 +1,12 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use alloc::sync::Arc;
-use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
+use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::application::app_config;
-use crate::conclude::{exit_with_unrecoverable_error, Output};
+use crate::cli_utils::spawn_chain_runtime;
+use crate::conclude::{exit_with_unrecoverable_error, json, Output};
 
 /// The data structure that represents the arguments when invoking the `keys balance` CLI command.
 ///
@@ -23,27 +22,19 @@ pub struct KeyBalanceCmd {
     chain_id: ChainId,
 
     #[clap(required = true, help = "name of the key")]
-    keyname: String,
+    key_name: String,
 }
 
 impl Runnable for KeyBalanceCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => Output::error(format!(
-                "chain {} not found in configuration file",
-                self.chain_id
-            ))
-            .exit(),
-            Some(chain_config) => chain_config,
-        };
-
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
+        let key_name = self.key_name.clone();
 
-        match chain.query_balance() {
+        match chain.query_balance(Some(key_name)) {
+            Ok(balance) if json() => Output::success(balance).exit(),
             Ok(balance) => {
                 Output::success_msg(format!("balance {} {}", balance.amount, balance.denom)).exit()
             }
