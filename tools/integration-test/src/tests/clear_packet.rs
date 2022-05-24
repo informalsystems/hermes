@@ -139,19 +139,17 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
         chains.node_b.chain_driver().local_transfer_token(
             &relayer_wallet_b.as_ref(),
             &wallet_b.address(),
-            100,
-            &denom_b1,
+            &denom_b1.with_amount(100).as_ref(),
         )?;
 
-        let amount1 = random_u64_range(1000, 5000);
+        let amount1 = random_u128_range(1000, 5000);
 
         chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            amount1,
+            &denom_a.with_amount(amount1).as_ref(),
         )?;
 
         let denom_b2 = derive_ibc_denom(
@@ -163,8 +161,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
         relayer.with_supervisor(|| {
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
                 &wallet_b.address(),
-                amount1,
-                &denom_b2.as_ref(),
+                &denom_b2.with_amount(amount1).as_ref(),
             )?;
 
             Ok(())
