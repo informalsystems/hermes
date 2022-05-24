@@ -636,7 +636,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
-        // If a key_name extract the account hash.
+        // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let account = match key_name {
             Some(account) => {
