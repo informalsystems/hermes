@@ -473,35 +473,15 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
                 &denom_b.with_amount(send_amount).as_ref(),
             )?;
 
-            // info!(
-            //     "Expect user to be refunded receive timeout fee {} and go from {} to {}",
-            //     timeout_fee + timeout_fee_2,
-            //     balance_a3,
-            //     balance_a3.amount() + timeout_fee + timeout_fee_2
-            // );
+            chain_driver_a.assert_eventual_wallet_amount(
+                &user_a.address(),
+                &(balance_a3 + timeout_fee + timeout_fee_2).as_ref(),
+            )?;
 
-            // chain_driver_a.assert_eventual_wallet_amount(
-            //     &user_a.address(),
-            //     &(balance_a3 + timeout_fee + timeout_fee_2).as_ref(),
-            // )?;
-
-            // chain_driver_a.assert_eventual_wallet_amount(
-            //     &user_a.address(),
-            //     &(balance_a3 + timeout_fee + timeout_fee_2 + receive_fee + receive_fee_2).as_ref(),
-            // )?;
-
-            // info!(
-            //     "Expect relayer to receive ack fee {} and receive fee {} and go from {} to {}",
-            //     ack_fee + ack_fee_2,
-            //     receive_fee + receive_fee_2,
-            //     relayer_balance_a,
-            //     relayer_balance_a.amount() + ack_fee + receive_fee + ack_fee_2 + receive_fee_2,
-            // );
-
-            // chain_driver_a.assert_eventual_wallet_amount(
-            //     &relayer_a.address(),
-            //     &(relayer_balance_a + ack_fee + receive_fee + ack_fee_2 + receive_fee_2).as_ref(),
-            // )?;
+            chain_driver_a.assert_eventual_wallet_amount(
+                &relayer_a.address(),
+                &(relayer_balance_a + ack_fee + receive_fee + ack_fee_2 + receive_fee_2).as_ref(),
+            )?;
 
             Ok(())
         })
