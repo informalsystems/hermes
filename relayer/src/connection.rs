@@ -511,7 +511,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
     /// Sends a connection open handshake message.
     /// The message sent depends on the chain status of the connection ends.
-    /// messages, for finalizing the connection open handshake.
     fn do_conn_open_handshake(&mut self) -> Result<(), ConnectionError> {
         let (a_state, b_state) = self.update_connection_and_query_states()?;
         debug!(
