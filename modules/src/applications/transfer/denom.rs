@@ -24,21 +24,21 @@ pub type PrefixedCoin = Coin<PrefixedDenom>;
 pub type HashedCoin = Coin<HashedDenom>;
 
 /// A `Coin` type with an unprefixed denomination.
-pub type BaseCoin = Coin<Denom>;
+pub type BaseCoin = Coin<BaseDenom>;
 
 /// Base denomination type
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Display)]
 #[serde(transparent)]
-pub struct Denom(String);
+pub struct BaseDenom(String);
 
-impl FromStr for Denom {
+impl FromStr for BaseDenom {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.trim().is_empty() {
             Err(Error::empty_base_denom())
         } else {
-            Ok(Denom(s.to_owned()))
+            Ok(BaseDenom(s.to_owned()))
         }
     }
 }
@@ -164,7 +164,7 @@ pub struct PrefixedDenom {
     #[serde(with = "serde_string")]
     trace_path: TracePath,
     /// Base denomination of the relayed fungible token.
-    base_denom: Denom,
+    base_denom: BaseDenom,
 }
 
 impl PrefixedDenom {
@@ -204,9 +204,9 @@ impl FromStr for PrefixedDenom {
 
         let (base_denom, trace_path) = {
             if last_part == s {
-                (Denom::from_str(s)?, TracePath::default())
+                (BaseDenom::from_str(s)?, TracePath::default())
             } else {
-                let base_denom = Denom::from_str(last_part)?;
+                let base_denom = BaseDenom::from_str(last_part)?;
                 let trace_path = TracePath::try_from(parts)?;
                 (base_denom, trace_path)
             }
@@ -223,7 +223,7 @@ impl TryFrom<RawDenomTrace> for PrefixedDenom {
     type Error = Error;
 
     fn try_from(value: RawDenomTrace) -> Result<Self, Self::Error> {
-        let base_denom = Denom::from_str(&value.base_denom)?;
+        let base_denom = BaseDenom::from_str(&value.base_denom)?;
         let trace_path = TracePath::from_str(&value.path)?;
         Ok(Self {
             trace_path,
@@ -241,8 +241,8 @@ impl From<PrefixedDenom> for RawDenomTrace {
     }
 }
 
-impl From<Denom> for PrefixedDenom {
-    fn from(denom: Denom) -> Self {
+impl From<BaseDenom> for PrefixedDenom {
+    fn from(denom: BaseDenom) -> Self {
         Self {
             trace_path: Default::default(),
             base_denom: denom,
@@ -429,8 +429,8 @@ mod tests {
 
     #[test]
     fn test_denom_validation() -> Result<(), Error> {
-        assert!(Denom::from_str("").is_err(), "empty base denom");
-        assert!(Denom::from_str("uatom").is_ok(), "valid base denom");
+        assert!(BaseDenom::from_str("").is_err(), "empty base denom");
+        assert!(BaseDenom::from_str("uatom").is_ok(), "valid base denom");
         assert!(PrefixedDenom::from_str("").is_err(), "empty denom trace");
         assert!(
             PrefixedDenom::from_str("transfer/channel-0/").is_err(),
