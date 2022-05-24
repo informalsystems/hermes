@@ -5,6 +5,7 @@ use super::consensus_state::NearConsensusState;
 use super::crypto_ops::NearCryptoOps;
 use super::error::Error;
 use super::header::NearHeader;
+use super::types::{ApprovalInner, CryptoHash, LightClientBlockView, ValidatorStakeView};
 
 #[derive(Debug, Clone)]
 pub struct NearClient {}
@@ -43,7 +44,7 @@ impl ClientDef for NearClient {
         header: Self::Header,
     ) -> Result<(), Error> {
         // your light client, shouldn't do storage anymore, it should just do verification here.
-        todo!()
+        validate_light_block(&header, &client_state)
     }
 
     fn update_state(
@@ -68,6 +69,8 @@ impl ClientDef for NearClient {
         // ^                                    ^
         // |    <-------consensus states----->  |
         // current state                       new state
+
+        todo!()
     }
 
     fn update_state_on_misbehaviour(
@@ -231,4 +234,123 @@ impl ClientDef for NearClient {
     ) -> Result<(), Error> {
         todo!()
     }
+}
+
+pub fn validate_light_block<D: Digest>(
+    header: &NearHeader,
+    client_state: NearClientState,
+) -> Result<(), Error> {
+    //The light client updates its head with the information from LightClientBlockView iff:
+
+    // 1. The height of the block is higher than the height of the current head;
+    // 2. The epoch of the block is equal to the epoch_id or next_epoch_id known for the current head;
+    // 3. If the epoch of the block is equal to the next_epoch_id of the head, then next_bps is not None;
+    // 4. approvals_after_next contain valid signatures on approval_message from the block producers of the corresponding
+    // epoch
+    // 5. The signatures present in approvals_after_next correspond to more than 2/3 of the total stake (see next section).
+    // 6. If next_bps is not none, sha256(borsh(next_bps)) corresponds to the next_bp_hash in inner_lite.
+
+    // QUESTION: do we also want to pass the block hash received from the RPC?
+    // it's not on the spec, but it's an extra validation
+
+    let new_block_view = header.get_light_client_block_view();
+    let current_block_view = client_state.get_head().get_light_client_block_view();
+    let (_current_block_hash, _next_block_hash, approval_message) =
+        reconstruct_light_client_block_view_fields::<D>(new_block_view)?;
+
+    // (1)
+    if new_block_view.inner_lite.height <= current_block_view.inner_lite.height {
+        return Err(Error::HeightTooOld);
+    }
+
+    // (2)
+    if ![
+        current_block_view.inner_lite.epoch_id,
+        current_block_view.inner_lite.next_epoch_id,
+    ]
+    .contains(&new_block_view.inner_lite.epoch_id)
+    {
+        return Err(Error::InvalidEpoch);
+    }
+
+    // (3)
+    if new_block_view.inner_lite.epoch_id == current_block_view.inner_lite.next_epoch_id
+        && new_block_view.next_bps.is_none()
+    {
+        return Err(Error::UnavailableBlockProducers);
+    }
+
+    //  (4) and (5)
+    let mut total_stake = 0;
+    let mut approved_stake = 0;
+
+    let epoch_block_producers = client_state
+        .get_validators_by_epoch(&new_block_view.inner_lite.epoch_id)
+        .ok_or(Error::InvalidEpoch)?;
+
+    for (maybe_signature, block_producer) in new_block_view
+        .approvals_after_next
+        .iter()
+        .zip(epoch_block_producers.iter())
+    {
+        let bp_stake_view = block_producer.clone().into_validator_stake();
+        let bp_stake = bp_stake_view.stake;
+        total_stake += bp_stake;
+
+        if maybe_signature.is_none() {
+            continue;
+        }
+
+        approved_stake += bp_stake;
+
+        let validator_public_key = bp_stake_view.public_key.clone();
+        if !maybe_signature
+            .as_ref()
+            .unwrap()
+            .verify(&approval_message, validator_public_key.clone())
+        {
+            return Err(Error::InvalidSignature);
+        }
+    }
+
+    let threshold = total_stake * 2 / 3;
+    if approved_stake <= threshold {
+        return Err(Error::InsufficientStakedAmount);
+    }
+
+    // # (6)
+    if new_block_view.next_bps.is_some() {
+        let new_block_view_next_bps_serialized =
+            new_block_view.next_bps.as_deref().unwrap().try_to_vec()?;
+        if D::digest(new_block_view_next_bps_serialized).as_slice()
+            != new_block_view.inner_lite.next_bp_hash.as_ref()
+        {
+            return Err(Error::SerializationError);
+        }
+    }
+    Ok(())
+}
+
+pub fn reconstruct_light_client_block_view_fields<D: Digest>(
+    block_view: &LightClientBlockView,
+) -> Result<(CryptoHash, CryptoHash, Vec<u8>), Error> {
+    let current_block_hash = block_view.current_block_hash::<D>();
+    let next_block_hash =
+        next_block_hash::<D>(block_view.next_block_inner_hash, current_block_hash);
+    let approval_message = [
+        ApprovalInner::Endorsement(next_block_hash).try_to_vec()?,
+        (block_view.inner_lite.height + 2).to_le().try_to_vec()?,
+    ]
+    .concat();
+    Ok((current_block_hash, next_block_hash, approval_message))
+}
+
+pub(crate) fn next_block_hash<D: Digest>(
+    next_block_inner_hash: CryptoHash,
+    current_block_hash: CryptoHash,
+) -> CryptoHash {
+    D::digest([next_block_inner_hash.as_ref(), current_block_hash.as_ref()].concat())
+        .as_slice()
+        .try_into()
+        .expect("Could not hash the next block")
 }

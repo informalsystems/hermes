@@ -3,15 +3,38 @@ use crate::core::{
     ics24_host::identifier::ChainId,
 };
 
-use super::types::LightClientBlockView;
+use super::types::{CryptoHash, LightClientBlockView, ValidatorStakeView};
 
 #[derive(Debug, Clone)]
 pub struct NearClientState {
     chain_id: ChainId,
     head: LightClientBlockView,
+    current_epoch: CryptoHash,
+    next_epoch: CryptoHash,
+    current_validators: Vec<ValidatorStakeView>,
+    next_validators: Vec<ValidatorStakeView>,
 }
 
 struct NearUpgradeOptions {}
+
+impl NearClientState {
+    pub fn get_validators_by_epoch(
+        &self,
+        epoch_id: &CryptoHash,
+    ) -> Option<&Vec<ValidatorStakeView>> {
+        if epoch_id == self.current_epoch {
+            Some(&self.current_validators)
+        } else if epoch_id == self.next_epoch {
+            Some(&self.next_validators)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_head(&self) -> &LightClientBlockView {
+        &self.head
+    }
+}
 
 impl ClientState for NearClientState {
     fn is_frozen(&self) -> bool {

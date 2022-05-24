@@ -10,6 +10,12 @@ pub struct NearHeader {
     inner: LightClientBlockView,
 }
 
+impl NearHeader {
+    pub fn get_light_client_block_view(&self) -> &LightClientBlockView {
+        &self.inner
+    }
+}
+
 impl Header for NearHeader {
     fn client_type(&self) -> ClientType {
         ClientType::Near
