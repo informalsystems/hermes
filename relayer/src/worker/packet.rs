@@ -152,6 +152,9 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd: WorkerCmd,
     index: u64,
 ) -> RetryResult<(), u64> {
+    // this is set to true if `schedule_packet_clearing` is called.
+    let mut scheduled_packet_clearing = false;
+
     trace!("handling command {}", cmd);
     let result = match cmd {
         WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
@@ -172,6 +175,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
                 clear_interval,
                 height,
             ) {
+                scheduled_packet_clearing = true;
                 link.a_to_b.schedule_packet_clearing(Some(height))
             } else {
                 Ok(())
@@ -218,6 +222,14 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
                 "will retry: schedule execution encountered error: {}",
                 e,
             );
+
+            // Reset the `is_first_run` flag if `execute_schedule` encountered
+            // any error after `schedule_packet_clearing`. This helps ensure that
+            // packets being cleared will be retried instead of dropped.
+            if scheduled_packet_clearing {
+                *is_first_run = true;
+            }
+
             return RetryResult::Retry(index);
         }
     }

@@ -5,7 +5,14 @@ use ibc_test_framework::util::random::random_u128_range;
 fn test_clear_packet() -> Result<(), Error> {
     run_binary_channel_test(&ClearPacketTest)
 }
+
+#[test]
+fn test_clear_packet_recovery() -> Result<(), Error> {
+    run_binary_channel_test(&ClearPacketRecoveryTest)
+}
+
 pub struct ClearPacketTest;
+pub struct ClearPacketRecoveryTest;
 
 impl TestOverrides for ClearPacketTest {
     fn modify_relayer_config(&self, config: &mut Config) {
@@ -22,6 +29,17 @@ impl TestOverrides for ClearPacketTest {
     // Unordered channel: will permit gaps in the sequence of relayed packets
     fn channel_order(&self) -> Order {
         Order::Unordered
+    }
+}
+
+impl TestOverrides for ClearPacketRecoveryTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.enabled = true;
+        config.mode.packets.clear_on_start = true;
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
     }
 }
 
@@ -95,6 +113,59 @@ impl BinaryChannelTest for ClearPacketTest {
                 .node_b
                 .chain_driver()
                 .assert_eventual_wallet_amount(&wallet_b.address(), &amount_b.as_ref())?;
+
+            Ok(())
+        })
+    }
+}
+
+impl BinaryChannelTest for ClearPacketRecoveryTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channel: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let denom_a = chains.node_a.denom();
+        let denom_b1 = chains.node_b.denom();
+
+        let wallet_a = chains.node_a.wallets().user1().cloned();
+        let wallet_b = chains.node_b.wallets().user1().cloned();
+
+        let relayer_wallet_b = chains.node_b.wallets().relayer().cloned();
+
+        // mess up the cached account sequence in ChainHandle of chain B
+        chains.node_b.chain_driver().local_transfer_token(
+            &relayer_wallet_b.as_ref(),
+            &wallet_b.address(),
+            100,
+            &denom_b1,
+        )?;
+
+        let amount1 = random_u64_range(1000, 5000);
+
+        chains.node_a.chain_driver().ibc_transfer_token(
+            &channel.port_a.as_ref(),
+            &channel.channel_id_a.as_ref(),
+            &wallet_a.as_ref(),
+            &wallet_b.address(),
+            &denom_a,
+            amount1,
+        )?;
+
+        let denom_b2 = derive_ibc_denom(
+            &channel.port_b.as_ref(),
+            &channel.channel_id_b.as_ref(),
+            &denom_a,
+        )?;
+
+        relayer.with_supervisor(|| {
+            chains.node_b.chain_driver().assert_eventual_wallet_amount(
+                &wallet_b.address(),
+                amount1,
+                &denom_b2.as_ref(),
+            )?;
 
             Ok(())
         })

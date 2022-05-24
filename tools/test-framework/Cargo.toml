@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-test-framework"
-version    = "0.14.1"
+version    = "0.15.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -10,14 +10,14 @@ repository = "https://github.com/informalsystems/ibc-rs"
 authors    = ["Informal Systems <hello@informal.systems>"]
 
 description = """
-  Integration tests for IBC Relayer
+  Framework for writing integration tests for IBC relayers
 """
 
 [dependencies]
-ibc             = { path = "../../modules" }
-ibc-relayer     = { path = "../../relayer" }
-ibc-relayer-cli = { path = "../../relayer-cli" }
-ibc-proto       = { path = "../../proto" }
+ibc             = { version = "=0.15.0", path = "../../modules" }
+ibc-relayer     = { version = "=0.15.0", path = "../../relayer" }
+ibc-relayer-cli = { version = "=0.15.0", path = "../../relayer-cli" }
+ibc-proto       = { version = "=0.18.0", path = "../../proto" }
 tendermint      = { version = "=0.23.7" }
 tendermint-rpc  = { version = "=0.23.7", features = ["http-client", "websocket-client"] }
 

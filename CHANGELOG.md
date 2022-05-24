@@ -1,5 +1,54 @@
 # CHANGELOG
 
+## v0.15.0
+
+*May 23rd, 2022*
+
+This release brings a number of bug fixes, some performance improvements,
+notably when [clearing packets](//github.com/informalsystems/ibc-rs/issues/2087),
+as well as [new metrics](https://github.com/informalsystems/ibc-rs/issues/2112)
+for better observability of the relayer's operations.
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Fix packet commitment calculation to match ibc-go
+    ([#2104](https://github.com/informalsystems/ibc-rs/issues/2104))
+  - Fix incorrect acknowledgement verification
+    ([#2114](https://github.com/informalsystems/ibc-rs/issues/2114))
+  - fix connection id mix-up in connection acknowledgement processing
+    ([#2178](https://github.com/informalsystems/ibc-rs/issues/2178))
+- [Relayer Library](relayer)
+  - Fix a bug where connection and channel handshakes would fail with non-batching transactions
+    ([#1971](https://github.com/informalsystems/ibc-rs/issues/1971))
+  - Fixed client expiry computation to avoid using local time.
+    ([#2180](https://github.com/informalsystems/ibc-rs/issues/2180))
+
+### FEATURES
+
+- General
+  - Replaced gaia v5 with v7 in E2E tests.
+    ([#1986](https://github.com/informalsystems/ibc-rs/issues/1986))
+- [Relayer Library](relayer)
+  - Add six new metrics: `wallet_balance`, `ws_events`, `ws_reconnect`,
+    `tx_latency_submitted`, `tx_latency_confirmed`, `msg_num`
+    ([#2112](https://github.com/informalsystems/ibc-rs/issues/2112))
+
+### IMPROVEMENTS
+
+- [IBC Modules](modules)
+  - Remove object capabilities from the modules
+    ([#2159](https://github.com/informalsystems/ibc-rs/issues/2159))
+- [Relayer Library](relayer)
+  - Ensure `max_msg_num` is between 1 and 100 with a default of 30
+    ([#1971](https://github.com/informalsystems/ibc-rs/issues/1971))
+  - Fixed misleading error message leaking from the misbehavior detection task.
+    ([#2031](https://github.com/informalsystems/ibc-rs/issues/2031))
+  - Added support for incremental processing of packet clearing commands.
+    ([#2087](https://github.com/informalsystems/ibc-rs/issues/2087))
+  - Implement ADR 9: add domain type for request messages that are passed to query
+    functions ([#2192](https://github.com/informalsystems/ibc-rs/issues/2192))
+
 ## v0.14.1
 
 *May 2nd, 2022*
@@ -562,7 +611,7 @@ then on top of the changes above, `mode.connections.enabled` and `mode.channels.
 *October 29th, 2021*
 
 This is the final release of version 0.8.0, which now depends on the official releases of the `prost` and `tonic` crates.
-In addition to everything that's included in v0.8.0-pre.1, this release updates the minimum supported Rust version to 1.56, 
+In addition to everything that's included in v0.8.0-pre.1, this release updates the minimum supported Rust version to 1.56,
 and contains various bug fixes and performance improvements which make the relayer more reliable.
 
 #### Notice for operators
@@ -592,7 +641,7 @@ For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commi
   - Update to official releases of `prost` 0.9 and `tonic` 0.6
     ([#1502](https://github.com/informalsystems/ibc-rs/issues/1502))
 - [IBC Modules](modules)
-  - Support for converting `ibc::events::IbcEvent` into `tendermint::abci::Event` 
+  - Support for converting `ibc::events::IbcEvent` into `tendermint::abci::Event`
     ([#838](https://github.com/informalsystems/ibc-rs/issues/838))
   - Restructure the layout of the `ibc` crate to match `ibc-go`'s [layout](https://github.com/cosmos/ibc-go#contents)
     ([#1436](https://github.com/informalsystems/ibc-rs/issues/1436))
