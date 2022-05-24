@@ -135,14 +135,17 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
             .collect::<Result<Vec<_>, Error>>()?;
 
         let mmr_update_proof = if let Some(mmr_update) = raw_header.mmr_update_proof {
+            let commitment = mmr_update
+                .signed_commitment
+                .as_ref()
+                .ok_or_else(|| {
+                    Error::invalid_mmr_update("Signed commitment is missing".to_string())
+                })?
+                .commitment
+                .as_ref()
+                .ok_or_else(|| Error::invalid_mmr_update("Commitment is missing".to_string()))?;
             let payload = {
-                mmr_update
-                    .signed_commitment
-                    .as_ref()
-                    .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                    .commitment
-                    .as_ref()
-                    .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
+                commitment
                     .payload
                     .iter()
                     .filter_map(|item| {
@@ -158,30 +161,20 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                     .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
                     .clone()
             };
-            let block_number = mmr_update
-                .signed_commitment
-                .as_ref()
-                .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                .commitment
-                .as_ref()
-                .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                .block_numer;
-            let validator_set_id = mmr_update
-                .signed_commitment
-                .as_ref()
-                .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                .commitment
-                .as_ref()
-                .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                .validator_set_id;
+            let block_number = commitment.block_numer;
+            let validator_set_id = commitment.validator_set_id;
             let signatures = mmr_update
                 .signed_commitment
-                .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
+                .ok_or_else(|| {
+                    Error::invalid_mmr_update("Signed Commiment is missing".to_string())
+                })?
                 .signatures
                 .into_iter()
                 .map(|commitment_sig| {
                     if commitment_sig.signature.len() != 65 {
-                        return Err(Error::invalid_mmr_update("".to_string()));
+                        return Err(Error::invalid_mmr_update(
+                            "Invalid signature length".to_string(),
+                        ));
                     }
                     Ok(SignatureWithAuthorityIndex {
                         signature: {
@@ -193,6 +186,16 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                     })
                 })
                 .collect::<Result<Vec<_>, Error>>()?;
+
+            let mmr_leaf = mmr_update
+                .mmr_leaf
+                .as_ref()
+                .ok_or_else(|| Error::invalid_mmr_update("Mmr Leaf is missing".to_string()))?;
+            let beefy_next_authority_set =
+                mmr_leaf.beefy_next_authority_set.as_ref().ok_or_else(|| {
+                    Error::invalid_mmr_update("Beefy Next Authority set is missing".to_string())
+                })?;
+
             Some(MmrUpdateProof {
                 signed_commitment: SignedCommitment {
                     commitment: Commitment {
@@ -204,72 +207,24 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                 },
                 latest_mmr_leaf: MmrLeaf {
                     version: {
-                        let (major, minor) = split_leaf_version(
-                            mmr_update
-                                .mmr_leaf
-                                .as_ref()
-                                .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                                .version
-                                .saturated_into::<u8>(),
-                        );
+                        let (major, minor) =
+                            split_leaf_version(mmr_leaf.version.saturated_into::<u8>());
                         MmrLeafVersion::new(major, minor)
                     },
                     parent_number_and_hash: {
-                        let parent_number = mmr_update
-                            .mmr_leaf
-                            .as_ref()
-                            .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                            .parent_number;
-                        let parent_hash = H256::decode(
-                            &mut mmr_update
-                                .mmr_leaf
-                                .as_ref()
-                                .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                                .parent_hash
-                                .as_slice(),
-                        )
-                        .map_err(|e| Error::invalid_mmr_update(e.to_string()))?;
+                        let parent_number = mmr_leaf.parent_number;
+                        let parent_hash = H256::decode(&mut mmr_leaf.parent_hash.as_slice())
+                            .map_err(|e| Error::invalid_mmr_update(e.to_string()))?;
                         (parent_number, parent_hash)
                     },
                     beefy_next_authority_set: BeefyNextAuthoritySet {
-                        id: mmr_update
-                            .mmr_leaf
-                            .as_ref()
-                            .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                            .beefy_next_authority_set
-                            .as_ref()
-                            .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                            .id,
-                        len: mmr_update
-                            .mmr_leaf
-                            .as_ref()
-                            .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                            .beefy_next_authority_set
-                            .as_ref()
-                            .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                            .len,
-                        root: H256::decode(
-                            &mut mmr_update
-                                .mmr_leaf
-                                .as_ref()
-                                .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                                .beefy_next_authority_set
-                                .as_ref()
-                                .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                                .authority_root
-                                .as_slice(),
-                        )
-                        .map_err(|e| Error::invalid_mmr_update(e.to_string()))?,
+                        id: beefy_next_authority_set.id,
+                        len: beefy_next_authority_set.len,
+                        root: H256::decode(&mut beefy_next_authority_set.authority_root.as_slice())
+                            .map_err(|e| Error::invalid_mmr_update(e.to_string()))?,
                     },
-                    leaf_extra: H256::decode(
-                        &mut mmr_update
-                            .mmr_leaf
-                            .as_ref()
-                            .ok_or_else(|| Error::invalid_mmr_update("".to_string()))?
-                            .parachain_heads
-                            .as_slice(),
-                    )
-                    .map_err(|e| Error::invalid_mmr_update(e.to_string()))?,
+                    leaf_extra: H256::decode(&mut mmr_leaf.parachain_heads.as_slice())
+                        .map_err(|e| Error::invalid_mmr_update(e.to_string()))?,
                 },
                 mmr_proof: Proof {
                     leaf_index: mmr_update.mmr_leaf_index,
@@ -288,7 +243,9 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                     .into_iter()
                     .map(|item| {
                         if item.len() != 32 {
-                            return Err(Error::invalid_mmr_update("".to_string()));
+                            return Err(Error::invalid_mmr_update(
+                                "Invalid authorities proof".to_string(),
+                            ));
                         }
                         let mut dest = [0u8; 32];
                         dest.copy_from_slice(&item);
