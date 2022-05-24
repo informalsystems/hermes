@@ -43,21 +43,20 @@ use crate::downcast;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BeefyClient<Crypto>(PhantomData<Crypto>);
 
-impl<Crypto: CryptoOps> Default for BeefyClient<Crypto> {
+impl<Crypto> Default for BeefyClient<Crypto> {
     fn default() -> Self {
         Self(PhantomData::default())
     }
 }
 
-impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> {
+impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
     type Header = BeefyHeader;
     type ClientState = ClientState;
-    type ConsensusState = ConsensusState<Self::Crypto>;
-    type Crypto = Crypto;
+    type ConsensusState = ConsensusState;
 
     fn verify_header(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -131,11 +130,11 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
 
     fn update_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Crypto>), Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         let mut parachain_cs_states = vec![];
         // Extract the new client state from the verified header
         let client_state = client_state
@@ -153,7 +152,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
             }
             parachain_cs_states.push((
                 height,
-                AnyConsensusState::Beefy(ConsensusState::<Crypto>::try_from(header)?),
+                AnyConsensusState::Beefy(ConsensusState::from_header::<Crypto>(header)?),
             ))
         }
 
@@ -183,7 +182,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
 
     fn check_for_misbehaviour(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: ClientId,
         _client_state: Self::ClientState,
         _header: Self::Header,
@@ -193,7 +192,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
 
     fn verify_client_consensus_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_state: &Self::ClientState,
         _height: Height,
         prefix: &CommitmentPrefix,
@@ -201,7 +200,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
         root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState<Crypto>,
+        expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
         let path = ClientConsensusStatePath {
             client_id: client_id.clone(),
@@ -215,7 +214,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
     // Consensus state will be verified in the verification functions  before these are called
     fn verify_connection_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -232,7 +231,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
 
     fn verify_channel_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -250,7 +249,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
 
     fn verify_client_full_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_state: &Self::ClientState,
         _height: Height,
         prefix: &CommitmentPrefix,
@@ -266,7 +265,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         height: Height,
@@ -297,7 +296,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         height: Height,
@@ -327,7 +326,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         height: Height,
@@ -354,7 +353,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         height: Height,
@@ -386,7 +385,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync> ClientDef for BeefyClient<Crypto> 
         _consensus_state: &Self::ConsensusState,
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Crypto>), Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         todo!()
     }
 }
@@ -432,8 +431,8 @@ fn verify_non_membership<Crypto: CryptoOps, P: Into<Path>>(
     Crypto::verify_non_membership_trie_proof(&root, &trie_proof, &key)
 }
 
-fn verify_delay_passed<Crypto: CryptoOps>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+fn verify_delay_passed(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
 ) -> Result<(), Error> {
@@ -468,9 +467,7 @@ fn verify_delay_passed<Crypto: CryptoOps>(
     .map_err(|e| e.into())
 }
 
-pub fn downcast_consensus_state<Crypto: CryptoOps>(
-    cs: AnyConsensusState<Crypto>,
-) -> Result<ConsensusState<Crypto>, Error> {
+pub fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState, Error> {
     downcast!(
         cs => AnyConsensusState::Beefy
     )

@@ -47,8 +47,8 @@ pub fn dispatch<Ctx, Crypto>(
     msg: ConnectionMsg,
 ) -> Result<HandlerOutput<ConnectionResult>, Error>
 where
-    Ctx: LightClientContext<Crypto = Crypto>,
-    Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq,
+    Ctx: LightClientContext,
+    Crypto: CryptoOps,
 {
     match msg {
         ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),

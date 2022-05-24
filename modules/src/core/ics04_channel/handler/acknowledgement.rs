@@ -22,8 +22,8 @@ pub struct AckPacketResult {
     pub seq_number: Option<Sequence>,
 }
 
-pub fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: &MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();

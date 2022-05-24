@@ -15,14 +15,14 @@ use tendermint_proto::Protobuf;
 
 /// Enumeration of all messages that the local ICS26 module is capable of routing.
 #[derive(Clone, Debug)]
-pub enum Ics26Envelope<Crypto> {
-    Ics2Msg(ClientMsg<Crypto>),
+pub enum Ics26Envelope {
+    Ics2Msg(ClientMsg),
     Ics3Msg(ConnectionMsg),
     Ics4ChannelMsg(ChannelMsg),
     Ics4PacketMsg(PacketMsg),
 }
 
-impl<Crypto: Clone> TryFrom<Any> for Ics26Envelope<Crypto> {
+impl TryFrom<Any> for Ics26Envelope {
     type Error = Error;
 
     fn try_from(any_msg: Any) -> Result<Self, Self::Error> {

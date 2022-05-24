@@ -29,8 +29,8 @@ pub enum RecvPacketResult {
     NoOp,
 }
 
-pub fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: &MsgRecvPacket,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();

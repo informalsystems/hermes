@@ -1,4 +1,3 @@
-use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics04_channel::channel::Counterparty;
 use crate::core::ics04_channel::channel::State;
@@ -22,8 +21,8 @@ pub struct SendPacketResult {
     pub commitment: PacketCommitment,
 }
 
-pub fn send_packet<Crypto: CryptoOps>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn send_packet(
+    ctx: &dyn LightClientContext,
     packet: Packet,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();

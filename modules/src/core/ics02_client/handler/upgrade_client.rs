@@ -17,16 +17,16 @@ use core::fmt::Debug;
 /// The result following the successful processing of a `MsgUpgradeAnyClient` message.
 /// This data type should be used with a qualified name `upgrade_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Result<Crypto> {
+pub struct Result {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
-    pub consensus_state: Option<ConsensusUpdateResult<Crypto>>,
+    pub consensus_state: Option<ConsensusUpdateResult>,
 }
 
-pub fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
-    msg: MsgUpgradeAnyClient<Crypto>,
-) -> HandlerResult<ClientResult<Crypto>, Error> {
+pub fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
+    msg: MsgUpgradeAnyClient,
+) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
     let MsgUpgradeAnyClient { client_id, .. } = msg;
 
@@ -152,8 +152,7 @@ mod tests {
         let msg = MsgUpgradeAnyClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
             client_state: MockClientState::new(MockHeader::new(Height::new(1, 26))).into(),
-            consensus_state: MockConsensusState::<Crypto>::new(MockHeader::new(Height::new(1, 26)))
-                .into(),
+            consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26))).into(),
             proof_upgrade_client: Default::default(),
             proof_upgrade_consensus_state: Default::default(),
             signer,
@@ -181,8 +180,7 @@ mod tests {
         let msg = MsgUpgradeAnyClient {
             client_id,
             client_state: MockClientState::new(MockHeader::new(Height::new(0, 26))).into(),
-            consensus_state: MockConsensusState::<Crypto>::new(MockHeader::new(Height::new(0, 26)))
-                .into(),
+            consensus_state: MockConsensusState::new(MockHeader::new(Height::new(0, 26))).into(),
             proof_upgrade_client: Default::default(),
             proof_upgrade_consensus_state: Default::default(),
             signer,

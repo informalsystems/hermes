@@ -1,6 +1,5 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics26_routing::context::LightClientContext;
 use crate::prelude::*;
 use core::fmt::Debug;
@@ -21,19 +20,19 @@ use crate::timestamp::Timestamp;
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Result<Crypto> {
+pub struct Result {
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub client_state: AnyClientState,
-    pub consensus_state: Option<AnyConsensusState<Crypto>>,
+    pub consensus_state: Option<AnyConsensusState>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
 
-pub fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
-    msg: MsgCreateAnyClient<Crypto>,
-) -> HandlerResult<ClientResult<Crypto>, Error> {
+pub fn process(
+    ctx: &dyn LightClientContext,
+    msg: MsgCreateAnyClient,
+) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
     // Construct this client's identifier
@@ -103,7 +102,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             MockClientState::new(MockHeader::new(height)).into(),
-            Some(MockConsensusState::<Crypto>::new(MockHeader::new(height)).into()),
+            Some(MockConsensusState::new(MockHeader::new(height)).into()),
             signer,
         )
         .unwrap();
@@ -147,7 +146,7 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&existing_client_id, height);
 
-        let create_client_msgs: Vec<MsgCreateAnyClient<Crypto>> = vec![
+        let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
             MsgCreateAnyClient::new(
                 MockClientState::new(MockHeader::new(Height {
                     revision_height: 42,
@@ -155,7 +154,7 @@ mod tests {
                 }))
                 .into(),
                 Some(
-                    MockConsensusState::<Crypto>::new(MockHeader::new(Height {
+                    MockConsensusState::new(MockHeader::new(Height {
                         revision_height: 42,
                         ..height
                     }))
@@ -171,7 +170,7 @@ mod tests {
                 }))
                 .into(),
                 Some(
-                    MockConsensusState::<Crypto>::new(MockHeader::new(Height {
+                    MockConsensusState::new(MockHeader::new(Height {
                         revision_height: 42,
                         ..height
                     }))
@@ -264,9 +263,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             tm_client_state,
-            Some(AnyConsensusState::<Crypto>::Tendermint(
-                tm_header.try_into().unwrap(),
-            )),
+            Some(AnyConsensusState::Tendermint(tm_header.try_into().unwrap())),
             signer,
         )
         .unwrap();

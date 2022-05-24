@@ -13,7 +13,7 @@ pub(crate) fn send_transfer<Ctx, Crypto: CryptoOps>(
     msg: MsgTransfer,
 ) -> Result<HandlerOutput<PacketResult>, Error>
 where
-    Ctx: LightClientContext<Crypto = Crypto>,
+    Ctx: LightClientContext,
 {
     let source_channel_end = ctx
         .channel_end(&(msg.source_port.clone(), msg.source_channel))

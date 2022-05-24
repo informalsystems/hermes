@@ -1,11 +1,9 @@
 use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::prelude::*;
-use core::fmt::Debug;
 
 use ibc_proto::google::protobuf::Any;
 
 use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
-use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
@@ -39,11 +37,11 @@ pub fn deliver<Ctx, Crypto>(
     message: Any,
 ) -> Result<(Vec<IbcEvent>, Vec<String>), Error>
 where
-    Ctx: Ics26Context + ClientReader<Crypto = Crypto> + ClientKeeper<Crypto = Crypto>,
-    Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq,
+    Ctx: Ics26Context,
+    Crypto: CryptoOps,
 {
     // Decode the proto message into a domain message, creating an ICS26 envelope.
-    let envelope = decode::<Crypto>(message)?;
+    let envelope = decode(message)?;
 
     // Process the envelope, and accumulate any events that were generated.
     let output = dispatch::<_, Crypto>(ctx, envelope)?;
@@ -52,7 +50,7 @@ where
 }
 
 /// Attempts to convert a message into a [Ics26Envelope] message
-pub fn decode<Crypto: Clone>(message: Any) -> Result<Ics26Envelope<Crypto>, Error> {
+pub fn decode(message: Any) -> Result<Ics26Envelope, Error> {
     message.try_into()
 }
 
@@ -61,13 +59,10 @@ pub fn decode<Crypto: Clone>(message: Any) -> Result<Ics26Envelope<Crypto>, Erro
 /// and events produced after processing the input `msg`.
 /// If this method returns an error, the runtime is expected to rollback all state modifications to
 /// the `Ctx` caused by all messages from the transaction that this `msg` is a part of.
-pub fn dispatch<Ctx, Crypto>(
-    ctx: &mut Ctx,
-    msg: Ics26Envelope<Crypto>,
-) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx, Crypto>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, Error>
 where
-    Ctx: Ics26Context + ClientReader<Crypto = Crypto> + ClientKeeper<Crypto = Crypto>,
-    Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq,
+    Ctx: Ics26Context,
+    Crypto: CryptoOps,
 {
     let output = match msg {
         Ics2Msg(msg) => {
@@ -237,7 +232,7 @@ mod tests {
         // Test parameters
         struct Test {
             name: String,
-            msg: Ics26Envelope<Crypto>,
+            msg: Ics26Envelope,
             want_pass: bool,
         }
         let default_signer = get_dummy_account_id();
@@ -267,7 +262,7 @@ mod tests {
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
-            Some(AnyConsensusState::Mock(MockConsensusState::<Crypto>::new(
+            Some(AnyConsensusState::Mock(MockConsensusState::new(
                 MockHeader::new(start_client_height),
             ))),
             default_signer.clone(),

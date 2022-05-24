@@ -1,7 +1,6 @@
 use core::convert::TryInto;
 use core::fmt::Debug;
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use prost::Message;
 use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
@@ -37,32 +36,19 @@ use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TendermintClient<Crypto> {
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct TendermintClient {
     verifier: ProdVerifier,
-    _phantom: core::marker::PhantomData<Crypto>,
 }
 
-impl<Crypto> Default for TendermintClient<Crypto> {
-    fn default() -> Self {
-        Self {
-            verifier: Default::default(),
-            _phantom: Default::default(),
-        }
-    }
-}
-
-impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
-    for TendermintClient<Crypto>
-{
+impl ClientDef for TendermintClient {
     type Header = Header;
     type ClientState = ClientState;
-    type ConsensusState = ConsensusState<Self::Crypto>;
-    type Crypto = Crypto;
+    type ConsensusState = ConsensusState;
 
     fn verify_header(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -77,11 +63,11 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
         }
 
         // Check if a consensus state is already installed; if so skip
-        let header_consensus_state = ConsensusState::<Self::Crypto>::from(header.clone());
+        let header_consensus_state = ConsensusState::from(header.clone());
 
         let _ = match ctx.maybe_consensus_state(&client_id, header.height())? {
             Some(cs) => {
-                let cs = downcast_consensus_state::<Crypto>(cs)?;
+                let cs = downcast_consensus_state(cs)?;
                 // If this consensus state matches, skip verification
                 // (optimization)
                 if cs == header_consensus_state {
@@ -94,9 +80,8 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
             None => None,
         };
 
-        let trusted_consensus_state = downcast_consensus_state::<Crypto>(
-            ctx.consensus_state(&client_id, header.trusted_height)?,
-        )?;
+        let trusted_consensus_state =
+            downcast_consensus_state(ctx.consensus_state(&client_id, header.trusted_height)?)?;
 
         let trusted_state = TrustedBlockState {
             header_time: trusted_consensus_state.timestamp,
@@ -152,11 +137,11 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn update_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Self::Crypto>), Ics02Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Ics02Error> {
         let header_consensus_state = ConsensusState::from(header.clone());
         Ok((
             client_state.with_header(header),
@@ -176,19 +161,19 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn check_for_misbehaviour(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<bool, Ics02Error> {
         // Check if a consensus state is already installed; if so it should
         // match the untrusted header.
-        let header_consensus_state = ConsensusState::<Self::Crypto>::from(header.clone());
+        let header_consensus_state = ConsensusState::from(header.clone());
 
         let existing_consensus_state =
             match ctx.maybe_consensus_state(&client_id, header.height())? {
                 Some(cs) => {
-                    let cs = downcast_consensus_state::<Crypto>(cs)?;
+                    let cs = downcast_consensus_state(cs)?;
                     // If this consensus state matches, skip verification
                     // (optimization)
                     if cs == header_consensus_state {
@@ -215,7 +200,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
         if header.height() < client_state.latest_height() {
             let maybe_next_cs = ctx
                 .next_consensus_state(&client_id, header.height())?
-                .map(downcast_consensus_state::<Crypto>)
+                .map(downcast_consensus_state)
                 .transpose()?;
 
             if let Some(next_cs) = maybe_next_cs {
@@ -235,7 +220,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
         if header.trusted_height < header.height() {
             let maybe_prev_cs = ctx
                 .prev_consensus_state(&client_id, header.height())?
-                .map(downcast_consensus_state::<Crypto>)
+                .map(downcast_consensus_state)
                 .transpose()?;
 
             if let Some(prev_cs) = maybe_prev_cs {
@@ -257,7 +242,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn verify_client_consensus_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -265,7 +250,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
         root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState<Crypto>,
+        expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
@@ -282,7 +267,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn verify_connection_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -303,7 +288,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn verify_channel_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -325,7 +310,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn verify_client_full_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -345,7 +330,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -358,7 +343,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
         commitment: PacketCommitment,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
-        verify_delay_passed::<Self::Crypto>(ctx, height, connection_end)?;
+        verify_delay_passed(ctx, height, connection_end)?;
 
         let commitment_path = CommitmentsPath {
             port_id: port_id.clone(),
@@ -378,7 +363,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -392,7 +377,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
     ) -> Result<(), Ics02Error> {
         // client state height = consensus state height
         client_state.verify_height(height)?;
-        verify_delay_passed::<Self::Crypto>(ctx, height, connection_end)?;
+        verify_delay_passed(ctx, height, connection_end)?;
 
         let ack_path = AcksPath {
             port_id: port_id.clone(),
@@ -411,7 +396,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -423,7 +408,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
         sequence: Sequence,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
-        verify_delay_passed::<Self::Crypto>(ctx, height, connection_end)?;
+        verify_delay_passed(ctx, height, connection_end)?;
 
         let mut seq_bytes = Vec::new();
         u64::from(sequence)
@@ -443,7 +428,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -455,7 +440,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
         sequence: Sequence,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
-        verify_delay_passed::<Self::Crypto>(ctx, height, connection_end)?;
+        verify_delay_passed(ctx, height, connection_end)?;
 
         let receipt_path = ReceiptsPath {
             port_id: port_id.clone(),
@@ -477,7 +462,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef
         _consensus_state: &Self::ConsensusState,
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Self::Crypto>), Ics02Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Ics02Error> {
         todo!()
     }
 }
@@ -523,8 +508,8 @@ fn verify_non_membership(
         .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
 }
 
-fn verify_delay_passed<Crypto: CryptoOps>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+fn verify_delay_passed(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
 ) -> Result<(), Ics02Error> {
@@ -553,11 +538,9 @@ fn verify_delay_passed<Crypto: CryptoOps>(
     .map_err(|e| e.into())
 }
 
-fn downcast_consensus_state<Crypto: CryptoOps>(
-    cs: AnyConsensusState<Crypto>,
-) -> Result<ConsensusState<Crypto>, Ics02Error> {
+fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState, Ics02Error> {
     downcast!(
-        cs => AnyConsensusState::<Crypto>::Tendermint
+        cs => AnyConsensusState::Tendermint
     )
     .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
 }

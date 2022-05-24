@@ -21,18 +21,18 @@ use crate::timestamp::Timestamp;
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Result<Crypto> {
+pub struct Result {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
-    pub consensus_state: Option<ConsensusUpdateResult<Crypto>>,
+    pub consensus_state: Option<ConsensusUpdateResult>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
 
-pub fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: MsgUpdateAnyClient,
-) -> HandlerResult<ClientResult<Crypto>, Error> {
+) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgUpdateAnyClient {

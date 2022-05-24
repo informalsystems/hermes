@@ -16,9 +16,9 @@ pub mod upgrade_client;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
-pub enum ClientMsg<Crypto> {
-    CreateClient(MsgCreateAnyClient<Crypto>),
+pub enum ClientMsg {
+    CreateClient(MsgCreateAnyClient),
     UpdateClient(MsgUpdateAnyClient),
     Misbehaviour(MsgSubmitAnyMisbehaviour),
-    UpgradeClient(MsgUpgradeAnyClient<Crypto>),
+    UpgradeClient(MsgUpgradeAnyClient),
 }

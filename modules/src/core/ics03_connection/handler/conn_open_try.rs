@@ -14,16 +14,15 @@ use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
-use core::fmt::Debug;
 
-pub(crate) fn process<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub(crate) fn process<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     msg: MsgConnectionOpenTry,
 ) -> HandlerResult<ConnectionResult, Error> {
     let mut output = HandlerOutput::builder();
 
     // Check that consensus height (for client proof) in message is not too advanced nor too old.
-    check_client_consensus_height::<Crypto>(ctx, msg.consensus_height())?;
+    check_client_consensus_height(ctx, msg.consensus_height())?;
 
     // Unwrap the old connection end (if any) and its identifier.
     let (mut new_connection_end, conn_id) = match &msg.previous_connection_id {

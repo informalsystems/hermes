@@ -11,11 +11,10 @@ use crate::core::ics26_routing::context::LightClientContext;
 use crate::prelude::*;
 use crate::proofs::Proofs;
 use crate::Height;
-use core::fmt::Debug;
 
 /// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
-pub fn verify_channel_proofs<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn verify_channel_proofs<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     channel_end: &ChannelEnd,
     connection_end: &ConnectionEnd,
@@ -57,8 +56,8 @@ pub fn verify_channel_proofs<Crypto: CryptoOps + Debug + Send + Sync + PartialEq
 }
 
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
-pub fn verify_packet_recv_proofs<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn verify_packet_recv_proofs<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     packet: &Packet,
     connection_end: &ConnectionEnd,
@@ -105,10 +104,8 @@ pub fn verify_packet_recv_proofs<Crypto: CryptoOps + Debug + Send + Sync + Parti
 }
 
 /// Entry point for verifying all proofs bundled in an ICS4 packet ack message.
-pub fn verify_packet_acknowledgement_proofs<
-    Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq,
->(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn verify_packet_acknowledgement_proofs<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     packet: &Packet,
     acknowledgement: Acknowledgement,
@@ -152,8 +149,8 @@ pub fn verify_packet_acknowledgement_proofs<
 }
 
 /// Entry point for verifying all timeout proofs.
-pub fn verify_next_sequence_recv<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn verify_next_sequence_recv<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
     packet: Packet,
@@ -193,8 +190,8 @@ pub fn verify_next_sequence_recv<Crypto: CryptoOps + Debug + Send + Sync + Parti
     Ok(())
 }
 
-pub fn verify_packet_receipt_absence<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn verify_packet_receipt_absence<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
     packet: Packet,

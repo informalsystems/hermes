@@ -16,16 +16,16 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MsgCreateAnyClient<Crypto> {
+pub struct MsgCreateAnyClient {
     pub client_state: AnyClientState,
-    pub consensus_state: Option<AnyConsensusState<Crypto>>,
+    pub consensus_state: Option<AnyConsensusState>,
     pub signer: Signer,
 }
 
-impl<Crypto> MsgCreateAnyClient<Crypto> {
+impl MsgCreateAnyClient {
     pub fn new(
         client_state: AnyClientState,
-        consensus_state: Option<AnyConsensusState<Crypto>>,
+        consensus_state: Option<AnyConsensusState>,
         signer: Signer,
     ) -> Result<Self, Error> {
         match consensus_state.as_ref() {
@@ -48,7 +48,7 @@ impl<Crypto> MsgCreateAnyClient<Crypto> {
     }
 }
 
-impl<Crypto: Clone> Msg for MsgCreateAnyClient<Crypto> {
+impl Msg for MsgCreateAnyClient {
     type ValidationError = crate::core::ics24_host::error::ValidationError;
     type Raw = RawMsgCreateClient;
 
@@ -61,9 +61,9 @@ impl<Crypto: Clone> Msg for MsgCreateAnyClient<Crypto> {
     }
 }
 
-impl<Crypto: Clone> Protobuf<RawMsgCreateClient> for MsgCreateAnyClient<Crypto> {}
+impl Protobuf<RawMsgCreateClient> for MsgCreateAnyClient {}
 
-impl<Crypto: Clone> TryFrom<RawMsgCreateClient> for MsgCreateAnyClient<Crypto> {
+impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
     type Error = Error;
 
     fn try_from(raw: RawMsgCreateClient) -> Result<Self, Error> {
@@ -83,8 +83,8 @@ impl<Crypto: Clone> TryFrom<RawMsgCreateClient> for MsgCreateAnyClient<Crypto> {
     }
 }
 
-impl<Crypto: Clone> From<MsgCreateAnyClient<Crypto>> for RawMsgCreateClient {
-    fn from(ics_msg: MsgCreateAnyClient<Crypto>) -> Self {
+impl From<MsgCreateAnyClient> for RawMsgCreateClient {
+    fn from(ics_msg: MsgCreateAnyClient) -> Self {
         RawMsgCreateClient {
             client_state: Some(ics_msg.client_state.into()),
             consensus_state: ics_msg.consensus_state.map(|cs| cs.into()),
@@ -104,7 +104,7 @@ mod tests {
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::msgs::MsgCreateAnyClient;
-    use crate::test_utils::{get_dummy_account_id, Crypto};
+    use crate::test_utils::get_dummy_account_id;
 
     #[test]
     fn msg_create_client_serialization() {
@@ -115,9 +115,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             tm_client_state,
-            Some(AnyConsensusState::<Crypto>::Tendermint(
-                tm_header.try_into().unwrap(),
-            )),
+            Some(AnyConsensusState::Tendermint(tm_header.try_into().unwrap())),
             signer,
         )
         .unwrap();

@@ -1,4 +1,3 @@
-use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::commitment::AcknowledgementCommitment;
 use crate::core::ics04_channel::error::Error;
@@ -20,8 +19,8 @@ pub struct WriteAckPacketResult {
     pub ack_commitment: AcknowledgementCommitment,
 }
 
-pub fn process<Crypto: CryptoOps>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn process(
+    ctx: &dyn LightClientContext,
     packet: Packet,
     ack: Vec<u8>,
 ) -> HandlerResult<PacketResult, Error> {

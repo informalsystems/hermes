@@ -9,11 +9,10 @@ use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::core::ics26_routing::context::LightClientContext;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
-use core::fmt::Debug;
 
 /// Entry point for verifying all proofs bundled in any ICS3 message.
-pub fn verify_proofs<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn verify_proofs<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     client_state: Option<AnyClientState>,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -60,8 +59,8 @@ pub fn verify_proofs<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
 /// Verifies the authenticity and semantic correctness of a commitment `proof`. The commitment
 /// claims to prove that an object of type connection exists on the source chain (i.e., the chain
 /// which created this proof). This object must match the state of `expected_conn`.
-pub fn verify_connection_proof<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn verify_connection_proof<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
@@ -115,8 +114,8 @@ pub fn verify_connection_proof<Crypto: CryptoOps + Debug + Send + Sync + Partial
 /// complete verification: that the client state the counterparty stores is valid (i.e., not frozen,
 /// at the same revision as the current chain, with matching chain identifiers, etc) and that the
 /// `proof` is correct.
-pub fn verify_client_proof<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn verify_client_proof<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
     expected_client_state: AnyClientState,
@@ -154,8 +153,8 @@ pub fn verify_client_proof<Crypto: CryptoOps + Debug + Send + Sync + PartialEq +
         })
 }
 
-pub fn verify_consensus_proof<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn verify_consensus_proof<Crypto: CryptoOps>(
+    ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
     proof: &ConsensusProof,
@@ -197,8 +196,8 @@ pub fn verify_consensus_proof<Crypto: CryptoOps + Debug + Send + Sync + PartialE
 
 /// Checks that `claimed_height` is within normal bounds, i.e., fresh enough so that the chain has
 /// not pruned it yet, but not newer than the current (actual) height of the local chain.
-pub fn check_client_consensus_height<Crypto: CryptoOps>(
-    ctx: &dyn LightClientContext<Crypto = Crypto>,
+pub fn check_client_consensus_height(
+    ctx: &dyn LightClientContext,
     claimed_height: Height,
 ) -> Result<(), Error> {
     if claimed_height > ctx.host_height() {

@@ -11,23 +11,23 @@ pub mod update_client;
 pub mod upgrade_client;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ClientResult<Crypto> {
-    Create(create_client::Result<Crypto>),
-    Update(update_client::Result<Crypto>),
-    Upgrade(upgrade_client::Result<Crypto>),
+pub enum ClientResult {
+    Create(create_client::Result),
+    Update(update_client::Result),
+    Upgrade(upgrade_client::Result),
 }
 
 /// General entry point for processing any message related to ICS2 (client functions) protocols.
 pub fn dispatch<Ctx, Crypto>(
     ctx: &Ctx,
-    msg: ClientMsg<Crypto>,
-) -> Result<HandlerOutput<ClientResult<Crypto>>, Error>
+    msg: ClientMsg,
+) -> Result<HandlerOutput<ClientResult>, Error>
 where
-    Ctx: LightClientContext<Crypto = Crypto>,
-    Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq,
+    Ctx: LightClientContext,
+    Crypto: CryptoOps,
 {
     match msg {
-        ClientMsg::CreateClient(msg) => create_client::process::<Crypto>(ctx, msg),
+        ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),
         ClientMsg::UpdateClient(msg) => update_client::process::<Crypto>(ctx, msg),
         ClientMsg::UpgradeClient(msg) => upgrade_client::process::<Crypto>(ctx, msg),
         _ => {

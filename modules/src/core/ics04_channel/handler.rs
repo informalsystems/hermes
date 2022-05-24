@@ -64,8 +64,8 @@ pub fn channel_dispatch<Ctx, Crypto>(
     msg: &ChannelMsg,
 ) -> Result<(HandlerOutputBuilder<()>, ChannelResult), Error>
 where
-    Ctx: LightClientContext<Crypto = Crypto>,
-    Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq,
+    Ctx: LightClientContext,
+    Crypto: CryptoOps,
 {
     let output = match msg {
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
@@ -173,8 +173,8 @@ pub fn packet_dispatch<Ctx, Crypto>(
     msg: &PacketMsg,
 ) -> Result<(HandlerOutputBuilder<()>, PacketResult), Error>
 where
-    Ctx: LightClientContext<Crypto = Crypto>,
-    Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq,
+    Ctx: LightClientContext,
+    Crypto: CryptoOps,
 {
     let output = match msg {
         PacketMsg::RecvPacket(msg) => recv_packet::process::<Crypto>(ctx, msg),

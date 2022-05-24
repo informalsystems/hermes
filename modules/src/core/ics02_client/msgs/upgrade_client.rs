@@ -18,19 +18,19 @@ pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpgradeClient";
 
 /// A type of message that triggers the upgrade of an on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq)]
-pub struct MsgUpgradeAnyClient<Crypto> {
+pub struct MsgUpgradeAnyClient {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState<Crypto>,
+    pub consensus_state: AnyConsensusState,
     pub proof_upgrade_client: Vec<u8>,
     pub proof_upgrade_consensus_state: Vec<u8>,
     pub signer: Signer,
 }
-impl<Crypto> MsgUpgradeAnyClient<Crypto> {
+impl MsgUpgradeAnyClient {
     pub fn new(
         client_id: ClientId,
         client_state: AnyClientState,
-        consensus_state: AnyConsensusState<Crypto>,
+        consensus_state: AnyConsensusState,
         proof_upgrade_client: Vec<u8>,
         proof_upgrade_consensus_state: Vec<u8>,
         signer: Signer,
@@ -46,7 +46,7 @@ impl<Crypto> MsgUpgradeAnyClient<Crypto> {
     }
 }
 
-impl<Crypto: Clone> Msg for MsgUpgradeAnyClient<Crypto> {
+impl Msg for MsgUpgradeAnyClient {
     type ValidationError = crate::core::ics24_host::error::ValidationError;
     type Raw = RawMsgUpgradeClient;
 
@@ -59,10 +59,10 @@ impl<Crypto: Clone> Msg for MsgUpgradeAnyClient<Crypto> {
     }
 }
 
-impl<Crypto: Clone> Protobuf<RawMsgUpgradeClient> for MsgUpgradeAnyClient<Crypto> {}
+impl Protobuf<RawMsgUpgradeClient> for MsgUpgradeAnyClient {}
 
-impl<Crypto: Clone> From<MsgUpgradeAnyClient<Crypto>> for RawMsgUpgradeClient {
-    fn from(dm_msg: MsgUpgradeAnyClient<Crypto>) -> RawMsgUpgradeClient {
+impl From<MsgUpgradeAnyClient> for RawMsgUpgradeClient {
+    fn from(dm_msg: MsgUpgradeAnyClient) -> RawMsgUpgradeClient {
         RawMsgUpgradeClient {
             client_id: dm_msg.client_id.to_string(),
             client_state: Some(dm_msg.client_state.into()),
@@ -74,7 +74,7 @@ impl<Crypto: Clone> From<MsgUpgradeAnyClient<Crypto>> for RawMsgUpgradeClient {
     }
 }
 
-impl<Crypto: Clone> TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient<Crypto> {
+impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
     type Error = Error;
 
     fn try_from(proto_msg: RawMsgUpgradeClient) -> Result<Self, Self::Error> {
@@ -113,13 +113,13 @@ pub mod test_util {
             client_state::{MockClientState, MockConsensusState},
             header::MockHeader,
         },
-        test_utils::{get_dummy_bech32_account, get_dummy_proof, Crypto},
+        test_utils::{get_dummy_bech32_account, get_dummy_proof},
     };
 
     use super::MsgUpgradeAnyClient;
 
     /// Extends the implementation with additional helper methods.
-    impl MsgUpgradeAnyClient<Crypto> {
+    impl MsgUpgradeAnyClient {
         /// Setter for `client_id`. Amenable to chaining, since it consumes the input message.
         pub fn with_client_id(self, client_id: ClientId) -> Self {
             MsgUpgradeAnyClient { client_id, ..self }
@@ -134,8 +134,7 @@ pub mod test_util {
                 AnyClientState::Mock(MockClientState::new(MockHeader::new(height))).into(),
             ),
             consensus_state: Some(
-                AnyConsensusState::Mock(MockConsensusState::<Crypto>::new(MockHeader::new(height)))
-                    .into(),
+                AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height))).into(),
             ),
             proof_upgrade_client: get_dummy_proof(),
             proof_upgrade_consensus_state: get_dummy_proof(),
@@ -150,7 +149,6 @@ mod tests {
     use alloc::vec::Vec;
     use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 
-    use crate::test_utils::Crypto;
     use crate::{
         core::{
             ics02_client::{
@@ -176,7 +174,7 @@ mod tests {
 
         let client_state = AnyClientState::Mock(MockClientState::new(MockHeader::new(height)));
         let consensus_state =
-            AnyConsensusState::Mock(MockConsensusState::<Crypto>::new(MockHeader::new(height)));
+            AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height)));
 
         let proof = get_dummy_merkle_proof();
         let mut proof_buf = Vec::new();

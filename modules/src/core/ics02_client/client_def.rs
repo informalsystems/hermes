@@ -24,20 +24,19 @@ use core::fmt::Debug;
 use crate::mock::client_def::MockClient;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
-pub enum ConsensusUpdateResult<Crypto> {
-    Single(AnyConsensusState<Crypto>),
-    Batch(Vec<(Height, AnyConsensusState<Crypto>)>),
+pub enum ConsensusUpdateResult {
+    Single(AnyConsensusState),
+    Batch(Vec<(Height, AnyConsensusState)>),
 }
 
 pub trait ClientDef: Clone {
     type Header: Header;
     type ClientState: ClientState;
     type ConsensusState: ConsensusState;
-    type Crypto: CryptoOps + Debug + Send + Sync;
 
     fn verify_header(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -45,11 +44,11 @@ pub trait ClientDef: Clone {
 
     fn update_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Self::Crypto>), Error>;
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error>;
 
     fn update_state_on_misbehaviour(
         &self,
@@ -59,7 +58,7 @@ pub trait ClientDef: Clone {
 
     fn check_for_misbehaviour(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -72,7 +71,7 @@ pub trait ClientDef: Clone {
         consensus_state: &Self::ConsensusState,
         proof_upgrade_client: Vec<u8>,
         proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Self::Crypto>), Error>;
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error>;
 
     /// Verification functions as specified in:
     /// <https://github.com/cosmos/ibc/tree/master/spec/core/ics-002-client-semantics>
@@ -84,7 +83,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_client_consensus_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -92,14 +91,14 @@ pub trait ClientDef: Clone {
         root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState<Self::Crypto>,
+        expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
     #[allow(clippy::too_many_arguments)]
     fn verify_connection_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -114,7 +113,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_channel_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -130,7 +129,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_client_full_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -144,7 +143,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_data(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -161,7 +160,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -178,7 +177,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -194,7 +193,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -208,37 +207,36 @@ pub trait ClientDef: Clone {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum AnyClient<Crypto: CryptoOps> {
-    Tendermint(TendermintClient<Crypto>),
+pub enum AnyClient<Crypto> {
+    Tendermint(TendermintClient),
     Beefy(BeefyClient<Crypto>),
     Near(BeefyClient<Crypto>),
     #[cfg(any(test, feature = "mocks"))]
-    Mock(MockClient<Crypto>),
+    Mock(MockClient),
 }
 
-impl<Crypto: CryptoOps> AnyClient<Crypto> {
+impl<Crypto> AnyClient<Crypto> {
     pub fn from_client_type(client_type: ClientType) -> Self {
         match client_type {
-            ClientType::Tendermint => Self::Tendermint(TendermintClient::<Crypto>::default()),
+            ClientType::Tendermint => Self::Tendermint(TendermintClient::default()),
             ClientType::Beefy => Self::Beefy(BeefyClient::<Crypto>::default()),
             ClientType::Near => Self::Near(BeefyClient::<Crypto>::default()),
             #[cfg(any(test, feature = "mocks"))]
-            ClientType::Mock => Self::Mock(MockClient::<Crypto>::default()),
+            ClientType::Mock => Self::Mock(MockClient::default()),
         }
     }
 }
 
 // ⚠️  Beware of the awful boilerplate below ⚠️
-impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for AnyClient<Crypto> {
+impl<Crypto: CryptoOps> ClientDef for AnyClient<Crypto> {
     type Header = AnyHeader;
     type ClientState = AnyClientState;
-    type ConsensusState = AnyConsensusState<Self::Crypto>;
-    type Crypto = Crypto;
+    type ConsensusState = AnyConsensusState;
 
     /// Validate an incoming header
     fn verify_header(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -291,11 +289,11 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
     /// Validates an incoming `header` against the latest consensus state of this client.
     fn update_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: AnyClientState,
         header: AnyHeader,
-    ) -> Result<(AnyClientState, ConsensusUpdateResult<Self::Crypto>), Error> {
+    ) -> Result<(AnyClientState, ConsensusUpdateResult), Error> {
         match self {
             Self::Tendermint(client) => {
                 let (client_state, header) = downcast!(
@@ -387,7 +385,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
     /// Checks for misbehaviour in an incoming header
     fn check_for_misbehaviour(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -432,7 +430,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
         consensus_state: &Self::ConsensusState,
         proof_upgrade_client: Vec<u8>,
         proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Self::Crypto>), Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         match self {
             Self::Tendermint(client) => {
                 let (client_state, consensus_state) = downcast!(
@@ -494,7 +492,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
 
     fn verify_client_consensus_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -502,7 +500,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
         root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState<Self::Crypto>,
+        expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
@@ -569,7 +567,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
 
     fn verify_connection_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &AnyClientState,
         height: Height,
@@ -637,7 +635,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
 
     fn verify_channel_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &AnyClientState,
         height: Height,
@@ -710,7 +708,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
     }
     fn verify_client_full_state(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -780,7 +778,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -863,7 +861,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -945,7 +943,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
     }
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -1024,7 +1022,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Any
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        ctx: &dyn LightClientContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,

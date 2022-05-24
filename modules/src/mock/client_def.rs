@@ -1,4 +1,3 @@
-use crate::clients::crypto_ops::crypto::CryptoOps;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::AnyClientState;
@@ -21,28 +20,21 @@ use crate::prelude::*;
 use crate::Height;
 use core::fmt::Debug;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MockClient<Crypto>(core::marker::PhantomData<Crypto>);
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct MockClient;
 
-impl<Crypto> Default for MockClient<Crypto> {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
-
-impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for MockClient<Crypto> {
+impl ClientDef for MockClient {
     type Header = MockHeader;
     type ClientState = MockClientState;
-    type ConsensusState = MockConsensusState<Self::Crypto>;
-    type Crypto = Crypto;
+    type ConsensusState = MockConsensusState;
 
     fn update_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Self::Crypto>), Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         if client_state.latest_height() >= header.height() {
             return Err(Error::low_header_height(
                 header.height(),
@@ -58,7 +50,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn verify_client_consensus_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_state: &Self::ClientState,
         _height: Height,
         prefix: &CommitmentPrefix,
@@ -66,7 +58,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
         _root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        _expected_consensus_state: &AnyConsensusState<Self::Crypto>,
+        _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
         let client_prefixed_path = Path::ClientConsensusState(ClientConsensusStatePath {
             client_id: client_id.clone(),
@@ -82,7 +74,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn verify_connection_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -97,7 +89,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn verify_channel_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -113,7 +105,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn verify_client_full_state(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
@@ -127,7 +119,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn verify_packet_data(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -144,7 +136,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn verify_packet_acknowledgement(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -161,7 +153,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn verify_next_sequence_recv(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -177,7 +169,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn verify_packet_receipt_absence(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -197,7 +189,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
         consensus_state: &Self::ConsensusState,
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Self::Crypto>), Error> {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         Ok((
             *client_state,
             ConsensusUpdateResult::Single(AnyConsensusState::Mock(consensus_state.clone())),
@@ -206,7 +198,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn verify_header(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: ClientId,
         _client_state: Self::ClientState,
         _header: Self::Header,
@@ -224,7 +216,7 @@ impl<Crypto: CryptoOps + Debug + Send + Sync + PartialEq + Eq> ClientDef for Moc
 
     fn check_for_misbehaviour(
         &self,
-        _ctx: &dyn LightClientContext<Crypto = Self::Crypto>,
+        _ctx: &dyn LightClientContext,
         _client_id: ClientId,
         _client_state: Self::ClientState,
         _header: Self::Header,

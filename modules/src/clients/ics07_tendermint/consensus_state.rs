@@ -8,7 +8,6 @@ use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::google::protobuf as tpb;
 use tendermint_proto::Protobuf;
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
 use crate::clients::ics07_tendermint::error::Error;
@@ -18,29 +17,24 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct ConsensusState<Crypto> {
+pub struct ConsensusState {
     pub timestamp: Time,
     pub root: CommitmentRoot,
     pub next_validators_hash: Hash,
-    _phantom: core::marker::PhantomData<Crypto>,
 }
 
-impl<Crypto> ConsensusState<Crypto> {
+impl ConsensusState {
     pub fn new(root: CommitmentRoot, timestamp: Time, next_validators_hash: Hash) -> Self {
         Self {
             timestamp,
             root,
             next_validators_hash,
-            _phantom: Default::default(),
         }
     }
 }
 
-impl<Crypto: CryptoOps + Debug + Send + Sync>
-    crate::core::ics02_client::client_consensus::ConsensusState for ConsensusState<Crypto>
-{
+impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusState {
     type Error = Infallible;
-    type Crypto = Crypto;
 
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
@@ -50,14 +44,14 @@ impl<Crypto: CryptoOps + Debug + Send + Sync>
         &self.root
     }
 
-    fn wrap_any(self) -> AnyConsensusState<Crypto> {
+    fn wrap_any(self) -> AnyConsensusState {
         AnyConsensusState::Tendermint(self)
     }
 }
 
-impl<Crypto: Clone> Protobuf<RawConsensusState> for ConsensusState<Crypto> {}
+impl Protobuf<RawConsensusState> for ConsensusState {}
 
-impl<Crypto> TryFrom<RawConsensusState> for ConsensusState<Crypto> {
+impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
 
     fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
@@ -82,13 +76,12 @@ impl<Crypto> TryFrom<RawConsensusState> for ConsensusState<Crypto> {
             timestamp,
             next_validators_hash: Hash::from_bytes(Algorithm::Sha256, &raw.next_validators_hash)
                 .map_err(|e| Error::invalid_raw_consensus_state(e.to_string()))?,
-            _phantom: Default::default(),
         })
     }
 }
 
-impl<Crypto> From<ConsensusState<Crypto>> for RawConsensusState {
-    fn from(value: ConsensusState<Crypto>) -> Self {
+impl From<ConsensusState> for RawConsensusState {
+    fn from(value: ConsensusState) -> Self {
         // FIXME: shunts like this are necessary due to
         // https://github.com/informalsystems/tendermint-rs/issues/1053
         let tpb::Timestamp { seconds, nanos } = value.timestamp.into();
@@ -104,18 +97,17 @@ impl<Crypto> From<ConsensusState<Crypto>> for RawConsensusState {
     }
 }
 
-impl<Crypto> From<tendermint::block::Header> for ConsensusState<Crypto> {
+impl From<tendermint::block::Header> for ConsensusState {
     fn from(header: tendermint::block::Header) -> Self {
         Self {
             root: CommitmentRoot::from_bytes(header.app_hash.as_ref()),
             timestamp: header.time,
             next_validators_hash: header.next_validators_hash,
-            _phantom: Default::default(),
         }
     }
 }
 
-impl<Crypto> From<Header> for ConsensusState<Crypto> {
+impl From<Header> for ConsensusState {
     fn from(header: Header) -> Self {
         Self::from(header.signed_header.header)
     }
