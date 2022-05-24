@@ -190,6 +190,16 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
         Ok(false)
     }
 
+    fn verify_upgrade_and_update_state(
+        &self,
+        _client_state: &Self::ClientState,
+        _consensus_state: &Self::ConsensusState,
+        _proof_upgrade_client: Vec<u8>,
+        _proof_upgrade_consensus_state: Vec<u8>,
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult<Crypto>), Error> {
+        todo!()
+    }
+
     fn verify_client_consensus_state(
         &self,
         _ctx: &dyn LightClientContext,
@@ -377,16 +387,6 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
             root,
             receipt_path,
         )
-    }
-
-    fn verify_upgrade_and_update_state(
-        &self,
-        _client_state: &Self::ClientState,
-        _consensus_state: &Self::ConsensusState,
-        _proof_upgrade_client: Vec<u8>,
-        _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
-        todo!()
     }
 }
 

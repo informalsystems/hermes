@@ -1,5 +1,4 @@
-//! ICS 07: Tendermint Client implements a client verification algorithm for blockchains which use
-//! the Beefy consensus algorithm.
+//! ICS 13: Beefy Client implements a client verification algorithm for parachains in the dotsama ecosystem.
 
 pub mod client_def;
 pub mod client_state;
