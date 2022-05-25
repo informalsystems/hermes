@@ -5,7 +5,7 @@ use crate::core::ics02_client::{
 
 use super::types::LightClientBlockView;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, PartialEq, Eq, Debug, codec::Encode, codec::Decode)]
 pub struct NearHeader {
     inner: LightClientBlockView,
 }
@@ -22,6 +22,6 @@ impl Header for NearHeader {
     }
 
     fn wrap_any(self) -> AnyHeader {
-        AnyHeader::Near(self.inner.clone())
+        AnyHeader::Near(self)
     }
 }

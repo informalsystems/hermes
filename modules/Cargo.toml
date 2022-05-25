@@ -65,7 +65,7 @@ beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
-sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", optional = true }
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false, optional = true }
 
 [dependencies.tendermint]
 version = "=0.23.7"

@@ -7,7 +7,7 @@ use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 use crate::clients::ics11_beefy::header::{decode_header as decode_beefy_header, BeefyHeader};
-use crate::clients::ics13_near::types::LightClientBlockView;
+use crate::clients::ics13_near::header::NearHeader;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 #[cfg(any(test, feature = "mocks"))]
@@ -37,7 +37,7 @@ pub enum AnyHeader {
     #[serde(skip)]
     Beefy(BeefyHeader),
     #[serde(skip)]
-    Near(LightClientBlockView),
+    Near(NearHeader),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockHeader),
 }
@@ -141,7 +141,7 @@ impl From<AnyHeader> for Any {
                 type_url: NEAR_HEADER_TYPE_URL.to_string(),
                 value: header
                     .encode_vec()
-                    .encode_vec("encodign to `Any` from AnyHeader::Near"),
+                    .expect("encodign to `Any` from AnyHeader::Near"),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyHeader::Mock(header) => Any {

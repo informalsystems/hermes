@@ -263,7 +263,7 @@ pub fn validate_light_block<H: HostFunctionsProvider>(
 
     // (1)
     if new_block_view.inner_lite.height <= current_block_view.inner_lite.height {
-        return Err(Error::HeightTooOld);
+        return Err(NearError::height_too_old().into());
     }
 
     // (2)
@@ -273,14 +273,14 @@ pub fn validate_light_block<H: HostFunctionsProvider>(
     ]
     .contains(&new_block_view.inner_lite.epoch_id)
     {
-        return Err(Error::InvalidEpoch);
+        return Err(NearError::invalid_epoch(new_block_view.inner_lite.epoch_id).into());
     }
 
     // (3)
     if new_block_view.inner_lite.epoch_id == current_block_view.inner_lite.next_epoch_id
         && new_block_view.next_bps.is_none()
     {
-        return Err(Error::UnavailableBlockProducers);
+        return Err(NearError::unavailable_block_producers().into());
     }
 
     //  (4) and (5)
@@ -289,7 +289,9 @@ pub fn validate_light_block<H: HostFunctionsProvider>(
 
     let epoch_block_producers = client_state
         .get_validators_by_epoch(&new_block_view.inner_lite.epoch_id)
-        .ok_or(Error::InvalidEpoch)?;
+        .ok_or(Error::from(NearError::invalid_epoch(
+            new_block_view.inner_lite.epoch_id,
+        )))?;
 
     for (maybe_signature, block_producer) in new_block_view
         .approvals_after_next
@@ -312,23 +314,27 @@ pub fn validate_light_block<H: HostFunctionsProvider>(
             .unwrap()
             .verify(&approval_message, validator_public_key.clone())
         {
-            return Err(NearError::invalid_signature);
+            return Err(NearError::invalid_signature().into());
         }
     }
 
     let threshold = total_stake * 2 / 3;
     if approved_stake <= threshold {
-        return Err(Error::InsufficientStakedAmount);
+        return Err(NearError::insufficient_staked_amount().into());
     }
 
     // # (6)
     if new_block_view.next_bps.is_some() {
-        let new_block_view_next_bps_serialized =
-            new_block_view.next_bps.as_deref().unwrap().try_to_vec()?;
+        let new_block_view_next_bps_serialized = new_block_view
+            .next_bps
+            .as_deref()
+            .unwrap()
+            .try_to_vec()
+            .map_err(|_| Error::from(NearError::serialization_error()))?;
         if H::sha256_digest(new_block_view_next_bps_serialized.as_ref()).as_slice()
             != new_block_view.inner_lite.next_bp_hash.as_ref()
         {
-            return Err(Error::SerializationError);
+            return Err(NearError::serialization_error().into());
         }
     }
     Ok(())
@@ -341,8 +347,13 @@ pub fn reconstruct_light_client_block_view_fields<H: HostFunctionsProvider>(
     let next_block_hash =
         next_block_hash::<H>(block_view.next_block_inner_hash, current_block_hash);
     let approval_message = [
-        ApprovalInner::Endorsement(next_block_hash).try_to_vec()?,
-        (block_view.inner_lite.height + 2).to_le().try_to_vec()?,
+        ApprovalInner::Endorsement(next_block_hash)
+            .try_to_vec()
+            .map_err(|_| Error::from(NearError::serialization_error()))?,
+        (block_view.inner_lite.height + 2)
+            .to_le()
+            .try_to_vec()
+            .map_err(|_| Error::from(NearError::serialization_error()))?,
     ]
     .concat();
     Ok((current_block_hash, next_block_hash, approval_message))

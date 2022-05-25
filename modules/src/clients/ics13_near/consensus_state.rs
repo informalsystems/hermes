@@ -1,8 +1,7 @@
+use super::error::Error;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
-use crate::error::Error;
-
 
 #[derive(Debug, Clone)]
 pub struct NearConsensusState {
@@ -11,7 +10,6 @@ pub struct NearConsensusState {
 
 impl ConsensusState for NearConsensusState {
     type Error = Error;
-
 
     fn client_type(&self) -> ClientType {
         ClientType::Near

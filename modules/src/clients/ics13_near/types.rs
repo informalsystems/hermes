@@ -3,22 +3,34 @@ use sp_std::vec::Vec;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use sp_core::ed25519::{Public as Ed25519Public, Signature as Ed25519Signature};
+use sp_io::crypto::ed25519_verify;
 
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::Height;
 
 #[derive(Debug)]
 pub struct ConversionError(String);
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct PublicKey(pub [u8; 32]);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub enum Signature {
     Ed25519(Ed25519Signature),
 }
 
 #[derive(
-    Debug, Ord, PartialOrd, PartialEq, Eq, Hash, Clone, Copy, BorshSerialize, BorshDeserialize,
+    Debug,
+    Ord,
+    PartialOrd,
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    BorshSerialize,
+    BorshDeserialize,
+    codec::Encode,
+    codec::Decode,
 )]
 pub struct CryptoHash(pub [u8; 32]);
 
@@ -32,6 +44,16 @@ impl Signature {
     pub fn as_bytes(&self) -> &[u8] {
         match self {
             Self::Ed25519(inner) => &inner.0,
+        }
+    }
+
+    // TODO: we might want to create a trait for signature verification
+    // or integrate this into HostFunctions
+    pub fn verify(&self, data: impl AsRef<[u8]>, public_key: PublicKey) -> bool {
+        match self {
+            Self::Ed25519(signature) => {
+                ed25519_verify(signature, data.as_ref(), &Ed25519Public::from(&public_key))
+            }
         }
     }
 }
@@ -95,7 +117,9 @@ pub struct LightClientBlockLiteView {
     pub inner_lite: BlockHeaderInnerLiteView,
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize, codec::Encode, codec::Decode,
+)]
 pub struct LightClientBlockView {
     pub prev_block_hash: CryptoHash,
     pub next_block_inner_hash: CryptoHash,
@@ -105,7 +129,9 @@ pub struct LightClientBlockView {
     pub approvals_after_next: Vec<Option<Signature>>,
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize, codec::Encode, codec::Decode,
+)]
 pub struct BlockHeaderInnerLiteView {
     pub height: BlockHeight,
     pub epoch_id: CryptoHash,
@@ -139,11 +165,15 @@ pub enum ApprovalInner {
     Skip(BlockHeight),
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize, codec::Encode, codec::Decode,
+)]
 pub enum ValidatorStakeView {
     V1(ValidatorStakeViewV1),
 }
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize, codec::Encode, codec::Decode,
+)]
 pub struct ValidatorStakeViewV1 {
     pub account_id: AccountId,
     pub public_key: PublicKey,
