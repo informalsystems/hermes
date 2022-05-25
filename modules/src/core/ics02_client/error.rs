@@ -6,6 +6,7 @@ use tendermint_proto::Error as TendermintProtoError;
 
 use crate::clients::ics07_tendermint::error::Error as Ics07Error;
 use crate::clients::ics11_beefy::error::Error as Ics11Error;
+use crate::clients::ics13_near::error::Error as Ics13Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::height::HeightError;
 use crate::core::ics23_commitment::error::Error as Ics23Error;
@@ -185,6 +186,10 @@ define_error! {
             [ Ics11Error ]
             | _ | { "Beefy error" },
 
+        Near
+            [ Ics13Error ]
+            | _ | { "Near error" },
+
         InvalidPacketTimestamp
             [ crate::timestamp::ParseTimestampError ]
             | _ | { "invalid packet timeout timestamp value" },
@@ -289,5 +294,11 @@ impl From<Ics07Error> for Error {
 impl From<Ics11Error> for Error {
     fn from(e: Ics11Error) -> Error {
         Error::beefy(e)
+    }
+}
+
+impl From<Ics13Error> for Error {
+    fn from(e: Ics13Error) -> Error {
+        Error::near(e)
     }
 }

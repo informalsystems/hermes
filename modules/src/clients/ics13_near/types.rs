@@ -4,6 +4,7 @@ use sp_std::vec::Vec;
 use borsh::{BorshDeserialize, BorshSerialize};
 use sp_core::ed25519::{Public as Ed25519Public, Signature as Ed25519Signature};
 
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::Height;
 
 #[derive(Debug)]
@@ -238,10 +239,55 @@ impl BorshDeserialize for PublicKey {
 }
 
 impl LightClientBlockView {
-    fn get_height(&self) -> Height {
+    pub fn get_height(&self) -> Height {
         Height {
             revision_number: 0,
             revision_height: self.inner_lite.height,
         }
     }
+
+    pub fn current_block_hash<H: HostFunctionsProvider>(&self) -> CryptoHash {
+        current_block_hash::<H>(
+            H::sha256_digest(self.inner_lite.try_to_vec().unwrap().as_ref())
+                .as_slice()
+                .try_into()
+                .unwrap(),
+            self.inner_rest_hash,
+            self.prev_block_hash,
+        )
+    }
+}
+
+/// The hash of the block is:
+/// ```ignore
+/// sha256(concat(
+///     sha256(concat(
+///         sha256(borsh(inner_lite)),
+///         sha256(borsh(inner_rest)) // we can use inner_rest_hash as well
+///     )
+/// ),
+/// prev_hash
+///))
+/// ```
+fn current_block_hash<H: HostFunctionsProvider>(
+    inner_lite_hash: CryptoHash,
+    inner_rest_hash: CryptoHash,
+    prev_block_hash: CryptoHash,
+) -> CryptoHash {
+    H::sha256_digest(
+        [
+            H::sha256_digest(
+                [inner_lite_hash.as_ref(), inner_rest_hash.as_ref()]
+                    .concat()
+                    .as_ref(),
+            )
+            .as_ref(),
+            prev_block_hash.as_ref(),
+        ]
+        .concat()
+        .as_ref(),
+    )
+    .as_slice()
+    .try_into()
+    .unwrap()
 }

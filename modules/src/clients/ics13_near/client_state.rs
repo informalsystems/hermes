@@ -22,9 +22,9 @@ impl NearClientState {
         &self,
         epoch_id: &CryptoHash,
     ) -> Option<&Vec<ValidatorStakeView>> {
-        if epoch_id == self.current_epoch {
+        if epoch_id == &self.current_epoch {
             Some(&self.current_validators)
-        } else if epoch_id == self.next_epoch {
+        } else if epoch_id == &self.next_epoch {
             Some(&self.next_validators)
         } else {
             None

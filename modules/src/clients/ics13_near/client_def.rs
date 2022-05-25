@@ -1,24 +1,33 @@
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
+use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics03_connection::connection::ConnectionEnd;
+use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
+use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
-use crate::core::ics24_host::identifier::ClientId;
+use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::LightClientContext;
-use std::marker::PhantomData;
+use crate::Height;
 
 use super::client_state::NearClientState;
 use super::consensus_state::NearConsensusState;
-use super::crypto_ops::NearCryptoOps;
-use super::error::Error;
+use crate::core::ics02_client::error::Error;
+
+use super::error::Error as NearError;
 use super::header::NearHeader;
-use super::types::{ApprovalInner, CryptoHash, LightClientBlockView, ValidatorStakeView};
+use super::host_functions::NearHostFunctions;
+use super::types::{ApprovalInner, CryptoHash, LightClientBlockView};
+
+use borsh::BorshSerialize;
 
 #[derive(Debug, Clone)]
-pub struct NearClient<HostFunctions>(PhantomData<HostFunctions>);
+pub struct NearClient;
 
-impl<HostFunctions: HostFunctions> ClientDef for NearClient<HostFunctions> {
+impl ClientDef for NearClient {
     /// The data that we need to update the [`ClientState`] to a new block height
     type Header = NearHeader;
 
@@ -50,7 +59,7 @@ impl<HostFunctions: HostFunctions> ClientDef for NearClient<HostFunctions> {
         header: Self::Header,
     ) -> Result<(), Error> {
         // your light client, shouldn't do storage anymore, it should just do verification here.
-        validate_light_block(&header, client_state)
+        validate_light_block::<NearHostFunctions>(&header, client_state)
     }
 
     fn update_state(
@@ -230,7 +239,7 @@ impl<HostFunctions: HostFunctions> ClientDef for NearClient<HostFunctions> {
 }
 
 // TODO: refactor to use [`HostFunctions`]
-pub fn validate_light_block<D: Digest>(
+pub fn validate_light_block<H: HostFunctionsProvider>(
     header: &NearHeader,
     client_state: NearClientState,
 ) -> Result<(), Error> {
@@ -248,9 +257,9 @@ pub fn validate_light_block<D: Digest>(
     // it's not on the spec, but it's an extra validation
 
     let new_block_view = header.get_light_client_block_view();
-    let current_block_view = client_state.get_head().get_light_client_block_view();
+    let current_block_view = client_state.get_head();
     let (_current_block_hash, _next_block_hash, approval_message) =
-        reconstruct_light_client_block_view_fields::<D>(new_block_view)?;
+        reconstruct_light_client_block_view_fields::<H>(new_block_view)?;
 
     // (1)
     if new_block_view.inner_lite.height <= current_block_view.inner_lite.height {
@@ -303,7 +312,7 @@ pub fn validate_light_block<D: Digest>(
             .unwrap()
             .verify(&approval_message, validator_public_key.clone())
         {
-            return Err(Error::InvalidSignature);
+            return Err(NearError::invalid_signature);
         }
     }
 
@@ -316,7 +325,7 @@ pub fn validate_light_block<D: Digest>(
     if new_block_view.next_bps.is_some() {
         let new_block_view_next_bps_serialized =
             new_block_view.next_bps.as_deref().unwrap().try_to_vec()?;
-        if D::digest(new_block_view_next_bps_serialized).as_slice()
+        if H::sha256_digest(new_block_view_next_bps_serialized.as_ref()).as_slice()
             != new_block_view.inner_lite.next_bp_hash.as_ref()
         {
             return Err(Error::SerializationError);
@@ -325,12 +334,12 @@ pub fn validate_light_block<D: Digest>(
     Ok(())
 }
 
-pub fn reconstruct_light_client_block_view_fields<D: Digest>(
+pub fn reconstruct_light_client_block_view_fields<H: HostFunctionsProvider>(
     block_view: &LightClientBlockView,
 ) -> Result<(CryptoHash, CryptoHash, Vec<u8>), Error> {
-    let current_block_hash = block_view.current_block_hash::<D>();
+    let current_block_hash = block_view.current_block_hash::<H>();
     let next_block_hash =
-        next_block_hash::<D>(block_view.next_block_inner_hash, current_block_hash);
+        next_block_hash::<H>(block_view.next_block_inner_hash, current_block_hash);
     let approval_message = [
         ApprovalInner::Endorsement(next_block_hash).try_to_vec()?,
         (block_view.inner_lite.height + 2).to_le().try_to_vec()?,
@@ -339,12 +348,16 @@ pub fn reconstruct_light_client_block_view_fields<D: Digest>(
     Ok((current_block_hash, next_block_hash, approval_message))
 }
 
-pub(crate) fn next_block_hash<D: Digest>(
+pub(crate) fn next_block_hash<H: HostFunctionsProvider>(
     next_block_inner_hash: CryptoHash,
     current_block_hash: CryptoHash,
 ) -> CryptoHash {
-    D::digest([next_block_inner_hash.as_ref(), current_block_hash.as_ref()].concat())
-        .as_slice()
-        .try_into()
-        .expect("Could not hash the next block")
+    H::sha256_digest(
+        [next_block_inner_hash.as_ref(), current_block_hash.as_ref()]
+            .concat()
+            .as_ref(),
+    )
+    .as_slice()
+    .try_into()
+    .expect("Could not hash the next block")
 }
