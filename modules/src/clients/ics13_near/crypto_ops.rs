@@ -1,4 +1,4 @@
-use crate::clients::{crypto_ops::crypto::CryptoOps, ics12_near::error::Error};
+use crate::clients::{crypto_ops::crypto::CryptoOps, ics13_near::error::Error};
 
 #[derive(Debug, Clone)]
 pub struct NearCryptoOps {

@@ -7,7 +7,7 @@ use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 use crate::clients::ics11_beefy::header::{decode_header as decode_beefy_header, BeefyHeader};
-use crate::clients::ics12_near::types::LightClientBlockView;
+use crate::clients::ics13_near::types::LightClientBlockView;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 #[cfg(any(test, feature = "mocks"))]
