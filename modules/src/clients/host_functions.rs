@@ -1,10 +1,20 @@
+use std::marker::PhantomData;
 use crate::core::ics02_client::error::Error;
 use crate::prelude::*;
 use sp_core::H256;
 
 /// This trait captures all the functions that the host chain should provide for
 /// crypto operations.
-pub trait HostFunctionsProvider: beefy_client::traits::HostFunctions + Clone {
+pub trait HostFunctionsProvider: Clone {
+    /// Keccak 256 hash function
+    fn keccak_256(input: &[u8]) -> [u8; 32];
+
+    /// Compressed Ecdsa public key recovery from a signature
+    fn secp256k1_ecdsa_recover_compressed(
+        signature: &[u8; 65],
+        value: &[u8; 32],
+    ) -> Option<Vec<u8>>;
+
     /// This function should verify membership in a trie proof using parity's sp-trie package
     /// with a BlakeTwo256 Hasher
     fn verify_membership_trie_proof(
@@ -21,4 +31,23 @@ pub trait HostFunctionsProvider: beefy_client::traits::HostFunctions + Clone {
         proof: &[Vec<u8>],
         key: &[u8],
     ) -> Result<(), Error>;
+}
+
+/// This is a work around that allows us to have one super trait [`HostFunctionsProvider`]
+/// that encapsulates all the needed host functions by different subsytems, and then
+/// implement the needed traits through this wrapper.
+pub struct HostFunctionsManager<T: HostFunctionsProvider>(PhantomData<T>);
+
+// implementation for beefy host functions
+impl<T> beefy_client::traits::HostFunctions for HostFunctionsManager<T>
+    where
+        T: HostFunctionsProvider
+{
+    fn keccak_256(input: &[u8]) -> [u8; 32] {
+        T::keccak_256(input)
+    }
+
+    fn secp256k1_ecdsa_recover_compressed(signature: &[u8; 65], value: &[u8; 32]) -> Option<Vec<u8>> {
+        T::secp256k1_ecdsa_recover_compressed(signature, value)
+    }
 }

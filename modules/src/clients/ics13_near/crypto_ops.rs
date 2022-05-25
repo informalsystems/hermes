@@ -6,6 +6,14 @@ pub struct NearCryptoOps {
 }
 
 impl HostFunctionsProvider for NearCryptoOps {
+    fn keccak_256(input: &[u8]) -> [u8; 32] {
+        todo!()
+    }
+
+    fn secp256k1_ecdsa_recover_compressed(signature: &[u8; 65], value: &[u8; 32]) -> Option<Vec<u8>> {
+        todo!()
+    }
+
     fn verify_membership_trie_proof(
         root: &sp_core::H256,
         proof: &[Vec<u8>],

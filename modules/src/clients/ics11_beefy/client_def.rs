@@ -7,7 +7,7 @@ use pallet_mmr_primitives::BatchProof;
 use sp_core::H256;
 use tendermint_proto::Protobuf;
 
-use crate::clients::host_functions::HostFunctionsProvider;
+use crate::clients::host_functions::{HostFunctionsManager, HostFunctionsProvider};
 use crate::clients::ics11_beefy::client_state::ClientState;
 use crate::clients::ics11_beefy::consensus_state::ConsensusState;
 use crate::clients::ics11_beefy::error::Error as BeefyError;
@@ -61,6 +61,9 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(), Error> {
+        // type alias for managing host functions impl.
+        type BeefyHostFunctions = HostFunctionsManager<HostFunctions>;
+
         let light_client_state = LightClientState {
             latest_beefy_height: client_state.latest_beefy_height,
             mmr_root_hash: client_state.mmr_root_hash,
@@ -68,7 +71,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
             next_authorities: client_state.next_authority_set.clone(),
             beefy_activation_block: client_state.beefy_activation_block,
         };
-        let mut light_client = BeefyLightClient::<HostFunctions>::new();
+        let mut light_client = BeefyLightClient::<BeefyHostFunctions>::new();
         // If mmr update exists verify it and return the new light client state
         // or else return existing light client state
         let light_client_state = if let Some(mmr_update) = header.mmr_update_proof {
