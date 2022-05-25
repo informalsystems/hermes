@@ -419,22 +419,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     /// handshake steps.
     /// This is required because of crossing handshake messages in the presence of multiple relayers.
     ///
-    /// Chain a is queried with the relayer's a_side connection id (`relayer_a_id`) with result
+    /// Chain a is queried with the relayer's `a_side.connection_id` (`relayer_a_id`) with result
     /// `a_connection`. If the counterparty id of this connection, `a_counterparty_id`,
-    /// is some id then it must match the relayer's b_side connection id (`relayer_b_id`).
-    /// A similar check is done for the b_side of the connection.
+    /// is some id then it must match the relayer's `b_side.connection_id` (`relayer_b_id`).
+    /// A similar check is done for the `b_side` of the connection.
     ///
     ///  a                                 relayer                                    b
-    ///  \                     a_side -- connection -- b_side                         /
-    ///   \                  relayer_a_id               relayer_b_id                 /
-    ///    v                      \                              /                  /
-    /// a_counterparty_id <_____________________________________/                  v
-    ///                            \____________________________________>   b_counterparty_id
+    ///  |                     a_side -- connection -- b_side                         |
+    ///  a_id _____________> relayer_a_id             relayer_b_id <______________> b_id
+    ///  |                      \                                /                    |
+    /// a_counterparty_id <_____________________________________/                     |
+    ///                           \____________________________________>   b_counterparty_id
     ///
     /// Case 1 (fix connection ID):
     ///  a                                                      b
     ///  | <-- Init (r1)                                        |
-    ///  | a_id = 1                                             |
+    ///  | a_id = 1, a_counterparty_id = None                   |
     ///  |                                         Try (r2) --> |
     ///  |                    b_id = 100, b_counterparty_id = 1 |
     ///  |                                         Try (r1) --> |
@@ -449,7 +449,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     /// Case 2 (update from None to some connection ID):
     ///  a                                                      b
     ///  | <-- Init (r1)                                        |
-    ///  | a_id = 1                                             |
+    ///  | a_id = 1, a_counterparty_id = None                   |
     ///  |                                         Try (r2) --> |
     ///  |                    b_id = 100, b_counterparty_id = 1 |
     ///  | <-- Ack (r2)
