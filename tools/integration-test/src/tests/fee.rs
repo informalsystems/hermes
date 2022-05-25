@@ -1,7 +1,6 @@
 use ibc::core::ics04_channel::Version;
 use ibc::events::IbcEvent;
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::fee::pay_packet_fee;
 use ibc_test_framework::util::random::random_u128_range;
 use std::thread;
 
@@ -399,6 +398,7 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
         )?;
 
         let user_a = wallets_a.user1();
+
         let user_b = wallets_b.user1();
 
         let balance_a1 = chain_driver_a.query_balance(&user_a.address(), &denom_a)?;
@@ -442,19 +442,15 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
         let ack_fee_2 = random_u128_range(200, 300);
         let timeout_fee_2 = random_u128_range(100, 200);
 
-        chain_driver_a.value().runtime.block_on(async {
-            pay_packet_fee(
-                &chain_driver_a.tx_config(),
-                &port_a,
-                &channel_id_a,
-                &DualTagged::new(sequence),
-                &user_a,
-                &denom_a.with_amount(receive_fee_2).as_ref(),
-                &denom_a.with_amount(ack_fee_2).as_ref(),
-                &denom_a.with_amount(timeout_fee_2).as_ref(),
-            )
-            .await
-        })?;
+        chain_driver_a.pay_packet_fee(
+            &port_a,
+            &channel_id_a,
+            &DualTagged::new(sequence),
+            &user_a,
+            &denom_a.with_amount(receive_fee_2).as_ref(),
+            &denom_a.with_amount(ack_fee_2).as_ref(),
+            &denom_a.with_amount(timeout_fee_2).as_ref(),
+        )?;
 
         let total_sent_2 = receive_fee_2 + ack_fee_2 + timeout_fee_2;
         let balance_a3 = balance_a2 - total_sent_2;

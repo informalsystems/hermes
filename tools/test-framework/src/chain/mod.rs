@@ -18,5 +18,6 @@ pub mod builder;
 pub mod config;
 pub mod driver;
 pub mod exec;
+pub mod ext;
 pub mod tagged;
 pub mod version;
