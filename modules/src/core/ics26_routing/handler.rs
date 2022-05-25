@@ -1,4 +1,4 @@
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::prelude::*;
 
 use ibc_proto::google::protobuf::Any;
@@ -32,19 +32,19 @@ pub struct MsgReceipt {
 /// Mimics the DeliverTx ABCI interface, but for a single message and at a slightly lower level.
 /// No need for authentication info or signature checks here.
 /// Returns a vector of all events that got generated as a byproduct of processing `message`.
-pub fn deliver<Ctx, Crypto>(
+pub fn deliver<Ctx, HostFunctions>(
     ctx: &mut Ctx,
     message: Any,
 ) -> Result<(Vec<IbcEvent>, Vec<String>), Error>
 where
     Ctx: Ics26Context,
-    Crypto: CryptoOps,
+    HostFunctions: HostFunctionsProvider,
 {
     // Decode the proto message into a domain message, creating an ICS26 envelope.
     let envelope = decode(message)?;
 
     // Process the envelope, and accumulate any events that were generated.
-    let output = dispatch::<_, Crypto>(ctx, envelope)?;
+    let output = dispatch::<_, HostFunctions>(ctx, envelope)?;
 
     Ok(MsgReceipt { events, log })
 }
@@ -59,15 +59,15 @@ pub fn decode(message: Any) -> Result<Ics26Envelope, Error> {
 /// and events produced after processing the input `msg`.
 /// If this method returns an error, the runtime is expected to rollback all state modifications to
 /// the `Ctx` caused by all messages from the transaction that this `msg` is a part of.
-pub fn dispatch<Ctx, Crypto>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx, HostFunctions>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, Error>
 where
     Ctx: Ics26Context,
-    Crypto: CryptoOps,
+    HostFunctions: HostFunctionsProvider,
 {
     let output = match msg {
         Ics2Msg(msg) => {
             let handler_output =
-                ics2_msg_dispatcher::<_, Crypto>(ctx, msg).map_err(Error::ics02_client)?;
+                ics2_msg_dispatcher::<_, HostFunctions>(ctx, msg).map_err(Error::ics02_client)?;
 
             // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
@@ -81,7 +81,7 @@ where
 
         Ics3Msg(msg) => {
             let handler_output =
-                ics3_msg_dispatcher::<_, Crypto>(ctx, msg).map_err(Error::ics03_connection)?;
+                ics3_msg_dispatcher::<_, HostFunctions>(ctx, msg).map_err(Error::ics03_connection)?;
 
             // Apply any results to the host chain store.
             ctx.store_connection_result(handler_output.result)
@@ -96,7 +96,7 @@ where
         Ics4ChannelMsg(msg) => {
             let module_id = ics4_validate(ctx, &msg).map_err(Error::ics04_channel)?;
             let (mut handler_builder, channel_result) =
-                ics4_msg_dispatcher::<_, Crypto>(ctx, &msg).map_err(Error::ics04_channel)?;
+                ics4_msg_dispatcher::<_, HostFunctions>(ctx, &msg).map_err(Error::ics04_channel)?;
 
             let mut module_output = ModuleOutputBuilder::new();
             let cb_result =
@@ -112,7 +112,7 @@ where
         }
 
         Ics20Msg(msg) => {
-            let handler_output = ics20_msg_dispatcher::<_, Crypto>(ctx, msg)
+            let handler_output = ics20_msg_dispatcher::<_, HostFunctions>(ctx, msg)
                 .map_err(Error::ics20_fungible_token_transfer)?;
 
             // Apply any results to the host chain store.
@@ -128,7 +128,7 @@ where
         Ics4PacketMsg(msg) => {
             let module_id = get_module_for_packet_msg(ctx, &msg).map_err(Error::ics04_channel)?;
             let (mut handler_builder, packet_result) =
-                ics4_packet_msg_dispatcher::<_, Crypto>(ctx, &msg).map_err(Error::ics04_channel)?;
+                ics4_packet_msg_dispatcher::<_, HostFunctions>(ctx, &msg).map_err(Error::ics04_channel)?;
 
             if matches!(packet_result, PacketResult::Recv(RecvPacketResult::NoOp)) {
                 return Ok(handler_builder.with_result(()));
@@ -342,7 +342,7 @@ mod tests {
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
 
         // First, create a client..
-        let res = dispatch::<_, Crypto>(
+        let res = dispatch::<_, HostFunctions>(
             &mut ctx,
             Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(create_client_msg.clone())),
         );

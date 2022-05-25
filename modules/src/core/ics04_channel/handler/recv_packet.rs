@@ -1,4 +1,4 @@
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{Counterparty, Order, State};
 use crate::core::ics04_channel::error::Error;
@@ -29,7 +29,7 @@ pub enum RecvPacketResult {
     NoOp,
 }
 
-pub fn process<Crypto: CryptoOps>(
+pub fn process<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     msg: &MsgRecvPacket,
 ) -> HandlerResult<PacketResult, Error> {
@@ -79,7 +79,7 @@ pub fn process<Crypto: CryptoOps>(
         return Err(Error::low_packet_timestamp());
     }
 
-    verify_packet_recv_proofs::<Crypto>(
+    verify_packet_recv_proofs::<HostFunctions>(
         ctx,
         msg.proofs.height(),
         packet,

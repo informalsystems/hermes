@@ -1,4 +1,4 @@
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
@@ -22,7 +22,7 @@ pub struct AckPacketResult {
     pub seq_number: Option<Sequence>,
 }
 
-pub fn process<Crypto: CryptoOps>(
+pub fn process<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     msg: &MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
@@ -77,7 +77,7 @@ pub fn process<Crypto: CryptoOps>(
     }
 
     // Verify the acknowledgement proof
-    verify_packet_acknowledgement_proofs::<Crypto>(
+    verify_packet_acknowledgement_proofs::<HostFunctions>(
         ctx,
         msg.proofs.height(),
         packet,

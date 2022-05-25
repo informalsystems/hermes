@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::events::Attributes;
@@ -12,7 +12,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Crypto: CryptoOps>(
+pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     msg: MsgConnectionOpenConfirm,
 ) -> HandlerResult<ConnectionResult, Error> {
@@ -41,7 +41,7 @@ pub(crate) fn process<Crypto: CryptoOps>(
     );
 
     // 2. Pass the details to the verification function.
-    verify_proofs::<Crypto>(
+    verify_proofs::<HostFunctions>(
         ctx,
         None,
         msg.proofs.height(),

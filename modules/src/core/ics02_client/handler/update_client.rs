@@ -2,7 +2,7 @@
 use core::fmt::Debug;
 use tracing::debug;
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
@@ -29,7 +29,7 @@ pub struct Result {
     pub processed_height: Height,
 }
 
-pub fn process<Crypto: CryptoOps>(
+pub fn process<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     msg: MsgUpdateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
@@ -44,7 +44,7 @@ pub fn process<Crypto: CryptoOps>(
     // Read client type from the host chain store. The client should already exist.
     let client_type = ctx.client_type(&client_id)?;
 
-    let client_def = AnyClient::<Crypto>::from_client_type(client_type);
+    let client_def = AnyClient::<HostFunctions>::from_client_type(client_type);
 
     // Read client state from the host chain store.
     let client_state = ctx.client_state(&client_id)?;

@@ -7,7 +7,7 @@ use pallet_mmr_primitives::BatchProof;
 use sp_core::H256;
 use tendermint_proto::Protobuf;
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::clients::ics11_beefy::client_state::ClientState;
 use crate::clients::ics11_beefy::consensus_state::ConsensusState;
 use crate::clients::ics11_beefy::error::Error as BeefyError;
@@ -41,15 +41,15 @@ use crate::core::ics24_host::path::{
 use crate::downcast;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BeefyClient<Crypto>(PhantomData<Crypto>);
+pub struct BeefyClient<HostFunctions>(PhantomData<HostFunctions>);
 
-impl<Crypto> Default for BeefyClient<Crypto> {
+impl<HostFunctions> Default for BeefyClient<HostFunctions> {
     fn default() -> Self {
         Self(PhantomData::default())
     }
 }
 
-impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
+impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctions> {
     type Header = BeefyHeader;
     type ClientState = ClientState;
     type ConsensusState = ConsensusState;
@@ -68,7 +68,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
             next_authorities: client_state.next_authority_set.clone(),
             beefy_activation_block: client_state.beefy_activation_block,
         };
-        let mut light_client = BeefyLightClient::<Crypto>::new();
+        let mut light_client = BeefyLightClient::<HostFunctions>::new();
         // If mmr update exists verify it and return the new light client state
         // or else return existing light client state
         let light_client_state = if let Some(mmr_update) = header.mmr_update_proof {
@@ -152,7 +152,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
             }
             parachain_cs_states.push((
                 height,
-                AnyConsensusState::Beefy(ConsensusState::from_header::<Crypto>(header)?),
+                AnyConsensusState::Beefy(ConsensusState::from_header::<HostFunctions>(header)?),
             ))
         }
 
@@ -218,7 +218,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
             height: consensus_height.revision_height,
         };
         let value = expected_consensus_state.encode_vec().unwrap();
-        verify_membership::<Crypto, _>(prefix, proof, root, path, value)
+        verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
     }
 
     // Consensus state will be verified in the verification functions  before these are called
@@ -236,7 +236,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
     ) -> Result<(), Error> {
         let path = ConnectionsPath(connection_id.clone());
         let value = expected_connection_end.encode_vec().unwrap();
-        verify_membership::<Crypto, _>(prefix, proof, root, path, value)
+        verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
     }
 
     fn verify_channel_state(
@@ -254,7 +254,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
     ) -> Result<(), Error> {
         let path = ChannelEndsPath(port_id.clone(), *channel_id);
         let value = expected_channel_end.encode_vec().unwrap();
-        verify_membership::<Crypto, _>(prefix, proof, root, path, value)
+        verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
     }
 
     fn verify_client_full_state(
@@ -270,7 +270,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
     ) -> Result<(), Error> {
         let path = ClientStatePath(client_id.clone());
         let value = expected_client_state.encode_vec().unwrap();
-        verify_membership::<Crypto, _>(prefix, proof, root, path, value)
+        verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
     }
 
     fn verify_packet_data(
@@ -295,7 +295,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
             sequence,
         };
 
-        verify_membership::<Crypto, _>(
+        verify_membership::<HostFunctions, _>(
             connection_end.counterparty().prefix(),
             proof,
             root,
@@ -325,7 +325,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
             channel_id: *channel_id,
             sequence,
         };
-        verify_membership::<Crypto, _>(
+        verify_membership::<HostFunctions, _>(
             connection_end.counterparty().prefix(),
             proof,
             root,
@@ -352,7 +352,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
         let seq_bytes = codec::Encode::encode(&u64::from(sequence));
 
         let seq_path = SeqRecvsPath(port_id.clone(), *channel_id);
-        verify_membership::<Crypto, _>(
+        verify_membership::<HostFunctions, _>(
             connection_end.counterparty().prefix(),
             proof,
             root,
@@ -381,7 +381,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
             channel_id: *channel_id,
             sequence,
         };
-        verify_non_membership::<Crypto, _>(
+        verify_non_membership::<HostFunctions, _>(
             connection_end.counterparty().prefix(),
             proof,
             root,
@@ -390,7 +390,7 @@ impl<Crypto: CryptoOps> ClientDef for BeefyClient<Crypto> {
     }
 }
 
-fn verify_membership<Crypto: CryptoOps, P: Into<Path>>(
+fn verify_membership<HostFunctions: HostFunctionsProvider, P: Into<Path>>(
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
@@ -408,10 +408,10 @@ fn verify_membership<Crypto: CryptoOps, P: Into<Path>>(
     let trie_proof: Vec<Vec<u8>> = codec::Decode::decode(&mut &*trie_proof)
         .map_err(|e| Error::beefy(BeefyError::scale_decode(e)))?;
     let root = H256::from_slice(root.as_bytes());
-    Crypto::verify_membership_trie_proof(&root, &trie_proof, &key, &value)
+    HostFunctions::verify_membership_trie_proof(&root, &trie_proof, &key, &value)
 }
 
-fn verify_non_membership<Crypto: CryptoOps, P: Into<Path>>(
+fn verify_non_membership<HostFunctions: HostFunctionsProvider, P: Into<Path>>(
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
@@ -428,7 +428,7 @@ fn verify_non_membership<Crypto: CryptoOps, P: Into<Path>>(
     let trie_proof: Vec<Vec<u8>> = codec::Decode::decode(&mut &*trie_proof)
         .map_err(|e| Error::beefy(BeefyError::scale_decode(e)))?;
     let root = H256::from_slice(root.as_bytes());
-    Crypto::verify_non_membership_trie_proof(&root, &trie_proof, &key)
+    HostFunctions::verify_non_membership_trie_proof(&root, &trie_proof, &key)
 }
 
 fn verify_delay_passed(

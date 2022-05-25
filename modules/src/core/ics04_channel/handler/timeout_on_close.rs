@@ -1,4 +1,4 @@
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
 use crate::core::ics04_channel::events::TimeoutOnClosePacket;
@@ -14,7 +14,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub fn process<Crypto: CryptoOps>(
+pub fn process<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     msg: &MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {
@@ -75,7 +75,7 @@ pub fn process<Crypto: CryptoOps>(
         source_channel_end.version().clone(),
     );
 
-    verify_channel_proofs::<Crypto>(
+    verify_channel_proofs::<HostFunctions>(
         ctx,
         msg.proofs.height(),
         &source_channel_end,
@@ -91,7 +91,7 @@ pub fn process<Crypto: CryptoOps>(
                 msg.next_sequence_recv,
             ));
         }
-        verify_next_sequence_recv::<Crypto>(
+        verify_next_sequence_recv::<HostFunctions>(
             ctx,
             msg.proofs.height(),
             &connection_end,
@@ -107,7 +107,7 @@ pub fn process<Crypto: CryptoOps>(
             channel: Some(source_channel_end),
         })
     } else {
-        verify_packet_receipt_absence::<Crypto>(
+        verify_packet_receipt_absence::<HostFunctions>(
             ctx,
             msg.proofs.height(),
             &connection_end,

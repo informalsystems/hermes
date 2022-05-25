@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 //!
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::error::Error;
@@ -23,7 +23,7 @@ pub struct Result {
     pub consensus_state: Option<ConsensusUpdateResult>,
 }
 
-pub fn process<Crypto: CryptoOps>(
+pub fn process<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     msg: MsgUpgradeAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
@@ -48,7 +48,7 @@ pub fn process<Crypto: CryptoOps>(
 
     let client_type = ctx.client_type(&client_id)?;
 
-    let client_def = AnyClient::<Crypto>::from_client_type(client_type);
+    let client_def = AnyClient::<HostFunctions>::from_client_type(client_type);
 
     let (new_client_state, new_consensus_state) = client_def.verify_upgrade_and_update_state(
         &upgrade_client_state,

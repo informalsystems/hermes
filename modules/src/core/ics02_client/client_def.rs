@@ -1,4 +1,4 @@
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::clients::ics07_tendermint::client_def::TendermintClient;
 use crate::clients::ics11_beefy::client_def::BeefyClient;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
@@ -207,20 +207,20 @@ pub trait ClientDef: Clone {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum AnyClient<Crypto> {
+pub enum AnyClient<HostFunctions> {
     Tendermint(TendermintClient),
-    Beefy(BeefyClient<Crypto>),
-    Near(BeefyClient<Crypto>),
+    Beefy(BeefyClient<HostFunctions>),
+    Near(BeefyClient<HostFunctions>),
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockClient),
 }
 
-impl<Crypto> AnyClient<Crypto> {
+impl<HostFunctions> AnyClient<HostFunctions> {
     pub fn from_client_type(client_type: ClientType) -> Self {
         match client_type {
             ClientType::Tendermint => Self::Tendermint(TendermintClient::default()),
-            ClientType::Beefy => Self::Beefy(BeefyClient::<Crypto>::default()),
-            ClientType::Near => Self::Near(BeefyClient::<Crypto>::default()),
+            ClientType::Beefy => Self::Beefy(BeefyClient::<HostFunctions>::default()),
+            ClientType::Near => Self::Near(BeefyClient::<HostFunctions>::default()),
             #[cfg(any(test, feature = "mocks"))]
             ClientType::Mock => Self::Mock(MockClient::default()),
         }
@@ -228,7 +228,7 @@ impl<Crypto> AnyClient<Crypto> {
 }
 
 // ⚠️  Beware of the awful boilerplate below ⚠️
-impl<Crypto: CryptoOps> ClientDef for AnyClient<Crypto> {
+impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions> {
     type Header = AnyHeader;
     type ClientState = AnyClientState;
     type ConsensusState = AnyConsensusState;

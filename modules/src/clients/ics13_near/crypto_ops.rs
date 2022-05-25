@@ -1,11 +1,11 @@
-use crate::clients::{crypto_ops::crypto::CryptoOps, ics13_near::error::Error};
+use crate::clients::{host_functions::HostFunctionsProvider, ics13_near::error::Error};
 
 #[derive(Debug, Clone)]
 pub struct NearCryptoOps {
     // _p: PhantomData<Host
 }
 
-impl CryptoOps for NearCryptoOps {
+impl HostFunctionsProvider for NearCryptoOps {
     fn verify_membership_trie_proof(
         root: &sp_core::H256,
         proof: &[Vec<u8>],

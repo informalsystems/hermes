@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::prelude::*;
 use beefy_client::traits::HostFunctions;
 use sp_core::keccak_256;
@@ -103,7 +103,7 @@ impl HostFunctions for Crypto {
     }
 }
 
-impl CryptoOps for Crypto {
+impl HostFunctions for Crypto {
     fn verify_membership_trie_proof(
         root: &sp_core::H256,
         proof: &[Vec<u8>],

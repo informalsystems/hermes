@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenAck`.
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::events::Attributes;
@@ -14,7 +14,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Crypto: CryptoOps>(
+pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     msg: MsgConnectionOpenAck,
 ) -> HandlerResult<ConnectionResult, Error> {
@@ -66,7 +66,7 @@ pub(crate) fn process<Crypto: CryptoOps>(
     };
 
     // 2. Pass the details to the verification function.
-    verify_proofs::<Crypto>(
+    verify_proofs::<HostFunctions>(
         ctx,
         msg.client_state.clone(),
         msg.proofs.height(),

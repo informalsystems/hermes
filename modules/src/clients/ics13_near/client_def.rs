@@ -1,4 +1,12 @@
-use crate::core::ics02_client::client_def::ClientDef;
+use crate::clients::host_functions::HostFunctionsProvider;
+use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
+use crate::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
+};
+use crate::core::ics24_host::identifier::ClientId;
+use crate::core::ics26_routing::context::LightClientContext;
+use std::marker::PhantomData;
 
 use super::client_state::NearClientState;
 use super::consensus_state::NearConsensusState;
@@ -8,9 +16,9 @@ use super::header::NearHeader;
 use super::types::{ApprovalInner, CryptoHash, LightClientBlockView, ValidatorStakeView};
 
 #[derive(Debug, Clone)]
-pub struct NearClient {}
+pub struct NearClient<HostFunctions>(PhantomData<HostFunctions>);
 
-impl ClientDef for NearClient {
+impl<HostFunctions: HostFunctions> ClientDef for NearClient<HostFunctions> {
     /// The data that we need to update the [`ClientState`] to a new block height
     type Header = NearHeader;
 
@@ -33,33 +41,25 @@ impl ClientDef for NearClient {
     ///    - The timestamp of the header.
     type ConsensusState = NearConsensusState;
 
-    type Crypto = NearCryptoOps;
-
     // rehydrate client from its own storage, then call this function
     fn verify_header(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_id: crate::core::ics24_host::identifier::ClientId,
+        _ctx: &dyn LightClientContext,
+        _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(), Error> {
         // your light client, shouldn't do storage anymore, it should just do verification here.
-        validate_light_block(&header, &client_state)
+        validate_light_block(&header, client_state)
     }
 
     fn update_state(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_id: crate::core::ics24_host::identifier::ClientId,
+        ctx: &dyn LightClientContext,
+        client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<
-        (
-            Self::ClientState,
-            crate::core::ics02_client::client_def::ConsensusUpdateResult<Self::Crypto>,
-        ),
-        Error,
-    > {
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         // 1. create new client state from this header, return that.
         // 2. as well as all the neccessary consensus states.
         //
@@ -83,159 +83,153 @@ impl ClientDef for NearClient {
 
     fn check_for_misbehaviour(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_id: crate::core::ics24_host::identifier::ClientId,
-        client_state: Self::ClientState,
-        header: Self::Header,
+        _ctx: &dyn LightClientContext,
+        _client_id: ClientId,
+        _client_state: Self::ClientState,
+        _header: Self::Header,
     ) -> Result<bool, Error> {
-        todo!()
+        Ok(false)
     }
 
     fn verify_upgrade_and_update_state(
         &self,
-        client_state: &Self::ClientState,
-        consensus_state: &Self::ConsensusState,
-        proof_upgrade_client: Vec<u8>,
-        proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<
-        (
-            Self::ClientState,
-            crate::core::ics02_client::client_def::ConsensusUpdateResult<Self::Crypto>,
-        ),
-        Error,
-    > {
+        _client_state: &Self::ClientState,
+        _consensus_state: &Self::ConsensusState,
+        _proof_upgrade_client: Vec<u8>,
+        _proof_upgrade_consensus_state: Vec<u8>,
+    ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         todo!()
     }
 
     fn verify_client_consensus_state(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_state: &Self::ClientState,
-        height: crate::Height,
-        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
-        consensus_height: crate::Height,
-        expected_consensus_state: &crate::core::ics02_client::client_consensus::AnyConsensusState<
-            Self::Crypto,
-        >,
+        _ctx: &dyn LightClientContext,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _client_id: &ClientId,
+        _consensus_height: Height,
+        _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
         todo!()
     }
 
+    // Consensus state will be verified in the verification functions  before these are called
     fn verify_connection_state(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
-        client_state: &Self::ClientState,
-        height: crate::Height,
-        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        connection_id: &crate::core::ics24_host::identifier::ConnectionId,
-        expected_connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
+        _ctx: &dyn LightClientContext,
+        _client_id: &ClientId,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _connection_id: &ConnectionId,
+        _expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
         todo!()
     }
 
     fn verify_channel_state(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
-        client_state: &Self::ClientState,
-        height: crate::Height,
-        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
-        expected_channel_end: &crate::core::ics04_channel::channel::ChannelEnd,
+        _ctx: &dyn LightClientContext,
+        _client_id: &ClientId,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _expected_channel_end: &ChannelEnd,
     ) -> Result<(), Error> {
         todo!()
     }
 
     fn verify_client_full_state(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_state: &Self::ClientState,
-        height: crate::Height,
-        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
-        expected_client_state: &crate::core::ics02_client::client_state::AnyClientState,
+        _ctx: &dyn LightClientContext,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _client_id: &ClientId,
+        _expected_client_state: &AnyClientState,
     ) -> Result<(), Error> {
         todo!()
     }
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
-        client_state: &Self::ClientState,
-        height: crate::Height,
-        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
-        sequence: crate::core::ics04_channel::packet::Sequence,
-        commitment: crate::core::ics04_channel::commitment::PacketCommitment,
+        ctx: &dyn LightClientContext,
+        _client_id: &ClientId,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _connection_end: &ConnectionEnd,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
+        _commitment: PacketCommitment,
     ) -> Result<(), Error> {
         todo!()
     }
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
-        client_state: &Self::ClientState,
-        height: crate::Height,
-        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
-        sequence: crate::core::ics04_channel::packet::Sequence,
-        ack: crate::core::ics04_channel::commitment::AcknowledgementCommitment,
+        ctx: &dyn LightClientContext,
+        _client_id: &ClientId,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _connection_end: &ConnectionEnd,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
+        _ack: AcknowledgementCommitment,
     ) -> Result<(), Error> {
         todo!()
     }
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
-        client_state: &Self::ClientState,
-        height: crate::Height,
-        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
-        sequence: crate::core::ics04_channel::packet::Sequence,
+        _ctx: &dyn LightClientContext,
+        _client_id: &ClientId,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _connection_end: &ConnectionEnd,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
     ) -> Result<(), Error> {
         todo!()
     }
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn crate::core::ics26_routing::context::LightClientContext<Crypto = Self::Crypto>,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
-        client_state: &Self::ClientState,
-        height: crate::Height,
-        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
-        sequence: crate::core::ics04_channel::packet::Sequence,
+        _ctx: &dyn LightClientContext,
+        _client_id: &ClientId,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _connection_end: &ConnectionEnd,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
     ) -> Result<(), Error> {
         todo!()
     }
 }
 
+// TODO: refactor to use [`HostFunctions`]
 pub fn validate_light_block<D: Digest>(
     header: &NearHeader,
     client_state: NearClientState,

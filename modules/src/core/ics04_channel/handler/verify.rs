@@ -1,4 +1,4 @@
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
@@ -13,7 +13,7 @@ use crate::proofs::Proofs;
 use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
-pub fn verify_channel_proofs<Crypto: CryptoOps>(
+pub fn verify_channel_proofs<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     height: Height,
     channel_end: &ChannelEnd,
@@ -35,7 +35,7 @@ pub fn verify_channel_proofs<Crypto: CryptoOps>(
         .consensus_state(&client_id, proofs.height())
         .map_err(|_| Error::error_invalid_consensus_state())?;
 
-    let client_def = AnyClient::<Crypto>::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<HostFunctions>::from_client_type(client_state.client_type());
 
     // Verify the proof for the channel state against the expected channel end.
     // A counterparty channel id of None in not possible, and is checked by validate_basic in msg.
@@ -56,7 +56,7 @@ pub fn verify_channel_proofs<Crypto: CryptoOps>(
 }
 
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
-pub fn verify_packet_recv_proofs<Crypto: CryptoOps>(
+pub fn verify_packet_recv_proofs<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     height: Height,
     packet: &Packet,
@@ -75,7 +75,7 @@ pub fn verify_packet_recv_proofs<Crypto: CryptoOps>(
         .consensus_state(client_id, proofs.height())
         .map_err(|_| Error::error_invalid_consensus_state())?;
 
-    let client_def = AnyClient::<Crypto>::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<HostFunctions>::from_client_type(client_state.client_type());
 
     let commitment = ctx.packet_commitment(
         packet.data.clone(),
@@ -104,7 +104,7 @@ pub fn verify_packet_recv_proofs<Crypto: CryptoOps>(
 }
 
 /// Entry point for verifying all proofs bundled in an ICS4 packet ack message.
-pub fn verify_packet_acknowledgement_proofs<Crypto: CryptoOps>(
+pub fn verify_packet_acknowledgement_proofs<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     height: Height,
     packet: &Packet,
@@ -126,7 +126,7 @@ pub fn verify_packet_acknowledgement_proofs<Crypto: CryptoOps>(
 
     let ack_commitment = ctx.ack_commitment(acknowledgement);
 
-    let client_def = AnyClient::<Crypto>::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<HostFunctions>::from_client_type(client_state.client_type());
 
     // Verify the proof for the packet against the chain store.
     client_def
@@ -149,7 +149,7 @@ pub fn verify_packet_acknowledgement_proofs<Crypto: CryptoOps>(
 }
 
 /// Entry point for verifying all timeout proofs.
-pub fn verify_next_sequence_recv<Crypto: CryptoOps>(
+pub fn verify_next_sequence_recv<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -169,7 +169,7 @@ pub fn verify_next_sequence_recv<Crypto: CryptoOps>(
         .consensus_state(client_id, proofs.height())
         .map_err(|_| Error::error_invalid_consensus_state())?;
 
-    let client_def = AnyClient::<Crypto>::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<HostFunctions>::from_client_type(client_state.client_type());
 
     // Verify the proof for the packet against the chain store.
     client_def
@@ -190,7 +190,7 @@ pub fn verify_next_sequence_recv<Crypto: CryptoOps>(
     Ok(())
 }
 
-pub fn verify_packet_receipt_absence<Crypto: CryptoOps>(
+pub fn verify_packet_receipt_absence<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -209,7 +209,7 @@ pub fn verify_packet_receipt_absence<Crypto: CryptoOps>(
         .consensus_state(client_id, proofs.height())
         .map_err(|_| Error::error_invalid_consensus_state())?;
 
-    let client_def = AnyClient::<Crypto>::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<HostFunctions>::from_client_type(client_state.client_type());
 
     // Verify the proof for the packet against the chain store.
     client_def

@@ -1,6 +1,6 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelCloseConfirm`.
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::core::ics04_channel::error::Error;
@@ -13,7 +13,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Crypto: CryptoOps>(
+pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     msg: &MsgChannelCloseConfirm,
 ) -> HandlerResult<ChannelResult, Error> {
@@ -65,7 +65,7 @@ pub(crate) fn process<Crypto: CryptoOps>(
         channel_end.version().clone(),
     );
 
-    verify_channel_proofs::<Crypto>(
+    verify_channel_proofs::<HostFunctions>(
         ctx,
         msg.proofs.height(),
         &channel_end,

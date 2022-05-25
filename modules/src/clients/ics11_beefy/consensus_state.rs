@@ -7,7 +7,7 @@ use tendermint::time::Time;
 use tendermint_proto::google::protobuf as tpb;
 use tendermint_proto::Protobuf;
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use ibc_proto::ibc::lightclients::beefy::v1::ConsensusState as RawConsensusState;
 
 use crate::clients::ics11_beefy::error::Error;
@@ -33,7 +33,7 @@ impl ConsensusState {
     }
 
     #[cfg(not(test))]
-    pub fn from_header<Crypto: CryptoOps>(header: ParachainHeader) -> Result<Self, Error> {
+    pub fn from_header<HostFunctions: HostFunctionsProvider>(header: ParachainHeader) -> Result<Self, Error> {
         use crate::clients::ics11_beefy::header::decode_timestamp_extrinsic;
         use crate::timestamp::Timestamp;
         use sp_runtime::SaturatedConversion;
@@ -51,7 +51,7 @@ impl ConsensusState {
                 })?
         };
 
-        let timestamp = decode_timestamp_extrinsic::<Crypto>(&header)?;
+        let timestamp = decode_timestamp_extrinsic::<HostFunctions>(&header)?;
         let duration = core::time::Duration::from_millis(timestamp);
         let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
             .unwrap_or_default()
@@ -69,7 +69,7 @@ impl ConsensusState {
     #[cfg(test)]
     /// Leaving this here because there's no ibc commitment root in the runtime header that will be used in
     /// testing
-    pub fn from_header<Crypto: CryptoOps>(header: ParachainHeader) -> Result<Self, Error> {
+    pub fn from_header<HostFunctions: HostFunctionsProvider>(header: ParachainHeader) -> Result<Self, Error> {
         use crate::clients::ics11_beefy::header::decode_timestamp_extrinsic;
         use crate::timestamp::Timestamp;
         use sp_runtime::SaturatedConversion;
@@ -85,7 +85,7 @@ impl ConsensusState {
                 .unwrap_or_default()
         };
 
-        let timestamp = decode_timestamp_extrinsic::<Crypto>(&header)?;
+        let timestamp = decode_timestamp_extrinsic::<HostFunctions>(&header)?;
         let duration = core::time::Duration::from_millis(timestamp);
         let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
             .unwrap_or_default()

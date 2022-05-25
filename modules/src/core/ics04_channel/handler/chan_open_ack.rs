@@ -1,5 +1,5 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenAck`.
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::core::ics04_channel::error::Error;
@@ -12,7 +12,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Crypto: CryptoOps>(
+pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     msg: &MsgChannelOpenAck,
 ) -> HandlerResult<ChannelResult, Error> {
@@ -72,7 +72,7 @@ pub(crate) fn process<Crypto: CryptoOps>(
     channel_end.set_counterparty_channel_id(msg.counterparty_channel_id);
 
     //2. Verify proofs
-    verify_channel_proofs::<Crypto>(
+    verify_channel_proofs::<HostFunctions>(
         ctx,
         msg.proofs.height(),
         &channel_end,
@@ -284,7 +284,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = channel_dispatch::<_, Crypto>(&test.ctx, &test.msg);
+            let res = channel_dispatch::<_, HostFunctions>(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok((proto_output, res)) => {

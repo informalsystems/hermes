@@ -1,5 +1,5 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
@@ -11,7 +11,7 @@ use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS3 message.
-pub fn verify_proofs<Crypto: CryptoOps>(
+pub fn verify_proofs<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     client_state: Option<AnyClientState>,
     height: Height,
@@ -19,7 +19,7 @@ pub fn verify_proofs<Crypto: CryptoOps>(
     expected_conn: &ConnectionEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    verify_connection_proof::<Crypto>(
+    verify_connection_proof::<HostFunctions>(
         ctx,
         height,
         connection_end,
@@ -30,7 +30,7 @@ pub fn verify_proofs<Crypto: CryptoOps>(
 
     // If the message includes a client state, then verify the proof for that state.
     if let Some(expected_client_state) = client_state {
-        verify_client_proof::<Crypto>(
+        verify_client_proof::<HostFunctions>(
             ctx,
             height,
             connection_end,
@@ -45,7 +45,7 @@ pub fn verify_proofs<Crypto: CryptoOps>(
 
     // If a consensus proof is attached to the message, then verify it.
     if let Some(proof) = proofs.consensus_proof() {
-        Ok(verify_consensus_proof::<Crypto>(
+        Ok(verify_consensus_proof::<HostFunctions>(
             ctx,
             height,
             connection_end,
@@ -59,7 +59,7 @@ pub fn verify_proofs<Crypto: CryptoOps>(
 /// Verifies the authenticity and semantic correctness of a commitment `proof`. The commitment
 /// claims to prove that an object of type connection exists on the source chain (i.e., the chain
 /// which created this proof). This object must match the state of `expected_conn`.
-pub fn verify_connection_proof<Crypto: CryptoOps>(
+pub fn verify_connection_proof<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -89,7 +89,7 @@ pub fn verify_connection_proof<Crypto: CryptoOps>(
         .connection_id()
         .ok_or_else(Error::invalid_counterparty)?;
 
-    let client_def = AnyClient::<Crypto>::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<HostFunctions>::from_client_type(client_state.client_type());
 
     // Verify the proof for the connection state against the expected connection end.
     client_def
@@ -114,7 +114,7 @@ pub fn verify_connection_proof<Crypto: CryptoOps>(
 /// complete verification: that the client state the counterparty stores is valid (i.e., not frozen,
 /// at the same revision as the current chain, with matching chain identifiers, etc) and that the
 /// `proof` is correct.
-pub fn verify_client_proof<Crypto: CryptoOps>(
+pub fn verify_client_proof<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -135,7 +135,7 @@ pub fn verify_client_proof<Crypto: CryptoOps>(
         .consensus_state(connection_end.client_id(), proof_height)
         .map_err(|e| Error::consensus_state_verification_failure(proof_height, e))?;
 
-    let client_def = AnyClient::<Crypto>::from_client_type(client_state.client_type());
+    let client_def = AnyClient::<HostFunctions>::from_client_type(client_state.client_type());
 
     client_def
         .verify_client_full_state(
@@ -153,7 +153,7 @@ pub fn verify_client_proof<Crypto: CryptoOps>(
         })
 }
 
-pub fn verify_consensus_proof<Crypto: CryptoOps>(
+pub fn verify_consensus_proof<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn LightClientContext,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -177,7 +177,7 @@ pub fn verify_consensus_proof<Crypto: CryptoOps>(
         .consensus_state(connection_end.client_id(), height)
         .map_err(|e| Error::consensus_state_verification_failure(height, e))?;
 
-    let client = AnyClient::<Crypto>::from_client_type(client_state.client_type());
+    let client = AnyClient::<HostFunctions>::from_client_type(client_state.client_type());
 
     client
         .verify_client_consensus_state(

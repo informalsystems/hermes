@@ -1,5 +1,5 @@
 //! This module implements the processing logic for ICS3 (connection open handshake) messages.
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::msgs::ConnectionMsg;
@@ -42,18 +42,18 @@ pub struct ConnectionResult {
 
 /// General entry point for processing any type of message related to the ICS3 connection open
 /// handshake protocol.
-pub fn dispatch<Ctx, Crypto>(
+pub fn dispatch<Ctx, HostFunctions>(
     ctx: &Ctx,
     msg: ConnectionMsg,
 ) -> Result<HandlerOutput<ConnectionResult>, Error>
 where
     Ctx: LightClientContext,
-    Crypto: CryptoOps,
+    HostFunctions: HostFunctionsProvider,
 {
     match msg {
         ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),
-        ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process::<Crypto>(ctx, *msg),
-        ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process::<Crypto>(ctx, *msg),
-        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process::<Crypto>(ctx, msg),
+        ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process::<HostFunctions>(ctx, *msg),
+        ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process::<HostFunctions>(ctx, *msg),
+        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process::<HostFunctions>(ctx, msg),
     }
 }

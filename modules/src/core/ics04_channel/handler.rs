@@ -1,6 +1,6 @@
 //! This module implements the processing logic for ICS4 (channel) messages.
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::ChannelMsg;
@@ -59,21 +59,21 @@ where
 
 /// General entry point for processing any type of message related to the ICS4 channel open and
 /// channel close handshake protocols.
-pub fn channel_dispatch<Ctx, Crypto>(
+pub fn channel_dispatch<Ctx, HostFunctions>(
     ctx: &Ctx,
     msg: &ChannelMsg,
 ) -> Result<(HandlerOutputBuilder<()>, ChannelResult), Error>
 where
     Ctx: LightClientContext,
-    Crypto: CryptoOps,
+    HostFunctions: HostFunctionsProvider,
 {
     let output = match msg {
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
-        ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process::<Crypto>(ctx, msg),
-        ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process::<Crypto>(ctx, msg),
-        ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process::<Crypto>(ctx, msg),
+        ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process::<HostFunctions>(ctx, msg),
+        ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process::<HostFunctions>(ctx, msg),
+        ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process::<HostFunctions>(ctx, msg),
         ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg),
-        ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process::<Crypto>(ctx, msg),
+        ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process::<HostFunctions>(ctx, msg),
     }?;
     let HandlerOutput {
         result,
@@ -168,19 +168,19 @@ where
 }
 
 /// Dispatcher for processing any type of message related to the ICS4 packet protocols.
-pub fn packet_dispatch<Ctx, Crypto>(
+pub fn packet_dispatch<Ctx, HostFunctions>(
     ctx: &Ctx,
     msg: &PacketMsg,
 ) -> Result<(HandlerOutputBuilder<()>, PacketResult), Error>
 where
     Ctx: LightClientContext,
-    Crypto: CryptoOps,
+    HostFunctions: HostFunctionsProvider,
 {
     let output = match msg {
-        PacketMsg::RecvPacket(msg) => recv_packet::process::<Crypto>(ctx, msg),
-        PacketMsg::AckPacket(msg) => acknowledgement::process::<Crypto>(ctx, msg),
-        PacketMsg::ToPacket(msg) => timeout::process::<Crypto>(ctx, msg),
-        PacketMsg::ToClosePacket(msg) => timeout_on_close::process::<Crypto>(ctx, msg),
+        PacketMsg::RecvPacket(msg) => recv_packet::process::<HostFunctions>(ctx, msg),
+        PacketMsg::AckPacket(msg) => acknowledgement::process::<HostFunctions>(ctx, msg),
+        PacketMsg::ToPacket(msg) => timeout::process::<HostFunctions>(ctx, msg),
+        PacketMsg::ToClosePacket(msg) => timeout_on_close::process::<HostFunctions>(ctx, msg),
     }?;
     let HandlerOutput {
         result,

@@ -1,5 +1,5 @@
 //! This module implements the processing logic for ICS2 (client abstractions and functions) msgs.
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::msgs::ClientMsg;
 use crate::core::ics26_routing::context::LightClientContext;
@@ -18,18 +18,18 @@ pub enum ClientResult {
 }
 
 /// General entry point for processing any message related to ICS2 (client functions) protocols.
-pub fn dispatch<Ctx, Crypto>(
+pub fn dispatch<Ctx, HostFunctions>(
     ctx: &Ctx,
     msg: ClientMsg,
 ) -> Result<HandlerOutput<ClientResult>, Error>
 where
     Ctx: LightClientContext,
-    Crypto: CryptoOps,
+    HostFunctions: HostFunctionsProvider,
 {
     match msg {
         ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),
-        ClientMsg::UpdateClient(msg) => update_client::process::<Crypto>(ctx, msg),
-        ClientMsg::UpgradeClient(msg) => upgrade_client::process::<Crypto>(ctx, msg),
+        ClientMsg::UpdateClient(msg) => update_client::process::<HostFunctions>(ctx, msg),
+        ClientMsg::UpgradeClient(msg) => upgrade_client::process::<HostFunctions>(ctx, msg),
         _ => {
             unimplemented!()
         }

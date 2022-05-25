@@ -3,7 +3,6 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::error::Error;
 
-use super::crypto_ops::NearCryptoOps;
 
 #[derive(Debug, Clone)]
 pub struct NearConsensusState {
@@ -13,7 +12,6 @@ pub struct NearConsensusState {
 impl ConsensusState for NearConsensusState {
     type Error = Error;
 
-    type Crypto = NearCryptoOps;
 
     fn client_type(&self) -> ClientType {
         ClientType::Near
@@ -23,7 +21,7 @@ impl ConsensusState for NearConsensusState {
         &self.commitment_root
     }
 
-    fn wrap_any(self) -> AnyConsensusState<Self::Crypto> {
+    fn wrap_any(self) -> AnyConsensusState {
         todo!()
     }
 }

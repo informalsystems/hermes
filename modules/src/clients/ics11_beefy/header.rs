@@ -1,7 +1,7 @@
 use prost::Message;
 use tendermint_proto::Protobuf;
 
-use crate::clients::crypto_ops::crypto::CryptoOps;
+use crate::clients::host_functions::HostFunctionsProvider;
 use crate::clients::ics11_beefy::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::header::AnyHeader;
@@ -395,7 +395,7 @@ pub fn decode_header<B: Buf>(buf: B) -> Result<BeefyHeader, Error> {
 }
 
 /// Attempt to extract the timestamp extrinsic from the parachain header
-pub fn decode_timestamp_extrinsic<Crypto: CryptoOps>(
+pub fn decode_timestamp_extrinsic<HostFunctions: HostFunctionsProvider>(
     header: &ParachainHeader,
 ) -> Result<u64, Error> {
     let proof = &*header.extrinsic_proof;
@@ -405,7 +405,7 @@ pub fn decode_timestamp_extrinsic<Crypto: CryptoOps>(
     // Timestamp extrinsic should be the first inherent and hence the first extrinsic
     // https://github.com/paritytech/substrate/blob/d602397a0bbb24b5d627795b797259a44a5e29e9/primitives/trie/src/lib.rs#L99-L101
     let key = codec::Encode::encode(&Compact(0u32));
-    Crypto::verify_membership_trie_proof(&extrinsic_root, proof, &*key, ext)
+    HostFunctions::verify_membership_trie_proof(&extrinsic_root, proof, &*key, ext)
         .map_err(|e| Error::timestamp_extrinsic(format!("Proof Verification failed {:?}", e)))?;
     // Decoding from the [2..] because the timestamp inmherent has two extra bytes before the call that represents the
     // call length and the extrinsic version.
