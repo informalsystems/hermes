@@ -2,6 +2,10 @@ use alloc::sync::Arc;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use ibc_relayer::chain::requests::{
+    PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest,
+};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
 
@@ -12,8 +16,6 @@ use ibc::core::ics24_host::identifier::ClientId;
 use ibc::events::WithBlockDataType;
 use ibc::query::QueryTxRequest;
 use ibc::Height;
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_relayer::chain::ChainEndpoint;
 use ibc_relayer::chain::CosmosSdkChain;
 
@@ -53,7 +55,10 @@ impl Runnable for QueryClientStateCmd {
             .unwrap_or_else(exit_with_unrecoverable_error);
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
-        match chain.query_client_state(&self.client_id, height) {
+        match chain.query_client_state(QueryClientStateRequest {
+            client_id: self.client_id.clone(),
+            height,
+        }) {
             Ok(cs) => Output::success(cs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -108,7 +113,10 @@ impl Runnable for QueryClientConsensusCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
+        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
+            client_id: self.client_id.clone(),
+            height: Height::zero(),
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
@@ -122,8 +130,11 @@ impl Runnable for QueryClientConsensusCmd {
                 let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
                 let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
 
-                let res =
-                    chain.query_consensus_state(self.client_id.clone(), consensus_height, height);
+                let res = chain.query_consensus_state(QueryConsensusStateRequest {
+                    client_id: self.client_id.clone(),
+                    consensus_height,
+                    query_height: height,
+                });
 
                 match res {
                     Ok(cs) => Output::success(cs).exit(),
@@ -132,8 +143,8 @@ impl Runnable for QueryClientConsensusCmd {
             }
             None => {
                 let res = chain.query_consensus_states(QueryConsensusStatesRequest {
-                    client_id: self.client_id.to_string(),
-                    pagination: ibc_proto::cosmos::base::query::pagination::all(),
+                    client_id: self.client_id.clone(),
+                    pagination: Some(PageRequest::all()),
                 });
 
                 match res {
@@ -188,7 +199,10 @@ impl Runnable for QueryClientHeaderCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
+        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
+            client_id: self.client_id.clone(),
+            height: Height::zero(),
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
@@ -252,11 +266,9 @@ impl Runnable for QueryClientConnectionsCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let req = QueryClientConnectionsRequest {
-            client_id: self.client_id.to_string(),
-        };
-
-        let res = chain.query_client_connections(req);
+        let res = chain.query_client_connections(QueryClientConnectionsRequest {
+            client_id: self.client_id.clone(),
+        });
 
         match res {
             Ok(ce) => Output::success(ce).exit(),

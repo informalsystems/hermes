@@ -10,6 +10,7 @@ use ibc::Height;
 
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
+use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
 use crate::link::operational_data::{OperationalData, TrackedEvents};
 use crate::link::packet_events::{
@@ -89,7 +90,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         info!("unreceived packets found: {} ", sequences.len());
 
-        self.relay_packet_messages(sequences, src_response_height, query_send_packet_events)
+        self.relay_packet_messages(
+            sequences,
+            src_response_height,
+            query_send_packet_events,
+            TrackingId::new_static("packet-recv"),
+        )
     }
 
     /// Implements the `packet-ack` CLI
@@ -117,19 +123,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         info!("unreceived acknowledgements found: {} ", sequences.len());
 
-        self.relay_packet_messages(sequences, src_response_height, query_write_ack_events)
+        self.relay_packet_messages(
+            sequences,
+            src_response_height,
+            query_write_ack_events,
+            TrackingId::new_static("packet-ack"),
+        )
     }
 
     fn relay_packet_messages(
         &self,
-        sequences: Vec<u64>,
+        sequences: Vec<Sequence>,
         src_response_height: Height,
         query_fn: impl Fn(
             &ChainA,
             &PathIdentifiers,
             Vec<Sequence>,
             Height,
-        ) -> Result<TrackedEvents, LinkError>,
+        ) -> Result<Vec<IbcEvent>, LinkError>,
+        tracking_id: TrackingId,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         dbg!(src_response_height);
         let mut results = vec![];
@@ -140,7 +152,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             &self.a_to_b.path_id,
             query_fn,
         ) {
-            self.a_to_b.events_to_operational_data(events_chunk)?;
+            let tracked_events = TrackedEvents::new(events_chunk, tracking_id);
+            self.a_to_b.events_to_operational_data(tracked_events)?;
 
             // In case of zero connection delay, the op. data will already be ready
             let (src_ods, dst_ods) = self.a_to_b.try_fetch_scheduled_operational_data()?;

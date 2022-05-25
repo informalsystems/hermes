@@ -20,9 +20,13 @@ use ibc::{
     core::ics02_client::height::Height, core::ics24_host::identifier::ChainId, events::IbcEvent,
 };
 
-use crate::util::{
-    retry::{retry_count, retry_with_index, RetryResult},
-    stream::try_group_while,
+use crate::{
+    chain::tracking::TrackingId,
+    telemetry,
+    util::{
+        retry::{retry_count, retry_with_index, RetryResult},
+        stream::try_group_while,
+    },
 };
 
 mod error;
@@ -49,6 +53,7 @@ mod retry_strategy {
 #[derive(Clone, Debug)]
 pub struct EventBatch {
     pub chain_id: ChainId,
+    pub tracking_id: TrackingId,
     pub height: Height,
     pub events: Vec<IbcEvent>,
 }
@@ -283,7 +288,7 @@ impl EventMonitor {
     /// Event monitor loop
     #[allow(clippy::while_let_loop)]
     pub fn run(mut self) {
-        debug!("[{}] starting event monitor", self.chain_id);
+        debug!(chain = %self.chain_id, "starting event monitor");
 
         // Continuously run the event loop, so that when it aborts
         // because of WebSocket client restart, we pick up the work again.
@@ -345,39 +350,40 @@ impl EventMonitor {
                     error!("[{}] {}", self.chain_id, e);
                 }),
                 Err(e) => {
-                    match e.detail() {
-                        ErrorDetail::SubscriptionCancelled(reason) => {
-                            error!(
-                                "[{}] subscription cancelled, reason: {}",
-                                self.chain_id, reason
-                            );
+                    if let ErrorDetail::SubscriptionCancelled(reason) = e.detail() {
+                        error!(
+                            "[{}] subscription cancelled, reason: {}",
+                            self.chain_id, reason
+                        );
 
-                            self.propagate_error(e).unwrap_or_else(|e| {
-                                error!("[{}] {}", self.chain_id, e);
-                            });
+                        self.propagate_error(e).unwrap_or_else(|e| {
+                            error!("[{}] {}", self.chain_id, e);
+                        });
 
-                            // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
-                            self.reconnect();
+                        telemetry!(ws_reconnect, &self.chain_id);
 
-                            // Abort this event loop, the `run` method will start a new one.
-                            // We can't just write `return self.run()` here because Rust
-                            // does not perform tail call optimization, and we would
-                            // thus potentially blow up the stack after many restarts.
-                            return Next::Continue;
-                        }
-                        _ => {
-                            error!("[{}] failed to collect events: {}", self.chain_id, e);
+                        // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                        self.reconnect();
 
-                            // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
-                            self.reconnect();
+                        // Abort this event loop, the `run` method will start a new one.
+                        // We can't just write `return self.run()` here because Rust
+                        // does not perform tail call optimization, and we would
+                        // thus potentially blow up the stack after many restarts.
+                        return Next::Continue;
+                    } else {
+                        error!("[{}] failed to collect events: {}", self.chain_id, e);
 
-                            // Abort this event loop, the `run` method will start a new one.
-                            // We can't just write `return self.run()` here because Rust
-                            // does not perform tail call optimization, and we would
-                            // thus potentially blow up the stack after many restarts.
-                            return Next::Continue;
-                        }
-                    }
+                        telemetry!(ws_reconnect, &self.chain_id);
+
+                        // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                        self.reconnect();
+
+                        // Abort this event loop, the `run` method will start a new one.
+                        // We can't just write `return self.run()` here because Rust
+                        // does not perform tail call optimization, and we would
+                        // thus potentially blow up the stack after many restarts.
+                        return Next::Continue;
+                    };
                 }
             }
         }
@@ -400,6 +406,8 @@ impl EventMonitor {
 
     /// Collect the IBC events from the subscriptions
     fn process_batch(&self, batch: EventBatch) -> Result<()> {
+        telemetry!(ws_events, &batch.chain_id, batch.events.len() as u64);
+
         self.tx_batch
             .send(Ok(batch))
             .map_err(|_| Error::channel_send_failed())?;
@@ -448,6 +456,7 @@ fn stream_batches(
             height,
             events,
             chain_id: chain_id.clone(),
+            tracking_id: TrackingId::new_uuid(),
         }
     })
 }

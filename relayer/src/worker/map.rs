@@ -229,11 +229,13 @@ impl Drop for WorkerMap {
 
 #[cfg(feature = "telemetry")]
 fn metric_type(o: &Object) -> ibc_telemetry::state::WorkerType {
-    use ibc_telemetry::state::WorkerType::*;
+    use ibc_telemetry::state::WorkerType;
+
     match o {
-        Object::Client(_) => Client,
-        Object::Connection(_) => Connection,
-        Object::Channel(_) => Channel,
-        Object::Packet(_) => Packet,
+        Object::Client(_) => WorkerType::Client,
+        Object::Connection(_) => WorkerType::Connection,
+        Object::Channel(_) => WorkerType::Channel,
+        Object::Packet(_) => WorkerType::Packet,
+        Object::Wallet(_) => WorkerType::Wallet,
     }
 }

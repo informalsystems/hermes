@@ -19,6 +19,7 @@ use crate::chain::{
         counterparty_chain_from_connection,
     },
     handle::ChainHandle,
+    requests::QueryClientStateRequest,
 };
 use crate::error::Error as RelayerError;
 use crate::supervisor::Error as SupervisorError;
@@ -92,12 +93,6 @@ impl Channel {
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
-    pub fn src_port_id(&self) -> &PortId {
-        &self.src_port_id
-    }
-    pub fn src_channel_id(&self) -> &ChannelId {
-        &self.src_channel_id
-    }
 }
 
 /// A packet worker between a source and destination chain, and a specific channel and port.
@@ -123,11 +118,18 @@ impl Packet {
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
-    pub fn src_port_id(&self) -> &PortId {
-        &self.src_port_id
-    }
-    pub fn src_channel_id(&self) -> &ChannelId {
-        &self.src_channel_id
+}
+
+/// A wallet worker which monitors the balance of the wallet in use by Hermes
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct Wallet {
+    /// Chain identifier
+    pub chain_id: ChainId,
+}
+
+impl Wallet {
+    pub fn short_name(&self) -> String {
+        format!("wallet::{}", self.chain_id)
     }
 }
 
@@ -148,6 +150,8 @@ pub enum Object {
     Channel(Channel),
     /// See [`Packet`].
     Packet(Packet),
+    /// See [`Wallet`]
+    Wallet(Wallet),
 }
 
 define_error! {
@@ -196,6 +200,7 @@ impl Object {
             Object::Connection(c) => &c.src_chain_id == src_chain_id,
             Object::Channel(c) => &c.src_chain_id == src_chain_id,
             Object::Packet(p) => &p.src_chain_id == src_chain_id,
+            Object::Wallet(_) => false,
         }
     }
 
@@ -206,6 +211,7 @@ impl Object {
             Object::Connection(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
             Object::Channel(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
             Object::Packet(p) => &p.src_chain_id == chain_id || &p.dst_chain_id == chain_id,
+            Object::Wallet(w) => &w.chain_id == chain_id,
         }
     }
 
@@ -216,6 +222,7 @@ impl Object {
             Object::Channel(_) => ObjectType::Channel,
             Object::Connection(_) => ObjectType::Connection,
             Object::Packet(_) => ObjectType::Packet,
+            Object::Wallet(_) => ObjectType::Wallet,
         }
     }
 }
@@ -227,6 +234,7 @@ pub enum ObjectType {
     Channel,
     Connection,
     Packet,
+    Wallet,
 }
 
 impl From<Client> for Object {
@@ -253,6 +261,12 @@ impl From<Packet> for Object {
     }
 }
 
+impl From<Wallet> for Object {
+    fn from(w: Wallet) -> Self {
+        Self::Wallet(w)
+    }
+}
+
 impl Object {
     pub fn src_chain_id(&self) -> &ChainId {
         match self {
@@ -260,6 +274,7 @@ impl Object {
             Self::Connection(ref connection) => &connection.src_chain_id,
             Self::Channel(ref channel) => &channel.src_chain_id,
             Self::Packet(ref path) => &path.src_chain_id,
+            Self::Wallet(ref wallet) => &wallet.chain_id,
         }
     }
 
@@ -269,6 +284,7 @@ impl Object {
             Self::Connection(ref connection) => &connection.dst_chain_id,
             Self::Channel(ref channel) => &channel.dst_chain_id,
             Self::Packet(ref path) => &path.dst_chain_id,
+            Self::Wallet(ref wallet) => &wallet.chain_id,
         }
     }
 
@@ -278,6 +294,7 @@ impl Object {
             Self::Connection(ref connection) => connection.short_name(),
             Self::Channel(ref channel) => channel.short_name(),
             Self::Packet(ref path) => path.short_name(),
+            Self::Wallet(ref wallet) => wallet.short_name(),
         }
     }
 
@@ -287,7 +304,10 @@ impl Object {
         dst_chain: &impl ChainHandle,
     ) -> Result<Self, ObjectError> {
         let client_state = dst_chain
-            .query_client_state(e.client_id(), Height::zero())
+            .query_client_state(QueryClientStateRequest {
+                client_id: e.client_id().clone(),
+                height: Height::zero(),
+            })
             .map_err(ObjectError::relayer)?;
 
         if client_state.refresh_period().is_none() {
@@ -296,7 +316,6 @@ impl Object {
                 dst_chain.id(),
             ));
         }
-
         let src_chain_id = client_state.chain_id();
 
         Ok(Client {
