@@ -2,10 +2,10 @@
    Types for information about a chain wallet.
 */
 
-use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use core::fmt::{self, Display};
 use ibc_relayer::keyring::KeyEntry;
 
+use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::tagged::*;
 
 /**
@@ -112,6 +112,12 @@ impl Wallet {
             address: WalletAddress(address),
             key,
         }
+    }
+}
+
+impl WalletAddress {
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
     }
 }
 

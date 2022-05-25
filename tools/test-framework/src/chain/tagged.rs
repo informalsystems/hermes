@@ -7,7 +7,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use serde_json as json;
 
-use crate::chain::driver::query_txs::query_recipient_transactions;
+use crate::chain::cli::query::query_recipient_transactions;
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
@@ -114,6 +114,12 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         &self,
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error> {
-        query_recipient_transactions(self.value(), recipient_address.value())
+        let driver = *self.value();
+        query_recipient_transactions(
+            driver.chain_id.as_str(),
+            &driver.command_path,
+            &driver.rpc_listen_address(),
+            &recipient_address.value().0,
+        )
     }
 }

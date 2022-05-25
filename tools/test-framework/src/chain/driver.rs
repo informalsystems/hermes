@@ -36,10 +36,6 @@ use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 use crate::util::retry::assert_eventually_succeed;
 
-pub mod interchain;
-pub mod query_txs;
-pub mod transfer;
-
 /**
    Number of times (seconds) to try and query a wallet to reach the
    target amount, as used by [`assert_eventual_wallet_amount`].

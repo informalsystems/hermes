@@ -1,4 +1,4 @@
-use crate::chain::driver::transfer::local_transfer_token;
+use crate::chain::cli::transfer::local_transfer_token;
 use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
@@ -71,11 +71,15 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         recipient: &MonoTagged<Chain, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error> {
+        let driver = *self.value();
         local_transfer_token(
-            self.value(),
-            sender.value(),
-            recipient.value(),
-            token.value(),
+            driver.chain_id.as_str(),
+            &driver.command_path,
+            &driver.home_path,
+            &driver.rpc_listen_address(),
+            sender.value().address.as_str(),
+            recipient.value().as_str(),
+            &token.value().to_string(),
         )
     }
 }
