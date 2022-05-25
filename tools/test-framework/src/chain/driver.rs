@@ -25,6 +25,7 @@ use crate::chain::cli::bootstrap::{
     add_genesis_account, add_genesis_validator, add_wallet, collect_gen_txs, initialize,
     start_chain,
 };
+use crate::chain::cli::query::query_balance;
 use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
@@ -212,7 +213,7 @@ impl ChainDriver {
        [`bootstrap_single_node`](crate::bootstrap::single::bootstrap_single_node).
     */
     pub fn initialize(&self) -> Result<(), Error> {
-        initialize(&self.chain_id, &self.command_path, &self.home_path)
+        initialize(self.chain_id.as_str(), &self.command_path, &self.home_path)
     }
 
     /**
@@ -267,7 +268,7 @@ impl ChainDriver {
     */
     pub fn add_wallet(&self, wallet_id: &str) -> Result<Wallet, Error> {
         let seed_content = add_wallet(
-            &self.chain_id,
+            self.chain_id.as_str(),
             &self.command_path,
             &self.home_path,
             wallet_id,
@@ -307,7 +308,7 @@ impl ChainDriver {
         let amounts_str = amounts.iter().map(|t| t.to_string()).collect::<Vec<_>>();
 
         add_genesis_account(
-            &self.chain_id,
+            self.chain_id.as_str(),
             &self.command_path,
             &self.home_path,
             &wallet.0,
@@ -321,7 +322,7 @@ impl ChainDriver {
     */
     pub fn add_genesis_validator(&self, wallet_id: &WalletId, token: &Token) -> Result<(), Error> {
         add_genesis_validator(
-            &self.chain_id,
+            self.chain_id.as_str(),
             &self.command_path,
             &self.home_path,
             &wallet_id.0,
@@ -333,7 +334,7 @@ impl ChainDriver {
        Call `gaiad collect-gentxs` to generate the genesis transactions.
     */
     pub fn collect_gen_txs(&self) -> Result<(), Error> {
-        collect_gen_txs(&self.chain_id, &self.command_path, &self.home_path)
+        collect_gen_txs(self.chain_id.as_str(), &self.command_path, &self.home_path)
     }
 
     /**
@@ -378,32 +379,13 @@ impl ChainDriver {
        Query for the balances for a given wallet address and denomination
     */
     pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<u128, Error> {
-        let res = self
-            .exec(&[
-                "--node",
-                &self.rpc_listen_address(),
-                "query",
-                "bank",
-                "balances",
-                &wallet_id.0,
-                "--denom",
-                denom.as_str(),
-                "--output",
-                "json",
-            ])?
-            .stdout;
-
-        let amount_str = json::from_str::<json::Value>(&res)
-            .map_err(handle_generic_error)?
-            .get("amount")
-            .ok_or_else(|| eyre!("expected amount field"))?
-            .as_str()
-            .ok_or_else(|| eyre!("expected string field"))?
-            .to_string();
-
-        let amount = u128::from_str(&amount_str).map_err(handle_generic_error)?;
-
-        Ok(amount)
+        query_balance(
+            self.chain_id.as_str(),
+            &self.command_path,
+            &self.rpc_listen_address(),
+            &wallet_id.0,
+            &denom.to_string(),
+        )
     }
 
     pub fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
