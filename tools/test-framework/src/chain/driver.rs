@@ -10,7 +10,6 @@ use eyre::eyre;
 use serde_json as json;
 use std::fs;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
 use std::str;
 use tokio::runtime::Runtime;
 use toml;
@@ -22,6 +21,10 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 
+use crate::chain::cli::bootstrap::{
+    add_genesis_account, add_genesis_validator, add_wallet, collect_gen_txs, initialize,
+    start_chain,
+};
 use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
@@ -30,7 +33,6 @@ use crate::relayer::tx::{new_tx_config_for_test, simple_send_tx};
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
-use crate::util::file::pipe_to_file;
 use crate::util::retry::assert_eventually_succeed;
 
 pub mod interchain;
@@ -210,16 +212,7 @@ impl ChainDriver {
        [`bootstrap_single_node`](crate::bootstrap::single::bootstrap_single_node).
     */
     pub fn initialize(&self) -> Result<(), Error> {
-        self.exec(&[
-            "--home",
-            &self.home_path,
-            "--chain-id",
-            self.chain_id.as_str(),
-            "init",
-            self.chain_id.as_str(),
-        ])?;
-
-        Ok(())
+        initialize(&self.chain_id, &self.command_path, &self.home_path)
     }
 
     /**
@@ -273,24 +266,12 @@ impl ChainDriver {
        Add a wallet with the given ID to the full node's keyring.
     */
     pub fn add_wallet(&self, wallet_id: &str) -> Result<Wallet, Error> {
-        let output = self.exec(&[
-            "--home",
-            self.home_path.as_str(),
-            "keys",
-            "add",
+        let seed_content = add_wallet(
+            &self.chain_id,
+            &self.command_path,
+            &self.home_path,
             wallet_id,
-            "--keyring-backend",
-            "test",
-            "--output",
-            "json",
-        ])?;
-
-        // gaia6 somehow displays result in stderr instead of stdout
-        let seed_content = if output.stdout.is_empty() {
-            output.stderr
-        } else {
-            output.stdout
-        };
+        )?;
 
         let json_val: json::Value = json::from_str(&seed_content).map_err(handle_generic_error)?;
 
@@ -323,17 +304,15 @@ impl ChainDriver {
         wallet: &WalletAddress,
         amounts: &[&Token],
     ) -> Result<(), Error> {
-        let amounts_str = itertools::join(amounts.iter().map(|t| t.to_string()), ",");
+        let amounts_str = amounts.iter().map(|t| t.to_string()).collect::<Vec<_>>();
 
-        self.exec(&[
-            "--home",
+        add_genesis_account(
+            &self.chain_id,
+            &self.command_path,
             &self.home_path,
-            "add-genesis-account",
             &wallet.0,
             &amounts_str,
-        ])?;
-
-        Ok(())
+        )
     }
 
     /**
@@ -341,28 +320,20 @@ impl ChainDriver {
        for an uninitialized chain.
     */
     pub fn add_genesis_validator(&self, wallet_id: &WalletId, token: &Token) -> Result<(), Error> {
-        self.exec(&[
-            "--home",
+        add_genesis_validator(
+            &self.chain_id,
+            &self.command_path,
             &self.home_path,
-            "gentx",
             &wallet_id.0,
-            "--keyring-backend",
-            "test",
-            "--chain-id",
-            self.chain_id.as_str(),
             &token.to_string(),
-        ])?;
-
-        Ok(())
+        )
     }
 
     /**
        Call `gaiad collect-gentxs` to generate the genesis transactions.
     */
     pub fn collect_gen_txs(&self) -> Result<(), Error> {
-        self.exec(&["--home", &self.home_path, "collect-gentxs"])?;
-
-        Ok(())
+        collect_gen_txs(&self.chain_id, &self.command_path, &self.home_path)
     }
 
     /**
@@ -395,41 +366,12 @@ impl ChainDriver {
        value is dropped.
     */
     pub fn start(&self) -> Result<ChildProcess, Error> {
-        let base_args = [
-            "--home",
+        start_chain(
+            &self.command_path,
             &self.home_path,
-            "start",
-            "--pruning",
-            "nothing",
-            "--grpc.address",
-            &self.grpc_listen_address(),
-            "--rpc.laddr",
             &self.rpc_listen_address(),
-        ];
-
-        let args: Vec<&str> = base_args.to_vec();
-
-        let mut child = Command::new(&self.command_path)
-            .args(&args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
-
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| eyre!("expected stdout to be present in child process"))?;
-
-        let stderr = child
-            .stderr
-            .take()
-            .ok_or_else(|| eyre!("expected stderr to be present in child process"))?;
-
-        pipe_to_file(stdout, &format!("{}/stdout.log", self.home_path))?;
-        pipe_to_file(stderr, &format!("{}/stderr.log", self.home_path))?;
-
-        Ok(ChildProcess::new(child))
+            &self.grpc_listen_address(),
+        )
     }
 
     /**
