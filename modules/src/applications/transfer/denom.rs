@@ -529,7 +529,10 @@ mod tests {
 
         trace_path.remove_prefix(&prefix_2);
         assert_eq!(TracePath::from_str("transfer/channel-1")?, trace_path);
-        assert_eq!(TracePath(vec![prefix_1]), trace_path);
+        assert_eq!(TracePath(vec![prefix_1.clone()]), trace_path);
+
+        trace_path.remove_prefix(&prefix_1);
+        assert!(trace_path.is_empty());
 
         Ok(())
     }
