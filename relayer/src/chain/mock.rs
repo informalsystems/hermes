@@ -46,10 +46,10 @@ use super::requests::{
     IncludeProof, QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
     QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-    QueryUpgradedConsensusStateRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use super::tracking::TrackedMsgs;
 use super::HealthCheck;
@@ -279,6 +279,14 @@ impl ChainEndpoint for MockChain {
         &self,
         _request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<Sequence>, Error> {
+        unimplemented!()
+    }
+
+    fn query_packet_acknowledgement(
+        &self,
+        _request: QueryPacketAcknowledgementRequest,
+        _include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
         unimplemented!()
     }
 

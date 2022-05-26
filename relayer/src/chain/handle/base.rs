@@ -36,10 +36,10 @@ use crate::{
             QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
             QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
             QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-            QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-            QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-            QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-            QueryUpgradedConsensusStateRequest,
+            QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
+            QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest,
+            QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+            QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
         },
         tracking::TrackedMsgs,
         ChainStatus,
@@ -421,11 +421,23 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryUnreceivedPackets { request, reply_to })
     }
 
+    fn query_packet_acknowledgement(
+        &self,
+        request: QueryPacketAcknowledgementRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement {
+            request,
+            include_proof,
+            reply_to,
+        })
+    }
+
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<Sequence>, Height), Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })
+        self.send(|reply_to| ChainRequest::QueryPacketAcknowledgements { request, reply_to })
     }
 
     fn query_unreceived_acknowledgement(

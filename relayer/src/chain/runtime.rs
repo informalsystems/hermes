@@ -53,10 +53,10 @@ use super::{
         QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
         QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
         QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-        QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-        QueryUpgradedConsensusStateRequest,
+        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
+        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
+        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
     },
     tracking::TrackedMsgs,
     ChainEndpoint, ChainStatus, HealthCheck,
@@ -390,7 +390,11 @@ where
                             self.query_unreceived_packets(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryPacketAcknowledgement { request, reply_to }) => {
+                        Ok(ChainRequest::QueryPacketAcknowledgement { request, include_proof, reply_to }) => {
+                            self.query_packet_acknowledgement(request, include_proof, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryPacketAcknowledgements { request, reply_to }) => {
                             self.query_packet_acknowledgements(request, reply_to)?
                         },
 
@@ -809,6 +813,18 @@ where
         reply_to: ReplyTo<Vec<Sequence>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn query_packet_acknowledgement(
+        &self,
+        request: QueryPacketAcknowledgementRequest,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Vec<u8>, Option<MerkleProof>)>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .query_packet_acknowledgement(request, include_proof);
         reply_to.send(result).map_err(Error::send)
     }
 
