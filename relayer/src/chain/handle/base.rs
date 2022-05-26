@@ -37,7 +37,7 @@ use crate::{
             QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
             QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
             QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-            QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest,
+            QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
             QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
             QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
         },
@@ -412,6 +412,18 @@ impl ChainHandle for BaseChainHandle {
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<Sequence>, Height), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketCommitments { request, reply_to })
+    }
+
+    fn query_packet_receipt(
+        &self,
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketReceipt {
+            request,
+            include_proof,
+            reply_to,
+        })
     }
 
     fn query_unreceived_packets(

@@ -44,8 +44,9 @@ use self::requests::{
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+    QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+    QueryUpgradedConsensusStateRequest,
 };
 use self::tracking::TrackedMsgs;
 
@@ -254,6 +255,12 @@ pub trait ChainEndpoint: Sized {
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<Sequence>, ICSHeight), Error>;
+
+    fn query_packet_receipt(
+        &self,
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
 
     /// Queries all the unreceived IBC packets associated with a channel and packet commit sequences.
     /// Returns the corresponding packet sequence numbers.

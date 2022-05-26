@@ -85,8 +85,9 @@ use super::requests::{
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+    QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+    QueryUpgradedConsensusStateRequest,
 };
 
 pub mod batch;
@@ -1198,6 +1199,34 @@ impl ChainEndpoint for CosmosSdkChain {
             .into();
 
         Ok((commitment_sequences, height))
+    }
+
+    fn query_packet_receipt(
+        &self,
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        let data: Path = ReceiptsPath {
+            port_id: request.port_id,
+            channel_id: request.channel_id,
+            sequence: request.sequence,
+        }
+        .into();
+
+        match include_proof {
+            IncludeProof::Yes => {
+                let res = self.query(data, request.height, true)?;
+
+                let commitment_proof_bytes = res.proof.ok_or_else(Error::empty_response_proof)?;
+
+                Ok((res.value, Some(commitment_proof_bytes)))
+            }
+            IncludeProof::No => {
+                let res = self.query(data, request.height, false)?;
+
+                Ok((res.value, None))
+            }
+        }
     }
 
     /// Queries the unreceived packet sequences associated with a channel.

@@ -36,8 +36,9 @@ use crate::chain::requests::{
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+    QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+    QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::{ChainStatus, HealthCheck};
@@ -429,6 +430,14 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<Sequence>, Height), Error> {
         self.inner().query_packet_commitments(request)
+    }
+
+    fn query_packet_receipt(
+        &self,
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.inner().query_packet_receipt(request, include_proof)
     }
 
     fn query_unreceived_packets(

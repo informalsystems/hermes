@@ -49,8 +49,9 @@ use super::{
         QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
         QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
         QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+        QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryUnreceivedAcksRequest,
+        QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+        QueryUpgradedConsensusStateRequest,
     },
     tracking::TrackedMsgs,
 };
@@ -307,6 +308,12 @@ pub enum ChainRequest {
         reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     },
 
+    QueryPacketReceipt {
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Vec<u8>, Option<MerkleProof>)>,
+    },
+
     QueryUnreceivedPackets {
         request: QueryUnreceivedPacketsRequest,
         reply_to: ReplyTo<Vec<Sequence>>,
@@ -541,6 +548,12 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<Sequence>, Height), Error>;
+
+    fn query_packet_receipt(
+        &self,
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
 
     fn query_unreceived_packets(
         &self,

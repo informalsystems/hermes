@@ -233,6 +233,14 @@ impl From<QueryPacketCommitmentsRequest> for RawQueryPacketCommitmentsRequest {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryPacketReceiptRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: Sequence,
+    pub height: Height,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QueryUnreceivedPacketsRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
