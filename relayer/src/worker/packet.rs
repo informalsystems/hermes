@@ -158,10 +158,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 
         // Handle the arrival of an event signaling that the
         // source chain has advanced to a new block.
-        WorkerCmd::NewBlock {
-            height,
-            new_block: _,
-        } => {
+        WorkerCmd::NewBlock { height, .. } => {
             // Decide if packet clearing should be scheduled.
             // Packet clearing may happen once at start,
             // and then at predefined block intervals.
