@@ -251,15 +251,7 @@ dependencies = [
 [[package]]
 name = "beefy-generic-client"
 version = "0.1.0"
-<<<<<<< HEAD
-<<<<<<< HEAD
 source = "git+https://github.com/ComposableFi/beefy-client?branch=master#c8ef22e646f9eb33d66ac83e6fdad808b76aa4ed"
-=======
-source = "git+https://github.com/ComposableFi/beefy-client?branch=david/refactor-traits#c60a46d3335303b5980eb93280f84ec0e6d99466"
->>>>>>> 5c48fa8c (decode timestamp from extrinsic correctly)
-=======
-source = "git+https://github.com/ComposableFi/beefy-client?branch=david/refactor-traits#2228e4277c19c5cf643d3e613a6c1cc41cb0862c"
->>>>>>> b77494c4 (fixed flaky beefy client test issues)
 dependencies = [
  "beefy-primitives",
  "ckb-merkle-mountain-range",
@@ -1677,10 +1669,7 @@ dependencies = [
  "parity-scale-codec",
  "prost",
  "prost-types",
-<<<<<<< HEAD
  "ripemd",
-=======
->>>>>>> b77494c4 (fixed flaky beefy client test issues)
  "safe-regex",
  "serde",
  "serde_derive",

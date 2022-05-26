@@ -346,7 +346,7 @@ mod tests {
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
 
         // First, create a client..
-        let res = dispatch::<_, HostFunctions>(
+        let res = dispatch::<_, Crypto>(
             &mut ctx,
             Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(create_client_msg.clone())),
         );

@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
@@ -13,6 +12,7 @@ use crate::core::ics23_commitment::commitment::{
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::LightClientContext;
 use crate::Height;
+use core::marker::PhantomData;
 
 use super::client_state::NearClientState;
 use super::consensus_state::NearConsensusState;
@@ -21,6 +21,7 @@ use crate::core::ics02_client::error::Error;
 use super::error::Error as NearError;
 use super::header::NearHeader;
 use super::types::{ApprovalInner, CryptoHash, LightClientBlockView};
+use crate::prelude::*;
 
 use borsh::BorshSerialize;
 
@@ -289,9 +290,7 @@ pub fn validate_light_block<H: HostFunctionsProvider>(
 
     let epoch_block_producers = client_state
         .get_validators_by_epoch(&new_block_view.inner_lite.epoch_id)
-        .ok_or(Error::from(NearError::invalid_epoch(
-            new_block_view.inner_lite.epoch_id,
-        )))?;
+        .ok_or_else(|| Error::from(NearError::invalid_epoch(new_block_view.inner_lite.epoch_id)))?;
 
     for (maybe_signature, block_producer) in new_block_view
         .approvals_after_next

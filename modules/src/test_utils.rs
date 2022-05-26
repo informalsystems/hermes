@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::prelude::*;
-use beefy_client::traits::HostFunctions;
 use sp_core::keccak_256;
 use sp_trie::LayoutV0;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
@@ -102,7 +101,7 @@ impl HostFunctionsProvider for Crypto {
             .map(|val| val.to_vec())
     }
 
-    fn ed25519_recover(signature: &[u8; 64], value: &[u8; 32]) -> Option<Vec<u8>> {
+    fn ed25519_recover(_signature: &[u8; 64], _value: &[u8; 32]) -> Option<Vec<u8>> {
         todo!()
     }
 
@@ -132,6 +131,6 @@ impl HostFunctionsProvider for Crypto {
     }
 
     fn sha256_digest(data: &[u8]) -> [u8; 32] {
-        todo!()
+        sp_io::hashing::sha2_256(data)
     }
 }

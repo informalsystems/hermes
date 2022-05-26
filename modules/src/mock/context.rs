@@ -221,6 +221,7 @@ impl MockContext {
                 // Return the tuple.
                 (Some(client_state), consensus_state)
             }
+            ClientType::Near => todo!(),
         };
         let consensus_states = vec![(cs_height, consensus_state)].into_iter().collect();
 
@@ -278,6 +279,7 @@ impl MockContext {
                 // Return the tuple.
                 (Some(client_state), consensus_state)
             }
+            ClientType::Near => todo!(),
         };
 
         let prev_consensus_state = match client_type {
@@ -293,6 +295,7 @@ impl MockContext {
                 );
                 AnyConsensusState::from(light_block)
             }
+            ClientType::Near => todo!(),
         };
 
         let consensus_states = vec![

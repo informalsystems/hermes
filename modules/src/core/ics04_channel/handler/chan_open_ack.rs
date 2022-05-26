@@ -284,7 +284,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = channel_dispatch::<_, HostFunctions>(&test.ctx, &test.msg);
+            let res = channel_dispatch::<_, Crypto>(&test.ctx, &test.msg);
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok((proto_output, res)) => {

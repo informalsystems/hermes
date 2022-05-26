@@ -1,7 +1,7 @@
 use crate::core::ics02_client::error::Error;
 use crate::prelude::*;
+use core::marker::PhantomData;
 use sp_core::H256;
-use std::marker::PhantomData;
 
 /// This trait captures all the functions that the host chain should provide for
 /// crypto operations.

@@ -4,6 +4,7 @@ use crate::core::{
 };
 
 use super::types::{CryptoHash, LightClientBlockView, ValidatorStakeView};
+use crate::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct NearClientState {
@@ -62,9 +63,9 @@ impl ClientState for NearClientState {
 
     fn upgrade(
         self,
-        upgrade_height: crate::Height,
-        upgrade_options: Self::UpgradeOptions,
-        chain_id: ChainId,
+        _upgrade_height: crate::Height,
+        _upgrade_options: Self::UpgradeOptions,
+        _chain_id: ChainId,
     ) -> Self {
         // TODO: validate this -- not sure how to process the given parameters in this case
         self

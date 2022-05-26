@@ -8,23 +8,23 @@ define_error! {
         { epoch_id: CryptoHash }
         | _ | { "invalid epoch id" },
         HeightTooOld
-        | e | { format_args!(
+        | _ | { format_args!(
             "height too old")
         },
         InvalidSignature
-        | e | { format_args!(
+        | _ | { format_args!(
             "invalid signature")
         },
         InsufficientStakedAmount
-        | e | { format_args!(
+        | _ | { format_args!(
             "insufficient staked amount")
         },
         SerializationError
-        | e | { format_args!(
+        | _ | { format_args!(
             "serialization error")
         },
         UnavailableBlockProducers
-        | e | { format_args!(
+        | _ | { format_args!(
             "unavailable block producers")
         },
     }
