@@ -81,22 +81,19 @@ pub struct TransitMessage {
 /// Holds all the necessary information for handling a batch of in-transit messages. This includes
 /// an event received from a chain along with any other packets related to the event (i.e.
 /// 'receive' or 'timeout' packets) that the relayer has to submit in response to the event.
-///
-/// Each `OperationalData` item is uniquely identified by the combination of its `target` chain
-/// and its `proofs_height` value.
 #[derive(Clone)]
 pub struct OperationalData {
-    /// Represents the height for the proofs in all the messages. Note that the
-    /// height at which the proofs are queried. For example, a client consensus
-    /// state at `proofs_height - 1` must exist on-chain in order to verify
-    /// the proofs.
+    /// Represents the height for the proofs in all the messages. Note that this is the height
+    /// at which the proofs are queried. For example, for Tendermint chains, a client consensus
+    /// state at `proofs_height + 1` must exist on-chain in order to verify the proofs.
     pub proofs_height: Height,
     /// The batch of messages associated with this piece of operational data.
     pub batch: Vec<TransitMessage>,
     /// Represents the target of the packet messages, either the source or the destination
     /// chain.
     pub target: OperationalDataTarget,
-    /// A unique ID for tracking this piece of operational data along the relaying pipeline.
+    /// A unique ID for tracking this batch of events starting from when they were received
+    /// until the transactions corresponding to those events is submitted.
     pub tracking_id: TrackingId,
     /// Stores `Some(ConnectionDelay)` if the delay is non-zero and `None` otherwise
     connection_delay: Option<ConnectionDelay>,

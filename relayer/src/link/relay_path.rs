@@ -1286,11 +1286,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// first determines whether the current piece of operational data
     /// has elapsed.
     ///
-    /// A piece of operational data is considered 'elapsed' if it has surpassed
-    /// its target chain's:
-    /// 1. Latest timestamp
-    /// 2. Maximum block time
-    /// 3. Latest height
+    /// A piece of operational data is considered 'elapsed' if it has been waiting
+    /// for an amount of time that surpasses both of the following:
+    /// 1. The time duration specified in the connection delay
+    /// 2. The number of blocks specified in the connection delay
     ///
     /// If the current piece of operational data has elapsed, then relaying
     /// is performed using the asynchronous sender. Operational data is
