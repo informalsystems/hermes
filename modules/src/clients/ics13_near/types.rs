@@ -3,13 +3,13 @@ use sp_std::vec::Vec;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use sp_core::ed25519::{Public as Ed25519Public, Signature as Ed25519Signature};
-use sp_io::crypto::ed25519_verify;
 
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::Height;
 
 #[derive(Debug)]
 pub struct ConversionError(String);
+
 #[derive(Debug, Clone, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct PublicKey(pub [u8; 32]);
 
@@ -49,11 +49,15 @@ impl Signature {
 
     // TODO: we might want to create a trait for signature verification
     // or integrate this into HostFunctions
-    pub fn verify(&self, data: impl AsRef<[u8]>, public_key: PublicKey) -> bool {
+    pub fn verify<T: HostFunctionsProvider>(
+        &self,
+        data: impl AsRef<[u8; 32]>,
+        public_key: PublicKey,
+    ) -> bool {
         match self {
-            Self::Ed25519(signature) => {
-                ed25519_verify(signature, data.as_ref(), &Ed25519Public::from(&public_key))
-            }
+            Self::Ed25519(signature) => T::ed25519_recover(signature.as_ref(), data.as_ref())
+                .map(|key| &key == public_key.0.as_ref())
+                .unwrap_or(false),
         }
     }
 }
@@ -171,6 +175,7 @@ pub enum ApprovalInner {
 pub enum ValidatorStakeView {
     V1(ValidatorStakeViewV1),
 }
+
 #[derive(
     Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize, codec::Encode, codec::Decode,
 )]
@@ -226,6 +231,7 @@ impl ValidatorStakeView {
         }
     }
 }
+
 #[cfg_attr(feature = "deepsize_feature", derive(deepsize::DeepSizeOf))]
 #[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 pub struct MerklePathItem {

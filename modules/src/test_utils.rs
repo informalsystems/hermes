@@ -102,6 +102,10 @@ impl HostFunctionsProvider for Crypto {
             .map(|val| val.to_vec())
     }
 
+    fn ed25519_recover(signature: &[u8; 64], value: &[u8; 32]) -> Option<Vec<u8>> {
+        todo!()
+    }
+
     fn verify_membership_trie_proof(
         root: &sp_core::H256,
         proof: &[Vec<u8>],
@@ -125,5 +129,9 @@ impl HostFunctionsProvider for Crypto {
             root, proof, &item,
         )
         .map_err(|_| Ics02Error::beefy(BeefyError::invalid_trie_proof()))
+    }
+
+    fn sha256_digest(data: &[u8]) -> [u8; 32] {
+        todo!()
     }
 }

@@ -33,7 +33,9 @@ impl ConsensusState {
     }
 
     #[cfg(not(test))]
-    pub fn from_header<HostFunctions: HostFunctionsProvider>(header: ParachainHeader) -> Result<Self, Error> {
+    pub fn from_header<HostFunctions: HostFunctionsProvider>(
+        header: ParachainHeader,
+    ) -> Result<Self, Error> {
         use crate::clients::ics11_beefy::header::decode_timestamp_extrinsic;
         use crate::timestamp::Timestamp;
         use sp_runtime::SaturatedConversion;
@@ -69,7 +71,9 @@ impl ConsensusState {
     #[cfg(test)]
     /// Leaving this here because there's no ibc commitment root in the runtime header that will be used in
     /// testing
-    pub fn from_header<HostFunctions: HostFunctionsProvider>(header: ParachainHeader) -> Result<Self, Error> {
+    pub fn from_header<HostFunctions: HostFunctionsProvider>(
+        header: ParachainHeader,
+    ) -> Result<Self, Error> {
         use crate::clients::ics11_beefy::header::decode_timestamp_extrinsic;
         use crate::timestamp::Timestamp;
         use sp_runtime::SaturatedConversion;

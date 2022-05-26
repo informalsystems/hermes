@@ -54,6 +54,8 @@ where
         ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),
         ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process::<HostFunctions>(ctx, *msg),
         ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process::<HostFunctions>(ctx, *msg),
-        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process::<HostFunctions>(ctx, msg),
+        ConnectionMsg::ConnectionOpenConfirm(msg) => {
+            conn_open_confirm::process::<HostFunctions>(ctx, msg)
+        }
     }
 }

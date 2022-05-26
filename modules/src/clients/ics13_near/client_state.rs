@@ -15,7 +15,7 @@ pub struct NearClientState {
     next_validators: Vec<ValidatorStakeView>,
 }
 
-struct NearUpgradeOptions {}
+pub struct NearUpgradeOptions {}
 
 impl NearClientState {
     pub fn get_validators_by_epoch(

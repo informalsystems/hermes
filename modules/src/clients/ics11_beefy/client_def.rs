@@ -61,9 +61,6 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(), Error> {
-        // type alias for managing host functions impl.
-        type BeefyHostFunctions = HostFunctionsManager<HostFunctions>;
-
         let light_client_state = LightClientState {
             latest_beefy_height: client_state.latest_beefy_height,
             mmr_root_hash: client_state.mmr_root_hash,
@@ -71,7 +68,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
             next_authorities: client_state.next_authority_set.clone(),
             beefy_activation_block: client_state.beefy_activation_block,
         };
-        let mut light_client = BeefyLightClient::<BeefyHostFunctions>::new();
+        let mut light_client = BeefyLightClient::<HostFunctionsManager<HostFunctions>>::new();
         // If mmr update exists verify it and return the new light client state
         // or else return existing light client state
         let light_client_state = if let Some(mmr_update) = header.mmr_update_proof {

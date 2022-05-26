@@ -15,6 +15,9 @@ pub trait HostFunctionsProvider: Clone {
         value: &[u8; 32],
     ) -> Option<Vec<u8>>;
 
+    /// Recover the ED25519 pubkey that produced this signature
+    fn ed25519_recover(signature: &[u8; 64], value: &[u8; 32]) -> Option<Vec<u8>>;
+
     /// This function should verify membership in a trie proof using parity's sp-trie package
     /// with a BlakeTwo256 Hasher
     fn verify_membership_trie_proof(
@@ -39,6 +42,7 @@ pub trait HostFunctionsProvider: Clone {
 /// This is a work around that allows us to have one super trait [`HostFunctionsProvider`]
 /// that encapsulates all the needed host functions by different subsytems, and then
 /// implement the needed traits through this wrapper.
+#[derive(Clone)]
 pub struct HostFunctionsManager<T: HostFunctionsProvider>(PhantomData<T>);
 
 // implementation for beefy host functions

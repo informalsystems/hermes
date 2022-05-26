@@ -71,9 +71,13 @@ where
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
         ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process::<HostFunctions>(ctx, msg),
         ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process::<HostFunctions>(ctx, msg),
-        ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process::<HostFunctions>(ctx, msg),
+        ChannelMsg::ChannelOpenConfirm(msg) => {
+            chan_open_confirm::process::<HostFunctions>(ctx, msg)
+        }
         ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg),
-        ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process::<HostFunctions>(ctx, msg),
+        ChannelMsg::ChannelCloseConfirm(msg) => {
+            chan_close_confirm::process::<HostFunctions>(ctx, msg)
+        }
     }?;
     let HandlerOutput {
         result,

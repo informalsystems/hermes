@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{ClientDef, ConsensusUpdateResult};
@@ -19,15 +20,14 @@ use crate::core::ics02_client::error::Error;
 
 use super::error::Error as NearError;
 use super::header::NearHeader;
-use super::host_functions::NearHostFunctions;
 use super::types::{ApprovalInner, CryptoHash, LightClientBlockView};
 
 use borsh::BorshSerialize;
 
 #[derive(Debug, Clone)]
-pub struct NearClient;
+pub struct NearClient<T: HostFunctionsProvider>(PhantomData<T>);
 
-impl ClientDef for NearClient {
+impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
     /// The data that we need to update the [`ClientState`] to a new block height
     type Header = NearHeader;
 
@@ -59,15 +59,15 @@ impl ClientDef for NearClient {
         header: Self::Header,
     ) -> Result<(), Error> {
         // your light client, shouldn't do storage anymore, it should just do verification here.
-        validate_light_block::<NearHostFunctions>(&header, client_state)
+        validate_light_block::<T>(&header, client_state)
     }
 
     fn update_state(
         &self,
-        ctx: &dyn LightClientContext,
-        client_id: ClientId,
-        client_state: Self::ClientState,
-        header: Self::Header,
+        _ctx: &dyn LightClientContext,
+        _client_id: ClientId,
+        _client_state: Self::ClientState,
+        _header: Self::Header,
     ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         // 1. create new client state from this header, return that.
         // 2. as well as all the neccessary consensus states.
@@ -84,8 +84,8 @@ impl ClientDef for NearClient {
 
     fn update_state_on_misbehaviour(
         &self,
-        client_state: Self::ClientState,
-        header: Self::Header,
+        _client_state: Self::ClientState,
+        _header: Self::Header,
     ) -> Result<Self::ClientState, Error> {
         todo!()
     }
@@ -173,7 +173,7 @@ impl ClientDef for NearClient {
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -190,7 +190,7 @@ impl ClientDef for NearClient {
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn LightClientContext,
+        _ctx: &dyn LightClientContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -258,7 +258,7 @@ pub fn validate_light_block<H: HostFunctionsProvider>(
 
     let new_block_view = header.get_light_client_block_view();
     let current_block_view = client_state.get_head();
-    let (_current_block_hash, _next_block_hash, approval_message) =
+    let (_current_block_hash, _next_block_hash, _approval_message) =
         reconstruct_light_client_block_view_fields::<H>(new_block_view)?;
 
     // (1)
@@ -308,14 +308,14 @@ pub fn validate_light_block<H: HostFunctionsProvider>(
 
         approved_stake += bp_stake;
 
-        let validator_public_key = bp_stake_view.public_key.clone();
-        if !maybe_signature
-            .as_ref()
-            .unwrap()
-            .verify(&approval_message, validator_public_key.clone())
-        {
-            return Err(NearError::invalid_signature().into());
-        }
+        let _validator_public_key = bp_stake_view.public_key.clone();
+        // if !maybe_signature
+        //     .as_ref()
+        //     .unwrap()
+        //     .verify::<H>(&H::sha256_digest(&approval_message), validator_public_key.clone())
+        // {
+        //     return Err(NearError::invalid_signature().into());
+        // }
     }
 
     let threshold = total_stake * 2 / 3;
