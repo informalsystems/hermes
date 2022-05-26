@@ -1,8 +1,7 @@
 use core::fmt;
-use core::ops::Add;
 use core::str::FromStr;
 
-use derive_more::{Display, From};
+use derive_more::{Display, From, Into};
 use ibc_proto::cosmos::base::v1beta1::Coin as RawCoin;
 use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
@@ -295,9 +294,19 @@ impl FromStr for HashedDenom {
     }
 }
 
-/// A decimal type for representing token transfer amounts.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, From)]
+/// A type for representing token transfer amounts.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, From, Into)]
 pub struct Amount(U256);
+
+impl Amount {
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
+    pub fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(Self)
+    }
+}
 
 impl FromStr for Amount {
     type Err = Error;
@@ -311,19 +320,6 @@ impl FromStr for Amount {
 impl From<u64> for Amount {
     fn from(v: u64) -> Self {
         Self(v.into())
-    }
-}
-
-// We only provide an `Add<Decimal>` implementation which always panics on overflow.
-impl Add<Self> for Amount {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(
-            self.0
-                .checked_add(rhs.0)
-                .expect("decimal addition overflow"),
-        )
     }
 }
 
