@@ -54,8 +54,9 @@ use super::{
         QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
         QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
         QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+        QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+        QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+        QueryUpgradedConsensusStateRequest,
     },
     tracking::TrackedMsgs,
     ChainEndpoint, ChainStatus, HealthCheck,
@@ -375,6 +376,10 @@ where
 
                         Ok(ChainRequest::BuildPacketProofs { packet_type, port_id, channel_id, sequence, height, reply_to }) => {
                             self.build_packet_proofs(packet_type, port_id, channel_id, sequence, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryPacketCommitment { request, include_proof, reply_to }) => {
+                            self.query_packet_commitment(request, include_proof, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryPacketCommitments { request, reply_to }) => {
@@ -776,6 +781,16 @@ where
             self.chain
                 .build_packet_proofs(packet_type, port_id, channel_id, sequence, height);
 
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn query_packet_commitment(
+        &self,
+        request: QueryPacketCommitmentRequest,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Vec<u8>, Option<MerkleProof>)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_packet_commitment(request, include_proof);
         reply_to.send(result).map_err(Error::send)
     }
 

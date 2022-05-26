@@ -36,9 +36,10 @@ use crate::{
             QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
             QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
             QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-            QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-            QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-            QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+            QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
+            QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+            QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+            QueryUpgradedConsensusStateRequest,
         },
         tracking::TrackedMsgs,
         ChainStatus,
@@ -390,6 +391,18 @@ impl ChainHandle for BaseChainHandle {
             channel_id: *channel_id,
             sequence,
             height,
+            reply_to,
+        })
+    }
+
+    fn query_packet_commitment(
+        &self,
+        request: QueryPacketCommitmentRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketCommitment {
+            request,
+            include_proof,
             reply_to,
         })
     }

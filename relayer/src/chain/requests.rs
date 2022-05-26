@@ -208,6 +208,14 @@ impl From<QueryChannelClientStateRequest> for RawQueryChannelClientStateRequest 
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryPacketCommitmentRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: Sequence,
+    pub height: Height,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QueryPacketCommitmentsRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
