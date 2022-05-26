@@ -14,10 +14,9 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
 };
-use ibc_relayer::transfer::Amount;
 use ibc_relayer::{
     config::Config,
-    transfer::{build_and_send_transfer_messages, TransferOptions},
+    transfer::{build_and_send_transfer_messages, Amount, TransferOptions},
 };
 
 use crate::cli_utils::ChainHandlePair;

@@ -1,9 +1,11 @@
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::config::Override;
+use abscissa_core::{Command, FrameworkErrorKind, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::BaseChainHandle;
+use ibc_relayer::config::Config;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
 
@@ -21,7 +23,7 @@ pub enum ClearCmds {
     Packets(ClearPacketsCmd),
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Command)]
 pub struct ClearPacketsCmd {
     #[clap(required = true, help = "identifier of the chain")]
     chain_id: ChainId,
@@ -38,6 +40,23 @@ pub struct ClearPacketsCmd {
         help = "use the given signing key (default: `key_name` config)"
     )]
     key: Option<String>,
+}
+
+impl Override<Config> for ClearPacketsCmd {
+    fn override_config(&self, mut config: Config) -> Result<Config, abscissa_core::FrameworkError> {
+        let chain_config = config.find_chain_mut(&self.chain_id).ok_or_else(|| {
+            FrameworkErrorKind::ComponentError.context(format!(
+                "missing configuration for chain '{}'",
+                self.chain_id
+            ))
+        })?;
+
+        if let Some(ref key_name) = self.key {
+            chain_config.key_name = key_name.to_string();
+        }
+
+        Ok(config)
+    }
 }
 
 impl Runnable for ClearPacketsCmd {
