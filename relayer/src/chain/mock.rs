@@ -316,7 +316,8 @@ impl ChainEndpoint for MockChain {
     fn query_next_sequence_receive(
         &self,
         _request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error> {
+        _include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error> {
         unimplemented!()
     }
 

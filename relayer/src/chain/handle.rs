@@ -271,7 +271,8 @@ pub enum ChainRequest {
 
     QueryNextSequenceReceive {
         request: QueryNextSequenceReceiveRequest,
-        reply_to: ReplyTo<Sequence>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Sequence, Option<MerkleProof>)>,
     },
 
     ProvenClientConsensus {
@@ -461,7 +462,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error>;
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error>;
 
     fn query_channels(
         &self,

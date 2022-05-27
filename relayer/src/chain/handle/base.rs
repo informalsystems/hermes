@@ -249,8 +249,13 @@ impl ChainHandle for BaseChainHandle {
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error> {
-        self.send(|reply_to| ChainRequest::QueryNextSequenceReceive { request, reply_to })
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryNextSequenceReceive {
+            request,
+            include_proof,
+            reply_to,
+        })
     }
 
     fn query_channels(

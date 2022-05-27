@@ -1185,13 +1185,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         debug!("build timeout for channel");
         let (packet_type, next_sequence_received) = if self.ordered_channel() {
-            let next_seq = self
+            let (next_seq, _) = self
                 .dst_chain()
-                .query_next_sequence_receive(QueryNextSequenceReceiveRequest {
-                    port_id: self.dst_port_id().clone(),
-                    channel_id: *dst_channel_id,
-                })
+                .query_next_sequence_receive(
+                    QueryNextSequenceReceiveRequest {
+                        port_id: self.dst_port_id().clone(),
+                        channel_id: *dst_channel_id,
+                        height,
+                    },
+                    IncludeProof::No,
+                )
                 .map_err(|e| LinkError::query(self.dst_chain().id(), e))?;
+
             (PacketMsgType::TimeoutOrdered, next_seq)
         } else {
             (PacketMsgType::TimeoutUnordered, packet.sequence)

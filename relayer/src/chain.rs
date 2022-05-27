@@ -292,7 +292,8 @@ pub trait ChainEndpoint: Sized {
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error>;
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error>;
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 

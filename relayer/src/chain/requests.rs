@@ -317,6 +317,7 @@ impl From<QueryUnreceivedAcksRequest> for RawQueryUnreceivedAcksRequest {
 pub struct QueryNextSequenceReceiveRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
+    pub height: Height,
 }
 
 impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveRequest {

@@ -222,8 +222,10 @@ where
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error> {
-        self.value().query_next_sequence_receive(request)
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error> {
+        self.value()
+            .query_next_sequence_receive(request, include_proof)
     }
 
     fn query_channels(

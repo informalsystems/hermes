@@ -1,4 +1,5 @@
 use alloc::sync::Arc;
+use bytes::{Buf, Bytes};
 use core::{
     convert::{TryFrom, TryInto},
     future::Future,
@@ -1359,26 +1360,46 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error> {
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error> {
         crate::time!("query_next_sequence_receive");
         crate::telemetry!(query, self.id(), "query_next_sequence_receive");
 
-        let mut client = self
-            .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
-                    self.grpc_addr.clone(),
-                ),
-            )
-            .map_err(Error::grpc_transport)?;
+        match include_proof {
+            IncludeProof::Yes => {
+                let data: Path = SeqRecvsPath(request.port_id, request.channel_id).into();
 
-        let request = tonic::Request::new(request.into());
+                let res = self.query(data, request.height, true)?;
+                // Note: We expect the return to be a u64 encoded in big-endian. Refer to ibc-go:
+                // https://github.com/cosmos/ibc-go/blob/25767f6bdb5bab2c2a116b41d92d753c93e18121/modules/core/04-channel/client/utils/utils.go#L191
+                if res.value.len() != 8 {
+                    return Err(Error::query("next_sequence_receive".into()));
+                }
+                let seq: Sequence = Bytes::from(res.value).get_u64().into();
 
-        let response = self
-            .block_on(client.next_sequence_receive(request))
-            .map_err(Error::grpc_status)?
-            .into_inner();
+                let commitment_proof_bytes = res.proof.ok_or_else(Error::empty_response_proof)?;
 
-        Ok(Sequence::from(response.next_sequence_receive))
+                Ok((seq, Some(commitment_proof_bytes)))
+            }
+            IncludeProof::No => {
+                let mut client = self
+                    .block_on(
+                        ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                            self.grpc_addr.clone(),
+                        ),
+                    )
+                    .map_err(Error::grpc_transport)?;
+
+                let request = tonic::Request::new(request.into());
+
+                let response = self
+                    .block_on(client.next_sequence_receive(request))
+                    .map_err(Error::grpc_status)?
+                    .into_inner();
+
+                Ok((Sequence::from(response.next_sequence_receive), None))
+            }
+        }
     }
 
     /// This function queries transactions for events matching certain criteria.

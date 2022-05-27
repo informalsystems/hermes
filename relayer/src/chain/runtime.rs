@@ -407,8 +407,8 @@ where
                             self.query_unreceived_acknowledgement(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryNextSequenceReceive { request, reply_to }) => {
-                            self.query_next_sequence_receive(request, reply_to)?
+                        Ok(ChainRequest::QueryNextSequenceReceive { request, include_proof, reply_to }) => {
+                            self.query_next_sequence_receive(request, include_proof, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryPacketEventDataFromTxs { request, reply_to }) => {
@@ -864,9 +864,12 @@ where
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-        reply_to: ReplyTo<Sequence>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Sequence, Option<MerkleProof>)>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_next_sequence_receive(request);
+        let result = self
+            .chain
+            .query_next_sequence_receive(request, include_proof);
         reply_to.send(result).map_err(Error::send)
     }
 

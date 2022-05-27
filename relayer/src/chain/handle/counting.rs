@@ -271,9 +271,11 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error> {
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error> {
         self.inc_metric("query_next_sequence_receive");
-        self.inner().query_next_sequence_receive(request)
+        self.inner()
+            .query_next_sequence_receive(request, include_proof)
     }
 
     fn query_channels(
