@@ -295,7 +295,7 @@ pub enum ChainRequest {
         channel_id: ChannelId,
         sequence: Sequence,
         height: Height,
-        reply_to: ReplyTo<(Vec<u8>, Proofs)>,
+        reply_to: ReplyTo<Proofs>,
     },
 
     QueryPacketCommitment {
@@ -538,7 +538,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         channel_id: &ChannelId,
         sequence: Sequence,
         height: Height,
-    ) -> Result<(Vec<u8>, Proofs), Error>;
+    ) -> Result<Proofs, Error>;
 
     fn query_packet_commitment(
         &self,

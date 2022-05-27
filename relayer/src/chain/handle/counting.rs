@@ -390,7 +390,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         channel_id: &ChannelId,
         sequence: Sequence,
         height: Height,
-    ) -> Result<(Vec<u8>, Proofs), Error> {
+    ) -> Result<Proofs, Error> {
         self.inc_metric("build_packet_proofs");
         self.inner()
             .build_packet_proofs(packet_type, port_id, channel_id, sequence, height)

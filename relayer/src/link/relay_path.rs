@@ -1124,7 +1124,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn build_recv_packet(&self, packet: &Packet, height: Height) -> Result<Option<Any>, LinkError> {
-        let (_, proofs) = self
+        let proofs = self
             .src_chain()
             .build_packet_proofs(
                 PacketMsgType::Recv,
@@ -1152,7 +1152,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
 
-        let (_, proofs) = self
+        let proofs = self
             .src_chain()
             .build_packet_proofs(
                 PacketMsgType::Ack,
@@ -1205,7 +1205,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             (PacketMsgType::TimeoutUnordered, packet.sequence)
         };
 
-        let (_, proofs) = self
+        let proofs = self
             .dst_chain()
             .build_packet_proofs(
                 packet_type,
@@ -1237,7 +1237,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         packet: &Packet,
         height: Height,
     ) -> Result<Option<Any>, LinkError> {
-        let (_, proofs) = self
+        let proofs = self
             .dst_chain()
             .build_packet_proofs(
                 PacketMsgType::TimeoutOnClose,

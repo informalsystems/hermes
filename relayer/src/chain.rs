@@ -472,7 +472,7 @@ pub trait ChainEndpoint: Sized {
         channel_id: ChannelId,
         sequence: Sequence,
         height: ICSHeight,
-    ) -> Result<(Vec<u8>, Proofs), Error> {
+    ) -> Result<Proofs, Error> {
         let channel_proof = if packet_type == PacketMsgType::TimeoutOnClose {
             let (_, maybe_channel_proof) = self.query_channel(
                 QueryChannelRequest {
@@ -488,7 +488,7 @@ pub trait ChainEndpoint: Sized {
             None
         };
 
-        let (bytes, packet_proof) =
+        let (_, packet_proof) =
             self.proven_packet(packet_type, port_id, channel_id, sequence, height)?;
 
         let proofs = Proofs::new(
@@ -500,6 +500,6 @@ pub trait ChainEndpoint: Sized {
         )
         .map_err(Error::malformed_proof)?;
 
-        Ok((bytes, proofs))
+        Ok(proofs)
     }
 }

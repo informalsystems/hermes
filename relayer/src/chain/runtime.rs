@@ -784,7 +784,7 @@ where
         channel_id: ChannelId,
         sequence: Sequence,
         height: Height,
-        reply_to: ReplyTo<(Vec<u8>, Proofs)>,
+        reply_to: ReplyTo<Proofs>,
     ) -> Result<(), Error> {
         let result =
             self.chain

@@ -389,7 +389,7 @@ impl ChainHandle for BaseChainHandle {
         channel_id: &ChannelId,
         sequence: Sequence,
         height: Height,
-    ) -> Result<(Vec<u8>, Proofs), Error> {
+    ) -> Result<Proofs, Error> {
         self.send(|reply_to| ChainRequest::BuildPacketProofs {
             packet_type,
             port_id: port_id.clone(),
