@@ -14,6 +14,7 @@ use crate::chain::requests::IncludeProof;
 use crate::chain::requests::QueryChannelRequest;
 use crate::chain::requests::QueryHostConsensusStateRequest;
 use crate::chain::requests::QueryNextSequenceReceiveRequest;
+use crate::chain::requests::QueryPacketCommitmentRequest;
 use crate::chain::requests::QueryUnreceivedAcksRequest;
 use crate::chain::requests::QueryUnreceivedPacketsRequest;
 use crate::chain::tracking::TrackedMsgs;
@@ -782,12 +783,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn send_packet_commitment_cleared_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
         let (bytes, _) = self
             .src_chain()
-            .build_packet_proofs(
-                PacketMsgType::Recv,
-                self.src_port_id(),
-                self.src_channel_id(),
-                packet.sequence,
-                Height::zero(),
+            .query_packet_commitment(
+                QueryPacketCommitmentRequest {
+                    port_id: self.src_port_id().clone(),
+                    channel_id: *self.src_channel_id(),
+                    sequence: packet.sequence,
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
             )
             .map_err(LinkError::relayer)?;
 
