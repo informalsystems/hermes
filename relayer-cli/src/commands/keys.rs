@@ -23,6 +23,6 @@ pub enum KeysCmd {
     /// Restore a key to a configured chain using a mnemonic
     Restore(restore::KeyRestoreCmd),
 
-    /// Query balance for a key from a configured chain
+    /// Query balance for a key from a configured chain. If no key is given, the key is retrieved from the configuration file.
     Balance(balance::KeyBalanceCmd),
 }

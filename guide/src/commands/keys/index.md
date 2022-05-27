@@ -248,18 +248,43 @@ In order to retrieve the balance of an account associated with a key use the `ke
 
 ```shell
 USAGE:
-    hermes keys balance <CHAIN_ID> <KEYNAME>
+    hermes keys balance [OPTIONS] <CHAIN_ID>
 
 DESCRIPTION:
-    Query balance for a key from a configured chain
+    Query balance for a key from a configured chain. If no key is given, the key is retrieved from the configuration file
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain
-    keyname                   key name
+ARGS:
+    chain_id                      identifier of the chain
+
+OPTIONS:
+    -k, --key-name <KEY_NAME>     (optional) name of the key (defaults to the `key_name` defined in the config)
 ```
 
 If the command is successful a message with the following format will be displayed:
 
 ```
-Success: balance <amount> <denom>
+Success: balance for key `KEY_NAME`: 100000000000 stake
+```
+
+**JSON:**
+
+```shell
+    hermes --json keys balance [OPTIONS] <CHAIN_ID>
+```
+or
+
+```shell
+    hermes -j keys balance [OPTIONS] <CHAIN_ID>
+```
+
+If the command is successful a message with the following format will be displayed:
+
+```json
+{
+  "result": {
+    "amount": "99989207",
+    "denom": "stake"
+  },
+  "status": "success"
+}
 ```
