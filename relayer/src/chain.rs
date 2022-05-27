@@ -473,23 +473,89 @@ pub trait ChainEndpoint: Sized {
         sequence: Sequence,
         height: ICSHeight,
     ) -> Result<Proofs, Error> {
-        let channel_proof = if packet_type == PacketMsgType::TimeoutOnClose {
-            let (_, maybe_channel_proof) = self.query_channel(
-                QueryChannelRequest {
-                    port_id: port_id.clone(),
-                    channel_id,
-                    height,
-                },
-                IncludeProof::Yes,
-            )?;
-            let channel_proof = maybe_channel_proof.expect(QUERY_PROOF_EXPECT_MSG);
-            Some(CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?)
-        } else {
-            None
+        let (maybe_packet_proof, channel_proof) = match packet_type {
+            PacketMsgType::Recv => {
+                let (_, maybe_packet_proof) = self.query_packet_commitment(
+                    QueryPacketCommitmentRequest {
+                        port_id,
+                        channel_id,
+                        sequence,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, None)
+            }
+            PacketMsgType::Ack => {
+                let (_, maybe_packet_proof) = self.query_packet_acknowledgement(
+                    QueryPacketAcknowledgementRequest {
+                        port_id,
+                        channel_id,
+                        sequence,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, None)
+            }
+            PacketMsgType::TimeoutUnordered => {
+                let (_, maybe_packet_proof) = self.query_packet_receipt(
+                    QueryPacketReceiptRequest {
+                        port_id,
+                        channel_id,
+                        sequence,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, None)
+            }
+            PacketMsgType::TimeoutOrdered => {
+                let (_, maybe_packet_proof) = self.query_next_sequence_receive(
+                    QueryNextSequenceReceiveRequest {
+                        port_id,
+                        channel_id,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, None)
+            }
+            PacketMsgType::TimeoutOnClose => {
+                let channel_proof = {
+                    let (_, maybe_channel_proof) = self.query_channel(
+                        QueryChannelRequest {
+                            port_id: port_id.clone(),
+                            channel_id,
+                            height,
+                        },
+                        IncludeProof::Yes,
+                    )?;
+                    let channel_merkle_proof = maybe_channel_proof.expect(QUERY_PROOF_EXPECT_MSG);
+                    Some(
+                        CommitmentProofBytes::try_from(channel_merkle_proof)
+                            .map_err(Error::malformed_proof)?,
+                    )
+                };
+                let (_, maybe_packet_proof) = self.query_packet_receipt(
+                    QueryPacketReceiptRequest {
+                        port_id,
+                        channel_id,
+                        sequence,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, channel_proof)
+            }
         };
 
-        let (_, packet_proof) =
-            self.proven_packet(packet_type, port_id, channel_id, sequence, height)?;
+        let packet_proof = maybe_packet_proof.expect(QUERY_PROOF_EXPECT_MSG);
 
         let proofs = Proofs::new(
             CommitmentProofBytes::try_from(packet_proof).map_err(Error::malformed_proof)?,
