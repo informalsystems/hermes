@@ -35,9 +35,9 @@ use ibc::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest,
 };
 use ibc::core::ics04_channel::events as ChannelEvents;
-use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
+use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
@@ -1538,49 +1538,6 @@ impl ChainEndpoint for CosmosSdkChain {
         let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
 
         Ok((consensus_state, proof))
-    }
-
-    fn proven_packet(
-        &self,
-        packet_type: PacketMsgType,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: Sequence,
-        height: ICSHeight,
-    ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let data: Path = match packet_type {
-            PacketMsgType::Recv => CommitmentsPath {
-                port_id,
-                channel_id,
-                sequence,
-            }
-            .into(),
-            PacketMsgType::Ack => AcksPath {
-                port_id,
-                channel_id,
-                sequence,
-            }
-            .into(),
-            PacketMsgType::TimeoutUnordered => ReceiptsPath {
-                port_id,
-                channel_id,
-                sequence,
-            }
-            .into(),
-            PacketMsgType::TimeoutOrdered => SeqRecvsPath(port_id, channel_id).into(),
-            PacketMsgType::TimeoutOnClose => ReceiptsPath {
-                port_id,
-                channel_id,
-                sequence,
-            }
-            .into(),
-        };
-
-        let res = self.query(data, height, true)?;
-
-        let commitment_proof_bytes = res.proof.ok_or_else(Error::empty_response_proof)?;
-
-        Ok((res.value, commitment_proof_bytes))
     }
 
     fn build_client_state(

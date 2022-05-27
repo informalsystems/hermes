@@ -315,15 +315,6 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
-    fn proven_packet(
-        &self,
-        packet_type: PacketMsgType,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: Sequence,
-        height: ICSHeight,
-    ) -> Result<(Vec<u8>, MerkleProof), Error>;
-
     fn build_client_state(
         &self,
         height: ICSHeight,

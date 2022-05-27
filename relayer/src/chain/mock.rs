@@ -17,9 +17,9 @@ use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientS
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::context::ChannelReader;
-use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::events::IbcEvent;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
@@ -345,17 +345,6 @@ impl ChainEndpoint for MockChain {
         _consensus_height: Height,
         _height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        unimplemented!()
-    }
-
-    fn proven_packet(
-        &self,
-        _packet_type: PacketMsgType,
-        _port_id: PortId,
-        _channel_id: ChannelId,
-        _sequence: Sequence,
-        _height: Height,
-    ) -> Result<(Vec<u8>, MerkleProof), Error> {
         unimplemented!()
     }
 
