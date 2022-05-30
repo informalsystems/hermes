@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::fmt;
+use ibc::core::ics04_channel::channel::Order;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tracing::error;
@@ -121,13 +122,23 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
 
             match link_res {
                 Ok(link) => {
-                    let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
+                    let channel_ordering = link.a_to_b.channel().ordering;
                     let link = Arc::new(Mutex::new(link));
+
+                    if packets_config.clear_on_start || channel_ordering == Order::Ordered {
+                        let clear_on_start_task = packet::spawn_clear_packet_on_start_worker(
+                            link.clone(),
+                            packets_config.clear_interval,
+                            path.clone(),
+                        );
+                        task_handles.push(clear_on_start_task);
+                    }
+
+                    let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
                     let resubmit = Resubmit::from_clear_interval(packets_config.clear_interval);
                     let packet_task = packet::spawn_packet_cmd_worker(
                         cmd_rx,
                         link.clone(),
-                        packets_config.clear_on_start,
                         packets_config.clear_interval,
                         path.clone(),
                     );

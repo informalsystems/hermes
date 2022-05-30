@@ -21,7 +21,7 @@ pub fn worker_default_strategy() -> impl Iterator<Item = Duration> {
 /// 10ms at every step. The strategy delay is
 /// not capped, so it will retry indefinitely.
 ///
-/// See the `stubbord_strategy` test below.
+/// See the `stubborn_strategy` test below.
 pub fn worker_stubborn_strategy() -> impl Iterator<Item = Duration> {
     ConstantGrowth::new(Duration::from_secs(1), Duration::from_millis(10))
 }
