@@ -22,4 +22,4 @@ opentelemetry-prometheus = "0.10.0"
 prometheus               = "0.13.0"
 rouille                  = "3.5.0"
 uuid                     = { version = "1.0.0", features = ["v4"] }
-moka                     = "0.8.2"
+moka                     = "0.8.5"
