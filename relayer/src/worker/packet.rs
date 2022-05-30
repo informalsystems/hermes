@@ -73,7 +73,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     spawn_background_task(span, Some(Duration::from_millis(1000)), move || {
-        let relay_path = &link.lock().unwrap().a_to_b;
+        let relay_path = &mut link.lock().unwrap().a_to_b;
 
         relay_path
             .refresh_schedule()
@@ -120,7 +120,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
                 handle_packet_cmd(
                     &mut is_first_run,
-                    &link.lock().unwrap(),
+                    &mut link.lock().unwrap(),
                     clear_on_start,
                     clear_interval,
                     &path,
@@ -145,7 +145,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 /// data that is ready.
 fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     is_first_run: &mut bool,
-    link: &Link<ChainA, ChainB>,
+    link: &mut Link<ChainA, ChainB>,
     clear_on_start: bool,
     clear_interval: u64,
     path: &Packet,
