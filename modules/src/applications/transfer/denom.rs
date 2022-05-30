@@ -19,9 +19,6 @@ const IBC_DENOM_PREFIX: &str = "ibc";
 /// A `Coin` type with fully qualified `PrefixedDenom`.
 pub type PrefixedCoin = Coin<PrefixedDenom>;
 
-/// A `Coin` type with a `HashedDenom`.
-pub type HashedCoin = Coin<HashedDenom>;
-
 /// A `Coin` type with an unprefixed denomination.
 pub type BaseCoin = Coin<BaseDenom>;
 
@@ -167,12 +164,6 @@ pub struct PrefixedDenom {
 }
 
 impl PrefixedDenom {
-    /// Returns a coin denomination for an ICS20 fungible token in the format
-    /// 'ibc/{Hash(trace_path/base_denom)}'.
-    pub fn hashed(&self) -> HashedDenom {
-        HashedDenom::from(self)
-    }
-
     /// Removes the specified prefix from the trace path if there is a match, otherwise does nothing.
     pub fn remove_trace_prefix(&mut self, prefix: &TracePrefix) {
         self.trace_path.remove_prefix(prefix)
@@ -256,41 +247,6 @@ impl fmt::Display for PrefixedDenom {
         } else {
             write!(f, "{}/{}", self.trace_path, self.base_denom)
         }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, From)]
-pub struct HashedDenom(Vec<u8>);
-
-impl From<&PrefixedDenom> for HashedDenom {
-    fn from(value: &PrefixedDenom) -> Self {
-        let mut hasher = Sha256::new();
-        hasher.update(value.to_string().as_bytes());
-        let denom_bytes = hasher.finalize();
-        Self(denom_bytes.to_vec())
-    }
-}
-
-impl fmt::Display for HashedDenom {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let denom_hex = String::from_utf8(hex::encode_upper(&self.0)).map_err(|_| fmt::Error)?;
-        write!(f, "{}/{}", IBC_DENOM_PREFIX, denom_hex)
-    }
-}
-
-impl FromStr for HashedDenom {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split('/').collect();
-        if parts.len() != 2 || parts[1].trim().is_empty() {
-            return Err(Error::malformed_hash_denom());
-        } else if parts[0] != IBC_DENOM_PREFIX {
-            return Err(Error::missing_denom_ibc_prefix());
-        }
-
-        let bytes = hex::decode_upper(parts[1]).map_err(Error::parse_hex)?;
-        Ok(Self(bytes))
     }
 }
 
