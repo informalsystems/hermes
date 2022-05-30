@@ -5,16 +5,12 @@ use derive_more::{Display, From, Into};
 use ibc_proto::cosmos::base::v1beta1::Coin as RawCoin;
 use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
-use subtle_encoding::hex;
 
 use super::error::Error;
 use crate::bigint::U256;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 use crate::serializers::serde_string;
-
-const IBC_DENOM_PREFIX: &str = "ibc";
 
 /// A `Coin` type with fully qualified `PrefixedDenom`.
 pub type PrefixedCoin = Coin<PrefixedDenom>;

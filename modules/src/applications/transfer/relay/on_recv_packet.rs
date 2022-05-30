@@ -53,19 +53,13 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
             };
 
             let denom_trace_event = DenomTraceEvent {
-                trace_hash: coin.denom.hashed(),
+                trace_hash: ctx.denom_hash_string(&coin.denom),
                 denom: coin.denom.clone(),
             };
             output.emit(denom_trace_event.into());
 
             Ok(Box::new(move |ctx| {
                 let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                let hashed_denom = coin.denom.hashed();
-                if ctx.get_denom_trace(&hashed_denom).is_none() {
-                    ctx.set_denom_trace(&coin.denom)
-                        .map_err(|e| e.to_string())?;
-                }
-
                 ctx.mint_coins(&receiver_account, &coin)
                     .map_err(|e| e.to_string())
             }))

@@ -1,5 +1,5 @@
 use crate::applications::transfer::acknowledgement::Acknowledgement;
-use crate::applications::transfer::{Amount, HashedDenom, PrefixedDenom, MODULE_ID_STR};
+use crate::applications::transfer::{Amount, PrefixedDenom, MODULE_ID_STR};
 use crate::events::ModuleEvent;
 use crate::prelude::*;
 use crate::signer::Signer;
@@ -123,18 +123,22 @@ impl From<TimeoutEvent> for ModuleEvent {
 }
 
 pub struct DenomTraceEvent {
-    pub trace_hash: HashedDenom,
+    pub trace_hash: Option<String>,
     pub denom: PrefixedDenom,
 }
 
 impl From<DenomTraceEvent> for ModuleEvent {
     fn from(ev: DenomTraceEvent) -> Self {
         let DenomTraceEvent { trace_hash, denom } = ev;
-        Self {
+        let mut ev = Self {
             kind: EVENT_TYPE_DENOM_TRACE.to_string(),
             module_name: MODULE_ID_STR.parse().expect("invalid ModuleId"),
-            attributes: vec![("trace_hash", trace_hash).into(), ("denom", denom).into()],
+            attributes: vec![("denom", denom).into()],
+        };
+        if let Some(hash) = trace_hash {
+            ev.attributes.push(("trace_hash", hash).into());
         }
+        ev
     }
 }
 
