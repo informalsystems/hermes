@@ -10,6 +10,9 @@ use crate::events::ModuleEvent;
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 use crate::prelude::*;
 
+/// This function handles the transfer sending logic.
+/// If this method returns an error, the runtime is expected to rollback all state modifications to
+/// the `Ctx` caused by all messages from the transaction that this `msg` is a part of.
 pub fn send_transfer<Ctx, C: TryInto<PrefixedCoin>>(
     ctx: &mut Ctx,
     output: &mut HandlerOutputBuilder<()>,
