@@ -8,8 +8,11 @@ use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, State};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::chain::requests::{
+    PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
+    QueryConnectionRequest,
+};
 use ibc_relayer::registry::Registry;
 
 use crate::commands::query::channel_ends::ChannelEnds;
@@ -54,11 +57,9 @@ fn run_query_channels<Chain: ChainHandle>(
     let chain = registry.get_or_spawn(&cmd.chain_id)?;
     let chain_height = chain.query_latest_height()?;
 
-    let req = QueryChannelsRequest {
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-    };
-
-    let identified_channels = chain.query_channels(req)?;
+    let identified_channels = chain.query_channels(QueryChannelsRequest {
+        pagination: Some(PageRequest::all()),
+    })?;
 
     for identified_channel in identified_channels {
         let port_id = identified_channel.port_id;
@@ -125,9 +126,15 @@ fn query_channel_ends<Chain: ChainHandle>(
     channel_id: ChannelId,
     chain_height: Height,
 ) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
-    let connection_end = chain.query_connection(&connection_id, chain_height)?;
+    let connection_end = chain.query_connection(QueryConnectionRequest {
+        connection_id: connection_id.clone(),
+        height: chain_height,
+    })?;
     let client_id = connection_end.client_id().clone();
-    let client_state = chain.query_client_state(&client_id, chain_height)?;
+    let client_state = chain.query_client_state(QueryClientStateRequest {
+        client_id,
+        height: chain_height,
+    })?;
     let counterparty_chain_id = client_state.chain_id();
 
     if let Some(dst_chain_id) = destination_chain {
@@ -166,17 +173,23 @@ fn query_channel_ends<Chain: ChainHandle>(
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
     let counterparty_chain_height = counterparty_chain.query_latest_height()?;
 
-    let counterparty_connection_end = counterparty_chain
-        .query_connection(&counterparty_connection_id, counterparty_chain_height)?;
+    let counterparty_connection_end =
+        counterparty_chain.query_connection(QueryConnectionRequest {
+            connection_id: counterparty_connection_id,
+            height: counterparty_chain_height,
+        })?;
 
-    let counterparty_client_state = counterparty_chain
-        .query_client_state(&counterparty_client_id, counterparty_chain_height)?;
+    let counterparty_client_state =
+        counterparty_chain.query_client_state(QueryClientStateRequest {
+            client_id: counterparty_client_id,
+            height: counterparty_chain_height,
+        })?;
 
-    let counterparty_channel_end = counterparty_chain.query_channel(
-        &counterparty_port_id,
-        &counterparty_channel_id,
-        counterparty_chain_height,
-    )?;
+    let counterparty_channel_end = counterparty_chain.query_channel(QueryChannelRequest {
+        port_id: counterparty_port_id,
+        channel_id: counterparty_channel_id,
+        height: counterparty_chain_height,
+    })?;
 
     Ok(ChannelEnds {
         channel_end,

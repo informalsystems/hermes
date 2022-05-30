@@ -11,14 +11,18 @@ use ibc::events::IbcEvent;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::QueryClientStateRequest;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
 
+/// The chain that the events associated with a piece of [`OperationalData`] are bound for.
 #[derive(Clone, Copy, PartialEq)]
 pub enum OperationalDataTarget {
+    /// The chain which generated the events associated with the `OperationalData`.
     Source,
+    /// The chain receiving the events associated with the `OperationalData``.
     Destination,
 }
 
@@ -74,18 +78,22 @@ pub struct TransitMessage {
     pub msg: Any,
 }
 
-/// Holds all the necessary information for handling a set of in-transit messages.
-///
-/// Each `OperationalData` item is uniquely identified by the combination of two attributes:
-///     - `target`: represents the target of the packet messages, either source or destination chain,
-///     - `proofs_height`: represents the height for the proofs in all the messages.
-///       Note: this is the height at which the proofs are queried. A client consensus state at
-///       `proofs_height + 1` must exist on-chain in order to verify the proofs.
+/// Holds all the necessary information for handling a batch of in-transit messages. This includes
+/// an event received from a chain along with any other packets related to the event (i.e.
+/// 'receive' or 'timeout' packets) that the relayer has to submit in response to the event.
 #[derive(Clone)]
 pub struct OperationalData {
+    /// Represents the height for the proofs in all the messages. Note that this is the height
+    /// at which the proofs are queried. For example, for Tendermint chains, a client consensus
+    /// state at `proofs_height + 1` must exist on-chain in order to verify the proofs.
     pub proofs_height: Height,
+    /// The batch of messages associated with this piece of operational data.
     pub batch: Vec<TransitMessage>,
+    /// Represents the target of the packet messages, either the source or the destination
+    /// chain.
     pub target: OperationalDataTarget,
+    /// A unique ID for tracking this batch of events starting from when they were received
+    /// until the transactions corresponding to those events is submitted.
     pub tracking_id: TrackingId,
     /// Stores `Some(ConnectionDelay)` if the delay is non-zero and `None` otherwise
     connection_delay: Option<ConnectionDelay>,
@@ -169,11 +177,18 @@ impl OperationalData {
             let client_state = match self.target {
                 OperationalDataTarget::Source => relay_path
                     .src_chain()
-                    .query_client_state(relay_path.src_client_id(), Height::zero())
+                    .query_client_state(QueryClientStateRequest {
+                        client_id: relay_path.src_client_id().clone(),
+                        height: Height::zero(),
+                    })
                     .map_err(|e| LinkError::query(relay_path.src_chain().id(), e))?,
+
                 OperationalDataTarget::Destination => relay_path
                     .dst_chain()
-                    .query_client_state(relay_path.dst_client_id(), Height::zero())
+                    .query_client_state(QueryClientStateRequest {
+                        client_id: relay_path.dst_client_id().clone(),
+                        height: Height::zero(),
+                    })
                     .map_err(|e| LinkError::query(relay_path.dst_chain().id(), e))?,
             };
 

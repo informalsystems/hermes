@@ -34,10 +34,13 @@ use ibc::query::QueryTxRequest;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::{
+    PageRequest, QueryClientStateRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+};
 use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error as RelayerError;
 
@@ -395,7 +398,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         let height = Height::new(expected_target_chain.id().version(), 0);
 
-        match host_chain.query_client_state(client_id, height) {
+        match host_chain.query_client_state(QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height,
+        }) {
             Ok(cs) => {
                 if cs.chain_id() != expected_target_chain.id() {
                     Err(ForeignClientError::mismatch_chain_id(
@@ -438,7 +444,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
             .src_chain
-            .query_upgraded_client_state(src_height)
+            .query_upgraded_client_state(QueryUpgradedClientStateRequest { height: src_height })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
                     self.id.clone(),
@@ -452,7 +458,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         let (consensus_state, proof_upgrade_consensus_state) = self
             .src_chain
-            .query_upgraded_consensus_state(src_height)
+            .query_upgraded_consensus_state(QueryUpgradedConsensusStateRequest {
+                height: src_height,
+            })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
                     self.id.clone(),
@@ -482,8 +490,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             client_id: self.id.clone(),
             client_state,
             consensus_state,
-            proof_upgrade_client,
-            proof_upgrade_consensus_state,
+            proof_upgrade_client: proof_upgrade_client.into(),
+            proof_upgrade_consensus_state: proof_upgrade_consensus_state.into(),
             signer,
         }
         .to_any();
@@ -643,16 +651,20 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn validated_client_state(
         &self,
     ) -> Result<(AnyClientState, Option<Duration>), ForeignClientError> {
-        let client_state = self
-            .dst_chain
-            .query_client_state(self.id(), Height::zero())
-            .map_err(|e| {
-                ForeignClientError::client_refresh(
-                    self.id().clone(),
-                    "failed querying client state on dst chain".to_string(),
-                    e,
-                )
-            })?;
+        let client_state = {
+            self.dst_chain
+                .query_client_state(QueryClientStateRequest {
+                    client_id: self.id().clone(),
+                    height: Height::zero(),
+                })
+                .map_err(|e| {
+                    ForeignClientError::client_refresh(
+                        self.id().clone(),
+                        "failed querying client state on dst chain".to_string(),
+                        e,
+                    )
+                })?
+        };
 
         if client_state.is_frozen() {
             return Err(ForeignClientError::expired_or_frozen(
@@ -1107,19 +1119,17 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         consensus_height: Height,
     ) -> Result<Option<UpdateClient>, ForeignClientError> {
-        let request = QueryClientEventRequest {
-            height: Height::zero(),
-            event_id: WithBlockDataType::UpdateClient,
-            client_id: self.id.clone(),
-            consensus_height,
-        };
-
         let mut events = vec![];
         for i in 0..MAX_RETRIES {
             thread::sleep(Duration::from_millis(100));
             let result = self
                 .dst_chain
-                .query_txs(QueryTxRequest::Client(request.clone()))
+                .query_txs(QueryTxRequest::Client(QueryClientEventRequest {
+                    height: Height::zero(),
+                    event_id: WithBlockDataType::UpdateClient,
+                    client_id: self.id.clone(),
+                    consensus_height,
+                }))
                 .map_err(|e| {
                     ForeignClientError::client_event_query(
                         self.id().clone(),
@@ -1173,8 +1183,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let mut consensus_states = self
             .dst_chain
             .query_consensus_states(QueryConsensusStatesRequest {
-                client_id: self.id.to_string(),
-                pagination: ibc_proto::cosmos::base::query::pagination::all(),
+                client_id: self.id.clone(),
+                pagination: Some(PageRequest::all()),
             })
             .map_err(|e| {
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
@@ -1187,7 +1197,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     fn consensus_state(&self, height: Height) -> Result<AnyConsensusState, ForeignClientError> {
         let res = self
             .dst_chain
-            .query_consensus_state(self.id.clone(), height, Height::zero())
+            .query_consensus_state(QueryConsensusStateRequest {
+                client_id: self.id.clone(),
+                consensus_height: height,
+                query_height: Height::zero(),
+            })
             .map_err(|e| {
                 ForeignClientError::client_consensus_query(
                     self.id.clone(),
@@ -1262,15 +1276,19 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         .entered();
 
         // Get the latest client state on destination.
-        let client_state = self
-            .dst_chain()
-            .query_client_state(&self.id, Height::zero())
-            .map_err(|e| {
-                ForeignClientError::misbehaviour(
-                    format!("failed querying client state on dst chain {}", self.id),
-                    e,
-                )
-            })?;
+        let client_state = {
+            self.dst_chain()
+                .query_client_state(QueryClientStateRequest {
+                    client_id: self.id().clone(),
+                    height: Height::zero(),
+                })
+                .map_err(|e| {
+                    ForeignClientError::misbehaviour(
+                        format!("failed querying client state on dst chain {}", self.id),
+                        e,
+                    )
+                })?
+        };
 
         let consensus_state_heights = if let Some(ref event) = update {
             vec![event.consensus_height()]
@@ -1563,6 +1581,7 @@ mod test {
     use crate::chain::handle::{BaseChainHandle, ChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
+    use crate::chain::requests::QueryClientStateRequest;
     use crate::chain::runtime::ChainRuntime;
     use crate::foreign_client::ForeignClient;
 
@@ -1743,14 +1762,20 @@ mod test {
         let b_client = client_on_b.id;
 
         // Now that the clients exists, we should be able to query its state
-        let b_client_state = b_chain.query_client_state(&b_client, Height::default());
+        let b_client_state = b_chain.query_client_state(QueryClientStateRequest {
+            client_id: b_client,
+            height: Height::default(),
+        });
         assert!(
             b_client_state.is_ok(),
             "Client query (on chain b) failed with error: {:?}",
             b_client_state
         );
 
-        let a_client_state = a_chain.query_client_state(&a_client, Height::default());
+        let a_client_state = a_chain.query_client_state(QueryClientStateRequest {
+            client_id: a_client,
+            height: Height::default(),
+        });
         assert!(
             a_client_state.is_ok(),
             "Client query (on chain a) failed with error: {:?}",

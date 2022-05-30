@@ -21,7 +21,7 @@ use ibc::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
         },
-        ics23_commitment::commitment::CommitmentPrefix,
+        ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
     events::IbcEvent,
@@ -29,18 +29,6 @@ use ibc::{
     query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
-};
-
-use ibc_proto::ibc::core::{
-    channel::v1::{
-        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
-        QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    },
-    client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
-    commitment::v1::MerkleProof,
-    connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
 
 use crate::{
@@ -52,8 +40,19 @@ use crate::{
     keyring::KeyEntry,
 };
 
-use super::client::ClientSettings;
-use super::tracking::TrackedMsgs;
+use super::{
+    client::ClientSettings,
+    requests::{
+        QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+        QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+        QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+        QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+    },
+    tracking::TrackedMsgs,
+};
 use super::{ChainStatus, HealthCheck};
 
 mod base;
@@ -199,8 +198,7 @@ pub enum ChainRequest {
     },
 
     QueryClientState {
-        client_id: ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
         reply_to: ReplyTo<AnyClientState>,
     },
 
@@ -215,19 +213,17 @@ pub enum ChainRequest {
     },
 
     QueryConsensusState {
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
     },
 
     QueryUpgradedClientState {
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
         reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
     },
 
     QueryUpgradedConsensusState {
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
         reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
     },
 
@@ -240,8 +236,7 @@ pub enum ChainRequest {
     },
 
     QueryConnection {
-        connection_id: ConnectionId,
-        height: Height,
+        request: QueryConnectionRequest,
         reply_to: ReplyTo<ConnectionEnd>,
     },
 
@@ -261,9 +256,7 @@ pub enum ChainRequest {
     },
 
     QueryChannel {
-        port_id: PortId,
-        channel_id: ChannelId,
-        height: Height,
+        request: QueryChannelRequest,
         reply_to: ReplyTo<ChannelEnd>,
     },
 
@@ -314,22 +307,22 @@ pub enum ChainRequest {
 
     QueryPacketCommitments {
         request: QueryPacketCommitmentsRequest,
-        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+        reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     },
 
     QueryUnreceivedPackets {
         request: QueryUnreceivedPacketsRequest,
-        reply_to: ReplyTo<Vec<u64>>,
+        reply_to: ReplyTo<Vec<Sequence>>,
     },
 
     QueryPacketAcknowledgement {
         request: QueryPacketAcknowledgementsRequest,
-        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+        reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     },
 
     QueryUnreceivedAcknowledgement {
         request: QueryUnreceivedAcksRequest,
-        reply_to: ReplyTo<Vec<u64>>,
+        reply_to: ReplyTo<Vec<Sequence>>,
     },
 
     QueryPacketEventDataFromTxs {
@@ -343,7 +336,7 @@ pub enum ChainRequest {
     },
 
     QueryHostConsensusState {
-        height: Height,
+        request: QueryHostConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
     },
 }
@@ -405,11 +398,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
-    fn query_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<AnyClientState, Error>;
+    fn query_client_state(&self, request: QueryClientStateRequest)
+        -> Result<AnyClientState, Error>;
 
     fn query_client_connections(
         &self,
@@ -423,30 +413,24 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error>;
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error>;
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error>;
 
     fn query_connections(
         &self,
@@ -468,12 +452,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error>;
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error>;
 
     fn query_channel_client_state(
         &self,
@@ -554,22 +533,22 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error>;
+    ) -> Result<(Vec<Sequence>, Height), Error>;
 
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error>;
+    ) -> Result<Vec<Sequence>, Error>;
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error>;
+    ) -> Result<(Vec<Sequence>, Height), Error>;
 
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error>;
+    ) -> Result<Vec<Sequence>, Error>;
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 
@@ -578,5 +557,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
 
-    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<AnyConsensusState, Error>;
 }
