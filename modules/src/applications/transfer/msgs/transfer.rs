@@ -2,12 +2,12 @@
 
 use crate::prelude::*;
 
+use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 use tendermint_proto::Protobuf;
 
 use crate::applications::transfer::error::Error;
-use crate::applications::transfer::IbcCoin;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
@@ -18,13 +18,13 @@ pub const TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
 /// Message definition for the "packet receiving" datagram.
 #[derive(Clone, Debug, PartialEq)]
-pub struct MsgTransfer {
+pub struct MsgTransfer<C = Coin> {
     /// the port on which the packet will be sent
     pub source_port: PortId,
     /// the channel by which the packet will be sent
     pub source_channel: ChannelId,
     /// the tokens to be transferred
-    pub token: IbcCoin,
+    pub token: C,
     /// the sender address
     pub sender: Signer,
     /// the recipient address on the destination chain
@@ -64,8 +64,6 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             })?,
         };
 
-        let token = raw_msg.token.ok_or_else(Error::invalid_token)?.try_into()?;
-
         Ok(MsgTransfer {
             source_port: raw_msg
                 .source_port
@@ -75,7 +73,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
                 .source_channel
                 .parse()
                 .map_err(|e| Error::invalid_channel_id(raw_msg.source_channel.clone(), e))?,
-            token,
+            token: raw_msg.token.ok_or_else(Error::invalid_token)?,
             sender: raw_msg.sender.parse().map_err(Error::signer)?,
             receiver: raw_msg.receiver.parse().map_err(Error::signer)?,
             timeout_height,
@@ -89,7 +87,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
         RawMsgTransfer {
             source_port: domain_msg.source_port.to_string(),
             source_channel: domain_msg.source_channel.to_string(),
-            token: Some(domain_msg.token.into()),
+            token: Some(domain_msg.token),
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
             timeout_height: Some(domain_msg.timeout_height.into()),
@@ -131,23 +129,24 @@ pub mod test_util {
     use crate::bigint::U256;
     use crate::signer::Signer;
     use crate::{
-        applications::transfer::{BaseCoin, IbcCoin},
+        applications::transfer::{BaseCoin, PrefixedCoin},
         core::ics24_host::identifier::{ChannelId, PortId},
         test_utils::get_dummy_bech32_account,
         timestamp::Timestamp,
         Height,
     };
 
-    // Returns a dummy `RawMsgTransfer`, for testing only!
-    pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
+    // Returns a dummy ICS20 `MsgTransfer`, for testing only!
+    pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer<PrefixedCoin> {
         let address: Signer = get_dummy_bech32_account().as_str().parse().unwrap();
         MsgTransfer {
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
-            token: IbcCoin::Base(BaseCoin {
+            token: BaseCoin {
                 denom: "uatom".parse().unwrap(),
                 amount: U256::from(10).into(),
-            }),
+            }
+            .into(),
             sender: address.clone(),
             receiver: address,
             timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),

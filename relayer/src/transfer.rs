@@ -1,15 +1,16 @@
-use core::convert::TryInto;
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
-use ibc::applications::transfer::{error::Error as Ics20Error, msgs::transfer::MsgTransfer};
-use ibc::applications::transfer::{Amount, IbcCoin};
+use ibc::applications::transfer::error::Error as Ics20Error;
+use ibc::applications::transfer::msgs::transfer::MsgTransfer;
+use ibc::applications::transfer::Amount;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::signer::Signer;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
 
 use crate::chain::handle::ChainHandle;
@@ -119,7 +120,8 @@ pub struct TransferOptions {
 pub fn build_transfer_message(
     packet_src_port_id: PortId,
     packet_src_channel_id: ChannelId,
-    token: IbcCoin,
+    amount: Amount,
+    denom: String,
     sender: Signer,
     receiver: Signer,
     timeout_height: Height,
@@ -128,7 +130,10 @@ pub fn build_transfer_message(
     let msg = MsgTransfer {
         source_port: packet_src_port_id,
         source_channel: packet_src_channel_id,
-        token,
+        token: Coin {
+            denom,
+            amount: amount.to_string(),
+        },
         sender,
         receiver,
         timeout_height,
@@ -157,17 +162,13 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         &destination_chain_status,
     )?;
 
-    let token = ibc_proto::cosmos::base::v1beta1::Coin {
-        denom: opts.denom.clone(),
-        amount: opts.amount.to_string(),
-    }
-    .try_into()
-    .map_err(TransferError::token_transfer)?;
-
     let msg = MsgTransfer {
         source_port: opts.packet_src_port_id.clone(),
         source_channel: opts.packet_src_channel_id,
-        token,
+        token: Coin {
+            denom: opts.denom.clone(),
+            amount: opts.amount.to_string(),
+        },
         sender,
         receiver,
         timeout_height: timeout.timeout_height,

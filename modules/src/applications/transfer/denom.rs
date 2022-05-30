@@ -355,67 +355,18 @@ impl<D: ToString> From<Coin<D>> for RawCoin {
     }
 }
 
-/// The `Coin` type used in `MsgTransfer`, whose denomination is either hashed or unprefixed.
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
-pub enum IbcCoin {
-    Hashed(HashedCoin),
-    Base(BaseCoin),
-}
-
-impl IbcCoin {
-    pub fn amount(&self) -> Amount {
-        match self {
-            IbcCoin::Hashed(c) => c.amount,
-            IbcCoin::Base(c) => c.amount,
+impl From<BaseCoin> for PrefixedCoin {
+    fn from(coin: BaseCoin) -> PrefixedCoin {
+        PrefixedCoin {
+            denom: coin.denom.into(),
+            amount: coin.amount,
         }
     }
 }
 
-impl fmt::Display for IbcCoin {
+impl fmt::Display for PrefixedCoin {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            IbcCoin::Hashed(coin) => write!(f, "{}-{}", coin.amount, coin.denom),
-            IbcCoin::Base(coin) => write!(f, "{}-{}", coin.amount, coin.denom),
-        }
-    }
-}
-
-impl TryFrom<RawCoin> for IbcCoin {
-    type Error = Error;
-
-    fn try_from(proto: RawCoin) -> Result<IbcCoin, Self::Error> {
-        if proto.denom.starts_with(IBC_DENOM_PREFIX) {
-            Ok(Self::Hashed(HashedCoin::try_from(proto)?))
-        } else {
-            Ok(Self::Base(BaseCoin::try_from(proto)?))
-        }
-    }
-}
-
-impl From<IbcCoin> for RawCoin {
-    fn from(ibc_coin: IbcCoin) -> Self {
-        let (denom, amount) = match ibc_coin {
-            IbcCoin::Hashed(c) => (c.denom.to_string(), c.amount.to_string()),
-            IbcCoin::Base(c) => (c.denom.to_string(), c.amount.to_string()),
-        };
-        Self { denom, amount }
-    }
-}
-
-impl From<PrefixedCoin> for IbcCoin {
-    fn from(prefixed_coin: PrefixedCoin) -> Self {
-        let Coin { denom, amount } = prefixed_coin;
-        if !denom.trace_path.is_empty() {
-            IbcCoin::Hashed(HashedCoin {
-                denom: denom.hashed(),
-                amount,
-            })
-        } else {
-            IbcCoin::Base(BaseCoin {
-                denom: denom.base_denom,
-                amount,
-            })
-        }
+        write!(f, "{}-{}", self.amount, self.denom)
     }
 }
 
@@ -533,128 +484,6 @@ mod tests {
 
         trace_path.remove_prefix(&prefix_1);
         assert!(trace_path.is_empty());
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_ibc_coin_from_prefixed_coin() -> Result<(), Error> {
-        let denom_str = "uatom";
-        let amount = "1000".parse()?;
-        let coin = PrefixedCoin {
-            denom: denom_str.parse()?,
-            amount,
-        };
-        assert_eq!(
-            IbcCoin::from(coin),
-            IbcCoin::Base(BaseCoin {
-                denom: denom_str.parse()?,
-                amount,
-            }),
-            "valid base denom"
-        );
-
-        let denom_str = "transfer/channel-0/uatom";
-        let amount = "1000".parse()?;
-        let coin = PrefixedCoin {
-            denom: denom_str.parse()?,
-            amount,
-        };
-        assert_eq!(
-            IbcCoin::from(coin),
-            IbcCoin::Hashed(HashedCoin {
-                denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
-                    .parse()?,
-                amount,
-            }),
-            "valid hashed denom"
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_ibc_coin_validation() -> Result<(), Error> {
-        struct Test {
-            name: &'static str,
-            denom: &'static str,
-            exp_coin: Option<IbcCoin>,
-        }
-
-        let amount = Amount::from_str("1000")?;
-        let hashed_denom = "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
-        let base_denom_slash = "gamm/pool/1";
-        let base_denom_double_slash = "gamm//pool//1";
-        let non_ibc_prefixed_denom =
-            "notibc/7F1D3FCF4AE79E1554D670D1AD949A9BA4E4A3C76C63093E17E446A46061A7A2";
-
-        let tests: Vec<Test> = vec![
-            Test {
-                name: "hashed denom",
-                denom: hashed_denom,
-                exp_coin: Some(IbcCoin::Hashed(HashedCoin {
-                    denom: hashed_denom.parse()?,
-                    amount,
-                })),
-            },
-            Test {
-                name: "base denom with '/'s",
-                denom: base_denom_slash,
-                exp_coin: Some(IbcCoin::Base(BaseCoin {
-                    denom: base_denom_slash.parse()?,
-                    amount,
-                })),
-            },
-            Test {
-                name: "base denom with '//'s",
-                denom: base_denom_double_slash,
-                exp_coin: Some(IbcCoin::Base(BaseCoin {
-                    denom: base_denom_double_slash.parse()?,
-                    amount,
-                })),
-            },
-            Test {
-                name: "non-ibc prefix with hash",
-                denom: non_ibc_prefixed_denom,
-                exp_coin: Some(IbcCoin::Base(BaseCoin {
-                    denom: non_ibc_prefixed_denom.parse()?,
-                    amount,
-                })),
-            },
-            Test {
-                name: "empty denom",
-                denom: "",
-                exp_coin: None,
-            },
-            Test {
-                name: "'ibc' denom",
-                denom: "ibc",
-                exp_coin: None,
-            },
-            Test {
-                name: "'ibc/' denom",
-                denom: "ibc/",
-                exp_coin: None,
-            },
-            Test {
-                name: "invalid hashed denom",
-                denom: "ibc/!@#$!@#",
-                exp_coin: None,
-            },
-        ];
-
-        for test in tests {
-            let coin = RawCoin {
-                denom: test.denom.to_string(),
-                amount: amount.to_string(),
-            };
-
-            if let Some(exp_coin) = test.exp_coin {
-                assert_eq!(IbcCoin::try_from(coin)?, exp_coin, "{}", test.name);
-            } else {
-                assert!(IbcCoin::try_from(coin).is_err(), "{}", test.name)
-            }
-        }
 
         Ok(())
     }

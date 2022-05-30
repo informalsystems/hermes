@@ -33,13 +33,6 @@ pub fn build_transfer_message<SrcChain, DstChain>(
         .add(Duration::from_secs(60))
         .map_err(handle_generic_error)?;
 
-    let token = ibc_proto::cosmos::base::v1beta1::Coin {
-        denom: denom.value().to_string(),
-        amount: amount.to_string(),
-    }
-    .try_into()
-    .map_err(TransferError::token_transfer)?;
-
     let sender = sender
         .value()
         .address
@@ -56,7 +49,8 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     Ok(raw_build_transfer_message(
         (*port_id.value()).clone(),
         **channel_id.value(),
-        token,
+        amount.into(),
+        denom.to_string(),
         sender,
         receiver,
         Height::zero(),

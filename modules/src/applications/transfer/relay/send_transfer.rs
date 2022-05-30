@@ -3,17 +3,17 @@ use crate::applications::transfer::error::Error;
 use crate::applications::transfer::events::TransferEvent;
 use crate::applications::transfer::msgs::transfer::MsgTransfer;
 use crate::applications::transfer::packet::PacketData;
-use crate::applications::transfer::{Coin, IbcCoin, Source, TracePrefix};
+use crate::applications::transfer::{Coin, PrefixedCoin, Source, TracePrefix};
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
 use crate::events::ModuleEvent;
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 use crate::prelude::*;
 
-pub fn send_transfer<Ctx>(
+pub fn send_transfer<Ctx, C: TryInto<PrefixedCoin>>(
     ctx: &mut Ctx,
     output: &mut HandlerOutputBuilder<()>,
-    msg: MsgTransfer,
+    msg: MsgTransfer<C>,
 ) -> Result<(), Error>
 where
     Ctx: Ics20Context,
@@ -39,15 +39,11 @@ where
         .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel))
         .map_err(Error::ics04_channel)?;
 
-    let denom = match msg.token.clone() {
-        IbcCoin::Hashed(coin) => ctx
-            .get_denom_trace(&coin.denom)
-            .ok_or_else(Error::trace_not_found)?,
-        IbcCoin::Base(coin) => coin.denom.into(),
-    };
+    let token = msg.token.try_into().map_err(|_| Error::invalid_token())?;
+    let denom = token.denom.clone();
     let coin = Coin {
         denom: denom.clone(),
-        amount: msg.token.amount(),
+        amount: token.amount,
     };
 
     let sender = msg
@@ -104,7 +100,7 @@ where
 
     output.log(format!(
         "IBC fungible token transfer: {} --({})--> {}",
-        msg.sender, msg.token, msg.receiver
+        msg.sender, token, msg.receiver
     ));
 
     let transfer_event = TransferEvent {

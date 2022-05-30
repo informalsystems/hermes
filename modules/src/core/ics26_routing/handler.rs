@@ -134,7 +134,7 @@ mod tests {
     use test_log::test;
 
     use crate::applications::transfer::context::test::deliver as ics20_deliver;
-    use crate::applications::transfer::{IbcCoin, PrefixedCoin};
+    use crate::applications::transfer::PrefixedCoin;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
     use crate::core::ics02_client::msgs::{
@@ -189,7 +189,7 @@ mod tests {
         #[derive(Clone, Debug)]
         enum TestMsg {
             Ics26(Ics26Envelope),
-            Ics20(MsgTransfer),
+            Ics20(MsgTransfer<PrefixedCoin>),
         }
 
         impl From<Ics26Envelope> for TestMsg {
@@ -198,8 +198,8 @@ mod tests {
             }
         }
 
-        impl From<MsgTransfer> for TestMsg {
-            fn from(msg: MsgTransfer) -> Self {
+        impl From<MsgTransfer<PrefixedCoin>> for TestMsg {
+            fn from(msg: MsgTransfer<PrefixedCoin>) -> Self {
                 Self::Ics20(msg)
             }
         }
@@ -300,15 +300,12 @@ mod tests {
         msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height;
         msg_to_on_close.packet.timeout_timestamp = msg_transfer_two.timeout_timestamp;
 
-        let denom = match msg_transfer_two.token.clone() {
-            IbcCoin::Base(coin) => coin.denom.into(),
-            IbcCoin::Hashed(_) => unreachable!(),
-        };
+        let denom = msg_transfer_two.token.denom.clone();
         let packet_data = {
             let data = PacketData {
                 token: PrefixedCoin {
                     denom,
-                    amount: msg_transfer_two.token.amount(),
+                    amount: msg_transfer_two.token.amount,
                 },
                 sender: msg_transfer_two.sender.clone(),
                 receiver: msg_transfer_two.receiver.clone(),
@@ -546,7 +543,7 @@ mod tests {
                             .downcast_mut::<DummyTransferModule>()
                             .unwrap(),
                         &mut HandlerOutputBuilder::new(),
-                        msg.into(),
+                        msg,
                     )
                     .map(|_| ())
                     .map_err(Error::ics04_channel)

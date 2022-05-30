@@ -296,12 +296,13 @@ pub fn on_timeout_packet(
 
 #[cfg(test)]
 pub(crate) mod test {
-    use ibc_proto::google::protobuf::Any;
     use subtle_encoding::bech32;
 
     use crate::applications::transfer::context::cosmos_adr028_escrow_address;
     use crate::applications::transfer::error::Error as Ics20Error;
+    use crate::applications::transfer::msgs::transfer::MsgTransfer;
     use crate::applications::transfer::relay::send_transfer::send_transfer;
+    use crate::applications::transfer::PrefixedCoin;
     use crate::core::ics04_channel::error::Error;
     use crate::handler::HandlerOutputBuilder;
     use crate::prelude::*;
@@ -310,11 +311,8 @@ pub(crate) mod test {
     pub(crate) fn deliver(
         ctx: &mut DummyTransferModule,
         output: &mut HandlerOutputBuilder<()>,
-        msg: Any,
+        msg: MsgTransfer<PrefixedCoin>,
     ) -> Result<(), Error> {
-        let msg = msg
-            .try_into()
-            .map_err(|e: Ics20Error| Error::app_module(e.to_string()))?;
         send_transfer(ctx, output, msg).map_err(|e: Ics20Error| Error::app_module(e.to_string()))
     }
 
