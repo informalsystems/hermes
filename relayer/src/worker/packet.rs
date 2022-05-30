@@ -128,7 +128,16 @@ pub fn spawn_clear_packet_on_start_worker<ChainA: ChainHandle, ChainB: ChainHand
     };
 
     spawn_background_task(span, Some(Duration::from_secs(1)), move || {
-        handle_clear_packet(&mut link.lock().unwrap(), clear_interval, &path, None)?;
+        let link = &mut link.lock().unwrap();
+        let latest_height = link
+            .a_to_b
+            .channel()
+            .a_side
+            .chain
+            .query_latest_height()
+            .map_err(|e| TaskError::Ignore(RunError::relayer(e)))?;
+
+        handle_clear_packet(link, clear_interval, &path, Some(latest_height))?;
 
         Ok(Next::Abort)
     })
