@@ -2,7 +2,7 @@ use crate::applications::transfer::context::Ics20Context;
 use crate::applications::transfer::error::Error as Ics20Error;
 use crate::applications::transfer::events::DenomTraceEvent;
 use crate::applications::transfer::packet::PacketData;
-use crate::applications::transfer::{Source, TracePrefix};
+use crate::applications::transfer::{is_receiver_chain_source, TracePrefix};
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics26_routing::context::{ModuleOutputBuilder, WriteFn};
 use crate::prelude::*;
@@ -23,46 +23,46 @@ pub fn process_recv_packet<Ctx: 'static + Ics20Context>(
         .try_into()
         .map_err(|_| Ics20Error::parse_account_failure())?;
 
-    let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
-    match data.token.denom.source_chain(&prefix) {
-        Source::Receiver => {
-            // sender chain is not the source, unescrow tokens
-            let coin = {
-                let mut c = data.token;
-                c.denom.remove_trace_prefix(&prefix);
-                c
-            };
+    if is_receiver_chain_source(
+        packet.source_port.clone(),
+        packet.source_channel,
+        &data.token.denom,
+    ) {
+        // sender chain is not the source, unescrow tokens
+        let prefix = TracePrefix::new(packet.source_port.clone(), packet.source_channel);
+        let coin = {
+            let mut c = data.token;
+            c.denom.remove_trace_prefix(&prefix);
+            c
+        };
 
-            let escrow_address = ctx
-                .get_channel_escrow_address(&packet.destination_port, packet.destination_channel)?;
+        let escrow_address =
+            ctx.get_channel_escrow_address(&packet.destination_port, packet.destination_channel)?;
 
-            Ok(Box::new(move |ctx| {
-                let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                ctx.send_coins(&escrow_address, &receiver_account, &coin)
-                    .map_err(|e| e.to_string())
-            }))
-        }
-        Source::Sender => {
-            // sender chain is the source, mint vouchers
-            let prefix =
-                TracePrefix::new(packet.destination_port.clone(), packet.destination_channel);
-            let coin = {
-                let mut c = data.token;
-                c.denom.add_trace_prefix(prefix);
-                c
-            };
+        Ok(Box::new(move |ctx| {
+            let ctx = ctx.downcast_mut::<Ctx>().unwrap();
+            ctx.send_coins(&escrow_address, &receiver_account, &coin)
+                .map_err(|e| e.to_string())
+        }))
+    } else {
+        // sender chain is the source, mint vouchers
+        let prefix = TracePrefix::new(packet.destination_port.clone(), packet.destination_channel);
+        let coin = {
+            let mut c = data.token;
+            c.denom.add_trace_prefix(prefix);
+            c
+        };
 
-            let denom_trace_event = DenomTraceEvent {
-                trace_hash: ctx.denom_hash_string(&coin.denom),
-                denom: coin.denom.clone(),
-            };
-            output.emit(denom_trace_event.into());
+        let denom_trace_event = DenomTraceEvent {
+            trace_hash: ctx.denom_hash_string(&coin.denom),
+            denom: coin.denom.clone(),
+        };
+        output.emit(denom_trace_event.into());
 
-            Ok(Box::new(move |ctx| {
-                let ctx = ctx.downcast_mut::<Ctx>().unwrap();
-                ctx.mint_coins(&receiver_account, &coin)
-                    .map_err(|e| e.to_string())
-            }))
-        }
+        Ok(Box::new(move |ctx| {
+            let ctx = ctx.downcast_mut::<Ctx>().unwrap();
+            ctx.mint_coins(&receiver_account, &coin)
+                .map_err(|e| e.to_string())
+        }))
     }
 }

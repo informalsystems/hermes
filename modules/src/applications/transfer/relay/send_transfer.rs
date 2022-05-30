@@ -3,7 +3,7 @@ use crate::applications::transfer::error::Error;
 use crate::applications::transfer::events::TransferEvent;
 use crate::applications::transfer::msgs::transfer::MsgTransfer;
 use crate::applications::transfer::packet::PacketData;
-use crate::applications::transfer::{Coin, PrefixedCoin, Source, TracePrefix};
+use crate::applications::transfer::{is_sender_chain_source, Coin, PrefixedCoin};
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
 use crate::events::ModuleEvent;
@@ -55,14 +55,12 @@ where
         .try_into()
         .map_err(|_| Error::parse_account_failure())?;
 
-    let prefix = TracePrefix::new(msg.source_port.clone(), msg.source_channel);
-    match denom.source_chain(&prefix) {
-        Source::Sender => {
-            let escrow_address =
-                ctx.get_channel_escrow_address(&msg.source_port, msg.source_channel)?;
-            ctx.send_coins(&sender, &escrow_address, &coin)?;
-        }
-        Source::Receiver => ctx.burn_coins(&sender, &coin)?,
+    if is_sender_chain_source(msg.source_port.clone(), msg.source_channel, &denom) {
+        let escrow_address =
+            ctx.get_channel_escrow_address(&msg.source_port, msg.source_channel)?;
+        ctx.send_coins(&sender, &escrow_address, &coin)?;
+    } else {
+        ctx.burn_coins(&sender, &coin)?;
     }
 
     let data = {

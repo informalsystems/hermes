@@ -141,14 +141,6 @@ impl fmt::Display for TracePath {
     }
 }
 
-/// Indicates whether the sender chain is acting as a source or sink. Each send to any chain other
-/// than the one it was previously received from is a movement forwards in the token's timeline. In
-/// these instances the sender chain is acting as the source zone.
-pub enum Source {
-    Sender,
-    Receiver,
-}
-
 /// A type that contains the base denomination for ICS20 and the source tracing information path.
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct PrefixedDenom {
@@ -169,16 +161,25 @@ impl PrefixedDenom {
     pub fn add_trace_prefix(&mut self, prefix: TracePrefix) {
         self.trace_path.add_prefix(prefix)
     }
+}
 
-    /// Returns `Source::Receiver` if the denomination originally came from the receiving chain and
-    /// `Source::Sender` otherwise.
-    pub fn source_chain(&self, prefix: &TracePrefix) -> Source {
-        if self.trace_path.starts_with(prefix) {
-            Source::Receiver
-        } else {
-            Source::Sender
-        }
-    }
+/// Returns false if the denomination originally came from the receiving chain and true otherwise.
+pub fn is_sender_chain_source(
+    source_port: PortId,
+    source_channel: ChannelId,
+    denom: &PrefixedDenom,
+) -> bool {
+    !is_receiver_chain_source(source_port, source_channel, denom)
+}
+
+/// Returns true if the denomination originally came from the receiving chain and false otherwise.
+pub fn is_receiver_chain_source(
+    source_port: PortId,
+    source_channel: ChannelId,
+    denom: &PrefixedDenom,
+) -> bool {
+    let prefix = TracePrefix::new(source_port, source_channel);
+    denom.trace_path.starts_with(&prefix)
 }
 
 impl FromStr for PrefixedDenom {
