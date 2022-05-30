@@ -3,6 +3,7 @@ use ibc_relayer::worker::client::spawn_refresh_client;
 
 use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
 use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
+use ibc_test_framework::chain::tagged::TaggedChainDriverExt;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{assert_eventually_channel_established, init_channel};
@@ -35,7 +36,7 @@ pub fn setup_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
     Ok(())
 }
 
-pub fn local_transfer_handler<ChainA>(
+pub fn local_transfer_handler<ChainA: ChainHandle>(
     node: Tagged<ChainA, &FullNode>,
     source: u64,
     target: u64,
@@ -49,7 +50,7 @@ pub fn local_transfer_handler<ChainA>(
     let denom = get_denom(&node, denom);
 
     node.chain_driver().local_transfer_token(
-        &source_wallet.address(),
+        &source_wallet,
         &target_wallet.address(),
         amount,
         &denom,
@@ -189,13 +190,13 @@ pub fn ibc_transfer_send_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
         denom_source,
     );
 
-    node_source.chain_driver().transfer_token(
+    node_source.chain_driver().ibc_transfer_token(
         &port_source,
         &channel_id_source,
-        &wallet_source.address(),
+        &wallet_source,
         &wallet_target.address(),
-        amount_source_to_target,
         &denom_source,
+        amount_source_to_target,
     )?;
 
     node_source.chain_driver().assert_eventual_wallet_amount(
