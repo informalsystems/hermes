@@ -127,13 +127,11 @@ pub fn spawn_clear_packet_on_start_worker<ChainA: ChainHandle, ChainB: ChainHand
         )
     };
 
-    spawn_background_task(span, Some(Duration::from_secs(1)), move || {
+    spawn_background_task(span, Some(Duration::from_millis(200)), move || {
         let link = &mut link.lock().unwrap();
         let latest_height = link
             .a_to_b
-            .channel()
-            .a_side
-            .chain
+            .src_chain()
             .query_latest_height()
             .map_err(|e| TaskError::Ignore(RunError::relayer(e)))?;
 
