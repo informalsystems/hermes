@@ -150,6 +150,7 @@ pub enum ChainRequest {
     },
 
     QueryBalance {
+        key_name: Option<String>,
         reply_to: ReplyTo<Balance>,
     },
 
@@ -382,8 +383,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
-    /// Query the balance of the current account for the denom used to pay tx fees.
-    fn query_balance(&self) -> Result<Balance, Error>;
+    /// Query the balance of the given account for the denom used to pay tx fees.
+    /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
+    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
 
     fn query_application_status(&self) -> Result<ChainStatus, Error>;
 

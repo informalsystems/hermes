@@ -149,8 +149,8 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
     }
 
-    fn query_balance(&self) -> Result<Balance, Error> {
-        self.send(|reply_to| ChainRequest::QueryBalance { reply_to })
+    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
+        self.send(|reply_to| ChainRequest::QueryBalance { key_name, reply_to })
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

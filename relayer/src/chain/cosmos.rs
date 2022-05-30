@@ -636,12 +636,23 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(version_specs.ibc_go_version)
     }
 
-    fn query_balance(&self) -> Result<Balance, Error> {
-        let key = self.key()?;
+    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
+        // If a key_name is given, extract the account hash.
+        // Else retrieve the account from the configuration file.
+        let account = match key_name {
+            Some(account) => {
+                let key = self.keybase().get_key(&account).map_err(Error::key_base)?;
+                key.account
+            }
+            _ => {
+                let key = self.key()?;
+                key.account
+            }
+        };
 
         let balance = self.block_on(query_balance(
             &self.grpc_addr,
-            &key.account,
+            &account,
             &self.config.gas_price.denom,
         ))?;
 
