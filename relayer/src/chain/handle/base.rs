@@ -14,7 +14,7 @@ use ibc::{
         ics03_connection::version::Version,
         ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
         ics04_channel::packet::{PacketMsgType, Sequence},
-        ics23_commitment::commitment::CommitmentPrefix,
+        ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::ChainId,
         ics24_host::identifier::ChannelId,
         ics24_host::identifier::{ClientId, ConnectionId, PortId},
@@ -25,19 +25,24 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
-    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{
-    chain::{client::ClientSettings, tx::TrackedMsgs, ChainStatus},
+    account::Balance,
+    chain::{
+        client::ClientSettings,
+        requests::{
+            QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+            QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+            QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+            QueryConsensusStateRequest, QueryConsensusStatesRequest,
+            QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+            QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+            QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+            QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+        },
+        tracking::TrackedMsgs,
+        ChainStatus,
+    },
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
@@ -144,6 +149,10 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
     }
 
+    fn query_balance(&self) -> Result<Balance, Error> {
+        self.send(|reply_to| ChainRequest::QueryBalance { reply_to })
+    }
+
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
         self.send(|reply_to| ChainRequest::QueryApplicationStatus { reply_to })
     }
@@ -157,14 +166,9 @@ impl ChainHandle for BaseChainHandle {
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
+        request: QueryClientStateRequest,
     ) -> Result<AnyClientState, Error> {
-        self.send(|reply_to| ChainRequest::QueryClientState {
-            client_id: client_id.clone(),
-            height,
-            reply_to,
-        })
+        self.send(|reply_to| ChainRequest::QueryClientState { request, reply_to })
     }
 
     fn query_client_connections(
@@ -183,30 +187,23 @@ impl ChainHandle for BaseChainHandle {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
+        request: QueryConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
-        self.send(|reply_to| ChainRequest::QueryConsensusState {
-            client_id,
-            consensus_height,
-            query_height,
-            reply_to,
-        })
+        self.send(|reply_to| ChainRequest::QueryConsensusState { request, reply_to })
     }
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::QueryUpgradedClientState { height, reply_to })
+        self.send(|reply_to| ChainRequest::QueryUpgradedClientState { request, reply_to })
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::QueryUpgradedConsensusState { height, reply_to })
+        self.send(|reply_to| ChainRequest::QueryUpgradedConsensusState { request, reply_to })
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -217,16 +214,8 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryCompatibleVersions { reply_to })
     }
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error> {
-        self.send(|reply_to| ChainRequest::QueryConnection {
-            connection_id: connection_id.clone(),
-            height,
-            reply_to,
-        })
+    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
+        self.send(|reply_to| ChainRequest::QueryConnection { request, reply_to })
     }
 
     fn query_connections(
@@ -257,18 +246,8 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryChannels { request, reply_to })
     }
 
-    fn query_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error> {
-        self.send(|reply_to| ChainRequest::QueryChannel {
-            port_id: port_id.clone(),
-            channel_id: *channel_id,
-            height,
-            reply_to,
-        })
+    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
+        self.send(|reply_to| ChainRequest::QueryChannel { request, reply_to })
     }
 
     fn query_channel_client_state(
@@ -421,28 +400,28 @@ impl ChainHandle for BaseChainHandle {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketCommitments { request, reply_to })
     }
 
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.send(|reply_to| ChainRequest::QueryUnreceivedPackets { request, reply_to })
     }
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
+    ) -> Result<(Vec<Sequence>, Height), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })
     }
 
     fn query_unreceived_acknowledgement(
         &self,
         request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
+    ) -> Result<Vec<Sequence>, Error> {
         self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
     }
 
@@ -457,8 +436,11 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to })
     }
 
-    fn query_host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
-        self.send(|reply_to| ChainRequest::QueryHostConsensusState { height, reply_to })
+    fn query_host_consensus_state(
+        &self,
+        request: QueryHostConsensusStateRequest,
+    ) -> Result<AnyConsensusState, Error> {
+        self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
     }
 }
 

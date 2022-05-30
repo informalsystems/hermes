@@ -6,13 +6,15 @@ use flex_error::{define_error, DetailOnly};
 use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
+use ibc::signer::Signer;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use ibc_proto::google::protobuf::Any;
 use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::tx::TrackedMsgs;
+use crate::chain::tracking::TrackedMsgs;
 use crate::chain::ChainStatus;
 use crate::error::Error;
 use crate::util::bigint::U256;
@@ -75,6 +77,12 @@ impl FromStr for Amount {
     }
 }
 
+impl From<u64> for Amount {
+    fn from(amount: u64) -> Self {
+        Self(amount.into())
+    }
+}
+
 #[derive(Copy, Clone)]
 pub struct TransferTimeout {
     pub timeout_height: Height,
@@ -129,6 +137,32 @@ pub struct TransferOptions {
     pub number_msgs: usize,
 }
 
+pub fn build_transfer_message(
+    packet_src_port_id: PortId,
+    packet_src_channel_id: ChannelId,
+    amount: Amount,
+    denom: String,
+    sender: Signer,
+    receiver: Signer,
+    timeout_height: Height,
+    timeout_timestamp: Timestamp,
+) -> Any {
+    let msg = MsgTransfer {
+        source_port: packet_src_port_id,
+        source_channel: packet_src_channel_id,
+        token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
+            denom,
+            amount: amount.to_string(),
+        }),
+        sender,
+        receiver,
+        timeout_height,
+        timeout_timestamp,
+    };
+
+    msg.to_any()
+}
+
 pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
     packet_src_chain: &SrcChain, // the chain whose account is debited
     packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
@@ -141,14 +175,14 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
 
     let sender = packet_src_chain.get_signer().map_err(TransferError::key)?;
 
-    let application_status = packet_dst_chain
+    let destination_chain_status = packet_dst_chain
         .query_application_status()
         .map_err(TransferError::relayer)?;
 
     let timeout = TransferTimeout::new(
         opts.timeout_height_offset,
         opts.timeout_duration,
-        &application_status,
+        &destination_chain_status,
     )?;
 
     let msg = MsgTransfer {
@@ -168,7 +202,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     let msgs = vec![raw_msg; opts.number_msgs];
 
     let events = packet_src_chain
-        .send_messages_and_wait_commit(TrackedMsgs::new(msgs, "ft-transfer"))
+        .send_messages_and_wait_commit(TrackedMsgs::new_static(msgs, "ft-transfer"))
         .map_err(|e| TransferError::submit(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction

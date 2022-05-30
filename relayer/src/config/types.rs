@@ -3,165 +3,320 @@
 //! Implements defaults, as well as serializing and
 //! deserializing with upper-bound verification.
 
-use core::fmt;
+pub use max_msg_num::MaxMsgNum;
 
-use serde::de::Unexpected;
-use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+pub mod max_msg_num {
+    flex_error::define_error! {
+        Error {
+            TooSmall
+                { value: usize }
+                |e| {
+                    format_args!("`max_msg_num` must be greater than or equal to {}, found {}",
+                        MaxMsgNum::MIN_BOUND, e.value)
+                },
 
-#[derive(Debug, Clone, Copy)]
-pub struct MaxMsgNum(pub usize);
-
-impl MaxMsgNum {
-    const DEFAULT: usize = 30;
-    const MAX_BOUND: usize = 100;
-}
-
-impl Default for MaxMsgNum {
-    fn default() -> Self {
-        Self(Self::DEFAULT)
+            TooBig
+                { value: usize }
+                |e| {
+                    format_args!("`max_msg_num` must be less than or equal to {}, found {}",
+                        MaxMsgNum::MAX_BOUND, e.value)
+                },
+        }
     }
-}
 
-impl<'de> Deserialize<'de> for MaxMsgNum {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let u = usize::deserialize(deserializer)?;
+    #[derive(Debug, Clone, Copy)]
+    pub struct MaxMsgNum(usize);
 
-        if u > Self::MAX_BOUND {
-            return Err(D::Error::invalid_value(
-                Unexpected::Unsigned(u as u64),
-                &format!("a usize less than {}", Self::MAX_BOUND).as_str(),
-            ));
+    impl MaxMsgNum {
+        const DEFAULT: usize = 30;
+        const MIN_BOUND: usize = 1;
+        const MAX_BOUND: usize = 100;
+
+        pub fn new(value: usize) -> Result<Self, Error> {
+            if value < Self::MIN_BOUND {
+                return Err(Error::too_small(value));
+            }
+
+            if value > Self::MAX_BOUND {
+                return Err(Error::too_big(value));
+            }
+
+            Ok(Self(value))
         }
 
-        Ok(MaxMsgNum(u))
+        pub fn to_usize(self) -> usize {
+            self.0
+        }
+    }
+
+    impl Default for MaxMsgNum {
+        fn default() -> Self {
+            Self(Self::DEFAULT)
+        }
+    }
+
+    use serde::de::Unexpected;
+    use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+
+    impl<'de> Deserialize<'de> for MaxMsgNum {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let value = usize::deserialize(deserializer)?;
+
+            MaxMsgNum::new(value).map_err(|e| match e.detail() {
+                ErrorDetail::TooSmall(_) => D::Error::invalid_value(
+                    Unexpected::Unsigned(value as u64),
+                    &format!("a usize greater than or equal to {}", Self::MIN_BOUND).as_str(),
+                ),
+                ErrorDetail::TooBig(_) => D::Error::invalid_value(
+                    Unexpected::Unsigned(value as u64),
+                    &format!("a usize less than or equal to {}", Self::MAX_BOUND).as_str(),
+                ),
+            })
+        }
+    }
+
+    impl Serialize for MaxMsgNum {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.0.serialize(serializer)
+        }
+    }
+
+    impl From<MaxMsgNum> for usize {
+        fn from(m: MaxMsgNum) -> Self {
+            m.0
+        }
     }
 }
 
-impl Serialize for MaxMsgNum {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.0.serialize(serializer)
+pub use max_tx_size::MaxTxSize;
+
+pub mod max_tx_size {
+    flex_error::define_error! {
+        Error {
+            TooBig
+                { value: usize }
+                |e| {
+                    format_args!("`max_tx_size` must be less than or equal to {}, found {}",
+                        MaxTxSize::MAX_BOUND, e.value)
+                },
+        }
     }
-}
 
-impl From<MaxMsgNum> for usize {
-    fn from(m: MaxMsgNum) -> Self {
-        m.0
-    }
-}
+    #[derive(Debug, Clone, Copy)]
+    pub struct MaxTxSize(usize);
 
-#[derive(Debug, Clone, Copy)]
-pub struct MaxTxSize(usize);
+    impl MaxTxSize {
+        const DEFAULT: usize = 2 * 1048576; // 2 MBytes
+        const MAX_BOUND: usize = 8 * 1048576; // 8 MBytes
 
-impl MaxTxSize {
-    const DEFAULT: usize = 2 * 1048576; // 2 MBytes
-    const MAX_BOUND: usize = 8 * 1048576; // 8 MBytes
-}
+        pub fn new(value: usize) -> Result<Self, Error> {
+            if value > Self::MAX_BOUND {
+                return Err(Error::too_big(value));
+            }
 
-impl Default for MaxTxSize {
-    fn default() -> Self {
-        Self(Self::DEFAULT)
-    }
-}
-
-impl<'de> Deserialize<'de> for MaxTxSize {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let u = usize::deserialize(deserializer)?;
-
-        if u > Self::MAX_BOUND {
-            return Err(D::Error::invalid_value(
-                Unexpected::Unsigned(u as u64),
-                &format!("a usize less than {}", Self::MAX_BOUND).as_str(),
-            ));
+            Ok(Self(value))
         }
 
-        Ok(MaxTxSize(u))
+        pub fn to_usize(self) -> usize {
+            self.0
+        }
+    }
+
+    impl Default for MaxTxSize {
+        fn default() -> Self {
+            Self(Self::DEFAULT)
+        }
+    }
+
+    use serde::de::Unexpected;
+    use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+
+    impl<'de> Deserialize<'de> for MaxTxSize {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let value = usize::deserialize(deserializer)?;
+
+            MaxTxSize::new(value).map_err(|e| match e.detail() {
+                ErrorDetail::TooBig(_) => D::Error::invalid_value(
+                    Unexpected::Unsigned(value as u64),
+                    &format!("a usize less than or equal to {}", Self::MAX_BOUND).as_str(),
+                ),
+            })
+        }
+    }
+
+    impl Serialize for MaxTxSize {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.0.serialize(serializer)
+        }
+    }
+
+    impl From<MaxTxSize> for usize {
+        fn from(m: MaxTxSize) -> Self {
+            m.0
+        }
     }
 }
 
-impl Serialize for MaxTxSize {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.0.serialize(serializer)
-    }
-}
+pub use memo::Memo;
 
-impl From<MaxTxSize> for usize {
-    fn from(m: MaxTxSize) -> Self {
-        m.0
-    }
-}
-
-/// A memo domain-type.
-///
-/// Hermes uses this type to populate the `tx.memo` field for
-/// each transaction it submits.
-/// The memo can be configured on a per-chain basis.
-///
-#[derive(Clone, Debug, Default)]
-pub struct Memo(String);
-
-impl Memo {
-    const MAX_LEN: usize = 50;
-
-    pub fn new(memo: &str) -> Self {
-        Self(memo.to_string())
+pub mod memo {
+    flex_error::define_error! {
+        Error {
+            TooLong
+                { length: usize }
+                |e| {
+                    format_args!("`memo` must been no longer than {} characters, found length {}",
+                        Memo::MAX_LEN, e.length)
+                }
+        }
     }
 
-    pub fn apply_suffix(&mut self, suffix: &str) {
-        // Add a separator if the memo
-        // is pre-populated with some content already.
-        if !self.0.is_empty() {
-            self.0.push_str(" | ");
+    /// A memo domain-type.
+    ///
+    /// Hermes uses this type to populate the `tx.memo` field for
+    /// each transaction it submits.
+    /// The memo can be configured on a per-chain basis.
+    ///
+    #[derive(Clone, Debug, Default)]
+    pub struct Memo(String);
+
+    impl Memo {
+        const MAX_LEN: usize = 50;
+
+        pub fn new(memo: String) -> Result<Self, Error> {
+            if memo.len() > Self::MAX_LEN {
+                return Err(Error::too_long(memo.len()));
+            }
+
+            Ok(Self(memo))
         }
 
-        self.0.push_str(suffix);
-    }
+        pub fn apply_suffix(&mut self, suffix: &str) {
+            // Add a separator if the memo
+            // is pre-populated with some content already.
+            if !self.0.is_empty() {
+                self.0.push_str(" | ");
+            }
 
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl<'de> Deserialize<'de> for Memo {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let m = String::deserialize(deserializer)?;
-
-        if m.len() > Self::MAX_LEN {
-            return Err(D::Error::invalid_length(
-                m.len(),
-                &format!("a string length of at most {}", Self::MAX_LEN).as_str(),
-            ));
+            self.0.push_str(suffix);
         }
 
-        Ok(Memo(m))
+        pub fn as_str(&self) -> &str {
+            &self.0
+        }
+    }
+
+    use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+
+    impl<'de> Deserialize<'de> for Memo {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let value = String::deserialize(deserializer)?;
+
+            Memo::new(value).map_err(|e| match e.detail() {
+                ErrorDetail::TooLong(sub) => D::Error::invalid_length(
+                    sub.length,
+                    &format!("a string length of at most {}", Self::MAX_LEN).as_str(),
+                ),
+            })
+        }
+    }
+
+    impl Serialize for Memo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.0.serialize(serializer)
+        }
+    }
+
+    use core::fmt;
+
+    impl fmt::Display for Memo {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", self.as_str())
+        }
     }
 }
 
-impl Serialize for Memo {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.0.serialize(serializer)
-    }
-}
+#[cfg(test)]
+#[allow(dead_code)] // the fields of the structs defined below are never accessed
+mod tests {
+    use super::*;
 
-impl fmt::Display for Memo {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_str())
+    use serde::Deserialize;
+    use test_log::test;
+
+    #[test]
+    fn parse_invalid_max_msg_num_min() {
+        #[derive(Debug, Deserialize)]
+        struct DummyConfig {
+            max_msg_num: MaxMsgNum,
+        }
+
+        let err = toml::from_str::<DummyConfig>("max_msg_num = 0")
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("expected a usize greater than or equal to"));
+    }
+
+    #[test]
+    fn parse_invalid_max_msg_num_max() {
+        #[derive(Debug, Deserialize)]
+        struct DummyConfig {
+            max_msg_num: MaxMsgNum,
+        }
+
+        let err = toml::from_str::<DummyConfig>("max_msg_num = 1024")
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("expected a usize less than or equal to"));
+    }
+
+    #[test]
+    fn parse_invalid_max_tx_size() {
+        #[derive(Debug, Deserialize)]
+        struct DummyConfig {
+            max_tx_size: MaxTxSize,
+        }
+
+        let err = toml::from_str::<DummyConfig>("max_tx_size = 9999999999")
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("expected a usize less than or equal to"));
+    }
+
+    #[test]
+    fn parse_invalid_memo() {
+        #[derive(Debug, Deserialize)]
+        struct DummyConfig {
+            memo: Memo,
+        }
+
+        let err = toml::from_str::<DummyConfig>(
+            r#"memo = "foo bar baz foo bar baz foo bar baz foo bar baz foo bar baz""#,
+        )
+        .unwrap_err()
+        .to_string();
+
+        assert!(err.contains("a string length of at most"));
     }
 }

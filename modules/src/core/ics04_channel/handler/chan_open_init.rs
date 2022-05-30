@@ -17,9 +17,6 @@ pub(crate) fn process(
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id)?;
-
     if msg.channel.connection_hops().len() != 1 {
         return Err(Error::invalid_connection_hops_length(
             1,
@@ -64,7 +61,6 @@ pub(crate) fn process(
         channel_id: chan_id,
         channel_end: new_channel_end,
         channel_id_state: ChannelIdState::Generated,
-        channel_cap,
     };
 
     let event_attributes = Attributes {
@@ -137,23 +133,8 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because port does not have a capability associated"
-                    .to_string(),
-                ctx: context
-                    .clone()
-                    .with_connection(cid.clone(), init_conn_end.clone()),
-                msg: ChannelMsg::ChannelOpenInit(msg_chan_init.clone()),
-                want_pass: false,
-            },
-            Test {
                 name: "Good parameters".to_string(),
-                ctx: context
-                    .with_connection(cid, init_conn_end)
-                    .with_port_capability(
-                        MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
-                            .unwrap()
-                            .port_id,
-                    ),
+                ctx: context.with_connection(cid, init_conn_end),
                 msg: ChannelMsg::ChannelOpenInit(msg_chan_init),
                 want_pass: true,
             },

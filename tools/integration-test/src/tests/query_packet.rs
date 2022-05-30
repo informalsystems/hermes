@@ -46,13 +46,13 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             amount1
         );
 
-        chains.node_a.chain_driver().transfer_token(
+        chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
-            &wallet_a.address(),
+            &wallet_a.as_ref(),
             &wallet_b.address(),
-            amount1,
             &denom_a,
+            amount1,
         )?;
 
         sleep(Duration::from_secs(2));
@@ -77,21 +77,21 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
 
-        assert_eq!(summary.unreceived_packets, [1]);
+        assert_eq!(summary.unreceived_packets, [1.into()]);
         assert!(summary.unreceived_acks.is_empty());
 
         // Receive the packet on the destination chain
-        link.build_and_send_recv_packet_messages()?;
+        link.relay_recv_packet_and_timeout_messages()?;
 
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
 
         assert!(summary.unreceived_packets.is_empty());
-        assert_eq!(summary.unreceived_acks, [1]);
+        assert_eq!(summary.unreceived_acks, [1.into()]);
 
         // Acknowledge the packet on the source chain
         let link = link.reverse(false)?;
-        link.build_and_send_ack_packet_messages()?;
+        link.relay_ack_packet_messages()?;
 
         let summary =
             pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
@@ -102,13 +102,13 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let denom_b = chains.node_b.denom();
         let amount2 = random_u64_range(1000, 5000);
 
-        chains.node_b.chain_driver().transfer_token(
+        chains.node_b.chain_driver().ibc_transfer_token(
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
-            &wallet_b.address(),
+            &wallet_b.as_ref(),
             &wallet_a.address(),
-            amount2,
             &denom_b,
+            amount2,
         )?;
 
         info!(
@@ -136,7 +136,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             &counterparty_channel_end,
         )?;
 
-        assert_eq!(summary.unreceived_packets, [1]);
+        assert_eq!(summary.unreceived_packets, [1.into()]);
         assert!(summary.unreceived_acks.is_empty());
 
         Ok(())

@@ -136,7 +136,6 @@ impl fmt::Display for Result {
 /// which typically signals a success (UNIX process return code `0`) or an error (code `1`). An
 /// optional `result` can be added to an output.
 ///
-#[derive(Debug)]
 pub struct Output {
     /// The return status
     pub status: Status,

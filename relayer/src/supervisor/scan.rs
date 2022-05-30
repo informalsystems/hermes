@@ -8,21 +8,24 @@ use ibc::{
     core::{
         ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
         ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
-        ics04_channel::channel::{IdentifiedChannelEnd, State as ChannelState},
+        ics04_channel::{
+            channel::{IdentifiedChannelEnd, State as ChannelState},
+            packet::Sequence,
+        },
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
     Height,
-};
-
-use ibc_proto::ibc::core::{
-    channel::v1::QueryConnectionChannelsRequest, client::v1::QueryClientStatesRequest,
-    connection::v1::QueryClientConnectionsRequest,
 };
 
 use crate::{
     chain::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
+        requests::{
+            PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
+            QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
+            QueryConnectionRequest,
+        },
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
     registry::Registry,
@@ -221,9 +224,11 @@ impl ChannelScan {
         &self,
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
-    ) -> Option<Vec<u64>> {
+    ) -> Option<Vec<Sequence>> {
         self.counterparty.as_ref().map(|counterparty| {
-            unreceived_packets(counterparty_chain, chain, counterparty).unwrap_or_default()
+            unreceived_packets(counterparty_chain, chain, &counterparty.into())
+                .map(|(seq, _)| seq)
+                .unwrap_or_default()
         })
     }
 
@@ -231,9 +236,11 @@ impl ChannelScan {
         &self,
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
-    ) -> Option<Vec<u64>> {
+    ) -> Option<Vec<Sequence>> {
         self.counterparty.as_ref().map(|counterparty| {
-            unreceived_acknowledgements(counterparty_chain, chain, counterparty).unwrap_or_default()
+            unreceived_acknowledgements(counterparty_chain, chain, &counterparty.into())
+                .map(|(sns, _)| sns)
+                .unwrap_or_default()
         })
     }
 }
@@ -691,7 +698,10 @@ fn query_client<Chain: ChainHandle>(
     client_id: &ClientId,
 ) -> Result<IdentifiedAnyClientState, Error> {
     let client = chain
-        .query_client_state(client_id, Height::zero())
+        .query_client_state(QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(Error::query)?;
 
     Ok(IdentifiedAnyClientState::new(client_id.clone(), client))
@@ -703,7 +713,11 @@ fn query_channel<Chain: ChainHandle>(
     channel_id: &ChannelId,
 ) -> Result<IdentifiedChannelEnd, Error> {
     let channel_end = chain
-        .query_channel(port_id, channel_id, Height::zero())
+        .query_channel(QueryChannelRequest {
+            port_id: port_id.clone(),
+            channel_id: *channel_id,
+            height: Height::zero(),
+        })
         .map_err(Error::query)?;
 
     Ok(IdentifiedChannelEnd::new(
@@ -733,7 +747,7 @@ fn query_all_clients<Chain: ChainHandle>(
     chain: &Chain,
 ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
     let clients_req = QueryClientStatesRequest {
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        pagination: Some(PageRequest::all()),
     };
 
     chain.query_clients(clients_req).map_err(Error::query)
@@ -743,12 +757,10 @@ fn query_client_connections<Chain: ChainHandle>(
     chain: &Chain,
     client_id: &ClientId,
 ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-    let conns_req = QueryClientConnectionsRequest {
-        client_id: client_id.to_string(),
-    };
-
     let ids = chain
-        .query_client_connections(conns_req)
+        .query_client_connections(QueryClientConnectionsRequest {
+            client_id: client_id.clone(),
+        })
         .map_err(Error::query)?;
 
     let connections = ids
@@ -770,7 +782,10 @@ fn query_connection<Chain: ChainHandle>(
     connection_id: &ConnectionId,
 ) -> Result<IdentifiedConnectionEnd, Error> {
     let connection_end = chain
-        .query_connection(connection_id, Height::zero())
+        .query_connection(QueryConnectionRequest {
+            connection_id: connection_id.clone(),
+            height: Height::zero(),
+        })
         .map_err(Error::query)?;
 
     Ok(IdentifiedConnectionEnd {
@@ -783,12 +798,10 @@ fn query_connection_channels<Chain: ChainHandle>(
     chain: &Chain,
     connection_id: &ConnectionId,
 ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-    let chans_req = QueryConnectionChannelsRequest {
-        connection: connection_id.to_string(),
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-    };
-
     chain
-        .query_connection_channels(chans_req)
+        .query_connection_channels(QueryConnectionChannelsRequest {
+            connection_id: connection_id.clone(),
+            pagination: Some(PageRequest::all()),
+        })
         .map_err(Error::query)
 }

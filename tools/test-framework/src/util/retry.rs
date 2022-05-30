@@ -4,7 +4,7 @@
 
 use core::time::Duration;
 use std::thread::sleep;
-use tracing::{debug, info};
+use tracing::{info, trace};
 
 use crate::error::Error;
 
@@ -28,7 +28,7 @@ pub fn assert_eventually_succeed<R>(
                 return Ok(res);
             }
             Err(e) => {
-                debug!("retrying task {} that failed with error: {}", task_name, e);
+                trace!("retrying task {} that failed with error: {}", task_name, e);
                 sleep(interval)
             }
         }

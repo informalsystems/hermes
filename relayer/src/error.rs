@@ -7,8 +7,9 @@ use http::uri::InvalidUri;
 use humantime::format_duration;
 use prost::{DecodeError, EncodeError};
 use tendermint::Error as TendermintError;
-use tendermint_light_client::{
-    components::io::IoError as LightClientIoError, errors::Error as LightClientError,
+use tendermint_light_client::components::io::IoError as LightClientIoError;
+use tendermint_light_client::errors::{
+    Error as LightClientError, ErrorDetail as LightClientErrorDetail,
 };
 use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
@@ -93,10 +94,10 @@ define_error! {
             [ TraceError<TendermintProtoError> ]
             |_| { "error decoding protobuf" },
 
-        LightClient
-            { address: String }
-            [ TraceError<LightClientError> ]
-            |e| { format!("light client error for RPC address {0}", e.address) },
+        LightClientVerification
+            { chain_id: String }
+            [ LightClientError ]
+            |e| { format!("light client verification error for chain id {0}", e.chain_id) },
 
         LightClientState
             [ client_error::Error ]
@@ -104,7 +105,7 @@ define_error! {
 
         LightClientIo
             { address: String }
-            [ TraceError<LightClientIoError> ]
+            [ LightClientIoError ]
             |e| { format!("light client error for RPC address {0}", e.address) },
 
         ChainNotCaughtUp
@@ -506,23 +507,34 @@ impl Error {
     pub fn send<T>(_: crossbeam_channel::SendError<T>) -> Error {
         Error::channel_send()
     }
+
+    pub fn is_trusted_state_outside_trusting_period_error(&self) -> bool {
+        match self.detail() {
+            ErrorDetail::LightClientVerification(e) => matches!(
+                e.source,
+                LightClientErrorDetail::TrustedStateOutsideTrustingPeriod(_)
+            ),
+            _ => false,
+        }
+    }
 }
 
 impl GrpcStatusSubdetail {
     /// Check whether this gRPC error matches
-    /// - status: InvalidArgument
     /// - message: verification failed: ... failed packet acknowledgement verification for client: client state height < proof height ...
     pub fn is_client_state_height_too_low(&self) -> bool {
-        if self.status.code() != tonic::Code::InvalidArgument {
-            return false;
-        }
+        // Gaia v6.0.1 (SDK 0.44.5) returns code`InvalidArgument`, whereas gaia v6.0.4
+        // (SDK 0.44.6, and potentially others) returns code `Unknown`.
+        // Workaround by matching strictly on the status message.
+        // if self.status.code() != tonic::Code::InvalidArgument
+        //     return false;
+        // }
 
         let msg = self.status.message();
         msg.contains("verification failed") && msg.contains("client state height < proof height")
     }
 
     /// Check whether this gRPC error matches
-    /// - status: InvalidArgument
     /// - message: "account sequence mismatch, expected 166791, got 166793: incorrect account sequence: invalid request"
     ///
     /// # Note:

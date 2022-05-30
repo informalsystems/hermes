@@ -28,6 +28,8 @@ pub struct TestConfig {
     */
     pub chain_command_path: String,
 
+    pub account_prefix: String,
+
     /**
        The directory path for storing the chain and relayer files.
        Defaults to `"data"`. This can be overridden with the `$CHAIN_STORE_DIR`

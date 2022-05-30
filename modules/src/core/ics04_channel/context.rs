@@ -13,10 +13,7 @@ use crate::core::ics04_channel::handler::recv_packet::RecvPacketResult;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::{error::Error, packet::Receipt};
-use crate::core::ics05_port::capabilities::ChannelCapability;
-use crate::core::ics05_port::context::CapabilityReader;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::ModuleId;
 use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
@@ -24,7 +21,7 @@ use crate::Height;
 use super::packet::{PacketResult, Sequence};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
-pub trait ChannelReader: CapabilityReader {
+pub trait ChannelReader {
     /// Returns the ChannelEnd for the given `port_id` and `chan_id`.
     fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Error>;
 
@@ -42,8 +39,6 @@ pub trait ChannelReader: CapabilityReader {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyConsensusState, Error>;
-
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Error>;
 
     fn get_next_sequence_send(
         &self,
@@ -131,13 +126,6 @@ pub trait ChannelReader: CapabilityReader {
     fn block_delay(&self, delay_period_time: Duration) -> u64 {
         calculate_block_delay(delay_period_time, self.max_expected_time_per_block())
     }
-
-    /// Return the module_id along with the capability associated with a given (channel-id, port_id)
-    fn lookup_module_by_channel(
-        &self,
-        channel_id: &ChannelId,
-        port_id: &PortId,
-    ) -> Result<(ModuleId, ChannelCapability), Error>;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
