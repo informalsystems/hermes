@@ -184,8 +184,6 @@ impl BinaryChannelTest for IbcTransferMBT {
         for state in &self.0 {
             match &state.action {
                 Action::Null => {
-                    info!("[Init] Setting up chains");
-                    // super::handlers::setup_chains(&chains)?;
                     info!("[Init] Done");
                 }
                 Action::LocalTransfer {
@@ -203,19 +201,6 @@ impl BinaryChannelTest for IbcTransferMBT {
                     info!("[LocalTransfer] Done");
                 }
                 Action::RestoreRelay => {
-                    // assert_eq!(chain_pair.0.len(), 2);
-                    // assert!(chain_pair.0.contains(&1));
-                    // assert!(chain_pair.0.contains(&2));
-                    // info!("[CreateChannel] between {:?}", chain_pair.0);
-
-                    // // super::handlers::create_channel(
-                    // //     &chains.handle_a,
-                    // //     &chains.handle_b,
-                    // //     &mut channels_a_b,
-                    // //     &mut refresh_task_a,
-                    // //     &mut refresh_task_b,
-                    // // )?;
-
                     if supervisor.is_none() {
                         supervisor = Some(relayer.spawn_supervisor()?);
                     }
@@ -223,16 +208,6 @@ impl BinaryChannelTest for IbcTransferMBT {
                     info!("[RestoreRelay] Done");
                 }
                 Action::InterruptRelay => {
-                    // assert_eq!(chain_pair.0.len(), 2);
-                    // assert!(chain_pair.0.contains(&1));
-                    // assert!(chain_pair.0.contains(&2));
-                    // info!("[ExpireChannel] between {:?}", chain_pair.0);
-
-                    // // super::handlers::expire_channel(
-                    // //     &mut channels_a_b,
-                    // //     &mut refresh_task_a,
-                    // //     &mut refresh_task_b,
-                    // // )?;
                     supervisor.take().expect("one").shutdown();
 
                     info!("[InterruptRelay] Done");

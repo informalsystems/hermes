@@ -74,7 +74,7 @@ jobs:
         run: |
           nix shell .#python .#${{ matrix.gaiad }} -c cargo \
             test -p ibc-integration-test --no-fail-fast -- \
-            --nocapture --test-threads=1
+            --nocapture --test-threads=2
 
   ibc-go-integration-test:
     runs-on: ubuntu-latest
