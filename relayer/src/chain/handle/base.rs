@@ -448,7 +448,7 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryPacketAcknowledgements { request, reply_to })
     }
 
-    fn query_unreceived_acknowledgement(
+    fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error> {

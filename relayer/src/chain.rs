@@ -174,20 +174,24 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
+    /// Performs a query to retrieve the state of the specified light client. A
+    /// proof can optionally be returned along with the result.
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyClientState, Option<MerkleProof>), Error>;
 
-    /// Performs a query to retrieve the consensus state (for a specific height `consensus_height`)
-    /// that an on-chain client stores.
+    /// Performs a query to retrieve the consensus state for a specified height
+    /// `consensus_height` that the specified light client stores.
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error>;
 
+    /// Performs a query to retrieve all the consensus states that the specified
+    /// light client stores.
     fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
@@ -215,81 +219,111 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error>;
 
+    /// Performs a query to retrieve the connection associated with a given
+    /// connection identifier. A proof can optionally be returned along with the
+    /// result.
     fn query_connection(
         &self,
         request: QueryConnectionRequest,
         include_proof: IncludeProof,
     ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error>;
 
-    /// Performs a query to retrieve the identifiers of all channels associated with a connection.
+    /// Performs a query to retrieve all channels associated with a connection.
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    /// Performs a query to retrieve the identifiers of all channels.
+    /// Performs a query to retrieve all the channels of a chain.
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
+    /// Performs a query to retrieve the channel associated with a given channel
+    /// identifier. A proof can optionally be returned along with the result.
     fn query_channel(
         &self,
         request: QueryChannelRequest,
         include_proof: IncludeProof,
     ) -> Result<(ChannelEnd, Option<MerkleProof>), Error>;
 
+    /// Performs a query to retrieve the client state for the channel associated
+    /// with a given channel identifier.
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error>;
 
+    /// Performs a query to retrieve a stored packet commitment hash, stored on
+    /// the chain at path `path::CommitmentsPath`. A proof can optionally be
+    /// returned along with the result.
     fn query_packet_commitment(
         &self,
         request: QueryPacketCommitmentRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
 
-    /// Queries all the packet commitments hashes associated with a channel.
-    /// Returns the corresponding packet sequence numbers.
+    /// Performs a query to retrieve all the packet commitments hashes
+    /// associated with a channel. Returns the corresponding packet sequence
+    /// numbers and the height at which they were retrieved.
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<Sequence>, ICSHeight), Error>;
 
+    /// Performs a query to retrieve a given packet receipt, stored on the chain at path
+    /// `path::CommitmentsPath`. A proof can optionally be returned along with the result.
     fn query_packet_receipt(
         &self,
         request: QueryPacketReceiptRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
 
-    /// Queries all the unreceived IBC packets associated with a channel and packet commit sequences.
-    /// Returns the corresponding packet sequence numbers.
+    /// Performs a query about which IBC packets in the specified list has not
+    /// been received. Returns the sequence numbers of the packets that were not
+    /// received.
+    ///
+    /// For example, given a request with the sequence numbers `[5,6,7,8]`, a
+    /// response of `[7,8]` would indicate that packets 5 & 6 were received,
+    /// while packets 7, 8 were not.
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<Sequence>, Error>;
 
+    /// Performs a query to retrieve a stored packet acknowledgement hash,
+    /// stored on the chain at path `path::AcksPath`. A proof can optionally be
+    /// returned along with the result.
     fn query_packet_acknowledgement(
         &self,
         request: QueryPacketAcknowledgementRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
 
-    /// Queries all the packet acknowledgements associated with a channel.
-    /// Returns the corresponding packet sequence numbers.
+    /// Performs a query to retrieve all the packet acknowledgements associated
+    /// with a channel. Returns the corresponding packet sequence numbers and
+    /// the height at which they were retrieved.
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<Sequence>, ICSHeight), Error>;
 
-    /// Queries all the unreceived packet acknowledgements associated with a
-    /// Returns the corresponding packet sequence numbers.
+    /// Performs a query about which IBC packets in the specified list has not
+    /// been acknowledged. Returns the sequence numbers of the packets that were not
+    /// acknowledged.
+    ///
+    /// For example, given a request with the sequence numbers `[5,6,7,8]`, a
+    /// response of `[7,8]` would indicate that packets 5 & 6 were acknowledged,
+    /// while packets 7, 8 were not.
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error>;
 
+    /// Performs a query to retrieve `nextSequenceRecv` stored at path
+    /// `path::SeqRecvsPath` as defined in ICS-4. A proof can optionally be
+    /// returned along with the result.
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,

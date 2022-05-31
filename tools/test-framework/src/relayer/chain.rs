@@ -372,11 +372,11 @@ where
         self.value().query_packet_acknowledgements(request)
     }
 
-    fn query_unreceived_acknowledgement(
+    fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error> {
-        self.value().query_unreceived_acknowledgement(request)
+        self.value().query_unreceived_acknowledgements(request)
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {

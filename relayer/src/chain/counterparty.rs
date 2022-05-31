@@ -432,7 +432,7 @@ pub fn unreceived_acknowledgements_sequences(
     }
 
     chain
-        .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
+        .query_unreceived_acknowledgements(QueryUnreceivedAcksRequest {
             port_id: port_id.clone(),
             channel_id: *channel_id,
             packet_ack_sequences: acks_on_counterparty,

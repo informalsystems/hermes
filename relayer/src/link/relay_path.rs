@@ -809,7 +809,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn recv_packet_acknowledged_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
         let unreceived_ack = self
             .dst_chain()
-            .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
+            .query_unreceived_acknowledgements(QueryUnreceivedAcksRequest {
                 port_id: self.dst_port_id().clone(),
                 channel_id: *self.dst_channel_id(),
                 packet_ack_sequences: vec![packet.sequence],
