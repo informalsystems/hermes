@@ -13,13 +13,13 @@ use crate::prelude::*;
 /// This function handles the transfer sending logic.
 /// If this method returns an error, the runtime is expected to rollback all state modifications to
 /// the `Ctx` caused by all messages from the transaction that this `msg` is a part of.
-pub fn send_transfer<Ctx, C: TryInto<PrefixedCoin>>(
+pub fn send_transfer<Ctx, C>(
     ctx: &mut Ctx,
     output: &mut HandlerOutputBuilder<()>,
     msg: MsgTransfer<C>,
 ) -> Result<(), Error>
 where
-    Ctx: Ics20Context,
+    Ctx: Ics20Context, C: TryInto<PrefixedCoin>
 {
     if !ctx.is_send_enabled() {
         return Err(Error::send_disabled());
