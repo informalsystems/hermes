@@ -1,11 +1,13 @@
 use tendermint_rpc::{abci, event::Event as RpcEvent, event::EventData as RpcEventData};
 
-use ibc::core::ics02_client::{events as client_events, height::Height};
-use ibc::core::ics03_connection::events as connection_events;
-use ibc::core::ics04_channel::events as channel_events;
+use ibc::core::ics02_client::events::NewBlock;
+use ibc::core::ics02_client::height::Height;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
 
+use super::ics02_client as client_events;
+use super::ics03_connection as connection_events;
+use super::ics04_channel as channel_events;
 use crate::event::monitor::queries;
 
 /// Extract IBC events from Tendermint RPC events
@@ -91,7 +93,7 @@ pub fn get_all_events(
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
             );
 
-            vals.push((height, client_events::NewBlock::new(height).into()));
+            vals.push((height, NewBlock::new(height).into()));
             vals.append(&mut extract_block_events(height, &events));
         }
         RpcEventData::Tx { tx_result } => {

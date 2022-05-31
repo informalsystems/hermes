@@ -1,11 +1,9 @@
 use crate::prelude::*;
-use core::convert::{TryFrom, TryInto};
 use core::fmt;
 use core::str::FromStr;
 use flex_error::{define_error, TraceError};
 use prost::alloc::fmt::Formatter;
 use serde_derive::{Deserialize, Serialize};
-use tendermint_rpc::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events as ClientEvents;
@@ -287,51 +285,6 @@ impl fmt::Display for IbcEvent {
             IbcEvent::Empty(ev) => write!(f, "EmptyEv({})", ev),
             IbcEvent::ChainError(ev) => write!(f, "ChainErrorEv({})", ev),
         }
-    }
-}
-
-impl TryFrom<IbcEvent> for AbciEvent {
-    type Error = Error;
-
-    fn try_from(event: IbcEvent) -> Result<Self, Self::Error> {
-        Ok(match event {
-            IbcEvent::CreateClient(event) => event.into(),
-            IbcEvent::UpdateClient(event) => event.into(),
-            IbcEvent::UpgradeClient(event) => event.into(),
-            IbcEvent::ClientMisbehaviour(event) => event.into(),
-            IbcEvent::OpenInitConnection(event) => event.into(),
-            IbcEvent::OpenTryConnection(event) => event.into(),
-            IbcEvent::OpenAckConnection(event) => event.into(),
-            IbcEvent::OpenConfirmConnection(event) => event.into(),
-            IbcEvent::OpenInitChannel(event) => event.into(),
-            IbcEvent::OpenTryChannel(event) => event.into(),
-            IbcEvent::OpenAckChannel(event) => event.into(),
-            IbcEvent::OpenConfirmChannel(event) => event.into(),
-            IbcEvent::CloseInitChannel(event) => event.into(),
-            IbcEvent::CloseConfirmChannel(event) => event.into(),
-            IbcEvent::SendPacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::WriteAcknowledgement(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
-            _ => return Err(Error::incorrect_event_type(event.to_string())),
-        })
-    }
-}
-
-// This is tendermint specific
-pub fn from_tx_response_event(height: Height, event: &AbciEvent) -> Option<IbcEvent> {
-    // Return the first hit we find
-    if let Some(mut client_res) = ClientEvents::try_from_tx(event) {
-        client_res.set_height(height);
-        Some(client_res)
-    } else if let Some(mut conn_res) = ConnectionEvents::try_from_tx(event) {
-        conn_res.set_height(height);
-        Some(conn_res)
-    } else if let Some(mut chan_res) = ChannelEvents::try_from_tx(event) {
-        chan_res.set_height(height);
-        Some(chan_res)
-    } else {
-        None
     }
 }
 

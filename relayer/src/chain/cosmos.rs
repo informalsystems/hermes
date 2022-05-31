@@ -32,7 +32,6 @@ use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectio
 use ibc::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest,
 };
-use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -72,6 +71,7 @@ use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{ChainStatus, QueryResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
+use crate::event::ics04_channel as channel_events;
 use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
@@ -1535,7 +1535,7 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = ChannelEvents::try_from_tx(&event)?;
+    let ibc_event = channel_events::try_from_tx(&event)?;
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
             Some(ibc_event)
