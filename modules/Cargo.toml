@@ -52,10 +52,6 @@ default-features = false
 version = "=0.24.0-pre.2"
 default-features = false
 
-[dependencies.tendermint-rpc]
-version = "=0.24.0-pre.2"
-default-features = false
-
 [dependencies.tendermint-light-client-verifier]
 version = "=0.24.0-pre.2"
 default-features = false
