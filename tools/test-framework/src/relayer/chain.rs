@@ -251,16 +251,6 @@ where
         self.value().query_channel_client_state(request)
     }
 
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: Height,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.value()
-            .proven_client_consensus(client_id, consensus_height, height)
-    }
-
     fn build_header(
         &self,
         trusted_height: Height,

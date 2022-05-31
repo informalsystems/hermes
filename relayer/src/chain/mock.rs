@@ -19,7 +19,7 @@ use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
-use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
 use ibc::events::IbcEvent;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
@@ -336,15 +336,6 @@ impl ChainEndpoint for MockChain {
         &self,
         _request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
-        unimplemented!()
-    }
-
-    fn proven_client_consensus(
-        &self,
-        _client_id: &ClientId,
-        _consensus_height: Height,
-        _height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
 

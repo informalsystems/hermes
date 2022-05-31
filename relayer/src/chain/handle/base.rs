@@ -289,20 +289,6 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryChannelClientState { request, reply_to })
     }
 
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: Height,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::ProvenClientConsensus {
-            client_id: client_id.clone(),
-            consensus_height,
-            height,
-            reply_to,
-        })
-    }
-
     fn build_header(
         &self,
         trusted_height: Height,

@@ -276,13 +276,6 @@ pub enum ChainRequest {
         reply_to: ReplyTo<(Sequence, Option<MerkleProof>)>,
     },
 
-    ProvenClientConsensus {
-        client_id: ClientId,
-        consensus_height: Height,
-        height: Height,
-        reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
-    },
-
     BuildChannelProofs {
         port_id: PortId,
         channel_id: ChannelId,
@@ -482,13 +475,6 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error>;
-
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: Height,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     fn build_header(
         &self,

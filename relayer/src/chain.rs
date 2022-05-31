@@ -308,14 +308,6 @@ pub trait ChainEndpoint: Sized {
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error>;
 
-    // Provable queries
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: ICSHeight,
-        height: ICSHeight,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
-
     fn build_client_state(
         &self,
         height: ICSHeight,
@@ -401,9 +393,18 @@ pub trait ChainEndpoint: Sized {
                         .map_err(Error::malformed_proof)?,
                 );
 
-                let consensus_state_proof = self
-                    .proven_client_consensus(client_id, client_state_value.latest_height(), height)?
-                    .1;
+                let consensus_state_proof = {
+                    let (_, maybe_consensus_state_proof) = self.query_consensus_state(
+                        QueryConsensusStateRequest {
+                            client_id: client_id.clone(),
+                            consensus_height: client_state_value.latest_height(),
+                            query_height: height,
+                        },
+                        IncludeProof::Yes,
+                    )?;
+
+                    maybe_consensus_state_proof.expect(QUERY_PROOF_EXPECT_MSG)
+                };
 
                 consensus_proof = Option::from(
                     ConsensusProof::new(

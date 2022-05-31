@@ -371,10 +371,6 @@ where
                             self.query_channel_client_state(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
-                            self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
-                        },
-
                         Ok(ChainRequest::BuildPacketProofs { packet_type, port_id, channel_id, sequence, height, reply_to }) => {
                             self.build_packet_proofs(packet_type, port_id, channel_id, sequence, height, reply_to)?
                         },
@@ -746,21 +742,6 @@ where
         reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel_client_state(request);
-        reply_to.send(result).map_err(Error::send)
-    }
-
-    fn proven_client_consensus(
-        &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        height: Height,
-        reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
-    ) -> Result<(), Error> {
-        let result = self
-            .chain
-            .proven_client_consensus(&client_id, consensus_height, height)
-            .map(|(cs, mp)| (cs.wrap_any(), mp));
-
         reply_to.send(result).map_err(Error::send)
     }
 
