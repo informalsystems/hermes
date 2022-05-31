@@ -16,7 +16,13 @@ use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
-/// Message definition for the "packet receiving" datagram.
+/// Message used to build an ICS20 token transfer packet.
+///
+/// Note that this message is not a packet yet, as it lacks the proper sequence
+/// number, and destination port/channel. This is by design. The sender of the
+/// packet, which might be the user of a command line application, should only
+/// have to specify the information related to the transfer of the token, and
+/// let the library figure out how to build the packet properly.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgTransfer<C = Coin> {
     /// the port on which the packet will be sent

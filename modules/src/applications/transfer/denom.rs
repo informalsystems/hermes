@@ -163,7 +163,30 @@ impl PrefixedDenom {
     }
 }
 
-/// Returns false if the denomination originally came from the receiving chain and true otherwise.
+/// Returns true if the denomination originally came from the sender chain and
+/// false otherwise.
+///
+/// Note: It is better to think of the "source" chain as the chain that
+/// escrows/unescrows the token, while the other chain mints/burns the tokens,
+/// respectively. A chain being the "source" of a token does NOT mean it is the
+/// original creator of the token (e.g. "uatom"), as "source" might suggest.
+///
+/// This means that in any given transfer, a chain can very well be the source
+/// of a token of which it is not the creator. For example, let
+///
+/// A: sender chain in this transfer, port "transfer" and channel "c2b" (to B)
+/// B: receiver chain in this transfer, port "transfer" and channel "c2a" (to A)
+/// token denom: "transfer/someOtherChannel/someDenom"
+///
+/// A, initiator of the transfer, needs to figure out if it should escrow the
+/// tokens, or burn them. If B had originally sent the token to A in a previous
+/// transfer, then A would have stored the token as "transfer/c2b/someDenom".
+/// Now, A is sending to B, so to check if B is the source of the token, we need
+/// to check if the token starts with "transfer/c2b". In this example, it
+/// doesn't, so the token doesn't originate from B. A is considered the source,
+/// even though it is not the creator of the token. Specifically, the token was
+/// created by the chain at the other end of A's port "transfer" and channel
+/// "someOtherChannel".
 pub fn is_sender_chain_source(
     source_port: PortId,
     source_channel: ChannelId,
@@ -178,6 +201,13 @@ pub fn is_receiver_chain_source(
     source_channel: ChannelId,
     denom: &PrefixedDenom,
 ) -> bool {
+    // For example, let
+    // A: sender chain in this transfer, port "transfer" and channel "c2b" (to B)
+    // B: receiver chain in this transfer, port "transfer" and channel "c2a" (to A)
+    //
+    // If B had originally sent the token in a previous tranfer, then A would have stored the token as
+    // "transfer/c2b/{token_denom}". Now, A is sending to B, so to check if B is the source of the token,
+    // we need to check if the token starts with "transfer/c2b".
     let prefix = TracePrefix::new(source_port, source_channel);
     denom.trace_path.starts_with(&prefix)
 }
