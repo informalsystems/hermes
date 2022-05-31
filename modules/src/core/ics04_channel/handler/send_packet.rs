@@ -54,7 +54,7 @@ pub fn send_packet(
 
     let client_state = ctx
         .client_state(&client_id)
-        .map_err(|_| Error::implementation_specific())?;
+        .map_err(|e| Error::implementation_specific(e.to_string()))?;
 
     // prevent accidental sends with clients that cannot be updated
     if client_state.is_frozen() {

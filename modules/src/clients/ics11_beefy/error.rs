@@ -16,22 +16,29 @@ define_error! {
     Error {
         InvalidAddress
             |_| { "invalid address" },
+
         InvalidTrieProof
             |_| { "invalid trie proof" },
+
         InvalidMmrUpdate
             { reason: String }
             |e| { format_args!("invalid mmr update {}", e.reason) },
+
         InvalidCommitmentRoot
             |_| { "invalid commitment root" },
+
         TimestampExtrinsic
             { reason: String }
             |e| { format_args!("error decoding timestamp extrinsic {}", e.reason) },
+
         InvalidHeader
             { reason: String }
             |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },
+
         ImplementationSpecific
             { reason: String }
             |e| { format_args!("Implementation specific error: {}", e.reason) },
+
         Validation
             { reason: String }
             |e| { format_args!("invalid header, failed basic validation: {}", e.reason) },
@@ -135,15 +142,6 @@ define_error! {
                 format_args!("header height = {0} is invalid", e.height)
             },
 
-        InvalidTrustedHeaderHeight
-            {
-                trusted_header_height: Height,
-                height_header: Height
-            }
-            | e | {
-                format_args!("header height is {0} and is lower than the trusted header height, which is {1} ", e.height_header, e.trusted_header_height)
-            },
-
         LowUpdateHeight
             {
                 low: Height,
@@ -151,21 +149,6 @@ define_error! {
             }
             | e | {
                 format_args!("header height is {0} but it must be greater than the current client height which is {1}", e.low, e.high)
-            },
-
-        MismatchedRevisions
-            {
-                current_revision: u64,
-                update_revision: u64,
-            }
-            | e | {
-                format_args!("the header's current/trusted revision number ({0}) and the update's revision number ({1}) should be the same", e.current_revision, e.update_revision)
-            },
-
-        VerificationError
-            { reason: BeefyClientError }
-            | e | {
-                format_args!("verification failed: {:?}", e.reason)
             },
 
         ProcessedTimeNotFound
@@ -188,6 +171,13 @@ define_error! {
                 format_args!(
                     "Processed height for the client {0} at height {1} not found",
                     e.client_id, e.height)
+            },
+
+
+        VerificationError
+            { reason: BeefyClientError }
+            | e | {
+                format_args!("verification failed: {:?}", e.reason)
             },
 
         Ics23Error

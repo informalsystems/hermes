@@ -61,18 +61,10 @@ pub trait ClientReader {
     fn host_height(&self) -> Height;
 
     /// Returns the current timestamp of the local chain.
-    fn host_timestamp(&self) -> Timestamp {
-        let pending_consensus_state = self
-            .pending_host_consensus_state()
-            .expect("host must have pending consensus state");
-        pending_consensus_state.timestamp()
-    }
+    fn host_timestamp(&self) -> Timestamp;
 
     /// Returns the `ConsensusState` of the host (local) chain at a specific height.
     fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
-
-    /// Returns the pending `ConsensusState` of the host (local) chain.
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Error>;
 
     /// Returns a natural number, counting how many clients have been created thus far.
     /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.

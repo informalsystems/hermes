@@ -10,6 +10,7 @@ use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::LightClientContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
+use crate::prelude::*;
 use crate::timestamp::Expiry;
 use crate::Height;
 use core::fmt::Debug;
@@ -136,7 +137,7 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
                     receipt: Some(Receipt::Ok),
                 }))
             }
-            Err(_) => return Err(Error::implementation_specific()),
+            Err(e) => return Err(Error::implementation_specific(e.to_string())),
         }
     };
 

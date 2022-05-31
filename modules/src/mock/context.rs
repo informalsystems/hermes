@@ -1122,10 +1122,6 @@ impl ClientReader for MockContext {
         }
     }
 
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics02Error> {
-        Err(Ics02Error::missing_local_consensus_state(Height::zero()))
-    }
-
     fn client_counter(&self) -> Result<u64, Ics02Error> {
         Ok(self.ibc_store.lock().unwrap().client_ids_counter)
     }

@@ -342,15 +342,8 @@ define_error! {
             | _ | { "route not found" },
 
         ImplementationSpecific
-            | _ | { "implementation specific error" },
-
-        AppModule
-            { description: String }
-            | e | {
-                format_args!(
-                    "application module error: {0}",
-                    e.description)
-            },
+            { reason: String }
+            | e | { format_args!("implementation specific error: {}", e.reason) },
     }
 }
 

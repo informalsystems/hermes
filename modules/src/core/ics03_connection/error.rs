@@ -2,6 +2,7 @@ use crate::core::ics02_client::error as client_error;
 use crate::core::ics03_connection::version::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::prelude::*;
 use crate::proofs::ProofError;
 use crate::signer::SignerError;
 use crate::Height;
@@ -156,6 +157,7 @@ define_error! {
             },
 
         ImplementationSpecific
-            | _ | { "implementation specific error" },
+            { reason: String }
+            | e | { format_args!("implementation specific error: {}", e.reason) },
     }
 }
