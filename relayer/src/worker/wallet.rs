@@ -5,7 +5,7 @@ use tracing::{error_span, trace};
 use crate::{
     chain::handle::ChainHandle,
     telemetry,
-    util::{task::{spawn_background_task, Next, TaskError, TaskHandle}, bigint::U256},
+    util::task::{spawn_background_task, Next, TaskError, TaskHandle},
 };
 
 pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
