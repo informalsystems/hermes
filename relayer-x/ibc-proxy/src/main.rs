@@ -3,10 +3,11 @@ use std::net::SocketAddr;
 use axum::{routing::post, Extension, Router};
 use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
+use tendermint_rpc::Url;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
-use ibc_proxy::routes;
+use ibc_proxy::{listen::listen, routes};
 
 /// IBC Node
 #[derive(Parser, Debug)]
@@ -25,7 +26,11 @@ struct Args {
 
     /// RPC address of the full node to proxy requests to
     #[clap(long, default_value = "http://localhost:26657")]
-    proxy: tendermint_rpc::Url,
+    rpc: Url,
+
+    /// WebSocket address of the full node to listen for events from
+    #[clap(long, default_value = "ws://localhost:26657/websocket")]
+    ws: Url,
 }
 
 #[tokio::main]
@@ -42,16 +47,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect(&args.db)
         .await?;
 
-    let rpc_client = hyper::client::Client::default();
+    info!("Connecting to WebSocket endpoint");
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], args.port));
+    tokio::spawn(listen(pool.clone(), args.ws));
 
     let app = Router::new()
         .route("/", post(routes::root))
         .layer(TraceLayer::new_for_http())
         .layer(Extension(pool))
-        .layer(Extension(rpc_client))
-        .layer(Extension(args.proxy));
+        .layer(Extension(hyper::client::Client::default()))
+        .layer(Extension(args.rpc));
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], args.port));
 
     info!("Listening on http://{addr}");
 

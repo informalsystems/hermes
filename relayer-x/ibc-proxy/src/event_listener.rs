@@ -8,7 +8,7 @@ use futures::{
 
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info, warn};
 
 use tendermint_rpc::{
     event::Event as RpcEvent, query::Query, Error as RpcError, SubscriptionClient, Url,
@@ -47,7 +47,7 @@ pub enum MonitorCmd {
 /// The default events that are queried are:
 /// - [`EventType::NewBlock`](tendermint_rpc::query::EventType::NewBlock)
 /// - [`EventType::Tx`](tendermint_rpc::query::EventType::Tx)
-pub struct EventMonitor {
+pub struct EventListener {
     /// WebSocket to collect events from
     client: WebSocketClient,
     /// Async task handle for the WebSocket client's driver
@@ -68,40 +68,7 @@ pub struct EventMonitor {
     subscriptions: Box<SubscriptionStream>,
 }
 
-// TODO: These are SDK specific, should be eventually moved.
-pub mod queries {
-    use tendermint_rpc::query::{EventType, Query};
-
-    pub fn all() -> Vec<Query> {
-        // Note: Tendermint-go supports max 5 query specifiers!
-        vec![
-            new_block(),
-            ibc_client(),
-            ibc_connection(),
-            ibc_channel(),
-            // This will be needed when we send misbehavior evidence to full node
-            // Query::eq("message.module", "evidence"),
-        ]
-    }
-
-    pub fn new_block() -> Query {
-        Query::from(EventType::NewBlock)
-    }
-
-    pub fn ibc_client() -> Query {
-        Query::eq("message.module", "ibc_client")
-    }
-
-    pub fn ibc_connection() -> Query {
-        Query::eq("message.module", "ibc_connection")
-    }
-
-    pub fn ibc_channel() -> Query {
-        Query::eq("message.module", "ibc_channel")
-    }
-}
-
-impl EventMonitor {
+impl EventListener {
     /// Create an event monitor, and connect to a node
     pub async fn new(node_addr: Url) -> Result<(Self, EventReceiver, MonitorCmdSender)> {
         let (tx_batch, rx_batch) = mpsc::unbounded_channel();
@@ -113,7 +80,7 @@ impl EventMonitor {
             .map_err(|_| Error::client_creation_failed(node_addr.clone()))?;
 
         let (tx_err, rx_err) = mpsc::unbounded_channel();
-        let websocket_driver_handle = tokio::task::spawn(run_driver(driver, tx_err.clone()));
+        let websocket_driver_handle = tokio::spawn(run_driver(driver, tx_err.clone()));
 
         let event_queries = queries::all();
 
@@ -142,7 +109,7 @@ impl EventMonitor {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
-            trace!("subscribing to query: {}", query);
+            debug!("subscribing to query: {}", query);
 
             let subscription = self
                 .client
@@ -155,13 +122,13 @@ impl EventMonitor {
 
         self.subscriptions = Box::new(select_all(subscriptions));
 
-        trace!("subscribed to all queries");
+        debug!("subscribed to all queries");
 
         Ok(())
     }
 
     async fn try_reconnect(&mut self) -> Result<()> {
-        trace!(
+        warn!(
             "trying to reconnect to WebSocket endpoint {}",
             self.node_addr
         );
@@ -171,17 +138,17 @@ impl EventMonitor {
             .await
             .map_err(|_| Error::client_creation_failed(self.node_addr.clone()))?;
 
-        let mut driver_handle = tokio::task::spawn(run_driver(driver, self.tx_err.clone()));
+        let mut driver_handle = tokio::spawn(run_driver(driver, self.tx_err.clone()));
 
         // Swap the new client with the previous one which failed,
         // so that we can shut the latter down gracefully.
         core::mem::swap(&mut self.client, &mut client);
         core::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
-        trace!("reconnected to WebSocket endpoint {}", self.node_addr);
+        warn!("reconnected to WebSocket endpoint {}", self.node_addr);
 
         // Shut down previous client
-        trace!("gracefully shutting down previous client",);
+        debug!("gracefully shutting down previous client",);
 
         let _ = client.close();
 
@@ -189,14 +156,15 @@ impl EventMonitor {
             .await
             .map_err(Error::client_termination_failed)?;
 
-        trace!("previous client successfully shutdown");
+        debug!("previous client successfully shutdown");
 
         Ok(())
     }
 
     /// Try to resubscribe to events
     async fn try_resubscribe(&mut self) -> Result<()> {
-        trace!("trying to resubscribe to events");
+        warn!("trying to resubscribe to events");
+
         self.subscribe().await
     }
 
@@ -207,10 +175,10 @@ impl EventMonitor {
     async fn reconnect(&mut self) {
         let result = {
             if let Err(e) = self.try_reconnect().await {
-                trace!("error when reconnecting: {}", e);
+                error!("error when reconnecting: {}", e);
                 Err(e)
             } else if let Err(e) = self.try_resubscribe().await {
-                trace!("error when resubscribing: {}", e);
+                error!("error when resubscribing: {}", e);
                 Err(e)
             } else {
                 Ok(())
@@ -247,7 +215,7 @@ impl EventMonitor {
         // Wait for the WebSocket driver to finish
         let _ = self.driver_handle.await;
 
-        trace!("event monitor has successfully shut down",);
+        debug!("event monitor has successfully shut down",);
     }
 
     async fn run_loop(&mut self) -> Next {
@@ -276,6 +244,8 @@ impl EventMonitor {
             if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
                 return Next::Abort;
             }
+
+            debug!("got a batch: {result:?}");
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
@@ -355,7 +325,7 @@ fn stream_batches(
     // Collect IBC events from each RPC event
     let events = subscriptions
         .map_ok(collect_events)
-        .map_err(Error::canceled_or_generic)
+        .map_err(Error::cancelled_or_generic)
         .try_flatten();
 
     // Group events by height
@@ -448,7 +418,7 @@ define_error! {
 }
 
 impl Error {
-    pub fn canceled_or_generic(e: RpcError) -> Self {
+    pub fn cancelled_or_generic(e: RpcError) -> Self {
         use tendermint_rpc::error::ErrorDetail;
 
         match e.detail() {
@@ -457,5 +427,38 @@ impl Error {
             }
             _ => Self::rpc(e),
         }
+    }
+}
+
+// TODO: These are SDK specific, should be eventually moved.
+pub mod queries {
+    use tendermint_rpc::query::{EventType, Query};
+
+    pub fn all() -> Vec<Query> {
+        // Note: Tendermint-go supports max 5 query specifiers!
+        vec![
+            new_block(),
+            ibc_client(),
+            ibc_connection(),
+            ibc_channel(),
+            // This will be needed when we send misbehavior evidence to full node
+            // Query::eq("message.module", "evidence"),
+        ]
+    }
+
+    pub fn new_block() -> Query {
+        Query::from(EventType::NewBlock)
+    }
+
+    pub fn ibc_client() -> Query {
+        Query::eq("message.module", "ibc_client")
+    }
+
+    pub fn ibc_connection() -> Query {
+        Query::eq("message.module", "ibc_connection")
+    }
+
+    pub fn ibc_channel() -> Query {
+        Query::eq("message.module", "ibc_channel")
     }
 }
