@@ -1,7 +1,9 @@
 use crate::prelude::*;
 
+use serde_derive::{Deserialize, Serialize};
+
 /// Packet commitment
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct PacketCommitment(Vec<u8>);
 
 impl PacketCommitment {
@@ -17,7 +19,7 @@ impl From<Vec<u8>> for PacketCommitment {
 }
 
 /// Acknowledgement commitment to be stored
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct AcknowledgementCommitment(Vec<u8>);
 
 impl AcknowledgementCommitment {
