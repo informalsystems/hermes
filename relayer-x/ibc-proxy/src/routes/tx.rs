@@ -8,7 +8,7 @@ use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 
 use crate::error::ReportError;
 use crate::search::TxSearch;
-use crate::utils::proto_to_deliver_tx;
+use crate::utils::proto::proto_to_deliver_tx;
 
 #[tracing::instrument(skip(pool))]
 pub async fn tx_search(pool: &PgPool, search: TxSearch) -> Result<TxSearchResponse, ReportError> {

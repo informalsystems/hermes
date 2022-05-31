@@ -9,10 +9,14 @@ edition = "2021"
 debug = 1
 
 [dependencies]
+async-stream = "0.3.3"
 axum = { version = "0.5.4", features = ["json"] }
 clap = { version = "3.1.15", features = ["derive"] }
 color-eyre = "0.6.1"
+flex-error = { version = "0.4.4", features = ["eyre_tracer"], default-features = false }
+futures = "0.3.21"
 hyper = { version = "0.14.18", features = ["client", "http1"] }
+ibc = "0.15.0"
 itertools = "0.10.3"
 prost = "0.10.3"
 serde = "1.0.137"
@@ -21,7 +25,7 @@ sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "postgres", "ti
 # subtle-encoding = "0.5.1"
 tendermint = "0.23.7"
 tendermint-proto = "0.23.7"
-tendermint-rpc = "0.23.7"
+tendermint-rpc = { version = "0.23.7", features = ["websocket-client"] }
 time = "0.2.27"
 tokio = { version = "1.18.1", features = ["full"] }
 tower = "0.4.12"

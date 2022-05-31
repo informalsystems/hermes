@@ -6,7 +6,7 @@ use tendermint_proto::abci::TxResult;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 
-use crate::{error::ReportError, search::HeaderSearch, utils::proto_to_deliver_tx};
+use crate::{error::ReportError, search::HeaderSearch, utils::proto::proto_to_deliver_tx};
 
 #[tracing::instrument(skip(pool))]
 pub async fn header_search(
@@ -23,7 +23,7 @@ pub async fn header_search(
     let deliver_tx = raw_tx_result.result.unwrap();
     let tx_result = proto_to_deliver_tx(deliver_tx)?;
 
-    trace!(tx_result.events = ? &tx_result.events, "got events");
+    trace!(tx_result.events = ?tx_result.events, "got events");
 
     let txs = vec![TxResponse {
         hash: hash.parse().wrap_err("failed to parse tx hash")?, // TODO: validate hash earlier
