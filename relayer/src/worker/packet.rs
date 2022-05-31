@@ -48,25 +48,7 @@ pub fn spawn_packet_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     spawn_background_task(span, Some(Duration::from_millis(1000)), move || {
-        let relay_path = &mut link.lock().unwrap().a_to_b;
-
-        relay_path
-            .refresh_schedule()
-            .map_err(handle_link_error_in_task)?;
-
-        relay_path
-            .execute_schedule()
-            .map_err(handle_link_error_in_task)?;
-
-        let summary = relay_path.process_pending_txs(resubmit);
-
-        if !summary.is_empty() {
-            trace!("packet worker produced relay summary: {}", summary);
-        }
-
-        telemetry!(packet_metrics(&path, &summary));
-        let _path = &path; // avoid unused variable warning when telemetry is disabled
-
+        handle_execute_schedule(&mut link.lock().unwrap(), &path, resubmit)?;
         Ok(Next::Continue)
     })
 }
@@ -173,7 +155,7 @@ fn handle_update_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
         .update_schedule(batch)
         .map_err(handle_link_error_in_task)?;
 
-    handle_execute_schedule(link, clear_interval, path)
+    handle_execute_schedule(link, path, Resubmit::from_clear_interval(clear_interval))
 }
 
 fn handle_clear_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
@@ -186,13 +168,13 @@ fn handle_clear_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
         .schedule_packet_clearing(height)
         .map_err(handle_link_error_in_task)?;
 
-    handle_execute_schedule(link, clear_interval, path)
+    handle_execute_schedule(link, path, Resubmit::from_clear_interval(clear_interval))
 }
 
 fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
-    clear_interval: u64,
-    path: &Packet,
+    _path: &Packet,
+    resubmit: Resubmit,
 ) -> Result<(), TaskError<RunError>> {
     link.a_to_b
         .refresh_schedule()
@@ -208,15 +190,13 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
             e
         })?;
 
-    let resubmit = Resubmit::from_clear_interval(clear_interval);
-
     let summary = link.a_to_b.process_pending_txs(resubmit);
 
     if !summary.is_empty() {
         trace!("produced relay summary: {:?}", summary);
     }
 
-    telemetry!(packet_metrics(path, &summary));
+    telemetry!(packet_metrics(_path, &summary));
 
     Ok(())
 }
