@@ -62,7 +62,7 @@ humantime = "2.1.0"
 nanoid = "0.4.0"
 regex = "1.5.5"
 moka = "0.8.3"
-uuid = { version = "1.0.0", features = ["v4"] }
+uuid = { version = "1.1.0", features = ["v4"] }
 
 [dependencies.num-bigint]
 version = "0.4"
