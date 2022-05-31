@@ -5,8 +5,7 @@
 > in the user __$HOME__ folder under `$HOME/.hermes/keys/`
 
 > __BREAKING__: As of Hermes v0.2.0, the format of the keys stored on disk has changed, and
-> keys which had been previously configured must now be re-imported using either the `keys add`
-> or the `keys restore` commands.
+> keys which had been previously configured must now be re-imported using either the `keys add` command.
 
 ---
 
@@ -31,10 +30,12 @@ DESCRIPTION:
 
 SUBCOMMANDS:
     help       Get usage information
-    add        Adds a key to a configured chain
+    add        Adds key to a configured chain or restores a key to a configured chain
+                    using a mnemonic
+    balance    Query balance for a key from a configured chain. If no key is given, the
+                    key is retrieved from the configuration file
     delete     Delete key(s) from a configured chain
     list       List keys configured on a chain
-    restore    restore a key to a configured chain using a mnemonic
 ```
 
 ### Key Seed file (Private Key)
@@ -63,23 +64,55 @@ The command outputs a JSON similar to the one below.
 
 You can save this to a file (e.g. `key_seed.json`) and use it to add to the relayer with `hermes keys add <chain_id> -f key_seed.json`. See the `Adding Keys` section for more details.
 
-### Adding Keys
+### Adding and restoring Keys
+
+The command `keys add` has two conflicting flags, `--key-file` and `--mnemonic-file` which are respectively used to add and restore a key.
+
+```shell
+    hermes keys add [OPTIONS] --key-file <KEY_FILE> --mnemonic-file <MNEMONIC_FILE> <CHAIN_ID>
+
+DESCRIPTION:
+    Adds key to a configured chain or restores a key to a configured chain using a mnemonic
+
+ARGS:
+    chain_id                  identifier of the chain
+
+FLAGS:
+    -f, --key-file <KEY_FILE>
+            path to the key file
+
+    -m, --mnemonic-file <MNEMONIC_FILE>
+            path to file containing mnemonic to restore the key from
+
+OPTIONS:
+    -k, --key-name <KEY_NAME>
+            name of the key (defaults to the `key_name` defined in the config)
+
+    -p, --hd-path <HD_PATH>
+            derivation path for this key [default: m/44'/118'/0'/0/0]
+```
 
 #### Add a private key to a chain from a key file
 
 ```shell
-    hermes keys add <OPTIONS>
+    hermes keys add [OPTIONS] --key-file <KEY_FILE> <CHAIN_ID>
 
 DESCRIPTION:
-    Adds a key to a configured chain
+    Adds key to a configured chain or restores a key to a configured chain using a mnemonic
 
-POSITIONAL ARGUMENTS:
+ARGS:
     chain_id                  identifier of the chain
 
 FLAGS:
-    -f, --file FILE           path to the key file
-    -n, --name NAME           name of the key (defaults to the `key_name` defined in the config)
-    -p, --hd-path HD-PATH     derivation path for this key (default: m/44'/118'/0'/0/0)
+    -f, --key-file <KEY_FILE>
+            path to the key file
+
+OPTIONS:
+    -k, --key-name <KEY_NAME>
+            name of the key (defaults to the `key_name` defined in the config)
+
+    -p, --hd-path <HD_PATH>
+            derivation path for this key [default: m/44'/118'/0'/0/0]
 ```
 
 To add a private key file to a chain:
@@ -96,34 +129,39 @@ Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
 
 > **Key name:**
 > By default, the key will be named after the `key_name` property specified in the configuration file.
-> To use a different key name, specify the `--name` option when invoking `keys add`.
+> To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
-> hermes -c config.toml keys add [CHAINID] -f [PRIVATE_KEY_FILE] -n [KEY_NAME]
+> hermes -c config.toml keys add [CHAINID] -f [PRIVATE_KEY_FILE] -k [KEY_NAME]
 > ```
 
 #### Restore a private key to a chain from a mnemonic
 
 ```shell
-USAGE:
-    hermes keys restore <OPTIONS>
+    hermes keys add [OPTIONS] --mnemonic-file <MNEMONIC_FILE> <CHAIN_ID>
 
 DESCRIPTION:
-    restore a key to a configured chain using a mnemonic
+    Adds key to a configured chain or restores a key to a configured chain using a mnemonic
 
-POSITIONAL ARGUMENTS:
+ARGS:
     chain_id                  identifier of the chain
 
 FLAGS:
-    -m, --mnemonic MNEMONIC   mnemonic to restore the key from
-    -n, --name NAME           name of the key (defaults to the `key_name` defined in the config)
-    -p, --hd-path HD-PATH     derivation path for this key (default: m/44'/118'/0'/0/0)
+    -m, --mnemonic-file <MNEMONIC_FILE>
+            path to file containing mnemonic to restore the key from
+
+OPTIONS:
+    -k, --key-name <KEY_NAME>
+            name of the key (defaults to the `key_name` defined in the config)
+
+    -p, --hd-path <HD_PATH>
+            derivation path for this key [default: m/44'/118'/0'/0/0]
 ```
 
 To restore a key from its mnemonic:
 
 ```shell
-hermes -c config.toml keys restore [CHAIN_ID] -m "[MNEMONIC]"
+hermes -c config.toml keys restore [CHAIN_ID] -m "[MNEMONIC_FILE]"
 ```
 
 or using an explicit [derivation path](https://github.com/satoshilabs/slips/blob/master/slip-0044.md), for example
@@ -131,7 +169,7 @@ an Ethereum coin type (used for Evmos, Injective, Umee, Cronos, and
 possibly other networks):
 
 ```shell
-hermes -c config.toml keys restore --mnemonic <MNEMONIC> --hd-path "m/44'/60'/0'/0/0" <CHAIN_ID>
+hermes -c config.toml keys restore --mnemonic-file <MNEMONIC_FILE> --hd-path "m/44'/60'/0'/0/0" <CHAIN_ID>
 ```
 
 
@@ -143,10 +181,10 @@ Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 
 > **Key name:**
 > By default, the key will be named after the `key_name` property specified in the configuration file.
-> To use a different key name, specify the `--name` option when invoking `keys restore`.
+> To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
-> hermes -c config.toml keys restore [CHAINID] -m "[MNEMONIC]" -n [KEY_NAME]
+> hermes -c config.toml keys restore [CHAINID] -m "[MNEMONIC_FILE]" -k [KEY_NAME]
 > ```
 
 ### Delete keys
