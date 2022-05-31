@@ -19,7 +19,8 @@ pub fn send_transfer<Ctx, C>(
     msg: MsgTransfer<C>,
 ) -> Result<(), Error>
 where
-    Ctx: Ics20Context, C: TryInto<PrefixedCoin>
+    Ctx: Ics20Context,
+    C: TryInto<PrefixedCoin>,
 {
     if !ctx.is_send_enabled() {
         return Err(Error::send_disabled());
