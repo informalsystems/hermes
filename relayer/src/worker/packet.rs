@@ -75,6 +75,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
     // Mutex is used to prevent race condition between the packet workers
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
+    mut should_clear_on_start: bool,
     clear_interval: u64,
     path: Packet,
 ) -> TaskHandle {
@@ -93,6 +94,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             retry_with_index(retry_strategy::worker_stubborn_strategy(), |i| {
                 let result = handle_packet_cmd(
                     &mut link.lock().unwrap(),
+                    &mut should_clear_on_start,
                     clear_interval,
                     &path,
                     cmd.clone(),
@@ -111,36 +113,6 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     })
 }
 
-pub fn spawn_clear_packet_on_start_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
-    link: Arc<Mutex<Link<ChainA, ChainB>>>,
-    clear_interval: u64,
-    path: Packet,
-) -> TaskHandle {
-    let span = {
-        let relay_path = &link.lock().unwrap().a_to_b;
-        error_span!(
-            "clear_packet_on_start",
-            src_chain = %relay_path.src_chain().id(),
-            src_port = %relay_path.src_port_id(),
-            src_channel = %relay_path.src_channel_id(),
-            dst_chain = %relay_path.dst_chain().id(),
-        )
-    };
-
-    spawn_background_task(span, Some(Duration::from_millis(200)), move || {
-        let link = &mut link.lock().unwrap();
-        let latest_height = link
-            .a_to_b
-            .src_chain()
-            .query_latest_height()
-            .map_err(|e| TaskError::Ignore(RunError::relayer(e)))?;
-
-        handle_clear_packet(link, clear_interval, &path, Some(latest_height))?;
-
-        Ok(Next::Abort)
-    })
-}
-
 /// Receives worker commands, which may be:
 ///     - IbcEvent => then it updates schedule
 ///     - NewBlock => schedules packet clearing
@@ -151,6 +123,7 @@ pub fn spawn_clear_packet_on_start_worker<ChainA: ChainHandle, ChainB: ChainHand
 /// data that is ready.
 fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
+    should_clear_on_start: &mut bool,
     clear_interval: u64,
     path: &Packet,
     cmd: WorkerCmd,
@@ -164,10 +137,11 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
             height,
             new_block: _,
         } => {
-            // Decide if packet clearing should be scheduled.
-            // Packet clearing may happen once at start,
-            // and then at predefined block intervals.
-            if should_clear_packets(clear_interval, height) {
+            if *should_clear_on_start {
+                handle_clear_packet(link, clear_interval, path, Some(height))?;
+                *should_clear_on_start = false;
+                Ok(())
+            } else if should_clear_packets(clear_interval, height) {
                 handle_clear_packet(link, clear_interval, path, Some(height))
             } else {
                 Ok(())
