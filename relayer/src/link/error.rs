@@ -15,7 +15,7 @@ define_error! {
     LinkError {
         Relayer
             [ Error ]
-            |_| { "failed with underlying error" },
+            |_| { "link failed with underlying error" },
 
         Supervisor
             [ SupervisorError ]

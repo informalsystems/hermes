@@ -5,7 +5,7 @@ use tracing::{error_span, trace};
 use crate::{
     chain::handle::ChainHandle,
     telemetry,
-    util::task::{spawn_background_task, Next, TaskError, TaskHandle},
+    util::{task::{spawn_background_task, Next, TaskError, TaskHandle}, bigint::U256},
 };
 
 pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
@@ -20,6 +20,9 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
             TaskError::Ignore(format!("failed to query balance for the account: {e}"))
         })?;
 
+        // The input domain `balance.amount` may exceed u64::MAX.
+        // TODO: add mechanism workaround to handle `PosOverflow` errors in parse.
+        // Example input that overflows, from sifchain-1: `349999631379421794336`.
         let amount: u64 = balance.amount.parse().map_err(|_| {
             TaskError::Ignore(format!(
                 "failed to parse amount into u64: {}",

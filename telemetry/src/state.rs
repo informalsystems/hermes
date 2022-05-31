@@ -228,7 +228,6 @@ impl TelemetryState {
 
     pub fn tx_submitted(
         &self,
-
         tracking_id: impl ToString,
         chain_id: &ChainId,
         channel_id: &ChannelId,
@@ -280,7 +279,7 @@ impl TelemetryState {
 
 use std::sync::Arc;
 
-use opentelemetry::metrics::Descriptor;
+use opentelemetry::metrics::{Descriptor, Unit};
 use opentelemetry::sdk::export::metrics::{Aggregator, AggregatorSelector};
 use opentelemetry::sdk::metrics::aggregators::{histogram, last_value, sum};
 
@@ -290,8 +289,12 @@ impl AggregatorSelector for CustomAggregatorSelector {
     fn aggregator_for(&self, descriptor: &Descriptor) -> Option<Arc<dyn Aggregator + Send + Sync>> {
         match descriptor.name() {
             "wallet_balance" => Some(Arc::new(last_value())),
-            "tx_latency_submitted" => Some(Arc::new(histogram(descriptor, &[0.5, 0.9, 0.99]))),
-            "tx_latency_confirmed" => Some(Arc::new(histogram(descriptor, &[0.5, 0.9, 0.99]))),
+            // Prometheus' supports only collector for histogram, sum, and last value aggregators.
+            // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
+            // TODO: Once quantile sketches are supported, replace histograms with that.
+            // For the moment, disable histogram buckets since no values make sense for all use-cases.
+            "tx_latency_submitted" => Some(Arc::new(histogram(descriptor, &[]))),
+            "tx_latency_confirmed" => Some(Arc::new(histogram(descriptor, &[]))),
             _ => Some(Arc::new(sum())),
         }
     }
@@ -372,14 +375,16 @@ impl Default for TelemetryState {
 
             tx_latency_submitted: meter
                 .u64_value_recorder("tx_latency_submitted")
+                .with_unit(Unit::new("milliseconds"))
                 .with_description("The latency for all transactions submitted to a specific chain, \
-                    i.e. the difference between the moment when Hermes received a batch of events \
-                    and when it submitted the corresponding transaction(s). Milliseconds.")
+                i.e. the difference between the moment when Hermes received a batch of events \
+                and when it submitted the corresponding transaction(s). Milliseconds.")
                 .init(),
 
-            tx_latency_confirmed: meter
+                tx_latency_confirmed: meter
                 .u64_value_recorder("tx_latency_confirmed")
-                .with_description("The latency for all transactions submitted to a specific chain, \
+                .with_unit(Unit::new("milliseconds"))
+                .with_description("The latency for all transactions submitted & confirmed to a specific chain, \
                     i.e. the difference between the moment when Hermes received a batch of events \
                     until the corresponding transaction(s) were confirmed. Milliseconds.")
                 .init(),
