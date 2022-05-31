@@ -743,28 +743,19 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_client_state");
         crate::telemetry!(query, self.id(), "query_client_state");
 
+        let res = self.query(
+            ClientStatePath(request.client_id.clone()),
+            request.height,
+            matches!(include_proof, IncludeProof::Yes),
+        )?;
+        let client_state = AnyClientState::decode_vec(&res.value).map_err(Error::decode)?;
+
         match include_proof {
             IncludeProof::Yes => {
-                let res = self.query(
-                    ClientStatePath(request.client_id.clone()),
-                    request.height,
-                    true,
-                )?;
-
-                let client_state = AnyClientState::decode_vec(&res.value).map_err(Error::decode)?;
-
-                Ok((
-                    client_state,
-                    Some(res.proof.ok_or_else(Error::empty_response_proof)?),
-                ))
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                Ok((client_state, Some(proof)))
             }
-            IncludeProof::No => {
-                let client_state = self
-                    .query(ClientStatePath(request.client_id), request.height, false)
-                    .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
-
-                Ok((client_state, None))
-            }
+            IncludeProof::No => Ok((client_state, None)),
         }
     }
 
@@ -851,55 +842,31 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_consensus_state");
         crate::telemetry!(query, self.id(), "query_consensus_state");
 
+        let res = self.query(
+            ClientConsensusStatePath {
+                client_id: request.client_id.clone(),
+                epoch: request.consensus_height.revision_number,
+                height: request.consensus_height.revision_height,
+            },
+            request.query_height,
+            matches!(include_proof, IncludeProof::Yes),
+        )?;
+
+        let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
+
+        if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
+            return Err(Error::consensus_state_type_mismatch(
+                ClientType::Tendermint,
+                consensus_state.client_type(),
+            ));
+        }
+
         match include_proof {
             IncludeProof::Yes => {
-                let res = self.query(
-                    ClientConsensusStatePath {
-                        client_id: request.client_id.clone(),
-                        epoch: request.consensus_height.revision_number,
-                        height: request.consensus_height.revision_height,
-                    },
-                    request.query_height,
-                    true,
-                )?;
-
-                let consensus_state =
-                    AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
-
-                if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
-                    return Err(Error::consensus_state_type_mismatch(
-                        ClientType::Tendermint,
-                        consensus_state.client_type(),
-                    ));
-                }
-
                 let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
-
                 Ok((consensus_state, Some(proof)))
             }
-            IncludeProof::No => {
-                let res = self.query(
-                    ClientConsensusStatePath {
-                        client_id: request.client_id.clone(),
-                        epoch: request.consensus_height.revision_number,
-                        height: request.consensus_height.revision_height,
-                    },
-                    request.query_height,
-                    false,
-                )?;
-
-                let consensus_state =
-                    AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
-
-                if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
-                    return Err(Error::consensus_state_type_mismatch(
-                        ClientType::Tendermint,
-                        consensus_state.client_type(),
-                    ));
-                }
-
-                Ok((consensus_state, None))
-            }
+            IncludeProof::No => Ok((consensus_state, None)),
         }
     }
 
@@ -1123,31 +1090,20 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_channel");
         crate::telemetry!(query, self.id(), "query_channel");
 
+        let res = self.query(
+            ChannelEndsPath(request.port_id, request.channel_id),
+            request.height,
+            matches!(include_proof, IncludeProof::Yes),
+        )?;
+
+        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+
         match include_proof {
             IncludeProof::Yes => {
-                let res = self.query(
-                    ChannelEndsPath(request.port_id, request.channel_id),
-                    request.height,
-                    true,
-                )?;
-
-                let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
-
-                Ok((
-                    channel_end,
-                    Some(res.proof.ok_or_else(Error::empty_response_proof)?),
-                ))
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                Ok((channel_end, Some(proof)))
             }
-            IncludeProof::No => {
-                let res = self.query(
-                    ChannelEndsPath(request.port_id, request.channel_id),
-                    request.height,
-                    false,
-                )?;
-                let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
-
-                Ok((channel_end, None))
-            }
+            IncludeProof::No => Ok((channel_end, None)),
         }
     }
 
@@ -1185,26 +1141,23 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketCommitmentRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
-        let data: Path = CommitmentsPath {
-            port_id: request.port_id,
-            channel_id: request.channel_id,
-            sequence: request.sequence,
-        }
-        .into();
+        let res = self.query(
+            CommitmentsPath {
+                port_id: request.port_id,
+                channel_id: request.channel_id,
+                sequence: request.sequence,
+            },
+            request.height,
+            matches!(include_proof, IncludeProof::Yes),
+        )?;
 
         match include_proof {
             IncludeProof::Yes => {
-                let res = self.query(data, request.height, true)?;
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
 
-                let commitment_proof_bytes = res.proof.ok_or_else(Error::empty_response_proof)?;
-
-                Ok((res.value, Some(commitment_proof_bytes)))
+                Ok((res.value, Some(proof)))
             }
-            IncludeProof::No => {
-                let res = self.query(data, request.height, false)?;
-
-                Ok((res.value, None))
-            }
+            IncludeProof::No => Ok((res.value, None)),
         }
     }
 
@@ -1251,26 +1204,23 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketReceiptRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
-        let data: Path = ReceiptsPath {
-            port_id: request.port_id,
-            channel_id: request.channel_id,
-            sequence: request.sequence,
-        }
-        .into();
+        let res = self.query(
+            ReceiptsPath {
+                port_id: request.port_id,
+                channel_id: request.channel_id,
+                sequence: request.sequence,
+            },
+            request.height,
+            matches!(include_proof, IncludeProof::Yes),
+        )?;
 
         match include_proof {
             IncludeProof::Yes => {
-                let res = self.query(data, request.height, true)?;
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
 
-                let commitment_proof_bytes = res.proof.ok_or_else(Error::empty_response_proof)?;
-
-                Ok((res.value, Some(commitment_proof_bytes)))
+                Ok((res.value, Some(proof)))
             }
-            IncludeProof::No => {
-                let res = self.query(data, request.height, false)?;
-
-                Ok((res.value, None))
-            }
+            IncludeProof::No => Ok((res.value, None)),
         }
     }
 
@@ -1310,26 +1260,23 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketAcknowledgementRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
-        let data: Path = AcksPath {
-            port_id: request.port_id,
-            channel_id: request.channel_id,
-            sequence: request.sequence,
-        }
-        .into();
+        let res = self.query(
+            AcksPath {
+                port_id: request.port_id,
+                channel_id: request.channel_id,
+                sequence: request.sequence,
+            },
+            request.height,
+            matches!(include_proof, IncludeProof::Yes),
+        )?;
 
         match include_proof {
             IncludeProof::Yes => {
-                let res = self.query(data, request.height, true)?;
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
 
-                let commitment_proof_bytes = res.proof.ok_or_else(Error::empty_response_proof)?;
-
-                Ok((res.value, Some(commitment_proof_bytes)))
+                Ok((res.value, Some(proof)))
             }
-            IncludeProof::No => {
-                let res = self.query(data, request.height, false)?;
-
-                Ok((res.value, None))
-            }
+            IncludeProof::No => Ok((res.value, None)),
         }
     }
 
@@ -1411,9 +1358,12 @@ impl ChainEndpoint for CosmosSdkChain {
 
         match include_proof {
             IncludeProof::Yes => {
-                let data: Path = SeqRecvsPath(request.port_id, request.channel_id).into();
+                let res = self.query(
+                    SeqRecvsPath(request.port_id, request.channel_id),
+                    request.height,
+                    true,
+                )?;
 
-                let res = self.query(data, request.height, true)?;
                 // Note: We expect the return to be a u64 encoded in big-endian. Refer to ibc-go:
                 // https://github.com/cosmos/ibc-go/blob/25767f6bdb5bab2c2a116b41d92d753c93e18121/modules/core/04-channel/client/utils/utils.go#L191
                 if res.value.len() != 8 {
@@ -1421,9 +1371,9 @@ impl ChainEndpoint for CosmosSdkChain {
                 }
                 let seq: Sequence = Bytes::from(res.value).get_u64().into();
 
-                let commitment_proof_bytes = res.proof.ok_or_else(Error::empty_response_proof)?;
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
 
-                Ok((seq, Some(commitment_proof_bytes)))
+                Ok((seq, Some(proof)))
             }
             IncludeProof::No => {
                 let mut client = self
