@@ -1202,13 +1202,16 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
     /// Returns the consensus state at `height` or error if not found.
     fn consensus_state(&self, height: Height) -> Result<AnyConsensusState, ForeignClientError> {
-        let res = self
+        let (consensus_state, _) = self
             .dst_chain
-            .query_consensus_state(QueryConsensusStateRequest {
-                client_id: self.id.clone(),
-                consensus_height: height,
-                query_height: Height::zero(),
-            })
+            .query_consensus_state(
+                QueryConsensusStateRequest {
+                    client_id: self.id.clone(),
+                    consensus_height: height,
+                    query_height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| {
                 ForeignClientError::client_consensus_query(
                     self.id.clone(),
@@ -1218,7 +1221,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        Ok(res)
+        Ok(consensus_state)
     }
 
     /// Retrieves all consensus heights for this client sorted in descending

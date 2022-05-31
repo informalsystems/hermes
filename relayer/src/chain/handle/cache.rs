@@ -209,8 +209,9 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error> {
-        self.inner().query_consensus_state(request)
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
+        self.inner().query_consensus_state(request, include_proof)
     }
 
     fn query_upgraded_client_state(

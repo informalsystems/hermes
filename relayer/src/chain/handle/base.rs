@@ -194,8 +194,13 @@ impl ChainHandle for BaseChainHandle {
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error> {
-        self.send(|reply_to| ChainRequest::QueryConsensusState { request, reply_to })
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryConsensusState {
+            request,
+            include_proof,
+            reply_to,
+        })
     }
 
     fn query_upgraded_client_state(

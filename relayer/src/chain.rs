@@ -180,17 +180,18 @@ pub trait ChainEndpoint: Sized {
         include_proof: IncludeProof,
     ) -> Result<(AnyClientState, Option<MerkleProof>), Error>;
 
-    fn query_consensus_states(
-        &self,
-        request: QueryConsensusStatesRequest,
-    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
-
     /// Performs a query to retrieve the consensus state (for a specific height `consensus_height`)
     /// that an on-chain client stores.
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error>;
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error>;
+
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
 
     fn query_upgraded_client_state(
         &self,

@@ -426,13 +426,20 @@ impl ChainEndpoint for MockChain {
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error> {
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
+        // IncludeProof::Yes not implemented
+        assert!(matches!(include_proof, IncludeProof::No));
+
         let consensus_states = self.context.consensus_states(&request.client_id);
-        Ok(consensus_states
-            .into_iter()
-            .find(|s| s.height == request.consensus_height)
-            .unwrap()
-            .consensus_state)
+        Ok((
+            consensus_states
+                .into_iter()
+                .find(|s| s.height == request.consensus_height)
+                .unwrap()
+                .consensus_state,
+            None,
+        ))
     }
 
     fn query_upgraded_consensus_state(

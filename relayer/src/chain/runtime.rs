@@ -327,8 +327,8 @@ where
                             self.query_consensus_states(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryConsensusState { request, reply_to }) => {
-                            self.query_consensus_state(request, reply_to)?
+                        Ok(ChainRequest::QueryConsensusState { request, include_proof, reply_to }) => {
+                            self.query_consensus_state(request, include_proof, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryUpgradedClientState { request, reply_to }) => {
@@ -662,11 +662,12 @@ where
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-        reply_to: ReplyTo<AnyConsensusState>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(AnyConsensusState, Option<MerkleProof>)>,
     ) -> Result<(), Error> {
-        let consensus_state = self.chain.query_consensus_state(request);
+        let res = self.chain.query_consensus_state(request, include_proof);
 
-        reply_to.send(consensus_state).map_err(Error::send)
+        reply_to.send(res).map_err(Error::send)
     }
 
     fn query_upgraded_consensus_state(

@@ -209,14 +209,15 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<ConnectionId>>,
     },
 
+    QueryConsensusState {
+        request: QueryConsensusStateRequest,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(AnyConsensusState, Option<MerkleProof>)>,
+    },
+
     QueryConsensusStates {
         request: QueryConsensusStatesRequest,
         reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
-    },
-
-    QueryConsensusState {
-        request: QueryConsensusStateRequest,
-        reply_to: ReplyTo<AnyConsensusState>,
     },
 
     QueryUpgradedClientState {
@@ -427,7 +428,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error>;
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error>;
 
     fn query_upgraded_client_state(
         &self,

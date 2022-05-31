@@ -846,17 +846,61 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error> {
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
         crate::time!("query_consensus_state");
         crate::telemetry!(query, self.id(), "query_consensus_state");
 
-        let (consensus_state, _proof) = self.proven_client_consensus(
-            &request.client_id,
-            request.consensus_height,
-            request.query_height,
-        )?;
+        match include_proof {
+            IncludeProof::Yes => {
+                let res = self.query(
+                    ClientConsensusStatePath {
+                        client_id: request.client_id.clone(),
+                        epoch: request.consensus_height.revision_number,
+                        height: request.consensus_height.revision_height,
+                    },
+                    request.query_height,
+                    true,
+                )?;
 
-        Ok(consensus_state)
+                let consensus_state =
+                    AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
+
+                if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
+                    return Err(Error::consensus_state_type_mismatch(
+                        ClientType::Tendermint,
+                        consensus_state.client_type(),
+                    ));
+                }
+
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+
+                Ok((consensus_state, Some(proof)))
+            }
+            IncludeProof::No => {
+                let res = self.query(
+                    ClientConsensusStatePath {
+                        client_id: request.client_id.clone(),
+                        epoch: request.consensus_height.revision_number,
+                        height: request.consensus_height.revision_height,
+                    },
+                    request.query_height,
+                    false,
+                )?;
+
+                let consensus_state =
+                    AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
+
+                if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
+                    return Err(Error::consensus_state_type_mismatch(
+                        ClientType::Tendermint,
+                        consensus_state.client_type(),
+                    ));
+                }
+
+                Ok((consensus_state, None))
+            }
+        }
     }
 
     fn query_client_connections(

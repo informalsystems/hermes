@@ -171,8 +171,9 @@ where
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error> {
-        self.value().query_consensus_state(request)
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
+        self.value().query_consensus_state(request, include_proof)
     }
 
     fn query_upgraded_client_state(

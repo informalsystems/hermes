@@ -212,9 +212,10 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error> {
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
         self.inc_metric("query_consensus_state");
-        self.inner().query_consensus_state(request)
+        self.inner().query_consensus_state(request, include_proof)
     }
 
     fn query_upgraded_client_state(
