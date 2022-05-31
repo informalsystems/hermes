@@ -2,7 +2,7 @@ use core::time::Duration;
 use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::Receiver;
-use tracing::{error_span, trace};
+use tracing::{error, error_span, trace};
 
 use ibc::Height;
 
@@ -100,6 +100,9 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                     cmd.clone(),
                 );
 
+                // Hack to use TaskError inside retry loop. Otherwise we
+                // will have to refactor all use of `retry_with_index` to
+                // make retry-able error handling more ergonomic.
                 match result {
                     Ok(()) => RetryResult::Ok(()),
                     Err(TaskError::Ignore(_)) => RetryResult::Retry(i),
@@ -139,6 +142,8 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         } => {
             if *should_clear_on_start {
                 handle_clear_packet(link, clear_interval, path, Some(height))?;
+
+                // Clear the flag only if handle_clear_packet succeeds
                 *should_clear_on_start = false;
                 Ok(())
             } else if should_clear_packets(clear_interval, height) {
@@ -153,10 +158,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 }
 
 /// Whether or not to clear pending packets at this `step` for the given height.
-/// Packets are cleared on the first iteration if this is an ordered channel, or
-/// if `clear_on_start` is true.
-/// Subsequently, packets are cleared only if `clear_interval` is not `0` and
-/// if we have reached the interval.
+/// Packets are cleared if `clear_interval` is not `0` and if we have reached the interval.
 fn should_clear_packets(clear_interval: u64, height: Height) -> bool {
     clear_interval != 0 && height.revision_height % clear_interval == 0
 }
@@ -198,7 +200,13 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     link.a_to_b
         .execute_schedule()
-        .map_err(handle_link_error_in_task)?;
+        .map_err(handle_link_error_in_task)
+        .map_err(|e| {
+            if let TaskError::Ignore(e) = &e {
+                error!("will retry: schedule execution encountered error: {}", e,);
+            }
+            e
+        })?;
 
     let resubmit = Resubmit::from_clear_interval(clear_interval);
 

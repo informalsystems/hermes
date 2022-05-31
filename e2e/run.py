@@ -81,7 +81,7 @@ def passive_packets(
     proc = relayer.start(c)
 
     # 5. wait for the relayer to initialize and pick up pending packets
-    sleep(30.0)
+    sleep(20.0)
 
     # 6. verify that there are no pending packets
     # hermes query packet unreceived-packets ibc-1 transfer channel-1

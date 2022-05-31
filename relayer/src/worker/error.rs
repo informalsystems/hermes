@@ -4,7 +4,6 @@ use ibc::core::ics02_client::error::Error as Ics02Error;
 
 use crate::channel::ChannelError;
 use crate::connection::ConnectionError;
-use crate::error::Error as RelayerError;
 use crate::link::error::LinkError;
 
 define_error! {
@@ -32,9 +31,5 @@ define_error! {
         Recv
             [ DisplayOnly<RecvError> ]
             | _ | { "error receiving from channel: sender end has been closed" },
-
-        Relayer
-            [ RelayerError ]
-            | _ | { "relayer error" },
     }
 }
