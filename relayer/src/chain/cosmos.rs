@@ -41,8 +41,6 @@ use ibc::core::ics24_host::path::{
 };
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::events::IbcEvent;
-use ibc::query::QueryBlockRequest;
-use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc::{
@@ -66,6 +64,7 @@ use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query}
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
+use crate::chain::requests::{QueryBlockRequest, QueryTxRequest};
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::{ChainEndpoint, HealthCheck};
 use crate::chain::{ChainStatus, QueryResponse};

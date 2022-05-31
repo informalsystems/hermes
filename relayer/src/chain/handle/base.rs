@@ -21,7 +21,6 @@ use ibc::{
     },
     events::IbcEvent,
     proofs::Proofs,
-    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
@@ -31,12 +30,12 @@ use crate::{
     chain::{
         client::ClientSettings,
         requests::{
-            QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-            QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-            QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-            QueryConsensusStateRequest, QueryConsensusStatesRequest,
+            QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
+            QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+            QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+            QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
             QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-            QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+            QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryTxRequest,
             QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
             QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
         },

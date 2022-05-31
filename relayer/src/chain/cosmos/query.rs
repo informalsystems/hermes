@@ -4,7 +4,6 @@ use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::query::QueryTxHash;
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
 use tendermint::block::Height;
@@ -13,6 +12,7 @@ use tendermint_rpc::query::Query;
 use tendermint_rpc::{Client, HttpClient, Url};
 
 use crate::chain::cosmos::version::Specs;
+use crate::chain::requests::QueryTxHash;
 use crate::chain::QueryResponse;
 use crate::error::Error;
 

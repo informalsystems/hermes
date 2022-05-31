@@ -14,8 +14,8 @@ use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc::events::WithBlockDataType;
-use ibc::query::QueryTxRequest;
 use ibc::Height;
+use ibc_relayer::chain::requests::QueryTxRequest;
 use ibc_relayer::chain::ChainEndpoint;
 use ibc_relayer::chain::CosmosSdkChain;
 

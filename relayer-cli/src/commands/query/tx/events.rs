@@ -9,9 +9,9 @@ use tracing::debug;
 use tendermint_rpc::abci::transaction::Hash;
 
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::chain::requests::{QueryTxHash, QueryTxRequest};
 use ibc_relayer::chain::runtime::ChainRuntime;
 use ibc_relayer::chain::CosmosSdkChain;
 

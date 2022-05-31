@@ -10,11 +10,10 @@ use tracing::{debug, error, info, span, trace, warn, Level};
 use crate::chain::counterparty::unreceived_acknowledgements;
 use crate::chain::counterparty::unreceived_packets;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::QueryChannelRequest;
-use crate::chain::requests::QueryHostConsensusStateRequest;
-use crate::chain::requests::QueryNextSequenceReceiveRequest;
-use crate::chain::requests::QueryUnreceivedAcksRequest;
-use crate::chain::requests::QueryUnreceivedPacketsRequest;
+use crate::chain::requests::{
+    QueryChannelRequest, QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::chain::ChainStatus;
@@ -56,7 +55,6 @@ use ibc::{
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
     events::{IbcEvent, PrettyEvents, WithBlockDataType},
-    query::QueryTxRequest,
     signer::Signer,
     timestamp::Timestamp,
     tx_msg::Msg,

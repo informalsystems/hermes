@@ -1,3 +1,5 @@
+use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
+use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
@@ -20,6 +22,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest as RawQueryClientConnectionsRequest,
     QueryConnectionsRequest as RawQueryConnectionsRequest,
 };
+use tendermint_rpc::abci::transaction::Hash;
 
 use serde::{Deserialize, Serialize};
 
@@ -300,3 +303,19 @@ impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveReques
 pub struct QueryHostConsensusStateRequest {
     pub height: Height,
 }
+
+/// Used for queries and not yet standardized in channel's query.proto
+#[derive(Clone, Debug)]
+pub enum QueryTxRequest {
+    Packet(QueryPacketEventDataRequest),
+    Client(QueryClientEventRequest),
+    Transaction(QueryTxHash),
+}
+
+#[derive(Clone, Debug)]
+pub enum QueryBlockRequest {
+    Packet(QueryPacketEventDataRequest),
+}
+
+#[derive(Clone, Debug)]
+pub struct QueryTxHash(pub Hash);

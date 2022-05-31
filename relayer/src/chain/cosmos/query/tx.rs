@@ -3,7 +3,6 @@ use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
-use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::Height as ICSHeight;
 use tendermint_rpc::abci::transaction::Hash as TxHash;
 use tendermint_rpc::abci::Event;
@@ -12,6 +11,7 @@ use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
+use crate::chain::requests::{QueryTxHash, QueryTxRequest};
 use crate::error::Error;
 use crate::event::from_tx_response_event;
 use crate::event::ics02_client as client_events;

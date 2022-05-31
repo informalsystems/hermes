@@ -26,13 +26,13 @@ use ibc::{
     },
     events::IbcEvent,
     proofs::Proofs,
-    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
 
 use crate::{
     account::Balance,
+    chain::requests::{QueryBlockRequest, QueryTxRequest},
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::Error,
