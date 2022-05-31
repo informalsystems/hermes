@@ -58,6 +58,7 @@ DESCRIPTION:
     Query information about channels
 
 SUBCOMMANDS:
+    client     Query channel's client state
     end        Query channel end
     ends       Query channel ends and underlying connection and client objects
 ```
