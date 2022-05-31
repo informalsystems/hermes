@@ -22,7 +22,8 @@ ARGS:
     <CHANNEL_ID>    identifier of the channel
 
 OPTIONS:
-    -h, --help    Print help information
+    -h, --help      Print help information
+    -k, --key KEY   Use the given signing key (default: `key_name` config)
 ```
 
 ### Example
@@ -439,4 +440,3 @@ Success: [
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: []
 ```
-
