@@ -3,11 +3,13 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+use crate::commands::query::channel_client::QueryChannelClientCmd;
 use crate::commands::query::channel_ends::QueryChannelEndsCmd;
 use crate::commands::query::channels::QueryChannelsCmd;
 use crate::commands::query::packet::QueryPacketCmds;
 
 mod channel;
+mod channel_client;
 mod channel_ends;
 mod channels;
 mod client;
@@ -76,6 +78,9 @@ pub enum QueryConnectionCmds {
 
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum QueryChannelCmds {
+    /// Query channel's client state
+    Client(QueryChannelClientCmd),
+
     /// Query channel end
     End(channel::QueryChannelEndCmd),
 
