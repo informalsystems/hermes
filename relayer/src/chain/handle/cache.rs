@@ -130,8 +130,8 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_balance(&self) -> Result<Balance, Error> {
-        self.inner().query_balance()
+    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
+        self.inner().query_balance(key_name)
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
