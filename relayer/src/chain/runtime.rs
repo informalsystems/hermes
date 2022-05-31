@@ -301,8 +301,8 @@ where
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryBalance { reply_to }) => {
-                            self.query_balance(reply_to)?
+                        Ok(ChainRequest::QueryBalance { key_name, reply_to }) => {
+                            self.query_balance(key_name, reply_to)?
                         }
 
                         Ok(ChainRequest::QueryApplicationStatus { reply_to }) => {
@@ -467,8 +467,12 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_balance(&self, reply_to: ReplyTo<Balance>) -> Result<(), Error> {
-        let balance = self.chain.query_balance();
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        reply_to: ReplyTo<Balance>,
+    ) -> Result<(), Error> {
+        let balance = self.chain.query_balance(key_name);
         reply_to.send(balance).map_err(Error::send)
     }
 
