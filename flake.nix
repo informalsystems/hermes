@@ -39,6 +39,7 @@
               ibc-go-main-simapp
               ibc-go-ics29-simapp
               wasmd
+              apalache
             ;
 
             python = nixpkgs.python3.withPackages (p: [
