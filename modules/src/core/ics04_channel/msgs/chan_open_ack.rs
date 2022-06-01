@@ -84,7 +84,7 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
                 .map_err(Error::identifier)?,
             counterparty_version: raw_msg.counterparty_version.into(),
             proofs,
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(Error::signer)?,
         })
     }
 }

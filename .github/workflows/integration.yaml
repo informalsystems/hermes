@@ -199,15 +199,16 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p ibc-integration-test --no-fail-fast --no-run
-      - env:
-          RUST_LOG: debug
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-        run: |
-          nix shell \
-            .#${{ matrix.gaiad }} \
-            .#apalache \
-            -c cargo \
-            test -p ibc-integration-test --features mbt --no-fail-fast -- \
-            --nocapture --test-threads=1 mbt
+          args: -p ibc-integration-test --features mbt --no-fail-fast --no-run
+      # Disable running MBT tests until flakiness is addressed
+      # - env:
+      #     RUST_LOG: debug
+      #     RUST_BACKTRACE: 1
+      #     NO_COLOR_LOG: 1
+      #   run: |
+      #     nix shell \
+      #       .#${{ matrix.gaiad }} \
+      #       .#apalache \
+      #       -c cargo \
+      #       test -p ibc-integration-test --features mbt --no-fail-fast -- \
+      #       --nocapture --test-threads=1 mbt

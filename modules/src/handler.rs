@@ -11,20 +11,20 @@ pub struct HandlerOutput<T, Event = IbcEvent> {
     pub events: Vec<Event>,
 }
 
-impl<T> HandlerOutput<T> {
-    pub fn builder() -> HandlerOutputBuilder<T> {
+impl<T, E> HandlerOutput<T, E> {
+    pub fn builder() -> HandlerOutputBuilder<T, E> {
         HandlerOutputBuilder::new()
     }
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct HandlerOutputBuilder<T> {
+pub struct HandlerOutputBuilder<T, E = IbcEvent> {
     log: Vec<String>,
-    events: Vec<IbcEvent>,
+    events: Vec<E>,
     marker: PhantomData<T>,
 }
 
-impl<T> HandlerOutputBuilder<T> {
+impl<T, E> HandlerOutputBuilder<T, E> {
     pub fn new() -> Self {
         Self {
             log: Vec::new(),
@@ -42,16 +42,16 @@ impl<T> HandlerOutputBuilder<T> {
         self.log.push(log.into());
     }
 
-    pub fn with_events(mut self, mut events: Vec<IbcEvent>) -> Self {
+    pub fn with_events(mut self, mut events: Vec<E>) -> Self {
         self.events.append(&mut events);
         self
     }
 
-    pub fn emit(&mut self, event: IbcEvent) {
+    pub fn emit(&mut self, event: E) {
         self.events.push(event);
     }
 
-    pub fn with_result(self, result: T) -> HandlerOutput<T> {
+    pub fn with_result(self, result: T) -> HandlerOutput<T, E> {
         HandlerOutput {
             result,
             log: self.log,
@@ -59,13 +59,21 @@ impl<T> HandlerOutputBuilder<T> {
         }
     }
 
-    pub fn merge(&mut self, other: HandlerOutput<()>) {
-        let HandlerOutput {
-            mut log,
-            mut events,
-            ..
+    pub fn merge<Event: Into<E>>(&mut self, other: HandlerOutputBuilder<(), Event>) {
+        let HandlerOutputBuilder {
+            mut log, events, ..
         } = other;
         self.log.append(&mut log);
-        self.events.append(&mut events);
+        self.events
+            .append(&mut events.into_iter().map(Into::into).collect());
+    }
+
+    pub fn merge_output<Event: Into<E>>(&mut self, other: HandlerOutput<(), Event>) {
+        let HandlerOutput {
+            mut log, events, ..
+        } = other;
+        self.log.append(&mut log);
+        self.events
+            .append(&mut events.into_iter().map(Into::into).collect());
     }
 }

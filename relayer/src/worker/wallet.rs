@@ -2,14 +2,12 @@ use std::{ops::Div, time::Duration};
 
 use tracing::{error_span, trace};
 
+use ibc::bigint::U256;
+
 use crate::{
     chain::handle::ChainHandle,
     telemetry,
-    transfer::Amount,
-    util::{
-        bigint::U256,
-        task::{spawn_background_task, Next, TaskError, TaskHandle},
-    },
+    util::task::{spawn_background_task, Next, TaskError, TaskHandle},
 };
 
 pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
@@ -24,7 +22,7 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
             TaskError::Ignore(format!("failed to query balance for the account: {e}"))
         })?;
 
-        let amount: Amount = balance.amount.parse().map_err(|_| {
+        let amount: U256 = U256::from_dec_str(&balance.amount).map_err(|_| {
             TaskError::Ignore(format!(
                 "failed to parse amount into U256: {}",
                 balance.amount
@@ -43,7 +41,7 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
         //
         // Example input that overflows, from sifchain-1: `349999631379421794336`.
         //
-        if let Some(_scaled_amount) = scale_down(amount.0) {
+        if let Some(_scaled_amount) = scale_down(amount) {
             telemetry!(
                 wallet_balance,
                 &chain.id(),
@@ -71,7 +69,7 @@ fn scale_down(amount: U256) -> Option<u64> {
 #[cfg(test)]
 mod tests {
     use super::scale_down;
-    use crate::util::bigint::U256;
+    use ibc::bigint::U256;
 
     #[test]
     fn example_input() {

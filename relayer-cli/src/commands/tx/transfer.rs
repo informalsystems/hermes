@@ -3,6 +3,7 @@ use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
 
 use core::time::Duration;
 use ibc::{
+    applications::transfer::Amount,
     core::{
         ics02_client::client_state::ClientState,
         ics02_client::height::Height,
@@ -14,7 +15,6 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
 };
-use ibc_relayer::transfer::Amount;
 use ibc_relayer::{
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
