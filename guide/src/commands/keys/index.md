@@ -66,7 +66,7 @@ You can save this to a file (e.g. `key_seed.json`) and use it to add to the rela
 
 ### Adding and restoring Keys
 
-The command `keys add` has two conflicting flags, `--key-file` and `--mnemonic-file` which are respectively used to add and restore a key.
+The command `keys add` has two exclusive flags, `--key-file` and `--mnemonic-file` which are respectively used to add and restore a key.
 
 ```shell
     hermes keys add [OPTIONS] --key-file <KEY_FILE> --mnemonic-file <MNEMONIC_FILE> <CHAIN_ID>
@@ -161,7 +161,7 @@ OPTIONS:
 To restore a key from its mnemonic:
 
 ```shell
-hermes -c config.toml keys restore [CHAIN_ID] -m "[MNEMONIC_FILE]"
+hermes -c config.toml keys add [CHAIN_ID] -m "[MNEMONIC_FILE]"
 ```
 
 or using an explicit [derivation path](https://github.com/satoshilabs/slips/blob/master/slip-0044.md), for example
@@ -169,7 +169,7 @@ an Ethereum coin type (used for Evmos, Injective, Umee, Cronos, and
 possibly other networks):
 
 ```shell
-hermes -c config.toml keys restore --mnemonic-file <MNEMONIC_FILE> --hd-path "m/44'/60'/0'/0/0" <CHAIN_ID>
+hermes -c config.toml keys add --mnemonic-file <MNEMONIC_FILE> --hd-path "m/44'/60'/0'/0/0" <CHAIN_ID>
 ```
 
 
@@ -184,7 +184,7 @@ Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 > To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
-> hermes -c config.toml keys restore [CHAINID] -m "[MNEMONIC_FILE]" -k [KEY_NAME]
+> hermes -c config.toml keys add [CHAINID] -m "[MNEMONIC_FILE]" -k [KEY_NAME]
 > ```
 
 ### Delete keys

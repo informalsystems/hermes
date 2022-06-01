@@ -18,7 +18,7 @@ use crate::conclude::Output;
 
 /// The data structure that represents the arguments when invoking the `keys add` CLI command.
 ///
-/// The command has one argument and two conflicting flags:
+/// The command has one argument and two exclusive flags:
 ///
 /// The command to add a key from a file:
 ///
@@ -140,6 +140,9 @@ impl Runnable for KeysAddCmd {
                     .exit(),
                 }
             }
+            // This case should never trigger.
+            // The 'required' parameter for the flags will trigger an error if both flags have not been given.
+            // And the 'group' parameter for the flags will trigger an error if both flags are given.
             _ => Output::error(format!("--mnemonic-file and --key-file can't both be None")).exit(),
         }
     }
