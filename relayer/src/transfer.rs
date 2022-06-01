@@ -73,7 +73,7 @@ impl FromStr for Amount {
     type Err = FromStrRadixErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(U256::from_str_radix(s, 10)?))
+        Ok(Self(U256::from_dec_str(s)?))
     }
 }
 
