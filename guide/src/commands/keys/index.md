@@ -4,8 +4,8 @@
 > store the private key file. The key file will be stored on the local file system
 > in the user __$HOME__ folder under `$HOME/.hermes/keys/`
 
-> __BREAKING__: As of Hermes v0.2.0, the format of the keys stored on disk has changed, and
-> keys which had been previously configured must now be re-imported using either the `keys add` command.
+> __BREAKING__: As of Hermes v1.0.0, the sub-command `keys restore` has been removed.
+> Please use the sub-command `keys add` in order to restore a key.
 
 ---
 
@@ -19,7 +19,7 @@ To see the available sub-commands for the `keys` command run:
 hermes help keys
 ```
 
-Currently there are two sub-commands supported `add` and `list`:
+The available sub-commands are the following:
 
 ```shell
 USAGE:
