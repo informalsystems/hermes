@@ -165,7 +165,7 @@ impl ChainEndpoint for MockChain {
         Ok(Some(semver::Version::new(3, 0, 0)))
     }
 
-    fn query_balance(&self) -> Result<Balance, Error> {
+    fn query_balance(&self, _key_name: Option<String>) -> Result<Balance, Error> {
         unimplemented!()
     }
 
