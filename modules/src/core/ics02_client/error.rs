@@ -1,6 +1,8 @@
 use crate::prelude::*;
 
 use flex_error::{define_error, TraceError};
+use tendermint::Error as TendermintError;
+use tendermint_proto::Error as TendermintProtoError;
 
 use crate::clients::ics07_tendermint::error::Error as Ics07Error;
 use crate::core::ics02_client::client_type::ClientType;
@@ -8,11 +10,9 @@ use crate::core::ics02_client::height::HeightError;
 use crate::core::ics23_commitment::error::Error as Ics23Error;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;
+use crate::signer::SignerError;
 use crate::timestamp::Timestamp;
 use crate::Height;
-
-use tendermint::Error as TendermintError;
-use tendermint_proto::Error as TendermintProtoError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -268,6 +268,10 @@ define_error! {
         InvalidAnyConsensusState
             [ TraceError<TendermintProtoError> ]
             | _ | { "invalid any client consensus state" },
+
+        Signer
+            [ SignerError ]
+            | _ | { "failed to parse signer" },
     }
 }
 

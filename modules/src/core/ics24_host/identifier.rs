@@ -354,7 +354,7 @@ impl ChannelId {
         Self(counter)
     }
 
-    pub fn counter(&self) -> u64 {
+    pub fn sequence(&self) -> u64 {
         self.0
     }
 

@@ -603,7 +603,9 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
 
         let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
-        Ok(Signer::new(bech32))
+        bech32
+            .parse()
+            .map_err(|e| Error::ics02(ClientError::signer(e)))
     }
 
     /// Get the chain configuration

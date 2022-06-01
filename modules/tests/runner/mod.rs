@@ -163,7 +163,9 @@ impl IbcTestRunner {
     }
 
     fn signer() -> Signer {
-        Signer::new("")
+        "cosmos1wxeyh7zgn4tctjzs0vtqpc6p5cxq5t2muzl7ng"
+            .parse()
+            .unwrap()
     }
 
     pub fn counterparty(client_id: u64, connection_id: Option<u64>) -> Counterparty {
