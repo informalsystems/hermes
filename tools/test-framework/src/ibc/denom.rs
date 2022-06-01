@@ -4,7 +4,9 @@
 
 use core::fmt::{self, Display};
 use eyre::Report as Error;
-use ibc::applications::ics20_fungible_token_transfer as token_transfer;
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+use sha2::{Digest, Sha256};
+use subtle_encoding::hex;
 
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -56,10 +58,30 @@ pub fn derive_ibc_denom<ChainA, ChainB>(
     channel_id: &TaggedChannelIdRef<ChainB, ChainA>,
     denom: &TaggedDenomRef<ChainA>,
 ) -> Result<TaggedDenom<ChainB>, Error> {
+    fn derive_denom(
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        denom: &str,
+    ) -> Result<String, Error> {
+        let transfer_path = format!("{}/{}/{}", port_id, channel_id, denom);
+        derive_denom_with_path(&transfer_path)
+    }
+
+    /// Derive the transferred token denomination using
+    /// <https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md>
+    fn derive_denom_with_path(transfer_path: &str) -> Result<String, Error> {
+        let mut hasher = Sha256::new();
+        hasher.update(transfer_path.as_bytes());
+
+        let denom_bytes = hasher.finalize();
+        let denom_hex = String::from_utf8(hex::encode_upper(denom_bytes))?;
+
+        Ok(format!("ibc/{}", denom_hex))
+    }
+
     match denom.value() {
         Denom::Base(denom) => {
-            let hashed =
-                token_transfer::derive_ibc_denom(port_id.value(), channel_id.value(), denom)?;
+            let hashed = derive_denom(port_id.value(), channel_id.value(), denom)?;
 
             Ok(MonoTagged::new(Denom::Ibc {
                 path: format!("{}/{}", port_id, channel_id),
@@ -69,8 +91,7 @@ pub fn derive_ibc_denom<ChainA, ChainB>(
         }
         Denom::Ibc { path, denom, .. } => {
             let new_path = format!("{}/{}/{}", port_id, channel_id, path);
-            let hashed =
-                token_transfer::derive_ibc_denom_with_path(&format!("{}/{}", new_path, denom))?;
+            let hashed = derive_denom_with_path(&format!("{}/{}", new_path, denom))?;
 
             Ok(MonoTagged::new(Denom::Ibc {
                 path: new_path,

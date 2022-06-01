@@ -437,9 +437,7 @@ mod tests {
         let block_ref = ctx_b.host_block(client_height);
         let latest_header: AnyHeader = match block_ref.cloned().map(Into::into).unwrap() {
             AnyHeader::Tendermint(mut theader) => {
-                let cons_state = ctx
-                    .latest_consensus_states(&client_id, &client_height)
-                    .clone();
+                let cons_state = ctx.latest_consensus_states(&client_id, &client_height);
                 if let AnyConsensusState::Tendermint(tcs) = cons_state {
                     theader.signed_header.header.time = tcs.timestamp;
                     theader.trusted_height = Height::new(1, 11)
@@ -475,10 +473,7 @@ mod tests {
                     Update(upd_res) => {
                         assert_eq!(upd_res.client_id, client_id);
                         assert!(!upd_res.client_state.is_frozen());
-                        assert_eq!(
-                            upd_res.client_state,
-                            ctx.latest_client_states(&client_id).clone()
-                        );
+                        assert_eq!(upd_res.client_state, ctx.latest_client_states(&client_id));
                         assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
                     }
                     _ => panic!("update handler result has incorrect type"),

@@ -6,6 +6,7 @@ use core::str::FromStr;
 use flex_error::{define_error, TraceError};
 use prost::alloc::fmt::Formatter;
 use serde_derive::{Deserialize, Serialize};
+use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::error as client_error;
@@ -19,6 +20,7 @@ use crate::core::ics04_channel::events as ChannelEvents;
 use crate::core::ics04_channel::events::Attributes as ChannelAttributes;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::error::ValidationError;
+use crate::core::ics26_routing::context::ModuleId;
 use crate::timestamp::ParseTimestampError;
 use crate::Height;
 
@@ -62,6 +64,10 @@ define_error! {
         IncorrectEventType
             { event: String }
             | e | { format_args!("incorrect event type: {}", e.event) },
+
+        MalformedModuleEvent
+            { event: ModuleEvent }
+            | e | { format_args!("module event cannot use core event types: {:?}", e.event) },
     }
 }
 
@@ -89,6 +95,7 @@ impl WithBlockDataType {
 const NEW_BLOCK_EVENT: &str = "new_block";
 const EMPTY_EVENT: &str = "empty";
 const CHAIN_ERROR_EVENT: &str = "chain_error";
+const APP_MODULE_EVENT: &str = "app_module";
 /// Client event types
 const CREATE_CLIENT_EVENT: &str = "create_client";
 const UPDATE_CLIENT_EVENT: &str = "update_client";
@@ -138,6 +145,7 @@ pub enum IbcEventType {
     AckPacket,
     Timeout,
     TimeoutOnClose,
+    AppModule,
     Empty,
     ChainError,
 }
@@ -166,6 +174,7 @@ impl IbcEventType {
             IbcEventType::AckPacket => ACK_PACKET_EVENT,
             IbcEventType::Timeout => TIMEOUT_EVENT,
             IbcEventType::TimeoutOnClose => TIMEOUT_ON_CLOSE_EVENT,
+            IbcEventType::AppModule => APP_MODULE_EVENT,
             IbcEventType::Empty => EMPTY_EVENT,
             IbcEventType::ChainError => CHAIN_ERROR_EVENT,
         }
@@ -200,6 +209,7 @@ impl FromStr for IbcEventType {
             TIMEOUT_ON_CLOSE_EVENT => Ok(IbcEventType::TimeoutOnClose),
             EMPTY_EVENT => Ok(IbcEventType::Empty),
             CHAIN_ERROR_EVENT => Ok(IbcEventType::ChainError),
+            // from_str() for `APP_MODULE_EVENT` MUST fail because a `ModuleEvent`'s type isn't constant
             _ => Err(Error::incorrect_event_type(s.to_string())),
         }
     }
@@ -233,6 +243,8 @@ pub enum IbcEvent {
     AcknowledgePacket(ChannelEvents::AcknowledgePacket),
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
+
+    AppModule(ModuleEvent),
 
     Empty(String),      // Special event, signifying empty response
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
@@ -285,6 +297,8 @@ impl fmt::Display for IbcEvent {
             IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacketEv({})", ev),
             IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacketEv({})", ev),
 
+            IbcEvent::AppModule(ev) => write!(f, "AppModuleEv({:?})", ev),
+
             IbcEvent::Empty(ev) => write!(f, "EmptyEv({})", ev),
             IbcEvent::ChainError(ev) => write!(f, "ChainErrorEv({})", ev),
         }
@@ -311,10 +325,15 @@ impl TryFrom<IbcEvent> for AbciEvent {
             IbcEvent::CloseInitChannel(event) => event.into(),
             IbcEvent::CloseConfirmChannel(event) => event.into(),
             IbcEvent::SendPacket(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::ReceivePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::WriteAcknowledgement(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
-            _ => return Err(Error::incorrect_event_type(event.to_string())),
+            IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::AppModule(event) => event.try_into()?,
+            IbcEvent::NewBlock(_) | IbcEvent::Empty(_) | IbcEvent::ChainError(_) => {
+                return Err(Error::incorrect_event_type(event.to_string()))
+            }
         })
     }
 }
@@ -420,6 +439,7 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(_) => IbcEventType::AckPacket,
             IbcEvent::TimeoutPacket(_) => IbcEventType::Timeout,
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
+            IbcEvent::AppModule(_) => IbcEventType::AppModule,
             IbcEvent::Empty(_) => IbcEventType::Empty,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
         }
@@ -461,6 +481,65 @@ impl IbcEvent {
         match self {
             IbcEvent::WriteAcknowledgement(ev) => Some(&ev.ack),
             _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ModuleEvent {
+    pub kind: String,
+    pub module_name: ModuleId,
+    pub attributes: Vec<ModuleEventAttribute>,
+}
+
+impl TryFrom<ModuleEvent> for AbciEvent {
+    type Error = Error;
+
+    fn try_from(event: ModuleEvent) -> Result<Self, Self::Error> {
+        if IbcEventType::from_str(event.kind.as_str()).is_ok() {
+            return Err(Error::malformed_module_event(event));
+        }
+
+        let attributes = event.attributes.into_iter().map(Into::into).collect();
+        Ok(AbciEvent {
+            type_str: event.kind,
+            attributes,
+        })
+    }
+}
+
+impl From<ModuleEvent> for IbcEvent {
+    fn from(e: ModuleEvent) -> Self {
+        IbcEvent::AppModule(e)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ModuleEventAttribute {
+    pub key: String,
+    pub value: String,
+}
+
+impl<K: ToString, V: ToString> From<(K, V)> for ModuleEventAttribute {
+    fn from((k, v): (K, V)) -> Self {
+        Self {
+            key: k.to_string(),
+            value: v.to_string(),
+        }
+    }
+}
+
+impl From<ModuleEventAttribute> for Tag {
+    fn from(attr: ModuleEventAttribute) -> Self {
+        Self {
+            key: attr
+                .key
+                .parse()
+                .expect("Key::from_str() impl is infallible"),
+            value: attr
+                .key
+                .parse()
+                .expect("Value::from_str() impl is infallible"),
         }
     }
 }
