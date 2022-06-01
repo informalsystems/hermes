@@ -384,7 +384,7 @@ where
         self.value().query_host_consensus_state(request)
     }
 
-    fn query_balance(&self) -> Result<Balance, Error> {
-        self.value().query_balance()
+    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
+        self.value().query_balance(key_name)
     }
 }
