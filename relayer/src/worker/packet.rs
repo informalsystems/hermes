@@ -13,15 +13,15 @@ use crate::link::Resubmit;
 use crate::link::{error::LinkError, Link};
 use crate::object::Packet;
 use crate::telemetry;
-use crate::util::retry::{retry_with_index, RetryResult};
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
-use crate::worker::retry_strategy;
 
 use super::error::RunError;
 use super::WorkerCmd;
 
 fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     if e.is_expired_or_frozen_error() {
+        // If the client is expired or frozen, terminate the packet worker
+        // as there is no point of relaying further packets.
         TaskError::Fatal(RunError::link(e))
     } else {
         TaskError::Ignore(RunError::link(e))
@@ -71,27 +71,28 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             dst_chain = %relay_path.dst_chain().id(),
         )
     };
-    spawn_background_task(span, Some(Duration::from_millis(200)), move || {
-        if let Ok(cmd) = cmd_rx.try_recv() {
-            retry_with_index(retry_strategy::worker_stubborn_strategy(), |i| {
-                let result = handle_packet_cmd(
-                    &mut link.lock().unwrap(),
-                    &mut should_clear_on_start,
-                    clear_interval,
-                    &path,
-                    cmd.clone(),
-                );
 
-                // Hack to use TaskError inside retry loop. Otherwise we
-                // will have to refactor all use of `retry_with_index` to
-                // make retry-able error handling more ergonomic.
-                match result {
-                    Ok(()) => RetryResult::Ok(()),
-                    Err(TaskError::Ignore(_)) => RetryResult::Retry(i),
-                    Err(TaskError::Fatal(_)) => RetryResult::Err(i),
-                }
-            })
-            .map_err(|e| TaskError::Fatal(RunError::retry(e)))?;
+    let mut current_command = None;
+
+    spawn_background_task(span, Some(Duration::from_millis(200)), move || {
+        if current_command.is_none() {
+            // Only try to receive the next command if the
+            // previous command was processed successfully.
+            current_command = cmd_rx.try_recv().ok();
+        }
+
+        if let Some(cmd) = &current_command {
+            handle_packet_cmd(
+                &mut link.lock().unwrap(),
+                &mut should_clear_on_start,
+                clear_interval,
+                &path,
+                cmd.clone(),
+            )?;
+
+            // Only reset current_command if handle_packet_cmd succeeds.
+            // Otherwise the same command will be retried in the next step.
+            current_command = None;
         }
 
         Ok(Next::Continue)
