@@ -35,7 +35,7 @@ impl Runnable for QueryChannelClientCmd {
 
         match chain.query_channel_client_state(QueryChannelClientStateRequest {
             port_id: self.port_id.clone(),
-            channel_id: self.channel_id.clone(),
+            channel_id: self.channel_id,
         }) {
             Ok(cs) => Output::success(cs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
