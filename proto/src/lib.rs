@@ -153,6 +153,9 @@ pub mod ibc {
             pub mod v1 {
                 include_proto!("ibc.applications.transfer.v1.rs");
             }
+            pub mod v2 {
+                include_proto!("ibc.applications.transfer.v2.rs");
+            }
         }
         pub mod interchain_accounts {
             pub mod v1 {

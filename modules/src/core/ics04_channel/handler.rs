@@ -7,7 +7,7 @@ use crate::core::ics04_channel::msgs::ChannelMsg;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::{
-    Ics26Context, ModuleId, ModuleOutput, OnRecvPacketAck, Router,
+    Ics26Context, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, Router,
 };
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 
@@ -87,7 +87,7 @@ pub fn channel_callback<Ctx>(
     module_id: &ModuleId,
     msg: &ChannelMsg,
     mut result: ChannelResult,
-    module_output: &mut ModuleOutput,
+    module_output: &mut ModuleOutputBuilder,
 ) -> Result<ChannelResult, Error>
 where
     Ctx: Ics26Context,
@@ -115,6 +115,7 @@ where
                 &msg.port_id,
                 &result.channel_id,
                 msg.channel.counterparty(),
+                msg.channel.version(),
                 &msg.counterparty_version,
             )?;
             result.channel_end.version = version;
@@ -191,7 +192,7 @@ pub fn packet_callback<Ctx>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
     msg: &PacketMsg,
-    module_output: &mut ModuleOutput,
+    module_output: &mut ModuleOutputBuilder,
 ) -> Result<(), Error>
 where
     Ctx: Ics26Context,
@@ -206,7 +207,7 @@ where
             let result = cb.on_recv_packet(module_output, &msg.packet, &msg.signer);
             match result {
                 OnRecvPacketAck::Nil(write_fn) | OnRecvPacketAck::Successful(_, write_fn) => {
-                    write_fn(cb.as_any_mut());
+                    write_fn(cb.as_any_mut()).map_err(Error::app_module)?;
                 }
                 OnRecvPacketAck::Failed(_) => {}
             }

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use flex_error::{define_error, TraceError};
 
-use crate::applications::ics20_fungible_token_transfer;
+use crate::applications::transfer;
 use crate::core::ics02_client;
 use crate::core::ics03_connection;
 use crate::core::ics04_channel;
@@ -22,7 +22,7 @@ define_error! {
             | _ | { "ICS04 channel error" },
 
         Ics20FungibleTokenTransfer
-            [ ics20_fungible_token_transfer::error::Error ]
+            [ transfer::error::Error ]
             | _ | { "ICS20 fungible token transfer error" },
 
         UnknownMessageTypeUrl

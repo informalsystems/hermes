@@ -1,8 +1,7 @@
 use crate::prelude::*;
 
-use tendermint_proto::Protobuf;
-
 use ibc_proto::ibc::core::client::v1::MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour;
+use tendermint_proto::Protobuf;
 
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::misbehaviour::AnyMisbehaviour;
@@ -52,7 +51,7 @@ impl TryFrom<RawMsgSubmitMisbehaviour> for MsgSubmitAnyMisbehaviour {
                 .parse()
                 .map_err(Error::invalid_raw_misbehaviour)?,
             misbehaviour: AnyMisbehaviour::try_from(raw_misbehaviour)?,
-            signer: raw.signer.into(),
+            signer: raw.signer.parse().map_err(Error::signer)?,
         })
     }
 }
