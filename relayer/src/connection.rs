@@ -604,13 +604,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
     /// Executes the connection handshake protocol (ICS003)
     fn handshake(&mut self) -> Result<(), ConnectionError> {
+        // approximate number of retries per block
+        const PER_BLOCK_RETRIES: u32 = 10;
+        // keep the retry delay constant
+        const DELAY_INCREMENT: u64 = 0;
+        // maximum retry delay expressed in number of blocks
+        const BLOCK_NUMBER_DELAY: u32 = 10;
         let max_block_times = self.max_block_times()?;
-        // retry every 1/10th of block time
-        let retry_delay = max_block_times / 10;
+        let retry_delay = max_block_times / PER_BLOCK_RETRIES;
         let strategy = clamp_total(
-            ConstantGrowth::new(retry_delay, Duration::from_secs(0)),
+            ConstantGrowth::new(retry_delay, Duration::from_secs(DELAY_INCREMENT)),
             retry_delay,
-            max_block_times * 100, // retry for ~100 blocks
+            max_block_times * BLOCK_NUMBER_DELAY,
         );
         retry_with_index(strategy, |_| {
             if let Err(e) = self.do_conn_open_handshake() {
