@@ -72,7 +72,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
                 .ok_or_else(Error::missing_packet)?
                 .try_into()?,
             proofs,
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(Error::signer)?,
         })
     }
 }
@@ -129,6 +129,7 @@ mod test {
     use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
     use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+    use crate::test_utils::get_dummy_bech32_account;
 
     #[test]
     fn msg_recv_packet_try_from_raw() {
@@ -165,7 +166,7 @@ mod test {
             Test {
                 name: "Empty signer".to_string(),
                 raw: RawMsgRecvPacket {
-                    signer: "".to_string(),
+                    signer: get_dummy_bech32_account(),
                     ..default_raw_msg
                 },
                 want_pass: true,
