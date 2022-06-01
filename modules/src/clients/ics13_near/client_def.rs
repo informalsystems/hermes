@@ -239,7 +239,8 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
     }
 }
 
-// TODO: refactor to use [`HostFunctions`]
+/// validates a light block that's contained on the `NearHeader` based on the current
+/// state of the light client.
 pub fn validate_light_block<H: HostFunctionsProvider>(
     header: &NearHeader,
     client_state: NearClientState,
@@ -259,7 +260,7 @@ pub fn validate_light_block<H: HostFunctionsProvider>(
 
     let new_block_view = header.get_light_client_block_view();
     let current_block_view = client_state.get_head();
-    let (_current_block_hash, _next_block_hash, _approval_message) =
+    let (_current_block_hash, _next_block_hash, approval_message) =
         reconstruct_light_client_block_view_fields::<H>(new_block_view)?;
 
     // (1)
@@ -307,14 +308,16 @@ pub fn validate_light_block<H: HostFunctionsProvider>(
 
         approved_stake += bp_stake;
 
-        let _validator_public_key = bp_stake_view.public_key.clone();
-        // if !maybe_signature
-        //     .as_ref()
-        //     .unwrap()
-        //     .verify::<H>(&H::sha256_digest(&approval_message), validator_public_key.clone())
-        // {
-        //     return Err(NearError::invalid_signature().into());
-        // }
+        let validator_public_key = &bp_stake_view.public_key;
+        let data = H::sha256_digest(&approval_message);
+        let signature = maybe_signature.as_ref().unwrap();
+        if H::ed25519_verify(
+            signature.get_inner(),
+            &data,
+            validator_public_key.get_inner(),
+        ) {
+            return Err(NearError::invalid_signature().into());
+        }
     }
 
     let threshold = total_stake * 2 / 3;

@@ -101,8 +101,8 @@ impl HostFunctionsProvider for Crypto {
             .map(|val| val.to_vec())
     }
 
-    fn ed25519_recover(_signature: &[u8; 64], _value: &[u8; 32]) -> Option<Vec<u8>> {
-        todo!()
+    fn ed25519_verify(_signature: &[u8; 64], _value: &[u8; 32], public_key: &[u8; 32]) -> bool {
+        true
     }
 
     fn verify_membership_trie_proof(

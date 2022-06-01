@@ -16,7 +16,7 @@ pub trait HostFunctionsProvider: Clone {
     ) -> Option<Vec<u8>>;
 
     /// Recover the ED25519 pubkey that produced this signature
-    fn ed25519_recover(signature: &[u8; 64], value: &[u8; 32]) -> Option<Vec<u8>>;
+    fn ed25519_verify(signature: &[u8; 64], value: &[u8; 32], pubkey: &[u8]) -> bool;
 
     /// This function should verify membership in a trie proof using parity's sp-trie package
     /// with a BlakeTwo256 Hasher
