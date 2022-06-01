@@ -104,7 +104,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
                 .try_into()?,
             counterparty_version: raw_msg.counterparty_version.into(),
             proofs,
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(ChannelError::signer)?,
         };
 
         msg.validate_basic()

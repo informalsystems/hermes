@@ -1488,6 +1488,7 @@ dependencies = [
  "time 0.3.9",
  "tracing",
  "tracing-subscriber",
+ "uint",
 ]
 
 [[package]]
@@ -1578,7 +1579,6 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber",
- "uint",
  "uuid 1.1.0",
 ]
 
