@@ -6,6 +6,9 @@ pub(crate) mod ics02_client;
 pub(crate) mod ics03_connection;
 pub(crate) mod ics04_channel;
 
+#[cfg(test)]
+mod module_event;
+
 use ibc::events::IbcEvent;
 use ibc::Height;
 use tendermint_rpc::abci;

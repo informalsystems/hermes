@@ -60,10 +60,6 @@ define_error! {
         IncorrectEventType
             { event: String }
             | e | { format_args!("incorrect event type: {}", e.event) },
-
-        MalformedModuleEvent
-            { event: ModuleEvent }
-            | e | { format_args!("module event cannot use core event types: {:?}", e.event) },
     }
 }
 
@@ -438,22 +434,6 @@ pub struct ModuleEvent {
     pub attributes: Vec<ModuleEventAttribute>,
 }
 
-impl TryFrom<ModuleEvent> for AbciEvent {
-    type Error = Error;
-
-    fn try_from(event: ModuleEvent) -> Result<Self, Self::Error> {
-        if IbcEventType::from_str(event.kind.as_str()).is_ok() {
-            return Err(Error::malformed_module_event(event));
-        }
-
-        let attributes = event.attributes.into_iter().map(Into::into).collect();
-        Ok(AbciEvent {
-            type_str: event.kind,
-            attributes,
-        })
-    }
-}
-
 impl From<ModuleEvent> for IbcEvent {
     fn from(e: ModuleEvent) -> Self {
         IbcEvent::AppModule(e)
@@ -471,21 +451,6 @@ impl<K: ToString, V: ToString> From<(K, V)> for ModuleEventAttribute {
         Self {
             key: k.to_string(),
             value: v.to_string(),
-        }
-    }
-}
-
-impl From<ModuleEventAttribute> for Tag {
-    fn from(attr: ModuleEventAttribute) -> Self {
-        Self {
-            key: attr
-                .key
-                .parse()
-                .expect("Key::from_str() impl is infallible"),
-            value: attr
-                .key
-                .parse()
-                .expect("Value::from_str() impl is infallible"),
         }
     }
 }

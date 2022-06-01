@@ -5,7 +5,7 @@ use tendermint_rpc::abci::Event as AbciEvent;
 use ibc::core::ics04_channel::error::Error;
 use ibc::core::ics04_channel::events::{
     AcknowledgePacket, Attributes, CloseConfirm, CloseInit, OpenAck, OpenConfirm, OpenInit,
-    OpenTry, SendPacket, TimeoutPacket, WriteAcknowledgement,
+    OpenTry, ReceivePacket, SendPacket, TimeoutOnClosePacket, TimeoutPacket, WriteAcknowledgement,
 };
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::events::{IbcEvent, IbcEventType};
@@ -74,6 +74,18 @@ pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
                 })
                 .ok()
         }
+        Ok(IbcEventType::ReceivePacket) => {
+            extract_packet_and_write_ack_from_tx(event)
+                .map(|(packet, write_ack)| {
+                    // This event should not have a write ack.
+                    debug_assert_eq!(write_ack.len(), 0);
+                    IbcEvent::ReceivePacket(ReceivePacket {
+                        height: Default::default(),
+                        packet,
+                    })
+                })
+                .ok()
+        }
         Ok(IbcEventType::WriteAck) => extract_packet_and_write_ack_from_tx(event)
             .map(|(packet, write_ack)| {
                 IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
@@ -101,6 +113,18 @@ pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
                     // This event should not have a write ack.
                     debug_assert_eq!(write_ack.len(), 0);
                     IbcEvent::TimeoutPacket(TimeoutPacket {
+                        height: Default::default(),
+                        packet,
+                    })
+                })
+                .ok()
+        }
+        Ok(IbcEventType::TimeoutOnClose) => {
+            extract_packet_and_write_ack_from_tx(event)
+                .map(|(packet, write_ack)| {
+                    // This event should not have a write ack.
+                    debug_assert_eq!(write_ack.len(), 0);
+                    IbcEvent::TimeoutOnClosePacket(TimeoutOnClosePacket {
                         height: Default::default(),
                         packet,
                     })
@@ -336,6 +360,16 @@ mod tests {
         }
     }
 
+    impl ToAbciEvent for ReceivePacket {
+        fn to_abci_event(&self) -> AbciEvent {
+            let attributes = packet_to_abci_tags(&self.packet);
+            AbciEvent {
+                type_str: IbcEventType::ReceivePacket.as_str().to_string(),
+                attributes,
+            }
+        }
+    }
+
     impl ToAbciEvent for WriteAcknowledgement {
         fn to_abci_event(&self) -> AbciEvent {
             let mut attributes = packet_to_abci_tags(&self.packet);
@@ -369,6 +403,16 @@ mod tests {
             let attributes = packet_to_abci_tags(&self.packet);
             AbciEvent {
                 type_str: IbcEventType::Timeout.as_str().to_string(),
+                attributes,
+            }
+        }
+    }
+
+    impl ToAbciEvent for TimeoutOnClosePacket {
+        fn to_abci_event(&self) -> AbciEvent {
+            let attributes = packet_to_abci_tags(&self.packet);
+            AbciEvent {
+                type_str: IbcEventType::TimeoutOnClose.as_str().to_string(),
                 attributes,
             }
         }
