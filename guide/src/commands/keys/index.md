@@ -121,6 +121,18 @@ To add a private key file to a chain:
 hermes -c config.toml keys add [CHAIN_ID] -f [PRIVATE_KEY_FILE]
 ```
 
+The content of the file key should have the same format as the output of the `gaiad keys add` command:
+
+```json
+{
+  "name": "testkey",
+  "type": "local",
+  "address": "cosmos1tc3vcuxyyac0dmayf887t95tdg7qpyql48w7gj",
+  "pubkey": "cosmospub1addwnpepqgg7ng4ycm60pdxfzdfh4hjvkwcr3da59mr8k883vsstx60ruv7kur4525u",
+  "mnemonic": "[24 words mnemonic]"
+}
+```
+
 If the command is successful a message similar to the one below will be displayed:
 
 ```json
@@ -172,6 +184,10 @@ possibly other networks):
 hermes -c config.toml keys add --mnemonic-file <MNEMONIC_FILE> --hd-path "m/44'/60'/0'/0/0" <CHAIN_ID>
 ```
 
+The mnemonic file needs to have the 24 mnemonic words on the same line, separated by a white space. So the content should have the following format:
+```
+word1 word2 word3 ... word24
+```
 
 If the command is successful a message similar to the one below will be displayed:
 
