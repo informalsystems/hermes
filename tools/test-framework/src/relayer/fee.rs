@@ -1,14 +1,18 @@
 use core::time::Duration;
+use http::uri::Uri;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::events::IbcEvent;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::applications::fee::v1::query_client::QueryClient;
 use ibc_proto::ibc::applications::fee::v1::{
     Fee, MsgPayPacketFee, MsgPayPacketFeeAsync, MsgRegisterCounterpartyAddress, PacketFee,
+    QueryCounterpartyAddressRequest,
 };
 use ibc_proto::ibc::core::channel::v1::PacketId;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use prost::{EncodeError, Message};
+use tonic::Code;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::token::TaggedTokenRef;
@@ -213,4 +217,36 @@ pub fn build_register_counterparty_address_message<Chain, Counterparty>(
     };
 
     Ok(MonoTagged::new(wrapped))
+}
+
+pub async fn query_counterparty_address<Chain, Counterparty>(
+    grpc_address: &Uri,
+    channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+    address: &MonoTagged<Chain, &WalletAddress>,
+) -> Result<Option<MonoTagged<Counterparty, WalletAddress>>, Error> {
+    let mut client = QueryClient::connect(grpc_address.clone())
+        .await
+        .map_err(handle_generic_error)?;
+
+    let request = QueryCounterpartyAddressRequest {
+        channel_id: channel_id.value().to_string(),
+        relayer_address: address.value().to_string(),
+    };
+
+    let result = client.counterparty_address(request).await;
+
+    match result {
+        Ok(response) => {
+            let counterparty_address = WalletAddress(response.into_inner().counterparty_address);
+
+            Ok(Some(MonoTagged::new(counterparty_address)))
+        }
+        Err(e) => {
+            if e.code() == Code::NotFound {
+                Ok(None)
+            } else {
+                Err(Error::generic(e.into()))
+            }
+        }
+    }
 }

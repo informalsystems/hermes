@@ -191,11 +191,33 @@ impl BinaryChannelTest for ForwardRelayerTest {
             chain_id_a
         );
 
+        {
+            let counterparty_address =
+                chain_driver_b.query_counterparty_address(&channel_id_b, &relayer_b.address())?;
+
+            assert_eq(
+                "counterparty address should be None before registering",
+                &counterparty_address,
+                &None,
+            )?;
+        }
+
         chain_driver_b.register_counterparty_address(
             &relayer_b,
             &relayer_a.address(),
             &channel_id_b,
         )?;
+
+        {
+            let counterparty_address =
+                chain_driver_b.query_counterparty_address(&channel_id_b, &relayer_b.address())?;
+
+            assert_eq(
+                "counterparty address should match registered address",
+                &counterparty_address,
+                &Some(relayer_a.address().cloned()),
+            )?;
+        }
 
         let user_a = wallets_a.user1();
         let user_b = wallets_b.user1();

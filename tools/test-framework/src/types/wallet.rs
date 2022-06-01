@@ -11,13 +11,13 @@ use crate::types::tagged::*;
 /**
    Newtype wrapper for a wallet ID as identified by the chain and relayer.
 */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WalletId(pub String);
 
 /**
    Newtype wrapper for the address a wallet corresponds to.
 */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WalletAddress(pub String);
 
 /**

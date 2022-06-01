@@ -7,7 +7,8 @@ use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::fee::{
-    ibc_token_transfer_with_fee, pay_packet_fee, register_counterparty_address,
+    ibc_token_transfer_with_fee, pay_packet_fee, query_counterparty_address,
+    register_counterparty_address,
 };
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -44,6 +45,12 @@ pub trait ChainFeeMethodsExt<Chain> {
         counterparty_address: &MonoTagged<Counterparty, &WalletAddress>,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
     ) -> Result<(), Error>;
+
+    fn query_counterparty_address<Counterparty>(
+        &self,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        address: &MonoTagged<Chain, &WalletAddress>,
+    ) -> Result<Option<MonoTagged<Counterparty, WalletAddress>>, Error>;
 }
 
 impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
@@ -106,6 +113,18 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
             wallet,
             counterparty_address,
             channel_id,
+        ))
+    }
+
+    fn query_counterparty_address<Counterparty>(
+        &self,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        address: &MonoTagged<Chain, &WalletAddress>,
+    ) -> Result<Option<MonoTagged<Counterparty, WalletAddress>>, Error> {
+        self.value().runtime.block_on(query_counterparty_address(
+            &self.tx_config().value().grpc_address,
+            channel_id,
+            address,
         ))
     }
 }

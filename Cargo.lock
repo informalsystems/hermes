@@ -1684,6 +1684,7 @@ dependencies = [
  "tendermint-rpc",
  "tokio",
  "toml",
+ "tonic",
  "tracing",
  "tracing-subscriber",
 ]
