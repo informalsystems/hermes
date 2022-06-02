@@ -168,12 +168,12 @@ define_error! {
             |e| {
                 format!("connection {} already exists in an incompatible state", e.connection_id)
             },
+
         MaxRetry
             {
                 description: String,
                 tries: u64,
                 total_delay: Duration,
-                source: Box<ConnectionErrorDetail>,
             }
             | e | {
                 format_args!("Error after maximum retry of {} and total delay of {}s: {}",

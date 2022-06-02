@@ -23,8 +23,7 @@ use crate::chain::requests::{PageRequest, QueryConnectionRequest, QueryConnectio
 use crate::chain::tracking::TrackedMsgs;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
-use crate::util::retry::{clamp_total, retry_with_index, ConstantGrowth};
-use crate::util::retry::{retry_count, RetryResult};
+use crate::util::retry::{retry_count, retry_with_index, RetryResult};
 use crate::util::task::Next;
 
 mod error;
@@ -33,16 +32,45 @@ pub use error::ConnectionError;
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
 
-pub fn from_retry_error(e: retry::Error<ConnectionError>, description: String) -> ConnectionError {
-    match e {
-        retry::Error::Operation {
-            error,
-            total_delay,
-            tries,
-        } => {
-            ConnectionError::max_retry(description, tries, total_delay, Box::new(error.0))
+// Includes utility methods and constants to configure the retry behavior
+// for the channel handshake algorithm.
+mod handshake_retry {
+    use crate::connection::ConnectionError;
+    use crate::util::retry::{clamp_total, ConstantGrowth};
+    use core::time::Duration;
+
+    // Approximate number of retries per block
+    const PER_BLOCK_RETRIES: u32 = 10;
+    // Keep the retry delay constant
+    const DELAY_INCREMENT: u64 = 0;
+    // Maximum retry delay expressed in number of blocks
+    const BLOCK_NUMBER_DELAY: u32 = 10;
+
+    // The default retry strategy.
+    // We retry with a constant backoff strategy. The strategy is parametrized by the
+    // maximum block time expressed as a `Duration`.
+    pub fn default_strategy(max_block_times: Duration) -> impl Iterator<Item = Duration> {
+        let retry_delay = max_block_times / PER_BLOCK_RETRIES;
+
+        clamp_total(
+            ConstantGrowth::new(retry_delay, Duration::from_secs(DELAY_INCREMENT)),
+            retry_delay,
+            max_block_times * BLOCK_NUMBER_DELAY,
+        )
+    }
+
+    pub fn from_retry_error(
+        e: retry::Error<ConnectionError>,
+        description: String,
+    ) -> ConnectionError {
+        match e {
+            retry::Error::Operation {
+                error: _,
+                total_delay,
+                tries,
+            } => ConnectionError::max_retry(description, tries, total_delay),
+            retry::Error::Internal(reason) => ConnectionError::retry_internal(reason),
         }
-        retry::Error::Internal(reason) => ConnectionError::retry_internal(reason),
     }
 }
 
@@ -601,20 +629,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
     /// Executes the connection handshake protocol (ICS003)
     fn handshake(&mut self) -> Result<(), ConnectionError> {
-        // approximate number of retries per block
-        const PER_BLOCK_RETRIES: u32 = 10;
-        // keep the retry delay constant
-        const DELAY_INCREMENT: u64 = 0;
-        // maximum retry delay expressed in number of blocks
-        const BLOCK_NUMBER_DELAY: u32 = 10;
         let max_block_times = self.max_block_times()?;
-        let retry_delay = max_block_times / PER_BLOCK_RETRIES;
-        let strategy = clamp_total(
-            ConstantGrowth::new(retry_delay, Duration::from_secs(DELAY_INCREMENT)),
-            retry_delay,
-            max_block_times * BLOCK_NUMBER_DELAY,
-        );
-        retry_with_index(strategy, |_| {
+
+        retry_with_index(handshake_retry::default_strategy(max_block_times), |_| {
             if let Err(e) = self.do_conn_open_handshake() {
                 if e.is_expired_or_frozen_error() {
                     RetryResult::Err(e)
@@ -630,7 +647,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 "failed to open connection after {} retries",
                 retry_count(&err)
             );
-            from_retry_error(
+            handshake_retry::from_retry_error(
                 err,
                 format!("failed to finish connection handshake for {:?}", self),
             )
