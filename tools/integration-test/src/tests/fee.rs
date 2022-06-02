@@ -460,6 +460,36 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
 
         let sequence = send_packet_event.packet.sequence;
 
+        {
+            let packets = chain_driver_a.query_incentivized_packets(&channel_id_a, &port_a)?;
+
+            info!("incenvitized packets: {:?}", packets);
+
+            assert_eq!(packets.len(), 1);
+
+            let packet = &packets[0];
+            assert_eq!(packet.packet_id.sequence, sequence);
+
+            assert_eq!(packet.packet_fees.len(), 1);
+            let packet_fee = &packet.packet_fees[0];
+
+            assert_eq!(packet_fee.recv_fee.len(), 1);
+            assert_eq!(packet_fee.ack_fee.len(), 1);
+            assert_eq!(packet_fee.timeout_fee.len(), 1);
+
+            assert_eq!(
+                &packet_fee.recv_fee[0],
+                denom_a.with_amount(receive_fee).value()
+            );
+            assert_eq!(&packet_fee.ack_fee[0], denom_a.with_amount(ack_fee).value());
+            assert_eq!(
+                &packet_fee.timeout_fee[0],
+                denom_a.with_amount(timeout_fee).value()
+            );
+
+            assert_eq!(packet_fee.refund_address, user_a.value().address);
+        }
+
         let receive_fee_2 = random_u128_range(300, 400);
         let ack_fee_2 = random_u128_range(200, 300);
         let timeout_fee_2 = random_u128_range(100, 200);

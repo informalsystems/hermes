@@ -144,7 +144,7 @@ impl PartialEq for Denom {
                     hashed: h2,
                 },
             ) => p1 == p2 && d1 == d2 && h1 == h2,
-            _ => false,
+            _ => self.as_str() == other.as_str(),
         }
     }
 }

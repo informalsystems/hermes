@@ -8,7 +8,7 @@ use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::fee::{
     ibc_token_transfer_with_fee, pay_packet_fee, query_counterparty_address,
-    register_counterparty_address,
+    query_incentivized_packets, register_counterparty_address, IdentifiedPacketFees,
 };
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -51,6 +51,12 @@ pub trait ChainFeeMethodsExt<Chain> {
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
         address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<Option<MonoTagged<Counterparty, WalletAddress>>, Error>;
+
+    fn query_incentivized_packets<Counterparty>(
+        &self,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
+    ) -> Result<Vec<IdentifiedPacketFees>, Error>;
 }
 
 impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
@@ -125,6 +131,18 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
             &self.tx_config().value().grpc_address,
             channel_id,
             address,
+        ))
+    }
+
+    fn query_incentivized_packets<Counterparty>(
+        &self,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
+    ) -> Result<Vec<IdentifiedPacketFees>, Error> {
+        self.value().runtime.block_on(query_incentivized_packets(
+            &self.tx_config().value().grpc_address,
+            channel_id,
+            port_id,
         ))
     }
 }
