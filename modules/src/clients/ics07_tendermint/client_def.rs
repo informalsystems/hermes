@@ -266,7 +266,7 @@ impl<H> ClientDef for TendermintClient<H>
         let value = expected_consensus_state
             .encode_vec()
             .map_err(Ics02Error::invalid_any_consensus_state)?;
-        verify_membership(client_state, prefix, proof, root, path, value)
+        verify_membership::<H, _>(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_connection_state(
@@ -287,7 +287,7 @@ impl<H> ClientDef for TendermintClient<H>
         let value = expected_connection_end
             .encode_vec()
             .map_err(Ics02Error::invalid_connection_end)?;
-        verify_membership(client_state, prefix, proof, root, path, value)
+        verify_membership::<H, _>(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_channel_state(
@@ -309,7 +309,7 @@ impl<H> ClientDef for TendermintClient<H>
         let value = expected_channel_end
             .encode_vec()
             .map_err(Ics02Error::invalid_channel_end)?;
-        verify_membership(client_state, prefix, proof, root, path, value)
+        verify_membership::<H, _>(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_client_full_state(
@@ -329,7 +329,7 @@ impl<H> ClientDef for TendermintClient<H>
         let value = expected_client_state
             .encode_vec()
             .map_err(Ics02Error::invalid_any_client_state)?;
-        verify_membership(client_state, prefix, proof, root, path, value)
+        verify_membership::<H, _>(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_packet_data(
@@ -355,7 +355,7 @@ impl<H> ClientDef for TendermintClient<H>
             sequence,
         };
 
-        verify_membership(
+        verify_membership::<H, _>(
             client_state,
             connection_end.counterparty().prefix(),
             proof,
@@ -388,7 +388,7 @@ impl<H> ClientDef for TendermintClient<H>
             channel_id: *channel_id,
             sequence,
         };
-        verify_membership(
+        verify_membership::<H, _>(
             client_state,
             connection_end.counterparty().prefix(),
             proof,
@@ -420,7 +420,7 @@ impl<H> ClientDef for TendermintClient<H>
             .expect("buffer size too small");
 
         let seq_path = SeqRecvsPath(port_id.clone(), *channel_id);
-        verify_membership(
+        verify_membership::<H, _>(
             client_state,
             connection_end.counterparty().prefix(),
             proof,
@@ -451,7 +451,7 @@ impl<H> ClientDef for TendermintClient<H>
             channel_id: *channel_id,
             sequence,
         };
-        verify_non_membership(
+        verify_non_membership::<H, _>(
             client_state,
             connection_end.counterparty().prefix(),
             proof,
@@ -474,16 +474,19 @@ impl<H> ClientDef for TendermintClient<H>
     }
 }
 
-fn verify_membership(
+fn verify_membership<H, P>(
     client_state: &ClientState,
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
-    path: impl Into<Path>,
+    path: P,
     value: Vec<u8>,
-) -> Result<(), Ics02Error> {
+) -> Result<(), Ics02Error>
+    where
+        H: HostFunctionsProvider, P: Into<Path>,
+{
     let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
-    let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
+    let merkle_proof: MerkleProof<H> = RawMerkleProof::try_from(proof.clone())
         .map_err(Ics02Error::invalid_commitment_proof)?
         .into();
 
@@ -498,15 +501,18 @@ fn verify_membership(
         .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
 }
 
-fn verify_non_membership(
+fn verify_non_membership<H, P>(
     client_state: &ClientState,
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
-    path: impl Into<Path>,
-) -> Result<(), Ics02Error> {
+    path: P,
+) -> Result<(), Ics02Error>
+    where
+        H: HostFunctionsProvider, P: Into<Path>,
+{
     let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
-    let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
+    let merkle_proof: MerkleProof<H> = RawMerkleProof::try_from(proof.clone())
         .map_err(Ics02Error::invalid_commitment_proof)?
         .into();
 

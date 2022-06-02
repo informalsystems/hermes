@@ -37,6 +37,21 @@ pub trait HostFunctionsProvider: Clone + Send + Sync + Default {
 
     /// Conduct a 256-bit Sha2 hash
     fn sha256_digest(data: &[u8]) -> [u8; 32];
+
+    /// The SHA-256 hash algorithm
+    fn sha2_256(message: &[u8]) -> [u8; 32];
+
+    /// The SHA-512 hash algorithm
+    fn sha2_512(message: &[u8]) -> [u8; 64];
+
+    /// The SHA-512 hash algorithm with its output truncated to 256 bits.
+    fn sha2_512_truncated(message: &[u8]) -> [u8; 32];
+
+    /// SHA-3-512 hash function.
+    fn sha3_512(message: &[u8]) -> [u8; 64];
+
+    /// Ripemd160 hash function.
+    fn ripemd160(message: &[u8]) -> [u8; 20];
 }
 
 /// This is a work around that allows us to have one super trait [`HostFunctionsProvider`]
@@ -62,6 +77,7 @@ where
     }
 }
 
+// implementation for tendermint functions
 impl<T> tendermint_light_client_verifier::host_functions::HostFunctionsProvider for HostFunctionsManager<T>
     where
         T: HostFunctionsProvider,
@@ -78,5 +94,31 @@ impl<T> tendermint_light_client_verifier::host_functions::HostFunctionsProvider 
 
     fn secp256k1_verify(_sig: &[u8], _message: &[u8], _public: &[u8]) -> bool {
         unimplemented!()
+    }
+}
+
+// implementation for ics23
+impl<H> ics23::HostFunctionsProvider for HostFunctionsManager<H>
+    where
+        H: HostFunctionsProvider,
+{
+    fn sha2_256(message: &[u8]) -> [u8; 32] {
+        H::sha2_256(message)
+    }
+
+    fn sha2_512(message: &[u8]) -> [u8; 64] {
+        H::sha2_512(message)
+    }
+
+    fn sha2_512_truncated(message: &[u8]) -> [u8; 32] {
+        H::sha2_512_truncated(message)
+    }
+
+    fn sha3_512(message: &[u8]) -> [u8; 64] {
+        H::sha3_512(message)
+    }
+
+    fn ripemd160(message: &[u8]) -> [u8; 20] {
+        H::ripemd160(message)
     }
 }

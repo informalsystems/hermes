@@ -90,10 +90,10 @@ impl TryFrom<RawMerkleProof> for CommitmentProofBytes {
     }
 }
 
-impl TryFrom<MerkleProof> for CommitmentProofBytes {
+impl<H> TryFrom<MerkleProof<H>> for CommitmentProofBytes {
     type Error = ProofError;
 
-    fn try_from(value: MerkleProof) -> Result<Self, Self::Error> {
+    fn try_from(value: MerkleProof<H>) -> Result<Self, Self::Error> {
         Self::try_from(RawMerkleProof::from(value))
     }
 }

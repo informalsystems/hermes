@@ -1,3 +1,4 @@
+use sp_std::marker::PhantomData;
 use crate::prelude::*;
 use tendermint::merkle::proof::Proof as TendermintProof;
 
@@ -9,6 +10,7 @@ use ics23::{
     calculate_existence_root, verify_membership, verify_non_membership, CommitmentProof,
     NonExistenceProof,
 };
+use crate::clients::host_functions::{HostFunctionsManager, HostFunctionsProvider};
 
 use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot};
 use crate::core::ics23_commitment::error::Error;
@@ -29,14 +31,15 @@ impl From<CommitmentRoot> for MerkleRoot {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct MerkleProof {
+pub struct MerkleProof<H> {
     pub proofs: Vec<CommitmentProof>,
+    _phantom: PhantomData<H>,
 }
 
 /// Convert to ics23::CommitmentProof
 /// The encoding and decoding shouldn't fail since ics23::CommitmentProof and ibc_proto::ics23::CommitmentProof should be the same
 /// Ref. <https://github.com/informalsystems/ibc-rs/issues/853>
-impl From<RawMerkleProof> for MerkleProof {
+impl<H> From<RawMerkleProof> for MerkleProof<H> {
     fn from(proof: RawMerkleProof) -> Self {
         let proofs: Vec<CommitmentProof> = proof
             .proofs
@@ -47,12 +50,12 @@ impl From<RawMerkleProof> for MerkleProof {
                 prost::Message::decode(&*encoded).unwrap()
             })
             .collect();
-        Self { proofs }
+        Self { proofs, _phantom: PhantomData }
     }
 }
 
-impl From<MerkleProof> for RawMerkleProof {
-    fn from(proof: MerkleProof) -> Self {
+impl<H> From<MerkleProof<H>> for RawMerkleProof {
+    fn from(proof: MerkleProof<H>) -> Self {
         Self {
             proofs: proof
                 .proofs
@@ -67,7 +70,10 @@ impl From<MerkleProof> for RawMerkleProof {
     }
 }
 
-impl MerkleProof {
+impl<H> MerkleProof<H>
+    where
+        H: HostFunctionsProvider,
+{
     pub fn verify_membership(
         &self,
         specs: &ProofSpecs,
@@ -107,9 +113,9 @@ impl MerkleProof {
         {
             match &proof.proof {
                 Some(Proof::Exist(existence_proof)) => {
-                    subroot = calculate_existence_root(existence_proof)
+                    subroot = calculate_existence_root::<HostFunctionsManager<H>>(existence_proof)
                         .map_err(|_| Error::invalid_merkle_proof())?;
-                    if !verify_membership(proof, spec, &subroot, key.as_bytes(), &value) {
+                    if !verify_membership::<HostFunctionsManager<H>>(proof, spec, &subroot, key.as_bytes(), &value) {
                         return Err(Error::verification_failure());
                     }
                     value = subroot.clone();
@@ -157,8 +163,8 @@ impl MerkleProof {
             .ok_or_else(Error::invalid_merkle_proof)?;
         match &proof.proof {
             Some(Proof::Nonexist(non_existence_proof)) => {
-                let subroot = calculate_non_existence_root(non_existence_proof)?;
-                if !verify_non_membership(proof, spec, &subroot, key.as_bytes()) {
+                let subroot = calculate_non_existence_root::<H>(non_existence_proof)?;
+                if !verify_non_membership::<HostFunctionsManager<H>>(proof, spec, &subroot, key.as_bytes()) {
                     return Err(Error::verification_failure());
                 }
                 // verify membership proofs starting from index 1 with value = subroot
@@ -170,11 +176,11 @@ impl MerkleProof {
 }
 
 // TODO move to ics23
-fn calculate_non_existence_root(proof: &NonExistenceProof) -> Result<Vec<u8>, Error> {
+fn calculate_non_existence_root<H: HostFunctionsProvider>(proof: &NonExistenceProof) -> Result<Vec<u8>, Error> {
     if let Some(left) = &proof.left {
-        calculate_existence_root(left).map_err(|_| Error::invalid_merkle_proof())
+        calculate_existence_root::<HostFunctionsManager<H>>(left).map_err(|_| Error::invalid_merkle_proof())
     } else if let Some(right) = &proof.right {
-        calculate_existence_root(right).map_err(|_| Error::invalid_merkle_proof())
+        calculate_existence_root::<HostFunctionsManager<H>>(right).map_err(|_| Error::invalid_merkle_proof())
     } else {
         Err(Error::invalid_merkle_proof())
     }
@@ -232,7 +238,7 @@ fn calculate_non_existence_root(proof: &NonExistenceProof) -> Result<Vec<u8>, Er
 //     }
 // }
 
-pub fn convert_tm_to_ics_merkle_proof(tm_proof: &TendermintProof) -> Result<MerkleProof, Error> {
+pub fn convert_tm_to_ics_merkle_proof<H>(tm_proof: &TendermintProof) -> Result<MerkleProof<H>, Error> {
     let mut proofs = Vec::new();
 
     for op in &tm_proof.ops {
