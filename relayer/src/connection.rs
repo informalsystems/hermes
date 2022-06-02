@@ -63,6 +63,8 @@ mod handshake_retry {
         )
     }
 
+    /// Translates from an error type that the `retry` mechanism threw into
+    /// a crate specific error of [`ConnectionError`] type.
     pub fn from_retry_error(
         e: retry::Error<ConnectionError>,
         description: String,
