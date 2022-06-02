@@ -31,7 +31,8 @@ schemars    = { version = "0.8", optional = true }
 base64      = { version = "0.13", default-features = false, features = ["alloc"] }
 
 [dependencies.tendermint-proto]
-version          = "=0.23.7"
+git = "https://github.com/composableFi/tendermint-rs"
+branch = "seun-0.23.7"
 default-features = false
 
 [features]

@@ -1684,9 +1684,9 @@ dependencies = [
  "sp-trie 6.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22)",
  "subtle-encoding",
  "subxt",
- "tendermint",
+ "tendermint 0.23.7 (git+https://github.com/composableFi/tendermint-rs?branch=seun-0.23.7)",
  "tendermint-light-client-verifier",
- "tendermint-proto",
+ "tendermint-proto 0.23.7 (git+https://github.com/composableFi/tendermint-rs?branch=seun-0.23.7)",
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
@@ -1707,7 +1707,7 @@ dependencies = [
  "prost-types",
  "schemars",
  "serde",
- "tendermint-proto",
+ "tendermint-proto 0.23.7 (git+https://github.com/composableFi/tendermint-rs?branch=seun-0.23.7)",
  "tonic",
 ]
 
@@ -4630,7 +4630,35 @@ dependencies = [
  "signature",
  "subtle",
  "subtle-encoding",
- "tendermint-proto",
+ "tendermint-proto 0.23.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time",
+ "zeroize",
+]
+
+[[package]]
+name = "tendermint"
+version = "0.23.7"
+source = "git+https://github.com/composableFi/tendermint-rs?branch=seun-0.23.7#cb79c164e84c3d9176b374f2b227393fe000e691"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "ed25519",
+ "ed25519-dalek",
+ "flex-error",
+ "futures",
+ "num-traits",
+ "once_cell",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "serde_repr",
+ "sha2 0.9.9",
+ "signature",
+ "subtle",
+ "subtle-encoding",
+ "tendermint-proto 0.23.7 (git+https://github.com/composableFi/tendermint-rs?branch=seun-0.23.7)",
  "time",
  "zeroize",
 ]
@@ -4643,7 +4671,7 @@ dependencies = [
  "flex-error",
  "serde",
  "serde_json",
- "tendermint",
+ "tendermint 0.23.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml",
  "url",
 ]
@@ -4656,7 +4684,24 @@ dependencies = [
  "derive_more",
  "flex-error",
  "serde",
- "tendermint",
+ "tendermint 0.23.7 (git+https://github.com/composableFi/tendermint-rs?branch=seun-0.23.7)",
+ "time",
+]
+
+[[package]]
+name = "tendermint-proto"
+version = "0.23.7"
+source = "git+https://github.com/composableFi/tendermint-rs?branch=seun-0.23.7#cb79c164e84c3d9176b374f2b227393fe000e691"
+dependencies = [
+ "bytes",
+ "flex-error",
+ "num-derive",
+ "num-traits",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "subtle-encoding",
  "time",
 ]
 
@@ -4698,9 +4743,9 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "subtle-encoding",
- "tendermint",
+ "tendermint 0.23.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "tendermint-config",
- "tendermint-proto",
+ "tendermint-proto 0.23.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
  "time",
  "tokio",
@@ -4721,7 +4766,7 @@ dependencies = [
  "serde_json",
  "simple-error",
  "tempfile",
- "tendermint",
+ "tendermint 0.23.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "time",
 ]
 

@@ -6,6 +6,7 @@ use prost::Message;
 use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
 use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_proto::Protobuf;
+use crate::clients::host_functions::{HostFunctionsManager, HostFunctionsProvider};
 
 use crate::clients::ics07_tendermint::client_state::ClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -36,12 +37,15 @@ use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct TendermintClient {
-    verifier: ProdVerifier,
+#[derive(Clone, Debug, Default)]
+pub struct TendermintClient<H: HostFunctionsProvider> {
+    verifier: ProdVerifier<HostFunctionsManager<H>>,
 }
 
-impl ClientDef for TendermintClient {
+impl<H> ClientDef for TendermintClient<H>
+    where
+        H: HostFunctionsProvider
+{
     type Header = Header;
     type ClientState = ClientState;
     type ConsensusState = ConsensusState;

@@ -111,7 +111,7 @@ impl HostFunctionsProvider for Crypto {
             .map(|val| val.to_vec())
     }
 
-    fn ed25519_verify(_signature: &[u8; 64], _value: &[u8; 32], _public_key: &[u8]) -> bool {
+    fn ed25519_verify(_signature: &[u8; 64], _msg: &[u8], _pubkey: &[u8]) -> bool {
         true
     }
 
