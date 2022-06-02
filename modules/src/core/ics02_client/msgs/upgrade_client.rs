@@ -93,7 +93,7 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
             consensus_state: AnyConsensusState::try_from(raw_consensus_state)?,
             proof_upgrade_client: proto_msg.proof_upgrade_client,
             proof_upgrade_consensus_state: proto_msg.proof_upgrade_consensus_state,
-            signer: proto_msg.signer.into(),
+            signer: Signer::from_str(proto_msg.signer.as_str()).map_err(Error::signer)?,
         })
     }
 }

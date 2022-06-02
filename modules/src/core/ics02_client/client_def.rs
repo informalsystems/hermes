@@ -14,7 +14,7 @@ use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
@@ -36,7 +36,7 @@ pub trait ClientDef: Clone {
 
     fn verify_header(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -44,7 +44,7 @@ pub trait ClientDef: Clone {
 
     fn update_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -58,7 +58,7 @@ pub trait ClientDef: Clone {
 
     fn check_for_misbehaviour(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -83,7 +83,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_client_consensus_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -98,7 +98,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_connection_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -113,7 +113,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_channel_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -129,7 +129,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_client_full_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -143,7 +143,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_data(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -160,7 +160,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -177,7 +177,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -193,7 +193,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -236,7 +236,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
     /// Validate an incoming header
     fn verify_header(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -289,7 +289,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
     /// Validates an incoming `header` against the latest consensus state of this client.
     fn update_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: ClientId,
         client_state: AnyClientState,
         header: AnyHeader,
@@ -385,7 +385,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
     /// Checks for misbehaviour in an incoming header
     fn check_for_misbehaviour(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -492,7 +492,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
 
     fn verify_client_consensus_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -567,7 +567,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
 
     fn verify_connection_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &AnyClientState,
         height: Height,
@@ -635,7 +635,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
 
     fn verify_channel_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &AnyClientState,
         height: Height,
@@ -708,7 +708,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
     }
     fn verify_client_full_state(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -778,7 +778,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -861,7 +861,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -943,7 +943,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
     }
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -1022,7 +1022,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for AnyClient<HostFunctions
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,

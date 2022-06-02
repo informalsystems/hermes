@@ -37,7 +37,7 @@ use crate::core::ics05_port::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{
-    Ics26Context, LightClientContext, Module, ModuleId, Router, RouterBuilder,
+    Ics26Context, Module, ModuleId, ReaderContext, Router, RouterBuilder,
 };
 use crate::core::ics26_routing::handler::{deliver, dispatch, MsgReceipt};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
@@ -513,7 +513,7 @@ impl MockContext {
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
-        self.clients[client_id]
+        self.ibc_store.lock().unwrap().clients[client_id]
             .consensus_states
             .iter()
             .map(|(k, v)| AnyConsensusStateWithHeight {
@@ -535,8 +535,8 @@ impl MockContext {
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> &AnyConsensusState {
-        self.clients[client_id]
+    ) -> AnyConsensusState {
+        self.ibc_store.lock().unwrap().clients[client_id]
             .consensus_states
             .get(height)
             .unwrap()
@@ -642,7 +642,7 @@ impl Router for MockRouter {
     }
 }
 
-impl LightClientContext for MockContext {}
+impl ReaderContext for MockContext {}
 
 impl Ics26Context for MockContext {
     type Router = MockRouter;
@@ -954,6 +954,14 @@ impl ChannelKeeper for MockContext {
             .insert(key, receipt);
         Ok(())
     }
+
+    fn store_packet(
+        &mut self,
+        _key: (PortId, ChannelId, Sequence),
+        _packet: crate::core::ics04_channel::packet::Packet,
+    ) -> Result<(), Ics04Error> {
+        Ok(())
+    }
 }
 
 impl ConnectionReader for MockContext {
@@ -1033,7 +1041,7 @@ impl ClientReader for MockContext {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyConsensusState, Ics02Error> {
-        match self.clients.get(client_id) {
+        match self.ibc_store.lock().unwrap().clients.get(client_id) {
             Some(client_record) => match client_record.consensus_states.get(&height) {
                 Some(consensus_state) => Ok(consensus_state.clone()),
                 None => Err(Ics02Error::consensus_state_not_found(
@@ -1054,7 +1062,8 @@ impl ClientReader for MockContext {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Option<AnyConsensusState>, Ics02Error> {
-        let client_record = self
+        let ibc_store = self.ibc_store.lock().unwrap();
+        let client_record = ibc_store
             .clients
             .get(client_id)
             .ok_or_else(|| Ics02Error::client_not_found(client_id.clone()))?;
@@ -1081,7 +1090,8 @@ impl ClientReader for MockContext {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Option<AnyConsensusState>, Ics02Error> {
-        let client_record = self
+        let ibc_store = self.ibc_store.lock().unwrap();
+        let client_record = ibc_store
             .clients
             .get(client_id)
             .ok_or_else(|| Ics02Error::client_not_found(client_id.clone()))?;
@@ -1242,7 +1252,7 @@ impl Ics18Context for MockContext {
         // Forward call to Ics26 delivery method.
         let mut all_events = vec![];
         for msg in msgs {
-            let (mut events, _) =
+            let MsgReceipt { mut events, .. } =
                 deliver::<_, Crypto>(self, msg).map_err(Ics18Error::transaction_failed)?;
             all_events.append(&mut events);
         }

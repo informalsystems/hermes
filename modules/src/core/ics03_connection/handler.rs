@@ -4,7 +4,7 @@ use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::msgs::ConnectionMsg;
 use crate::core::ics24_host::identifier::ConnectionId;
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::handler::HandlerOutput;
 use core::fmt::Debug;
 
@@ -47,7 +47,7 @@ pub fn dispatch<Ctx, HostFunctions>(
     msg: ConnectionMsg,
 ) -> Result<HandlerOutput<ConnectionResult>, Error>
 where
-    Ctx: LightClientContext,
+    Ctx: ReaderContext,
     HostFunctions: HostFunctionsProvider,
 {
     match msg {

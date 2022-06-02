@@ -7,13 +7,13 @@ use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
 pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     msg: &MsgChannelOpenConfirm,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();

@@ -9,13 +9,13 @@ use crate::core::ics04_channel::handler::verify::{
 use crate::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use crate::core::ics04_channel::packet::PacketResult;
 use crate::core::ics04_channel::{error::Error, handler::timeout::TimeoutPacketResult};
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
 pub fn process<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     msg: &MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();

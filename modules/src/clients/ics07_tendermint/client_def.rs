@@ -31,7 +31,7 @@ use crate::core::ics24_host::path::{
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
 use crate::core::ics24_host::Path;
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
@@ -48,7 +48,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_header(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -137,7 +137,7 @@ impl ClientDef for TendermintClient {
 
     fn update_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -161,7 +161,7 @@ impl ClientDef for TendermintClient {
 
     fn check_for_misbehaviour(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -242,7 +242,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_client_consensus_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -267,7 +267,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_connection_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -288,7 +288,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_channel_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -310,7 +310,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_client_full_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
@@ -330,7 +330,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -363,7 +363,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -396,7 +396,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -428,7 +428,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn LightClientContext,
+        ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         client_state: &Self::ClientState,
         height: Height,
@@ -512,7 +512,7 @@ fn verify_non_membership(
 }
 
 fn verify_delay_passed(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     height: Height,
     connection_end: &ConnectionEnd,
 ) -> Result<(), Ics02Error> {

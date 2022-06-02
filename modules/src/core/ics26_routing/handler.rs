@@ -3,7 +3,6 @@ use crate::prelude::*;
 
 use ibc_proto::google::protobuf::Any;
 
-use crate::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::core::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::core::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::core::ics04_channel::handler::{
@@ -32,10 +31,7 @@ pub struct MsgReceipt {
 /// Mimics the DeliverTx ABCI interface, but for a single message and at a slightly lower level.
 /// No need for authentication info or signature checks here.
 /// Returns a vector of all events that got generated as a byproduct of processing `message`.
-pub fn deliver<Ctx, HostFunctions>(
-    ctx: &mut Ctx,
-    message: Any,
-) -> Result<(Vec<IbcEvent>, Vec<String>), Error>
+pub fn deliver<Ctx, HostFunctions>(ctx: &mut Ctx, message: Any) -> Result<MsgReceipt, Error>
 where
     Ctx: Ics26Context,
     HostFunctions: HostFunctionsProvider,
@@ -44,7 +40,7 @@ where
     let envelope = decode(message)?;
 
     // Process the envelope, and accumulate any events that were generated.
-    let output = dispatch::<_, HostFunctions>(ctx, envelope)?;
+    let HandlerOutput { log, events, .. } = dispatch::<_, HostFunctions>(ctx, envelope)?;
 
     Ok(MsgReceipt { events, log })
 }
@@ -114,20 +110,6 @@ where
             handler_builder.with_result(())
         }
 
-        Ics20Msg(msg) => {
-            let handler_output = ics20_msg_dispatcher::<_, HostFunctions>(ctx, msg)
-                .map_err(Error::ics20_fungible_token_transfer)?;
-
-            // Apply any results to the host chain store.
-            ctx.store_packet_result(handler_output.result)
-                .map_err(Error::ics04_channel)?;
-
-            HandlerOutput::builder()
-                .with_log(handler_output.log)
-                .with_events(handler_output.events)
-                .with_result(())
-        }
-
         Ics4PacketMsg(msg) => {
             let module_id = get_module_for_packet_msg(ctx, &msg).map_err(Error::ics04_channel)?;
             let (mut handler_builder, packet_result) =
@@ -160,12 +142,10 @@ mod tests {
 
     use test_log::test;
 
-    use crate::applications::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer;
+    use crate::applications::transfer::context::test::deliver as ics20_deliver;
+    use crate::applications::transfer::PrefixedCoin;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
-    use crate::events::IbcEvent;
-    use crate::test_utils::Crypto;
-
     use crate::core::ics02_client::msgs::{
         create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient,
         upgrade_client::MsgUpgradeAnyClient, ClientMsg,
@@ -188,8 +168,8 @@ mod tests {
         timeout_on_close::{test_util::get_dummy_raw_msg_timeout_on_close, MsgTimeoutOnClose},
         ChannelMsg, PacketMsg,
     };
-    use crate::core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof;
     use crate::events::IbcEvent;
+    use crate::test_utils::Crypto;
     use crate::{
         applications::transfer::msgs::transfer::test_util::get_dummy_msg_transfer,
         applications::transfer::msgs::transfer::MsgTransfer,
@@ -236,7 +216,7 @@ mod tests {
         // Test parameters
         struct Test {
             name: String,
-            msg: Ics26Envelope,
+            msg: TestMsg,
             want_pass: bool,
         }
         let default_signer = get_dummy_account_id();
@@ -561,7 +541,23 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = dispatch::<_, Crypto>(&mut ctx, test.msg.clone());
+            let res = match test.msg.clone() {
+                TestMsg::Ics26(msg) => dispatch::<_, Crypto>(&mut ctx, msg).map(|_| ()),
+                TestMsg::Ics20(msg) => {
+                    let transfer_module =
+                        ctx.router_mut().get_route_mut(&transfer_module_id).unwrap();
+                    ics20_deliver(
+                        transfer_module
+                            .as_any_mut()
+                            .downcast_mut::<DummyTransferModule>()
+                            .unwrap(),
+                        &mut HandlerOutputBuilder::new(),
+                        msg,
+                    )
+                    .map(|_| ())
+                    .map_err(Error::ics04_channel)
+                }
+            };
 
             assert_eq!(
                 test.want_pass,

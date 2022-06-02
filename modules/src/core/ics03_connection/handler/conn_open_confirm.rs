@@ -7,13 +7,13 @@ use crate::core::ics03_connection::events::Attributes;
 use crate::core::ics03_connection::handler::verify::verify_proofs;
 use crate::core::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
 pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     msg: MsgConnectionOpenConfirm,
 ) -> HandlerResult<ConnectionResult, Error> {
     let mut output = HandlerOutput::builder();

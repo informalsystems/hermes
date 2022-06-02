@@ -12,7 +12,7 @@ use crate::core::ics02_client::handler::ClientResult;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
@@ -30,7 +30,7 @@ pub struct Result {
 }
 
 pub fn process<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     msg: MsgUpdateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();

@@ -21,6 +21,7 @@ std = [
     "flex-error/std",
     "flex-error/eyre_tracer",
     "ibc-proto/std",
+    "ics23/std",
     "clock",
     "beefy-client/std",
     "sp-runtime/std",
@@ -39,7 +40,7 @@ mocks = ["tendermint-testgen", "clock", "std", "sp-io", "sp-io/std"]
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 borsh = { version = "0.9.3", default-features = false }
-ibc-proto = { version = "0.17.1", path = "../proto", default-features = false }
+ibc-proto = { version = "0.18.0", path = "../proto", default-features = false }
 ics23 = { version = "=0.8.0-alpha", default-features = false }
 time = { version = "0.3", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
@@ -53,8 +54,8 @@ safe-regex = { version = "0.2.5", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 sha2 = { version = "0.10.2", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
-num-traits = { version = "0.2.14", default-features = false }
-derive_more = { version = "0.99.17", default-features = false, features = ["from", "display"] }
+num-traits = { version = "0.2.15", default-features = false }
+derive_more = { version = "0.99.17", default-features = false, features = ["from", "into", "display"] }
 uint = { version = "0.9", default-features = false }
 beefy-client = { package = "beefy-generic-client",  git = "https://github.com/ComposableFi/beefy-client", branch = "master", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }

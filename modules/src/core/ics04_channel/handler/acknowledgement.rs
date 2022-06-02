@@ -8,7 +8,7 @@ use crate::core::ics04_channel::handler::verify::verify_packet_acknowledgement_p
 use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use crate::core::ics04_channel::packet::{PacketResult, Sequence};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
@@ -23,7 +23,7 @@ pub struct AckPacketResult {
 }
 
 pub fn process<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     msg: &MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();

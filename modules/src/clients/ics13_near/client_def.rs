@@ -10,7 +10,7 @@ use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::Height;
 use core::marker::PhantomData;
 
@@ -54,7 +54,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
     // rehydrate client from its own storage, then call this function
     fn verify_header(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -65,7 +65,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
 
     fn update_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: ClientId,
         _client_state: Self::ClientState,
         _header: Self::Header,
@@ -93,7 +93,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
 
     fn check_for_misbehaviour(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: ClientId,
         _client_state: Self::ClientState,
         _header: Self::Header,
@@ -113,7 +113,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
 
     fn verify_client_consensus_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
@@ -129,7 +129,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
     // Consensus state will be verified in the verification functions  before these are called
     fn verify_connection_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -144,7 +144,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
 
     fn verify_channel_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -160,7 +160,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
 
     fn verify_client_full_state(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
@@ -174,7 +174,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
 
     fn verify_packet_data(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -191,7 +191,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
 
     fn verify_packet_acknowledgement(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -208,7 +208,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
 
     fn verify_next_sequence_recv(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -224,7 +224,7 @@ impl<T: HostFunctionsProvider> ClientDef for NearClient<T> {
 
     fn verify_packet_receipt_absence(
         &self,
-        _ctx: &dyn LightClientContext,
+        _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
         _client_state: &Self::ClientState,
         _height: Height,

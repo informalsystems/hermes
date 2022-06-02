@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::prelude::*;
 use core::fmt::Debug;
 
@@ -30,7 +30,7 @@ pub struct Result {
 }
 
 pub fn process(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     msg: MsgCreateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();

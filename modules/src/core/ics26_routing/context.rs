@@ -22,7 +22,7 @@ use crate::handler::HandlerOutputBuilder;
 use crate::signer::Signer;
 
 /// This trait captures all the functional dependencies of needed in light client implementations
-pub trait LightClientContext: ClientReader + ConnectionReader + ChannelReader {}
+pub trait ReaderContext: ClientReader + ConnectionReader + ChannelReader {}
 
 /// This trait captures all the functional dependencies (i.e., context) which the ICS26 module
 /// requires to be able to dispatch and process IBC messages. In other words, this is the
@@ -35,8 +35,7 @@ pub trait Ics26Context:
     + ChannelKeeper
     + ChannelReader
     + PortReader
-    + Ics20Context
-    + LightClientContext
+    + ReaderContext
 {
     type Router: Router;
 

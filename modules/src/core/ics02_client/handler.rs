@@ -2,7 +2,7 @@
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::msgs::ClientMsg;
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::handler::HandlerOutput;
 use core::fmt::Debug;
 
@@ -23,7 +23,7 @@ pub fn dispatch<Ctx, HostFunctions>(
     msg: ClientMsg,
 ) -> Result<HandlerOutput<ClientResult>, Error>
 where
-    Ctx: LightClientContext,
+    Ctx: ReaderContext,
     HostFunctions: HostFunctionsProvider,
 {
     match msg {

@@ -4,7 +4,7 @@ use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::WriteAcknowledgement;
 use crate::core::ics04_channel::packet::{Packet, PacketResult, Sequence};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::prelude::*;
 use crate::{
     events::IbcEvent,
@@ -20,7 +20,7 @@ pub struct WriteAckPacketResult {
 }
 
 pub fn process(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     packet: Packet,
     ack: Vec<u8>,
 ) -> HandlerResult<PacketResult, Error> {

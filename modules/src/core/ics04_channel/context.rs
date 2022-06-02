@@ -15,7 +15,7 @@ use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
-use super::packet::{PacketResult, Sequence};
+use super::packet::{Packet, PacketResult, Sequence};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 pub trait ChannelReader {
@@ -71,7 +71,7 @@ pub trait ChannelReader {
         self.hash(ack.into_bytes()).into()
     }
 
-    /// A hashing function for packet commitments
+    /// A Sha2_256 hashing function
     fn hash(&self, value: Vec<u8>) -> Vec<u8>;
 
     /// Returns the time when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
@@ -137,6 +137,8 @@ pub trait ChannelKeeper {
                     (res.port_id.clone(), res.channel_id, res.seq),
                     res.commitment,
                 )?;
+
+                self.store_packet((res.port_id.clone(), res.channel_id, res.seq), res.packet)?;
             }
             PacketResult::Recv(res) => {
                 let res = match res {
@@ -197,6 +199,13 @@ pub trait ChannelKeeper {
         &mut self,
         key: (PortId, ChannelId, Sequence),
         commitment: PacketCommitment,
+    ) -> Result<(), Error>;
+
+    /// Allow implementers to optionally store packet in storage
+    fn store_packet(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        packet: Packet,
     ) -> Result<(), Error>;
 
     fn delete_packet_commitment(&mut self, key: (PortId, ChannelId, Sequence))

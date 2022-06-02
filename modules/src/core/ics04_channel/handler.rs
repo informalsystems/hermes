@@ -7,7 +7,7 @@ use crate::core::ics04_channel::msgs::ChannelMsg;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::{
-    Ics26Context, LightClientContext, ModuleId, ModuleOutput, OnRecvPacketAck, Router,
+    Ics26Context, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, ReaderContext, Router,
 };
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 use core::fmt::Debug;
@@ -64,7 +64,7 @@ pub fn channel_dispatch<Ctx, HostFunctions>(
     msg: &ChannelMsg,
 ) -> Result<(HandlerOutputBuilder<()>, ChannelResult), Error>
 where
-    Ctx: LightClientContext,
+    Ctx: ReaderContext,
     HostFunctions: HostFunctionsProvider,
 {
     let output = match msg {
@@ -177,7 +177,7 @@ pub fn packet_dispatch<Ctx, HostFunctions>(
     msg: &PacketMsg,
 ) -> Result<(HandlerOutputBuilder<()>, PacketResult), Error>
 where
-    Ctx: LightClientContext,
+    Ctx: ReaderContext,
     HostFunctions: HostFunctionsProvider,
 {
     let output = match msg {

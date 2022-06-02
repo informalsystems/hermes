@@ -7,14 +7,14 @@ use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::{Packet, Sequence};
-use crate::core::ics26_routing::context::LightClientContext;
+use crate::core::ics26_routing::context::ReaderContext;
 use crate::prelude::*;
 use crate::proofs::Proofs;
 use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
 pub fn verify_channel_proofs<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     height: Height,
     channel_end: &ChannelEnd,
     connection_end: &ConnectionEnd,
@@ -57,7 +57,7 @@ pub fn verify_channel_proofs<HostFunctions: HostFunctionsProvider>(
 
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
 pub fn verify_packet_recv_proofs<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     height: Height,
     packet: &Packet,
     connection_end: &ConnectionEnd,
@@ -105,7 +105,7 @@ pub fn verify_packet_recv_proofs<HostFunctions: HostFunctionsProvider>(
 
 /// Entry point for verifying all proofs bundled in an ICS4 packet ack message.
 pub fn verify_packet_acknowledgement_proofs<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     height: Height,
     packet: &Packet,
     acknowledgement: Acknowledgement,
@@ -150,7 +150,7 @@ pub fn verify_packet_acknowledgement_proofs<HostFunctions: HostFunctionsProvider
 
 /// Entry point for verifying all timeout proofs.
 pub fn verify_next_sequence_recv<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     height: Height,
     connection_end: &ConnectionEnd,
     packet: Packet,
@@ -191,7 +191,7 @@ pub fn verify_next_sequence_recv<HostFunctions: HostFunctionsProvider>(
 }
 
 pub fn verify_packet_receipt_absence<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn LightClientContext,
+    ctx: &dyn ReaderContext,
     height: Height,
     connection_end: &ConnectionEnd,
     packet: Packet,
