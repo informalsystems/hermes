@@ -1,23 +1,22 @@
-use core::fmt::{Display, Formatter};
-use core::str::FromStr;
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
-use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use ibc::applications::transfer::error::Error as Ics20Error;
+use ibc::applications::transfer::msgs::transfer::MsgTransfer;
+use ibc::applications::transfer::Amount;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::signer::Signer;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
-use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::ChainStatus;
 use crate::error::Error;
-use crate::util::bigint::U256;
 
 define_error! {
     TransferError {
@@ -55,31 +54,12 @@ define_error! {
                     e.event)
             },
 
+        TokenTransfer
+            [ Ics20Error ]
+            |_| { "Token transfer error" },
+
         ZeroTimeout
             | _ | { "packet timeout height and packet timeout timestamp cannot both be 0" },
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Amount(pub U256);
-
-impl Display for Amount {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl FromStr for Amount {
-    type Err = FromStrRadixErr;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(U256::from_str_radix(s, 10)?))
-    }
-}
-
-impl From<u64> for Amount {
-    fn from(amount: u64) -> Self {
-        Self(amount.into())
     }
 }
 
@@ -150,10 +130,10 @@ pub fn build_transfer_message(
     let msg = MsgTransfer {
         source_port: packet_src_port_id,
         source_channel: packet_src_channel_id,
-        token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
+        token: Coin {
             denom,
             amount: amount.to_string(),
-        }),
+        },
         sender,
         receiver,
         timeout_height,
@@ -168,10 +148,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
     opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, TransferError> {
-    let receiver = match &opts.receiver {
-        None => packet_dst_chain.get_signer().map_err(TransferError::key)?,
-        Some(r) => r.clone().into(),
-    };
+    let receiver = packet_dst_chain.get_signer().map_err(TransferError::key)?;
 
     let sender = packet_src_chain.get_signer().map_err(TransferError::key)?;
 
@@ -188,10 +165,10 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     let msg = MsgTransfer {
         source_port: opts.packet_src_port_id.clone(),
         source_channel: opts.packet_src_channel_id,
-        token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
+        token: Coin {
             denom: opts.denom.clone(),
             amount: opts.amount.to_string(),
-        }),
+        },
         sender,
         receiver,
         timeout_height: timeout.timeout_height,
