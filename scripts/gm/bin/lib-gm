@@ -5,7 +5,7 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  VERSION="v0.1.1"
+  VERSION="v0.1.2"
   if is_json_output; then
     echo '{"status": "success", "message": "'"${VERSION}"'"}'
   else
