@@ -40,16 +40,19 @@ mod handshake_retry {
     use crate::util::retry::{clamp_total, ConstantGrowth};
     use core::time::Duration;
 
-    // Approximate number of retries per block
+    /// Approximate number of retries per block.
     const PER_BLOCK_RETRIES: u32 = 10;
-    // Keep the retry delay constant
+
+    /// Defines the increment in delay between subsequent retries.
+    /// A value of `0` will make the retry delay constant.
     const DELAY_INCREMENT: u64 = 0;
-    // Maximum retry delay expressed in number of blocks
+
+    /// Maximum retry delay expressed in number of blocks
     const BLOCK_NUMBER_DELAY: u32 = 10;
 
-    // The default retry strategy.
-    // We retry with a constant backoff strategy. The strategy is parametrized by the
-    // maximum block time expressed as a `Duration`.
+    /// The default retry strategy.
+    /// We retry with a constant backoff strategy. The strategy is parametrized by the
+    /// maximum block time expressed as a `Duration`.
     pub fn default_strategy(max_block_times: Duration) -> impl Iterator<Item = Duration> {
         let retry_delay = max_block_times / PER_BLOCK_RETRIES;
 
