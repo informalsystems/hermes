@@ -32,9 +32,10 @@ pub use error::ConnectionError;
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
 
-// Includes utility methods and constants to configure the retry behavior
-// for the channel handshake algorithm.
 mod handshake_retry {
+    //! Provides utility methods and constants to configure the retry behavior
+    //! for the channel handshake algorithm.
+
     use crate::connection::ConnectionError;
     use crate::util::retry::{clamp_total, ConstantGrowth};
     use core::time::Duration;
