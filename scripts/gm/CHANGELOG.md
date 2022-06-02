@@ -4,7 +4,11 @@
 
 ### BUGFIXES
 
-- Fixed `gm hermes keys` which was broken following a breaking change in Hermes CLI ([#2262])
+- Fixed `gm hermes keys` which was broken following a breaking change in Hermes CLI ([#2262]).
+
+### IMPROVEMENTS
+
+- Adjusted the `max_gas` and `gas_price.price` parameters used for `gm hermes config`.
 
 [#2262]: https://github.com/informalsystems/ibc-rs/issues/2262
 
