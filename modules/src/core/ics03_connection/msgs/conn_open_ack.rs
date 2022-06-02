@@ -99,7 +99,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 proof_height,
             )
             .map_err(Error::invalid_proof)?,
-            signer: msg.signer.into(),
+            signer: msg.signer.parse().map_err(Error::signer)?,
         })
     }
 }
