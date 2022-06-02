@@ -1023,13 +1023,13 @@ hermes_keys() {
   while [ "$EXTRA_WALLETS_COUNTER" -gt 0 ];
   do
     if [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
-        "$HERMES_BINARY" keys add "$ID" --name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
+        "$HERMES_BINARY" keys add "$ID" --key-name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
     elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
-        "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
+        "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --key-name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
     elif [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
-        "$HERMES_BINARY" keys add "$ID" --hd-path "$HDPATH" --name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
+        "$HERMES_BINARY" keys add "$ID" --hd-path "$HDPATH" --key-name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
     elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
-        "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --hd-path "$HDPATH" --name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
+        "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --hd-path "$HDPATH" --key-name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
     fi
     EXTRA_WALLETS_COUNTER="$((EXTRA_WALLETS_COUNTER - 1))"
   done
