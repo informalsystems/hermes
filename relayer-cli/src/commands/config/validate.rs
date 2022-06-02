@@ -25,7 +25,7 @@ impl Runnable for ValidateCmd {
                 // If there is a configuration file, verify that it is readable and not empty.
                 match fs::read_to_string(p.clone()) {
                     Ok(content) => {
-                        if content == "" {
+                        if content.is_empty() {
                             Output::error("the configuration file is empty").exit();
                         }
                     }
