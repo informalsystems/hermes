@@ -40,13 +40,7 @@ pub fn from_retry_error(e: retry::Error<ConnectionError>, description: String) -
             total_delay,
             tries,
         } => {
-            let detail = error::ConnectionErrorDetail::MaxRetry(error::MaxRetrySubdetail {
-                description,
-                tries,
-                total_delay,
-                source: Box::new(error.0),
-            });
-            ConnectionError(detail, error.1)
+            ConnectionError::max_retry(description, tries, total_delay, Box::new(error.0))
         }
         retry::Error::Internal(reason) => ConnectionError::retry_internal(reason),
     }
