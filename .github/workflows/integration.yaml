@@ -173,3 +173,42 @@ jobs:
           nix shell .#python .#ica -c cargo \
             test -p ibc-integration-test --features ica --no-fail-fast -- \
             --nocapture --test-threads=1 test_ica_filter
+
+  model-based-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        gaiad:
+          - gaia6
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v15
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v10
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --features mbt --no-fail-fast --no-run
+      # Disable running MBT tests until flakiness is addressed
+      # - env:
+      #     RUST_LOG: debug
+      #     RUST_BACKTRACE: 1
+      #     NO_COLOR_LOG: 1
+      #   run: |
+      #     nix shell \
+      #       .#${{ matrix.gaiad }} \
+      #       .#apalache \
+      #       -c cargo \
+      #       test -p ibc-integration-test --features mbt --no-fail-fast -- \
+      #       --nocapture --test-threads=1 mbt

@@ -374,6 +374,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4872d67bab6358e59559027aa3b9157c53d9358c51423c17554809a8858e0f8"
 
 [[package]]
+name = "bzip2"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6afcd980b5f3a45017c57e57a2fcccbb351cc43a356ce117ef760ef8052b89b0"
+dependencies = [
+ "bzip2-sys",
+ "libc",
+]
+
+[[package]]
+name = "bzip2-sys"
+version = "0.1.11+1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "736a955f3fa7875102d57c82b8cac37ec45224a07fd32d58f9f7a186b6cd4cdc"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
 name = "camino"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1448,7 +1469,7 @@ dependencies = [
  "flex-error",
  "ibc-proto",
  "ics23",
- "modelator",
+ "modelator 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits",
  "prost",
  "prost-types",
@@ -1464,9 +1485,10 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
- "time",
+ "time 0.3.9",
  "tracing",
  "tracing-subscriber",
+ "uint",
 ]
 
 [[package]]
@@ -1478,11 +1500,13 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-test-framework",
+ "modelator 0.4.2 (git+https://github.com/informalsystems/modelator)",
  "serde",
  "serde_json",
+ "tempfile",
  "tendermint",
  "tendermint-rpc",
- "time",
+ "time 0.3.9",
 ]
 
 [[package]]
@@ -1555,8 +1579,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber",
- "uint",
- "uuid 1.0.0",
+ "uuid 1.1.0",
 ]
 
 [[package]]
@@ -1629,7 +1652,7 @@ dependencies = [
  "opentelemetry-prometheus",
  "prometheus",
  "rouille",
- "uuid 1.0.0",
+ "uuid 1.1.0",
 ]
 
 [[package]]
@@ -1940,10 +1963,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "modelator"
+version = "0.4.2"
+source = "git+https://github.com/informalsystems/modelator#414fdeb192c165803639363808d88c14e6f972ad"
+dependencies = [
+ "clap",
+ "clap_complete",
+ "directories",
+ "hex",
+ "lazy_static",
+ "nom",
+ "once_cell",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.2",
+ "tempfile",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+ "ureq",
+ "zip",
+]
+
+[[package]]
 name = "moka"
-version = "0.8.4"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e924a2158752c5e2358a3a230e01a532cd9948a0eee35de848e094a9eb8ec294"
+checksum = "df72b50274c0988d9f4a6e808e06d9d926f265db6f8bbda1576bcaa658e72763"
 dependencies = [
  "crossbeam-channel 0.5.4",
  "crossbeam-epoch 0.8.2",
@@ -2290,6 +2338,12 @@ dependencies = [
  "spki",
  "zeroize",
 ]
+
+[[package]]
+name = "pkg-config"
+version = "0.3.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
 
 [[package]]
 name = "ppv-lite86"
@@ -2648,7 +2702,7 @@ dependencies = [
  "serde_json",
  "sha1",
  "threadpool",
- "time",
+ "time 0.3.9",
  "tiny_http",
  "url",
 ]
@@ -3329,7 +3383,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time",
+ "time 0.3.9",
  "zeroize",
 ]
 
@@ -3365,7 +3419,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-rpc",
- "time",
+ "time 0.3.9",
  "tokio",
 ]
 
@@ -3379,7 +3433,7 @@ dependencies = [
  "flex-error",
  "serde",
  "tendermint",
- "time",
+ "time 0.3.9",
 ]
 
 [[package]]
@@ -3397,7 +3451,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time",
+ "time 0.3.9",
 ]
 
 [[package]]
@@ -3426,7 +3480,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
- "time",
+ "time 0.3.9",
  "tokio",
  "tracing",
  "url",
@@ -3447,7 +3501,7 @@ dependencies = [
  "simple-error",
  "tempfile",
  "tendermint",
- "time",
+ "time 0.3.9",
 ]
 
 [[package]]
@@ -3522,6 +3576,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
 dependencies = [
  "num_cpus",
+]
+
+[[package]]
+name = "time"
+version = "0.1.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca8a50ef2360fbd1eeb0ecd46795a87a19024eb4b53c5dc916ca1fd95fe62438"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
@@ -4031,9 +4095,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cfcd319456c4d6ea10087ed423473267e1a071f3bc0aa89f80d60997843c6f0"
+checksum = "93bbc61e655a4833cf400d0d15bf3649313422fa7572886ad6dab16d79886365"
 dependencies = [
  "getrandom 0.2.6",
 ]
@@ -4302,4 +4366,18 @@ dependencies = [
  "quote",
  "syn",
  "synstructure",
+]
+
+[[package]]
+name = "zip"
+version = "0.5.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93ab48844d61251bb3835145c521d88aa4031d7139e8485990f60ca911fa0815"
+dependencies = [
+ "byteorder",
+ "bzip2",
+ "crc32fast",
+ "flate2",
+ "thiserror",
+ "time 0.1.43",
 ]

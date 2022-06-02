@@ -72,7 +72,7 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
         MsgCreateAnyClient::new(
             AnyClientState::try_from(raw_client_state)?,
             AnyConsensusState::try_from(raw_consensus_state)?,
-            raw.signer.into(),
+            raw.signer.parse().map_err(Error::signer)?,
         )
     }
 }
