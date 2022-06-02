@@ -65,7 +65,7 @@ mod tests {
         use ChainType::*;
 
         assert!(matches!(parse("CosmosSdk"), Ok(CosmosSdk)));
-        assert!(matches!(parse("cosmosdk"), Ok(CosmosSdk)));
+        assert!(matches!(parse("cosmossdk"), Ok(CosmosSdk)));
         assert!(matches!(parse("cosmos-sdk"), Ok(CosmosSdk)));
         assert!(matches!(parse("mock"), Ok(Mock)));
 
