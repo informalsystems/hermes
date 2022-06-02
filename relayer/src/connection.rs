@@ -1,9 +1,5 @@
 use core::time::Duration;
 
-use crate::chain::counterparty::connection_state_on_destination;
-use crate::chain::requests::{PageRequest, QueryConnectionRequest, QueryConnectionsRequest};
-use crate::chain::tracking::TrackedMsgs;
-pub use error::ConnectionError;
 use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
@@ -21,14 +17,18 @@ use ibc::events::IbcEvent;
 use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
 
+use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::{PageRequest, QueryConnectionRequest, QueryConnectionsRequest};
+use crate::chain::tracking::TrackedMsgs;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
 use crate::util::retry::{clamp_total, retry_with_index, ConstantGrowth};
 use crate::util::retry::{retry_count, RetryResult};
 use crate::util::task::Next;
 
-pub mod error;
+mod error;
+pub use error::ConnectionError;
 
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
