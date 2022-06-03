@@ -289,7 +289,7 @@ pub enum AddressType {
     Cosmos,
     Ethermint {
         #[serde(rename = "pk-type")]
-        pk_type: String
+        pk_type: String,
     },
 }
 

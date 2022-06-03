@@ -93,21 +93,21 @@ fn get_chains() {
 
 const MOCK_CHAIN_CONFIG: &str = r#"
 id = 'mock-0'
-rpc_addr = 'http://127.0.0.1:26557'
-grpc_addr = 'http://127.0.0.1:9091'
-websocket_addr = 'ws://127.0.0.1:26557/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 3000000
-gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
-max_msg_num = 30
-max_tx_size = 2097152
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+rpc-addr = 'http://127.0.0.1:26557'
+grpc-addr = 'http://127.0.0.1:9091'
+websocket-addr = 'ws://127.0.0.1:26557/websocket'
+rpc-timeout = '10s'
+account-prefix = 'cosmos'
+key-name = 'testkey'
+store-prefix = 'ibc'
+max-gas = 3000000
+gas-price = { price = 0.001, denom = 'stake' }
+gas-adjustment = 0.1
+max-msg-num = 30
+max-tx-size = 2097152
+clock-drift = '5s'
+trusting-period = '14days'
+trust-threshold = { numerator = '1', denominator = '3' }
 "#;
 
 #[test]
