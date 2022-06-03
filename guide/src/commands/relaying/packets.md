@@ -11,7 +11,7 @@ This section describes the configuration and commands that can be used to start 
 To relay packets only configure the `mode` section of the configuration file like so:
 ```toml
 [global]
-log_level = 'info'
+log-level = 'info'
 
 [mode]
 

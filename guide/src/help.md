@@ -7,7 +7,7 @@ For this purpose, we recommend a few ideas that could be of help:
 - [hermes help][help] command, providing a CLI
   documentation for all `hermes` commands.
 - [profile][profiling] your relayer binary to identify slow methods;
-- [configure][log-level] the `log_level` to help with debugging;
+- [configure][log-level] the `log-level` to help with debugging;
 - [patch][patching] your local gaia chain(s) to enable some corner-case methods
   (e.g., channel close);
 
@@ -82,7 +82,7 @@ all commands.
 
 ## Parametrizing the log output level
 
-The relayer configuration file permits parametrization of output verbosity via the knob called `log_level`.
+The relayer configuration file permits parametrization of output verbosity via the knob called `log-level`.
 This file is loaded by default from `$HOME/.hermes/config.toml`, but can be overridden in all commands
 with the `-c` flag, eg. `hermes -c ./path/to/my/config.toml some command`.
 
@@ -90,7 +90,7 @@ Relevant snippet:
 
 ```toml
 [global]
-log_level = 'error'
+log-level = 'error'
 ```
 
 Valid options for `log_level` are: 'error', 'warn', 'info', 'debug', 'trace'.
@@ -112,7 +112,7 @@ Using the `RUST_LOG` environment variable, we can turn logging on for the
 `tendermint-rpc` library, as follows:
 
 ```
-RUST_LOG=tendermint-rpc=debug,info hermes start
+RUST_LOG=tendermint_rpc=debug,info hermes start
 ```
 
 Setting the `RUST_LOG` environment variable to `tendermint_rpc=debug,info` instructs

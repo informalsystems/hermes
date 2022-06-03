@@ -948,7 +948,7 @@ hermes_config() {
   fi
   cat <<EOF > "$GLOBAL_HERMES_CONFIG"
 [global]
-log_level = '${GLOBAL_HERMES_LOG_LEVEL}'
+log-level = '${GLOBAL_HERMES_LOG_LEVEL}'
 
 [mode]
 
@@ -965,9 +965,9 @@ enabled = true
 
 [mode.packets]
 enabled = true
-clear_interval = 100
-clear_on_start = true
-tx_confirmation = true
+clear-interval = 100
+clear-on-start = true
+tx-confirmation = true
 
 [telemetry]
 enabled = ${GLOBAL_HERMES_TELEMETRY_ENABLED}
@@ -988,18 +988,18 @@ EOF
     cat <<EOF >> "$GLOBAL_HERMES_CONFIG"
 [[chains]]
 id = '${ID}'
-rpc_addr = 'http://localhost:${RPC}'
-grpc_addr = 'http://localhost:${GRPC}'
-websocket_addr = 'ws://localhost:${RPC}/websocket'
-rpc_timeout = '15s'
-account_prefix = '${ACCOUNT_PREFIX}'
-key_name = 'wallet'
-store_prefix = 'ibc'
-gas_price = { price = 0.001, denom = '${DENOM}' }
-max_gas = 1000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+rpc-addr = 'http://localhost:${RPC}'
+grpc-addr = 'http://localhost:${GRPC}'
+websocket-addr = 'ws://localhost:${RPC}/websocket'
+rpc-timeout = '15s'
+account-prefix = '${ACCOUNT_PREFIX}'
+key-name = 'wallet'
+store-prefix = 'ibc'
+gas-price = { price = 0.001, denom = '${DENOM}' }
+max-gas = 1000000
+clock-drift = '5s'
+trusting-period = '14days'
+trust-threshold = { numerator = '1', denominator = '3' }
 
 EOF
     done

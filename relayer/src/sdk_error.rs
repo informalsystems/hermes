@@ -18,7 +18,7 @@ define_error! {
 
         OutOfGas
             { code: u32 }
-            |_| { "the price configuration for this chain may be too low! please check the `gas_price.price` Hermes config.toml".to_string() },
+            |_| { "the price configuration for this chain may be too low! please check the `gas-price.price` Hermes config.toml".to_string() },
     }
 }
 

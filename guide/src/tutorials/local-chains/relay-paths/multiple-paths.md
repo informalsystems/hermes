@@ -8,7 +8,7 @@ Follow the steps below to connect three chains together and relay packets betwee
 
     ```toml
     [global]
-    log_level = 'info'
+    log-level = 'info'
 
     [mode]
 
@@ -25,57 +25,57 @@ Follow the steps below to connect three chains together and relay packets betwee
 
     [mode.packets]
     enabled = true
-    clear_interval = 100
-    clear_on_start = true
-    tx_confirmation = true
+    clear-interval = 100
+    clear-on-start = true
+    tx-confirmation = true
 
     [[chains]]
     id = 'ibc-0'
-    rpc_addr = 'http://127.0.0.1:26657'
-    grpc_addr = 'http://127.0.0.1:9090'
-    websocket_addr = 'ws://127.0.0.1:26657/websocket'
-    rpc_timeout = '10s'
-    account_prefix = 'cosmos'
-    key_name = 'testkey'
-    store_prefix = 'ibc'
-    max_gas = 2000000
-    gas_price = { price = 0.001, denom = 'stake' }
-    gas_adjustment = 0.1
-    clock_drift = '5s'
-    trusting_period = '14days'
-    trust_threshold = { numerator = '1', denominator = '3' }
+    rpc-addr = 'http://127.0.0.1:26657'
+    grpc-addr = 'http://127.0.0.1:9090'
+    websocket-addr = 'ws://127.0.0.1:26657/websocket'
+    rpc-timeout = '10s'
+    account-prefix = 'cosmos'
+    key-name = 'testkey'
+    store-prefix = 'ibc'
+    max-gas = 2000000
+    gas-price = { price = 0.001, denom = 'stake' }
+    gas-adjustment = 0.1
+    clock-drift = '5s'
+    trusting-period = '14days'
+    trust-threshold = { numerator = '1', denominator = '3' }
 
     [[chains]]
     id = 'ibc-1'
-    rpc_addr = 'http://127.0.0.1:26557'
-    grpc_addr = 'http://127.0.0.1:9091'
-    websocket_addr = 'ws://127.0.0.1:26557/websocket'
-    rpc_timeout = '10s'
-    account_prefix = 'cosmos'
-    key_name = 'testkey'
-    store_prefix = 'ibc'
-    max_gas = 2000000
-    gas_price = { price = 0.001, denom = 'stake' }
-    gas_adjustment = 0.1
-    clock_drift = '5s'
-    trusting_period = '14days'
-    trust_threshold = { numerator = '1', denominator = '3' }
+    rpc-addr = 'http://127.0.0.1:26557'
+    grpc-addr = 'http://127.0.0.1:9091'
+    websocket-addr = 'ws://127.0.0.1:26557/websocket'
+    rpc-timeout = '10s'
+    account-prefix = 'cosmos'
+    key-name = 'testkey'
+    store-prefix = 'ibc'
+    max-gas = 2000000
+    gas-price = { price = 0.001, denom = 'stake' }
+    gas-adjustment = 0.1
+    clock-drift = '5s'
+    trusting-period = '14days'
+    trust-threshold = { numerator = '1', denominator = '3' }
 
     [[chains]]
     id = 'ibc-2'
-    rpc_addr = 'http://127.0.0.1:26457'
-    grpc_addr = 'http://127.0.0.1:9092'
-    websocket_addr = 'ws://127.0.0.1:26457/websocket'
-    rpc_timeout = '10s'
-    account_prefix = 'cosmos'
-    key_name = 'testkey'
-    store_prefix = 'ibc'
-    max_gas = 2000000
-    gas_price = { price = 0.001, denom = 'stake' }
-    gas_adjustment = 0.1
-    clock_drift = '5s'
-    trusting_period = '14days'
-    trust_threshold = { numerator = '1', denominator = '3' }
+    rpc-addr = 'http://127.0.0.1:26457'
+    grpc-addr = 'http://127.0.0.1:9092'
+    websocket-addr = 'ws://127.0.0.1:26457/websocket'
+    rpc-timeout = '10s'
+    account-prefix = 'cosmos'
+    key-name = 'testkey'
+    store-prefix = 'ibc'
+    max-gas = 2000000
+    gas-price = { price = 0.001, denom = 'stake' }
+    gas-adjustment = 0.1
+    clock-drift = '5s'
+    trusting-period = '14days'
+    trust-threshold = { numerator = '1', denominator = '3' }
     ```
 
     This configuration has three chains `ibc-0`, `ibc-1` and `ibc-2`.

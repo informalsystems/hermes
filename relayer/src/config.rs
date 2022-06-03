@@ -179,7 +179,7 @@ pub struct Channels {
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct Packets {
     pub enabled: bool,
     #[serde(default = "default::clear_packets_interval")]
@@ -233,7 +233,7 @@ impl fmt::Display for LogLevel {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
-#[serde(default, deny_unknown_fields)]
+#[serde(default, deny_unknown_fields, rename_all = "kebab-case")]
 pub struct GlobalConfig {
     pub log_level: LogLevel,
 }
@@ -306,7 +306,7 @@ impl fmt::Display for AddressType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct ChainConfig {
     pub id: ChainId,
     pub rpc_addr: tendermint_rpc::Url,

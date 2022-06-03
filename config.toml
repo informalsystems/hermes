@@ -3,7 +3,7 @@
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
-log_level = 'info'
+log-level = 'info'
 
 
 # Specify the mode to be used by the relayer. [Required]
@@ -48,20 +48,20 @@ enabled = true
 # Interval (in number of blocks) at which pending packets
 # should be periodically cleared. A value of '0' will disable
 # periodic packet clearing. [Default: 100]
-clear_interval = 100
+clear-interval = 100
 
 # Whether or not to clear packets on start. [Default: false]
-clear_on_start = true
+clear-on-start = true
 
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
 # (to any chain in this config file) have been successfully delivered.
-# If they have not been, and `clear_interval = 0`, then those packets are
+# If they have not been, and `clear-interval = 0`, then those packets are
 # queued up for re-submission.
 # Experimental feature. Affects telemetry if set to false.
 # [Default: true]
-tx_confirmation = true
+tx-confirmation = true
 
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
@@ -103,28 +103,28 @@ port = 3001
 id = 'ibc-0'
 
 # Specify the RPC address and port where the chain RPC server listens on. Required
-rpc_addr = 'http://127.0.0.1:26657'
+rpc-addr = 'http://127.0.0.1:26657'
 
 # Specify the GRPC address and port where the chain GRPC server listens on. Required
-grpc_addr = 'http://127.0.0.1:9090'
+grpc-addr = 'http://127.0.0.1:9090'
 
 # Specify the WebSocket address and port where the chain WebSocket server
 # listens on. Required
-websocket_addr = 'ws://127.0.0.1:26657/websocket'
+websocket-addr = 'ws://127.0.0.1:26657/websocket'
 
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
 # Note: Hermes uses this parameter _only_ in `start` mode; for all other CLIs,
 # Hermes uses a large preconfigured timeout (on the order of minutes).
-rpc_timeout = '10s'
+rpc-timeout = '10s'
 
 # Specify the prefix used by the chain. Required
-account_prefix = 'cosmos'
+account-prefix = 'cosmos'
 
 # Specify the name of the private key to use for signing transactions. Required
 # See the Adding Keys chapter for more information about managing signing keys:
 #   https://hermes.informal.systems/commands/keys/index.html#adding-keys
-key_name = 'testkey'
+key-name = 'testkey'
 
 # Specify the address type which determines:
 # 1) address derivation;
@@ -134,71 +134,71 @@ key_name = 'testkey'
 #
 # Example configuration for chains based on Ethermint library:
 #
-# address_type = { derivation = 'ethermint', proto_type = { pk_type = '/ethermint.crypto.v1.ethsecp256k1.PubKey' } }
+# address-type = { derivation = 'ethermint', proto-type = { pk-type = '/ethermint.crypto.v1.ethsecp256k1.PubKey' } }
 #
 # Default: { derivation = 'cosmos' }, i.e. address derivation as in Cosmos SDK.
 # Warning: This is an advanced feature! Modify with caution.
-address_type = { derivation = 'cosmos' }
+address-type = { derivation = 'cosmos' }
 
 # Specify the store prefix used by the on-chain IBC modules. Required
 # Recommended value for Cosmos SDK: 'ibc'
-store_prefix = 'ibc'
+store-prefix = 'ibc'
 
 # Specify the default amount of gas to be used in case the tx simulation fails,
 # and Hermes cannot estimate the amount of gas needed.
 # Default: 100 000
-default_gas = 100000
+default-gas = 100000
 
 # Specify the maximum amount of gas to be used as the gas limit for a transaction.
 # Default: 400 000
-max_gas = 400000
+max-gas = 400000
 
 # Specify the price per gas used of the fee to submit a transaction and
 # the denomination of the fee. Required
-gas_price = { price = 0.001, denom = 'stake' }
+gas-price = { price = 0.001, denom = 'stake' }
 
 # Specify the ratio by which to increase the gas estimate used to compute the fee,
 # to account for potential estimation error. Default: 0.1, ie. 10%.
 # Valid range: 0.0 to 1.0 (inclusive)
-gas_adjustment = 1.0
+gas-adjustment = 1.0
 
 # Specify how many IBC messages at most to include in a single transaction.
 # Default: 30
-max_msg_num = 30
+max-msg-num = 30
 
 # Specify the maximum size, in bytes, of each transaction that Hermes will submit.
 # Default: 2097152 (2 MiB)
-max_tx_size = 2097152
+max-tx-size = 2097152
 
 # Specify the maximum amount of time to tolerate a clock drift.
 # The clock drift parameter defines how much new (untrusted) header's time
 # can drift into the future. Default: 5s
-clock_drift = '5s'
+clock-drift = '5s'
 
 # Specify the maximum time per block for this chain.
 # The block time together with the clock drift are added to the source drift to estimate
 # the maximum clock drift when creating a client on this chain. Default: 30s
 # For cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commit`
 # Note: This MUST be the same as the `max_expected_time_per_block` genesis parameter for Tendermint chains.
-max_block_time = '30s'
+max-block-time = '30s'
 
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period
 # (e.g. unbonding period = 3 weeks, trusting period = 2 weeks).
 # Default: 2/3 of the `unbonding period` for Cosmos SDK chains
-trusting_period = '14days'
+trusting-period = '14days'
 
 # Specify the trust threshold for the light client, ie. the maximum fraction of validators
 # which have changed between two blocks.
 # Default: { numerator = '1', denominator = '3' }, ie. 1/3.
 # Warning: This is an advanced feature! Modify with caution.
-trust_threshold = { numerator = '1', denominator = '3' }
+trust-threshold = { numerator = '1', denominator = '3' }
 
 # Specify a string that Hermes will use as a memo for each transaction it submits
 # to this chain. The string is limited to 50 characters. Default: '' (empty).
 # Note: Hermes will append to the string defined here additional
 # operational debugging information, e.g., relayer build version.
-memo_prefix = ''
+memo-prefix = ''
 
 # This section specifies the filters for policy based relaying.
 #
@@ -226,27 +226,27 @@ memo_prefix = ''
 
 # Specify that the transaction fees should be payed from this fee granter's account.
 # Optional. If unspecified (the default behavior), then no fee granter is used, and
-# the account specified in `key_name` will pay the tx fees for all transactions
+# the account specified in `key-name` will pay the tx fees for all transactions
 # submitted to this chain.
-# fee_granter = ''
+# fee-granter = ''
 
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'http://127.0.0.1:26557'
-grpc_addr = 'http://127.0.0.1:9091'
-websocket_addr = 'ws://127.0.0.1:26557/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-default_gas = 100000
-max_gas = 400000
-gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
-max_msg_num = 30
-max_tx_size = 2097152
-clock_drift = '5s'
-max_block_time = '30s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-address_type = { derivation = 'cosmos' }
+rpc-addr = 'http://127.0.0.1:26557'
+grpc-addr = 'http://127.0.0.1:9091'
+websocket-addr = 'ws://127.0.0.1:26557/websocket'
+rpc-timeout = '10s'
+account-prefix = 'cosmos'
+key-name = 'testkey'
+store-prefix = 'ibc'
+default-gas = 100000
+max-gas = 400000
+gas-price = { price = 0.001, denom = 'stake' }
+gas-adjustment = 0.1
+max-msg-num = 30
+max-tx-size = 2097152
+clock-drift = '5s'
+max-block-time = '30s'
+trusting-period = '14days'
+trust-threshold = { numerator = '1', denominator = '3' }
+address-type = { derivation = 'cosmos' }

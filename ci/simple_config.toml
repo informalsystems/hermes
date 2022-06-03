@@ -1,5 +1,5 @@
 [global]
-log_level = 'trace'
+log-level = 'trace'
 
 [mode]
 
@@ -16,9 +16,9 @@ enabled = false
 
 [mode.packets]
 enabled = true
-clear_interval = 100
-clear_on_start = true
-tx_confirmation = true
+clear-interval = 100
+clear-on-start = true
+tx-confirmation = true
 
 [telemetry]
 enabled = false
@@ -27,34 +27,34 @@ port = 3001
 
 [[chains]]
 id = 'ibc-0'
-rpc_addr = 'http://ibc-0:26657'
-grpc_addr = 'http://ibc-0:9090'
-websocket_addr = 'ws://ibc-0:26657/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 3000000
-max_msg_num = 30
-max_tx_size = 2097152
-gas_price = { price = 0.001, denom = 'stake' }
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+rpc-addr = 'http://ibc-0:26657'
+grpc-addr = 'http://ibc-0:9090'
+websocket-addr = 'ws://ibc-0:26657/websocket'
+rpc-timeout = '10s'
+account-prefix = 'cosmos'
+key-name = 'testkey'
+store-prefix = 'ibc'
+max-gas = 3000000
+max-msg-num = 30
+max-tx-size = 2097152
+gas-price = { price = 0.001, denom = 'stake' }
+clock-drift = '5s'
+trusting-period = '14days'
+trust-threshold = { numerator = '1', denominator = '3' }
 
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'http://ibc-1:26657'
-grpc_addr = 'http://ibc-1:9090'
-websocket_addr = 'ws://ibc-1:26657/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 3000000
-max_msg_num = 30
-max_tx_size = 2097152
-gas_price = { price = 0.001, denom = 'stake' }
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+rpc-addr = 'http://ibc-1:26657'
+grpc-addr = 'http://ibc-1:9090'
+websocket-addr = 'ws://ibc-1:26657/websocket'
+rpc-timeout = '10s'
+account-prefix = 'cosmos'
+key-name = 'testkey'
+store-prefix = 'ibc'
+max-gas = 3000000
+max-msg-num = 30
+max-tx-size = 2097152
+gas-price = { price = 0.001, denom = 'stake' }
+clock-drift = '5s'
+trusting-period = '14days'
+trust-threshold = { numerator = '1', denominator = '3' }

@@ -8,7 +8,7 @@ for connections and channels.
 To relay packets and handshake messages configure the `mode` section of the configuration file like so:
 ```toml
 [global]
-log_level = 'info'
+log-level = 'info'
 
 [mode]
 

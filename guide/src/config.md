@@ -47,13 +47,13 @@ please refer to the [Keys](./commands/keys/index.md) sections in order to learn 
 
 Hermes supports connection via TLS for use-cases such as connecting from behind
 a proxy or a load balancer. In order to enable this, you'll want to set the
-`rpc_addr`, `grpc_addr`, or `websocket_addr` parameters to specify a TLS
+`rpc-addr`, `grpc-addr`, or `websocket-addr` parameters to specify a TLS
 connection via HTTPS using the following scheme (note that the port number 443
 is just used for example):
 ```
-rpc_addr = 'https://domain.com:443'
-grpc_addr = 'https://domain.com:443'
-websocket_addr = 'wss://domain.com:443/websocket'
+rpc-addr = 'https://domain.com:443'
+grpc-addr = 'https://domain.com:443'
+websocket-addr = 'wss://domain.com:443/websocket'
 ```
 
 ## Support for Interchain Accounts
@@ -133,17 +133,17 @@ in `~/.hermes/config.toml`, ie. with two chains `ibc-0` and `ibc-1`.
     ```toml
     [[chains]]
     id = 'ibc-2'
-    rpc_addr = 'http://127.0.0.1:26457'
-    grpc_addr = 'http://127.0.0.1:9092'
-    websocket_addr = 'ws://127.0.0.1:26457/websocket'
-    rpc_timeout = '10s'
-    account_prefix = 'cosmos'
-    key_name = 'testkey'
-    store_prefix = 'ibc'
-    max_gas = 20000000
-    gas_price = { price = 0.001, denom = 'stake' }
-    clock_drift = '5s'
-    trusting_period = '14days'
+    rpc-addr = 'http://127.0.0.1:26457'
+    grpc-addr = 'http://127.0.0.1:9092'
+    websocket-addr = 'ws://127.0.0.1:26457/websocket'
+    rpc-timeout = '10s'
+    account-prefix = 'cosmos'
+    key-name = 'testkey'
+    store-prefix = 'ibc'
+    max-gas = 20000000
+    gas-price = { price = 0.001, denom = 'stake' }
+    clock-drift = '5s'
+    trusting-period = '14days'
     ```
 
 4. Change the configuration of the chain `ibc-0`, eg. the `max_gas` property.
