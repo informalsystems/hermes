@@ -18,6 +18,10 @@ define_error! {
 
         OutOfGas
             { code: u32 }
+            |_| { "the gas requirement is higher than the configured maximum gas! please check the Hermes config.toml".to_string() },
+
+        InsufficientFee
+            { code: u32 }
             |_| { "the price configuration for this chain may be too low! please check the `gas_price.price` Hermes config.toml".to_string() },
     }
 }
@@ -181,6 +185,7 @@ pub fn sdk_error_from_tx_sync_error_code(code: u32) -> SdkError {
         // is due to "out of gas" errors. These are unrecoverable at the moment
         // on the Hermes side. We'll inform the user to check for misconfig.
         11 => SdkError::out_of_gas(code),
+        13 => SdkError::insufficient_fee(code),
         _ => SdkError::unknown_sdk(code),
     }
 }
