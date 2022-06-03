@@ -255,6 +255,7 @@ impl TelemetryState {
 
     pub fn tx_submitted(
         &self,
+        tx_count: usize,
         tracking_id: impl ToString,
         chain_id: &ChainId,
         channel_id: &ChannelId,
@@ -274,12 +275,15 @@ impl TelemetryState {
                 KeyValue::new("port", port_id.to_string()),
             ];
 
-            self.tx_latency_submitted.record(latency, labels);
+            for _ in 0..tx_count {
+                self.tx_latency_submitted.record(latency, labels);
+            }
         }
     }
 
     pub fn tx_confirmed(
         &self,
+        tx_count: usize,
         tracking_id: impl ToString,
         chain_id: &ChainId,
         channel_id: &ChannelId,
@@ -299,7 +303,9 @@ impl TelemetryState {
                 KeyValue::new("port", port_id.to_string()),
             ];
 
-            self.tx_latency_confirmed.record(latency, labels);
+            for _ in 0..tx_count {
+                self.tx_latency_confirmed.record(latency, labels);
+            }
         }
     }
 

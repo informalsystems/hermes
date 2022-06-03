@@ -217,12 +217,11 @@ memo_prefix = ''
 # channel with port ID 'transfer' and channel ID 'channel-0', as well as on
 # all ICA channels.
 #
-# [chains.packet_filter]
-# policy = 'allow'
-# list = [
-#   ['ica*', '*'],
-#   ['transfer', 'channel-0'],
-# ]
+[chains.packet_filter]
+policy = 'allow'
+list = [
+  ['transfer', 'channel-1'],
+]
 
 # Specify that the transaction fees should be payed from this fee granter's account.
 # Optional. If unspecified (the default behavior), then no fee granter is used, and

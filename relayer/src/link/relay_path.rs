@@ -617,6 +617,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 Ok(reply) => {
                     // Done with this op. data
                     info!("success");
+                    telemetry!({
+                        let (chain, counterparty, channel_id, port_id) = self.target_info(odata.target);
+
+                        ibc_telemetry::global().tx_submitted(
+                            reply.len(),
+                            odata.tracking_id,
+                            &chain,
+                            channel_id,
+                            port_id,
+                            &counterparty,
+                        );
+                    });
 
                     return Ok(reply);
                 }
@@ -739,18 +751,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         let msgs = odata.assemble_msgs(self)?;
-
-        telemetry!({
-            let (chain, counterparty, channel_id, port_id) = self.target_info(odata.target);
-
-            ibc_telemetry::global().tx_submitted(
-                msgs.tracking_id,
-                &chain,
-                channel_id,
-                port_id,
-                &counterparty,
-            );
-        });
 
         match odata.target {
             OperationalDataTarget::Source => S::submit(self.src_chain(), msgs),
