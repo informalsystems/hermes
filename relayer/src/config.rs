@@ -282,12 +282,15 @@ impl Default for RestConfig {
 #[serde(
     rename_all = "lowercase",
     tag = "derivation",
-    content = "proto_type",
+    content = "proto-type",
     deny_unknown_fields
 )]
 pub enum AddressType {
     Cosmos,
-    Ethermint { pk_type: String },
+    Ethermint {
+        #[serde(rename = "pk-type")]
+        pk_type: String
+    },
 }
 
 impl Default for AddressType {

@@ -1,5 +1,5 @@
 [global]
-log_level = 'error'
+log-level = 'error'
 
 [mode]
 
@@ -16,29 +16,29 @@ enabled = false
 
 [mode.packets]
 enabled = true
-clear_interval = 100
-clear_on_start = true
-tx_confirmation = true
+clear-interval = 100
+clear-on-start = true
+tx-confirmation = true
 
 [[chains]]
 id = 'chain_A'
-rpc_addr = 'http://127.0.0.1:26657'
-grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://localhost:26657/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 200000
-gas_price = { price = 0.001, denom = 'stake' }
-max_msg_num = 4
-max_tx_size = 1048576
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-address_type = { derivation = 'cosmos' }
+rpc-addr = 'http://127.0.0.1:26657'
+grpc-addr = 'http://127.0.0.1:9090'
+websocket-addr = 'ws://localhost:26657/websocket'
+rpc-timeout = '10s'
+account-prefix = 'cosmos'
+key-name = 'testkey'
+store-prefix = 'ibc'
+max-gas = 200000
+gas-price = { price = 0.001, denom = 'stake' }
+max-msg-num = 4
+max-tx-size = 1048576
+clock-drift = '5s'
+trusting-period = '14days'
+trust-threshold = { numerator = '1', denominator = '3' }
+address-type = { derivation = 'cosmos' }
 
-[chains.packet_filter]
+[chains.packet-filter]
 policy = 'allow'
 list = [
   ['ica*', '*'],
@@ -47,15 +47,15 @@ list = [
 
 [[chains]]
 id = 'chain_B'
-rpc_addr = 'http://127.0.0.1:26557'
-grpc_addr = 'http://127.0.0.1:9090'
-websocket_addr = 'ws://localhost:26557/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-gas_price = { price = 0.001, denom = 'stake' }
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-address_type = { derivation = 'ethermint', proto_type = { pk_type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
+rpc-addr = 'http://127.0.0.1:26557'
+grpc-addr = 'http://127.0.0.1:9090'
+websocket-addr = 'ws://localhost:26557/websocket'
+rpc-timeout = '10s'
+account-prefix = 'cosmos'
+key-name = 'testkey'
+store-prefix = 'ibc'
+gas-price = { price = 0.001, denom = 'stake' }
+clock-drift = '5s'
+trusting-period = '14days'
+trust-threshold = { numerator = '1', denominator = '3' }
+address-type = { derivation = 'ethermint', proto-type = { pk-type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
