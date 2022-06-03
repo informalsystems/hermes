@@ -93,7 +93,7 @@ Relevant snippet:
 log-level = 'error'
 ```
 
-Valid options for `log_level` are: 'error', 'warn', 'info', 'debug', 'trace'.
+Valid options for `log-level` are: 'error', 'warn', 'info', 'debug', 'trace'.
 These levels correspond to the tracing sub-component of the relayer-cli,
 [see here](https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html).
 

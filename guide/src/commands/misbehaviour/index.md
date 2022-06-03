@@ -42,9 +42,9 @@ The following types of misbehaviour are handled:
 
     Some header with a height that is higher than the latest
     height on chain `A` has been accepted and a consensus state was created on `B`. Note that this implies
-    that the timestamp of this header must be within the `clock_drift` of the client.
+    that the timestamp of this header must be within the `clock-drift` of the client.
     Assume the client on `B` has been updated with `h2`(not present on/ produced by chain `A`)
-    and it has a timestamp of `t2` that is at most `clock_drift` in the future.
+    and it has a timestamp of `t2` that is at most `clock-drift` in the future.
     Then the latest header from `A` is fetched, let it be `h1`, with a timestamp of `t1`.
     If `t1 >= t2` then evidence of misbehavior is submitted to A.
 

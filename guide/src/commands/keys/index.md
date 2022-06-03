@@ -140,7 +140,7 @@ Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
 ```
 
 > **Key name:**
-> By default, the key will be named after the `key_name` property specified in the configuration file.
+> By default, the key will be named after the `key-name` property specified in the configuration file.
 > To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
@@ -196,7 +196,7 @@ Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 ```
 
 > **Key name:**
-> By default, the key will be named after the `key_name` property specified in the configuration file.
+> By default, the key will be named after the `key-name` property specified in the configuration file.
 > To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```

@@ -60,7 +60,7 @@ websocket-addr = 'wss://domain.com:443/websocket'
 
 As of version 0.13.0, Hermes supports relaying on [Interchain Accounts][ica] channels.
 
-If the `packet_filter` option in the chain configuration is disabled, then
+If the `packet-filter` option in the chain configuration is disabled, then
 Hermes will relay on all existing and future channels, including ICA channels.
 
 There are two kinds of ICA channels:
@@ -76,7 +76,7 @@ but also relay on all ICA channels, you can specify the following packet filter:
 > to match over all the possible ICA ports.
 
 ```toml
-[chains.packet_filter]
+[chains.packet-filter]
 policy = 'allow'
 list = [
   ['ica*', '*'], # allow relaying on all channels whose port starts with `ica`
@@ -90,7 +90,7 @@ If you wish to relay on all channels but not on ICA channels, you can use
 the following packet filter configuration:
 
 ```toml
-[chains.packet_filter]
+[chains.packet-filter]
 policy = 'deny'
 list = [
   ['ica*', '*'], # deny relaying on all channels whose port starts with `ica`
@@ -146,7 +146,7 @@ in `~/.hermes/config.toml`, ie. with two chains `ibc-0` and `ibc-1`.
     trusting-period = '14days'
     ```
 
-4. Change the configuration of the chain `ibc-0`, eg. the `max_gas` property.
+4. Change the configuration of the chain `ibc-0`, eg. the `max-gas` property.
 
 5. Send a `SIGHUP` signal to the `hermes` process:
 

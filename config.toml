@@ -217,7 +217,7 @@ memo-prefix = ''
 # channel with port ID 'transfer' and channel ID 'channel-0', as well as on
 # all ICA channels.
 #
-# [chains.packet_filter]
+# [chains.packet-filter]
 # policy = 'allow'
 # list = [
 #   ['ica*', '*'],
