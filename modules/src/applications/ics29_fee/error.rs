@@ -1,4 +1,5 @@
-use flex_error::define_error;
+use flex_error::{define_error, TraceError};
+use prost::EncodeError;
 
 use crate::applications::transfer::error::Error as TransferError;
 use crate::core::ics04_channel::error::Error as ChannelError;
@@ -24,5 +25,9 @@ define_error! {
 
         EmptyPacketId
             | _ | { "expect packet_id field to be non-empty" },
+
+        Encode
+            [ TraceError<EncodeError> ]
+            | _ | { "protobuf encode error" }
     }
 }
