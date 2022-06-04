@@ -9,12 +9,14 @@ use crate::core::ics04_channel::packet_id::PacketId;
 use crate::prelude::*;
 use crate::signer::Signer;
 
+#[derive(Debug, Clone)]
 pub struct PacketFee {
     pub fee: Fee,
     pub refund_address: Signer,
     // do not expose relayer field as it is currently a reserved field
 }
 
+#[derive(Debug, Clone)]
 pub struct IdentifiedPacketFees {
     pub packet_id: PacketId,
     pub packet_fees: Vec<PacketFee>,

@@ -1,4 +1,5 @@
 use core::time::Duration;
+use ibc::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::events::IbcEvent;
 
@@ -8,7 +9,7 @@ use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::fee::{
     ibc_token_transfer_with_fee, pay_packet_fee, query_counterparty_address,
-    query_incentivized_packets, register_counterparty_address, IdentifiedPacketFees,
+    query_incentivized_packets, register_counterparty_address,
 };
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;

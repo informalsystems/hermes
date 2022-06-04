@@ -1,7 +1,9 @@
 use core::fmt::{self, Display};
 use core::ops::{Add, Sub};
+use core::str::FromStr;
+use ibc_proto::cosmos::base::v1beta1::Coin;
 
-use crate::error::Error;
+use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::{derive_ibc_denom, Denom, TaggedDenom, TaggedDenomRef};
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::MonoTagged;
@@ -34,6 +36,13 @@ pub trait TaggedDenomExt<Chain> {
 impl Token {
     pub fn new(denom: Denom, amount: u128) -> Self {
         Self { denom, amount }
+    }
+
+    pub fn as_coin(&self) -> Coin {
+        Coin {
+            denom: self.denom.to_string(),
+            amount: self.amount.to_string(),
+        }
     }
 }
 
@@ -136,5 +145,16 @@ impl<Chain> Sub<u128> for MonoTagged<Chain, Token> {
 impl Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.amount, self.denom)
+    }
+}
+
+impl TryFrom<Coin> for Token {
+    type Error = Error;
+
+    fn try_from(fee: Coin) -> Result<Self, Error> {
+        let denom = Denom::base(&fee.denom);
+        let amount = u128::from_str(&fee.amount).map_err(handle_generic_error)?;
+
+        Ok(Token::new(denom, amount))
     }
 }

@@ -473,21 +473,28 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
             assert_eq!(packet.packet_fees.len(), 1);
             let packet_fee = &packet.packet_fees[0];
 
-            assert_eq!(packet_fee.recv_fee.len(), 1);
-            assert_eq!(packet_fee.ack_fee.len(), 1);
-            assert_eq!(packet_fee.timeout_fee.len(), 1);
+            assert_eq!(packet_fee.fee.recv_fee.len(), 1);
+            assert_eq!(packet_fee.fee.ack_fee.len(), 1);
+            assert_eq!(packet_fee.fee.timeout_fee.len(), 1);
 
             assert_eq!(
-                &packet_fee.recv_fee[0],
-                denom_a.with_amount(receive_fee).value()
+                &packet_fee.fee.recv_fee[0],
+                &denom_a.with_amount(receive_fee).value().as_coin(),
             );
-            assert_eq!(&packet_fee.ack_fee[0], denom_a.with_amount(ack_fee).value());
             assert_eq!(
-                &packet_fee.timeout_fee[0],
-                denom_a.with_amount(timeout_fee).value()
+                &packet_fee.fee.ack_fee[0],
+                &denom_a.with_amount(ack_fee).value().as_coin()
             );
 
-            assert_eq!(packet_fee.refund_address, user_a.value().address);
+            assert_eq!(
+                &packet_fee.fee.timeout_fee[0],
+                &denom_a.with_amount(timeout_fee).value().as_coin(),
+            );
+
+            assert_eq!(
+                packet_fee.refund_address.as_ref(),
+                user_a.value().address.as_str(),
+            );
         }
 
         let receive_fee_2 = random_u128_range(300, 400);

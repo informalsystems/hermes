@@ -44,7 +44,7 @@ pub async fn query_counterparty_address(
     }
 }
 
-pub async fn query_incentivized_packets<Chain, Counterparty>(
+pub async fn query_incentivized_packets(
     grpc_address: &Uri,
     channel_id: &ChannelId,
     port_id: &PortId,
