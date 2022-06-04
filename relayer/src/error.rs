@@ -22,6 +22,7 @@ use tonic::{
 };
 
 use ibc::{
+    applications::ics29_fee::error::Error as FeeError,
     clients::ics07_tendermint::error as tendermint_error,
     core::{
         ics02_client::{client_type::ClientType, error as client_error},
@@ -266,6 +267,10 @@ define_error! {
         Ics23
             [ commitment_error::Error ]
             |_| { "ICS 23 error" },
+
+        Ics29
+            [ FeeError ]
+            | _ | { "ICS 29 error" },
 
         InvalidUri
             { uri: String }
