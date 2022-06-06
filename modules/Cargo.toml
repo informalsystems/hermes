@@ -35,7 +35,7 @@ clock = ["tendermint/clock", "time/std"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = ["tendermint-testgen", "clock", "std", "sp-io", "sp-io/std"]
+mocks = ["tendermint-testgen", "clock", "std", "sp-io", "sp-io/std", "sha3", "ripemd"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
@@ -66,6 +66,8 @@ codec = { package = "parity-scale-codec", version = "3.0.0", default-features = 
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false, optional = true }
+sha3 = { version = "0.10.1", optional = true }
+ripemd = { version = "0.1.1", optional = true }
 
 [dependencies.tendermint]
 git = "https://github.com/composableFi/tendermint-rs"
