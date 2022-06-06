@@ -422,14 +422,12 @@ impl ChainEndpoint for MockChain {
         assert!(matches!(include_proof, IncludeProof::No));
 
         let consensus_states = self.context.consensus_states(&request.client_id);
-        Ok((
-            consensus_states
-                .into_iter()
-                .find(|s| s.height == request.consensus_height)
-                .unwrap()
-                .consensus_state,
-            None,
-        ))
+        let consensus_state = consensus_states
+            .into_iter()
+            .find(|s| s.height == request.consensus_height)
+            .ok_or_else(|| Error::query("Invalid consensus height".into()))?
+            .consensus_state;
+        Ok((consensus_state, None))
     }
 
     fn query_upgraded_consensus_state(
