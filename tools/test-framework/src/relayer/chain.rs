@@ -47,6 +47,7 @@ use ibc::{
 };
 use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
+use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
@@ -58,10 +59,10 @@ use ibc_relayer::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer::chain::{ChainStatus, HealthCheck};
 use ibc_relayer::config::ChainConfig;
+use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::error::Error;
-use ibc_relayer::{connection::ConnectionMsgType, keyring::KeyEntry};
+use ibc_relayer::keyring::KeyEntry;
 
 use crate::types::tagged::*;
 

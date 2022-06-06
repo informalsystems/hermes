@@ -1,15 +1,19 @@
 use flex_error::define_error;
+
+use tendermint::Error as TendermintError;
+
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics24_host::identifier::ChainId;
+
 use ibc_relayer::channel::ChannelError;
 use ibc_relayer::connection::ConnectionError;
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
 use ibc_relayer::link::error::LinkError;
+use ibc_relayer::spawn::SpawnError;
 use ibc_relayer::supervisor::Error as SupervisorError;
 use ibc_relayer::transfer::TransferError;
 use ibc_relayer::upgrade_chain::UpgradeChainError;
-use tendermint::Error as TendermintError;
 
 define_error! {
     /// An error raised within the relayer CLI
@@ -64,6 +68,10 @@ define_error! {
         Relayer
             [ RelayerError ]
             |_| { "relayer error" },
+
+        Spawn
+            [ SpawnError ]
+            |_| { "failed to spawn chain runtime" },
 
         Connection
             [ ConnectionError ]

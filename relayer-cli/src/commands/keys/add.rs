@@ -16,20 +16,49 @@ use ibc_relayer::{
 use crate::application::app_config;
 use crate::conclude::Output;
 
+/// The data structure that represents the arguments when invoking the `keys add` CLI command.
+///
+/// The command has one argument and two exclusive flags:
+///
+/// The command to add a key from a file:
+///
+/// `keys add [OPTIONS] --key-file <KEY_FILE> <CHAIN_ID>`
+///
+/// The command to restore a key from a file containing mnemonic:
+///
+/// `keys add [OPTIONS] --mnemonic-file <MNEMONIC_FILE> <CHAIN_ID>`
+///
+/// The key-file and mnemonic-file flags can't be given at the same time, this will cause a terminating error.
+/// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser)]
 pub struct KeysAddCmd {
     #[clap(required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[clap(short = 'f', long, required = true, help = "path to the key file")]
-    file: PathBuf,
+    #[clap(
+        short = 'f',
+        long,
+        required = true,
+        help = "path to the key file",
+        group = "add-restore"
+    )]
+    key_file: Option<PathBuf>,
 
     #[clap(
-        short = 'n',
+        short,
+        long,
+        required = true,
+        help = "path to file containing mnemonic to restore the key from",
+        group = "add-restore"
+    )]
+    mnemonic_file: Option<PathBuf>,
+
+    #[clap(
+        short,
         long,
         help = "name of the key (defaults to the `key_name` defined in the config)"
     )]
-    name: Option<String>,
+    key_name: Option<String>,
 
     #[clap(
         short = 'p',
@@ -47,7 +76,7 @@ impl KeysAddCmd {
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let name = self
-            .name
+            .key_name
             .clone()
             .unwrap_or_else(|| chain_config.key_name.clone());
 
@@ -56,7 +85,6 @@ impl KeysAddCmd {
 
         Ok(KeysAddOptions {
             config: chain_config.clone(),
-            file: self.file.clone(),
             name,
             hd_path,
         })
@@ -67,7 +95,6 @@ impl KeysAddCmd {
 pub struct KeysAddOptions {
     pub name: String,
     pub config: ChainConfig,
-    pub file: PathBuf,
     pub hd_path: HDPath,
 }
 
@@ -80,15 +107,44 @@ impl Runnable for KeysAddCmd {
             Ok(result) => result,
         };
 
-        let key = add_key(&opts.config, &opts.name, &opts.file, &opts.hd_path);
+        // Check if --file or --mnemonic was given as input.
+        match (self.key_file.clone(), self.mnemonic_file.clone()) {
+            (Some(key_file), _) => {
+                let key = add_key(&opts.config, &opts.name, &key_file, &opts.hd_path);
+                match key {
+                    Ok(key) => Output::success_msg(format!(
+                        "Added key '{}' ({}) on chain {}",
+                        opts.name, key.account, opts.config.id
+                    ))
+                    .exit(),
+                    Err(e) => Output::error(format!(
+                        "An error occurred adding the key on chain {} from file {:?}: {}",
+                        self.chain_id, key_file, e
+                    ))
+                    .exit(),
+                }
+            }
+            (_, Some(mnemonic_file)) => {
+                let key = restore_key(&mnemonic_file, &opts.name, &opts.hd_path, &opts.config);
 
-        match key {
-            Ok(key) => Output::success_msg(format!(
-                "Added key '{}' ({}) on chain {}",
-                opts.name, key.account, opts.config.id
-            ))
-            .exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+                match key {
+                    Ok(key) => Output::success_msg(format!(
+                        "Restored key '{}' ({}) on chain {}",
+                        opts.name, key.account, opts.config.id
+                    ))
+                    .exit(),
+                    Err(e) => Output::error(format!(
+                        "An error occurred restoring the key on chain {} from file {:?}: {}",
+                        self.chain_id, mnemonic_file, e
+                    ))
+                    .exit(),
+                }
+            }
+            // This case should never trigger.
+            // The 'required' parameter for the flags will trigger an error if both flags have not been given.
+            // And the 'group' parameter for the flags will trigger an error if both flags are given.
+            _ => Output::error("--mnemonic-file and --key-file can't both be None".to_string())
+                .exit(),
         }
     }
 }
@@ -106,4 +162,20 @@ pub fn add_key(
 
     keyring.add_key(key_name, key.clone())?;
     Ok(key)
+}
+
+pub fn restore_key(
+    mnemonic: &Path,
+    key_name: &str,
+    hdpath: &HDPath,
+    config: &ChainConfig,
+) -> Result<KeyEntry, Box<dyn std::error::Error>> {
+    let mnemonic_content =
+        fs::read_to_string(mnemonic).map_err(|_| "error reading the mnemonic file")?;
+
+    let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
+    let key_entry = keyring.key_from_mnemonic(&mnemonic_content, hdpath, &config.address_type)?;
+
+    keyring.add_key(key_name, key_entry.clone())?;
+    Ok(key_entry)
 }
