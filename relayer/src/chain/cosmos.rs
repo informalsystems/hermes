@@ -14,7 +14,7 @@ use tendermint::{
     abci::{Event, Path as TendermintABCIPath},
     node::info::TxIndexStatus,
 };
-use tendermint_light_client_verifier::types::LightBlock as TMLightBlock;
+use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
@@ -64,13 +64,12 @@ use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::query_balance;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::query_txs;
-use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query};
+use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
+use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
-use crate::chain::{ChainEndpoint, HealthCheck};
-use crate::chain::{ChainStatus, QueryResponse};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
@@ -449,7 +448,7 @@ impl CosmosSdkChain {
 }
 
 impl ChainEndpoint for CosmosSdkChain {
-    type LightBlock = TMLightBlock;
+    type LightBlock = TmLightBlock;
     type Header = TmHeader;
     type ConsensusState = TMConsensusState;
     type ClientState = ClientState;

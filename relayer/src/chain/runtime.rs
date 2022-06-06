@@ -47,6 +47,7 @@ use crate::{
 
 use super::{
     client::ClientSettings,
+    endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     requests::{
         QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
@@ -58,7 +59,6 @@ use super::{
         QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
     },
     tracking::TrackedMsgs,
-    ChainEndpoint, ChainStatus, HealthCheck,
 };
 
 pub struct Threads {
