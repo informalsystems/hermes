@@ -143,7 +143,8 @@ impl Runnable for KeysAddCmd {
             // This case should never trigger.
             // The 'required' parameter for the flags will trigger an error if both flags have not been given.
             // And the 'group' parameter for the flags will trigger an error if both flags are given.
-            _ => Output::error(format!("--mnemonic-file and --key-file can't both be None")).exit(),
+            _ => Output::error("--mnemonic-file and --key-file can't both be None".to_string())
+                .exit(),
         }
     }
 }

@@ -1,7 +1,7 @@
 use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 
-use crate::chain::ChainEndpoint;
+use crate::chain::endpoint::ChainEndpoint;
 use crate::error;
 use ibc::core::ics02_client::events::UpdateClient;
 

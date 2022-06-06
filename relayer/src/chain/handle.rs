@@ -42,6 +42,7 @@ use crate::{
 
 use super::{
     client::ClientSettings,
+    endpoint::{ChainStatus, HealthCheck},
     requests::{
         IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
         QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
@@ -55,7 +56,6 @@ use super::{
     },
     tracking::TrackedMsgs,
 };
-use super::{ChainStatus, HealthCheck};
 
 mod base;
 mod cache;

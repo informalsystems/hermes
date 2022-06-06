@@ -16,7 +16,8 @@ use crate::chain::requests::{
 };
 use crate::error::Error as RelayerError;
 use crate::object;
-use crate::registry::{Registry, SpawnError};
+use crate::registry::Registry;
+use crate::spawn::SpawnError;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Permission {

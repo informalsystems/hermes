@@ -28,6 +28,7 @@ use serde::{Serialize, Serializer};
 use crate::account::Balance;
 use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
+use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
     IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
@@ -41,11 +42,11 @@ use crate::chain::requests::{
     QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
-use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;
+use crate::connection::ConnectionMsgType;
 use crate::error::Error;
+use crate::keyring::KeyEntry;
 use crate::telemetry;
-use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
 /// A chain handle with support for caching.
 /// To be used for the passive relaying mode (i.e., `start` CLI).

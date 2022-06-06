@@ -28,6 +28,7 @@ use tracing::debug;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
     IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
@@ -41,7 +42,6 @@ use crate::chain::requests::{
     QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
-use crate::chain::{ChainStatus, HealthCheck};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::util::lock::LockExt;

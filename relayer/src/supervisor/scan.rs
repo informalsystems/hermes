@@ -35,7 +35,7 @@ use crate::{
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 
 use crate::error::Error as RelayerError;
-use crate::registry::SpawnError;
+use crate::spawn::SpawnError;
 
 flex_error::define_error! {
     Error {

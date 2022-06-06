@@ -122,7 +122,7 @@ fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
 
     if rest.enabled {
         warn!(
-            "REST server enabled in the config but Hermes was built without RESET support, \
+            "REST server enabled in the config but Hermes was built without REST support, \
              build Hermes with --features=rest-server to enable REST support."
         );
 
