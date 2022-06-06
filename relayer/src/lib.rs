@@ -38,6 +38,7 @@ pub mod path;
 pub mod registry;
 pub mod rest;
 pub mod sdk_error;
+pub mod spawn;
 pub mod supervisor;
 pub mod telemetry;
 pub mod transfer;
