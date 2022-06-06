@@ -18,6 +18,10 @@ define_error! {
 
         OutOfGas
             { code: u32 }
+            |_| { "the gas requirement is higher than the configured maximum gas! please check the Hermes config.toml".to_string() },
+
+        InsufficientFee
+            { code: u32 }
             |_| { "the price configuration for this chain may be too low! please check the `gas_price.price` Hermes config.toml".to_string() },
     }
 }
@@ -28,85 +32,85 @@ define_error! {
             |_| { "light client already exists" },
 
         InvalidLightClient
-            |_| { "light client already exists" },
+            |_| { "light client is invalid" },
 
         LightClientNotFound
-            |_| { "light client already exists" },
+            |_| { "light client not found" },
 
         FrozenLightClient
-            |_| { "light client already exists" },
+            |_| { "light client is frozen due to misbehaviour" },
 
         InvalidClientMetadata
-            |_| { "light client already exists" },
+            |_| { "invalid client metadata" },
 
         ConsensusStateNotFound
-            |_| { "light client already exists" },
+            |_| { "consensus state not found" },
 
         InvalidConsensusState
-            |_| { "light client already exists" },
+            |_| { "invalid consensus state" },
 
         ClientTypeNotFound
-            |_| { "light client already exists" },
+            |_| { "client type not found" },
 
         InvalidClientType
-            |_| { "light client already exists" },
+            |_| { "invalid client type" },
 
         CommitmentRootNotFound
-            |_| { "light client already exists" },
+            |_| { "commitment root not found" },
 
         InvalidClientHeader
-            |_| { "light client already exists" },
+            |_| { "invalid client header" },
 
         InvalidLightClientMisbehavior
-            |_| { "light client already exists" },
+            |_| { "invalid light client misbehaviour" },
 
         ClientStateVerificationFailed
-            |_| { "light client already exists" },
+            |_| { "client state verification failed" },
 
         ClientConsensusStateVerificationFailed
-            |_| { "light client already exists" },
+            |_| { "client consensus state verification failed" },
 
         ConnectionStateVerificationFailed
-            |_| { "light client already exists" },
+            |_| { "connection state verification failed" },
 
         ChannelStateVerificationFailed
-            |_| { "light client already exists" },
+            |_| { "channel state verification failed" },
 
         PacketCommitmentVerificationFailed
-            |_| { "light client already exists" },
+            |_| { "packet commitment verification failed" },
 
         PacketAcknowledgementVerificationFailed
-            |_| { "light client already exists" },
+            |_| { "packet acknowledgement verification failed" },
 
         PacketReceiptVerificationFailed
-            |_| { "light client already exists" },
+            |_| { "packet receipt verification failed" },
 
         NextSequenceReceiveVerificationFailed
-            |_| { "light client already exists" },
+            |_| { "next sequence receive verification failed" },
 
         SelfConsensusStateNotFound
-            |_| { "light client already exists" },
+            |_| { "self consensus state not found" },
 
         UpdateLightClientFailed
-            |_| { "light client already exists" },
+            |_| { "unable to update light client" },
 
         InvalidUpdateClientProposal
-            |_| { "light client already exists" },
+            |_| { "invalid update client proposal" },
 
         InvalidClientUpgrade
-            |_| { "light client already exists" },
+            |_| { "invalid client upgrade" },
 
         InvalidHeight
-            |_| { "light client already exists" },
+            |_| { "invalid height" },
 
         InvalidClientStateSubstitute
-            |_| { "light client already exists" },
+            |_| { "invalid client state substitute" },
 
         InvalidUpgradeProposal
-            |_| { "light client already exists" },
+            |_| { "invalid upgrade proposal" },
 
         InactiveClient
-            |_| { "light client already exists" },
+            |_| { "client is not active" },
 
         UnknownClient
             { code: u32 }
@@ -181,6 +185,7 @@ pub fn sdk_error_from_tx_sync_error_code(code: u32) -> SdkError {
         // is due to "out of gas" errors. These are unrecoverable at the moment
         // on the Hermes side. We'll inform the user to check for misconfig.
         11 => SdkError::out_of_gas(code),
+        13 => SdkError::insufficient_fee(code),
         _ => SdkError::unknown_sdk(code),
     }
 }

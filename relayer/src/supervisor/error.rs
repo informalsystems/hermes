@@ -4,7 +4,7 @@ use ibc::core::ics03_connection::connection::Counterparty;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId};
 
 use crate::error::Error as RelayerError;
-use crate::registry::SpawnError;
+use crate::spawn::SpawnError;
 use crate::supervisor::scan::Error as ScanError;
 
 define_error! {
