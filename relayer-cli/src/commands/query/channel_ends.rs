@@ -10,7 +10,7 @@ use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortI
 use ibc::Height;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
-    QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
 };
 use ibc_relayer::registry::Registry;
 
@@ -81,11 +81,14 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         None => chain.query_latest_height()?,
     };
 
-    let channel_end = chain.query_channel(QueryChannelRequest {
-        port_id: port_id.clone(),
-        channel_id,
-        height: chain_height,
-    })?;
+    let (channel_end, _) = chain.query_channel(
+        QueryChannelRequest {
+            port_id: port_id.clone(),
+            channel_id,
+            height: chain_height,
+        },
+        IncludeProof::No,
+    )?;
     if channel_end.state_matches(&State::Uninitialized) {
         return Err(format!(
             "{}/{} on chain {} @ {:?} is uninitialized",
@@ -105,17 +108,23 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         })?
         .clone();
 
-    let connection_end = chain.query_connection(QueryConnectionRequest {
-        connection_id: connection_id.clone(),
-        height: chain_height,
-    })?;
+    let (connection_end, _) = chain.query_connection(
+        QueryConnectionRequest {
+            connection_id: connection_id.clone(),
+            height: chain_height,
+        },
+        IncludeProof::No,
+    )?;
 
     let client_id = connection_end.client_id().clone();
 
-    let client_state = chain.query_client_state(QueryClientStateRequest {
-        client_id: client_id.clone(),
-        height: chain_height,
-    })?;
+    let (client_state, _) = chain.query_client_state(
+        QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: chain_height,
+        },
+        IncludeProof::No,
+    )?;
 
     let channel_counterparty = channel_end.counterparty().clone();
     let connection_counterparty = connection_end.counterparty().clone();
@@ -145,23 +154,30 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
     let counterparty_chain_height = counterparty_chain.query_latest_height()?;
 
-    let counterparty_connection_end =
-        counterparty_chain.query_connection(QueryConnectionRequest {
+    let (counterparty_connection_end, _) = counterparty_chain.query_connection(
+        QueryConnectionRequest {
             connection_id: counterparty_connection_id.clone(),
             height: counterparty_chain_height,
-        })?;
+        },
+        IncludeProof::No,
+    )?;
 
-    let counterparty_client_state =
-        counterparty_chain.query_client_state(QueryClientStateRequest {
+    let (counterparty_client_state, _) = counterparty_chain.query_client_state(
+        QueryClientStateRequest {
             client_id: counterparty_client_id.clone(),
             height: counterparty_chain_height,
-        })?;
+        },
+        IncludeProof::No,
+    )?;
 
-    let counterparty_channel_end = counterparty_chain.query_channel(QueryChannelRequest {
-        port_id: counterparty_port_id.clone(),
-        channel_id: counterparty_channel_id,
-        height: counterparty_chain_height,
-    })?;
+    let (counterparty_channel_end, _) = counterparty_chain.query_channel(
+        QueryChannelRequest {
+            port_id: counterparty_port_id.clone(),
+            channel_id: counterparty_channel_id,
+            height: counterparty_chain_height,
+        },
+        IncludeProof::No,
+    )?;
 
     if cmd.verbose {
         let res = ChannelEnds {
