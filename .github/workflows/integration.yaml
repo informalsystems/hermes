@@ -174,7 +174,6 @@ jobs:
             test -p ibc-integration-test --features ica --no-fail-fast -- \
             --nocapture --test-threads=1 test_ica_filter
 
-<<<<<<< HEAD
   ics29-fee-test:
     runs-on: ubuntu-latest
     steps:
