@@ -169,8 +169,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
                 clear_interval,
                 height,
             ) {
-                // Decrement the height in order to avoid clearing packets at the same
-                // height at which the packet's events were queried
+                // Decrement the height in order to avoid clearing packets redundantly
                 let height = height.decrement().unwrap();
                 link.a_to_b.schedule_packet_clearing(Some(height))
             } else {
