@@ -51,7 +51,6 @@ pub async fn send_tx_with_account_sequence_retry(
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
-    retry_counter: u64,
 ) -> Result<Response, Error> {
     crate::time!("send_tx_with_account_sequence_retry");
 
@@ -60,15 +59,7 @@ pub async fn send_tx_with_account_sequence_retry(
 
     telemetry!(msg_num, &config.chain_id, messages.len() as u64);
 
-    do_send_tx_with_account_sequence_retry(
-        config,
-        key_entry,
-        account,
-        tx_memo,
-        messages,
-        retry_counter,
-    )
-    .await
+    do_send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, messages, 0).await
 }
 
 // We have to do explicit return of `Box<dyn Future>` because Rust

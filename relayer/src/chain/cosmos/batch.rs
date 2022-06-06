@@ -67,8 +67,7 @@ pub async fn send_batched_messages_and_wait_check_tx(
 
     for batch in batches {
         let response =
-            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch, 0)
-                .await?;
+            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
 
         responses.push(response);
     }
@@ -95,8 +94,7 @@ async fn send_messages_as_batches(
 
     for batch in batches {
         let response =
-            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch, 0)
-                .await?;
+            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
 
         tx_hashes.push(response.hash);
     }

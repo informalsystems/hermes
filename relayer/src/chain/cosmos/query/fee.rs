@@ -1,4 +1,3 @@
-use core::str::FromStr;
 use http::uri::Uri;
 use ibc::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
@@ -15,7 +14,7 @@ pub async fn query_counterparty_address(
     grpc_address: &Uri,
     channel_id: &ChannelId,
     address: &Signer,
-) -> Result<Option<Signer>, Error> {
+) -> Result<Option<String>, Error> {
     let mut client = QueryClient::connect(grpc_address.clone())
         .await
         .map_err(Error::grpc_transport)?;
@@ -29,8 +28,7 @@ pub async fn query_counterparty_address(
 
     match result {
         Ok(response) => {
-            let counterparty_address =
-                Signer::from_str(&response.into_inner().counterparty_address).unwrap();
+            let counterparty_address = response.into_inner().counterparty_address;
 
             Ok(Some(counterparty_address))
         }

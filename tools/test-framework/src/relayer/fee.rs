@@ -130,7 +130,7 @@ pub async fn query_counterparty_address<Chain, Counterparty>(
     .await
     .map_err(handle_generic_error)?;
 
-    Ok(counterparty_address.map(|address| MonoTagged::new(WalletAddress(address.to_string()))))
+    Ok(counterparty_address.map(|address| MonoTagged::new(WalletAddress(address))))
 }
 
 pub async fn query_incentivized_packets<Chain, Counterparty>(
