@@ -218,7 +218,9 @@ pub enum AnyClient<HostFunctions: HostFunctionsProvider> {
 impl<HostFunctions: HostFunctionsProvider> AnyClient<HostFunctions> {
     pub fn from_client_type(client_type: ClientType) -> Self {
         match client_type {
-            ClientType::Tendermint => Self::Tendermint(TendermintClient::<HostFunctions>::default()),
+            ClientType::Tendermint => {
+                Self::Tendermint(TendermintClient::<HostFunctions>::default())
+            }
             ClientType::Beefy => Self::Beefy(BeefyClient::<HostFunctions>::default()),
             ClientType::Near => Self::Near(BeefyClient::<HostFunctions>::default()),
             #[cfg(any(test, feature = "mocks"))]

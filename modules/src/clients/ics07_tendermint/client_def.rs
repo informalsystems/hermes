@@ -1,12 +1,12 @@
 use core::convert::TryInto;
 use core::fmt::Debug;
 
+use crate::clients::host_functions::{HostFunctionsManager, HostFunctionsProvider};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use prost::Message;
 use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
 use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_proto::Protobuf;
-use crate::clients::host_functions::{HostFunctionsManager, HostFunctionsProvider};
 
 use crate::clients::ics07_tendermint::client_state::ClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -43,8 +43,8 @@ pub struct TendermintClient<H: HostFunctionsProvider> {
 }
 
 impl<H> ClientDef for TendermintClient<H>
-    where
-        H: HostFunctionsProvider
+where
+    H: HostFunctionsProvider,
 {
     type Header = Header;
     type ClientState = ClientState;
@@ -482,8 +482,9 @@ fn verify_membership<H, P>(
     path: P,
     value: Vec<u8>,
 ) -> Result<(), Ics02Error>
-    where
-        H: HostFunctionsProvider, P: Into<Path>,
+where
+    H: HostFunctionsProvider,
+    P: Into<Path>,
 {
     let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
     let merkle_proof: MerkleProof<H> = RawMerkleProof::try_from(proof.clone())
@@ -508,8 +509,9 @@ fn verify_non_membership<H, P>(
     root: &CommitmentRoot,
     path: P,
 ) -> Result<(), Ics02Error>
-    where
-        H: HostFunctionsProvider, P: Into<Path>,
+where
+    H: HostFunctionsProvider,
+    P: Into<Path>,
 {
     let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
     let merkle_proof: MerkleProof<H> = RawMerkleProof::try_from(proof.clone())

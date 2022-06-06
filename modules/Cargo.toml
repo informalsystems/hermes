@@ -83,7 +83,8 @@ branch = "seun-0.23.7"
 default-features = false
 
 [dependencies.tendermint-testgen]
-version = "=0.23.7"
+git = "https://github.com/composableFi/tendermint-rs"
+branch = "seun-0.23.7"
 optional = true
 default-features = false
 
@@ -93,14 +94,16 @@ tracing-subscriber = { version = "0.3.11", features = ["fmt", "env-filter", "jso
 test-log = { version = "0.2.10", features = ["trace"] }
 modelator = "0.4.2"
 sha2 = { version = "0.10.2" }
-tendermint-rpc = { version = "=0.23.7", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.23.7" } # Needed for generating (synthetic) light blocks.
+tendermint-rpc = { git = "https://github.com/composableFi/tendermint-rs", branch = "seun-0.23.7", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { git = "https://github.com/composableFi/tendermint-rs", branch = "seun-0.23.7" } # Needed for generating (synthetic) light blocks.
 # Beefy Light Client testing dependencies
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22"}
 subxt = "0.21.0"
 tokio = { version = "1.17.0", features = ["full"] }
 serde_json = "1.0.74"
 beefy-client = { package = "beefy-generic-client",  git = "https://github.com/ComposableFi/beefy-client", branch = "master", features = ["mocks"]}
+sha3 = { version = "0.10.1" }
+ripemd = { version = "0.1.1" }
 
 [[test]]
 name = "mbt"

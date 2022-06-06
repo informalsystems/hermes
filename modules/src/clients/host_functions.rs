@@ -78,9 +78,10 @@ where
 }
 
 // implementation for tendermint functions
-impl<T> tendermint_light_client_verifier::host_functions::HostFunctionsProvider for HostFunctionsManager<T>
-    where
-        T: HostFunctionsProvider,
+impl<T> tendermint_light_client_verifier::host_functions::HostFunctionsProvider
+    for HostFunctionsManager<T>
+where
+    T: HostFunctionsProvider,
 {
     fn sha2_256(preimage: &[u8]) -> [u8; 32] {
         T::sha256_digest(preimage)
@@ -99,8 +100,8 @@ impl<T> tendermint_light_client_verifier::host_functions::HostFunctionsProvider 
 
 // implementation for ics23
 impl<H> ics23::HostFunctionsProvider for HostFunctionsManager<H>
-    where
-        H: HostFunctionsProvider,
+where
+    H: HostFunctionsProvider,
 {
     fn sha2_256(message: &[u8]) -> [u8; 32] {
         H::sha2_256(message)

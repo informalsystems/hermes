@@ -289,6 +289,10 @@ impl Amount {
     pub fn checked_sub(self, rhs: Self) -> Option<Self> {
         self.0.checked_sub(rhs.0).map(Self)
     }
+
+    pub fn as_u256(&self) -> U256 {
+        self.0
+    }
 }
 
 impl FromStr for Amount {

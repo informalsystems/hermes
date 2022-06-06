@@ -143,6 +143,50 @@ impl HostFunctionsProvider for Crypto {
     fn sha256_digest(data: &[u8]) -> [u8; 32] {
         sp_io::hashing::sha2_256(data)
     }
+
+    fn sha2_256(message: &[u8]) -> [u8; 32] {
+        sp_io::hashing::sha2_256(message)
+    }
+
+    fn sha2_512(message: &[u8]) -> [u8; 64] {
+        use sha2::Digest;
+        let mut hasher = sha2::Sha512::new();
+        hasher.update(message);
+        let hash = hasher.finalize();
+        let mut res = [0u8; 64];
+        res.copy_from_slice(&hash);
+        res
+    }
+
+    fn sha2_512_truncated(message: &[u8]) -> [u8; 32] {
+        use sha2::Digest;
+        let mut hasher = sha2::Sha512::new();
+        hasher.update(message);
+        let hash = hasher.finalize();
+        let mut res = [0u8; 32];
+        res.copy_from_slice(&hash[..32]);
+        res
+    }
+
+    fn sha3_512(message: &[u8]) -> [u8; 64] {
+        use sha3::Digest;
+        let mut hasher = sha3::Sha3_512::new();
+        hasher.update(message);
+        let hash = hasher.finalize();
+        let mut res = [0u8; 64];
+        res.copy_from_slice(&hash);
+        res
+    }
+
+    fn ripemd160(message: &[u8]) -> [u8; 20] {
+        use ripemd::Digest;
+        let mut hasher = ripemd::Ripemd160::new();
+        hasher.update(message);
+        let hash = hasher.finalize();
+        let mut res = [0u8; 20];
+        res.copy_from_slice(&hash);
+        res
+    }
 }
 
 impl Ics20Keeper for DummyTransferModule {
