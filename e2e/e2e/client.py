@@ -86,7 +86,7 @@ class QueryClientState(Cmd[ClientState]):
         if self.proof:
             args.append('--proof')
 
-        args.extend([self.chain_id, self.client_id])
+        args.extend(["--chain", self.chain_id, "--client", self.client_id])
 
         return args
 
