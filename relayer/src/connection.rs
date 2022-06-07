@@ -19,7 +19,7 @@ use ibc::tx_msg::Msg;
 
 use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{PageRequest, QueryConnectionRequest, QueryConnectionsRequest};
+use crate::chain::requests::{IncludeProof, PageRequest, QueryConnectionRequest, QueryConnectionsRequest};
 use crate::chain::tracking::TrackedMsgs;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
@@ -214,11 +214,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         connection: WorkerConnectionObject,
         height: Height,
     ) -> Result<(Connection<ChainA, ChainB>, State), ConnectionError> {
-        let a_connection = chain
-            .query_connection(QueryConnectionRequest {
-                connection_id: connection.src_connection_id.clone(),
-                height,
-            })
+        let (a_connection, _) = chain
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: connection.src_connection_id.clone(),
+                    height,
+                },
+                IncludeProof::No,
+            )
             .map_err(ConnectionError::relayer)?;
 
         let client_id = a_connection.client_id();
@@ -393,7 +396,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 .query_connection(QueryConnectionRequest {
                     connection_id: id.clone(),
                     height: Height::zero(),
-                })
+                }, IncludeProof::No)
+                .map(|(connection_end, _)| connection_end)
                 .map_err(|e| ConnectionError::chain_query(self.a_chain().id(), e))
         } else {
             Ok(ConnectionEnd::default())
@@ -409,7 +413,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 .query_connection(QueryConnectionRequest {
                     connection_id: id.clone(),
                     height: Height::zero(),
-                })
+                }, IncludeProof::No)
+                .map(|(connection_end, _)| connection_end)
                 .map_err(|e| ConnectionError::chain_query(self.b_chain().id(), e))
         } else {
             Ok(ConnectionEnd::default())
@@ -668,12 +673,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .src_connection_id()
             .ok_or_else(ConnectionError::missing_local_connection_id)?;
 
-        let connection_end = self
+        let (connection_end, _) = self
             .src_chain()
-            .query_connection(QueryConnectionRequest {
-                connection_id: connection_id.clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: connection_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| ConnectionError::connection_query(connection_id.clone(), e))?;
 
         let connection = IdentifiedConnectionEnd {
@@ -788,12 +796,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         );
 
         // Retrieve existing connection if any
-        let dst_connection = self
+        let (dst_connection, _) = self
             .dst_chain()
-            .query_connection(QueryConnectionRequest {
-                connection_id: dst_connection_id.clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: dst_connection_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
 
         // Check if a connection is expected to exist on destination chain
@@ -903,12 +914,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .src_connection_id()
             .ok_or_else(ConnectionError::missing_local_connection_id)?;
 
-        let src_connection = self
+        let (src_connection, _) = self
             .src_chain()
-            .query_connection(QueryConnectionRequest {
-                connection_id: src_connection_id.clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: src_connection_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the try options
@@ -1046,12 +1060,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         let _expected_dst_connection =
             self.validated_expected_connection(ConnectionMsgType::OpenAck)?;
 
-        let src_connection = self
+        let (src_connection, _) = self
             .src_chain()
-            .query_connection(QueryConnectionRequest {
-                connection_id: src_connection_id.clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: src_connection_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the ack options
@@ -1154,12 +1171,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
-        let _src_connection = self
+        let (_src_connection, _) = self
             .src_chain()
-            .query_connection(QueryConnectionRequest {
-                connection_id: src_connection_id.clone(),
-                height: query_height,
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: src_connection_id.clone(),
+                    height: query_height,
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| ConnectionError::connection_query(src_connection_id.clone(), e))?;
 
         // TODO - check that the src connection is consistent with the confirm options
