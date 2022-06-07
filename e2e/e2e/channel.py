@@ -28,7 +28,7 @@ class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--conn", self.connection_id,
+                "--dst-conn", self.connection_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id]
 
         if self.ordering is not None:
@@ -66,7 +66,7 @@ class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--conn", self.connection_id,
+                "--dst-conn", self.connection_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
                 "--src-chan", self.src_channel_id]
 
@@ -105,7 +105,7 @@ class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--conn", self.connection_id,
+                "--dst-conn", self.connection_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
                 "--dst-chan", self.dst_channel_id,
                 "--src-chan", self.src_channel_id]
@@ -142,7 +142,7 @@ class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--conn", self.connection_id,
+                "--dst-conn", self.connection_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
                 "--dst-chan", self.dst_channel_id,
                 "--src-chan", self.src_channel_id]

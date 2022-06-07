@@ -117,7 +117,6 @@ pub struct TxRawConnTryCmd {
     src_client_id: ClientId,
 
     #[clap(
-        short = 's',
         long = "src-conn",
         required = true,
         help = "identifier of the source connection (required)",

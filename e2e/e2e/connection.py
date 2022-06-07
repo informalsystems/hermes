@@ -46,7 +46,7 @@ class TxConnTry(Cmd[TxConnTryRes]):
     src_conn_id: ConnectionId
 
     def args(self) -> List[str]:
-        return ["dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
+        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
                 "--dst-client", self.dst_client_id, "--src-client", self.src_client_id,
                 "--src-conn", self.src_conn_id]
 
