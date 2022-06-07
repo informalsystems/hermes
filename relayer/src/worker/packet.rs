@@ -181,15 +181,14 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
         .refresh_schedule()
         .map_err(handle_link_error_in_task)?;
 
-    link.a_to_b
-        .execute_schedule()
-        .map_err(handle_link_error_in_task)
-        .map_err(|e| {
-            if let TaskError::Ignore(e) = &e {
-                error!("will retry: schedule execution encountered error: {}", e,);
-            }
-            e
-        })?;
+    link.a_to_b.execute_schedule().map_err(|e| {
+        if e.is_expired_or_frozen_error() {
+            TaskError::Fatal(RunError::link(e))
+        } else {
+            error!("will retry: schedule execution encountered error: {}", e,);
+            TaskError::Ignore(RunError::link(e))
+        }
+    })?;
 
     let summary = link.a_to_b.process_pending_txs(resubmit);
 
