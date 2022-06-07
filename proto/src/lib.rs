@@ -74,26 +74,6 @@ pub mod cosmos {
             pub mod v1beta1 {
                 include_proto!("cosmos.base.query.v1beta1.rs");
             }
-
-            // TODO (BEFORE MERGING PR): Remove
-            pub mod pagination {
-                use super::v1beta1::PageRequest;
-
-                pub fn all() -> Option<PageRequest> {
-                    Some(PageRequest {
-                        limit: u64::MAX,
-                        ..Default::default()
-                    })
-                }
-
-                pub fn latest_limited(limit: u64) -> Option<PageRequest> {
-                    Some(PageRequest {
-                        limit,
-                        reverse: true,
-                        ..Default::default()
-                    })
-                }
-            }
         }
         pub mod reflection {
             pub mod v1beta1 {
@@ -152,6 +132,9 @@ pub mod ibc {
         pub mod transfer {
             pub mod v1 {
                 include_proto!("ibc.applications.transfer.v1.rs");
+            }
+            pub mod v2 {
+                include_proto!("ibc.applications.transfer.v2.rs");
             }
         }
         pub mod interchain_accounts {

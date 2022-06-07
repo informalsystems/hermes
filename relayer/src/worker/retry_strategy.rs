@@ -14,23 +14,11 @@ pub fn worker_default_strategy() -> impl Iterator<Item = Duration> {
     clamp_total(strategy, Duration::from_millis(500), Duration::from_secs(2))
 }
 
-/// A stubborn worker retry strategy.
-///
-/// Initial retry backoff is hardcoded to 1s, and
-/// this delay grows very slowly and steadily by
-/// 10ms at every step. The strategy delay is
-/// not capped, so it will retry indefinitely.
-///
-/// See the `stubbord_strategy` test below.
-pub fn worker_stubborn_strategy() -> impl Iterator<Item = Duration> {
-    ConstantGrowth::new(Duration::from_secs(1), Duration::from_millis(10))
-}
-
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
 
-    use crate::worker::retry_strategy::{worker_default_strategy, worker_stubborn_strategy};
+    use crate::worker::retry_strategy::worker_default_strategy;
 
     #[test]
     fn default_strategy() {
@@ -48,20 +36,5 @@ mod tests {
                 Duration::from_millis(100),
             ]
         );
-    }
-
-    #[test]
-    fn stubborn_strategy() {
-        let strategy = worker_stubborn_strategy();
-        // This strategy has an infinite amount of retry steps
-        // Assert that delays increment by 10ms
-        // Stop after 50 iterations
-        let mut delaysp = strategy.into_iter().take(50).peekable();
-        let step = Duration::from_millis(10);
-        while let Some(first) = delaysp.next() {
-            if let Some(next) = delaysp.peek() {
-                assert_eq!(first + step, *next);
-            }
-        }
     }
 }

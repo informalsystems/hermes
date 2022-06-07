@@ -55,7 +55,7 @@ impl TryFrom<RawMsgChannelOpenInit> for MsgChannelOpenInit {
                 .channel
                 .ok_or_else(Error::missing_channel)?
                 .try_into()?,
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(Error::signer)?,
         })
     }
 }
