@@ -19,7 +19,9 @@ use ibc::tx_msg::Msg;
 
 use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{IncludeProof, PageRequest, QueryConnectionRequest, QueryConnectionsRequest};
+use crate::chain::requests::{
+    IncludeProof, PageRequest, QueryConnectionRequest, QueryConnectionsRequest,
+};
 use crate::chain::tracking::TrackedMsgs;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
@@ -393,10 +395,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     ) -> Result<ConnectionEnd, ConnectionError> {
         if let Some(id) = connection_id {
             self.a_chain()
-                .query_connection(QueryConnectionRequest {
-                    connection_id: id.clone(),
-                    height: Height::zero(),
-                }, IncludeProof::No)
+                .query_connection(
+                    QueryConnectionRequest {
+                        connection_id: id.clone(),
+                        height: Height::zero(),
+                    },
+                    IncludeProof::No,
+                )
                 .map(|(connection_end, _)| connection_end)
                 .map_err(|e| ConnectionError::chain_query(self.a_chain().id(), e))
         } else {
@@ -410,10 +415,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     ) -> Result<ConnectionEnd, ConnectionError> {
         if let Some(id) = connection_id {
             self.b_chain()
-                .query_connection(QueryConnectionRequest {
-                    connection_id: id.clone(),
-                    height: Height::zero(),
-                }, IncludeProof::No)
+                .query_connection(
+                    QueryConnectionRequest {
+                        connection_id: id.clone(),
+                        height: Height::zero(),
+                    },
+                    IncludeProof::No,
+                )
                 .map(|(connection_end, _)| connection_end)
                 .map_err(|e| ConnectionError::chain_query(self.b_chain().id(), e))
         } else {
