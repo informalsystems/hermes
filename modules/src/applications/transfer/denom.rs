@@ -23,6 +23,12 @@ pub type BaseCoin = Coin<BaseDenom>;
 #[serde(transparent)]
 pub struct BaseDenom(String);
 
+impl BaseDenom {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 impl FromStr for BaseDenom {
     type Err = Error;
 
@@ -160,6 +166,14 @@ impl PrefixedDenom {
     /// Adds the specified prefix to the trace path.
     pub fn add_trace_prefix(&mut self, prefix: TracePrefix) {
         self.trace_path.add_prefix(prefix)
+    }
+
+    pub fn trace_path(&self) -> &TracePath {
+        &self.trace_path
+    }
+
+    pub fn base_denom(&self) -> &BaseDenom {
+        &self.base_denom
     }
 }
 

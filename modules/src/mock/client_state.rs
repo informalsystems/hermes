@@ -96,7 +96,7 @@ impl ClientState for MockClientState {
     type UpgradeOptions = ();
 
     fn chain_id(&self) -> ChainId {
-        todo!()
+        ChainId::default()
     }
 
     fn client_type(&self) -> ClientType {
