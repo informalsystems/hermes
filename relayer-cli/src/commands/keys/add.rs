@@ -32,7 +32,7 @@ use crate::conclude::Output;
 /// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser)]
 pub struct KeysAddCmd {
-    #[clap(required = true, help = "identifier of the chain")]
+    #[clap(long = "chain", required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
     #[clap(
