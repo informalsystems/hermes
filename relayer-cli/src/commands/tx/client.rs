@@ -8,7 +8,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    HeightQuery, IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest,
 };
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
@@ -119,7 +119,7 @@ impl Runnable for TxUpdateClientCmd {
         let src_chain_id = match dst_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.dst_client_id.clone(),
-                height: ibc::Height::zero(),
+                height: HeightQuery::Latest,
             },
             IncludeProof::No,
         ) {
@@ -186,7 +186,7 @@ impl Runnable for TxUpgradeClientCmd {
         let src_chain_id = match dst_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.client_id.clone(),
-                height: ibc::Height::zero(),
+                height: HeightQuery::Latest,
             },
             IncludeProof::No,
         ) {
