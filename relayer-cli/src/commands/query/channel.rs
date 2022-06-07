@@ -4,7 +4,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
-use ibc_relayer::chain::requests::QueryChannelRequest;
+use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest};
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -35,13 +35,16 @@ impl Runnable for QueryChannelEndCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let res = chain.query_channel(QueryChannelRequest {
-            port_id: self.port_id.clone(),
-            channel_id: self.channel_id,
-            height: ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
-        });
+        let res = chain.query_channel(
+            QueryChannelRequest {
+                port_id: self.port_id.clone(),
+                channel_id: self.channel_id,
+                height: ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
+            },
+            IncludeProof::No,
+        );
         match res {
-            Ok(channel_end) => {
+            Ok((channel_end, _)) => {
                 if channel_end.state_matches(&State::Uninitialized) {
                     Output::error(format!(
                         "port '{}' & channel '{}' does not exist",
