@@ -15,6 +15,11 @@ fn test_forward_relayer() -> Result<(), Error> {
 }
 
 #[test]
+fn test_auto_forward_relayer() -> Result<(), Error> {
+    run_binary_channel_test(&AutoForwardRelayerTest)
+}
+
+#[test]
 fn test_timeout_fee() -> Result<(), Error> {
     run_binary_channel_test(&TimeoutFeeTest)
 }
@@ -25,6 +30,7 @@ fn test_pay_packet_fee_async() -> Result<(), Error> {
 }
 
 struct ForwardRelayerTest;
+struct AutoForwardRelayerTest;
 struct NoForwardRelayerTest;
 struct TimeoutFeeTest;
 struct PayPacketFeeAsyncTest;
@@ -35,7 +41,21 @@ impl TestOverrides for ForwardRelayerTest {
     }
 }
 
+impl TestOverrides for AutoForwardRelayerTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.auto_register_counterparty_address = true;
+    }
+
+    fn channel_version(&self) -> Version {
+        Version::ics20_with_fee()
+    }
+}
+
 impl TestOverrides for NoForwardRelayerTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.auto_register_counterparty_address = false;
+    }
+
     fn channel_version(&self) -> Version {
         Version::ics20_with_fee()
     }
@@ -218,6 +238,99 @@ impl BinaryChannelTest for ForwardRelayerTest {
                 &Some(relayer_a.address().cloned()),
             )?;
         }
+
+        let user_a = wallets_a.user1();
+        let user_b = wallets_b.user1();
+
+        let balance_a1 = chain_driver_a.query_balance(&user_a.address(), &denom_a)?;
+
+        let relayer_balance_a = chain_driver_a.query_balance(&relayer_a.address(), &denom_a)?;
+
+        let send_amount = random_u128_range(1000, 2000);
+        let receive_fee = random_u128_range(300, 400);
+        let ack_fee = random_u128_range(200, 300);
+        let timeout_fee = random_u128_range(100, 200);
+
+        let total_sent = send_amount + receive_fee + ack_fee + timeout_fee;
+
+        let balance_a2 = balance_a1 - total_sent;
+
+        chain_driver_a.ibc_token_transfer_with_fee(
+            &port_a,
+            &channel_id_a,
+            &user_a,
+            &user_b.address(),
+            &denom_a.with_amount(send_amount).as_ref(),
+            &denom_a.with_amount(receive_fee).as_ref(),
+            &denom_a.with_amount(ack_fee).as_ref(),
+            &denom_a.with_amount(timeout_fee).as_ref(),
+            Duration::from_secs(60),
+        )?;
+
+        let denom_b = derive_ibc_denom(
+            &channel.port_b.as_ref(),
+            &channel.channel_id_b.as_ref(),
+            &denom_a,
+        )?;
+
+        info!("Expect user A's balance after transfer: {}", balance_a2);
+
+        chain_driver_a.assert_eventual_wallet_amount(&user_a.address(), &balance_a2.as_ref())?;
+
+        chain_driver_b.assert_eventual_wallet_amount(
+            &user_b.address(),
+            &denom_b.with_amount(send_amount).as_ref(),
+        )?;
+
+        info!(
+            "Expect user to be refunded receive timeout fee {} and go from {} to {}",
+            timeout_fee,
+            balance_a2,
+            balance_a2.amount() + timeout_fee
+        );
+
+        chain_driver_a.assert_eventual_wallet_amount(
+            &user_a.address(),
+            &(balance_a2 + timeout_fee).as_ref(),
+        )?;
+
+        info!(
+            "Expect relayer to receive ack fee {} and receive fee {} and go from {} to {}",
+            ack_fee,
+            receive_fee,
+            relayer_balance_a,
+            relayer_balance_a.amount() + ack_fee + receive_fee,
+        );
+
+        chain_driver_a.assert_eventual_wallet_amount(
+            &relayer_a.address(),
+            &(relayer_balance_a + ack_fee + receive_fee).as_ref(),
+        )?;
+
+        Ok(())
+    }
+}
+
+impl BinaryChannelTest for AutoForwardRelayerTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        _relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channel: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let chain_driver_a = chains.node_a.chain_driver();
+        let chain_driver_b = chains.node_b.chain_driver();
+
+        let denom_a = chains.node_a.denom();
+
+        let port_a = channel.port_a.as_ref();
+        let channel_id_a = channel.channel_id_a.as_ref();
+
+        let wallets_a = chains.node_a.wallets();
+        let wallets_b = chains.node_b.wallets();
+
+        let relayer_a = wallets_a.relayer();
 
         let user_a = wallets_a.user1();
         let user_b = wallets_b.user1();
