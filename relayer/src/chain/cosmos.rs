@@ -37,7 +37,7 @@ use ibc::core::ics04_channel::channel::{
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId};
 use ibc::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
