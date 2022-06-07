@@ -19,7 +19,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::QueryClientStateRequest;
+use crate::chain::requests::{IncludeProof, QueryClientStateRequest};
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -75,11 +75,14 @@ pub fn build_and_send_ibc_upgrade_proposal(
         .map_err(UpgradeChainError::query)?
         .add(opts.height_offset);
 
-    let client_state = src_chain
-        .query_client_state(QueryClientStateRequest {
-            client_id: opts.src_client_id.clone(),
-            height: Height::zero(),
-        })
+    let (client_state, _) = src_chain
+        .query_client_state(
+            QueryClientStateRequest {
+                client_id: opts.src_client_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(UpgradeChainError::query)?;
 
     let client_state = downcast!(client_state => AnyClientState::Tendermint)

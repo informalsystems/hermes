@@ -4,7 +4,7 @@ use tracing::debug;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    IncludeProof, PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest,
 };
 
@@ -44,11 +44,14 @@ impl Runnable for QueryClientStateCmd {
 
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
-        match chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height,
-        }) {
-            Ok(cs) => Output::success(cs).exit(),
+        match chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => Output::success(cs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -92,11 +95,14 @@ impl Runnable for QueryClientConsensusCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height: Height::zero(),
-        }) {
-            Ok(cs) => cs.chain_id(),
+        let counterparty_chain = match chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
                 self.client_id, self.chain_id, e
@@ -109,11 +115,16 @@ impl Runnable for QueryClientConsensusCmd {
                 let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
                 let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
 
-                let res = chain.query_consensus_state(QueryConsensusStateRequest {
-                    client_id: self.client_id.clone(),
-                    consensus_height,
-                    query_height: height,
-                });
+                let res = chain
+                    .query_consensus_state(
+                        QueryConsensusStateRequest {
+                            client_id: self.client_id.clone(),
+                            consensus_height,
+                            query_height: height,
+                        },
+                        IncludeProof::No,
+                    )
+                    .map(|(consensus_state, _)| consensus_state);
 
                 match res {
                     Ok(cs) => Output::success(cs).exit(),
@@ -168,11 +179,14 @@ impl Runnable for QueryClientHeaderCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height: Height::zero(),
-        }) {
-            Ok(cs) => cs.chain_id(),
+        let counterparty_chain = match chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
                 self.client_id, self.chain_id, e

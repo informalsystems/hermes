@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
 use super::requests::{
-    PageRequest, QueryChannelRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryConnectionRequest, QueryPacketAcknowledgementsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
+    QueryClientStateRequest, QueryConnectionRequest, QueryPacketAcknowledgementsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use super::{
     handle::ChainHandle,
@@ -34,19 +34,25 @@ pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
     src_connection_id: &ConnectionId,
 ) -> Result<ChainId, Error> {
-    let connection_end = src_chain
-        .query_connection(QueryConnectionRequest {
-            connection_id: src_connection_id.clone(),
-            height: Height::zero(),
-        })
+    let (connection_end, _) = src_chain
+        .query_connection(
+            QueryConnectionRequest {
+                connection_id: src_connection_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::relayer)?;
 
     let client_id = connection_end.client_id();
-    let client_state = src_chain
-        .query_client_state(QueryClientStateRequest {
-            client_id: client_id.clone(),
-            height: Height::zero(),
-        })
+    let (client_state, _) = src_chain
+        .query_client_state(
+            QueryClientStateRequest {
+                client_id: client_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::relayer)?;
 
     trace!(
@@ -68,11 +74,14 @@ fn connection_on_destination(
         .map_err(Error::relayer)?;
 
     for counterparty_connection in counterparty_connections.into_iter() {
-        let counterparty_connection_end = counterparty_chain
-            .query_connection(QueryConnectionRequest {
-                connection_id: counterparty_connection.clone(),
-                height: Height::zero(),
-            })
+        let (counterparty_connection_end, _) = counterparty_chain
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: counterparty_connection.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(Error::relayer)?;
 
         let local_connection_end = &counterparty_connection_end.counterparty();
@@ -90,11 +99,14 @@ pub fn connection_state_on_destination(
     counterparty_chain: &impl ChainHandle,
 ) -> Result<ConnectionState, Error> {
     if let Some(remote_connection_id) = connection.connection_end.counterparty().connection_id() {
-        let connection_end = counterparty_chain
-            .query_connection(QueryConnectionRequest {
-                connection_id: remote_connection_id.clone(),
-                height: Height::zero(),
-            })
+        let (connection_end, _) = counterparty_chain
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: remote_connection_id.clone(),
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
             .map_err(Error::relayer)?;
 
         Ok(connection_end.state)
@@ -144,12 +156,15 @@ pub fn channel_connection_client(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
-    let channel_end = chain
-        .query_channel(QueryChannelRequest {
-            port_id: port_id.clone(),
-            channel_id: *channel_id,
-            height: Height::zero(),
-        })
+    let (channel_end, _) = chain
+        .query_channel(
+            QueryChannelRequest {
+                port_id: port_id.clone(),
+                channel_id: *channel_id,
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::relayer)?;
 
     if channel_end.state_matches(&State::Uninitialized) {
@@ -165,11 +180,14 @@ pub fn channel_connection_client(
         .first()
         .ok_or_else(|| Error::missing_connection_hops(*channel_id, chain.id()))?;
 
-    let connection_end = chain
-        .query_connection(QueryConnectionRequest {
-            connection_id: connection_id.clone(),
-            height: Height::zero(),
-        })
+    let (connection_end, _) = chain
+        .query_connection(
+            QueryConnectionRequest {
+                connection_id: connection_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::relayer)?;
 
     if !connection_end.is_open() {
@@ -181,11 +199,14 @@ pub fn channel_connection_client(
     }
 
     let client_id = connection_end.client_id();
-    let client_state = chain
-        .query_client_state(QueryClientStateRequest {
-            client_id: client_id.clone(),
-            height: Height::zero(),
-        })
+    let (client_state, _) = chain
+        .query_client_state(
+            QueryClientStateRequest {
+                client_id: client_id.clone(),
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::relayer)?;
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
@@ -247,12 +268,15 @@ pub fn channel_on_destination(
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     if let Some(remote_channel_id) = channel.channel_end.counterparty().channel_id() {
         let counterparty = counterparty_chain
-            .query_channel(QueryChannelRequest {
-                port_id: channel.channel_end.counterparty().port_id().clone(),
-                channel_id: *remote_channel_id,
-                height: Height::zero(),
-            })
-            .map(|c| IdentifiedChannelEnd {
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: channel.channel_end.counterparty().port_id().clone(),
+                    channel_id: *remote_channel_id,
+                    height: Height::zero(),
+                },
+                IncludeProof::No,
+            )
+            .map(|(c, _)| IdentifiedChannelEnd {
                 port_id: channel.channel_end.counterparty().port_id().clone(),
                 channel_id: *remote_channel_id,
                 channel_end: c,
@@ -281,12 +305,15 @@ pub fn check_channel_counterparty(
     target_pchan: &PortChannelId,
     expected: &PortChannelId,
 ) -> Result<(), ChannelError> {
-    let channel_end_dst = target_chain
-        .query_channel(QueryChannelRequest {
-            port_id: target_pchan.port_id.clone(),
-            channel_id: target_pchan.channel_id,
-            height: Height::zero(),
-        })
+    let (channel_end_dst, _) = target_chain
+        .query_channel(
+            QueryChannelRequest {
+                port_id: target_pchan.port_id.clone(),
+                channel_id: target_pchan.channel_id,
+                height: Height::zero(),
+            },
+            IncludeProof::No,
+        )
         .map_err(|e| ChannelError::query(target_chain.id(), e))?;
 
     let counterparty = channel_end_dst.remote;
@@ -405,7 +432,7 @@ pub fn unreceived_acknowledgements_sequences(
     }
 
     chain
-        .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
+        .query_unreceived_acknowledgements(QueryUnreceivedAcksRequest {
             port_id: port_id.clone(),
             channel_id: *channel_id,
             packet_ack_sequences: acks_on_counterparty,

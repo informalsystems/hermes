@@ -115,7 +115,7 @@ pub fn get_unacknowledged_packets_at_src<ChainA: ChainHandle, ChainB: ChainHandl
         channel_id: *channel_id_a,
         packet_ack_sequences: Vec::new(),
     };
-    Ok(chain.query_unreceived_acknowledgement(request)?)
+    Ok(chain.query_unreceived_acknowledgements(request)?)
 }
 
 pub fn get_acknowledged_packets_at_dst<ChainA: ChainHandle, ChainB: ChainHandle>(
