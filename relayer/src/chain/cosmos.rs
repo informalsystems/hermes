@@ -63,6 +63,7 @@ use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::query_balance;
+use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
@@ -72,6 +73,7 @@ use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_con
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
+use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
@@ -662,6 +664,15 @@ impl ChainEndpoint for CosmosSdkChain {
         ))?;
 
         Ok(balance)
+    }
+
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
+        let denom_trace = self.block_on(query_denom_trace(
+            &self.grpc_addr,
+            &hash,
+        ))?;
+
+        Ok(denom_trace)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
