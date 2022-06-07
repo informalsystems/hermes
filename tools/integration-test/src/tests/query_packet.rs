@@ -65,6 +65,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             chains.handle_b().clone(),
             opts,
             false,
+            false,
         )?;
 
         let channel_end = query_identified_channel_end(
@@ -89,7 +90,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         assert_eq!(summary.unreceived_acks, [1.into()]);
 
         // Acknowledge the packet on the source chain
-        let link = link.reverse(false)?;
+        let link = link.reverse(false, false)?;
         link.relay_ack_packet_messages()?;
 
         let summary =

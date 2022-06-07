@@ -118,6 +118,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                     src_channel_id: path.src_channel_id,
                 },
                 packets_config.tx_confirmation,
+                packets_config.auto_register_counterparty_address,
             );
 
             match link_res {

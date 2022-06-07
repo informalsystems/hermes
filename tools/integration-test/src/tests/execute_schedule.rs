@@ -53,6 +53,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             chains.handle_b().clone(),
             chain_a_link_opts,
             true,
+            false,
         )?;
 
         let mut relay_path_a_to_b = chain_a_link.a_to_b;

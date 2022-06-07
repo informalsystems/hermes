@@ -115,6 +115,7 @@ impl TestOverrides for ExpirationTestOverrides {
                 clear_interval: 10,
                 clear_on_start: true,
                 tx_confirmation: true,
+                ..Default::default()
             },
         };
 
