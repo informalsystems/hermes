@@ -21,19 +21,23 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryChannelsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help = "identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
     #[clap(
         short = 'd',
-        long,
+        long = "dst-chain",
         help = "identifier of the channel's destination chain"
     )]
-    destination_chain: Option<ChainId>,
+    dst_chain_id: Option<ChainId>,
 
     #[clap(
         short = 'v',
-        long,
+        long = "verbose",
         help = "enable verbose output, displaying all client and connection ids"
     )]
     verbose: bool,
@@ -90,7 +94,7 @@ fn run_query_channels<Chain: ChainHandle>(
             let channel_ends = query_channel_ends(
                 &mut registry,
                 &chain,
-                cmd.destination_chain.as_ref(),
+                cmd.dst_chain_id.as_ref(),
                 channel_end,
                 connection_id,
                 chain_id,
@@ -118,7 +122,7 @@ fn run_query_channels<Chain: ChainHandle>(
 fn query_channel_ends<Chain: ChainHandle>(
     registry: &mut Registry<Chain>,
     chain: &Chain,
-    destination_chain: Option<&ChainId>,
+    dst_chain_id: Option<&ChainId>,
     channel_end: ChannelEnd,
     connection_id: ConnectionId,
     chain_id: ChainId,
@@ -137,7 +141,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     })?;
     let counterparty_chain_id = client_state.chain_id();
 
-    if let Some(dst_chain_id) = destination_chain {
+    if let Some(dst_chain_id) = dst_chain_id {
         if dst_chain_id != &counterparty_chain_id {
             return Err(format!(
                 "mismatch between supplied destination chain ({}) and counterparty chain ({})",

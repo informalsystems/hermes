@@ -23,13 +23,18 @@ pub enum ClearCmds {
 
 #[derive(Debug, Parser)]
 pub struct ClearPacketsCmd {
-    #[clap(required = true, help = "identifier of the chain")]
+    #[clap(long = "chain", required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the port")]
+    #[clap(
+        short = 'p',
+        long = "port",
+        required = true,
+        help = "identifier of the port"
+    )]
     port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the channel")]
+    #[clap(long = "chan", required = true, help = "identifier of the channel")]
     channel_id: ChannelId,
 }
 

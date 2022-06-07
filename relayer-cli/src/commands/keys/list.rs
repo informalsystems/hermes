@@ -14,7 +14,7 @@ use crate::{application::app_config, conclude::json};
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct KeysListCmd {
-    #[clap(required = true, help = "identifier of the chain")]
+    #[clap(long = "chain", required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 }
 

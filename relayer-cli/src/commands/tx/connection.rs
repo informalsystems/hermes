@@ -36,16 +36,34 @@ macro_rules! conn_open_cmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawConnInitCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        short = 'd',
+        long = "dst-chain",
+        required = true,
+        help = "identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        short = 's',
+        long = "src-chain",
+        required = true,
+        help = "identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination client")]
+    #[clap(
+        long = "dst-client",
+        required = true,
+        help = "identifier of the destination client"
+    )]
     dst_client_id: ClientId,
 
-    #[clap(required = true, help = "identifier of the source client")]
+    #[clap(
+        long = "src-client",
+        required = true,
+        help = "identifier of the source client"
+    )]
     src_client_id: ClientId,
 }
 
@@ -68,21 +86,39 @@ impl Runnable for TxRawConnInitCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawConnTryCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        short = 'd',
+        long = "dst-chain",
+        required = true,
+        help = "identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        short = 's',
+        long = "src-chain",
+        required = true,
+        help = "identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination client")]
+    #[clap(
+        long = "dst-client",
+        required = true,
+        help = "identifier of the destination client"
+    )]
     dst_client_id: ClientId,
 
-    #[clap(required = true, help = "identifier of the source client")]
+    #[clap(
+        long = "src-client",
+        required = true,
+        help = "identifier of the source client"
+    )]
     src_client_id: ClientId,
 
     #[clap(
         short = 's',
-        long,
+        long = "src-conn",
         required = true,
         help = "identifier of the source connection (required)",
         value_name = "ID"
@@ -90,8 +126,7 @@ pub struct TxRawConnTryCmd {
     src_conn_id: ConnectionId,
 
     #[clap(
-        short = 'd',
-        long,
+        long = "dst-conn",
         help = "identifier of the destination connection (optional)",
         value_name = "ID"
     )]
@@ -125,21 +160,38 @@ impl Runnable for TxRawConnTryCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawConnAckCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        short = 'd',
+        long = "dst-chain",
+        required = true,
+        help = "identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        short = 's',
+        long = "src-chain",
+        required = true,
+        help = "identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination client")]
+    #[clap(
+        long = "dst-client",
+        required = true,
+        help = "identifier of the destination client"
+    )]
     dst_client_id: ClientId,
 
-    #[clap(required = true, help = "identifier of the source client")]
+    #[clap(
+        long = "src-client",
+        required = true,
+        help = "identifier of the source client"
+    )]
     src_client_id: ClientId,
 
     #[clap(
-        short = 'd',
-        long,
+        long = "dst-conn",
         required = true,
         help = "identifier of the destination connection (required)",
         value_name = "ID"
@@ -147,8 +199,7 @@ pub struct TxRawConnAckCmd {
     dst_conn_id: ConnectionId,
 
     #[clap(
-        short = 's',
-        long,
+        long = "src-conn",
         required = true,
         help = "identifier of the source connection (required)",
         value_name = "ID"
@@ -183,21 +234,38 @@ impl Runnable for TxRawConnAckCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawConnConfirmCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        short = 'd',
+        long = "dst-chain",
+        required = true,
+        help = "identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        short = 's',
+        long = "src-chain",
+        required = true,
+        help = "identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination client")]
+    #[clap(
+        long = "dst-client",
+        required = true,
+        help = "identifier of the destination client"
+    )]
     dst_client_id: ClientId,
 
-    #[clap(required = true, help = "identifier of the source client")]
+    #[clap(
+        long = "src-client",
+        required = true,
+        help = "identifier of the source client"
+    )]
     src_client_id: ClientId,
 
     #[clap(
-        short = 'd',
-        long,
+        long = "dst-conn",
         required = true,
         help = "identifier of the destination connection (required)",
         value_name = "ID"
@@ -205,8 +273,7 @@ pub struct TxRawConnConfirmCmd {
     dst_conn_id: ConnectionId,
 
     #[clap(
-        short = 's',
-        long,
+        long = "src-conn",
         required = true,
         help = "identifier of the source connection (required)",
         value_name = "ID"

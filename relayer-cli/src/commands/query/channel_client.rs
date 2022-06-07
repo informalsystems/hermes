@@ -16,13 +16,26 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 /// If successful the channel's client state is displayed.
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryChannelClientCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help = "identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, long, help = "identifier of the port to query")]
+    #[clap(
+        short = 'p',
+        long = "port",
+        required = true,
+        help = "identifier of the port to query"
+    )]
     port_id: PortId,
 
-    #[clap(required = true, long, help = "identifier of the channel to query")]
+    #[clap(
+        long = "chan",
+        required = true,
+        help = "identifier of the channel to query"
+    )]
     channel_id: ChannelId,
 }
 

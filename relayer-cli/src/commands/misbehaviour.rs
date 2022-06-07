@@ -18,12 +18,14 @@ use ibc::core::ics02_client::client_state::ClientState;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct MisbehaviourCmd {
     #[clap(
+        long = "chain",
         required = true,
         help = "identifier of the chain where client updates are monitored for misbehaviour"
     )]
     chain_id: ChainId,
 
     #[clap(
+        long = "client",
         required = true,
         help = "identifier of the client to be monitored for misbehaviour"
     )]

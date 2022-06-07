@@ -12,13 +12,13 @@ use crate::conclude::Output;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct KeysDeleteCmd {
-    #[clap(required = true, help = "identifier of the chain")]
+    #[clap(long = "chain", required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[clap(short = 'n', long, help = "name of the key")]
-    name: Option<String>,
+    #[clap(short = 'k', long = "key-name", help = "name of the key")]
+    key_name: Option<String>,
 
-    #[clap(short = 'a', long, help = "delete all keys")]
+    #[clap(short = 'a', long = "all", help = "delete all keys")]
     all: bool,
 }
 
@@ -31,17 +31,19 @@ impl KeysDeleteCmd {
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
-        let id = match (self.all, &self.name) {
+        let id = match (self.all, &self.key_name) {
             (true, Some(_)) => {
-                return Err("cannot set both -n/--name and -a/--all".to_owned().into());
+                return Err("cannot set both -k/--key-name and -a/--all"
+                    .to_owned()
+                    .into());
             }
             (false, None) => {
-                return Err("must provide either -n/--name or -a/--all"
+                return Err("must provide either -k/--key-name or -a/--all"
                     .to_owned()
                     .into());
             }
             (true, None) => KeysDeleteId::All,
-            (false, Some(ref name)) => KeysDeleteId::Named(name),
+            (false, Some(ref key_name)) => KeysDeleteId::Named(key_name),
         };
 
         Ok(KeysDeleteOptions {
@@ -80,10 +82,10 @@ impl Runnable for KeysDeleteCmd {
                 }
                 Err(e) => Output::error(format!("{}", e)).exit(),
             },
-            KeysDeleteId::Named(name) => match delete_key(&opts.config, name) {
+            KeysDeleteId::Named(key_name) => match delete_key(&opts.config, key_name) {
                 Ok(_) => Output::success_msg(format!(
                     "Removed key ({}) on chain {}",
-                    name, opts.config.id
+                    key_name, opts.config.id
                 ))
                 .exit(),
                 Err(e) => Output::error(format!("{}", e)).exit(),

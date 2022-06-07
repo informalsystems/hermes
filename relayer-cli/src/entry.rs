@@ -13,11 +13,11 @@ use crate::commands::CliCmd;
 #[clap(author, about, version)]
 pub struct EntryPoint {
     /// Path to the configuration file
-    #[clap(short = 'c', long, help = "path to configuration file")]
+    #[clap(short = 'c', long = "config", help = "path to configuration file")]
     pub config: Option<PathBuf>,
 
     /// Toggle JSON output mode one verbosity setting
-    #[clap(short = 'j', long, help = "enable JSON output")]
+    #[clap(short = 'j', long = "json", help = "enable JSON output")]
     pub json: bool,
 
     /// Subcommand to execute.

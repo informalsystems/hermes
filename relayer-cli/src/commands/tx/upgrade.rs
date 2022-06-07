@@ -18,30 +18,47 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxIbcUpgradeChainCmd {
-    #[clap(required = true, help = "identifier of the chain to upgrade")]
+    #[clap(
+        short = 'd',
+        long = "dst-chain",
+        required = true,
+        help = "identifier of the chain to upgrade"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        short = 's',
+        long = "src-chain",
+        required = true,
+        help = "identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
     #[clap(
+        long = "src-client",
         required = true,
         help = "identifier of the client on source chain from which the plan is created"
     )]
     src_client_id: ClientId,
 
-    #[clap(required = true, help = "amount of stake")]
+    #[clap(
+        short = 'a',
+        long = "amount",
+        required = true,
+        help = "amount of stake"
+    )]
     amount: u64,
 
     #[clap(
+        short = 'H',
+        long = "height-offset",
         required = true,
         help = "upgrade height offset in number of blocks since current"
     )]
     height_offset: u64,
 
     #[clap(
-        short = 'c',
-        long,
+        long = "new-chain",
         value_name = "CHAIN-ID",
         help = "new chain identifier to assign to the upgrading chain (optional)"
     )]
@@ -49,7 +66,7 @@ pub struct TxIbcUpgradeChainCmd {
 
     #[clap(
         short = 'u',
-        long,
+        long = "new-unbonding",
         value_name = "PERIOD",
         help = "new unbonding period to assign to the upgrading chain, in seconds (optional)"
     )]
@@ -57,15 +74,14 @@ pub struct TxIbcUpgradeChainCmd {
 
     #[clap(
         short = 'n',
-        long,
+        long = "upgrade-name",
         value_name = "NAME",
         help = "a string to name the upgrade proposal plan (default: 'plan')"
     )]
     upgrade_name: Option<String>,
 
     #[clap(
-        short = 'd',
-        long,
+        long = "denom",
         help = "denomination for the deposit (default: 'stake')"
     )]
     denom: Option<String>,

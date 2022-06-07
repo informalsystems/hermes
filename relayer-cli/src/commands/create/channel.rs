@@ -45,14 +45,14 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 #[clap(disable_version_flag = true)]
 pub struct CreateChannelCommand {
     #[clap(
+        long = "chain-a",
         required = true,
         help = "Identifier of the side `a` chain for the new channel"
     )]
     chain_a: ChainId,
 
     #[clap(
-        short,
-        long,
+        long = "chain-b",
         help = "Identifier of the side `b` chain for the new channel"
     )]
     chain_b: Option<ChainId>,
@@ -61,37 +61,37 @@ pub struct CreateChannelCommand {
     connection_a: Option<ConnectionId>,
 
     #[clap(
-        long,
+        long = "port-a",
         required = true,
         help = "Identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
 
     #[clap(
-        long,
+        long = "port-b",
         required = true,
         help = "Identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
 
     #[clap(
-        short,
-        long,
+        short = 'o',
+        long = "order",
         help = "The channel ordering, valid options 'unordered' (default) and 'ordered'",
         default_value_t
     )]
     order: Order,
 
     #[clap(
-        short,
-        long = "channel-version",
+        short = 'v',
+        long = "chan-version",
         alias = "version",
         help = "The version for the new channel"
     )]
     version: Option<Version>,
 
     #[clap(
-        long,
+        long = "new-client-conn",
         help = "Indicates that a new client and connection will be created underlying the new channel"
     )]
     new_client_connection: bool,

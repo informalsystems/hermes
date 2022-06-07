@@ -20,13 +20,21 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryConnectionEndCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help = "identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the connection to query")]
+    #[clap(
+        long = "conn",
+        required = true,
+        help = "identifier of the connection to query"
+    )]
     connection_id: ConnectionId,
 
-    #[clap(short = 'H', long, help = "height of the state to query")]
+    #[clap(short = 'H', long = "height", help = "height of the state to query")]
     height: Option<u64>,
 }
 
@@ -77,10 +85,18 @@ impl Runnable for QueryConnectionEndCmd {
 /// `cargo run --bin hermes -- query connection channels ibc-0 connection-0`
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryConnectionChannelsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help = "identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the connection to query")]
+    #[clap(
+        long = "conn",
+        required = true,
+        help = "identifier of the connection to query"
+    )]
     connection_id: ConnectionId,
 }
 

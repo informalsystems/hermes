@@ -37,7 +37,7 @@ pub struct KeysAddCmd {
 
     #[clap(
         short = 'f',
-        long,
+        long = "key-file",
         required = true,
         help = "path to the key file",
         group = "add-restore"
@@ -45,8 +45,8 @@ pub struct KeysAddCmd {
     key_file: Option<PathBuf>,
 
     #[clap(
-        short,
-        long,
+        short = 'm',
+        long = "mnemonic-file",
         required = true,
         help = "path to file containing mnemonic to restore the key from",
         group = "add-restore"
@@ -54,15 +54,15 @@ pub struct KeysAddCmd {
     mnemonic_file: Option<PathBuf>,
 
     #[clap(
-        short,
-        long,
+        short = 'k',
+        long = "key-name",
         help = "name of the key (defaults to the `key_name` defined in the config)"
     )]
     key_name: Option<String>,
 
     #[clap(
         short = 'p',
-        long,
+        long = "hd-path",
         help = "derivation path for this key",
         default_value = "m/44'/118'/0'/0/0"
     )]

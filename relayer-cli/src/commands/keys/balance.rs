@@ -19,12 +19,12 @@ use crate::conclude::{exit_with_unrecoverable_error, json, Output};
 /// on the given chain, will be displayed.
 #[derive(Clone, Command, Debug, Parser)]
 pub struct KeyBalanceCmd {
-    #[clap(required = true, help = "identifier of the chain")]
+    #[clap(long = "chain", required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
     #[clap(
-        long,
-        short,
+        short = 'k',
+        long = "key-name",
         help = "(optional) name of the key (defaults to the `key_name` defined in the config)"
     )]
     key_name: Option<String>,

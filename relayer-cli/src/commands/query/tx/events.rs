@@ -22,10 +22,14 @@ use crate::prelude::app_config;
 /// Query the events emitted by transaction
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryTxEventsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help = "identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "transaction hash to query")]
+    #[clap(long = "hash", required = true, help = "transaction hash to query")]
     hash: String,
 }
 

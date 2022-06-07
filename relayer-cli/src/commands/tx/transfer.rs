@@ -27,19 +27,39 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxIcs20MsgTransferCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        short = 'd',
+        long = "dst-chain",
+        required = true,
+        help = "identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        short = 's',
+        long = "src-chain",
+        required = true,
+        help = "identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "identifier of the source port"
+    )]
     src_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source channel")]
+    #[clap(
+        long = "src-chan",
+        required = true,
+        help = "identifier of the source channel"
+    )]
     src_channel_id: ChannelId,
 
     #[clap(
+        short = 'a',
+        long = "amount",
         required = true,
         help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
@@ -47,7 +67,7 @@ pub struct TxIcs20MsgTransferCmd {
 
     #[clap(
         short = 'o',
-        long,
+        long = "timeout-height-offset",
         default_value = "0",
         help = "timeout in number of blocks since current"
     )]
@@ -55,7 +75,7 @@ pub struct TxIcs20MsgTransferCmd {
 
     #[clap(
         short = 't',
-        long,
+        long = "timeout-seconds",
         default_value = "0",
         help = "timeout in seconds since current"
     )]
@@ -63,28 +83,27 @@ pub struct TxIcs20MsgTransferCmd {
 
     #[clap(
         short = 'r',
-        long,
+        long = "receiver",
         help = "receiving account address on the destination chain"
     )]
     receiver: Option<String>,
 
     #[clap(
-        short = 'd',
-        long,
+        long = "denom",
         help = "denomination of the coins to send",
         default_value = "samoleans"
     )]
     denom: String,
 
-    #[clap(short = 'n', long, help = "number of messages to send")]
+    #[clap(short = 'n', long = "number-msgs", help = "number of messages to send")]
     number_msgs: Option<usize>,
 
     #[clap(
         short = 'k',
-        long,
-        help = "use the given signing key (default: `key_name` config)"
+        long = "key-name",
+        help = "use the given signing key name (default: `key_name` config)"
     )]
-    key: Option<String>,
+    key_name: Option<String>,
 }
 
 impl Override<Config> for TxIcs20MsgTransferCmd {
@@ -96,7 +115,7 @@ impl Override<Config> for TxIcs20MsgTransferCmd {
             ))
         })?;
 
-        if let Some(ref key_name) = self.key {
+        if let Some(ref key_name) = self.key_name {
             src_chain_config.key_name = key_name.to_string();
         }
 

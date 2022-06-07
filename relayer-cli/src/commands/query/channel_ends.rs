@@ -19,21 +19,33 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryChannelEndsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help = "identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the port to query")]
+    #[clap(
+        long = "port",
+        required = true,
+        help = "identifier of the port to query"
+    )]
     port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the channel to query")]
+    #[clap(
+        long = "chan",
+        required = true,
+        help = "identifier of the channel to query"
+    )]
     channel_id: ChannelId,
 
-    #[clap(short = 'H', long, help = "height of the state to query")]
+    #[clap(short = 'H', long = "height", help = "height of the state to query")]
     height: Option<u64>,
 
     #[clap(
         short = 'v',
-        long,
+        long = "verbose",
         help = "enable verbose output, displaying all details of channels, connections & clients"
     )]
     verbose: bool,
