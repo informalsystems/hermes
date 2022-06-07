@@ -452,4 +452,13 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     ) -> Result<AnyConsensusState, Error> {
         self.inner.query_host_consensus_state(request)
     }
+
+    fn maybe_register_counterparty_address(
+        &self,
+        channel_id: ChannelId,
+        counterparty_address: Signer,
+    ) -> Result<(), Error> {
+        self.inner
+            .maybe_register_counterparty_address(channel_id, counterparty_address)
+    }
 }

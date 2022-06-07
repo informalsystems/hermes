@@ -388,4 +388,13 @@ where
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
         self.value().query_balance(key_name)
     }
+
+    fn maybe_register_counterparty_address(
+        &self,
+        channel_id: ChannelId,
+        counterparty_address: Signer,
+    ) -> Result<(), Error> {
+        self.value()
+            .maybe_register_counterparty_address(channel_id, counterparty_address)
+    }
 }

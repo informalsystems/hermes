@@ -442,6 +442,18 @@ impl ChainHandle for BaseChainHandle {
     ) -> Result<AnyConsensusState, Error> {
         self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
     }
+
+    fn maybe_register_counterparty_address(
+        &self,
+        channel_id: ChannelId,
+        counterparty_address: Signer,
+    ) -> Result<(), Error> {
+        self.send(|reply_to| ChainRequest::MaybeRegisterCounterpartyAddress {
+            channel_id,
+            counterparty_address,
+            reply_to,
+        })
+    }
 }
 
 impl Serialize for BaseChainHandle {

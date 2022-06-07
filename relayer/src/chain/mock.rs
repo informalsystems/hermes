@@ -144,7 +144,7 @@ impl ChainEndpoint for MockChain {
         todo!()
     }
 
-    fn get_signer(&mut self) -> Result<Signer, Error> {
+    fn get_signer(&self) -> Result<Signer, Error> {
         Ok(get_dummy_account_id())
     }
 
@@ -438,6 +438,14 @@ impl ChainEndpoint for MockChain {
         &self,
         _request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
+        unimplemented!()
+    }
+
+    fn maybe_register_counterparty_address(
+        &mut self,
+        _channel_id: &ChannelId,
+        _counterparty_address: &Signer,
+    ) -> Result<(), Error> {
         unimplemented!()
     }
 }

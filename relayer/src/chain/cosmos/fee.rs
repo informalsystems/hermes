@@ -2,6 +2,7 @@ use ibc::applications::ics29_fee::msgs::register_counterparty::build_register_co
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::signer::Signer;
 
+use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::fee::query_counterparty_address;
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
@@ -13,13 +14,16 @@ use crate::keyring::KeyEntry;
 
 pub async fn maybe_register_counterparty_address(
     tx_config: &TxConfig,
-    channel_id: &ChannelId,
     key_entry: &KeyEntry,
-    account: &mut Account,
+    m_account: &mut Option<Account>,
     tx_memo: &Memo,
+    channel_id: &ChannelId,
     address: &Signer,
     counterparty_address: &Signer,
 ) -> Result<(), Error> {
+    let account =
+        get_or_fetch_account(&tx_config.grpc_address, &key_entry.account, m_account).await?;
+
     let current_counterparty_address =
         query_counterparty_address(&tx_config.grpc_address, channel_id, address).await?;
 

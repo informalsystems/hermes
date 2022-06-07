@@ -116,7 +116,7 @@ pub trait ChainEndpoint: Sized {
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<TxResponse>, Error>;
 
-    fn get_signer(&mut self) -> Result<Signer, Error>;
+    fn get_signer(&self) -> Result<Signer, Error>;
 
     fn config(&self) -> ChainConfig;
 
@@ -441,4 +441,10 @@ pub trait ChainEndpoint: Sized {
 
         Ok((bytes, proofs))
     }
+
+    fn maybe_register_counterparty_address(
+        &mut self,
+        channel_id: &ChannelId,
+        counterparty_address: &Signer,
+    ) -> Result<(), Error>;
 }

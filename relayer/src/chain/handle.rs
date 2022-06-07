@@ -339,6 +339,12 @@ pub enum ChainRequest {
         request: QueryHostConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
     },
+
+    MaybeRegisterCounterpartyAddress {
+        channel_id: ChannelId,
+        counterparty_address: Signer,
+        reply_to: ReplyTo<()>,
+    },
 }
 
 pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
@@ -561,4 +567,10 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
+
+    fn maybe_register_counterparty_address(
+        &self,
+        channel_id: ChannelId,
+        counterparty_address: Signer,
+    ) -> Result<(), Error>;
 }
