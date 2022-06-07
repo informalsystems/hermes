@@ -1,10 +1,10 @@
 use crossbeam_channel::RecvError;
 use flex_error::{define_error, DisplayOnly};
+use ibc::core::ics02_client::error::Error as Ics02Error;
 
 use crate::channel::ChannelError;
 use crate::connection::ConnectionError;
 use crate::link::error::LinkError;
-use ibc::core::ics02_client::error::Error as Ics02Error;
 
 define_error! {
     RunError {
@@ -30,6 +30,6 @@ define_error! {
 
         Recv
             [ DisplayOnly<RecvError> ]
-            | _ | { "error receiving from channel: sender end has been closed" }
+            | _ | { "error receiving from channel: sender end has been closed" },
     }
 }
