@@ -13,7 +13,6 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketRecvCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -21,7 +20,6 @@ pub struct TxRawPacketRecvCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -75,7 +73,6 @@ impl Runnable for TxRawPacketRecvCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketAckCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -83,7 +80,6 @@ pub struct TxRawPacketAckCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"

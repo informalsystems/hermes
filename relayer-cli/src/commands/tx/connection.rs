@@ -37,7 +37,6 @@ macro_rules! conn_open_cmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawConnInitCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -45,7 +44,6 @@ pub struct TxRawConnInitCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -87,7 +85,6 @@ impl Runnable for TxRawConnInitCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawConnTryCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -95,7 +92,6 @@ pub struct TxRawConnTryCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -160,7 +156,6 @@ impl Runnable for TxRawConnTryCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawConnAckCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -168,7 +163,6 @@ pub struct TxRawConnAckCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -234,7 +228,6 @@ impl Runnable for TxRawConnAckCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawConnConfirmCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -242,7 +235,6 @@ pub struct TxRawConnConfirmCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"

@@ -51,14 +51,14 @@ pub struct TxCreateClientCmd {
     ///
     /// The trusting period specifies how long a validator set is trusted for
     /// (must be shorter than the chain's unbonding period).
-    #[clap(short = 'p', long = "trusting-period")]
+    #[clap(long = "trusting-period")]
     trusting_period: Option<humantime::Duration>,
 
     /// Override the trust threshold specified in the configuration.
     ///
     /// The trust threshold defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
-    #[clap(short = 't', long = "trust-threshold", parse(try_from_str = parse_trust_threshold))]
+    #[clap(long = "trust-threshold", parse(try_from_str = parse_trust_threshold))]
     trust_threshold: Option<TrustThreshold>,
 }
 
@@ -100,7 +100,6 @@ impl Runnable for TxCreateClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpdateClientCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -115,14 +114,12 @@ pub struct TxUpdateClientCmd {
     dst_client_id: ClientId,
 
     #[clap(
-        short = 'H',
         long = "target-height",
         help = "the target height of the client update"
     )]
     target_height: Option<u64>,
 
     #[clap(
-        short = 't',
         long = "trusted-height",
         help = "the trusted height of the client update"
     )]
@@ -241,7 +238,6 @@ impl Runnable for TxUpgradeClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientsCmd {
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"

@@ -85,7 +85,6 @@ pub struct TxRawChanOpenInitCmd {
     src_port_id: PortId,
 
     #[clap(
-        short = 'o',
         long = "order",
         default_value_t,
         help = "the channel ordering, valid options 'unordered' (default) and 'ordered'"
@@ -148,7 +147,6 @@ impl Runnable for TxRawChanOpenInitCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanOpenTryCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -156,7 +154,6 @@ pub struct TxRawChanOpenTryCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -235,7 +232,6 @@ impl Runnable for TxRawChanOpenTryCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanOpenAckCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -243,7 +239,6 @@ pub struct TxRawChanOpenAckCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -323,7 +318,6 @@ impl Runnable for TxRawChanOpenAckCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanOpenConfirmCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -331,7 +325,6 @@ pub struct TxRawChanOpenConfirmCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -411,7 +404,6 @@ impl Runnable for TxRawChanOpenConfirmCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanCloseInitCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -419,7 +411,6 @@ pub struct TxRawChanCloseInitCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -499,7 +490,6 @@ impl Runnable for TxRawChanCloseInitCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanCloseConfirmCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -507,7 +497,6 @@ pub struct TxRawChanCloseConfirmCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
