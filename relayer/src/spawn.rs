@@ -7,9 +7,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::{
-        cosmos::{psql::PsqlChain, CosmosSdkChain},
-        handle::ChainHandle,
-        runtime::ChainRuntime,
+        cosmos::CosmosSdkChain, handle::ChainHandle, psql_cosmos::PsqlChain, runtime::ChainRuntime,
         ChainType,
     },
     config::Config,

@@ -111,9 +111,6 @@ pub async fn query_txs(
         }
 
         QueryTxRequest::Transaction(tx) => {
-            // TODO PSQL
-            // example:
-            // select tx_result from tx_results  where tx_hash = '3E8C354A884F837CAF53869CB49B6A0FC206572EFCB6CB3E7D1404925461EDFE';
             let mut response = rpc_client
                 .tx_search(
                     tx_hash_query(&tx),

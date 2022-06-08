@@ -19,10 +19,10 @@ exclude = [
     "relayer-x/ibc-proxy",
 ]
 
-# [patch.crates-io]
-# tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+[patch.crates-io]
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
+tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }

@@ -1652,6 +1652,7 @@ dependencies = [
  "delegate",
  "dirs-next",
  "env_logger",
+ "eyre",
  "flex-error",
  "futures",
  "hdpath",
@@ -3658,8 +3659,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.23.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ca881fa4dedd2b46334f13be7fbc8cc1549ba4be5a833fe4e73d1a1baaf7949"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/ibc-proxy#3e1719a43ceb335e2403655d8450d39402a02e74"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3689,8 +3689,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.23.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6c56ee93f4e9b7e7daba86d171f44572e91b741084384d0ae00df7991873dfd"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/ibc-proxy#3e1719a43ceb335e2403655d8450d39402a02e74"
 dependencies = [
  "flex-error",
  "serde",
@@ -3703,8 +3702,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.23.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e30a20da1169069a8629b9535bcee669be8b07480c696b5eb2f7d9cd4e4c431"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/ibc-proxy#3e1719a43ceb335e2403655d8450d39402a02e74"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3725,8 +3723,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.23.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ae030a759b89cca84860d497d4d4e491615d8a9243cc04c61cd89335ba9b593"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/ibc-proxy#3e1719a43ceb335e2403655d8450d39402a02e74"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3738,8 +3735,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.23.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b71f925d74903f4abbdc4af0110635a307b3cb05b175fdff4a7247c14a4d0874"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/ibc-proxy#3e1719a43ceb335e2403655d8450d39402a02e74"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3756,8 +3752,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.23.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a13e63f57ee05a1e927887191c76d1b139de9fa40c180b9f8727ee44377242a6"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/ibc-proxy#3e1719a43ceb335e2403655d8450d39402a02e74"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3790,8 +3785,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.23.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "442ede2d01e61466e515fd7f1d0aac7c3c86b3066535479caa86a43afb5e2e17"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/ibc-proxy#3e1719a43ceb335e2403655d8450d39402a02e74"
 dependencies = [
  "ed25519-dalek",
  "gumdrop",

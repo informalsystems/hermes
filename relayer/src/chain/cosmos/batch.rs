@@ -81,7 +81,7 @@ pub async fn send_batched_messages_and_wait_check_tx(
     Ok(responses)
 }
 
-async fn send_messages_as_batches(
+pub async fn send_messages_as_batches(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
     max_tx_size: MaxTxSize,

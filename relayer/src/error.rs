@@ -32,9 +32,9 @@ use ibc::{
     relayer::ics18_relayer::error as relayer_error,
 };
 
-use crate::chain::cosmos::psql::PsqlError;
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
+use crate::chain::psql_cosmos::PsqlError;
 use crate::event::monitor;
 use crate::keyring::errors::Error as KeyringError;
 use crate::sdk_error::SdkError;

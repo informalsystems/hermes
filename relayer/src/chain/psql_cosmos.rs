@@ -1,12 +1,12 @@
 #![allow(unused_variables, dead_code)]
 
-use std::sync::Arc;
+use alloc::sync::Arc;
+use core::future::Future;
 
 use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
-use tracing::info;
-
 use tendermint_rpc::endpoint::broadcast::tx_sync;
+use tracing::{info, span, Level};
 
 use ibc::{
     core::{
@@ -29,6 +29,10 @@ use ibc::{
     Height,
 };
 
+use crate::chain::cosmos::query::account::get_or_fetch_account;
+use crate::chain::cosmos::CosmosSdkChain;
+use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
+use crate::chain::psql_cosmos::query::query_txs;
 use crate::{
     account::Balance,
     chain::{
@@ -44,7 +48,9 @@ use crate::{
     light_client::{tendermint::LightClient as TmLightClient, LightClient, Verified},
 };
 
-use super::CosmosSdkChain;
+pub mod batch;
+pub mod query;
+pub mod wait;
 
 flex_error::define_error! {
     PsqlError {
@@ -60,6 +66,47 @@ pub struct PsqlChain {
     rt: Arc<tokio::runtime::Runtime>,
 }
 
+impl PsqlChain {
+    /// Run a future to completion on the Tokio runtime.
+    fn block_on<F: Future>(&self, f: F) -> F::Output {
+        crate::time!("block_on");
+        self.rt.block_on(f)
+    }
+
+    async fn do_send_messages_and_wait_commit(
+        &mut self,
+        tracked_msgs: TrackedMsgs,
+    ) -> Result<Vec<IbcEvent>, Error> {
+        crate::time!("send_messages_and_wait_commit");
+
+        let _span =
+            span!(Level::DEBUG, "send_tx_commit", id = %tracked_msgs.tracking_id()).entered();
+
+        let proto_msgs = tracked_msgs.msgs;
+
+        let key_entry = self.chain.key()?;
+
+        let account = get_or_fetch_account(
+            &self.chain.grpc_addr,
+            &key_entry.account,
+            &mut self.chain.account,
+        )
+        .await?;
+
+        send_batched_messages_and_wait_commit(
+            // TODO AZ
+            &self.pool,
+            &self.chain.tx_config,
+            self.chain.config.max_msg_num,
+            self.chain.config.max_tx_size,
+            &key_entry,
+            account,
+            &self.chain.config.memo_prefix,
+            proto_msgs,
+        )
+        .await
+    }
+}
 impl ChainEndpoint for PsqlChain {
     type LightBlock = <CosmosSdkChain as ChainEndpoint>::LightBlock;
 
@@ -129,7 +176,8 @@ impl ChainEndpoint for PsqlChain {
         &mut self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
-        self.chain.send_messages_and_wait_commit(tracked_msgs)
+        let runtime = self.rt.clone();
+        runtime.block_on(self.do_send_messages_and_wait_commit(tracked_msgs))
     }
 
     fn send_messages_and_wait_check_tx(
@@ -292,7 +340,10 @@ impl ChainEndpoint for PsqlChain {
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
-        self.chain.query_txs(request)
+        crate::time!("query_txs");
+        crate::telemetry!(query, self.id(), "query_txs");
+
+        self.block_on(query_txs(&self.pool, self.id(), &request))
     }
 
     fn query_blocks(

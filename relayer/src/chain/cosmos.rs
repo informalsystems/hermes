@@ -93,7 +93,6 @@ pub mod compatibility;
 pub mod encode;
 pub mod estimate;
 pub mod gas;
-pub mod psql;
 pub mod query;
 pub mod retry;
 pub mod simulate;
@@ -107,14 +106,14 @@ pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
 
 pub struct CosmosSdkChain {
-    config: ChainConfig,
-    tx_config: TxConfig,
+    pub(crate) config: ChainConfig,
+    pub(crate) tx_config: TxConfig,
     rpc_client: HttpClient,
-    grpc_addr: Uri,
+    pub(crate) grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
     /// A cached copy of the account information
-    account: Option<Account>,
+    pub(crate) account: Option<Account>,
 }
 
 impl CosmosSdkChain {
@@ -346,7 +345,7 @@ impl CosmosSdkChain {
         Ok((response.value, proof))
     }
 
-    fn key(&self) -> Result<KeyEntry, Error> {
+    pub fn key(&self) -> Result<KeyEntry, Error> {
         self.keybase()
             .get_key(&self.config.key_name)
             .map_err(Error::key_base)
