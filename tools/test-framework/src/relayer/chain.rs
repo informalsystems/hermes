@@ -63,6 +63,7 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::connection::ConnectionMsgType;
+use ibc_relayer::denom::DenomTrace;
 use ibc_relayer::error::Error;
 use ibc_relayer::keyring::KeyEntry;
 
@@ -400,5 +401,9 @@ where
 
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
         self.value().query_balance(key_name)
+    }
+
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
+        self.value().query_denom_trace(hash)
     }
 }
