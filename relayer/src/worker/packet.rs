@@ -116,29 +116,28 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Result<(), TaskError<RunError>> {
     match cmd {
         WorkerCmd::IbcEvents { batch } => {
-            handle_clear_packet(
-                link,
-                clear_interval,
-                path,
-                should_clear_on_start,
-                Some(batch.height),
-            )?;
+            if *should_clear_on_start {
+                handle_clear_packet(link, clear_interval, path, Some(batch.height))?;
+                *should_clear_on_start = false;
+            }
             handle_update_schedule(link, clear_interval, path, batch)
         }
 
         // Handle the arrival of an event signaling that the
         // source chain has advanced to a new block.
-        WorkerCmd::NewBlock { height, .. } => handle_clear_packet(
-            link,
-            clear_interval,
-            path,
-            should_clear_on_start,
-            Some(height),
-        ),
-
-        WorkerCmd::ClearPendingPackets => {
-            handle_clear_packet(link, clear_interval, path, should_clear_on_start, None)
+        WorkerCmd::NewBlock { height, .. } => {
+            if *should_clear_on_start {
+                handle_clear_packet(link, clear_interval, path, Some(height))?;
+                *should_clear_on_start = false;
+                Ok(())
+            } else if should_clear_packets(clear_interval, height) {
+                handle_clear_packet(link, clear_interval, path, Some(height))
+            } else {
+                Ok(())
+            }
         }
+
+        WorkerCmd::ClearPendingPackets => handle_clear_packet(link, clear_interval, path, None),
     }
 }
 
@@ -149,19 +148,20 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 /// `0` and if we have reached the interval.
 fn should_clear_packets(
     clear_interval: u64,
-    should_clear_on_start: &mut bool,
-    height: Option<Height>,
+    // should_clear_on_start: &mut bool,
+    // height: Option<Height>,
+    height: Height,
 ) -> bool {
-    if height.is_none() {
-        return false;
-    }
+    // if height.is_none() {
+    //     return false;
+    // }
 
-    if *should_clear_on_start {
-        *should_clear_on_start = false;
-        return true;
-    }
+    // if *should_clear_on_start {
+    //     *should_clear_on_start = false;
+    //     return true;
+    // }
 
-    let height = height.unwrap();
+    // let height = height.unwrap();
 
     clear_interval != 0 && height.revision_height % clear_interval == 0
 }
@@ -183,20 +183,18 @@ fn handle_clear_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
     clear_interval: u64,
     path: &Packet,
-    should_clear_on_start: &mut bool,
+    // should_clear_on_start: &mut bool,
     height: Option<Height>,
 ) -> Result<(), TaskError<RunError>> {
-    if !should_clear_packets(clear_interval, should_clear_on_start, height) {
-        return Ok(());
-    }
+    // if !should_clear_packets(clear_interval, should_clear_on_start, height) {
+    //     return Ok(());
+    // }
 
     link.a_to_b
         .schedule_packet_clearing(height)
         .map_err(handle_link_error_in_task)?;
 
-    handle_execute_schedule(link, path, Resubmit::from_clear_interval(clear_interval))?;
-
-    Ok(())
+    handle_execute_schedule(link, path, Resubmit::from_clear_interval(clear_interval))
 }
 
 fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
