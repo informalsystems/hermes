@@ -26,7 +26,7 @@ pub struct QueryAllClientsCmd {
 
     #[clap(
         long = "src-chain",
-        help = "filter for clients which target a specific chain id (implies '-o')",
+        help = "filter for clients which target a specific chain id (implies '--omit-chain-ids')",
         value_name = "ID"
     )]
     src_chain_id: Option<ChainId>,
