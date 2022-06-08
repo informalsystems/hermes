@@ -50,9 +50,9 @@ pub struct CreateConnectionCommand {
     delay: u64,
 }
 
-// cargo run --bin hermes -- create connection ibc-0 ibc-1
-// cargo run --bin hermes -- create connection ibc-0 ibc-1 --delay 100
-// cargo run --bin hermes -- create connection ibc-0 --client-a-id 07-tendermint-0 --client-b-id 07-tendermint-0
+// cargo run --bin hermes -- create connection --chain-a ibc-0 --chain-b ibc-1
+// cargo run --bin hermes -- create connection --chain-a ibc-0 --chain-b ibc-1 --delay 100
+// cargo run --bin hermes -- create connection --chain-a ibc-0 --client-a 07-tendermint-0 --client-b 07-tendermint-0
 impl Runnable for CreateConnectionCommand {
     fn run(&self) {
         match &self.chain_b_id {

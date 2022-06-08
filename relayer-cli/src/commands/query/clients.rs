@@ -25,7 +25,6 @@ pub struct QueryAllClientsCmd {
     chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         help = "filter for clients which target a specific chain id (implies '-o')",
         value_name = "ID"
@@ -33,7 +32,6 @@ pub struct QueryAllClientsCmd {
     src_chain_id: Option<ChainId>,
 
     #[clap(
-        short = 'o',
         long = "omit-chain-ids",
         help = "omit printing the source chain for each client"
     )]
@@ -47,7 +45,7 @@ struct ClientChain {
 }
 
 /// Command for querying all clients.
-/// hermes -c cfg.toml query clients ibc-1
+/// hermes --config cfg.toml query clients --chain ibc-1
 impl Runnable for QueryAllClientsCmd {
     fn run(&self) {
         let config = app_config();

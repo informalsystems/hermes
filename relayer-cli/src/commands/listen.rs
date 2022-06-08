@@ -61,11 +61,12 @@ impl FromStr for EventFilter {
 #[derive(Debug, Parser)]
 pub struct ListenCmd {
     /// Identifier of the chain to listen for events from
+    #[clap(long = "chain", required = true)]
     chain_id: ChainId,
 
     /// Add an event type to listen for, can be repeated.
     /// Listen for all events by default (available: Tx, NewBlock).
-    #[clap(short = 'e', long = "event", value_name = "EVENT")]
+    #[clap(long = "event", value_name = "EVENT")]
     events: Vec<EventFilter>,
 }
 

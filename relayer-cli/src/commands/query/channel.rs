@@ -23,7 +23,6 @@ pub struct QueryChannelEndCmd {
     chain_id: ChainId,
 
     #[clap(
-        short = 'p',
         long = "port",
         required = true,
         help = "identifier of the port to query"
@@ -37,7 +36,7 @@ pub struct QueryChannelEndCmd {
     )]
     channel_id: ChannelId,
 
-    #[clap(short = 'H', long = "height", help = "height of the state to query")]
+    #[clap(long = "height", help = "height of the state to query")]
     height: Option<u64>,
 }
 

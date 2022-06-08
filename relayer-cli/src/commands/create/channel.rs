@@ -29,11 +29,11 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 ///
 /// There are two possible ways to invoke this command:
 ///
-/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Connection-ID>` is the default
+/// `create channel --chain-a <Chain-A-ID> --conn-a <Connection-ID> --port-a <Port-ID> --port-b <Port-ID>` is the default
 /// way in which this command should be used, specifying a `Connection-ID` for this new channel
 /// to re-use. The command expects that `Connection-ID` is associated with chain A.
 ///
-/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Chain-B-ID> --new-client-connection`
+/// `create channel --chain-a <Chain-A-ID> --chain-b <Chain-B-ID> --port-a <Port-ID> --port-b <Port-ID> --new-client-conn`
 /// to indicate that a new connection/client pair is being created as part of this new channel.
 /// This brings up an interactive yes/no prompt to ensure that the operator at least
 /// considers the fact that they're initializing a new connection with the channel.
@@ -57,7 +57,10 @@ pub struct CreateChannelCommand {
     )]
     chain_b: Option<ChainId>,
 
-    /// Identifier of the connection on chain `a` to use in creating the new channel.
+    #[clap(
+        long = "conn-a",
+        help = "Identifier of the connection on chain `a` to use in creating the new channel."
+    )]
     connection_a: Option<ConnectionId>,
 
     #[clap(
@@ -75,7 +78,6 @@ pub struct CreateChannelCommand {
     port_b: PortId,
 
     #[clap(
-        short = 'o',
         long = "order",
         help = "The channel ordering, valid options 'unordered' (default) and 'ordered'",
         default_value_t
@@ -83,7 +85,6 @@ pub struct CreateChannelCommand {
     order: Order,
 
     #[clap(
-        short = 'v',
         long = "chan-version",
         alias = "version",
         help = "The version for the new channel"

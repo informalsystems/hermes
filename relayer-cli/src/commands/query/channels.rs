@@ -29,14 +29,12 @@ pub struct QueryChannelsCmd {
     chain_id: ChainId,
 
     #[clap(
-        short = 'd',
         long = "dst-chain",
         help = "identifier of the channel's destination chain"
     )]
     dst_chain_id: Option<ChainId>,
 
     #[clap(
-        short = 'v',
         long = "verbose",
         help = "enable verbose output, displaying all client and connection ids"
     )]

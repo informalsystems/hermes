@@ -22,7 +22,6 @@ use crate::error::Error;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxCreateClientCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -30,7 +29,6 @@ pub struct TxCreateClientCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -65,7 +63,7 @@ pub struct TxCreateClientCmd {
 }
 
 /// Sample to run this tx:
-///     `hermes tx raw create-client ibc-0 ibc-1`
+///     `hermes tx raw create-client --dst-chain ibc-0 --src-chain ibc-1`
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();

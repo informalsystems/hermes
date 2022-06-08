@@ -19,7 +19,6 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxIbcUpgradeChainCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the chain to upgrade"
@@ -27,7 +26,6 @@ pub struct TxIbcUpgradeChainCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -41,16 +39,10 @@ pub struct TxIbcUpgradeChainCmd {
     )]
     src_client_id: ClientId,
 
-    #[clap(
-        short = 'a',
-        long = "amount",
-        required = true,
-        help = "amount of stake"
-    )]
+    #[clap(long = "amount", required = true, help = "amount of stake")]
     amount: u64,
 
     #[clap(
-        short = 'H',
         long = "height-offset",
         required = true,
         help = "upgrade height offset in number of blocks since current"
@@ -65,7 +57,6 @@ pub struct TxIbcUpgradeChainCmd {
     new_chain_id: Option<ChainId>,
 
     #[clap(
-        short = 'u',
         long = "new-unbonding",
         value_name = "PERIOD",
         help = "new unbonding period to assign to the upgrading chain, in seconds (optional)"
@@ -73,7 +64,6 @@ pub struct TxIbcUpgradeChainCmd {
     new_unbonding: Option<u64>,
 
     #[clap(
-        short = 'n',
         long = "upgrade-name",
         value_name = "NAME",
         help = "a string to name the upgrade proposal plan (default: 'plan')"

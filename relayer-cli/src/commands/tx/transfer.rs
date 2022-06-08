@@ -28,7 +28,6 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxIcs20MsgTransferCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -36,7 +35,6 @@ pub struct TxIcs20MsgTransferCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"
@@ -58,7 +56,6 @@ pub struct TxIcs20MsgTransferCmd {
     src_channel_id: ChannelId,
 
     #[clap(
-        short = 'a',
         long = "amount",
         required = true,
         help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
@@ -66,7 +63,6 @@ pub struct TxIcs20MsgTransferCmd {
     amount: Amount,
 
     #[clap(
-        short = 'o',
         long = "timeout-height-offset",
         default_value = "0",
         help = "timeout in number of blocks since current"
@@ -74,7 +70,6 @@ pub struct TxIcs20MsgTransferCmd {
     timeout_height_offset: u64,
 
     #[clap(
-        short = 't',
         long = "timeout-seconds",
         default_value = "0",
         help = "timeout in seconds since current"
@@ -82,7 +77,6 @@ pub struct TxIcs20MsgTransferCmd {
     timeout_seconds: u64,
 
     #[clap(
-        short = 'r',
         long = "receiver",
         help = "receiving account address on the destination chain"
     )]
@@ -95,11 +89,10 @@ pub struct TxIcs20MsgTransferCmd {
     )]
     denom: String,
 
-    #[clap(short = 'n', long = "number-msgs", help = "number of messages to send")]
+    #[clap(long = "number-msgs", help = "number of messages to send")]
     number_msgs: Option<usize>,
 
     #[clap(
-        short = 'k',
         long = "key-name",
         help = "use the given signing key name (default: `key_name` config)"
     )]

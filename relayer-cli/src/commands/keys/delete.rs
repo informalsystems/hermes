@@ -15,10 +15,10 @@ pub struct KeysDeleteCmd {
     #[clap(long = "chain", required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[clap(short = 'k', long = "key-name", help = "name of the key")]
+    #[clap(long = "key-name", help = "name of the key")]
     key_name: Option<String>,
 
-    #[clap(short = 'a', long = "all", help = "delete all keys")]
+    #[clap(long = "all", help = "delete all keys")]
     all: bool,
 }
 

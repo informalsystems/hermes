@@ -24,7 +24,7 @@ pub struct QueryUnreceivedAcknowledgementCmd {
     )]
     chain_id: ChainId,
 
-    #[clap(short = 'p', long = "port", required = true, help = "port identifier")]
+    #[clap(long = "port", required = true, help = "port identifier")]
     port_id: PortId,
 
     #[clap(long = "chan", required = true, help = "channel identifier")]

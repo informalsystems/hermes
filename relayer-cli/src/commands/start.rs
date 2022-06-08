@@ -19,7 +19,6 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct StartCmd {
     #[clap(
-        short = 'f',
         long = "full-scan",
         help = "Force a full scan of the chains for clients, connections and channels"
     )]

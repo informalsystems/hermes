@@ -50,7 +50,6 @@ macro_rules! tx_chan_cmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanOpenInitCmd {
     #[clap(
-        short = 'd',
         long = "dst-chain",
         required = true,
         help = "identifier of the destination chain"
@@ -58,7 +57,6 @@ pub struct TxRawChanOpenInitCmd {
     dst_chain_id: ChainId,
 
     #[clap(
-        short = 's',
         long = "src-chain",
         required = true,
         help = "identifier of the source chain"

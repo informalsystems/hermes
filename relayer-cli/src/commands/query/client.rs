@@ -39,16 +39,12 @@ pub struct QueryClientStateCmd {
     )]
     client_id: ClientId,
 
-    #[clap(
-        short = 'H',
-        long = "height",
-        help = "the chain height context for the query"
-    )]
+    #[clap(long = "height", help = "the chain height context for the query")]
     height: Option<u64>,
 }
 
 /// Command for querying a client's state.
-/// hermes query client state ibc-1 07-tendermint-0 --height 3
+/// hermes query client state --chain ibc-1 --client 07-tendermint-0 --height 3
 impl Runnable for QueryClientStateCmd {
     fn run(&self) {
         let config = app_config();
@@ -100,15 +96,10 @@ pub struct QueryClientConsensusCmd {
     )]
     consensus_height: Option<u64>,
 
-    #[clap(
-        short = 's',
-        long = "heights-only",
-        help = "show only consensus heights"
-    )]
+    #[clap(long = "heights-only", help = "show only consensus heights")]
     heights_only: bool,
 
     #[clap(
-        short = 'H',
         long = "height",
         help = "the chain height context to be used, applicable only to a specific height"
     )]
@@ -116,7 +107,7 @@ pub struct QueryClientConsensusCmd {
 }
 
 /// Implementation of the query for a client's consensus state at a certain height.
-/// hermes query client consensus ibc-0 07-tendermint-0 -c 22
+/// hermes query client consensus --chain ibc-0 --client 07-tendermint-0 --consensus-height 22
 impl Runnable for QueryClientConsensusCmd {
     fn run(&self) {
         let config = app_config();
@@ -209,16 +200,12 @@ pub struct QueryClientHeaderCmd {
     )]
     consensus_height: u64,
 
-    #[clap(
-        short = 'H',
-        long = "height",
-        help = "the chain height context for the query"
-    )]
+    #[clap(long = "height", help = "the chain height context for the query")]
     height: Option<u64>,
 }
 
 /// Implementation of the query for the header used in a client update at a certain height.
-/// hermes query client header ibc-0 07-tendermint-0 22
+/// hermes query client header --chain ibc-0 --client 07-tendermint-0 --consensus-height 22
 impl Runnable for QueryClientHeaderCmd {
     fn run(&self) {
         let config = app_config();
@@ -286,14 +273,13 @@ pub struct QueryClientConnectionsCmd {
     client_id: ClientId,
 
     #[clap(
-        short = 'H',
         long = "height",
         help = "the chain height which this query should reflect"
     )]
     height: Option<u64>,
 }
 
-// hermes query connections ibc-0
+// hermes query connections --chain ibc-0
 impl Runnable for QueryClientConnectionsCmd {
     fn run(&self) {
         let config = app_config();

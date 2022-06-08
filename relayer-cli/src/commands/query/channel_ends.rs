@@ -40,11 +40,10 @@ pub struct QueryChannelEndsCmd {
     )]
     channel_id: ChannelId,
 
-    #[clap(short = 'H', long = "height", help = "height of the state to query")]
+    #[clap(long = "height", help = "height of the state to query")]
     height: Option<u64>,
 
     #[clap(
-        short = 'v',
         long = "verbose",
         help = "enable verbose output, displaying all details of channels, connections & clients"
     )]

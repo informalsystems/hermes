@@ -34,11 +34,11 @@ pub struct QueryConnectionEndCmd {
     )]
     connection_id: ConnectionId,
 
-    #[clap(short = 'H', long = "height", help = "height of the state to query")]
+    #[clap(long = "height", help = "height of the state to query")]
     height: Option<u64>,
 }
 
-// cargo run --bin hermes -- query connection end ibc-test connectionidone --height 3
+// cargo run --bin hermes -- query connection end --chain ibc-test --conn connectionidone --height 3
 impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();

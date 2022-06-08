@@ -26,12 +26,7 @@ pub struct ClearPacketsCmd {
     #[clap(long = "chain", required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[clap(
-        short = 'p',
-        long = "port",
-        required = true,
-        help = "identifier of the port"
-    )]
+    #[clap(long = "port", required = true, help = "identifier of the port")]
     port_id: PortId,
 
     #[clap(long = "chan", required = true, help = "identifier of the channel")]

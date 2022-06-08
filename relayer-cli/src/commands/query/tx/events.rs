@@ -33,7 +33,7 @@ pub struct QueryTxEventsCmd {
     hash: String,
 }
 
-// cargo run --bin hermes -- query tx events ibc-0 B8E78AD83810239E21863AC7B5FC4F99396ABB39EB534F721EEF43A4979C2821
+// cargo run --bin hermes -- query tx events --chain ibc-0 --hash B8E78AD83810239E21863AC7B5FC4F99396ABB39EB534F721EEF43A4979C2821
 impl Runnable for QueryTxEventsCmd {
     fn run(&self) {
         let config = app_config();

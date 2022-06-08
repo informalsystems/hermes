@@ -22,7 +22,6 @@ pub struct QueryPacketAcknowledgmentCmd {
     chain_id: ChainId,
 
     #[clap(
-        short = 'p',
         long = "port",
         required = true,
         help = "identifier of the port to query"
@@ -39,7 +38,7 @@ pub struct QueryPacketAcknowledgmentCmd {
     #[clap(long = "seq", required = true, help = "sequence of packet to query")]
     sequence: Sequence,
 
-    #[clap(short = 'H', long = "height", help = "height of the state to query")]
+    #[clap(long = "height", help = "height of the state to query")]
     height: Option<u64>,
 }
 
