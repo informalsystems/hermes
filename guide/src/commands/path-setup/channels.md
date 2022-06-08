@@ -10,24 +10,25 @@ Use the `create channel` command to establish a new channel.
 
 ```shell
 USAGE:
-    hermes create channel [OPTIONS] --port-a <PORT_A> --port-b <PORT_B> <CHAIN_A> [CONNECTION_A]
+    hermes create channel [OPTIONS] --chain-a <CHAIN_A> --port-a <PORT_A> --port-b <PORT_B>
 
 DESCRIPTION:
     Create a new channel between two chains using a pre-existing connection.
     Alternatively, create a new client and a new connection underlying the new channel if a pre-existing connection is not provided.
 
-POSITIONAL ARGUMENTS:
-    <CHAIN_A>                Identifier of the side `a` chain for the new channel
-    <CONNECTION_A>           Identifier of the connection on chain `a` to use in creating the new channel
-
 FLAGS:
-    -c, --chain-b <CHAIN_B>         Identifier of the side `b` chain for the new channel
-    -h, --help                         Print help information
-        --new-client-connection        Indicates that a new client and connection will be created underlying the new channel
-    -o, --order <ORDER>                The channel ordering, valid options 'unordered' (default) and 'ordered' [default: ORDER_UNORDERED]
+        --chain-a <CHAIN_A>            Identifier of the side `a` chain for the new channel
         --port-a <PORT_A>              Identifier of the side `a` port for the new channel
         --port-b <PORT_B>              Identifier of the side `b` port for the new channel
-    -v, --channel-version <VERSION>    The version for the new channel
+
+FLAGS:
+        --chain-b <CHAIN_B>            Identifier of the side `b` chain for the new channel
+        --conn-a <CONNECTION_A>        Identifier of the connection on chain `a` to use in creating the
+                                       new channel.
+    -h, --help                         Print help information
+        --new-client-conn              Indicates that a new client and connection will be created underlying the new channel
+        --order <ORDER>                The channel ordering, valid options 'unordered' (default) and 'ordered' [default: ORDER_UNORDERED]
+        --chan-version <VERSION>       The version for the new channel
 ```
 
 ## Examples
@@ -42,7 +43,7 @@ specifically the one we just created in the example above, with port name
 `transfer` on both sides:
 
 ```shell
-hermes create channel ibc-0 --connection-a connection-0 --port-a transfer --port-b transfer -o unordered
+hermes create channel --chain-a ibc-0 --conn-a connection-0 --port-a transfer --port-b transfer --order unordered
 ```
 
 Notice that one can omit the destination chain parameter, as Hermes will automatically
@@ -205,7 +206,7 @@ interactive prompt that pops up notifying you that a new client and a new
 connection will be initialized as part of the process:
 
 ```shell
-hermes create channel ibc-0 --chain-b ibc-1 --port-a transfer --port-b transfer -o unordered --new-client-connection
+hermes create channel --chain-a ibc-0 --chain-b ibc-1 --port-a transfer --port-b transfer --order unordered --new-client-conn
 ```
 
 ```json

@@ -33,12 +33,12 @@ Use the `query packet pending` command to query the sequence numbers of all pack
 
 ```shell
 USAGE:
-    hermes query packet pending <CHAIN_ID> <PORT_ID> <CHANNEL_ID>
+    hermes query packet pending --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>
 
-ARGS:
-    <CHAIN_ID>      identifier of the chain at one end of the channel
-    <PORT_ID>       port identifier on the chain given by <CHAIN_ID>
-    <CHANNEL_ID>    channel identifier on the chain given by <CHAIN_ID>
+FLAGS:
+        --chain <CHAIN_ID>     identifier of the chain at one end of the channel
+        --chan <CHANNEL_ID>    channel identifier on the chain given by <CHAIN_ID>
+        --port <PORT_ID>       port identifier on the chain given by <CHAIN_ID>
 ```
 
 __Example__
@@ -46,7 +46,7 @@ __Example__
 Query the sequence numbers of all packets that either not yet been received or not yet been acknowledged, at both ends of the channel `channel-1`.
 
 ```shell
-$ hermes query packet pending ibc-0 tranfer channel-1
+$ hermes query packet pending --chain ibc-0 --port transfer --chan channel-1
 ```
 
 ```json
@@ -85,15 +85,15 @@ Use the `query packet commitments` command to query the sequence numbers of all 
 
 ```shell
 USAGE:
-    hermes query packet commitments <OPTIONS>
+    hermes query packet commitments --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>
 
 DESCRIPTION:
     Query packet commitments
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain to query
-    port_id                   identifier of the port to query
-    channel_id                identifier of the channel to query
+FLAGS:
+        --chain <CHAIN_ID>     identifier of the chain to query
+        --chan <CHANNEL_ID>    identifier of the channel to query
+        --port <PORT_ID>       identifier of the port to query
 ```
 
 __Example__
@@ -101,7 +101,7 @@ __Example__
 Query `ibc-0` for the sequence numbers of packets that still have commitments on `ibc-0` and that were sent on `transfer` port and `channel-0`:
 
 ```shell
-hermes query packet commitments ibc-0 transfer channel-0
+hermes query packet commitments --chain ibc-0 --port transfer --chan channel-0
 ```
 
 ```json
@@ -124,19 +124,19 @@ Use the `query packet commitment` command to query the commitment value of a pac
 
 ```shell
 USAGE:
-    hermes query packet commitment <OPTIONS>
+    hermes query packet commitment [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID> --seq <SEQUENCE>
 
 DESCRIPTION:
     Query packet commitment
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain to query
-    port_id                   identifier of the port to query
-    channel_id                identifier of the channel to query
-    sequence                  sequence of packet to query
-
 FLAGS:
-    -H, --height HEIGHT       height of the state to query
+        --chain <CHAIN_ID>     identifier of the chain to query
+        --chan <CHANNEL_ID>    identifier of the channel to query
+        --port <PORT_ID>       identifier of the port to query
+        --seq <SEQUENCE>       sequence of packet to query
+
+OPTIONS:
+        --height <HEIGHT>      height of the state to query
 ```
 
 __Example__
@@ -144,7 +144,7 @@ __Example__
 Query `ibc-0` for the commitment of packet with sequence `3` sent on `transfer` port and `channel-0`:
 
 ```shell
-hermes query packet commitment ibc-0 transfer channel-0 3
+hermes query packet commitment --chain ibc-0 --port transfer --chan channel-0 --seq 3
 ```
 
 ```json
@@ -157,15 +157,15 @@ Use the `query packet acknowledgments` command to query the sequence numbers of 
 
 ```shell
 USAGE:
-    hermes query packet acks <OPTIONS>
+    hermes query packet acks --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>
 
 DESCRIPTION:
     Query packet acknowledgments
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain to query
-    port_id                   identifier of the port to query
-    channel_id                identifier of the channel to query
+FLAGS:
+        --chain <CHAIN_ID>     identifier of the chain to query
+        --chan <CHANNEL_ID>    identifier of the channel to query
+        --port <PORT_ID>       identifier of the port to query
 ```
 
 __Example__
@@ -173,7 +173,7 @@ __Example__
 Query `ibc-1` for the sequence numbers of packets acknowledged that were received on `transfer` port and `channel-1`:
 
 ```shell
-hermes query packet acks ibc-1 transfer channel-1
+hermes query packet acks --chain ibc-1 --port transfer --chan channel-1
 ```
 
 ```json
@@ -196,19 +196,19 @@ Use the `query packet acknowledgment` command to query the acknowledgment value 
 
 ```shell
 USAGE:
-    hermes query packet ack <OPTIONS>
+    hermes query packet ack [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID> --seq <SEQUENCE>
 
 DESCRIPTION:
     Query packet acknowledgment
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain to query
-    port_id                   identifier of the port to query
-    channel_id                identifier of the channel to query
-    sequence                  sequence of packet to query
-
 FLAGS:
-    -H, --height HEIGHT       height of the state to query
+        --chain <CHAIN_ID>     identifier of the chain to query
+        --chan <CHANNEL_ID>    identifier of the channel to query
+        --port <PORT_ID>       identifier of the port to query
+        --seq <SEQUENCE>       sequence of packet to query
+
+OPTIONS:
+        --height <HEIGHT>      height of the state to query
 ```
 
 __Example__
@@ -216,7 +216,7 @@ __Example__
 Query `ibc-1` for the acknowledgment of packet with sequence `2` received on `transfer` port and `channel-1`:
 
 ```shell
-hermes query packet ack ibc-1 transfer channel-1 2
+hermes query packet ack --chain ibc-1 --port transfer --chan channel-1 --seq 2
 ```
 
 ```json
@@ -229,15 +229,15 @@ Use the `query packet unreceived-packets` command to query the sequence numbers 
 
 ```shell
 USAGE:
-    hermes query packet unreceived-packets <OPTIONS>
+    hermes query packet unreceived-packets --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>
 
 DESCRIPTION:
     Query unreceived packets
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain for the unreceived sequences
-    port_id                   port identifier
-    channel_id                channel identifier
+FLAGS:
+        --chain <CHAIN_ID>     identifier of the chain for the unreceived sequences
+        --chan <CHANNEL_ID>    channel identifier
+        --port <PORT_ID>       port identifier
 ```
 
 __Example__
@@ -245,7 +245,7 @@ __Example__
 Query `transfer` port and `channel-1` on `ibc-1` for the sequence numbers of packets sent on `ibc-0` but not yet received:
 
 ```shell
-hermes query packet unreceived-packets ibc-1 transfer channel-1
+hermes query packet unreceived-packets --chain ibc-1 --port transfer --chan channel-1
 ```
 
 ```json
@@ -262,15 +262,15 @@ Use the `query packet unreceived-acks` command to query the sequence numbers of 
 
 ```shell
 USAGE:
-    hermes query packet unreceived-acks <OPTIONS>
+    hermes query packet unreceived-acks --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>
 
 DESCRIPTION:
     Query unreceived acknowledgments
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain to query the unreceived acknowledgments
-    port_id                   port identifier
-    channel_id                channel identifier
+FLAGS:
+        --chain <CHAIN_ID>     identifier of the chain to query the unreceived acknowledgments
+        --chan <CHANNEL_ID>    channel identifier
+        --port <PORT_ID>       port identifier
 ```
 
 __Example__
@@ -278,7 +278,7 @@ __Example__
 Query `transfer` port and `channel-0` on `ibc-0` for the sequence numbers of packets received by `ibc-1` but not yet acknowledged on `ibc-0`:
 
 ```shell
-hermes query packet unreceived-acks ibc-0 transfer channel-0
+hermes query packet unreceived-acks --chain ibc-0 --port transfer --chan channel-0
 ```
 
 ```json

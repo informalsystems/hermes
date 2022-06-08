@@ -32,4 +32,5 @@ SUBCOMMANDS:
     channel        Query information about channels
     channels       Query the identifiers of all channels on a given chain
     packet         Query information about packets
+    tx             Query information about transactions
 ```

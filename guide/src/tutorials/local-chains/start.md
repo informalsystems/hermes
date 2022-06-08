@@ -84,8 +84,8 @@ Our config file specifies two chains: `ibc-0` and `ibc-1`. We will need to speci
 previously mentioned, in this tutorial we will use the same private key for both chains.
 
 ```shell
-hermes keys add ibc-0 -f key_seed.json
-hermes keys add ibc-1 -f key_seed.json
+hermes keys add --chain ibc-0 --key-file key_seed.json
+hermes keys add --chain ibc-1 --key-file key_seed.json
 ```
 If successful, both commands should show an output similar to:
 

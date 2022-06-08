@@ -60,21 +60,26 @@ hermes help create channel
 
 ```
 USAGE:
-    hermes create channel <OPTIONS>
+    hermes create channel [OPTIONS] --chain-a <CHAIN_A> --port-a <PORT_A> --port-b <PORT_B>
 
 DESCRIPTION:
-    Create a new channel between two chains
-
-POSITIONAL ARGUMENTS:
-    chain_a_id                identifier of the side `a` chain for the new channel
-    chain_b_id                identifier of the side `b` chain for the new channel (optional)
+    Create a new channel between two chains using a pre-existing connection. Alternatively, create a new
+    client and a new connection underlying the new channel if a pre-existing connection is not provided
 
 FLAGS:
-    -c, --connection-a CONNECTION-A
-    --port-a PORT-A           identifier of the side `a` port for the new channel
-    --port-b PORT-B           identifier of the side `b` port for the new channel
-    -o, --order ORDER         the channel ordering, valid options 'unordered' (default) and 'ordered'
-    -v, --channel-version VERSION     the version for the new channel
+        --chain-a <CHAIN_A>         Identifier of the side `a` chain for the new channel
+        --port-a <PORT_A>           Identifier of the side `a` port for the new channel
+        --port-b <PORT_B>           Identifier of the side `b` port for the new channel
+
+OPTIONS:
+        --chain-b <CHAIN_B>         Identifier of the side `b` chain for the new channel
+        --chan-version <VERSION>    The version for the new channel
+        --conn-a <CONNECTION_A>     Identifier of the connection on chain `a` to use in creating the
+                                    new channel.
+        --new-client-conn           Indicates that a new client and connection will be created
+                                    underlying the new channel
+        --order <ORDER>             The channel ordering, valid options 'unordered' (default) and
+                                    'ordered' [default: ORDER_UNORDERED]
 ```
 
 Additionally, the `-h`/`--help` flags typical for CLI applications work on

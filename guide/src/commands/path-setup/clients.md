@@ -11,17 +11,17 @@ tracking the state of the source chain.
 
 ```shell
 USAGE:
-    hermes create client [OPTIONS] <DST_CHAIN_ID> <SRC_CHAIN_ID>
+    hermes create client [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID>
 
-ARGS:
-    <DST_CHAIN_ID>
+FLAGS:
+        --dst-chain <DST_CHAIN_ID>
             identifier of the destination chain
 
-    <SRC_CHAIN_ID>
+        --src-chain <SRC_CHAIN_ID>
             identifier of the source chain
 
 OPTIONS:
-    -d, --clock-drift <CLOCK_DRIFT>
+        --clock-drift <CLOCK_DRIFT>
             The maximum allowed clock drift for this client.
 
             The clock drift is a correction parameter. It helps deal with clocks that are only
@@ -31,13 +31,13 @@ OPTIONS:
             option is not specified, a suitable clock drift value is derived from the chain
             configurations.
 
-    -p, --trusting-period <TRUSTING_PERIOD>
+        --trusting-period <TRUSTING_PERIOD>
             Override the trusting period specified in the config.
 
             The trusting period specifies how long a validator set is trusted for (must be shorter
             than the chain's unbonding period).
 
-    -t, --trust-threshold <TRUST_THRESHOLD>
+        --trust-threshold <TRUST_THRESHOLD>
             Override the trust threshold specified in the configuration.
 
             The trust threshold defines what fraction of the total voting power of a known and
@@ -49,7 +49,7 @@ __Example__
 Create a new client on `ibc-0` which tracks `ibc-1`:
 
 ```shell
-hermes create client ibc-0 ibc-1
+hermes create client --dst-chain ibc-0 --src-chain ibc-1
 ```
 
 ```json
@@ -81,16 +81,19 @@ Specific update and trusted heights can be specified.
 
 ```shell
 USAGE:
-    hermes update client [OPTIONS] <DST_CHAIN_ID> <DST_CLIENT_ID>
+    hermes update client [OPTIONS] --dst-chain <DST_CHAIN_ID> --dst-client <DST_CLIENT_ID>
 
-ARGS:
-    <DST_CHAIN_ID>     identifier of the destination chain
-    <DST_CLIENT_ID>    identifier of the client to be updated on destination chain
+FLAGS:
+        --dst-chain <DST_CHAIN_ID>
+            identifier of the destination chain
+
+        --dst-client <DST_CLIENT_ID>
+            identifier of the client to be updated on destination chain
 
 OPTIONS:
     -h, --help                               Print help information
-    -H, --target-height <TARGET_HEIGHT>      the target height of the client update
-    -t, --trusted-height <TRUSTED_HEIGHT>    the trusted height of the client update
+        --target-height <TARGET_HEIGHT>      the target height of the client update
+        --trusted-height <TRUSTED_HEIGHT>    the trusted height of the client update
 ```
 
 __Update client with latest header__
@@ -98,7 +101,7 @@ __Update client with latest header__
 the client on `ibc-0` with latest header of `ibc-1`:
 
 ```shell
-hermes update client ibc-0 07-tendermint-9
+hermes update client --dst-chain ibc-0 --dst-client 07-tendermint-9
 ```
 
 ```json
@@ -126,7 +129,7 @@ The client with identifier `07-tendermint-1` has been updated with the consensus
 __Update a client to a specific target height__
 
 ```shell
-hermes update client ibc-0 07-tendermint-1 --target-height 320 --trusted-height 293
+hermes update client --dst-chain ibc-0 --dst-client 07-tendermint-1 --target-height 320 --trusted-height 293
 ```
 
 ```json

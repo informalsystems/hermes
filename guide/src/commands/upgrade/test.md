@@ -27,7 +27,7 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 2. Create one client on `ibc-1` for `ibc-0`:
 
     ```shell
-    hermes create client ibc-1 ibc-0
+    hermes create client --dst-chain ibc-1 --src-chain ibc-0
     ```
 
     ```json
@@ -51,7 +51,7 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     The proposal includes the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1` that was created in the previous step. In addition, the `unbonding_period` of the client is set to some new value (`400h`)
 
     ```shell
-    hermes tx raw upgrade-chain ibc-0 ibc-1 07-tendermint-0 10000000 300
+    hermes tx raw upgrade-chain --dst-chain ibc-0 --src-chain ibc-1 --src-client 07-tendermint-0 --amount 10000000 --height-offset 300
     ```
 
     ```text
@@ -197,7 +197,7 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     and another for the upgraded state.
 
     ```shell
-    hermes upgrade client ibc-1 07-tendermint-0
+    hermes upgrade client --chain ibc-1 --client 07-tendermint-0
     ```
     ```json
     Success: [
