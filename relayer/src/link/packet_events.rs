@@ -10,7 +10,6 @@ use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::link::error::LinkError;
-use crate::link::operational_data::TrackedEvents;
 use crate::path::PathIdentifiers;
 
 /// Limit on how many query results should be expected.
@@ -18,13 +17,13 @@ pub const QUERY_RESULT_LIMIT: usize = 50;
 
 /// Returns an iterator on batches of packet events.
 pub fn query_packet_events_with<'a, ChainA>(
-    sequence_nrs: &'a [u64],
+    sequence_nrs: &'a [Sequence],
     query_height: Height,
     src_chain: &'a ChainA,
     path: &'a PathIdentifiers,
-    query_fn: impl Fn(&ChainA, &PathIdentifiers, Vec<Sequence>, Height) -> Result<TrackedEvents, LinkError>
+    query_fn: impl Fn(&ChainA, &PathIdentifiers, Vec<Sequence>, Height) -> Result<Vec<IbcEvent>, LinkError>
         + 'a,
-) -> impl Iterator<Item = TrackedEvents> + 'a
+) -> impl Iterator<Item = Vec<IbcEvent>> + 'a
 where
     ChainA: ChainHandle,
 {
@@ -34,12 +33,16 @@ where
     sequence_nrs
         .chunks(QUERY_RESULT_LIMIT)
         .map_while(move |c| {
-            let sequences_nrs_chunk = c.iter().map(|&i| Sequence::from(i)).collect();
+            let sequences_nrs_chunk = c.to_vec();
             match query_fn(src_chain, path, sequences_nrs_chunk, query_height) {
                 Ok(mut events) => {
                     events_left_count -= c.len();
                     info!(events_total = %events_total_count, events_left = %events_left_count, "pulled packet data for {} events;", events.len());
-                    events.set_height(query_height);
+
+                    for event in events.iter_mut() {
+                        event.set_height(query_height);
+                    }
+
                     Some(events)
                 },
                 Err(e) => {
@@ -57,7 +60,7 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
     path: &PathIdentifiers,
     sequences: Vec<Sequence>,
     src_query_height: Height,
-) -> Result<TrackedEvents, LinkError> {
+) -> Result<Vec<IbcEvent>, LinkError> {
     let mut events_result = vec![];
     let _span = span!(Level::DEBUG, "query_send_packet_events", h = %src_query_height).entered();
 
@@ -83,6 +86,7 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
             _ => None,
         })
         .collect();
+
     query.sequences.retain(|seq| !recvd_sequences.contains(seq));
 
     let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
@@ -103,7 +107,7 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
     events_result.extend(tx_events);
     events_result.extend(end_block_events);
 
-    Ok(events_result.into())
+    Ok(events_result)
 }
 
 /// Returns packet event data for building ack messages for the
@@ -113,7 +117,7 @@ pub fn query_write_ack_events<ChainA: ChainHandle>(
     path: &PathIdentifiers,
     sequences: Vec<Sequence>,
     src_query_height: Height,
-) -> Result<TrackedEvents, LinkError> {
+) -> Result<Vec<IbcEvent>, LinkError> {
     // TODO(Adi): Would be good to make use of generics.
     let events_result = src_chain
         .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
@@ -127,5 +131,5 @@ pub fn query_write_ack_events<ChainA: ChainHandle>(
         }))
         .map_err(|e| LinkError::query(src_chain.id(), e))?;
 
-    Ok(events_result.into())
+    Ok(events_result)
 }

@@ -99,8 +99,18 @@ port = 3001
 # the relayer can send transactions and queries.
 [[chains]]
 
+psql_conn = 'postgres://tendermint:tendermint@localhost/ibc0'
+
 # Specify the chain ID. Required
 id = 'ibc-0'
+
+# Specify the type of chain.
+#
+# Possible values:
+# - CosmosSdk
+#
+# Default: CosmosSdk
+type = 'CosmosPsql'
 
 # Specify the RPC address and port where the chain RPC server listens on. Required
 rpc_addr = 'http://127.0.0.1:26657'
@@ -232,6 +242,7 @@ memo_prefix = ''
 
 [[chains]]
 id = 'ibc-1'
+type = 'CosmosSdk'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://127.0.0.1:26557/websocket'

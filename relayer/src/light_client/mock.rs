@@ -8,8 +8,8 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc::mock::host::HostBlock;
 use ibc::Height;
 
+use crate::chain::endpoint::ChainEndpoint;
 use crate::chain::mock::MockChain;
-use crate::chain::ChainEndpoint;
 use crate::error::Error;
 
 use super::Verified;

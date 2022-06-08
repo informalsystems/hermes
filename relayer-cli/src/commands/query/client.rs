@@ -1,9 +1,12 @@
-use alloc::sync::Arc;
-
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use tokio::runtime::Runtime as TokioRuntime;
 use tracing::debug;
+
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::{
+    PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest,
+};
 
 use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
 use ibc::core::ics02_client::client_state::ClientState;
@@ -12,12 +15,9 @@ use ibc::core::ics24_host::identifier::ClientId;
 use ibc::events::WithBlockDataType;
 use ibc::query::QueryTxRequest;
 use ibc::Height;
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
-use ibc_relayer::chain::ChainEndpoint;
-use ibc_relayer::chain::CosmosSdkChain;
 
 use crate::application::app_config;
+use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 
 /// Query client state command
@@ -39,21 +39,15 @@ impl Runnable for QueryClientStateCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => Output::error(format!(
-                "chain '{}' not found in configuration file",
-                self.chain_id
-            ))
-            .exit(),
-            Some(chain_config) => chain_config,
-        };
-
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
+
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
-        match chain.query_client_state(&self.client_id, height) {
+        match chain.query_client_state(QueryClientStateRequest {
+            client_id: self.client_id.clone(),
+            height,
+        }) {
             Ok(cs) => Output::success(cs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -93,22 +87,15 @@ impl Runnable for QueryClientConsensusCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => Output::error(format!(
-                "chain '{}' not found in configuration file",
-                self.chain_id
-            ))
-            .exit(),
-            Some(chain_config) => chain_config,
-        };
-
         debug!("Options: {:?}", self);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
+        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
+            client_id: self.client_id.clone(),
+            height: Height::zero(),
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
@@ -122,8 +109,11 @@ impl Runnable for QueryClientConsensusCmd {
                 let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
                 let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
 
-                let res =
-                    chain.query_consensus_state(self.client_id.clone(), consensus_height, height);
+                let res = chain.query_consensus_state(QueryConsensusStateRequest {
+                    client_id: self.client_id.clone(),
+                    consensus_height,
+                    query_height: height,
+                });
 
                 match res {
                     Ok(cs) => Output::success(cs).exit(),
@@ -132,8 +122,8 @@ impl Runnable for QueryClientConsensusCmd {
             }
             None => {
                 let res = chain.query_consensus_states(QueryConsensusStatesRequest {
-                    client_id: self.client_id.to_string(),
-                    pagination: ibc_proto::cosmos::base::query::pagination::all(),
+                    client_id: self.client_id.clone(),
+                    pagination: Some(PageRequest::all()),
                 });
 
                 match res {
@@ -173,22 +163,15 @@ impl Runnable for QueryClientHeaderCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => Output::error(format!(
-                "chain '{}' not found in configuration file",
-                self.chain_id
-            ))
-            .exit(),
-            Some(chain_config) => chain_config,
-        };
-
         debug!("Options: {:?}", self);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
+        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
+            client_id: self.client_id.clone(),
+            height: Height::zero(),
+        }) {
             Ok(cs) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
@@ -199,6 +182,7 @@ impl Runnable for QueryClientHeaderCmd {
 
         let consensus_height =
             ibc::Height::new(counterparty_chain.version(), self.consensus_height);
+
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
         let res = chain.query_txs(QueryTxRequest::Client(QueryClientEventRequest {
@@ -237,26 +221,14 @@ impl Runnable for QueryClientConnectionsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => Output::error(format!(
-                "chain '{}' not found in configuration file",
-                self.chain_id
-            ))
-            .exit(),
-            Some(chain_config) => chain_config,
-        };
-
         debug!("Options: {:?}", self);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let req = QueryClientConnectionsRequest {
-            client_id: self.client_id.to_string(),
-        };
-
-        let res = chain.query_client_connections(req);
+        let res = chain.query_client_connections(QueryClientConnectionsRequest {
+            client_id: self.client_id.clone(),
+        });
 
         match res {
             Ok(ce) => Output::success(ce).exit(),

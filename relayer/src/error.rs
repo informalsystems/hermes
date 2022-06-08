@@ -34,6 +34,7 @@ use ibc::{
 
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
+use crate::chain::psql_cosmos::PsqlError;
 use crate::event::monitor;
 use crate::keyring::errors::Error as KeyringError;
 use crate::sdk_error::SdkError;
@@ -500,6 +501,20 @@ define_error! {
                     e.chain_id
                 )
             },
+
+        Psql
+            [ TraceError<PsqlError> ]
+            |_| { "Psql" },
+
+        Sqlx
+            [ TraceError<sqlx::Error> ]
+            |_| { "sqlx" }
+    }
+}
+
+impl From<PsqlError> for Error {
+    fn from(e: PsqlError) -> Self {
+        Error::psql(e)
     }
 }
 

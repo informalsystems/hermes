@@ -15,6 +15,7 @@ use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
+use crate::telemetry;
 
 // Maximum number of retries for send_tx in the case of
 // an account sequence mismatch at broadcast step.
@@ -53,8 +54,11 @@ pub async fn send_tx_with_account_sequence_retry(
     retry_counter: u64,
 ) -> Result<Response, Error> {
     crate::time!("send_tx_with_account_sequence_retry");
+
     let _span =
         span!(Level::ERROR, "send_tx_with_account_sequence_retry", id = %config.chain_id).entered();
+
+    telemetry!(msg_num, &config.chain_id, messages.len() as u64);
 
     do_send_tx_with_account_sequence_retry(
         config,
@@ -70,7 +74,7 @@ pub async fn send_tx_with_account_sequence_retry(
 // We have to do explicit return of `Box<dyn Future>` because Rust
 // do not currently support recursive async functions behind the
 // `async fn` syntactic sugar.
-fn do_send_tx_with_account_sequence_retry<'a>(
+pub fn do_send_tx_with_account_sequence_retry<'a>(
     config: &'a TxConfig,
     key_entry: &'a KeyEntry,
     account: &'a mut Account,

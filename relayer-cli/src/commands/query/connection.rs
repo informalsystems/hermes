@@ -1,17 +1,17 @@
-use alloc::sync::Arc;
-
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use tokio::runtime::Runtime as TokioRuntime;
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::{
+    PageRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+};
 
 use ibc::core::{
     ics03_connection::connection::State,
     ics24_host::identifier::ConnectionId,
     ics24_host::identifier::{ChainId, PortChannelId},
 };
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
-use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
+use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
@@ -33,23 +33,16 @@ impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => Output::error(format!(
-                "chain '{}' not found in configuration file",
-                self.chain_id
-            ))
-            .exit(),
-            Some(chain_config) => chain_config,
-        };
-
         debug!("Options: {:?}", self);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
-        let res = chain.query_connection(&self.connection_id, height);
+        let res = chain.query_connection(QueryConnectionRequest {
+            connection_id: self.connection_id.clone(),
+            height,
+        });
         match res {
             Ok(connection_end) => {
                 if connection_end.state_matches(&State::Uninitialized) {
@@ -83,27 +76,17 @@ impl Runnable for QueryConnectionChannelsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => Output::error(format!(
-                "chain '{}' not found in configuration file",
-                self.chain_id
-            ))
-            .exit(),
-            Some(chain_config) => chain_config,
-        };
-
         debug!("Options: {:?}", self);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt)
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let req = QueryConnectionChannelsRequest {
-            connection: self.connection_id.to_string(),
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
-
-        let res: Result<_, Error> = chain.query_connection_channels(req).map_err(Error::relayer);
+        let res: Result<_, Error> = chain
+            .query_connection_channels(QueryConnectionChannelsRequest {
+                connection_id: self.connection_id.clone(),
+                pagination: Some(PageRequest::all()),
+            })
+            .map_err(Error::relayer);
 
         match res {
             Ok(channels) => {
