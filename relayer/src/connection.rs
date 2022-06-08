@@ -558,7 +558,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     fn do_conn_open_handshake(&mut self) -> Result<(), ConnectionError> {
         let (a_state, b_state) = self.update_connection_and_query_states()?;
         debug!(
-            "do_conn_open_finalize with connection end states: {}, {}",
+            "do_conn_open_handshake with connection end states: {}, {}",
             a_state, b_state
         );
 
@@ -634,7 +634,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
             (a_state, b_state) => {
                 warn!(
-                    "do_conn_open_finalize does not handle connection end state combination: \
+                    "do_conn_open_handshake does not handle connection end state combination: \
                     {}-{}, {}-{}. will retry to account for RPC node data availability issues.",
                     self.a_chain().id(),
                     a_state,
