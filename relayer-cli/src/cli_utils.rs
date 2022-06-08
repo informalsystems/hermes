@@ -56,7 +56,7 @@ pub fn spawn_chain_runtime(config: &Config, chain_id: &ChainId) -> Result<impl C
     spawn_chain_runtime_generic::<BaseChainHandle>(config, chain_id)
 }
 
-#[allow(unreachable_patterns)]
+//#[allow(unreachable_patterns)]
 pub fn spawn_chain_runtime_generic<Handle: ChainHandle>(
     config: &Config,
     chain_id: &ChainId,

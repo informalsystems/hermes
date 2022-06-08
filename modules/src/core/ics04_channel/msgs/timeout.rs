@@ -81,7 +81,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
                 .ok_or_else(Error::missing_packet)?
                 .try_into()?,
             next_sequence_recv: Sequence::from(raw_msg.next_sequence_recv),
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(Error::signer)?,
             proofs,
         })
     }
@@ -134,6 +134,7 @@ mod test {
     use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::msgs::timeout::test_util::get_dummy_raw_msg_timeout;
     use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
+    use crate::test_utils::get_dummy_bech32_account;
 
     #[test]
     fn msg_timeout_try_from_raw() {
@@ -180,7 +181,7 @@ mod test {
             Test {
                 name: "Empty signer".to_string(),
                 raw: RawMsgTimeout {
-                    signer: "".to_string(),
+                    signer: get_dummy_bech32_account(),
                     ..default_raw_msg
                 },
                 want_pass: true,

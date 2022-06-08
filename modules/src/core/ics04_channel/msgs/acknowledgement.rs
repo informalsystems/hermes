@@ -32,6 +32,12 @@ impl From<Vec<u8>> for Acknowledgement {
     }
 }
 
+impl AsRef<[u8]> for Acknowledgement {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_slice()
+    }
+}
+
 ///
 /// Message definition for packet acknowledgements.
 ///
@@ -107,7 +113,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
                 .ok_or_else(Error::missing_packet)?
                 .try_into()?,
             acknowledgement: raw_msg.acknowledgement.into(),
-            signer: raw_msg.signer.into(),
+            signer: raw_msg.signer.parse().map_err(Error::signer)?,
             proofs,
         })
     }
@@ -160,6 +166,7 @@ mod test {
     use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
     use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
+    use crate::test_utils::get_dummy_bech32_account;
 
     #[test]
     fn msg_acknowledgment_try_from_raw() {
@@ -197,7 +204,7 @@ mod test {
             Test {
                 name: "Empty signer".to_string(),
                 raw: RawMsgAcknowledgement {
-                    signer: "".to_string(),
+                    signer: get_dummy_bech32_account(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,

@@ -10,7 +10,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortCh
 use ibc::Height;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
-    PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
+    IncludeProof, PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
     QueryConnectionRequest,
 };
 use ibc_relayer::registry::Registry;
@@ -126,15 +126,21 @@ fn query_channel_ends<Chain: ChainHandle>(
     channel_id: ChannelId,
     chain_height: Height,
 ) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
-    let connection_end = chain.query_connection(QueryConnectionRequest {
-        connection_id: connection_id.clone(),
-        height: chain_height,
-    })?;
+    let (connection_end, _) = chain.query_connection(
+        QueryConnectionRequest {
+            connection_id: connection_id.clone(),
+            height: chain_height,
+        },
+        IncludeProof::No,
+    )?;
     let client_id = connection_end.client_id().clone();
-    let client_state = chain.query_client_state(QueryClientStateRequest {
-        client_id,
-        height: chain_height,
-    })?;
+    let (client_state, _) = chain.query_client_state(
+        QueryClientStateRequest {
+            client_id,
+            height: chain_height,
+        },
+        IncludeProof::No,
+    )?;
     let counterparty_chain_id = client_state.chain_id();
 
     if let Some(dst_chain_id) = destination_chain {
@@ -173,23 +179,30 @@ fn query_channel_ends<Chain: ChainHandle>(
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
     let counterparty_chain_height = counterparty_chain.query_latest_height()?;
 
-    let counterparty_connection_end =
-        counterparty_chain.query_connection(QueryConnectionRequest {
+    let (counterparty_connection_end, _) = counterparty_chain.query_connection(
+        QueryConnectionRequest {
             connection_id: counterparty_connection_id,
             height: counterparty_chain_height,
-        })?;
+        },
+        IncludeProof::No,
+    )?;
 
-    let counterparty_client_state =
-        counterparty_chain.query_client_state(QueryClientStateRequest {
+    let (counterparty_client_state, _) = counterparty_chain.query_client_state(
+        QueryClientStateRequest {
             client_id: counterparty_client_id,
             height: counterparty_chain_height,
-        })?;
+        },
+        IncludeProof::No,
+    )?;
 
-    let counterparty_channel_end = counterparty_chain.query_channel(QueryChannelRequest {
-        port_id: counterparty_port_id,
-        channel_id: counterparty_channel_id,
-        height: counterparty_chain_height,
-    })?;
+    let (counterparty_channel_end, _) = counterparty_chain.query_channel(
+        QueryChannelRequest {
+            port_id: counterparty_port_id,
+            channel_id: counterparty_channel_id,
+            height: counterparty_chain_height,
+        },
+        IncludeProof::No,
+    )?;
 
     Ok(ChannelEnds {
         channel_end,

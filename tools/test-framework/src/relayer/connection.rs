@@ -9,7 +9,7 @@ use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectio
 use ibc::timestamp::ZERO_DURATION;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::QueryConnectionRequest;
+use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest};
 use ibc_relayer::connection::{extract_connection_id, Connection, ConnectionSide};
 
 use crate::error::Error;
@@ -89,10 +89,13 @@ pub fn query_connection_end<ChainA: ChainHandle, ChainB>(
     handle: &ChainA,
     connection_id: &TaggedConnectionIdRef<ChainA, ChainB>,
 ) -> Result<DualTagged<ChainA, ChainB, ConnectionEnd>, Error> {
-    let connection_end = handle.query_connection(QueryConnectionRequest {
-        connection_id: connection_id.into_value().clone(),
-        height: Height::zero(),
-    })?;
+    let (connection_end, _) = handle.query_connection(
+        QueryConnectionRequest {
+            connection_id: connection_id.into_value().clone(),
+            height: Height::zero(),
+        },
+        IncludeProof::No,
+    )?;
 
     Ok(DualTagged::new(connection_end))
 }
@@ -101,10 +104,13 @@ pub fn query_identified_connection_end<ChainA: ChainHandle, ChainB>(
     handle: &ChainA,
     connection_id: TaggedConnectionIdRef<ChainA, ChainB>,
 ) -> Result<DualTagged<ChainA, ChainB, IdentifiedConnectionEnd>, Error> {
-    let connection_end = handle.query_connection(QueryConnectionRequest {
-        connection_id: connection_id.into_value().clone(),
-        height: Height::zero(),
-    })?;
+    let (connection_end, _) = handle.query_connection(
+        QueryConnectionRequest {
+            connection_id: connection_id.into_value().clone(),
+            height: Height::zero(),
+        },
+        IncludeProof::No,
+    )?;
     Ok(DualTagged::new(IdentifiedConnectionEnd::new(
         connection_id.into_value().clone(),
         connection_end,

@@ -850,6 +850,18 @@ impl From<ReceivePacket> for IbcEvent {
     }
 }
 
+impl TryFrom<ReceivePacket> for AbciEvent {
+    type Error = Error;
+
+    fn try_from(v: ReceivePacket) -> Result<Self, Self::Error> {
+        let attributes = Vec::<Tag>::try_from(v.packet)?;
+        Ok(AbciEvent {
+            type_str: IbcEventType::ReceivePacket.as_str().to_string(),
+            attributes,
+        })
+    }
+}
+
 impl core::fmt::Display for ReceivePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(f, "ReceivePacket - h:{}, {}", self.height, self.packet)
@@ -1063,6 +1075,18 @@ impl TimeoutOnClosePacket {
 impl From<TimeoutOnClosePacket> for IbcEvent {
     fn from(v: TimeoutOnClosePacket) -> Self {
         IbcEvent::TimeoutOnClosePacket(v)
+    }
+}
+
+impl TryFrom<TimeoutOnClosePacket> for AbciEvent {
+    type Error = Error;
+
+    fn try_from(v: TimeoutOnClosePacket) -> Result<Self, Self::Error> {
+        let attributes = Vec::<Tag>::try_from(v.packet)?;
+        Ok(AbciEvent {
+            type_str: IbcEventType::TimeoutOnClose.as_str().to_string(),
+            attributes,
+        })
     }
 }
 

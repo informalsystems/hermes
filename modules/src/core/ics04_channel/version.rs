@@ -7,7 +7,7 @@ use core::fmt;
 use core::str::FromStr;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::applications::ics20_fungible_token_transfer;
+use crate::applications::transfer;
 use crate::prelude::*;
 
 /// The version field for a `ChannelEnd`.
@@ -24,7 +24,7 @@ impl Version {
     }
 
     pub fn ics20() -> Self {
-        Self::new(ics20_fungible_token_transfer::VERSION.to_string())
+        Self::new(transfer::VERSION.to_string())
     }
 
     pub fn empty() -> Self {

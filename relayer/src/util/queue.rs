@@ -63,3 +63,9 @@ impl<T> Default for Queue<T> {
         Self::new()
     }
 }
+
+impl<T> From<VecDeque<T>> for Queue<T> {
+    fn from(deque: VecDeque<T>) -> Self {
+        Queue(Arc::new(RwLock::new(deque)))
+    }
+}

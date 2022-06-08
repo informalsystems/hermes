@@ -39,10 +39,15 @@ use crate::chain::requests::{
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
-use crate::error::Error;
+use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
+
+use super::requests::{
+    IncludeProof, QueryPacketAcknowledgementRequest, QueryPacketCommitmentRequest,
+    QueryPacketReceiptRequest,
+};
 
 /// The result of a health check.
 #[derive(Debug)]
@@ -77,6 +82,7 @@ pub trait ChainEndpoint: Sized {
     /// Constructs the chain
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
 
+    #[allow(clippy::type_complexity)]
     /// Initializes and returns the light client (if any) associated with this chain.
     fn init_light_client(&self) -> Result<Self::LightClient, Error>;
 
@@ -128,8 +134,9 @@ pub trait ChainEndpoint: Sized {
 
     // Queries
 
-    /// Query the balance of the current account for the denom used to pay tx fees.
-    fn query_balance(&self) -> Result<Balance, Error>;
+    /// Query the balance of the given account for the denom used to pay tx fees.
+    /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
+    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
@@ -147,20 +154,28 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
-    fn query_client_state(&self, request: QueryClientStateRequest)
-        -> Result<AnyClientState, Error>;
+    /// Performs a query to retrieve the state of the specified light client. A
+    /// proof can optionally be returned along with the result.
+    fn query_client_state(
+        &self,
+        request: QueryClientStateRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error>;
 
+    /// Performs a query to retrieve the consensus state for a specified height
+    /// `consensus_height` that the specified light client stores.
+    fn query_consensus_state(
+        &self,
+        request: QueryConsensusStateRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error>;
+
+    /// Performs a query to retrieve all the consensus states that the specified
+    /// light client stores.
     fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
-
-    /// Performs a query to retrieve the consensus state (for a specific height `consensus_height`)
-    /// that an on-chain client stores.
-    fn query_consensus_state(
-        &self,
-        request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
@@ -184,59 +199,116 @@ pub trait ChainEndpoint: Sized {
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error>;
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error>;
+    /// Performs a query to retrieve the connection associated with a given
+    /// connection identifier. A proof can optionally be returned along with the
+    /// result.
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error>;
 
-    /// Performs a query to retrieve the identifiers of all channels associated with a connection.
+    /// Performs a query to retrieve all channels associated with a connection.
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    /// Performs a query to retrieve the identifiers of all channels.
+    /// Performs a query to retrieve all the channels of a chain.
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error>;
+    /// Performs a query to retrieve the channel associated with a given channel
+    /// identifier. A proof can optionally be returned along with the result.
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error>;
 
+    /// Performs a query to retrieve the client state for the channel associated
+    /// with a given channel identifier.
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error>;
 
-    /// Queries all the packet commitments hashes associated with a channel.
-    /// Returns the corresponding packet sequence numbers.
+    /// Performs a query to retrieve a stored packet commitment hash, stored on
+    /// the chain at path `path::CommitmentsPath`. A proof can optionally be
+    /// returned along with the result.
+    fn query_packet_commitment(
+        &self,
+        request: QueryPacketCommitmentRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
+
+    /// Performs a query to retrieve all the packet commitments hashes
+    /// associated with a channel. Returns the corresponding packet sequence
+    /// numbers and the height at which they were retrieved.
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<Sequence>, ICSHeight), Error>;
 
-    /// Queries all the unreceived IBC packets associated with a channel and packet commit sequences.
-    /// Returns the corresponding packet sequence numbers.
+    /// Performs a query to retrieve a given packet receipt, stored on the chain at path
+    /// `path::CommitmentsPath`. A proof can optionally be returned along with the result.
+    fn query_packet_receipt(
+        &self,
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
+
+    /// Performs a query about which IBC packets in the specified list has not
+    /// been received. Returns the sequence numbers of the packets that were not
+    /// received.
+    ///
+    /// For example, given a request with the sequence numbers `[5,6,7,8]`, a
+    /// response of `[7,8]` would indicate that packets 5 & 6 were received,
+    /// while packets 7, 8 were not.
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<Sequence>, Error>;
 
-    /// Queries all the packet acknowledgements associated with a channel.
-    /// Returns the corresponding packet sequence numbers.
+    /// Performs a query to retrieve a stored packet acknowledgement hash,
+    /// stored on the chain at path `path::AcksPath`. A proof can optionally be
+    /// returned along with the result.
+    fn query_packet_acknowledgement(
+        &self,
+        request: QueryPacketAcknowledgementRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
+
+    /// Performs a query to retrieve all the packet acknowledgements associated
+    /// with a channel. Returns the corresponding packet sequence numbers and
+    /// the height at which they were retrieved.
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<Sequence>, ICSHeight), Error>;
 
-    /// Queries all the unreceived packet acknowledgements associated with a
-    /// Returns the corresponding packet sequence numbers.
+    /// Performs a query about which IBC packets in the specified list has not
+    /// been acknowledged. Returns the sequence numbers of the packets that were not
+    /// acknowledged.
+    ///
+    /// For example, given a request with the sequence numbers `[5,6,7,8]`, a
+    /// response of `[7,8]` would indicate that packets 5 & 6 were acknowledged,
+    /// while packets 7, 8 were not.
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error>;
 
+    /// Performs a query to retrieve `nextSequenceRecv` stored at path
+    /// `path::SeqRecvsPath` as defined in ICS-4. A proof can optionally be
+    /// returned along with the result.
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error>;
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error>;
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 
@@ -249,42 +321,6 @@ pub trait ChainEndpoint: Sized {
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error>;
-
-    // Provable queries
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<(AnyClientState, MerkleProof), Error>;
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: ICSHeight,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error>;
-
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: ICSHeight,
-        height: ICSHeight,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
-
-    fn proven_channel(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: ICSHeight,
-    ) -> Result<(ChannelEnd, MerkleProof), Error>;
-
-    fn proven_packet(
-        &self,
-        packet_type: PacketMsgType,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: Sequence,
-        height: ICSHeight,
-    ) -> Result<(Vec<u8>, MerkleProof), Error>;
 
     fn build_client_state(
         &self,
@@ -319,7 +355,14 @@ pub trait ChainEndpoint: Sized {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<(Option<AnyClientState>, Proofs), Error> {
-        let (connection_end, connection_proof) = self.proven_connection(connection_id, height)?;
+        let (connection_end, maybe_connection_proof) = self.query_connection(
+            QueryConnectionRequest {
+                connection_id: connection_id.clone(),
+                height,
+            },
+            IncludeProof::Yes,
+        )?;
+        let connection_proof = maybe_connection_proof.expect(QUERY_PROOF_EXPECT_MSG);
 
         // Check that the connection state is compatible with the message
         match message_type {
@@ -350,17 +393,32 @@ pub trait ChainEndpoint: Sized {
 
         match message_type {
             ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
-                let (client_state_value, client_state_proof) =
-                    self.proven_client_state(client_id, height)?;
+                let (client_state_value, maybe_client_state_proof) = self.query_client_state(
+                    QueryClientStateRequest {
+                        client_id: client_id.clone(),
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+                let client_state_proof = maybe_client_state_proof.expect(QUERY_PROOF_EXPECT_MSG);
 
                 client_proof = Some(
                     CommitmentProofBytes::try_from(client_state_proof)
                         .map_err(Error::malformed_proof)?,
                 );
 
-                let consensus_state_proof = self
-                    .proven_client_consensus(client_id, client_state_value.latest_height(), height)?
-                    .1;
+                let consensus_state_proof = {
+                    let (_, maybe_consensus_state_proof) = self.query_consensus_state(
+                        QueryConsensusStateRequest {
+                            client_id: client_id.clone(),
+                            consensus_height: client_state_value.latest_height(),
+                            query_height: height,
+                        },
+                        IncludeProof::Yes,
+                    )?;
+
+                    maybe_consensus_state_proof.expect(QUERY_PROOF_EXPECT_MSG)
+                };
 
                 consensus_proof = Option::from(
                     ConsensusProof::new(
@@ -397,11 +455,19 @@ pub trait ChainEndpoint: Sized {
         height: ICSHeight,
     ) -> Result<Proofs, Error> {
         // Collect all proofs as required
-        let channel_proof =
-            CommitmentProofBytes::try_from(self.proven_channel(port_id, channel_id, height)?.1)
-                .map_err(Error::malformed_proof)?;
+        let (_, maybe_channel_proof) = self.query_channel(
+            QueryChannelRequest {
+                port_id: port_id.clone(),
+                channel_id: *channel_id,
+                height,
+            },
+            IncludeProof::Yes,
+        )?;
+        let channel_proof = maybe_channel_proof.expect(QUERY_PROOF_EXPECT_MSG);
+        let channel_proof_bytes =
+            CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?;
 
-        Proofs::new(channel_proof, None, None, None, height.increment())
+        Proofs::new(channel_proof_bytes, None, None, None, height.increment())
             .map_err(Error::malformed_proof)
     }
 
@@ -413,20 +479,90 @@ pub trait ChainEndpoint: Sized {
         channel_id: ChannelId,
         sequence: Sequence,
         height: ICSHeight,
-    ) -> Result<(Vec<u8>, Proofs), Error> {
-        let channel_proof = if packet_type == PacketMsgType::TimeoutOnClose {
-            Some(
-                CommitmentProofBytes::try_from(
-                    self.proven_channel(&port_id, &channel_id, height)?.1,
-                )
-                .map_err(Error::malformed_proof)?,
-            )
-        } else {
-            None
+    ) -> Result<Proofs, Error> {
+        let (maybe_packet_proof, channel_proof) = match packet_type {
+            PacketMsgType::Recv => {
+                let (_, maybe_packet_proof) = self.query_packet_commitment(
+                    QueryPacketCommitmentRequest {
+                        port_id,
+                        channel_id,
+                        sequence,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, None)
+            }
+            PacketMsgType::Ack => {
+                let (_, maybe_packet_proof) = self.query_packet_acknowledgement(
+                    QueryPacketAcknowledgementRequest {
+                        port_id,
+                        channel_id,
+                        sequence,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, None)
+            }
+            PacketMsgType::TimeoutUnordered => {
+                let (_, maybe_packet_proof) = self.query_packet_receipt(
+                    QueryPacketReceiptRequest {
+                        port_id,
+                        channel_id,
+                        sequence,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, None)
+            }
+            PacketMsgType::TimeoutOrdered => {
+                let (_, maybe_packet_proof) = self.query_next_sequence_receive(
+                    QueryNextSequenceReceiveRequest {
+                        port_id,
+                        channel_id,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, None)
+            }
+            PacketMsgType::TimeoutOnClose => {
+                let channel_proof = {
+                    let (_, maybe_channel_proof) = self.query_channel(
+                        QueryChannelRequest {
+                            port_id: port_id.clone(),
+                            channel_id,
+                            height,
+                        },
+                        IncludeProof::Yes,
+                    )?;
+                    let channel_merkle_proof = maybe_channel_proof.expect(QUERY_PROOF_EXPECT_MSG);
+                    Some(
+                        CommitmentProofBytes::try_from(channel_merkle_proof)
+                            .map_err(Error::malformed_proof)?,
+                    )
+                };
+                let (_, maybe_packet_proof) = self.query_packet_receipt(
+                    QueryPacketReceiptRequest {
+                        port_id,
+                        channel_id,
+                        sequence,
+                        height,
+                    },
+                    IncludeProof::Yes,
+                )?;
+
+                (maybe_packet_proof, channel_proof)
+            }
         };
 
-        let (bytes, packet_proof) =
-            self.proven_packet(packet_type, port_id, channel_id, sequence, height)?;
+        let packet_proof = maybe_packet_proof.expect(QUERY_PROOF_EXPECT_MSG);
 
         let proofs = Proofs::new(
             CommitmentProofBytes::try_from(packet_proof).map_err(Error::malformed_proof)?,
@@ -437,6 +573,6 @@ pub trait ChainEndpoint: Sized {
         )
         .map_err(Error::malformed_proof)?;
 
-        Ok((bytes, proofs))
+        Ok(proofs)
     }
 }

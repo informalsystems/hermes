@@ -50,13 +50,15 @@ use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
     QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
     QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
+    QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+    QueryUpgradedConsensusStateRequest,
 };
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::ChainConfig;
@@ -148,8 +150,9 @@ where
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
-    ) -> Result<AnyClientState, Error> {
-        self.value().query_client_state(request)
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
+        self.value().query_client_state(request, include_proof)
     }
 
     fn query_client_connections(
@@ -169,8 +172,9 @@ where
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error> {
-        self.value().query_consensus_state(request)
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
+        self.value().query_consensus_state(request, include_proof)
     }
 
     fn query_upgraded_client_state(
@@ -195,8 +199,12 @@ where
         self.value().query_compatible_versions()
     }
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
-        self.value().query_connection(request)
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
+        self.value().query_connection(request, include_proof)
     }
 
     fn query_connections(
@@ -216,8 +224,10 @@ where
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error> {
-        self.value().query_next_sequence_receive(request)
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error> {
+        self.value()
+            .query_next_sequence_receive(request, include_proof)
     }
 
     fn query_channels(
@@ -227,8 +237,12 @@ where
         self.value().query_channels(request)
     }
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
-        self.value().query_channel(request)
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
+        self.value().query_channel(request, include_proof)
     }
 
     fn query_channel_client_state(
@@ -236,32 +250,6 @@ where
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.value().query_channel_client_state(request)
-    }
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.value().proven_client_state(client_id, height)
-    }
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.value().proven_connection(connection_id, height)
-    }
-
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: Height,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.value()
-            .proven_client_consensus(client_id, consensus_height, height)
     }
 
     fn build_header(
@@ -334,9 +322,17 @@ where
         channel_id: &ChannelId,
         sequence: Sequence,
         height: Height,
-    ) -> Result<(Vec<u8>, Proofs), Error> {
+    ) -> Result<Proofs, Error> {
         self.value()
             .build_packet_proofs(packet_type, port_id, channel_id, sequence, height)
+    }
+
+    fn query_packet_commitment(
+        &self,
+        request: QueryPacketCommitmentRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.value().query_packet_commitment(request, include_proof)
     }
 
     fn query_packet_commitments(
@@ -346,11 +342,28 @@ where
         self.value().query_packet_commitments(request)
     }
 
+    fn query_packet_receipt(
+        &self,
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.value().query_packet_receipt(request, include_proof)
+    }
+
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<Sequence>, Error> {
         self.value().query_unreceived_packets(request)
+    }
+
+    fn query_packet_acknowledgement(
+        &self,
+        request: QueryPacketAcknowledgementRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.value()
+            .query_packet_acknowledgement(request, include_proof)
     }
 
     fn query_packet_acknowledgements(
@@ -360,11 +373,11 @@ where
         self.value().query_packet_acknowledgements(request)
     }
 
-    fn query_unreceived_acknowledgement(
+    fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error> {
-        self.value().query_unreceived_acknowledgement(request)
+        self.value().query_unreceived_acknowledgements(request)
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
@@ -385,7 +398,7 @@ where
         self.value().query_host_consensus_state(request)
     }
 
-    fn query_balance(&self) -> Result<Balance, Error> {
-        self.value().query_balance()
+    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
+        self.value().query_balance(key_name)
     }
 }

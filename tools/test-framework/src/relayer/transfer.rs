@@ -5,12 +5,14 @@
 
 use core::ops::Add;
 use core::time::Duration;
-use ibc::signer::Signer;
+
+use ibc::applications::transfer::error::Error as Ics20Error;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
+use ibc_relayer::transfer::TransferError;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
@@ -31,13 +33,26 @@ pub fn build_transfer_message<SrcChain, DstChain>(
         .add(Duration::from_secs(60))
         .map_err(handle_generic_error)?;
 
+    let sender = sender
+        .value()
+        .address
+        .0
+        .parse()
+        .map_err(|e| TransferError::token_transfer(Ics20Error::signer(e)))?;
+
+    let receiver = recipient
+        .value()
+        .0
+        .parse()
+        .map_err(|e| TransferError::token_transfer(Ics20Error::signer(e)))?;
+
     Ok(raw_build_transfer_message(
         (*port_id.value()).clone(),
         **channel_id.value(),
         amount.into(),
-        denom.value().to_string(),
-        Signer::new(sender.value().address.0.clone()),
-        Signer::new(recipient.value().0.clone()),
+        denom.to_string(),
+        sender,
+        receiver,
         Height::zero(),
         timeout_timestamp,
     ))
