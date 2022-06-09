@@ -483,11 +483,7 @@ where
         reply_to.send(balance).map_err(Error::send)
     }
 
-    fn query_denom_trace(
-        &self,
-        hash: String,
-        reply_to: ReplyTo<DenomTrace>,
-    ) -> Result<(), Error> {
+    fn query_denom_trace(&self, hash: String, reply_to: ReplyTo<DenomTrace>) -> Result<(), Error> {
         let denom_trace = self.chain.query_denom_trace(hash);
         reply_to.send(denom_trace).map_err(Error::send)
     }

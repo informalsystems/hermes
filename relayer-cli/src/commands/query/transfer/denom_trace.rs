@@ -1,4 +1,3 @@
-
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
@@ -18,7 +17,6 @@ use crate::conclude::{exit_with_unrecoverable_error, json, Output};
 /// If successful the the base denomination and the path will be displayed.
 #[derive(Clone, Command, Debug, Parser)]
 pub struct DenomTraceCmd {
-
     #[clap(long = "chain", required = true, help = "identifier of the chain")]
     chain_id: ChainId,
 
@@ -30,25 +28,21 @@ impl Runnable for DenomTraceCmd {
     fn run(&self) {
         let config = app_config();
 
-    let chain = spawn_chain_runtime(&config, &self.chain_id)
-        .unwrap_or_else(exit_with_unrecoverable_error);
+        let chain = spawn_chain_runtime(&config, &self.chain_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
-    
         match chain.query_denom_trace(self.hash.clone()) {
             Ok(denom_trace) if json() => Output::success(denom_trace).exit(),
-            Ok(denom_trace) => {
-                Output::success_msg(format!(
-                    "base_denom: {}\n path: {}",
-                    denom_trace.base_denom, denom_trace.path
-                ))
-                .exit()
-            }
+            Ok(denom_trace) => Output::success_msg(format!(
+                "base_denom: {}\n path: {}",
+                denom_trace.base_denom, denom_trace.path
+            ))
+            .exit(),
             Err(e) => Output::error(format!(
                 "there was a problem querying the denomination trace: {}",
                 e
             ))
             .exit(),
         }
-
     }
 }

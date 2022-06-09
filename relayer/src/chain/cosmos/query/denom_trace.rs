@@ -1,20 +1,19 @@
 use http::uri::Uri;
 
-use ibc_proto::ibc::applications::transfer::v1::{query_client::QueryClient, QueryDenomTraceRequest};
+use ibc_proto::ibc::applications::transfer::v1::{
+    query_client::QueryClient, QueryDenomTraceRequest,
+};
 
 use crate::{denom::DenomTrace, error::Error};
 
 // Uses the GRPC client to retrieve the denom trace for a specific hash
-pub async fn query_denom_trace(
-    grpc_address: &Uri,
-    hash: &str,
-) -> Result<DenomTrace, Error> {
+pub async fn query_denom_trace(grpc_address: &Uri, hash: &str) -> Result<DenomTrace, Error> {
     let mut client = QueryClient::connect(grpc_address.clone())
         .await
         .map_err(Error::grpc_transport)?;
 
     let request = tonic::Request::new(QueryDenomTraceRequest {
-        hash: hash.to_string()
+        hash: hash.to_string(),
     });
 
     let response = client

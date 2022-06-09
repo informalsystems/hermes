@@ -667,10 +667,7 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
-        let denom_trace = self.block_on(query_denom_trace(
-            &self.grpc_addr,
-            &hash,
-        ))?;
+        let denom_trace = self.block_on(query_denom_trace(&self.grpc_addr, &hash))?;
 
         Ok(denom_trace)
     }
