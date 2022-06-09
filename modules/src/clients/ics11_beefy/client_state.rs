@@ -20,10 +20,9 @@ use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
-pub const REVISION_NUMBER: u64 = 0;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ClientState {
-    /// The chain id which encapsulates the para id
+    /// The chain id
     pub chain_id: ChainId,
     /// Latest mmr root hash
     pub mmr_root_hash: H256,
@@ -38,10 +37,6 @@ pub struct ClientState {
     pub authority: BeefyNextAuthoritySet<H256>,
     /// authorities for the next round
     pub next_authority_set: BeefyNextAuthoritySet<H256>,
-    /// Latest parachain height
-    pub latest_para_height: Option<Height>,
-    /// Parachain id
-    pub para_id: u32,
 }
 
 impl Protobuf<RawClientState> for ClientState {}
@@ -85,10 +80,6 @@ impl ClientState {
             authority: authority_set,
             next_authority_set,
         })
-    }
-
-    pub fn latest_height(&self) -> Height {
-        self.latest_para_height.unwrap_or_default()
     }
 
     pub fn to_leaf_index(&self, block_number: u32) -> u32 {
@@ -177,7 +168,7 @@ impl ClientState {
 
     /// Verify that the client is at a sufficient height and unfrozen at the given height
     pub fn verify_height(&self, height: Height) -> Result<(), Error> {
-        if (self.latest_height() as u64) < height.revision_height {
+        if (self.latest_beefy_height as u64) < height.revision_height {
             return Err(Error::insufficient_height(
                 Height::new(0, self.latest_beefy_height.into()),
                 height,
@@ -208,7 +199,7 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
     }
 
     fn latest_height(&self) -> Height {
-        self.latest_height()
+        Height::new(0, self.latest_beefy_height.into())
     }
 
     fn frozen_height(&self) -> Option<Height> {
@@ -219,15 +210,11 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
         mut self,
         upgrade_height: Height,
         _upgrade_options: UpgradeOptions,
-        chain_id: ChainId,
+        _chain_id: ChainId,
     ) -> Self {
         self.frozen_height = None;
         // Upgrade the client state
         self.latest_beefy_height = upgrade_height.revision_height.saturated_into::<u32>();
-
-        self.latest_para_height = None;
-
-        self.para_id = chain_id.version().saturated_into::<u32>();
 
         self
     }

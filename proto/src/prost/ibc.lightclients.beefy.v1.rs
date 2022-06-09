@@ -1,4 +1,4 @@
-/// ClientState from Tendermint tracks the current validator set, latest height,
+/// ClientState from Beefy tracks the current validator set, latest height,
 /// and a possible frozen height.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
@@ -94,9 +94,6 @@ pub struct ConsensusState {
     /// packet commitment root
     #[prost(bytes="vec", tag="2")]
     pub root: ::prost::alloc::vec::Vec<u8>,
-    /// proof of inclusion for this parachain header in the Mmr.
-    #[prost(message, optional, tag = "4")]
-    pub parachain_header: ::core::option::Option<ParachainHeader>,
 }
 /// Misbehaviour is a wrapper over two conflicting Headers
 /// that implements Misbehaviour interface expected by ICS-02
@@ -180,6 +177,7 @@ pub struct BeefyAuthoritySet {
     #[prost(bytes="vec", tag="3")]
     pub authority_root: ::prost::alloc::vec::Vec<u8>,
 }
+/// BeefyMmrLeaf leaf data
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BeefyMmrLeaf {
     /// leaf version
