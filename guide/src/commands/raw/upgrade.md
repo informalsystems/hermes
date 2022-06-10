@@ -20,6 +20,40 @@ FLAGS:
         --client <CLIENT_ID>    identifier of the client to be upgraded
 ```
 
+__Example__
+
+A given client is upgraded:
+
+```shell
+hermes tx raw upgrade-client --chain ibc-1 --client 07-tendermint-0
+````
+
+```
+Success: [
+    UpdateClient(
+        h: 1-101, cs_h: 07-tendermint-0(0-84),
+    ),
+    UpgradeClient(
+        UpgradeClient(
+            Attributes {
+                height: Height {
+                    revision: 1,
+                    height: 101,
+                },
+                client_id: ClientId(
+                    "07-tendermint-0",
+                ),
+                client_type: Tendermint,
+                consensus_height: Height {
+                    revision: 0,
+                    height: 85,
+                },
+            },
+        ),
+    ),
+]
+```
+
 ## Upgrade Clients
 
 Use this to perform the upgrade on all the clients.
@@ -34,6 +68,42 @@ DESCRIPTION:
 FLAGS:
         --src-chain <SRC_CHAIN_ID>    identifier of the chain that underwent an upgrade; all clients
                                       targeting this chain will be upgraded
+```
+
+__Example__
+
+All the clients are upgraded:
+
+```shell
+hermes tx raw upgrade-clients --chain ibc-1
+````
+
+```
+Success: [
+    [
+        UpdateClient(
+            h: 1-111, cs_h: 07-tendermint-0(0-108),
+        ),
+        UpgradeClient(
+            UpgradeClient(
+                Attributes {
+                    height: Height {
+                        revision: 1,
+                        height: 111,
+                    },
+                    client_id: ClientId(
+                        "07-tendermint-0",
+                    ),
+                    client_type: Tendermint,
+                    consensus_height: Height {
+                        revision: 0,
+                        height: 109,
+                    },
+                },
+            ),
+        ),
+    ],
+]
 ```
 
 ## Upgrade Chain
@@ -86,6 +156,6 @@ An upgrade proposal is made for `ibc-0`, for height `300` blocks from latest hei
 hermes tx raw upgrade-chain --dst-chain ibc-0 --src-chain ibc-1 --src-client 07-tendermint-0 --amount 10000000 --height-offset 300
 ```
 
-```json
-Success: transaction::Hash(CE98D8D98091BA8016BD852D18056E54C4CB3C4525E7F40DD3C40B4FD0F2482B)
+```
+Success: transaction::Hash(779713508B6103E37FADE60483BEE964A90BD67E5F20037B2CC4AE0E90B707C3)
 ```
