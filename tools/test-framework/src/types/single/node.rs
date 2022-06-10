@@ -7,6 +7,7 @@ use core::time::Duration;
 use eyre::eyre;
 use eyre::Report as Error;
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer::chain::ChainType;
 use ibc_relayer::config;
 use ibc_relayer::keyring::Store;
 use std::sync::{Arc, RwLock};
@@ -120,6 +121,7 @@ impl FullNode {
     pub fn generate_chain_config(&self) -> Result<config::ChainConfig, Error> {
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
+            r#type: ChainType::CosmosSdk,
             rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
             websocket_addr: Url::from_str(&self.chain_driver.websocket_address())?,
             grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,

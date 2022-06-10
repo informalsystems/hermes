@@ -31,7 +31,7 @@ use ibc::{
 };
 use tracing::trace;
 
-use crate::{chain::CosmosSdkChain, config::ChainConfig, error::Error};
+use crate::{chain::cosmos::CosmosSdkChain, config::ChainConfig, error::Error};
 
 use super::Verified;
 
