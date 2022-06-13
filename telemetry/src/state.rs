@@ -85,6 +85,9 @@ pub struct TelemetryState {
     /// Records the time at which we started processing an event batch.
     /// Used for computing the `tx_latency` metric.
     in_flight_events: moka::sync::Cache<String, Instant>,
+
+    ws_send_packet_count: Counter<u64>,
+    ws_acknowledgement_count: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -277,6 +280,44 @@ impl TelemetryState {
             self.tx_latency_confirmed.record(latency, labels);
         }
     }
+
+    pub fn record_send_packet(
+        &self,
+        _seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.ws_send_packet_count.add(1, labels);
+    }
+
+    pub fn record_write_ack(
+        &self,
+        _seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.ws_acknowledgement_count.add(1, labels);
+    }
 }
 
 use std::sync::Arc;
@@ -375,15 +416,25 @@ impl Default for TelemetryState {
                 .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain. The amount is of unit: 10^6 * `denom`")
                 .init(),
 
+            ws_send_packet_count: meter
+                .u64_counter("ws_send_packet_count")
+                .with_description("BLA send_packet")
+                .init(),
+
+            ws_acknowledgement_count: meter
+                .u64_counter("ws_acknowledgement_count")
+                .with_description("BLA ws_acknowledgement")
+                .init(),
+
             tx_latency_submitted: meter
                 .u64_value_recorder("tx_latency_submitted")
                 .with_unit(Unit::new("milliseconds"))
                 .with_description("The latency for all transactions submitted to a specific chain, \
-                i.e. the difference between the moment when Hermes received a batch of events \
-                and when it submitted the corresponding transaction(s). Milliseconds.")
+                    i.e. the difference between the moment when Hermes received a batch of events \
+                    and when it submitted the corresponding transaction(s). Milliseconds.")
                 .init(),
 
-                tx_latency_confirmed: meter
+            tx_latency_confirmed: meter
                 .u64_value_recorder("tx_latency_confirmed")
                 .with_unit(Unit::new("milliseconds"))
                 .with_description("The latency for all transactions submitted & confirmed to a specific chain, \
@@ -392,9 +443,9 @@ impl Default for TelemetryState {
                 .init(),
 
             in_flight_events: moka::sync::Cache::builder()
-                    .time_to_live(Duration::from_secs(60 * 60)) // Remove entries after 1 hour
-                    .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
-                    .build(),
+                .time_to_live(Duration::from_secs(60 * 60)) // Remove entries after 1 hour
+                .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
+                .build(),
         }
     }
 }
