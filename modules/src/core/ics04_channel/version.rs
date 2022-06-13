@@ -6,6 +6,7 @@ use core::convert::Infallible;
 use core::fmt;
 use core::str::FromStr;
 use serde_derive::{Deserialize, Serialize};
+use serde_json as json;
 
 use crate::applications::transfer;
 use crate::prelude::*;
@@ -28,14 +29,29 @@ impl Version {
     }
 
     pub fn ics20_with_fee() -> Self {
-        Self::new(format!(
-            "{{ \"feeVersion\": \"ics29-1\", \"appVersion\": \"{}\" }}",
-            transfer::VERSION
-        ))
+        let val = json::json!({
+            "feeVersion": "ics29-1",
+            "appVersion": transfer::VERSION,
+        });
+
+        Self::new(val.to_string())
     }
 
     pub fn empty() -> Self {
         Self::new("".to_string())
+    }
+
+    pub fn supports_fee(&self) -> bool {
+        json::from_str::<json::Value>(&self.0)
+            .ok()
+            .and_then(|val| {
+                let _app_version = val.get("appVersion")?.as_str()?;
+
+                let fee_version = val.get("feeVersion")?.as_str()?;
+
+                Some(fee_version == "ics29-1")
+            })
+            .unwrap_or(false)
     }
 }
 

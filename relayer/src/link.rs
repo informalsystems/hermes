@@ -143,7 +143,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             connection_delay: a_connection.delay_period(),
         };
 
-        if auto_register_counterparty_address {
+        if auto_register_counterparty_address && a_channel.version.supports_fee() {
             let address_a = a_chain.get_signer().map_err(LinkError::relayer)?;
 
             b_chain
