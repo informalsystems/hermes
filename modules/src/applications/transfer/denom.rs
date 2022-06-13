@@ -278,7 +278,9 @@ impl fmt::Display for PrefixedDenom {
 }
 
 /// A type for representing token transfer amounts.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Display, From, Into)]
+#[derive(
+    Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Display, From, Into,
+)]
 pub struct Amount(U256);
 
 impl Amount {
