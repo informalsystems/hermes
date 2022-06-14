@@ -35,9 +35,6 @@ pub type TaggedDenom<Chain> = MonoTagged<Chain, Denom>;
 pub type TaggedDenomRef<'a, Chain> = MonoTagged<Chain, &'a Denom>;
 
 /**
-   A tagged version of [`derive_ibc_denom`](token_transfer::derive_ibc_denom)
-   from the [`ibc`] module.
-
    Derives the denom on `ChainB` based on a denom on `ChainA` that has been
    transferred to `ChainB` via IBC.
 
