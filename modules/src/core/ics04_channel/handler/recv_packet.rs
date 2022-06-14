@@ -81,8 +81,10 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
     )?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
-        let next_seq_recv =
-            ctx.get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel))?;
+        let next_seq_recv = ctx.get_next_sequence_recv(&(
+            packet.destination_port.clone(),
+            packet.destination_channel,
+        ))?;
 
         if packet.sequence < next_seq_recv {
             output.emit(IbcEvent::ReceivePacket(ReceivePacket {
@@ -98,16 +100,16 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         }
 
         PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
-            port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel,
+            port_id: packet.destination_port.clone(),
+            channel_id: packet.destination_channel,
             seq: packet.sequence,
             seq_number: next_seq_recv.increment(),
             receipt: None,
         }))
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
-            packet.source_port.clone(),
-            packet.source_channel,
+            packet.destination_port.clone(),
+            packet.destination_channel,
             packet.sequence,
         ));
 
@@ -122,8 +124,8 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
             Err(e) if e.detail() == Error::packet_receipt_not_found(packet.sequence).detail() => {
                 // store a receipt that does not contain any data
                 PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
-                    port_id: packet.source_port.clone(),
-                    channel_id: packet.source_channel,
+                    port_id: packet.destination_port.clone(),
+                    channel_id: packet.destination_channel,
                     seq: packet.sequence,
                     seq_number: 1.into(),
                     receipt: Some(Receipt::Ok),
