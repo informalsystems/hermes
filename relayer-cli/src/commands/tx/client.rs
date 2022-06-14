@@ -208,7 +208,18 @@ impl Runnable for TxUpgradeClientCmd {
         let client = ForeignClient::find(src_chain, dst_chain, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let outcome = client.upgrade();
+        // Assumption: this query is run while the chain is halted as a result of an upgrade
+        let src_upgrade_height = {
+            let src_application_height = match client.src_chain().query_latest_height() {
+                Ok(height) => height,
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            };
+
+            // When the chain is halted, the application height reports a height
+            // 1 less than the halted height
+            src_application_height.increment()
+        };
+        let outcome = client.upgrade(src_upgrade_height);
 
         match outcome {
             Ok(receipt) => Output::success(receipt).exit(),
@@ -280,7 +291,20 @@ impl TxUpgradeClientsCmd {
         src_chain: Chain,
     ) -> Result<Vec<IbcEvent>, Error> {
         let client = ForeignClient::restore(client_id, dst_chain, src_chain);
-        client.upgrade().map_err(Error::foreign_client)
+
+        let src_upgrade_height = {
+            let src_application_height = match client.src_chain().query_latest_height() {
+                Ok(height) => height,
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            };
+
+            // When the chain is halted, the application height reports a height
+            // 1 less than the halted height
+            src_application_height.increment()
+        };
+        client
+            .upgrade(src_upgrade_height)
+            .map_err(Error::foreign_client)
     }
 }
 

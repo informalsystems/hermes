@@ -319,18 +319,27 @@ impl CosmosSdkChain {
     }
 
     /// Perform an ABCI query against the client upgrade sub-store.
-    /// Fetches both the target data, as well as the proof.
     ///
-    /// The data is returned in its raw format `Vec<u8>`, and is either
-    /// the client state (if the target path is [`UpgradedClientState`]),
-    /// or the client consensus state ([`UpgradedClientConsensusState`]).
+    /// The data is returned in its raw format `Vec<u8>`, and is either the
+    /// client state (if the target path is [`UpgradedClientState`]), or the
+    /// client consensus state ([`UpgradedClientConsensusState`]).
+    ///
+    /// Note: This is a special query in that it will only succeed if the chain
+    /// is halted after reaching the height proposed in a successful governance
+    /// proposal to upgrade the chain. In this scenario, let P be the height at
+    /// which the chain is planned to upgrade. We assume that the chain is
+    /// halted at height P. Tendermint will be at height P (as reported by the
+    /// /status RPC query), but the application will be at height P-1 (as
+    /// reported by the /abci_info RPC query).
+    ///
+    /// Therefore, `query_height` needs to be P-1. However, the path specified
+    /// in `query_data` needs to be constructed with height `P`, as this is how
+    /// the chain will have stored it in its upgrade sub-store.
     fn query_client_upgrade_state(
         &self,
-        data: ClientUpgradePath,
-        height: Height,
+        query_data: ClientUpgradePath,
+        query_height: Height,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let prev_height = Height::try_from(height.value() - 1).map_err(Error::invalid_height)?;
-
         // SAFETY: Creating a Path from a constant; this should never fail
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
             .expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
@@ -338,8 +347,8 @@ impl CosmosSdkChain {
             &self.rpc_client,
             &self.config.rpc_addr,
             path,
-            Path::Upgrade(data).to_string(),
-            prev_height,
+            Path::Upgrade(query_data).to_string(),
+            query_height,
             true,
         ))?;
 
@@ -779,11 +788,19 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_upgraded_client_state");
 
         // Query for the value and the proof.
-        let tm_height =
+        let upgrade_height =
             Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
+        let query_height = Height::try_from(
+            upgrade_height
+                .value()
+                .checked_sub(1)
+                .expect("height overflow"),
+        )
+        .map_err(Error::invalid_height)?;
+
         let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientState(request.height.revision_height),
-            tm_height,
+            ClientUpgradePath::UpgradedClientState(upgrade_height.value()),
+            query_height,
         )?;
 
         let client_state = AnyClientState::decode_vec(&upgraded_client_state_raw)
@@ -799,13 +816,20 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_upgraded_consensus_state");
         crate::telemetry!(query, self.id(), "query_upgraded_consensus_state");
 
-        let tm_height =
+        let upgrade_height =
             Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
+        let query_height = Height::try_from(
+            upgrade_height
+                .value()
+                .checked_sub(1)
+                .expect("height overflow"),
+        )
+        .map_err(Error::invalid_height)?;
 
         // Fetch the consensus state and its proof.
         let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientConsensusState(request.height.revision_height),
-            tm_height,
+            ClientUpgradePath::UpgradedClientConsensusState(upgrade_height.value()),
+            query_height,
         )?;
 
         let consensus_state = AnyConsensusState::decode_vec(&upgraded_consensus_state_raw)

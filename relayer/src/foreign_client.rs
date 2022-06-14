@@ -430,25 +430,19 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    pub fn upgrade(&self) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        // Fetch the latest height of the source chain.
-        let src_height = self.src_chain.query_latest_height().map_err(|e| {
-            ForeignClientError::client_upgrade(
-                self.id.clone(),
-                self.src_chain.id(),
-                "failed while querying src chain for latest height".to_string(),
-                e,
-            )
-        })?;
+    /// Create and send a transaction to perform a chain upgrade.
+    /// src_upgrade_height: The height on the source chain at which the chain will halt for the upgrade.
+    pub fn upgrade(&self, src_upgrade_height: Height) -> Result<Vec<IbcEvent>, ForeignClientError> {
+        info!("[{}] upgrade Height: {}", self, src_upgrade_height);
 
-        info!("[{}] upgrade Height: {}", self, src_height);
-
-        let mut msgs = self.build_update_client(src_height)?;
+        let mut msgs = self.build_update_client(src_upgrade_height)?;
 
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
             .src_chain
-            .query_upgraded_client_state(QueryUpgradedClientStateRequest { height: src_height })
+            .query_upgraded_client_state(QueryUpgradedClientStateRequest {
+                height: src_upgrade_height,
+            })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
                     self.id.clone(),
@@ -463,7 +457,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let (consensus_state, proof_upgrade_consensus_state) = self
             .src_chain
             .query_upgraded_consensus_state(QueryUpgradedConsensusStateRequest {
-                height: src_height,
+                height: src_upgrade_height,
             })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
