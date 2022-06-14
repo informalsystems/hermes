@@ -469,9 +469,9 @@ checksum = "fff857943da45f546682664a79488be82e69e43c1a7a2307679ab9afb3a66d2e"
 
 [[package]]
 name = "clap"
-version = "3.1.18"
+version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2dbdf4bdacb33466e854ce889eee8dfd5729abf7ccd7664d0a2d60cd384440b"
+checksum = "a836566fa5f52f7ddf909a8a2f9029b9f78ca584cd95cf7e87f8073110f4c5c9"
 dependencies = [
  "atty",
  "bitflags",
@@ -495,9 +495,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "3.1.18"
+version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25320346e922cffe59c0bbc5410c8d8784509efb321488971081313cb1e1a33c"
+checksum = "986fd75d1dfd2c34eb8c9275ae38ad87ea9478c9b79e87f1801f7d866dfb1e37"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -508,9 +508,9 @@ dependencies = [
 
 [[package]]
 name = "clap_lex"
-version = "0.2.0"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a37c35f1112dad5e6e0b1adaff798507497a18fceeb30cceb3bae7d1427b9213"
+checksum = "5538cd660450ebeb4234cfecf8f2284b844ffc4c50531e66d584ad5b91293613"
 dependencies = [
  "os_str_bytes",
 ]
@@ -1266,9 +1266,9 @@ checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 
 [[package]]
 name = "hdpath"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72adf5a17a0952ecfcddf8d46d071271d5ee52e78443f07ba0b2dcfe3063a132"
+checksum = "dafb09e5d85df264339ad786a147d9de1da13687a3697c52244297e5e7c32d9c"
 dependencies = [
  "byteorder",
 ]
@@ -1341,9 +1341,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff8670570af52249509a86f5e3e18a08c60b177071826898fde8997cf5f6bfbb"
+checksum = "75f43d41e26995c17e71ee126451dd3941010b0514a81a9d11f3b341debc2399"
 dependencies = [
  "bytes",
  "fnv",
@@ -1589,7 +1589,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber",
- "uuid 1.1.1",
+ "uuid 1.1.2",
 ]
 
 [[package]]
@@ -1662,7 +1662,7 @@ dependencies = [
  "opentelemetry-prometheus",
  "prometheus",
  "rouille",
- "uuid 1.1.1",
+ "uuid 1.1.2",
 ]
 
 [[package]]
@@ -3019,9 +3019,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.9"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cb243bdfdb5936c8dc3c45762a19d12ab4550cdc753bc247637d4ec35a040fd"
+checksum = "a41d061efea015927ac527063765e73601444cdc344ba855bc7bd44578b25e1c"
 dependencies = [
  "serde",
 ]
@@ -4128,9 +4128,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6d5d669b51467dcf7b2f1a796ce0f955f05f01cafda6c19d6e95f730df29238"
+checksum = "dd6469f4314d5f1ffec476e05f17cc9a78bc7a27a6a857842170bdf8d6f98d2f"
 dependencies = [
  "getrandom 0.2.6",
 ]
