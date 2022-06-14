@@ -531,6 +531,13 @@ pub mod service_server {
             &self,
             request: tonic::Request<super::GetTxsEventRequest>,
         ) -> Result<tonic::Response<super::GetTxsEventResponse>, tonic::Status>;
+        /// GetBlockWithTxs fetches a block with decoded txs.
+        ///
+        /// Since: cosmos-sdk 0.45.2
+        async fn get_block_with_txs(
+            &self,
+            request: tonic::Request<super::GetBlockWithTxsRequest>,
+        ) -> Result<tonic::Response<super::GetBlockWithTxsResponse>, tonic::Status>;
     }
     /// Service defines a gRPC service for interacting with transactions.
     #[derive(Debug)]
@@ -721,6 +728,46 @@ pub mod service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetTxsEventSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/cosmos.tx.v1beta1.Service/GetBlockWithTxs" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetBlockWithTxsSvc<T: Service>(pub Arc<T>);
+                    impl<
+                        T: Service,
+                    > tonic::server::UnaryService<super::GetBlockWithTxsRequest>
+                    for GetBlockWithTxsSvc<T> {
+                        type Response = super::GetBlockWithTxsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetBlockWithTxsRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).get_block_with_txs(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetBlockWithTxsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

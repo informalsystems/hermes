@@ -273,6 +273,7 @@ impl TryFrom<RawClientState> for ClientState {
             }
         });
 
+        #[allow(deprecated)]
         Ok(Self {
             chain_id: ChainId::from_string(raw.chain_id.as_str()),
             trust_level: trust_level
@@ -310,6 +311,7 @@ impl TryFrom<RawClientState> for ClientState {
 
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
+        #[allow(deprecated)]
         RawClientState {
             chain_id: value.chain_id.to_string(),
             trust_level: Some(value.trust_level.into()),

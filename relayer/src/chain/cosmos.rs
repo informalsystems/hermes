@@ -37,7 +37,7 @@ use ibc::core::ics04_channel::channel::{
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
@@ -1573,6 +1573,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn maybe_register_counterparty_address(
         &mut self,
         channel_id: &ChannelId,
+        port_id: &PortId,
         counterparty_address: &Signer,
     ) -> Result<(), Error> {
         let address = self.get_signer()?;
@@ -1584,6 +1585,7 @@ impl ChainEndpoint for CosmosSdkChain {
             &mut self.account,
             &self.config.memo_prefix,
             channel_id,
+            port_id,
             &address,
             counterparty_address,
         ))

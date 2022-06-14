@@ -419,8 +419,8 @@ where
                             self.query_host_consensus_state(request, reply_to)?
                         },
 
-                        Ok(ChainRequest::MaybeRegisterCounterpartyAddress { channel_id, counterparty_address, reply_to }) => {
-                            self.maybe_register_counterparty_address(&channel_id, &counterparty_address, reply_to)?
+                        Ok(ChainRequest::MaybeRegisterCounterpartyAddress { channel_id, port_id, counterparty_address, reply_to }) => {
+                            self.maybe_register_counterparty_address(&channel_id, &port_id, &counterparty_address, reply_to)?
                         }
 
                         Err(e) => error!("received error via chain request channel: {}", e),
@@ -902,12 +902,15 @@ where
     fn maybe_register_counterparty_address(
         &mut self,
         channel_id: &ChannelId,
+        port_id: &PortId,
         counterparty_address: &Signer,
         reply_to: ReplyTo<()>,
     ) -> Result<(), Error> {
-        let result = self
-            .chain
-            .maybe_register_counterparty_address(channel_id, counterparty_address);
+        let result = self.chain.maybe_register_counterparty_address(
+            channel_id,
+            port_id,
+            counterparty_address,
+        );
 
         reply_to.send(result).map_err(Error::send)?;
 

@@ -93,6 +93,7 @@ pub async fn register_counterparty_address<Chain, Counterparty>(
     wallet: &MonoTagged<Chain, &Wallet>,
     counterparty_address: &MonoTagged<Counterparty, &WalletAddress>,
     channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+    port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
 ) -> Result<(), Error> {
     let message = build_register_counterparty_address_message(
         &wallet
@@ -107,6 +108,7 @@ pub async fn register_counterparty_address<Chain, Counterparty>(
             .parse()
             .map_err(handle_generic_error)?,
         channel_id.value(),
+        port_id.value(),
     )
     .map_err(handle_generic_error)?;
 

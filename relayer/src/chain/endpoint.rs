@@ -579,6 +579,7 @@ pub trait ChainEndpoint: Sized {
     fn maybe_register_counterparty_address(
         &mut self,
         channel_id: &ChannelId,
+        port_id: &PortId,
         counterparty_address: &Signer,
     ) -> Result<(), Error>;
 }

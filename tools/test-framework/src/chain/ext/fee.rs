@@ -45,6 +45,7 @@ pub trait ChainFeeMethodsExt<Chain> {
         wallet: &MonoTagged<Chain, &Wallet>,
         counterparty_address: &MonoTagged<Counterparty, &WalletAddress>,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
     ) -> Result<(), Error>;
 
     fn query_counterparty_address<Counterparty>(
@@ -114,12 +115,14 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         wallet: &MonoTagged<Chain, &Wallet>,
         counterparty_address: &MonoTagged<Counterparty, &WalletAddress>,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
     ) -> Result<(), Error> {
         self.value().runtime.block_on(register_counterparty_address(
             &self.tx_config(),
             wallet,
             counterparty_address,
             channel_id,
+            port_id,
         ))
     }
 

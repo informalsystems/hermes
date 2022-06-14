@@ -348,6 +348,7 @@ pub enum ChainRequest {
 
     MaybeRegisterCounterpartyAddress {
         channel_id: ChannelId,
+        port_id: PortId,
         counterparty_address: Signer,
         reply_to: ReplyTo<()>,
     },
@@ -639,6 +640,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn maybe_register_counterparty_address(
         &self,
         channel_id: ChannelId,
+        port_id: PortId,
         counterparty_address: Signer,
     ) -> Result<(), Error>;
 }

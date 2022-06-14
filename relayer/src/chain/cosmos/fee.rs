@@ -1,5 +1,5 @@
 use ibc::applications::ics29_fee::msgs::register_counterparty::build_register_counterparty_address_message;
-use ibc::core::ics24_host::identifier::ChannelId;
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::signer::Signer;
 
 use crate::chain::cosmos::query::account::get_or_fetch_account;
@@ -18,6 +18,7 @@ pub async fn maybe_register_counterparty_address(
     m_account: &mut Option<Account>,
     tx_memo: &Memo,
     channel_id: &ChannelId,
+    port_id: &PortId,
     address: &Signer,
     counterparty_address: &Signer,
 ) -> Result<(), Error> {
@@ -38,6 +39,7 @@ pub async fn maybe_register_counterparty_address(
                 address,
                 counterparty_address,
                 channel_id,
+                port_id,
             )
             .map_err(Error::ics29)?;
 

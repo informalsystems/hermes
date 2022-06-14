@@ -476,10 +476,12 @@ impl ChainHandle for BaseChainHandle {
     fn maybe_register_counterparty_address(
         &self,
         channel_id: ChannelId,
+        port_id: PortId,
         counterparty_address: Signer,
     ) -> Result<(), Error> {
         self.send(|reply_to| ChainRequest::MaybeRegisterCounterpartyAddress {
             channel_id,
+            port_id,
             counterparty_address,
             reply_to,
         })

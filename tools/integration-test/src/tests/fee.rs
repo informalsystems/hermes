@@ -205,6 +205,7 @@ impl BinaryChannelTest for ForwardRelayerTest {
         let denom_a = chains.node_a.denom();
 
         let port_a = channel.port_a.as_ref();
+        let port_b = channel.port_b.as_ref();
         let channel_id_a = channel.channel_id_a.as_ref();
 
         let channel_id_b = channel.channel_id_b.as_ref();
@@ -238,6 +239,7 @@ impl BinaryChannelTest for ForwardRelayerTest {
             &relayer_b,
             &relayer_a.address(),
             &channel_id_b,
+            &port_b,
         )?;
 
         {
@@ -520,6 +522,7 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
         let denom_a = chains.node_a.denom();
 
         let port_a = channel.port_a.as_ref();
+        let port_b = channel.port_b.as_ref();
         let channel_id_a = channel.channel_id_a.as_ref();
 
         let channel_id_b = channel.channel_id_b.as_ref();
@@ -542,6 +545,7 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
             &relayer_b,
             &relayer_a.address(),
             &channel_id_b,
+            &port_b,
         )?;
 
         let user_a = wallets_a.user1();
@@ -682,6 +686,7 @@ impl BinaryChannelTest for NonFeeChannelTest {
         let denom_a = chains.node_a.denom();
 
         let port_a = channel.port_a.as_ref();
+        let port_b = channel.port_b.as_ref();
         let channel_id_a = channel.channel_id_a.as_ref();
         let channel_id_b = channel.channel_id_b.as_ref();
 
@@ -703,6 +708,7 @@ impl BinaryChannelTest for NonFeeChannelTest {
                 &relayer_b,
                 &relayer_a.address(),
                 &channel_id_b,
+                &port_b,
             );
 
             assert!(res.is_err());

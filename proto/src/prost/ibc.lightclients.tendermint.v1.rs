@@ -34,12 +34,12 @@ pub struct ClientState {
     /// "upgradedIBCState"}`
     #[prost(string, repeated, tag="9")]
     pub upgrade_path: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    /// This flag, when set to true, will allow governance to recover a client
-    /// which has expired
+    /// allow_update_after_expiry is deprecated
+    #[deprecated]
     #[prost(bool, tag="10")]
     pub allow_update_after_expiry: bool,
-    /// This flag, when set to true, will allow governance to unfreeze a client
-    /// whose chain has experienced a misbehaviour event
+    /// allow_update_after_misbehaviour is deprecated
+    #[deprecated]
     #[prost(bool, tag="11")]
     pub allow_update_after_misbehaviour: bool,
 }

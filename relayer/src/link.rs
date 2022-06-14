@@ -88,6 +88,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .channel_id
             .ok_or_else(|| LinkError::counterparty_channel_not_found(*a_channel_id))?;
 
+        let b_port_id = a_channel.counterparty().port_id.clone();
+
         if a_channel.connection_hops().is_empty() {
             return Err(LinkError::no_connection_hop(*a_channel_id, a_chain.id()));
         }
@@ -147,7 +149,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             let address_a = a_chain.get_signer().map_err(LinkError::relayer)?;
 
             b_chain
-                .maybe_register_counterparty_address(b_channel_id, address_a)
+                .maybe_register_counterparty_address(b_channel_id, b_port_id, address_a)
                 .map_err(LinkError::relayer)?;
         }
 
