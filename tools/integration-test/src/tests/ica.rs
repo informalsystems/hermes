@@ -114,11 +114,11 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         assert_eq(
             "balance of ICA account should be 0",
             &ica_balance.amount(),
-            &0,
+            &0u64.into(),
         )?;
 
         // Send funds to the interchain account.
-        let ica_fund = 42000;
+        let ica_fund = 42000u64;
 
         chains.node_b.chain_driver().local_transfer_token(
             &chains.node_b.wallets().user1(),

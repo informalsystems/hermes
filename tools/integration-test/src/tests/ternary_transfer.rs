@@ -45,7 +45,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             .chain_driver()
             .query_balance(&wallet_a1.address(), &denom_a)?;
 
-        let a_to_b_amount = 5000;
+        let a_to_b_amount = 5000u64;
 
         let channel_a_to_b = channels.channel_at::<0, 1>()?;
 

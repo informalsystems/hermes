@@ -1,7 +1,7 @@
 use core::fmt::{self, Display};
 use core::ops::{Add, Sub};
 use eyre::eyre;
-use ibc::applications::transfer::denom::RawCoin;
+use ibc::applications::transfer::denom::{Amount, RawCoin};
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::{derive_ibc_denom, Denom, TaggedDenom, TaggedDenomRef};
@@ -11,7 +11,7 @@ use crate::types::tagged::MonoTagged;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Token {
     pub denom: Denom,
-    pub amount: u128,
+    pub amount: Amount,
 }
 
 pub type TaggedToken<Chain> = MonoTagged<Chain, Token>;
@@ -20,7 +20,7 @@ pub type TaggedTokenRef<'a, Chain> = MonoTagged<Chain, &'a Token>;
 pub trait TaggedTokenExt<Chain> {
     fn denom(&self) -> TaggedDenomRef<Chain>;
 
-    fn amount(&self) -> u128;
+    fn amount(&self) -> Amount;
 
     fn transfer<Counterparty>(
         &self,
@@ -30,18 +30,21 @@ pub trait TaggedTokenExt<Chain> {
 }
 
 pub trait TaggedDenomExt<Chain> {
-    fn with_amount(&self, amount: u128) -> TaggedToken<Chain>;
+    fn with_amount(&self, amount: impl Into<Amount>) -> TaggedToken<Chain>;
 }
 
 impl Token {
-    pub fn new(denom: Denom, amount: u128) -> Self {
-        Self { denom, amount }
+    pub fn new(denom: Denom, amount: impl Into<Amount>) -> Self {
+        Self {
+            denom,
+            amount: amount.into(),
+        }
     }
 
     pub fn as_coin(&self) -> RawCoin {
         RawCoin {
             denom: self.denom.to_string(),
-            amount: self.amount.into(),
+            amount: self.amount,
         }
     }
 }
@@ -51,7 +54,7 @@ impl<Chain> TaggedTokenExt<Chain> for TaggedToken<Chain> {
         self.map_ref(|t| &t.denom)
     }
 
-    fn amount(&self) -> u128 {
+    fn amount(&self) -> Amount {
         self.value().amount
     }
 
@@ -71,7 +74,7 @@ impl<'a, Chain> TaggedTokenExt<Chain> for TaggedTokenRef<'a, Chain> {
         self.map_ref(|t| &t.denom)
     }
 
-    fn amount(&self) -> u128 {
+    fn amount(&self) -> Amount {
         self.value().amount
     }
 
@@ -87,58 +90,58 @@ impl<'a, Chain> TaggedTokenExt<Chain> for TaggedTokenRef<'a, Chain> {
 }
 
 impl<Chain> TaggedDenomExt<Chain> for TaggedDenom<Chain> {
-    fn with_amount(&self, amount: u128) -> TaggedToken<Chain> {
+    fn with_amount(&self, amount: impl Into<Amount>) -> TaggedToken<Chain> {
         self.map(|denom| Token {
             denom: denom.clone(),
-            amount,
+            amount: amount.into(),
         })
     }
 }
 
 impl<'a, Chain> TaggedDenomExt<Chain> for TaggedDenomRef<'a, Chain> {
-    fn with_amount(&self, amount: u128) -> TaggedToken<Chain> {
+    fn with_amount(&self, amount: impl Into<Amount>) -> TaggedToken<Chain> {
         self.map(|denom| Token {
             denom: (*denom).clone(),
-            amount,
+            amount: amount.into(),
         })
     }
 }
 
-impl Add<u128> for Token {
+impl<I: Into<Amount>> Add<I> for Token {
     type Output = Self;
 
-    fn add(self, amount: u128) -> Self {
+    fn add(self, amount: I) -> Self {
         Self {
             denom: self.denom,
-            amount: self.amount + amount,
+            amount: self.amount.checked_add(amount).unwrap(),
         }
     }
 }
 
-impl Sub<u128> for Token {
+impl<I: Into<Amount>> Sub<I> for Token {
     type Output = Self;
 
-    fn sub(self, amount: u128) -> Self {
+    fn sub(self, amount: I) -> Self {
         Self {
             denom: self.denom,
-            amount: self.amount - amount,
+            amount: self.amount.checked_sub(amount).unwrap(),
         }
     }
 }
 
-impl<Chain> Add<u128> for MonoTagged<Chain, Token> {
+impl<Chain, I: Into<Amount>> Add<I> for MonoTagged<Chain, Token> {
     type Output = Self;
 
-    fn add(self, amount: u128) -> Self {
-        self.map_into(|t| t + amount)
+    fn add(self, amount: I) -> Self {
+        self.map_into(|t| t + amount.into())
     }
 }
 
-impl<Chain> Sub<u128> for MonoTagged<Chain, Token> {
+impl<Chain, I: Into<Amount>> Sub<I> for MonoTagged<Chain, Token> {
     type Output = Self;
 
-    fn sub(self, amount: u128) -> Self {
-        self.map_into(|t| t - amount)
+    fn sub(self, amount: I) -> Self {
+        self.map_into(|t| t - amount.into())
     }
 }
 

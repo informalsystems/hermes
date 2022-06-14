@@ -162,7 +162,10 @@ impl BinaryChannelTest for NoForwardRelayerTest {
             receive_fee,
             timeout_fee,
             balance_a2,
-            balance_a2.amount() + receive_fee + timeout_fee
+            balance_a2
+                .amount()
+                .checked_add(receive_fee + timeout_fee)
+                .unwrap()
         );
 
         // receive fee and timeout fee should be refunded,
@@ -176,7 +179,7 @@ impl BinaryChannelTest for NoForwardRelayerTest {
             "Expect relayer to receive ack fee {} and go from {} to {}",
             ack_fee,
             relayer_balance_a,
-            relayer_balance_a.amount() + ack_fee,
+            relayer_balance_a.amount().checked_add(ack_fee).unwrap(),
         );
 
         chain_driver_a.assert_eventual_wallet_amount(
@@ -296,25 +299,10 @@ impl BinaryChannelTest for ForwardRelayerTest {
             &denom_b.with_amount(send_amount).as_ref(),
         )?;
 
-        info!(
-            "Expect user to be refunded receive timeout fee {} and go from {} to {}",
-            timeout_fee,
-            balance_a2,
-            balance_a2.amount() + timeout_fee
-        );
-
         chain_driver_a.assert_eventual_wallet_amount(
             &user_a.address(),
             &(balance_a2 + timeout_fee).as_ref(),
         )?;
-
-        info!(
-            "Expect relayer to receive ack fee {} and receive fee {} and go from {} to {}",
-            ack_fee,
-            receive_fee,
-            relayer_balance_a,
-            relayer_balance_a.amount() + ack_fee + receive_fee,
-        );
 
         chain_driver_a.assert_eventual_wallet_amount(
             &relayer_a.address(),
@@ -389,25 +377,10 @@ impl BinaryChannelTest for AutoForwardRelayerTest {
             &denom_b.with_amount(send_amount).as_ref(),
         )?;
 
-        info!(
-            "Expect user to be refunded receive timeout fee {} and go from {} to {}",
-            timeout_fee,
-            balance_a2,
-            balance_a2.amount() + timeout_fee
-        );
-
         chain_driver_a.assert_eventual_wallet_amount(
             &user_a.address(),
             &(balance_a2 + timeout_fee).as_ref(),
         )?;
-
-        info!(
-            "Expect relayer to receive ack fee {} and receive fee {} and go from {} to {}",
-            ack_fee,
-            receive_fee,
-            relayer_balance_a,
-            relayer_balance_a.amount() + ack_fee + receive_fee,
-        );
 
         chain_driver_a.assert_eventual_wallet_amount(
             &relayer_a.address(),
@@ -474,26 +447,10 @@ impl BinaryChannelTest for TimeoutFeeTest {
         thread::sleep(Duration::from_secs(6));
 
         relayer.with_supervisor(|| {
-            info!(
-                "Expect user to be refunded send amount {}, receive fee {} and ack fee {} and go from {} to {}",
-                send_amount,
-                receive_fee,
-                ack_fee,
-                balance_a2,
-                balance_a2.amount() + send_amount + receive_fee + ack_fee
-            );
-
             chain_driver_a.assert_eventual_wallet_amount(
                 &user_a.address(),
                 &(balance_a2 + send_amount + receive_fee + ack_fee).as_ref(),
             )?;
-
-            info!(
-                "Expect relayer to receive timeout fee {} and go from {} to {}",
-                timeout_fee,
-                relayer_balance_a,
-                relayer_balance_a.amount() + timeout_fee,
-            );
 
             chain_driver_a.assert_eventual_wallet_amount(
                 &relayer_a.address(),
@@ -721,9 +678,9 @@ impl BinaryChannelTest for NonFeeChannelTest {
                 &user_a,
                 &user_b.address(),
                 &denom_a.with_amount(send_amount).as_ref(),
-                &denom_a.with_amount(10).as_ref(),
-                &denom_a.with_amount(10).as_ref(),
-                &denom_a.with_amount(10).as_ref(),
+                &denom_a.with_amount(10u64).as_ref(),
+                &denom_a.with_amount(10u64).as_ref(),
+                &denom_a.with_amount(10u64).as_ref(),
                 Duration::from_secs(60),
             );
 

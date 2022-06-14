@@ -8,6 +8,7 @@ use alloc::sync::Arc;
 use eyre::eyre;
 use tokio::runtime::Runtime;
 
+use ibc::applications::transfer::denom::Amount;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 
@@ -171,7 +172,7 @@ impl ChainDriver {
     /**
        Query for the balances for a given wallet address and denomination
     */
-    pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<u128, Error> {
+    pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<Amount, Error> {
         query_balance(
             self.chain_id.as_str(),
             &self.command_path,
@@ -195,7 +196,7 @@ impl ChainDriver {
             WAIT_WALLET_AMOUNT_ATTEMPTS,
             Duration::from_secs(1),
             || {
-                let amount = self.query_balance(wallet, &token.denom)?;
+                let amount: Amount = self.query_balance(wallet, &token.denom)?;
 
                 if amount == token.amount {
                     Ok(())

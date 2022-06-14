@@ -293,7 +293,7 @@ impl BinaryChainTest for PacketExpirationTest {
             &channels.channel_id_a.as_ref(),
             &chains.node_a.wallets().user1(),
             &chains.node_b.wallets().user1().address(),
-            &chains.node_a.denom().with_amount(100).as_ref(),
+            &chains.node_a.denom().with_amount(100u64).as_ref(),
         )?;
 
         wait_for_client_expiry();
@@ -319,7 +319,7 @@ impl BinaryChainTest for PacketExpirationTest {
             assert_eq(
                 "balance on wallet B should remain zero",
                 &balance_b.amount(),
-                &0,
+                &0u64.into(),
             )?;
 
             Ok(())

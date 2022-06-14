@@ -2,6 +2,7 @@
    Utilities for random value generation.
 */
 
+use ibc::applications::transfer::denom::Amount;
 use rand::Rng;
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 
@@ -28,10 +29,15 @@ pub fn random_u64_range(min: u64, max: u64) -> u64 {
     rng.gen_range(min..max)
 }
 
-/// Generates a random `u64` value between the given min and max.
+/// Generates a random `u128` value between the given min and max.
 pub fn random_u128_range(min: u128, max: u128) -> u128 {
     let mut rng = rand::thread_rng();
     rng.gen_range(min..max)
+}
+
+pub fn random_amount_range(min: u128, max: u128) -> Amount {
+    let mut rng = rand::thread_rng();
+    rng.gen_range(min..max).into()
 }
 
 /// Generates a random string value, in the form of `u64` hex for simplicity.

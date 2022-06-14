@@ -286,12 +286,12 @@ impl fmt::Display for PrefixedDenom {
 pub struct Amount(pub U256);
 
 impl Amount {
-    pub fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(Self)
+    pub fn checked_add(self, rhs: impl Into<Amount>) -> Option<Self> {
+        self.0.checked_add(rhs.into().0).map(Self)
     }
 
-    pub fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(Self)
+    pub fn checked_sub(self, rhs: impl Into<Amount>) -> Option<Self> {
+        self.0.checked_sub(rhs.into().0).map(Self)
     }
 }
 
@@ -326,14 +326,23 @@ pub struct Coin<D> {
     pub amount: Amount,
 }
 
+impl<D> Coin<D> {
+    pub fn new(denom: D, amount: impl Into<Amount>) -> Self {
+        Self {
+            denom,
+            amount: amount.into(),
+        }
+    }
+}
+
 impl<D: FromStr> TryFrom<ProtoCoin> for Coin<D>
 where
-    Error: From<<D as FromStr>::Err>,
+    D::Err: Into<Error>,
 {
     type Error = Error;
 
     fn try_from(proto: ProtoCoin) -> Result<Coin<D>, Self::Error> {
-        let denom = D::from_str(&proto.denom)?;
+        let denom = D::from_str(&proto.denom).map_err(Into::into)?;
         let amount = Amount::from_str(&proto.amount)?;
         Ok(Self { denom, amount })
     }
