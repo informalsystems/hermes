@@ -1,4 +1,3 @@
-use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::fee::v1::{
     Fee as ProtoFee, MsgPayPacketFeeAsync, PacketFee as ProtoPacketFee,
@@ -7,6 +6,7 @@ use ibc_proto::ibc::core::channel::v1::PacketId as ProtoPacketId;
 
 use crate::applications::ics29_fee::error::Error;
 use crate::applications::ics29_fee::utils::encode_message;
+use crate::applications::transfer::denom::RawCoin;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
@@ -19,14 +19,14 @@ pub fn build_pay_packet_fee_async_message(
     channel_id: &ChannelId,
     sequence: Sequence,
     payer: &Signer,
-    recv_fee: Vec<Coin>,
-    ack_fee: Vec<Coin>,
-    timeout_fee: Vec<Coin>,
+    recv_fee: Vec<RawCoin>,
+    ack_fee: Vec<RawCoin>,
+    timeout_fee: Vec<RawCoin>,
 ) -> Result<Any, Error> {
     let fee = ProtoFee {
-        recv_fee,
-        ack_fee,
-        timeout_fee,
+        recv_fee: recv_fee.into_iter().map(Into::into).collect(),
+        ack_fee: ack_fee.into_iter().map(Into::into).collect(),
+        timeout_fee: timeout_fee.into_iter().map(Into::into).collect(),
     };
 
     let packet_fee = ProtoPacketFee {

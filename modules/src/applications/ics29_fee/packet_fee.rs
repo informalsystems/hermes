@@ -1,13 +1,21 @@
 use core::str::FromStr;
-use ibc_proto::ibc::applications::fee::v1::Fee;
+use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use ibc_proto::ibc::applications::fee::v1::{
-    IdentifiedPacketFees as ProtoIdentifiedPacketFees, PacketFee as ProtoPacketFee,
+    Fee as ProtoFee, IdentifiedPacketFees as ProtoIdentifiedPacketFees, PacketFee as ProtoPacketFee,
 };
 
 use super::error::Error;
+use crate::applications::transfer::denom::{Amount, RawCoin};
 use crate::core::ics04_channel::packet_id::PacketId;
 use crate::prelude::*;
 use crate::signer::Signer;
+
+#[derive(Debug, Clone)]
+pub struct Fee {
+    pub recv_fee: Vec<RawCoin>,
+    pub ack_fee: Vec<RawCoin>,
+    pub timeout_fee: Vec<RawCoin>,
+}
 
 #[derive(Debug, Clone)]
 pub struct PacketFee {
@@ -22,11 +30,41 @@ pub struct IdentifiedPacketFees {
     pub packet_fees: Vec<PacketFee>,
 }
 
+impl TryFrom<ProtoFee> for Fee {
+    type Error = Error;
+
+    fn try_from(fee: ProtoFee) -> Result<Self, Error> {
+        fn parse_coin_vec(coins: Vec<ProtoCoin>) -> Result<Vec<RawCoin>, Error> {
+            coins
+                .into_iter()
+                .map(|coin| {
+                    Ok(RawCoin {
+                        denom: coin.denom,
+                        amount: Amount::from_str(&coin.amount).map_err(Error::transfer)?,
+                    })
+                })
+                .collect()
+        }
+
+        let recv_fee = parse_coin_vec(fee.recv_fee)?;
+        let ack_fee = parse_coin_vec(fee.ack_fee)?;
+        let timeout_fee = parse_coin_vec(fee.timeout_fee)?;
+
+        Ok(Fee {
+            recv_fee,
+            ack_fee,
+            timeout_fee,
+        })
+    }
+}
+
 impl TryFrom<ProtoPacketFee> for PacketFee {
     type Error = Error;
 
     fn try_from(packet_fee: ProtoPacketFee) -> Result<Self, Error> {
-        let fee = packet_fee.fee.ok_or_else(Error::empty_fee)?;
+        let proto_fee = packet_fee.fee.ok_or_else(Error::empty_fee)?;
+
+        let fee = Fee::try_from(proto_fee)?;
 
         let refund_address = Signer::from_str(&packet_fee.refund_address).map_err(Error::signer)?;
 

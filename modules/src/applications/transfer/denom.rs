@@ -2,7 +2,7 @@ use core::fmt;
 use core::str::FromStr;
 
 use derive_more::{Display, From, Into};
-use ibc_proto::cosmos::base::v1beta1::Coin as RawCoin;
+use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
 
@@ -17,6 +17,8 @@ pub type PrefixedCoin = Coin<PrefixedDenom>;
 
 /// A `Coin` type with an unprefixed denomination.
 pub type BaseCoin = Coin<BaseDenom>;
+
+pub type RawCoin = Coin<String>;
 
 /// Base denomination type
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Display)]
@@ -281,7 +283,7 @@ impl fmt::Display for PrefixedDenom {
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Display, From, Into,
 )]
-pub struct Amount(U256);
+pub struct Amount(pub U256);
 
 impl Amount {
     pub fn checked_add(self, rhs: Self) -> Option<Self> {
@@ -324,22 +326,22 @@ pub struct Coin<D> {
     pub amount: Amount,
 }
 
-impl<D: FromStr> TryFrom<RawCoin> for Coin<D>
+impl<D: FromStr> TryFrom<ProtoCoin> for Coin<D>
 where
     Error: From<<D as FromStr>::Err>,
 {
     type Error = Error;
 
-    fn try_from(proto: RawCoin) -> Result<Coin<D>, Self::Error> {
+    fn try_from(proto: ProtoCoin) -> Result<Coin<D>, Self::Error> {
         let denom = D::from_str(&proto.denom)?;
         let amount = Amount::from_str(&proto.amount)?;
         Ok(Self { denom, amount })
     }
 }
 
-impl<D: ToString> From<Coin<D>> for RawCoin {
-    fn from(coin: Coin<D>) -> RawCoin {
-        RawCoin {
+impl<D: ToString> From<Coin<D>> for ProtoCoin {
+    fn from(coin: Coin<D>) -> ProtoCoin {
+        ProtoCoin {
             denom: coin.denom.to_string(),
             amount: coin.amount.to_string(),
         }

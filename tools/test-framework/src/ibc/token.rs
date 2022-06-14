@@ -1,7 +1,7 @@
 use core::fmt::{self, Display};
 use core::ops::{Add, Sub};
-use core::str::FromStr;
-use ibc_proto::cosmos::base::v1beta1::Coin;
+use eyre::eyre;
+use ibc::applications::transfer::denom::RawCoin;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::{derive_ibc_denom, Denom, TaggedDenom, TaggedDenomRef};
@@ -38,10 +38,10 @@ impl Token {
         Self { denom, amount }
     }
 
-    pub fn as_coin(&self) -> Coin {
-        Coin {
+    pub fn as_coin(&self) -> RawCoin {
+        RawCoin {
             denom: self.denom.to_string(),
-            amount: self.amount.to_string(),
+            amount: self.amount.into(),
         }
     }
 }
@@ -148,12 +148,13 @@ impl Display for Token {
     }
 }
 
-impl TryFrom<Coin> for Token {
+impl TryFrom<RawCoin> for Token {
     type Error = Error;
 
-    fn try_from(fee: Coin) -> Result<Self, Error> {
+    fn try_from(fee: RawCoin) -> Result<Self, Error> {
         let denom = Denom::base(&fee.denom);
-        let amount = u128::from_str(&fee.amount).map_err(handle_generic_error)?;
+        let amount =
+            u128::try_from(fee.amount.0).map_err(|e| handle_generic_error(eyre!("{}", e)))?;
 
         Ok(Token::new(denom, amount))
     }
