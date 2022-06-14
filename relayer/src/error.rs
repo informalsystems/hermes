@@ -6,6 +6,7 @@ use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
 use prost::{DecodeError, EncodeError};
+use regex::Regex;
 use tendermint::Error as TendermintError;
 use tendermint_light_client::components::io::IoError as LightClientIoError;
 use tendermint_light_client::errors::{
@@ -554,7 +555,76 @@ impl GrpcStatusSubdetail {
             .trim_start()
             .starts_with("account sequence mismatch")
     }
+
+    pub fn is_account_sequence_mismatch_that_can_be_ignored(&self) -> bool {
+        match parse_sequences_in_mismatch_error_message(self.status.message()) {
+            None => false,
+            Some((expected, got)) => expected < got,
+        }
+    }
+}
+
+fn parse_sequences_in_mismatch_error_message(message: &str) -> Option<(u64, u64)> {
+    let re = Regex::new(
+        r#"account sequence mismatch, expected (?P<expected>\d+), got (?P<got>\d+): incorrect account sequence"#
+    )
+        .unwrap();
+    match re.captures(message) {
+        None => None,
+        Some(captures) => match (captures["expected"].parse(), captures["got"].parse()) {
+            (Ok(e), Ok(g)) => Some((e, g)),
+            _ => None,
+        },
+    }
 }
 
 pub const QUERY_PROOF_EXPECT_MSG: &str =
     "Internal error. Requested proof with query but no proof was returned.";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_sequences_in_mismatch_error_message() {
+        struct Test<'a> {
+            name: &'a str,
+            message: &'a str,
+            result: Option<(u64, u64)>,
+        }
+        let tests: Vec<Test<'_>> = vec![
+            Test {
+                name: "matches mismatch error, correct expected and got",
+                message:
+                    "account sequence mismatch, expected 25, got 29: incorrect account sequence",
+                result: Some((25, 29)),
+            },
+            Test {
+                name: "matches mismatch error, bad expected",
+                message:
+                    "account sequence mismatch, expected 2a5, got 29: incorrect account sequence",
+                result: None,
+            },
+            Test {
+                name: "matches mismatch error, bad got",
+                message:
+                    "account sequence mismatch, expected 25, got -29: incorrect account sequence",
+                result: None,
+            },
+            Test {
+                name: "not a mismatch error",
+                message: "some other error message",
+                result: None,
+            },
+        ];
+
+        for test in tests {
+            assert_eq!(
+                test.result,
+                parse_sequences_in_mismatch_error_message(test.message),
+                "{}",
+                test.name
+            )
+        }
+    }
+}
