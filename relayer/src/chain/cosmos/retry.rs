@@ -141,7 +141,7 @@ fn do_send_tx_with_account_sequence_retry<'a>(
             // This is the case when gas estimation succeeded.
             Ok(response) => {
                 match response.code {
-                    // Gas estimation succeeded and broadcasting was successfully.
+                    // Gas estimation succeeded and broadcasting was successful.
                     Code::Ok => {
                         debug!("broadcast_tx_sync: {:?}", response);
 
